@@ -1,0 +1,52 @@
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_required_directories_exist() -> None:
+    required_directories = [
+        "src/features",
+        "src/strategies",
+        "src/backtest",
+        "src/risk",
+        "src/reporting",
+        "src/utils",
+        "tests",
+        "research",
+        "reports",
+    ]
+
+    for directory in required_directories:
+        assert (PROJECT_ROOT / directory).is_dir(), f"Missing directory: {directory}"
+
+
+def test_required_governance_files_exist() -> None:
+    required_files = [
+        "README.md",
+        "PROJECT_SPEC.md",
+        "AGENTS.md",
+        "EXPERIMENT_LOG.md",
+        "pyproject.toml",
+    ]
+
+    for file_name in required_files:
+        assert (PROJECT_ROOT / file_name).is_file(), f"Missing file: {file_name}"
+
+
+def test_placeholder_modules_are_importable() -> None:
+    import backtest.metrics
+    import backtest.portfolio
+    import features.momentum
+    import features.reversal
+    import features.volatility
+    import reporting.plots
+    import risk.constraints
+
+    assert features.momentum.__doc__
+    assert features.reversal.__doc__
+    assert features.volatility.__doc__
+    assert backtest.portfolio.__doc__
+    assert backtest.metrics.__doc__
+    assert risk.constraints.__doc__
+    assert reporting.plots.__doc__
