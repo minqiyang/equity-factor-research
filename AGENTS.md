@@ -14,6 +14,8 @@ This repository is a serious simulated quantitative research project. AI coding 
 - Document any change to strategy logic in `EXPERIMENT_LOG.md`, `PROJECT_SPEC.md`, or a relevant research note.
 - Treat zero-cost or no-slippage results as diagnostics only.
 - Keep failures, weak results, and caveats visible.
+- After meaningful code or research-process changes, check whether the work
+  should be added to `docs/engineering_log.md` as a durable engineering note.
 
 ## Strict Prohibitions
 
