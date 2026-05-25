@@ -369,3 +369,24 @@ Validation at the time of this entry:
 python -m pytest -q
 46 passed
 ```
+
+---
+
+## 2026-05-25 - WorldQuant Alpha#009 Stage 3
+
+This milestone implemented `alpha_009` as the first close-only WorldQuant-style alpha candidate. The function is a research feature only: it calculates a point-in-time-safe signal from close prices and does not define portfolio construction, execution timing, backtest integration, or expected profitability.
+
+The implementation uses the reusable operator layer from Stage 2. It computes one-period close deltas, evaluates full trailing rolling windows over those deltas, and applies the Alpha#009 rule: continue the current delta when the trailing delta window is strictly all positive or strictly all negative; otherwise use the negative current delta. A zero delta falls into the mixed-window branch because the conditions are strict.
+
+Date alignment is explicit: the feature at date `t` may use `close[t]` and earlier closes only, so it is known after the close at `t`. Trading lag remains the responsibility of a later strategy or backtest layer.
+
+Tests were added for hand-calculated positive, negative, mixed, and zero-delta cases; output shape preservation; future-row isolation; missing close behavior; strict input validation; window validation; and absence of backtest integration imports.
+
+No real market data was fetched. No reports were modified. No profitability claim or strategy performance result was added.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+60 passed
+```
