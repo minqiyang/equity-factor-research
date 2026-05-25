@@ -419,3 +419,15 @@ Validation at the time of this entry:
 python -m pytest -q
 60 passed
 ```
+
+---
+
+## 2026-05-25 - Pull Request and Commit Hygiene Rules
+
+This documentation-only governance update added explicit pull request and commit discipline to `AGENTS.md`.
+
+The project is adopting small, meaningful PR and commit practices to improve reviewability and traceability. The goal is not artificial PR or commit inflation. Trivial edits should not be split just to increase counts, and unrelated changes should not be combined into one PR.
+
+Future alpha work should continue to be split by clear milestones, such as planning, tests or documentation, implementation, read-only review, and PR review.
+
+No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.

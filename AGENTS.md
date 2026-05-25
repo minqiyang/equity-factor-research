@@ -17,6 +17,27 @@ This repository is a serious simulated quantitative research project. AI coding 
 - After meaningful code or research-process changes, check whether the work
   should be added to `docs/engineering_log.md` as a durable engineering note.
 
+## Pull Request and Commit Discipline
+
+- Prefer small, reviewable pull requests.
+- Each PR should represent one clear feature, bug fix, test improvement, documentation update, or refactor.
+- Prefer meaningful commits.
+- Each commit should represent one coherent engineering step.
+- Do not split trivial edits into artificial PRs or commits just to increase counts.
+- Do not combine unrelated changes in one PR.
+- Use separate PRs for distinct features, bug fixes, test hardening, documentation updates, and refactors.
+- Use a separate branch for each stage or milestone.
+- For research features, prefer this sequence:
+  1. planning
+  2. tests or documentation
+  3. implementation
+  4. read-only review
+  5. commit
+  6. PR
+  7. merge only after review
+- When a PR has multiple meaningful commits, preserve them unless the commit history is messy.
+- Do not treat PR count or commit count as a quality metric by itself.
+
 ## Strict Prohibitions
 
 - Never claim a strategy is profitable without reproducible evidence.
