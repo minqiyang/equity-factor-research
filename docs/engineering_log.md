@@ -434,6 +434,18 @@ No source code, tests, strategy logic, backtester behavior, metrics, reports, re
 
 ---
 
+## 2026-05-27 - Cross-Sectional Z-Score Normalization Helper
+
+This milestone added the first factor normalization helper: cross-sectional z-score normalization for date-indexed asset factor panels.
+
+The helper is intentionally narrow. It reuses the existing strict operator-layer validation and row-wise z-score behavior so missing factor values remain visible, zero-dispersion cross-sections produce `NaN`, and index and asset alignment are preserved.
+
+Rank normalization, factor combination, factor diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
 ## 2026-05-25 - Factor Normalization And Combination Roadmap
 
 This documentation-only roadmap defines the next research infrastructure step before combining factor outputs or connecting WorldQuant-style alphas to the backtester.
