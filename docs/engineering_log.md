@@ -431,3 +431,15 @@ The project is adopting small, meaningful PR and commit practices to improve rev
 Future alpha work should continue to be split by clear milestones, such as planning, tests or documentation, implementation, read-only review, and PR review.
 
 No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-25 - Factor Normalization And Combination Roadmap
+
+This documentation-only roadmap defines the next research infrastructure step before combining factor outputs or connecting WorldQuant-style alphas to the backtester.
+
+The roadmap explains why raw factor values should not be combined directly, distinguishes raw factors from normalized factors, combined scores, and full strategies, and records expected policies for cross-sectional normalization, ranking, winsorization, missing values, factor alignment, and correlation diagnostics.
+
+The intended future sequence is normalization helpers first, factor combination helpers second, factor correlation diagnostics third, an `alpha_009` synthetic feature smoke demo fourth, and backtest integration only after those pieces are tested.
+
+No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
