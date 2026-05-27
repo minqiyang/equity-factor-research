@@ -446,6 +446,18 @@ No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data f
 
 ---
 
+## 2026-05-27 - Rank-Based Factor Normalization Helpers
+
+This milestone added rank-based factor normalization helpers for date-indexed asset factor panels: ordinal cross-sectional ranks and pandas-style percentile ranks.
+
+The helpers are intentionally limited to row-wise ranking across assets. They preserve missing values, reuse strict panel validation, and document that pandas percentile ranks use `pct=True` semantics rather than min-max percentile scaling.
+
+Winsorization, factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
 ## 2026-05-25 - Factor Normalization And Combination Roadmap
 
 This documentation-only roadmap defines the next research infrastructure step before combining factor outputs or connecting WorldQuant-style alphas to the backtester.

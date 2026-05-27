@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from features.operators import cross_sectional_zscore
+from features.operators import cross_sectional_rank, cross_sectional_zscore, validate_panel_data
 
 
 def cross_sectional_zscore_factor(factor: pd.DataFrame, ddof: int = 0) -> pd.DataFrame:
@@ -47,4 +47,73 @@ def cross_sectional_zscore_factor(factor: pd.DataFrame, ddof: int = 0) -> pd.Dat
     return cross_sectional_zscore(factor, ddof=ddof)
 
 
-__all__ = ["cross_sectional_zscore_factor"]
+def cross_sectional_rank_factor(
+    factor: pd.DataFrame,
+    method: str = "average",
+    ascending: bool = True,
+) -> pd.DataFrame:
+    """Normalize each factor cross-section with ordinal row-wise ranks.
+
+    For each date, assets are ranked across that date's factor values using
+    pandas ordinal rank semantics with ``pct=False``. Missing factor values are
+    excluded from the row ranking and remain ``NaN`` in the output. Ties are
+    handled by pandas according to ``method``, with ``"average"`` as the
+    default.
+
+    The result preserves the input index and columns. The output is a
+    normalized research feature, not a combined score or trading strategy.
+
+    Args:
+        factor: Factor DataFrame indexed by increasing dates with assets as
+            columns. Values must already be numeric; strings and boolean columns
+            are rejected by the shared panel validator.
+        method: Tie-handling method passed to ``DataFrame.rank``.
+        ascending: If ``True``, lower raw values receive lower rank numbers. If
+            ``False``, higher raw values receive lower rank numbers.
+
+    Returns:
+        A DataFrame of ordinal ranks with the same index and columns as
+        ``factor``.
+    """
+
+    panel = validate_panel_data(factor, name="factor")
+    return panel.rank(axis=1, method=method, ascending=ascending, pct=False)
+
+
+def cross_sectional_percentile_rank_factor(
+    factor: pd.DataFrame,
+    method: str = "average",
+    ascending: bool = True,
+) -> pd.DataFrame:
+    """Normalize each factor cross-section with pandas percentile ranks.
+
+    For each date, assets are ranked across that date's factor values using
+    pandas ``pct=True`` rank semantics. The percentile rank is the ordinal rank
+    divided by the number of valid non-missing observations in that row; it is
+    not a min-max percentile transformation. Missing values are excluded from
+    the row ranking and remain ``NaN`` in the output.
+
+    The result preserves the input index and columns. The output is a
+    normalized research feature, not a combined score or trading strategy.
+
+    Args:
+        factor: Factor DataFrame indexed by increasing dates with assets as
+            columns. Values must already be numeric; strings and boolean columns
+            are rejected by the shared panel validator.
+        method: Tie-handling method passed to ``DataFrame.rank``.
+        ascending: If ``True``, lower raw values receive lower percentile ranks.
+            If ``False``, higher raw values receive lower percentile ranks.
+
+    Returns:
+        A DataFrame of pandas percentile ranks with the same index and columns
+        as ``factor``.
+    """
+
+    return cross_sectional_rank(factor, method=method, ascending=ascending)
+
+
+__all__ = [
+    "cross_sectional_percentile_rank_factor",
+    "cross_sectional_rank_factor",
+    "cross_sectional_zscore_factor",
+]
