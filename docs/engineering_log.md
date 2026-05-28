@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-05-28 - Repository Checkpoint Audit And Phase Report
+
+This documentation-only checkpoint captured the project state before moving from individual factor normalization helpers toward factor combination work.
+
+The audit reviewed tracked files, stage traceability, test status, scope guardrails, and current limitations. It did not change source code, tests, strategy logic, reports, real data access, backtester behavior, metrics, or profitability claims.
+
+---
+
 ## 2026-05-22 - Backtester Correctness Review: Silent Data Failures, Leakage Tests, and Return Semantics
 
 ### Context
