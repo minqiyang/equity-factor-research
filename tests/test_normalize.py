@@ -10,6 +10,7 @@ import features.normalize as normalize
 from features.normalize import (
     cross_sectional_percentile_rank_factor,
     cross_sectional_rank_factor,
+    cross_sectional_winsorize_factor,
     cross_sectional_zscore_factor,
 )
 
@@ -244,6 +245,101 @@ def test_rank_helpers_reject_invalid_string_values(bad_value: str) -> None:
 
     with pytest.raises(TypeError, match="numeric non-boolean"):
         cross_sectional_percentile_rank_factor(factor)
+
+
+def test_cross_sectional_winsorize_factor_preserves_index_and_columns() -> None:
+    factor = _panel({"AAA": [1.0, 10.0], "BBB": [2.0, 20.0], "CCC": [100.0, 30.0]})
+
+    result = cross_sectional_winsorize_factor(factor)
+
+    assert result.index.equals(factor.index)
+    assert result.columns.equals(factor.columns)
+
+
+def test_cross_sectional_winsorize_factor_is_hand_calculated() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0], "CCC": [100.0]})
+
+    result = cross_sectional_winsorize_factor(factor, lower_quantile=0.0, upper_quantile=0.5)
+
+    expected = _panel({"AAA": [1.0], "BBB": [2.0], "CCC": [2.0]})
+    assert_frame_equal(result, expected)
+
+
+def test_cross_sectional_winsorize_factor_clips_row_wise_not_globally() -> None:
+    factor = _panel({"AAA": [1.0, 10.0], "BBB": [2.0, 20.0], "CCC": [100.0, 30.0]})
+
+    result = cross_sectional_winsorize_factor(factor, lower_quantile=0.0, upper_quantile=0.5)
+
+    expected = _panel({"AAA": [1.0, 10.0], "BBB": [2.0, 20.0], "CCC": [2.0, 20.0]})
+    assert_frame_equal(result, expected)
+
+
+def test_cross_sectional_winsorize_factor_preserves_nan_and_excludes_missing_values() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [np.nan], "CCC": [100.0]})
+
+    result = cross_sectional_winsorize_factor(factor, lower_quantile=0.0, upper_quantile=0.5)
+
+    expected = _panel({"AAA": [1.0], "BBB": [np.nan], "CCC": [50.5]})
+    assert_frame_equal(result, expected)
+
+
+def test_cross_sectional_winsorize_factor_all_nan_row_remains_nan() -> None:
+    factor = _panel({"AAA": [np.nan], "BBB": [np.nan], "CCC": [np.nan]})
+
+    result = cross_sectional_winsorize_factor(factor)
+
+    assert result.loc[factor.index[0]].isna().all()
+
+
+def test_cross_sectional_winsorize_factor_single_valid_value_row_is_unchanged() -> None:
+    factor = _panel({"AAA": [np.nan], "BBB": [5.0], "CCC": [np.nan]})
+
+    result = cross_sectional_winsorize_factor(factor)
+
+    expected = _panel({"AAA": [np.nan], "BBB": [5.0], "CCC": [np.nan]})
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("lower_quantile", "upper_quantile"),
+    [(-0.1, 0.9), (0.1, 1.1), (0.5, 0.5), (0.9, 0.1)],
+)
+def test_cross_sectional_winsorize_factor_rejects_invalid_quantile_bounds(
+    lower_quantile: float,
+    upper_quantile: float,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0], "CCC": [3.0]})
+
+    with pytest.raises(ValueError, match="quantiles"):
+        cross_sectional_winsorize_factor(
+            factor,
+            lower_quantile=lower_quantile,
+            upper_quantile=upper_quantile,
+        )
+
+
+def test_cross_sectional_winsorize_factor_rejects_non_dataframe_input() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+
+    with pytest.raises(TypeError, match="DataFrame"):
+        cross_sectional_winsorize_factor(pd.Series([1.0, 2.0, 3.0], index=dates))
+
+
+def test_cross_sectional_winsorize_factor_rejects_unsorted_index() -> None:
+    dates = pd.to_datetime(["2024-01-02", "2024-01-01"])
+    factor = pd.DataFrame({"AAA": [1.0, 2.0], "BBB": [3.0, 4.0]}, index=dates)
+
+    with pytest.raises(ValueError, match="sorted"):
+        cross_sectional_winsorize_factor(factor)
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "NaN", "1.0"])
+def test_cross_sectional_winsorize_factor_rejects_invalid_string_values(bad_value: str) -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    factor = pd.DataFrame({"AAA": [1.0, bad_value, 3.0], "BBB": [2.0, 3.0, 4.0]}, index=dates)
+
+    with pytest.raises(TypeError, match="numeric non-boolean"):
+        cross_sectional_winsorize_factor(factor)
 
 
 def test_normalize_module_has_no_backtest_or_real_data_imports() -> None:
