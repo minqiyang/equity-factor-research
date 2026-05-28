@@ -507,3 +507,13 @@ The roadmap explains why raw factor values should not be combined directly, dist
 The intended future sequence is normalization helpers first, factor combination helpers second, factor correlation diagnostics third, an `alpha_009` synthetic feature smoke demo fourth, and backtest integration only after those pieces are tested.
 
 No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-28 - Synthetic Multi-Factor Workflow Demo
+
+This milestone added a synthetic-only workflow demo showing how existing factor preprocessing, normalization, diagnostics, and combination helpers can be used together on deterministic factor panels.
+
+The demo applies row-wise winsorization, z-score normalization, rank-based normalization, factor correlation diagnostics, and explicit weighted factor combination before writing a synthetic workflow report.
+
+It does not add backtest integration, portfolio construction, real market data, new alpha formulas, reports beyond the synthetic demo report, live trading functionality, or profitability claims.
