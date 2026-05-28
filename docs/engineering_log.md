@@ -442,6 +442,16 @@ No source code, tests, strategy logic, backtester behavior, metrics, reports, re
 
 ---
 
+## 2026-05-28 - Factor Correlation Diagnostics
+
+This milestone added diagnostic-only factor correlation infrastructure for aligned factor panels.
+
+The helper measures pairwise Pearson or Spearman relationships across flattened factor panels using overlapping non-missing observations only. It preserves factor names, validates panel alignment, and does not fill missing values.
+
+Factor selection, model training, backtest integration, performance reporting, real data fetching, new alpha formulas, and profitability claims remain deferred.
+
+---
+
 ## 2026-05-28 - Factor Combination Helper
 
 This milestone added a narrow helper for combining already-preprocessed factor panels with explicit weights.
