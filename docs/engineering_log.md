@@ -446,6 +446,18 @@ No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data f
 
 ---
 
+## 2026-05-28 - Cross-Sectional Factor Winsorization Helper
+
+This milestone added a row-wise winsorization helper for date-indexed asset factor panels.
+
+The helper is intentionally limited to factor preprocessing. It preserves missing values, reuses strict panel validation, and clips each date's cross-section independently using explicit lower and upper quantile bounds.
+
+Factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
 ## 2026-05-27 - Rank-Based Factor Normalization Helpers
 
 This milestone added rank-based factor normalization helpers for date-indexed asset factor panels: ordinal cross-sectional ranks and pandas-style percentile ranks.

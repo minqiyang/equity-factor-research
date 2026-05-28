@@ -9,7 +9,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from features.operators import cross_sectional_rank, cross_sectional_zscore, validate_panel_data
+from features.operators import (
+    cross_sectional_rank,
+    cross_sectional_zscore,
+    validate_panel_data,
+    winsorize_cross_sectional,
+)
 
 
 def cross_sectional_zscore_factor(factor: pd.DataFrame, ddof: int = 0) -> pd.DataFrame:
@@ -112,8 +117,45 @@ def cross_sectional_percentile_rank_factor(
     return cross_sectional_rank(factor, method=method, ascending=ascending)
 
 
+def cross_sectional_winsorize_factor(
+    factor: pd.DataFrame,
+    *,
+    lower_quantile: float = 0.01,
+    upper_quantile: float = 0.99,
+) -> pd.DataFrame:
+    """Clip each factor cross-section to row-wise quantile bounds.
+
+    For each date, factor values are clipped across assets using the row's
+    lower and upper quantiles. Missing factor values are excluded from quantile
+    calculations and remain ``NaN`` in the output.
+
+    The result preserves the input index and columns. The output is a factor
+    preprocessing helper, not a trading signal, combined score, or strategy.
+
+    Args:
+        factor: Factor DataFrame indexed by increasing dates with assets as
+            columns. Values must already be numeric; strings and boolean columns
+            are rejected by the shared panel validator.
+        lower_quantile: Lower row-wise clipping quantile. Must satisfy
+            ``0 <= lower_quantile < upper_quantile <= 1``.
+        upper_quantile: Upper row-wise clipping quantile. Must satisfy
+            ``0 <= lower_quantile < upper_quantile <= 1``.
+
+    Returns:
+        A DataFrame of row-wise winsorized factor values with the same index and
+        columns as ``factor``.
+    """
+
+    return winsorize_cross_sectional(
+        factor,
+        lower_quantile=lower_quantile,
+        upper_quantile=upper_quantile,
+    )
+
+
 __all__ = [
     "cross_sectional_percentile_rank_factor",
     "cross_sectional_rank_factor",
+    "cross_sectional_winsorize_factor",
     "cross_sectional_zscore_factor",
 ]
