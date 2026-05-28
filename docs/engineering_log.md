@@ -442,6 +442,16 @@ No source code, tests, strategy logic, backtester behavior, metrics, reports, re
 
 ---
 
+## 2026-05-28 - Factor Combination Helper
+
+This milestone added a narrow helper for combining already-preprocessed factor panels with explicit weights.
+
+The helper enforces exact date and asset alignment, finite non-boolean weights, at least one nonzero weight, and strict missing-value behavior before producing a weighted combined score.
+
+Normalization, factor correlation diagnostics, synthetic alpha smoke demos, backtest integration, real data fetching, new alpha formulas, reports, and profitability claims remain deferred.
+
+---
+
 ## 2026-05-27 - Cross-Sectional Z-Score Normalization Helper
 
 This milestone added the first factor normalization helper: cross-sectional z-score normalization for date-indexed asset factor panels.
