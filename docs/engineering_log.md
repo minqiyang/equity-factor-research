@@ -517,3 +517,13 @@ This milestone added a synthetic-only workflow demo showing how existing factor 
 The demo applies row-wise winsorization, z-score normalization, rank-based normalization, factor correlation diagnostics, and explicit weighted factor combination before writing a synthetic workflow report.
 
 It does not add backtest integration, portfolio construction, real market data, new alpha formulas, reports beyond the synthetic demo report, live trading functionality, or profitability claims.
+
+---
+
+## 2026-05-28 - Synthetic Combined-Score Backtest Smoke Test
+
+This milestone added a synthetic-only smoke test that passes a deterministic combined factor score into the existing long-only backtester.
+
+The workflow generates synthetic prices and synthetic factor panels, applies existing factor preprocessing and normalization helpers, combines z-scored factors with explicit weights, and runs the existing backtester with transaction costs and signal lag.
+
+The output is a workflow diagnostic only. It does not modify backtester or feature helper behavior, fetch real market data, add broker or live trading logic, introduce order execution, or make profitability claims.
