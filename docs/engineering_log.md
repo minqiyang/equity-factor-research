@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Structured Synthetic Experiment Registry
+
+This research-process milestone added a structured registry helper for the synthetic JSON experiment logs.
+
+The helper validates required log fields and synthetic-research caveats, rejects duplicate experiment IDs, builds a deterministic registry table, and writes `reports/experiment_registry.md` as a caveated review report. The report summarizes existing synthetic logs only; it does not run experiments, recalculate metrics, choose parameters, fetch real data, or make profitability claims.
+
+This does not change feature calculations, strategy logic, backtester behavior, report metrics, data access, live trading functionality, brokerage integration, order execution, or credential handling.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Synthetic Demo Experiment Logging Automation
 
 This research-process milestone added deterministic JSON experiment-log sidecars for the existing synthetic demos.
