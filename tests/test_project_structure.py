@@ -6,6 +6,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def test_required_directories_exist() -> None:
     required_directories = [
+        "src/data",
         "src/features",
         "src/strategies",
         "src/backtest",
@@ -37,6 +38,7 @@ def test_required_governance_files_exist() -> None:
 def test_placeholder_modules_are_importable() -> None:
     import backtest.metrics
     import backtest.portfolio
+    import data.csv_loader
     import features.momentum
     import features.reversal
     import features.volatility
@@ -48,5 +50,6 @@ def test_placeholder_modules_are_importable() -> None:
     assert features.volatility.__doc__
     assert backtest.portfolio.__doc__
     assert backtest.metrics.__doc__
+    assert data.csv_loader.__doc__
     assert risk.constraints.__doc__
     assert reporting.plots.__doc__
