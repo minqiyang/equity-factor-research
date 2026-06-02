@@ -23,6 +23,55 @@ parameter sensitivity smoke test. It reports every configured case and should
 not be used as parameter selection, strategy validation, financial advice, or
 profitability evidence.
 
+## Local CSV Experiment Records
+
+Any future run that uses user-provided local CSV data must add or prepare a full
+entry in this file before results are interpreted. The entry is required for
+loader smoke tests, feature audits, backtest diagnostics, parameter studies, and
+full experiment candidates.
+
+This requirement does not authorize data downloads, remote data access, vendor
+APIs, credentials, live trading, brokerage integration, order execution, or
+profitability claims. Local CSV runs remain research-only and must pass the
+real-data readiness audit before being treated as evidence.
+
+At minimum, a local CSV experiment record must include:
+
+- Local source path for each input file, plus file timestamp, file hash, or
+  version identifier when the file may be revised.
+- Schema for each file: wide price, long price, benchmark, universe membership,
+  factor panel, metadata, or another reviewed schema.
+- Validation summary: date parsing, sorted dates, duplicate checks, numeric
+  parsing, missing-value counts, non-positive price handling, and whether any
+  forward-fill or backward-fill was used.
+- Data provenance: source name as provided by the user, export type, known
+  manual edits, and known missing, stale, revised, or excluded observations.
+- Price adjustment policy: adjusted close, raw close, split-adjusted,
+  dividend-adjusted, total-return adjusted, or unknown, including benchmark
+  adjustment compatibility.
+- Universe rules: starting universe, point-in-time membership status, liquidity
+  filters, price filters, minimum history, exclusions, delistings, symbol
+  changes, and survivorship-bias caveats.
+- Feature and signal timing: formulas, lookbacks, skipped windows, latest data
+  timestamp available for each signal date, signal lag, and execution timing.
+- Sample splits and parameter policy: in-sample, validation, test or holdout
+  periods, warm-up exclusion, fixed parameters or grid, and whether choices were
+  made before seeing results.
+- Benchmark: symbol or local benchmark file, date range, price or return field,
+  missing dates, adjustment convention, and alignment to strategy dates.
+- Costs, slippage, turnover, rebalance frequency, and execution assumptions,
+  including whether zero-cost or zero-slippage settings are diagnostic only.
+- Metrics and limitations, including missing-data limitations, benchmark
+  mismatch, corporate-action uncertainty, vendor differences, stale prices,
+  delisting risk, and any unresolved low issues from the readiness audit.
+- Failure modes and next action, including weak, failed, ambiguous, or stopped
+  cases. Do not report only the best parameter result.
+
+If required provenance, adjustment policy, date alignment, benchmark coverage,
+sample splits, cost/slippage assumptions, or missing-data evidence is absent,
+stop before interpreting metrics. Synthetic JSON sidecar logs are not
+substitutes for local CSV experiment records.
+
 ## Template
 
 ### Experiment ID

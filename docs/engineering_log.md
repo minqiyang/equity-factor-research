@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Local CSV Experiment-Log Requirements
+
+This documentation-only milestone updated `EXPERIMENT_LOG.md` with required
+record fields for future user-provided local CSV research runs.
+
+The new section requires local source paths, file hashes or version identifiers,
+schemas, validation summaries, provenance, price adjustment policy, universe
+rules, feature and signal timing, sample splits, benchmark assumptions, costs,
+slippage, limitations, failure modes, and next actions before local CSV results
+are interpreted.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, or synthetic demos. It does
+not fetch data, download data, add vendor access, introduce live trading, add
+brokerage or order-execution logic, store credentials, or make profitability
+claims.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - QuantConnect/LEAN CSV Validation Mapping
 
 This documentation-only milestone updated `docs/quantconnect_lean_plan.md` to
