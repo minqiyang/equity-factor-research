@@ -149,6 +149,22 @@ def test_combined_score_demo_writes_experiment_log(tmp_path: Path) -> None:
     assert "not strategy validation" in payload["caveats"]
 
 
+def test_combined_score_demo_can_skip_report_and_log_outputs(tmp_path: Path) -> None:
+    report_path = tmp_path / "skipped_report.md"
+    log_path = tmp_path / "skipped_log.json"
+
+    result = run_synthetic_combined_score_backtest_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+        write_outputs=False,
+    )
+
+    assert not report_path.exists()
+    assert not log_path.exists()
+    assert result.report_path == report_path
+    assert result.experiment_log_path == log_path
+
+
 def test_main_writes_report_to_requested_path(tmp_path: Path) -> None:
     report_path = tmp_path / "module_report.md"
 

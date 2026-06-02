@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Synthetic Multi-Factor Parameter Sweep
+
+This research-process milestone added a deterministic synthetic-only parameter sweep for the combined-score backtest workflow.
+
+The sweep varies only explicit factor weight sets and selected-asset counts while holding synthetic seeds, date range, transaction cost, signal lag, benchmark, and execution assumptions fixed. It reports every configured case in `reports/synthetic_multifactor_parameter_sweep.md`, writes a JSON log under `reports/experiment_logs/`, and refreshes the synthetic experiment registry.
+
+This is a sensitivity smoke test, not parameter selection or strategy validation. It does not change feature calculations, backtester behavior, strategy logic, real-data access, live trading functionality, brokerage integration, order execution, or profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Structured Synthetic Experiment Registry
 
 This research-process milestone added a structured registry helper for the synthetic JSON experiment logs.
