@@ -14,6 +14,10 @@ universe definitions, validation splits, or parameter studies are introduced.
 Synthetic demo metrics remain workflow diagnostics only and are not financial
 advice, strategy validation, or profitability evidence.
 
+`reports/experiment_registry.md` summarizes the JSON logs in a deterministic
+table for review. The registry is a reporting view over existing logs; it does
+not run experiments, recalculate metrics, or replace full experiment records.
+
 ## Template
 
 ### Experiment ID
