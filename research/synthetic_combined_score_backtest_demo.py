@@ -27,10 +27,18 @@ from research.synthetic_multifactor_workflow_demo import (
     SyntheticMultifactorWorkflowConfig,
     generate_synthetic_factor_panels,
 )
+from reporting.experiment_log import (
+    SYNTHETIC_RESEARCH_CAVEATS,
+    resolve_experiment_log_path,
+    write_experiment_log,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "synthetic_combined_score_backtest_demo.md"
+DEFAULT_EXPERIMENT_LOG_PATH = (
+    PROJECT_ROOT / "reports" / "experiment_logs" / "synthetic_combined_score_backtest_demo.json"
+)
 
 
 @dataclass(frozen=True)
@@ -73,6 +81,7 @@ class SyntheticCombinedScoreBacktestResult:
     benchmark_prices: pd.Series
     backtest_result: BacktestResult
     report_path: Path
+    experiment_log_path: Path
 
 
 def generate_synthetic_prices(
@@ -114,8 +123,15 @@ def run_synthetic_combined_score_backtest_demo(
     *,
     config: SyntheticCombinedScoreBacktestConfig = SyntheticCombinedScoreBacktestConfig(),
     report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
 ) -> SyntheticCombinedScoreBacktestResult:
     """Run the synthetic combined-score backtest smoke test and write a report."""
+
+    experiment_log_path = resolve_experiment_log_path(
+        report_path,
+        default_report_path=DEFAULT_REPORT_PATH,
+        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+    ) if experiment_log_path is None else experiment_log_path
 
     prices = generate_synthetic_prices(config)
     raw_factors = generate_synthetic_factor_panels(_factor_config(config))
@@ -164,9 +180,82 @@ def run_synthetic_combined_score_backtest_demo(
         benchmark_prices=benchmark_prices,
         backtest_result=backtest_result,
         report_path=report_path,
+        experiment_log_path=experiment_log_path,
     )
     write_report(config=config, result=result)
+    write_demo_experiment_log(config=config, result=result)
     return result
+
+
+def write_demo_experiment_log(
+    *,
+    config: SyntheticCombinedScoreBacktestConfig,
+    result: SyntheticCombinedScoreBacktestResult,
+) -> dict[str, object]:
+    """Write a deterministic JSON log for the combined-score smoke test."""
+
+    metrics = result.backtest_result.metrics
+    return write_experiment_log(
+        log_path=result.experiment_log_path,
+        experiment_id="synthetic-combined-score-backtest-demo",
+        title="Synthetic Combined-Score Backtest Smoke Test",
+        experiment_type="synthetic_backtest_smoke_test",
+        summary=(
+            "Deterministic synthetic smoke test that connects existing factor "
+            "preprocessing and combination helpers to the existing long-only "
+            "backtester with explicit signal lag and transaction costs."
+        ),
+        config=config,
+        assumptions={
+            "data_scope": "synthetic only",
+            "data_source": "local deterministic price and factor generators; no external data fetch",
+            "universe": f"{config.asset_count} synthetic assets",
+            "date_range": {
+                "start": result.prices.index.min().date(),
+                "end": result.prices.index.max().date(),
+            },
+            "factor_names": list(FACTOR_NAMES),
+            "feature_timing": "synthetic factor values are aligned to price dates before lagged backtest use",
+            "execution_timing": result.backtest_result.assumptions["execution_timing"],
+            "rebalance_frequency": config.rebalance_frequency,
+            "selected_assets_per_rebalance": config.top_n,
+            "signal_lag_periods": config.signal_lag_periods,
+            "benchmark": "synthetic equal-weight universe benchmark",
+            "transaction_cost_model": (
+                f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
+            ),
+            "slippage_model": "not separately modeled; diagnostic synthetic smoke test only",
+            "turnover_model": result.backtest_result.assumptions["turnover_model"],
+            "long_only": result.backtest_result.assumptions["long_only"],
+            "live_trading": False,
+            "brokerage_integration": False,
+        },
+        outputs={
+            "markdown_report": _project_relative_path(result.report_path),
+            "experiment_log": _project_relative_path(result.experiment_log_path),
+            "price_rows": result.prices.shape[0],
+            "asset_count": result.prices.shape[1],
+        },
+        metrics=metrics,
+        diagnostics={
+            "aligned_signal_coverage": result.backtest_result.assumptions[
+                "aligned_signal_coverage"
+            ],
+            "correlation_method": "pearson",
+            "total_turnover": metrics["total_turnover"],
+        },
+        caveats=(
+            *SYNTHETIC_RESEARCH_CAVEATS,
+            "workflow smoke test only",
+            "not evidence of real-world strategy performance",
+            "not strategy validation",
+        ),
+        next_action=(
+            "Use as a reproducible synthetic smoke-test log only; real-data "
+            "readiness still requires explicit data interfaces, validation "
+            "splits, liquidity assumptions, and slippage modeling."
+        ),
+    )
 
 
 def write_report(
@@ -312,10 +401,23 @@ def _format_markdown_table(frame: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-def main(report_path: Path = DEFAULT_REPORT_PATH) -> None:
+def _project_relative_path(path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
+def main(
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+) -> None:
     """Run the synthetic combined-score smoke demo with default settings."""
 
-    run_synthetic_combined_score_backtest_demo(report_path=report_path)
+    run_synthetic_combined_score_backtest_demo(
+        report_path=report_path,
+        experiment_log_path=experiment_log_path,
+    )
 
 
 if __name__ == "__main__":

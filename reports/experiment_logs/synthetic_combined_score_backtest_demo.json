@@ -1,0 +1,87 @@
+{
+  "assumptions": {
+    "benchmark": "synthetic equal-weight universe benchmark",
+    "brokerage_integration": false,
+    "data_scope": "synthetic only",
+    "data_source": "local deterministic price and factor generators; no external data fetch",
+    "date_range": {
+      "end": "2024-08-12",
+      "start": "2024-01-02"
+    },
+    "execution_timing": "signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row",
+    "factor_names": [
+      "synthetic_momentum",
+      "synthetic_quality",
+      "synthetic_reversal"
+    ],
+    "feature_timing": "synthetic factor values are aligned to price dates before lagged backtest use",
+    "live_trading": false,
+    "long_only": true,
+    "rebalance_frequency": "ME",
+    "selected_assets_per_rebalance": 4,
+    "signal_lag_periods": 1,
+    "slippage_model": "not separately modeled; diagnostic synthetic smoke test only",
+    "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
+    "turnover_model": "target_weight_turnover",
+    "universe": "12 synthetic assets"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration",
+    "workflow smoke test only",
+    "not evidence of real-world strategy performance",
+    "not strategy validation"
+  ],
+  "config": {
+    "asset_count": 12,
+    "factor_seed": 20260528,
+    "periods": 160,
+    "periods_per_year": 252,
+    "price_seed": 20260529,
+    "rebalance_frequency": "ME",
+    "signal_lag_periods": 1,
+    "start_date": "2024-01-02",
+    "starting_price": 100.0,
+    "top_n": 4,
+    "transaction_cost_bps": 10.0,
+    "weights": {
+      "synthetic_momentum": 0.5,
+      "synthetic_quality": 0.3,
+      "synthetic_reversal": 0.2
+    },
+    "winsor_lower_quantile": 0.05,
+    "winsor_upper_quantile": 0.95
+  },
+  "diagnostics": {
+    "aligned_signal_coverage": 1.0,
+    "correlation_method": "pearson",
+    "total_turnover": 8.5
+  },
+  "experiment_id": "synthetic-combined-score-backtest-demo",
+  "experiment_type": "synthetic_backtest_smoke_test",
+  "metrics": {
+    "annualized_return": 0.13982602676618527,
+    "annualized_volatility": 0.10565772356515275,
+    "average_turnover": 0.053125,
+    "benchmark_total_return": 0.15962974979962308,
+    "excess_total_return": -0.07354821329746919,
+    "max_drawdown": -0.05135363466081455,
+    "sharpe_ratio": 1.2840020536287478,
+    "total_return": 0.08608153650215389,
+    "total_transaction_cost_impact": 0.0085,
+    "total_turnover": 8.5
+  },
+  "next_action": "Use as a reproducible synthetic smoke-test log only; real-data readiness still requires explicit data interfaces, validation splits, liquidity assumptions, and slippage modeling.",
+  "outputs": {
+    "asset_count": 12,
+    "experiment_log": "reports/experiment_logs/synthetic_combined_score_backtest_demo.json",
+    "markdown_report": "reports/synthetic_combined_score_backtest_demo.md",
+    "price_rows": 160
+  },
+  "schema_version": 1,
+  "summary": "Deterministic synthetic smoke test that connects existing factor preprocessing and combination helpers to the existing long-only backtester with explicit signal lag and transaction costs.",
+  "title": "Synthetic Combined-Score Backtest Smoke Test"
+}

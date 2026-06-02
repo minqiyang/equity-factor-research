@@ -1,0 +1,66 @@
+{
+  "assumptions": {
+    "benchmark": "synthetic equal-weight universe benchmark",
+    "brokerage_integration": false,
+    "data_scope": "synthetic only",
+    "data_source": "local deterministic generator; no external data fetch",
+    "date_range": {
+      "end": "2023-11-24",
+      "start": "2021-01-01"
+    },
+    "execution_timing": "signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row",
+    "feature_timing": "12-1 momentum uses shifted historical price anchors; signal lag keeps portfolio formation after signal availability",
+    "live_trading": false,
+    "rebalance_frequency": "ME",
+    "slippage_model": "not separately modeled; diagnostic synthetic run only",
+    "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
+    "universe": "20 synthetic assets"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration",
+    "workflow diagnostics only",
+    "not evidence of real-world strategy performance"
+  ],
+  "config": {
+    "asset_count": 20,
+    "lookback_periods": 252,
+    "periods": 756,
+    "periods_per_year": 252,
+    "rebalance_frequency": "ME",
+    "seed": 20260521,
+    "skip_periods": 21,
+    "start_date": "2021-01-01",
+    "starting_price": 100.0,
+    "top_n": 5,
+    "transaction_cost_bps": 10.0
+  },
+  "diagnostics": {},
+  "experiment_id": "synthetic-momentum-demo",
+  "experiment_type": "synthetic_backtest_smoke_test",
+  "metrics": {
+    "annualized_return": -0.02726693209338016,
+    "annualized_volatility": 0.10316577141438897,
+    "average_turnover": 0.01666666666666667,
+    "benchmark_total_return": 0.28164857057504955,
+    "excess_total_return": -0.3611382039333474,
+    "max_drawdown": -0.2255157992812763,
+    "sharpe_ratio": -0.21606908416519152,
+    "total_return": -0.07948963335829784,
+    "total_transaction_cost_impact": 0.0126,
+    "total_turnover": 12.600000000000001
+  },
+  "next_action": "Use as a reproducible smoke-test log only; real-data experiments still require explicit data-source, universe, slippage, benchmark, and validation-split documentation.",
+  "outputs": {
+    "experiment_log": "reports/experiment_logs/synthetic_momentum_demo.json",
+    "holdings_assets": 20,
+    "holdings_rows": 756,
+    "markdown_report": "reports/synthetic_momentum_demo.md"
+  },
+  "schema_version": 1,
+  "summary": "Deterministic synthetic 12-1 momentum workflow that generates local synthetic prices, computes a lagged momentum signal, and runs the existing long-only backtester as a smoke test.",
+  "title": "Synthetic Momentum Demo"
+}

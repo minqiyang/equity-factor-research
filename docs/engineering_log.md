@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Synthetic Demo Experiment Logging Automation
+
+This research-process milestone added deterministic JSON experiment-log sidecars for the existing synthetic demos.
+
+The logs capture each demo's configuration, synthetic-only data assumptions, caveats, output paths, and diagnostics or metrics. Backtest smoke-test logs also record benchmark choice, transaction-cost assumptions, signal lag, execution-timing assumptions, and the explicit caveat that slippage is not separately modeled.
+
+This does not change feature calculations, strategy logic, backtester behavior, portfolio construction, report metrics, real-data access, brokerage integration, live trading functionality, or profitability claims. The logs are reproducibility and auditability metadata for synthetic workflows only.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Post-4H Checkpoint Review
 
 This documentation-only checkpoint reviewed the repository after the synthetic combined-score backtest smoke test was merged to `main`.

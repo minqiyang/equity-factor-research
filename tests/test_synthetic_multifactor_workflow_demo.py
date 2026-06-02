@@ -1,5 +1,6 @@
 import ast
 import inspect
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -80,6 +81,28 @@ def test_workflow_report_is_created_with_required_warnings(tmp_path: Path) -> No
     assert "No backtest integration or portfolio construction is included." in report_text
     assert "| Total return |" not in report_text
     assert "Sharpe" not in report_text
+
+
+def test_workflow_writes_experiment_log(tmp_path: Path) -> None:
+    report_path = tmp_path / "synthetic_multifactor_workflow_demo.md"
+    log_path = tmp_path / "synthetic_multifactor_workflow_demo.json"
+
+    result = run_synthetic_multifactor_workflow_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+    )
+
+    payload = json.loads(log_path.read_text(encoding="utf-8"))
+    assert result.experiment_log_path == log_path
+    assert payload["experiment_id"] == "synthetic-multifactor-workflow-demo"
+    assert payload["experiment_type"] == "synthetic_feature_workflow"
+    assert payload["metrics"] == {}
+    assert payload["assumptions"]["data_scope"] == "synthetic only"
+    assert payload["assumptions"]["portfolio_construction"] == "not included"
+    assert payload["assumptions"]["backtest_integration"] == "not included"
+    assert payload["assumptions"]["transaction_cost_model"] == "not applicable; no portfolio or trades"
+    assert payload["diagnostics"]["factor_names"] == list(FACTOR_NAMES)
+    assert "not a strategy signal or portfolio" in payload["caveats"]
 
 
 def test_combined_score_preserves_index_and_columns(tmp_path: Path) -> None:
@@ -204,7 +227,10 @@ def test_workflow_module_has_no_forbidden_imports() -> None:
         elif isinstance(node, ast.ImportFrom) and node.module is not None:
             imported_modules.append(node.module)
 
+    allowed_modules = {"reporting.experiment_log"}
     for module_name in imported_modules:
+        if module_name in allowed_modules:
+            continue
         assert not any(term in module_name for term in forbidden_terms)
 
 

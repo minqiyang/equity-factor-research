@@ -1,5 +1,6 @@
 import ast
 import inspect
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -122,6 +123,30 @@ def test_report_contains_metrics_as_caveated_smoke_diagnostics(tmp_path: Path) -
     assert "| Total return |" in report_text
     assert "These values are deterministic diagnostics from synthetic data" in report_text
     assert "not evidence of real-world performance" in report_text
+
+
+def test_combined_score_demo_writes_experiment_log(tmp_path: Path) -> None:
+    report_path = tmp_path / "synthetic_combined_score_backtest_demo.md"
+    log_path = tmp_path / "synthetic_combined_score_backtest_demo.json"
+
+    result = run_synthetic_combined_score_backtest_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+    )
+
+    payload = json.loads(log_path.read_text(encoding="utf-8"))
+    assert result.experiment_log_path == log_path
+    assert payload["experiment_id"] == "synthetic-combined-score-backtest-demo"
+    assert payload["experiment_type"] == "synthetic_backtest_smoke_test"
+    assert payload["assumptions"]["data_scope"] == "synthetic only"
+    assert payload["assumptions"]["benchmark"] == "synthetic equal-weight universe benchmark"
+    assert payload["assumptions"]["signal_lag_periods"] == 1
+    assert payload["assumptions"]["transaction_cost_model"].startswith("10.00 bps")
+    assert payload["assumptions"]["slippage_model"].startswith("not separately modeled")
+    assert payload["assumptions"]["live_trading"] is False
+    assert payload["metrics"]["total_return"] == result.backtest_result.metrics["total_return"]
+    assert payload["diagnostics"]["aligned_signal_coverage"] == 1.0
+    assert "not strategy validation" in payload["caveats"]
 
 
 def test_main_writes_report_to_requested_path(tmp_path: Path) -> None:

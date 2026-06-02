@@ -15,10 +15,16 @@ import pandas as pd
 
 from backtest.portfolio import BacktestResult, run_long_only_backtest
 from features.momentum import calculate_12_1_momentum
+from reporting.experiment_log import (
+    SYNTHETIC_RESEARCH_CAVEATS,
+    resolve_experiment_log_path,
+    write_experiment_log,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "synthetic_momentum_demo.md"
+DEFAULT_EXPERIMENT_LOG_PATH = PROJECT_ROOT / "reports" / "experiment_logs" / "synthetic_momentum_demo.json"
 
 
 @dataclass(frozen=True)
@@ -71,8 +77,15 @@ def run_synthetic_momentum_demo(
     *,
     config: SyntheticDemoConfig = SyntheticDemoConfig(),
     report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
 ) -> BacktestResult:
     """Run the synthetic 12-1 momentum workflow and write a Markdown report."""
+
+    experiment_log_path = resolve_experiment_log_path(
+        report_path,
+        default_report_path=DEFAULT_REPORT_PATH,
+        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+    ) if experiment_log_path is None else experiment_log_path
 
     prices = generate_synthetic_prices(config)
     momentum = calculate_12_1_momentum(
@@ -99,7 +112,77 @@ def run_synthetic_momentum_demo(
         prices=prices,
         result=result,
     )
+    write_demo_experiment_log(
+        log_path=experiment_log_path,
+        report_path=report_path,
+        config=config,
+        prices=prices,
+        result=result,
+    )
     return result
+
+
+def write_demo_experiment_log(
+    *,
+    log_path: Path,
+    report_path: Path,
+    config: SyntheticDemoConfig,
+    prices: pd.DataFrame,
+    result: BacktestResult,
+) -> dict[str, object]:
+    """Write a deterministic JSON log for the synthetic momentum demo."""
+
+    return write_experiment_log(
+        log_path=log_path,
+        experiment_id="synthetic-momentum-demo",
+        title="Synthetic Momentum Demo",
+        experiment_type="synthetic_backtest_smoke_test",
+        summary=(
+            "Deterministic synthetic 12-1 momentum workflow that generates local "
+            "synthetic prices, computes a lagged momentum signal, and runs the "
+            "existing long-only backtester as a smoke test."
+        ),
+        config=config,
+        assumptions={
+            "data_scope": "synthetic only",
+            "data_source": "local deterministic generator; no external data fetch",
+            "universe": f"{config.asset_count} synthetic assets",
+            "date_range": {
+                "start": prices.index.min().date(),
+                "end": prices.index.max().date(),
+            },
+            "feature_timing": (
+                "12-1 momentum uses shifted historical price anchors; signal lag "
+                "keeps portfolio formation after signal availability"
+            ),
+            "execution_timing": result.assumptions["execution_timing"],
+            "rebalance_frequency": config.rebalance_frequency,
+            "benchmark": "synthetic equal-weight universe benchmark",
+            "transaction_cost_model": (
+                f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
+            ),
+            "slippage_model": "not separately modeled; diagnostic synthetic run only",
+            "live_trading": False,
+            "brokerage_integration": False,
+        },
+        outputs={
+            "markdown_report": _project_relative_path(report_path),
+            "experiment_log": _project_relative_path(log_path),
+            "holdings_rows": result.holdings.shape[0],
+            "holdings_assets": result.holdings.shape[1],
+        },
+        metrics=result.metrics,
+        caveats=(
+            *SYNTHETIC_RESEARCH_CAVEATS,
+            "workflow diagnostics only",
+            "not evidence of real-world strategy performance",
+        ),
+        next_action=(
+            "Use as a reproducible smoke-test log only; real-data experiments "
+            "still require explicit data-source, universe, slippage, benchmark, "
+            "and validation-split documentation."
+        ),
+    )
 
 
 def write_report(
@@ -187,10 +270,23 @@ def _format_number(value: float) -> str:
     return f"{value:.4f}"
 
 
-def main() -> None:
+def _project_relative_path(path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
+def main(
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+) -> None:
     """Run the synthetic momentum demo with default settings."""
 
-    run_synthetic_momentum_demo()
+    run_synthetic_momentum_demo(
+        report_path=report_path,
+        experiment_log_path=experiment_log_path,
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,66 @@
+{
+  "assumptions": {
+    "backtest_integration": "not included",
+    "benchmark": "not applicable",
+    "brokerage_integration": false,
+    "data_scope": "synthetic only",
+    "data_source": "local deterministic factor generator; no external data fetch",
+    "date_range": {
+      "end": "2024-04-22",
+      "start": "2024-01-02"
+    },
+    "live_trading": false,
+    "missing_value_policy": "no filling, reindexing, forward-fill, or zero defaults",
+    "portfolio_construction": "not included",
+    "slippage_model": "not applicable; no portfolio or trades",
+    "transaction_cost_model": "not applicable; no portfolio or trades",
+    "universe": "12 synthetic assets"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration",
+    "workflow diagnostics only",
+    "not a strategy signal or portfolio"
+  ],
+  "config": {
+    "asset_count": 12,
+    "periods": 80,
+    "seed": 20260528,
+    "start_date": "2024-01-02",
+    "weights": {
+      "synthetic_momentum": 0.5,
+      "synthetic_quality": 0.3,
+      "synthetic_reversal": 0.2
+    },
+    "winsor_lower_quantile": 0.05,
+    "winsor_upper_quantile": 0.95
+  },
+  "diagnostics": {
+    "combined_score_maximum": 0.26576006226955884,
+    "combined_score_mean": 2.7755575615628915e-18,
+    "combined_score_minimum": -0.31636373686176744,
+    "combined_score_standard_deviation": 0.08107220679715768,
+    "correlation_method": "pearson",
+    "factor_names": [
+      "synthetic_momentum",
+      "synthetic_quality",
+      "synthetic_reversal"
+    ]
+  },
+  "experiment_id": "synthetic-multifactor-workflow-demo",
+  "experiment_type": "synthetic_feature_workflow",
+  "metrics": {},
+  "next_action": "Use as a synthetic feature-workflow audit log only; backtest integration and real-data validation remain separate stages.",
+  "outputs": {
+    "asset_count": 12,
+    "experiment_log": "reports/experiment_logs/synthetic_multifactor_workflow_demo.json",
+    "factor_rows": 80,
+    "markdown_report": "reports/synthetic_multifactor_workflow_demo.md"
+  },
+  "schema_version": 1,
+  "summary": "Deterministic synthetic workflow for factor preprocessing, normalization, diagnostics, and explicit weighted score combination.",
+  "title": "Synthetic Multi-Factor Workflow Demo"
+}
