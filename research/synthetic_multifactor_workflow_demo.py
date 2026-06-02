@@ -22,10 +22,18 @@ from features.normalize import (
     cross_sectional_winsorize_factor,
     cross_sectional_zscore_factor,
 )
+from reporting.experiment_log import (
+    SYNTHETIC_RESEARCH_CAVEATS,
+    resolve_experiment_log_path,
+    write_experiment_log,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "synthetic_multifactor_workflow_demo.md"
+DEFAULT_EXPERIMENT_LOG_PATH = (
+    PROJECT_ROOT / "reports" / "experiment_logs" / "synthetic_multifactor_workflow_demo.json"
+)
 
 FACTOR_NAMES = (
     "synthetic_momentum",
@@ -66,6 +74,7 @@ class SyntheticMultifactorWorkflowResult:
     combined_score: pd.DataFrame
     weights: dict[str, float]
     report_path: Path
+    experiment_log_path: Path
 
 
 def generate_synthetic_factor_panels(
@@ -108,8 +117,15 @@ def run_synthetic_multifactor_workflow_demo(
     *,
     config: SyntheticMultifactorWorkflowConfig = SyntheticMultifactorWorkflowConfig(),
     report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
 ) -> SyntheticMultifactorWorkflowResult:
     """Run the synthetic factor workflow and write a Markdown report."""
+
+    experiment_log_path = resolve_experiment_log_path(
+        report_path,
+        default_report_path=DEFAULT_REPORT_PATH,
+        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+    ) if experiment_log_path is None else experiment_log_path
 
     raw_factors = generate_synthetic_factor_panels(config)
     winsorized_factors = {
@@ -146,9 +162,72 @@ def run_synthetic_multifactor_workflow_demo(
         combined_score=combined_score,
         weights=dict(config.weights),
         report_path=report_path,
+        experiment_log_path=experiment_log_path,
     )
     write_report(config=config, result=result)
+    write_workflow_experiment_log(config=config, result=result)
     return result
+
+
+def write_workflow_experiment_log(
+    *,
+    config: SyntheticMultifactorWorkflowConfig,
+    result: SyntheticMultifactorWorkflowResult,
+) -> dict[str, object]:
+    """Write a deterministic JSON log for the synthetic factor workflow."""
+
+    score_values = result.combined_score.stack(future_stack=True)
+    return write_experiment_log(
+        log_path=result.experiment_log_path,
+        experiment_id="synthetic-multifactor-workflow-demo",
+        title="Synthetic Multi-Factor Workflow Demo",
+        experiment_type="synthetic_feature_workflow",
+        summary=(
+            "Deterministic synthetic workflow for factor preprocessing, "
+            "normalization, diagnostics, and explicit weighted score combination."
+        ),
+        config=config,
+        assumptions={
+            "data_scope": "synthetic only",
+            "data_source": "local deterministic factor generator; no external data fetch",
+            "universe": f"{config.asset_count} synthetic assets",
+            "date_range": {
+                "start": result.combined_score.index.min().date(),
+                "end": result.combined_score.index.max().date(),
+            },
+            "missing_value_policy": "no filling, reindexing, forward-fill, or zero defaults",
+            "portfolio_construction": "not included",
+            "backtest_integration": "not included",
+            "benchmark": "not applicable",
+            "transaction_cost_model": "not applicable; no portfolio or trades",
+            "slippage_model": "not applicable; no portfolio or trades",
+            "live_trading": False,
+            "brokerage_integration": False,
+        },
+        outputs={
+            "markdown_report": _project_relative_path(result.report_path),
+            "experiment_log": _project_relative_path(result.experiment_log_path),
+            "factor_rows": result.combined_score.shape[0],
+            "asset_count": result.combined_score.shape[1],
+        },
+        diagnostics={
+            "factor_names": list(FACTOR_NAMES),
+            "combined_score_mean": float(score_values.mean()),
+            "combined_score_standard_deviation": float(score_values.std(ddof=0)),
+            "combined_score_minimum": float(score_values.min()),
+            "combined_score_maximum": float(score_values.max()),
+            "correlation_method": "pearson",
+        },
+        caveats=(
+            *SYNTHETIC_RESEARCH_CAVEATS,
+            "workflow diagnostics only",
+            "not a strategy signal or portfolio",
+        ),
+        next_action=(
+            "Use as a synthetic feature-workflow audit log only; backtest "
+            "integration and real-data validation remain separate stages."
+        ),
+    )
 
 
 def write_report(
@@ -266,10 +345,23 @@ def _format_markdown_table(frame: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-def main(report_path: Path = DEFAULT_REPORT_PATH) -> None:
+def _project_relative_path(path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
+def main(
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+) -> None:
     """Run the synthetic multi-factor workflow with default settings."""
 
-    run_synthetic_multifactor_workflow_demo(report_path=report_path)
+    run_synthetic_multifactor_workflow_demo(
+        report_path=report_path,
+        experiment_log_path=experiment_log_path,
+    )
 
 
 if __name__ == "__main__":

@@ -2,6 +2,18 @@
 
 Use this file to record every meaningful experiment, including failed or inconclusive runs. Do not delete weak results to make the project look better.
 
+## Automated Synthetic Demo Logs
+
+Synthetic demo scripts also write deterministic JSON sidecar logs under
+`reports/experiment_logs/`. These logs capture configuration, synthetic-only
+data assumptions, caveats, outputs, and diagnostics from reproducible smoke
+demos.
+
+They are not substitutes for full experiment records when real data, real
+universe definitions, validation splits, or parameter studies are introduced.
+Synthetic demo metrics remain workflow diagnostics only and are not financial
+advice, strategy validation, or profitability evidence.
+
 ## Template
 
 ### Experiment ID
