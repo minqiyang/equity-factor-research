@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - CSV Data Interface Design Plan
+
+This documentation-only milestone added `docs/csv_data_interface_plan.md` as a design plan for a future local CSV research interface.
+
+The plan defines intended local CSV data types, proposed wide and long schemas, validation rules, alignment expectations for existing feature/backtest modules, and risks around survivorship bias, corporate actions, delistings, adjusted versus raw prices, vendor differences, and benchmark mismatch.
+
+It does not implement a loader, fetch real data, add remote downloads, change feature calculations, modify backtester behavior, alter reports, introduce live trading, add brokerage or order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Synthetic Multi-Factor Parameter Sweep
 
 This research-process milestone added a deterministic synthetic-only parameter sweep for the combined-score backtest workflow.
