@@ -18,6 +18,11 @@ advice, strategy validation, or profitability evidence.
 table for review. The registry is a reporting view over existing logs; it does
 not run experiments, recalculate metrics, or replace full experiment records.
 
+`reports/synthetic_multifactor_parameter_sweep.md` is a synthetic-only
+parameter sensitivity smoke test. It reports every configured case and should
+not be used as parameter selection, strategy validation, financial advice, or
+profitability evidence.
+
 ## Template
 
 ### Experiment ID

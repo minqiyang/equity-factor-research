@@ -124,6 +124,7 @@ def run_synthetic_combined_score_backtest_demo(
     config: SyntheticCombinedScoreBacktestConfig = SyntheticCombinedScoreBacktestConfig(),
     report_path: Path = DEFAULT_REPORT_PATH,
     experiment_log_path: Path | None = None,
+    write_outputs: bool = True,
 ) -> SyntheticCombinedScoreBacktestResult:
     """Run the synthetic combined-score backtest smoke test and write a report."""
 
@@ -182,8 +183,9 @@ def run_synthetic_combined_score_backtest_demo(
         report_path=report_path,
         experiment_log_path=experiment_log_path,
     )
-    write_report(config=config, result=result)
-    write_demo_experiment_log(config=config, result=result)
+    if write_outputs:
+        write_report(config=config, result=result)
+        write_demo_experiment_log(config=config, result=result)
     return result
 
 
