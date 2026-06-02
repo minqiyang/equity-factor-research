@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - QuantConnect/LEAN CSV Validation Mapping
+
+This documentation-only milestone updated `docs/quantconnect_lean_plan.md` to
+map the future local CSV validation checklist to QuantConnect/LEAN data,
+calendar, universe, benchmark, fee, slippage, and execution assumptions.
+
+The new mapping treats local CSV validation and LEAN backtests as separate
+research artifacts. Local CSV checks improve auditability of user-provided
+files, but LEAN runs must still document platform datasets, data normalization,
+scheduled event timing, skipped symbols, benchmark configuration, brokerage
+model, fee model, slippage model, order type, cash buffer, and diagnostics.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, or synthetic demos. It does
+not fetch data, download data, add vendor access, introduce live trading, add
+brokerage or order-execution logic, store credentials, or make profitability
+claims.
+
+Validation:
+
+```text
+python -m pytest -q
+passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Real-Data Readiness Audit Checklist
 
 This documentation-only milestone added `docs/real_data_readiness_audit.md` as a pre-experiment checklist for using user-provided local CSV data.

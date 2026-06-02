@@ -163,6 +163,35 @@ The first LEAN version should call `SetBenchmark` with the selected benchmark an
 | Slippage | Currently not separate from transaction cost unless added later. | Slippage model per security. |
 | Metrics | Local deterministic metric helpers. | LEAN statistics plus any custom metrics logged/exported. |
 
+### Local CSV Validation Mapping
+
+The local CSV interface and a future LEAN backtest solve different data
+problems. The local path validates user-provided files already present on disk.
+The LEAN path uses platform subscriptions, history, universe selection, and
+engine accounting. A successful local CSV validation therefore improves
+auditability, but it does not prove that a LEAN run has identical data,
+calendar, symbol, fill, fee, or slippage assumptions.
+
+Local CSV validation should map into LEAN planning as follows:
+
+| Local CSV check | LEAN planning equivalent | Divergence risk |
+| --- | --- | --- |
+| File provenance, schema, and local path are recorded before use. | Record LEAN project, dataset, universe selection rules, start/end dates, benchmark, and algorithm parameters before the backtest. | Local file identity and LEAN dataset configuration are not interchangeable evidence. |
+| Dates parse, sort, and remain duplicate-free. | Log scheduled rebalance timestamps, algorithm time zone, exchange calendar, and latest completed bar date used for each signal. | Pandas date indexes can differ from LEAN event times, market holidays, half days, and data emission timing. |
+| Wide or long adjusted-close panels declare their adjustment convention. | Configure and record LEAN equity data normalization for signal calculation and benchmark comparison. | Local adjusted prices may not match LEAN corporate-action processing or normalization mode. |
+| Duplicate `(date, symbol)` rows, non-positive prices, and silent numeric coercion are rejected. | Skip securities with missing, stale, non-positive, or incomplete history at rebalance and log skip counts. | LEAN data can be absent because of subscriptions, IPO dates, delistings, symbol changes, or universe membership timing. |
+| Missing values are reported and are not forward-filled by default. | Record missing history responses, inactive securities, fill-forward settings, and symbols excluded for incomplete anchors. | Platform fill-forward behavior or warm-up gaps can hide a mismatch if it is not logged. |
+| Universe membership must be date-stamped and not use future membership. | Prefer LEAN universe selection over static modern ticker lists and record the exact filters used. | LEAN universe logic reduces survivorship bias risk, but filter timing and dataset coverage still need review. |
+| Benchmark files are validated separately and aligned explicitly. | Record `SetBenchmark` choice, benchmark subscription, normalization, date range, and missing benchmark observations. | A local benchmark series and LEAN benchmark security can differ in coverage, adjustment, and trading calendar. |
+| Experiment setup records costs, slippage, rebalance timing, and signal lag. | Record brokerage model, fee model, slippage model, cash buffer, order type, and scheduled execution timing. | Local turnover costs are target-weight approximations; LEAN applies order-level fills, fees, buying power, and cash constraints. |
+| Validation summary is preserved before interpreting results. | Preserve LEAN diagnostics: eligible count, selected symbols, skipped symbols, rejected orders, actual holdings, and benchmark state. | Similar headline metrics can mask different data coverage, fills, costs, or symbol mappings. |
+
+This mapping is a documentation-only bridge. It does not implement a CSV loader,
+fetch data, download data, add vendor access, connect to a broker, place orders,
+enable live trading, or make a profitability claim. Future LEAN results should
+be treated as a separate research artifact with their own experiment-log entry
+and caveats, not as a direct continuation of a local CSV validation report.
+
 ## 10. Potential Sources of Mismatch
 
 ### Data Vendor Differences
