@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Post-4H Checkpoint Review
+
+This documentation-only checkpoint reviewed the repository after the synthetic combined-score backtest smoke test was merged to `main`.
+
+The review synced `main`, confirmed the latest reviewed commit was `6811b58`, reran the full test suite and compile check, and interpreted guardrail grep matches for live trading, brokerage, real-data fetching, and profitability language. The matches were governance warnings, synthetic caveats, LEAN planning caveats, module docstrings, or tests that enforce forbidden-import and warning-language rules.
+
+No source code, tests, strategy logic, backtester behavior, feature calculations, report-generation code, data access, live trading functionality, or profitability claims were changed.
+
+Validation:
+
+```text
+python -m pytest -q
+171 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-05-28 - Repository Checkpoint Audit And Phase Report
 
 This documentation-only checkpoint captured the project state before moving from individual factor normalization helpers toward factor combination work.
