@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - WorldQuant Alpha Catalog Status Refresh
+
+This documentation-only milestone refreshed `docs/worldquant_alpha_catalog.md`
+after the post-CSV checkpoint identified stale catalog-era wording.
+
+Assumption: the post-CSV checkpoint recommendation to refresh the WorldQuant
+catalog is the next unblocked safe stage because PR #29 was merged, `main` was
+synced, baseline validation passed, and there were no open pull requests.
+
+The catalog now distinguishes the original Stage 1 classification from the
+current repository status: the reusable operator layer exists, `alpha_009` is
+implemented and tested as a close-only research feature, other
+WorldQuant-style alphas remain unimplemented, and there is no dedicated
+WorldQuant-style alpha backtest integration.
+
+The refresh also clarifies that `alpha_009` is not a full strategy, not a
+trading recommendation, not connected to a dedicated alpha strategy backtest,
+and not evidence of profitability. Remaining close-only candidates require
+separate formula review and tests. `alpha_012` remains blocked on volume plus
+close schema support, `alpha_101` remains blocked on OHLC support, and VWAP,
+market-cap, and industry-neutral categories remain deferred.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, metrics, CSV loader
+behavior, normalization, factor combination, diagnostics, data access,
+execution assumptions, or performance claims. It does not fetch data, download
+data, add vendor access, introduce live trading, add brokerage or
+order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-03 - Active Goal Behavior Rules
 
 This workflow-control milestone updated the long-running staged workflow rules

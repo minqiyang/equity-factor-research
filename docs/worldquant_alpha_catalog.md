@@ -8,7 +8,7 @@ The WorldQuant 101 Formulaic Alphas are public formulaic alpha references associ
 
 They are not guaranteed profitable strategies, not trading recommendations, and not evidence that any strategy will work in live markets.
 
-The purpose of this document is to classify the alpha references by data requirements, implementation complexity, and research priority before any code is written. The project should not blindly implement all 101 alphas at once.
+The purpose of this document is to classify the alpha references by data requirements, implementation complexity, and research priority before additional code is written. The project should not blindly implement all 101 alphas at once.
 
 ## Formulaic Alpha != Full Strategy
 
@@ -29,29 +29,55 @@ Before any alpha can become part of a credible research workflow, it still needs
 
 This project should continue to treat every formula as a research feature until it has been tested for leakage, missing data behavior, stability, and implementation correctness.
 
+## Current Implementation Status
+
+This catalog began as a Stage 1 documentation-only milestone. The current
+repository has moved beyond catalog-only status, but only in a narrow,
+reviewed way.
+
+| Area | Current status |
+| --- | --- |
+| Reusable operator layer | Implemented and tested for core pandas panel operators in `src/features/operators.py`. |
+| `alpha_009` | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
+| Other WorldQuant-style alphas | Not implemented. |
+| WorldQuant-style alpha backtest integration | Not implemented. |
+| Bulk WorldQuant 101 implementation | Not implemented and still out of scope. |
+
+`alpha_009` is not a full strategy, not a trading recommendation, not connected
+to a dedicated alpha strategy backtest, and not evidence of profitability. It
+only shows that one close-only formula can be represented as a tested research
+feature with explicit date-alignment assumptions.
+
 ## Priority System
 
-The current milestone is catalog-only. No alpha in this document is implemented yet.
+The current catalog is no longer catalog-only. Priority labels now distinguish
+implemented research features from future candidates and deferred categories.
 
 Priority labels:
 
-- `P0`: catalog only, not implemented.
-- `P1`: can be considered once close-only operators are ready.
-- `P2`: requires volume or OHLC support.
+- `Implemented research feature`: code exists with tests, but it is still not a
+  complete strategy or profitability claim.
+- `P1`: close-only candidate that can be considered after formula review,
+  operator coverage review, and tests are planned.
+- `P2`: requires volume, open, high, low, or OHLCV schema support before
+  implementation.
 - `P3`: deferred because it requires VWAP, market cap, industry neutralization, or higher complexity.
 
 Important priority rules:
 
-- All alpha references are `P0` in this documentation-only milestone.
-- Close-only alphas are future `P1` candidates after the operator layer exists.
-- `alpha_009` is the preferred first future implementation candidate because it is close-only and narrow in data requirements.
+- `alpha_009` is implemented as a research feature only.
+- Remaining close-only alphas are future `P1` candidates, not automatic
+  implementation tasks.
 - `alpha_012` is not an immediate implementation task; it is `P2` because it requires volume + close support.
 - `alpha_101` is not an immediate implementation task; it is `P2` because it requires OHLC support.
 - All VWAP, market cap, and industry-neutral categories are deferred as `P3`.
+- No new formula should be implemented until its data requirements, operator
+  coverage, missing-data behavior, and tests are explicitly scoped.
 
 ## Classification By Data Requirement
 
-This classification is the source of truth for the Stage 1 catalog. It groups the 101 alpha references by required input data categories.
+This classification groups the 101 alpha references by required input data
+categories. It remains a roadmap aid, not a mandate to implement every formula.
 
 ```text
 close only:
@@ -182,7 +208,7 @@ volume + close + high + low + industry:
 
 | Data requirement category | Alpha references | Future priority | Notes |
 | --- | --- | --- | --- |
-| close only | 1, 9, 10, 19, 24, 29, 34, 46, 49, 51 | P1 | Preferred first category after close-only operators exist; alpha_009 is the first candidate. |
+| close only | 1, 9, 10, 19, 24, 29, 34, 46, 49, 51 | P1 | `alpha_009` is implemented as a research feature only; remaining close-only references require separate formula review and tests before implementation. |
 | low only | 4 | P2 | Requires low data support. |
 | high only | 23 | P2 | Requires high data support. |
 | open + close | 8, 18, 33, 37, 38 | P2 | Requires open data support. |
@@ -203,7 +229,7 @@ volume + close + high + low + industry:
 
 ## Required Operators
 
-Expected reusable operators before broad alpha implementation:
+Reusable operator coverage before broad alpha implementation:
 
 - `delay`
 - `delta`
@@ -217,7 +243,7 @@ Expected reusable operators before broad alpha implementation:
 - `rolling_cov`
 - `signed_power`
 - `scale`
-- `winsorize`
+- `winsorize_cross_sectional`
 - `cross_sectional_zscore`
 - `safe_divide`
 
@@ -225,13 +251,17 @@ Deferred operator:
 
 - `neutralize_by_group`, deferred until industry group data and group-alignment tests exist.
 
-The first operator milestone should focus on simple, testable close-only primitives before attempting VWAP, industry-neutral, or high-complexity formulas.
+The core operator layer now exists for the first close-only formula work, but
+each additional formula still needs a formula-specific review. Missing or
+ambiguous operators should be added in small tested milestones before any
+dependent formula is implemented.
 
 ## Do Not Do Yet
 
 - Do not implement all 101 alphas at once.
 - Do not claim these alphas are profitable.
 - Do not connect these alphas to backtesting yet.
+- Do not treat `alpha_009` as a complete strategy.
 - Do not fetch real data.
 - Do not implement VWAP alphas before VWAP data support exists.
 - Do not implement industry-neutral alphas before industry data support exists.
@@ -239,6 +269,18 @@ The first operator milestone should focus on simple, testable close-only primiti
 
 ## Next Milestone
 
-The next milestone after this catalog is operator-layer implementation and tests, not alpha backtesting.
+The next milestone should remain small and data-prerequisite driven, not alpha
+backtesting.
 
-The operator milestone should create a small, well-tested operator layer first. Only after those operators pass deterministic, non-tautological tests should the project implement the first close-only alpha candidate, preferably `alpha_009`.
+Reasonable next documentation or planning stages include:
+
+- plan volume + close schema requirements before considering `alpha_012`;
+- plan OHLC schema requirements before considering `alpha_101`;
+- review another close-only candidate and list exact formula, operator, and test
+  requirements before implementation;
+- refresh roadmap documents when they still describe historical pre-`alpha_009`
+  or pre-operator states.
+
+Any future formula implementation should stay separate from backtest
+integration, real-data experiments, and performance interpretation until the
+project has a reviewed experiment plan.
