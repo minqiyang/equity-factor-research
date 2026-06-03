@@ -84,7 +84,7 @@ def test_load_wide_price_csv_rejects_duplicate_header_columns(tmp_path: Path) ->
         load_wide_price_csv(csv_path)
 
 
-@pytest.mark.parametrize("bad_value", ["bad", "nan", "NaN", "null", ""])
+@pytest.mark.parametrize("bad_value", ["bad", "nan", "NaN", "NA", "null", "", " ", "   "])
 def test_load_wide_price_csv_rejects_invalid_or_missing_numeric_values_by_default(
     tmp_path: Path,
     bad_value: str,

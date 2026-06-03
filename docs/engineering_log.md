@@ -12,6 +12,129 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - CSV Loader Missing-Value Debug And Fix
+
+This bugfix corrected strict missing-value validation in the local CSV loader
+after a WSL-only test failure exposed a pandas version difference.
+
+Initial mistake:
+
+- The first fix assumed that `pd.read_csv(..., keep_default_na=False,
+  dtype=str)` was sufficient to preserve raw CSV values through validation.
+- The missing-value detector still checked sentinel strings only when
+  `values.dtype == object`.
+- That assumption held in the Windows validation environment, where the focused
+  CSV loader tests and full test suite passed, but it did not cover WSL with
+  pandas 3.0.3.
+
+Consequence:
+
+- In WSL, `pd.read_csv(..., dtype=str)` produced a pandas string dtype rather
+  than an `object` dtype.
+- `_missing_value_mask` therefore skipped the string-sentinel branch for an
+  empty wide-price value.
+- The empty string was then passed to `pd.to_numeric`, which converted it to
+  `NaN` instead of raising before the loader's strict default policy could
+  reject it.
+- As a result, `load_wide_price_csv(..., allow_missing=False)` accepted a blank
+  numeric field that should have failed.
+
+Failing evidence:
+
+```text
+tests/test_csv_loader.py::test_load_wide_price_csv_rejects_invalid_or_missing_numeric_values_by_default[]
+bad_value = ""
+Failed: DID NOT RAISE any of (<class 'TypeError'>, <class 'ValueError'>)
+```
+
+The WSL run also showed large apparent diffs across docs, reports, research
+scripts, source modules, and tests. Review showed those broad diffs were
+line-ending noise from the Windows/WSL working tree, not intended source
+changes.
+
+Investigation:
+
+- Confirmed WSL imported the expected module:
+  `src/data/csv_loader.py`.
+- Confirmed WSL was using pandas 3.0.3.
+- Printed `_read_local_csv` and verified it already used
+  `keep_default_na=False, dtype=str`.
+- Probed a temporary CSV containing a blank `AAPL` field. WSL read the column
+  with dtype `str`, represented the blank as `""`, and returned
+  `_missing_value_mask == [False, False]`.
+- Confirmed `_parse_numeric_column` then returned `[100.0, NaN]` and the loader
+  accepted the file instead of raising.
+
+Correction attempts:
+
+- The first Windows-side correction added `dtype=str` and expanded tests for
+  `NA` and whitespace-only values. That made Windows tests pass, but it did not
+  address pandas string dtype in WSL.
+- Applying the saved WSL patch directly on the independent bugfix branch worked
+  functionally but introduced whole-file CRLF/LF whitespace noise. That patch
+  was restored before commit.
+
+Final fix:
+
+- `_read_local_csv` now reads local CSV files with
+  `pd.read_csv(path, keep_default_na=False, dtype=str)` so raw string values are
+  preserved before validation.
+- `_missing_value_mask` now checks both `object` dtype and pandas string dtype
+  via `pd.api.types.is_string_dtype(values.dtype)` before applying the sentinel
+  set.
+- `tests/test_csv_loader.py` now covers `""`, whitespace-only strings, `nan`,
+  `NaN`, `NA`, `null`, and a nonnumeric `bad` value for strict default
+  validation.
+
+Verification:
+
+```text
+WSL python -m pytest -q tests/test_csv_loader.py
+19 passed
+
+WSL python -m pytest -q
+209 passed
+
+WSL python -m compileall src tests research
+passed
+
+git diff --check origin/main..HEAD
+passed
+```
+
+Scope review:
+
+- Meaningful branch diff was limited to `src/data/csv_loader.py` and
+  `tests/test_csv_loader.py`.
+- The direct WSL patch application was rejected as a commit candidate because
+  it carried line-ending noise.
+- The committed branch used only the minimal semantic patch.
+
+Remaining caveats:
+
+- Windows and WSL can still display noisy diffs if line endings are touched
+  broadly.
+- Future CSV loader changes should inspect both normal diffs and
+  `git diff --ignore-space-at-eol` before staging.
+- Environment-specific behavior should be checked when pandas dtype handling is
+  part of the bug.
+
+Prevention:
+
+- Treat pandas dtype assumptions as version-sensitive.
+- Keep missing-value checks independent of only one dtype spelling.
+- When fixing validation behavior, probe the raw value, dtype, missing mask,
+  conversion result, and final loader behavior in the environment that reported
+  the failure.
+- Do not consider a technical fix complete until this type of full debug chain
+  is recorded in the relevant engineering log.
+
+This fix did not fetch real data, add vendor access, add live trading, add
+brokerage or order-execution logic, store credentials, modify backtester or
+metrics behavior, modify synthetic reports, or make profitability claims.
+
+---
+
 ## 2026-06-02 - Local CSV Experiment-Log Requirements
 
 This documentation-only milestone updated `EXPERIMENT_LOG.md` with required
