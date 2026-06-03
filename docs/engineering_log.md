@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Post-CSV Checkpoint Review
+
+This documentation-only milestone added `docs/post_csv_checkpoint_report.md`
+after the CSV interface design, local CSV loader, real-data readiness audit,
+LEAN validation mapping, local CSV experiment-log requirements, and CSV loader
+missing-value bugfix milestones were merged.
+
+The checkpoint records the current state of the local CSV infrastructure,
+baseline validation, read-only guardrail review, stage traceability, remaining
+low-severity documentation and roadmap issues, and the recommended next stage:
+refreshing the WorldQuant alpha catalog and roadmap status before any new alpha
+or data-schema implementation.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, CSV loader behavior, or
+synthetic demos. It does not fetch data, download data, add vendor access,
+introduce live trading, add brokerage or order-execution logic, store
+credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - CSV Loader Missing-Value Debug And Fix
 
 This bugfix corrected strict missing-value validation in the local CSV loader
