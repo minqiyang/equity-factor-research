@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - Active Goal Behavior Rules
+
+This workflow-control milestone updated the long-running staged workflow rules
+for bounded autonomous execution.
+
+Assumption: the user's active-goal clarification should be persisted as
+controller and Skill guidance, not implemented as source-code behavior.
+
+The controller now states that low-risk ambiguity should be handled by making a
+reasonable assumption, recording it in the final report and relevant durable
+log, and continuing. It also distinguishes missing workflow/documentation
+scaffolds, which can be created in separate workflow-control PRs, from missing
+product-behavior artifacts, which require a stop report.
+
+The stop conditions were expanded to cover dirty working trees before new
+stages, unclear requirements that could cause destructive or broad
+architecture changes, missing credentials or external access, new production
+dependencies, unsafe test failures, high or medium review issues, security,
+privacy, data-loss, or irreversible-operation risks, scope conflicts with
+project governance, and ready PR gates requiring human review or merge.
+
+The staged workflow Skill was updated with the same low-risk ambiguity and
+missing-file behavior so future sessions do not require a fresh prompt after
+every small step while remaining bounded by safety, scope, validation, and PR
+review gates.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, metrics, CSV loader
+behavior, alpha formulas, normalization, factor combination, diagnostics, data
+access, execution assumptions, or performance claims. It does not fetch data,
+download data, add vendor access, introduce live trading, add brokerage or
+order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+
+.\scripts\audit-skills.ps1
+passed
+```
+
+---
+
 ## 2026-06-03 - Long-Running Workflow Control Scaffolding
 
 This workflow-control milestone added the supporting process artifacts that the

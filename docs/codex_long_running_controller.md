@@ -72,16 +72,48 @@ documentation, clarifies a research decision, or advances a reviewed roadmap.
 If a stage changes source code, tests, research scripts, generated reports, or
 strategy behavior, use stricter review gates than a documentation-only stage.
 
+## Low-Risk Ambiguity
+
+For low-risk ambiguity, make a reasonable assumption, record the assumption in
+the final report and the relevant durable log, and continue.
+
+Low-risk ambiguity includes minor documentation placement choices, wording
+scope, whether to update a workflow log alongside a controller change, and
+whether to create a missing workflow-control scaffold file that the current
+prompt clearly expects.
+
+Do not continue on an assumption if the ambiguity could cause a destructive
+operation, broad architecture change, product behavior change, data loss,
+security or privacy risk, new production dependency, or scope conflict with
+`AGENTS.md`, `PROJECT_SPEC.md`, this controller, or the staged workflow Skill.
+
+If a file is missing but the current prompt expects it:
+
+- create it in a separate workflow-control PR when it is a low-risk
+  documentation, logging, controller, or audit-script scaffold.
+- stop and report when the missing file affects product behavior, strategy
+  logic, data access, execution, credentials, or external systems.
+
 ## Stop Conditions
 
 Stop and report instead of continuing when any of these occurs:
 
 - an open PR requires human review, approval, merge, or close decision.
 - a push, PR creation, or merge decision is needed after local validation.
-- the working tree is dirty in files unrelated to the intended stage.
+- a PR has been opened and is ready for human review or merge.
+- the working tree is dirty before a new stage starts.
 - baseline tests fail.
 - `python -m compileall src tests research` fails.
 - `git diff --check` fails.
+- an unclear requirement could cause destructive work or broad architecture
+  change.
+- missing credentials or external access are required.
+- a new production dependency would be required.
+- tests fail in a way that cannot be fixed safely within the current scope.
+- a read-only review finds a high or medium issue.
+- security, privacy, data-loss, or irreversible-operation risk appears.
+- the stage conflicts with `AGENTS.md`, `PROJECT_SPEC.md`, this controller, or
+  the staged workflow Skill.
 - the next safe stage would require real data fetching, downloads, vendor APIs,
   credentials, live trading, brokerage integration, order execution, or a
   profitability claim.

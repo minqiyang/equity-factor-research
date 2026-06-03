@@ -21,5 +21,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the long-running controller and staged workflow Skill with bounded
+  execution behavior, low-risk ambiguity handling, missing-file recovery rules,
+  and expanded stop conditions.
 - Updated `.agents/skills/staged-quant-workflow/SKILL.md` to reference the
   long-running controller and Skill audit script.
