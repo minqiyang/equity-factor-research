@@ -15,6 +15,57 @@ investment performance.
 
 ---
 
+## 2026-06-03 - Bounded Staged Execution Behavior
+
+Context:
+
+- The staged workflow now has a repository-local Skill and long-running
+  controller.
+- The user clarified that Codex should continue as a bounded staged execution
+  agent and should not ask for a new prompt after every small step.
+- Assumption: this clarification should be preserved as workflow-control
+  documentation and Skill guidance, not treated as a source-code or product
+  behavior change.
+
+Decision:
+
+- Add an explicit low-risk ambiguity policy to
+  `docs/codex_long_running_controller.md`.
+- Expand controller stop conditions to cover dirty working trees before new
+  stages, destructive or broad architecture ambiguity, missing credentials or
+  external access, new production dependencies, unsafe test failures,
+  high/medium review issues, security/privacy/data-loss/irreversible risks,
+  scope conflicts, and PR-ready human review gates.
+- Update `.agents/skills/staged-quant-workflow/SKILL.md` so future sessions
+  continue through low-risk ambiguity with logged assumptions and treat missing
+  expected files as workflow scaffolding only when that is low-risk.
+
+Rationale:
+
+- The project needs forward motion without turning every minor ambiguity into a
+  user prompt.
+- The same behavior must remain bounded by safety, scope, review, and merge
+  gates.
+- Missing workflow files can be repaired safely in small process PRs, while
+  missing product-behavior artifacts require a stop report.
+
+Consequences:
+
+- Future Codex sessions should continue through minor documentation/workflow
+  ambiguities after recording assumptions.
+- Future sessions must still stop for the defined safety, scope, review, and
+  human approval conditions.
+- This decision changes process guidance only. It does not modify source code,
+  data access, trading behavior, strategy logic, or performance claims.
+
+Follow-up:
+
+- Keep each behavior update PR-sized.
+- If this policy causes overreach, record the failure in
+  `docs/troubleshooting_log.md` and tighten the stop conditions.
+
+---
+
 ## 2026-06-03 - Add Long-Running Workflow Control Artifacts
 
 Context:

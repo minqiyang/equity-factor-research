@@ -28,6 +28,7 @@ Codex should be able to advance one small, reviewable stage at a time without wa
 - Codex does not merge PRs unless the user explicitly instructs it to merge.
 - Guardrails remain intact: no real data fetching, no live trading, no brokerage or order execution, no credentials, and no profitability claims.
 - Any technical, methodological, environment, testing, workflow, or reasoning problem is recorded in the relevant log with the full failure-to-fix chain.
+- Low-risk ambiguity is handled by making a reasonable assumption, recording it in the final report and relevant log, and continuing.
 
 ## Inputs and context to collect
 
@@ -46,11 +47,15 @@ Start each continuation by collecting:
 
 If a previous stage PR is still open, stop and report the merge gate instead of starting a new stage.
 
+If a prompt expects a missing file, do not silently treat that as fatal. Create the file in a separate workflow-control PR when it is a low-risk documentation, logging, controller, or audit-script scaffold. Stop and report when the missing file affects product behavior, strategy logic, data access, execution, credentials, or external systems.
+
 ## Workflow guidance
 
 Begin with read-only state inspection. If the previous required PR has merged, switch to `main`, fast-forward from `origin/main`, and rerun baseline validation before branching.
 
 Choose the next stage conservatively from the latest checkpoint recommendation. Prefer documentation or planning stages when roadmap state is stale, when data prerequisites are missing, or when guardrails need clarification before implementation. Prefer code only when the needed design, tests, and scope boundaries are already clear.
+
+Continue as a bounded staged execution agent. Do not ask the user for a new prompt after every small step; stop only at controller-defined stop conditions, failed checks, human approval gates, PR/push/merge decisions, or the final stage report.
 
 Before editing, state the intended files and scope. Use a separate branch for each stage. Use the app's default `codex/` branch prefix unless the user or stage instructions specify another branch name.
 
@@ -75,6 +80,7 @@ Commit only intended files. Push the branch and create a ready-for-review PR whe
 - Do not treat synthetic diagnostics as real-data evidence or profitability support.
 - Do not let pandas or line-ending behavior hide meaningful CSV validation bugs; inspect semantic diffs and line-ending-only diffs when relevant.
 - Do not skip detailed logging after a technical or workflow problem just because the final tests pass.
+- Do not stop on low-risk documentation ambiguity when a narrow, logged assumption can keep the staged workflow moving.
 
 ## Tools and deterministic operations
 
