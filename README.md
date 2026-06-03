@@ -2,6 +2,10 @@
 
 This repository is a local, simulated quantitative research project for building and auditing an equity factor strategy from first principles. The goal is to create a portfolio-quality research workflow that can later be compared with, or translated into, a QuantConnect/LEAN implementation.
 
+For a beginner-facing explanation of the project goal, factor-research concepts,
+current components, evaluation standards, and limitations, see
+[`docs/project_overview.md`](docs/project_overview.md).
+
 ## What This Project Is
 
 - A reproducible Python research pipeline for cross-sectional equity factor research.

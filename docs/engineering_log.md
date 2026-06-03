@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - Beginner-Facing Project Overview
+
+This documentation-only milestone added `docs/project_overview.md` and linked
+it from `README.md`.
+
+The overview explains the repository as an AI-assisted, simulated, auditable
+equity factor research pipeline. It defines factor, signal, portfolio,
+strategy, and conclusion; summarizes current components; lists what the project
+is not; records evaluation standards for factor research; and keeps current
+limitations visible for synthetic-only results, `alpha_009`, staged local CSV
+readiness, and future QuantConnect/LEAN work.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, metrics, CSV loader
+behavior, alpha formulas, normalization, factor combination, diagnostics, data
+access, execution assumptions, or performance claims. It does not fetch data,
+download data, add vendor access, introduce live trading, add brokerage or
+order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-02 - Project Staged Workflow Skill
 
 This research-process milestone added
