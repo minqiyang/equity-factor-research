@@ -37,6 +37,10 @@ Start each continuation by collecting:
 - latest local and remote `main`;
 - recent git history;
 - open and recently merged PRs;
+- `docs/codex_long_running_controller.md`;
+- `docs/decision_log.md`;
+- `docs/troubleshooting_log.md`;
+- `CHANGELOG.md`;
 - latest checkpoint or roadmap docs;
 - current test status when continuing beyond a merge gate.
 
@@ -59,6 +63,8 @@ git diff --check
 ```
 
 Run a read-only scope review before committing. Confirm changed files match the stage, guardrail grep findings are acceptable, and generated reports did not change unless the stage explicitly updates them.
+
+For workflow-control or Skill changes, run `.\scripts\audit-skills.ps1` before committing when the script exists.
 
 Commit only intended files. Push the branch and create a ready-for-review PR when the applicable readiness gate is met. Pause after PR creation.
 
@@ -96,6 +102,12 @@ Baseline validation:
 python -m pytest -q
 python -m compileall src tests research
 git diff --check
+```
+
+Skill audit:
+
+```powershell
+.\scripts\audit-skills.ps1
 ```
 
 Guardrail review:

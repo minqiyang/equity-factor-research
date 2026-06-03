@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - Long-Running Workflow Control Scaffolding
+
+This workflow-control milestone added the supporting process artifacts that the
+long-running staged workflow now expects to read before continuing:
+`docs/codex_long_running_controller.md`, `docs/decision_log.md`,
+`docs/troubleshooting_log.md`, `CHANGELOG.md`, and
+`scripts/audit-skills.ps1`.
+
+The controller defines startup checks, merge gates, stage-selection guidance,
+stop conditions, logging requirements, validation checks, Skill audit use, and
+the rule to pause after PR creation without merging. The decision and
+troubleshooting logs capture durable workflow decisions and detailed
+failure-to-fix records. The changelog records user-visible repository changes.
+The Skill audit script checks local repository Skill files for required
+frontmatter, headings, and balanced Markdown code fences.
+
+The staged workflow Skill was updated to read the new controller/log artifacts
+and to run `.\scripts\audit-skills.ps1` for workflow-control or Skill changes.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, metrics, CSV loader
+behavior, alpha formulas, normalization, factor combination, diagnostics, data
+access, execution assumptions, or performance claims. It does not fetch data,
+download data, add vendor access, introduce live trading, add brokerage or
+order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+
+.\scripts\audit-skills.ps1
+passed
+```
+
+---
+
 ## 2026-06-03 - Beginner-Facing Project Overview
 
 This documentation-only milestone added `docs/project_overview.md` and linked
