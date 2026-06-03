@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-06-03 - Refresh WorldQuant Catalog Before More Alpha Work
+
+Context:
+
+- `docs/post_csv_checkpoint_report.md` identified stale wording in
+  `docs/worldquant_alpha_catalog.md`.
+- The catalog still described the repository as catalog-only even though the
+  operator layer and `alpha_009` research feature now exist.
+- PR #29 was merged, latest `main` was synced, baseline validation passed, and
+  no open pull request gate remained.
+- Assumption: refreshing the catalog is the next unblocked safe stage because
+  it is documentation-only and directly addresses the latest checkpoint
+  recommendation.
+
+Decision:
+
+- Refresh `docs/worldquant_alpha_catalog.md` before implementing another
+  formula or expanding data schemas.
+- Treat `alpha_009` as implemented research-feature status only, not a full
+  strategy, backtest integration, trading recommendation, or profitability
+  claim.
+- Keep `alpha_012` blocked on volume plus close support and `alpha_101`
+  blocked on OHLC support.
+- Keep VWAP, market-cap, and industry-neutral categories deferred until the
+  required data support and validation rules exist.
+
+Rationale:
+
+- Roadmap documents should not guide future stages from stale pre-`alpha_009`
+  assumptions.
+- Documentation cleanup is lower risk than starting another formula while the
+  data prerequisites and next-stage options are still being clarified.
+- The project should continue to avoid bulk WorldQuant 101 implementation.
+
+Consequences:
+
+- Future alpha stages should start from current implementation status rather
+  than the original Stage 1 catalog-only milestone.
+- Additional formula work should be PR-sized and preceded by explicit formula,
+  data, operator, missing-value, and test scope.
+- This decision changes documentation only. It does not modify source code,
+  data access, strategy logic, backtester behavior, execution assumptions, or
+  performance claims.
+
+Follow-up:
+
+- If the next alpha stage is code-changing, run the stricter code PR readiness
+  gate: tests plus read-only review with no high or medium issues.
+- Consider a future planning stage for volume + close or OHLC schema support
+  before `alpha_012` or `alpha_101`.
+
+---
+
 ## 2026-06-03 - Bounded Staged Execution Behavior
 
 Context:

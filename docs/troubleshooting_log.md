@@ -23,6 +23,68 @@ problems, include:
 
 ---
 
+## 2026-06-03 - PowerShell Search Pattern Quoting Error
+
+Original mistake:
+
+- During the WorldQuant catalog refresh scope review, a stale-text `rg` search
+  used a PowerShell double-quoted string that contained Markdown backticks.
+
+Consequence:
+
+- The search command failed before checking the target documents.
+- No repository files were modified by the failed command, and baseline tests
+  had already passed, but the intended stale-text check still needed to be
+  rerun.
+
+Evidence:
+
+```text
+The string is missing the terminator: ".
+CategoryInfo          : ParserError
+FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
+```
+
+Investigation:
+
+- The failing pattern included `` `alpha_009` `` inside a PowerShell
+  double-quoted command string.
+- PowerShell treats the backtick as an escape character, so the shell parsed
+  the command incorrectly before `rg` could run.
+
+Correction attempts:
+
+- The failed double-quoted command was not reused.
+- The check was rerun with a single-quoted PowerShell pattern so Markdown
+  backticks were treated as literal characters.
+
+Final fix:
+
+- Reran the stale-text search successfully with single quotes around the regex
+  pattern.
+
+Verification:
+
+- The corrected search completed.
+- The only remaining match was an older 2025 historical engineering-log entry,
+  not the refreshed `docs/worldquant_alpha_catalog.md`.
+- The catalog no longer contains the stale current-state text that said no
+  alpha was implemented.
+
+Remaining caveats:
+
+- Historical logs can correctly preserve older milestone wording and should not
+  be rewritten unless they are explicitly misleading as current guidance.
+
+Prevention:
+
+- Use single-quoted PowerShell strings for `rg` patterns that contain Markdown
+  backticks.
+- Treat shell quoting failures as failed checks and rerun the check before
+  committing.
+
+---
+
 ## 2026-06-03 - Missing Long-Running Workflow Control Files
 
 Original assumption:

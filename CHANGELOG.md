@@ -21,6 +21,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Refreshed `docs/worldquant_alpha_catalog.md` to distinguish current
+  `alpha_009` research-feature status from the original catalog-only milestone
+  and to restate data prerequisites for future WorldQuant-style alpha stages.
 - Updated the long-running controller and staged workflow Skill with bounded
   execution behavior, low-risk ambiguity handling, missing-file recovery rules,
   and expanded stop conditions.
