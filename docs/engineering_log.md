@@ -12,6 +12,34 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-02 - Project Staged Workflow Skill
+
+This research-process milestone added
+`.agents/skills/staged-quant-workflow/SKILL.md` so future Codex sessions can
+resume the long-running staged workflow without requiring the user to paste a
+fresh detailed prompt for every phase.
+
+The Skill records the recurring workflow gates: verify current repo and PR
+state, stop at unmerged PR gates, sync latest `main` after a merge, rerun
+baseline validation, choose the next stage from current checkpoint evidence,
+keep each branch and PR narrowly scoped, open documentation-only or low-risk
+checkpoint PRs ready for review, gate code-changing PRs on tests plus read-only
+review, and pause after PR creation without merging.
+
+It also preserves the project guardrails: no real data fetching, downloads,
+vendor APIs, live trading, brokerage integration, order execution, credentials,
+or profitability claims. It records the problem-logging rule that technical,
+methodological, environment, testing, workflow, or reasoning problems require a
+durable log entry covering the initial mistake, consequence, evidence,
+investigation, correction attempts, final fix, validation, remaining caveats,
+reflection, and prevention.
+
+This change does not modify source code, tests, strategy logic, feature
+calculations, backtester behavior, metrics, generated reports, research scripts,
+data access, execution assumptions, or performance claims.
+
+---
+
 ## 2026-06-02 - Post-CSV Checkpoint Review
 
 This documentation-only milestone added `docs/post_csv_checkpoint_report.md`
