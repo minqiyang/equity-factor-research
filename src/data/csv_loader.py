@@ -212,7 +212,7 @@ def _read_local_csv(path: Path) -> pd.DataFrame:
     if duplicated_columns:
         raise ValueError(f"CSV header contains duplicate columns: {duplicated_columns}")
 
-    return pd.read_csv(path, keep_default_na=False)
+    return pd.read_csv(path, keep_default_na=False, dtype=str)
 
 
 def _read_header(path: Path) -> list[str]:
@@ -297,7 +297,7 @@ def _missing_value_mask(values: pd.Series) -> pd.Series:
     else:
         base_mask = pd.Series(False, index=values.index)
 
-    if values.dtype == object:
+    if values.dtype == object or pd.api.types.is_string_dtype(values.dtype):
         text = values.astype(str).str.strip().str.lower()
         return base_mask | text.isin(MISSING_SENTINELS)
     return base_mask
