@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a local CSV fixture workflow demo that loads committed synthetic CSV
+  fixtures, computes `alpha_009` as a research feature, runs IC / Rank IC /
+  quantile spread diagnostics, and writes caveated synthetic report/log
+  artifacts.
 - Added `docs/codex_long_running_controller.md` to define startup checks,
   merge gates, stage selection, stop conditions, logging requirements, and PR
   pause behavior for long-running Codex workflow.

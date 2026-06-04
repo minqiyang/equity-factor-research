@@ -1,0 +1,445 @@
+"""Synthetic local CSV fixture workflow demo.
+
+This script exercises the committed local CSV fixture path end to end. It does
+not use real market data, fetch data, connect to a broker, place orders,
+support live trading, run a backtest, or make a profitability claim.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+import pandas as pd
+
+from data.csv_loader import (
+    CSVValidationSummary,
+    load_benchmark_price_csv,
+    load_wide_price_csv,
+)
+from features.diagnostics import (
+    factor_information_coefficient,
+    factor_quantile_spread,
+    factor_rank_information_coefficient,
+)
+from features.worldquant_alphas import alpha_009
+from reporting.experiment_log import (
+    SYNTHETIC_RESEARCH_CAVEATS,
+    resolve_experiment_log_path,
+    write_experiment_log,
+)
+from reporting.experiment_registry import write_experiment_registry_report
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PRICE_FIXTURE = "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv"
+DEFAULT_BENCHMARK_FIXTURE = "tests/fixtures/local_csv_loader_smoke/synthetic_benchmark.csv"
+DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "local_csv_fixture_workflow_demo.md"
+DEFAULT_EXPERIMENT_LOG_PATH = (
+    PROJECT_ROOT / "reports" / "experiment_logs" / "local_csv_fixture_workflow_demo.json"
+)
+
+
+@dataclass(frozen=True)
+class LocalCSVFixtureWorkflowConfig:
+    """Configuration for the committed synthetic local CSV fixture workflow."""
+
+    price_fixture: str = DEFAULT_PRICE_FIXTURE
+    benchmark_fixture: str = DEFAULT_BENCHMARK_FIXTURE
+    alpha_window: int = 1
+    forward_return_horizon_rows: int = 1
+    ic_min_periods: int = 2
+    quantiles: int = 3
+    min_assets_per_quantile: int = 1
+
+
+@dataclass(frozen=True)
+class LocalCSVFixtureWorkflowResult:
+    """Container for local CSV fixture workflow outputs."""
+
+    prices: pd.DataFrame
+    benchmark_prices: pd.Series
+    price_summary: CSVValidationSummary
+    benchmark_summary: CSVValidationSummary
+    alpha_009_factor: pd.DataFrame
+    forward_returns: pd.DataFrame
+    benchmark_forward_returns: pd.Series
+    information_coefficient: pd.Series
+    rank_information_coefficient: pd.Series
+    quantile_spread: pd.DataFrame
+    report_path: Path
+    experiment_log_path: Path
+
+
+def run_local_csv_fixture_workflow_demo(
+    *,
+    config: LocalCSVFixtureWorkflowConfig = LocalCSVFixtureWorkflowConfig(),
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+    write_outputs: bool = True,
+    update_registry: bool = True,
+) -> LocalCSVFixtureWorkflowResult:
+    """Run the synthetic local CSV fixture workflow and optionally write outputs."""
+
+    _validate_config(config)
+    experiment_log_path = resolve_experiment_log_path(
+        report_path,
+        default_report_path=DEFAULT_REPORT_PATH,
+        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+    ) if experiment_log_path is None else experiment_log_path
+
+    price_result = load_wide_price_csv(_resolve_project_fixture(config.price_fixture))
+    benchmark_result = load_benchmark_price_csv(
+        _resolve_project_fixture(config.benchmark_fixture),
+    )
+    prices = price_result.data
+    benchmark_prices = benchmark_result.data
+    _validate_benchmark_alignment(prices, benchmark_prices)
+
+    alpha_factor = alpha_009(prices, window=config.alpha_window)
+    forward_returns = _future_returns(prices, periods=config.forward_return_horizon_rows)
+    benchmark_forward_returns = _future_returns(
+        benchmark_prices,
+        periods=config.forward_return_horizon_rows,
+    )
+
+    information_coefficient = factor_information_coefficient(
+        alpha_factor,
+        forward_returns,
+        min_periods=config.ic_min_periods,
+    )
+    rank_information_coefficient = factor_rank_information_coefficient(
+        alpha_factor,
+        forward_returns,
+        min_periods=config.ic_min_periods,
+    )
+    quantile_spread = factor_quantile_spread(
+        alpha_factor,
+        forward_returns,
+        quantiles=config.quantiles,
+        min_assets_per_quantile=config.min_assets_per_quantile,
+    )
+
+    result = LocalCSVFixtureWorkflowResult(
+        prices=prices,
+        benchmark_prices=benchmark_prices,
+        price_summary=price_result.summary,
+        benchmark_summary=benchmark_result.summary,
+        alpha_009_factor=alpha_factor,
+        forward_returns=forward_returns,
+        benchmark_forward_returns=benchmark_forward_returns,
+        information_coefficient=information_coefficient,
+        rank_information_coefficient=rank_information_coefficient,
+        quantile_spread=quantile_spread,
+        report_path=Path(report_path),
+        experiment_log_path=Path(experiment_log_path),
+    )
+
+    if write_outputs:
+        write_report(config=config, result=result)
+        write_workflow_experiment_log(config=config, result=result)
+        if _is_default_experiment_log_path(result.experiment_log_path) and update_registry:
+            write_experiment_registry_report()
+
+    return result
+
+
+def write_workflow_experiment_log(
+    *,
+    config: LocalCSVFixtureWorkflowConfig,
+    result: LocalCSVFixtureWorkflowResult,
+) -> dict[str, object]:
+    """Write a deterministic JSON log for the local CSV fixture workflow."""
+
+    return write_experiment_log(
+        log_path=result.experiment_log_path,
+        experiment_id="local-csv-fixture-workflow-demo",
+        title="Local CSV Fixture Workflow Demo",
+        experiment_type="synthetic_local_csv_workflow",
+        summary=(
+            "Deterministic smoke demo that loads committed synthetic local CSV "
+            "fixtures, computes alpha_009 as a research feature, and evaluates "
+            "diagnostic IC, Rank IC, and quantile spread against aligned "
+            "forward-return targets."
+        ),
+        config=config,
+        assumptions={
+            "data_scope": "synthetic only",
+            "data_source": (
+                "committed local CSV fixtures under tests/fixtures/local_csv_loader_smoke; "
+                "no external data fetch"
+            ),
+            "price_fixture": config.price_fixture,
+            "benchmark_fixture": config.benchmark_fixture,
+            "universe": f"{result.prices.shape[1]} synthetic fixture assets",
+            "date_range": {
+                "start": result.prices.index.min().date(),
+                "end": result.prices.index.max().date(),
+            },
+            "feature": f"alpha_009 with window={config.alpha_window}",
+            "feature_timing": (
+                "alpha_009 at date t uses close[t] and earlier closes only; "
+                "no trade timing is defined in this demo"
+            ),
+            "forward_return_timing": (
+                "forward returns are computed after loading as evaluation "
+                "targets only; they are not feature inputs"
+            ),
+            "benchmark": "synthetic local CSV benchmark fixture",
+            "missing_value_policy": (
+                "strict loader defaults; no fill, forward-fill, backward-fill, "
+                "or zero defaults"
+            ),
+            "portfolio_construction": "not included",
+            "backtest_integration": "not included",
+            "transaction_cost_model": "not applicable; no portfolio or trades",
+            "slippage_model": "not applicable; no portfolio or trades",
+            "live_trading": False,
+            "brokerage_integration": False,
+        },
+        outputs={
+            "markdown_report": _project_relative_path(result.report_path),
+            "experiment_log": _project_relative_path(result.experiment_log_path),
+            "price_rows": result.prices.shape[0],
+            "asset_count": result.prices.shape[1],
+            "benchmark_rows": int(result.benchmark_prices.shape[0]),
+        },
+        metrics={},
+        diagnostics={
+            "information_coefficient_by_date": _series_to_date_dict(
+                result.information_coefficient,
+            ),
+            "rank_information_coefficient_by_date": _series_to_date_dict(
+                result.rank_information_coefficient,
+            ),
+            "quantile_spread_valid_dates": int(
+                result.quantile_spread["top_minus_bottom_spread"].notna().sum()
+            ),
+            "factor_valid_observations": int(result.alpha_009_factor.notna().sum().sum()),
+            "forward_return_valid_observations": int(result.forward_returns.notna().sum().sum()),
+            "benchmark_forward_return_valid_observations": int(
+                result.benchmark_forward_returns.notna().sum()
+            ),
+        },
+        caveats=(
+            *SYNTHETIC_RESEARCH_CAVEATS,
+            "local CSV fixture smoke demo only",
+            "not strategy validation",
+            "not evidence of real-world performance",
+        ),
+        next_action=(
+            "Use this as a local CSV fixture wiring check only; a real "
+            "user-provided local CSV study still requires readiness-audit "
+            "approval, explicit sample splits, universe rules, benchmark "
+            "selection, costs, slippage assumptions, and full caveats."
+        ),
+    )
+
+
+def write_report(
+    *,
+    config: LocalCSVFixtureWorkflowConfig,
+    result: LocalCSVFixtureWorkflowResult,
+) -> None:
+    """Write a deterministic Markdown report for the local CSV fixture workflow."""
+
+    result.report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    content = f"""# Local CSV Fixture Workflow Demo
+
+This report uses committed synthetic local CSV fixtures only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not run a backtest, construct a portfolio, fetch real data, connect to a broker, place orders, or support live trading.
+
+## Purpose
+
+Exercise the local CSV research path with a small committed fixture:
+
+1. Load a wide adjusted-close CSV with the strict local loader.
+2. Load a benchmark CSV and verify date alignment.
+3. Compute `alpha_009` as a close-only research feature.
+4. Compute next-row forward returns as evaluation targets only.
+5. Run IC, Rank IC, and quantile spread diagnostics.
+6. Write a caveated report and JSON experiment log.
+
+## Inputs
+
+| Item | Value |
+| --- | --- |
+| Price fixture | `{config.price_fixture}` |
+| Benchmark fixture | `{config.benchmark_fixture}` |
+| Price schema | `{result.price_summary.schema}` |
+| Benchmark schema | `{result.benchmark_summary.schema}` |
+| Price rows | `{result.price_summary.source_row_count}` |
+| Asset columns | `{", ".join(result.price_summary.columns)}` |
+| Date range | `{result.prices.index.min().date()}` to `{result.prices.index.max().date()}` |
+| Missing price values | `{result.price_summary.missing_value_count}` |
+| Missing benchmark values | `{result.benchmark_summary.missing_value_count}` |
+
+## Processing Summary
+
+The workflow preserves the loader output date index and asset columns, verifies that the benchmark dates match the price panel dates, and computes `alpha_009` with `window={config.alpha_window}`. Forward returns are aligned to the same date as the factor value for diagnostic evaluation only; they are not used as feature inputs.
+
+No missing values were filled. No dates or assets were reindexed. No portfolio construction, execution timing, transaction cost model, slippage model, or backtest is included.
+
+## Diagnostic Coverage
+
+| Diagnostic | Value |
+| --- | ---: |
+| Factor valid observations | `{int(result.alpha_009_factor.notna().sum().sum())}` |
+| Forward-return valid observations | `{int(result.forward_returns.notna().sum().sum())}` |
+| Benchmark forward-return valid observations | `{int(result.benchmark_forward_returns.notna().sum())}` |
+| IC valid dates | `{int(result.information_coefficient.notna().sum())}` |
+| Rank IC valid dates | `{int(result.rank_information_coefficient.notna().sum())}` |
+| Quantile spread valid dates | `{int(result.quantile_spread["top_minus_bottom_spread"].notna().sum())}` |
+
+## Information Coefficient Diagnostics
+
+{_format_series_table(result.information_coefficient)}
+
+## Rank Information Coefficient Diagnostics
+
+{_format_series_table(result.rank_information_coefficient)}
+
+## Quantile Spread Diagnostics
+
+{_format_markdown_table(result.quantile_spread)}
+
+## Limitations
+
+- The CSV files are tiny synthetic fixtures committed for workflow testing.
+- The benchmark is synthetic and used only to verify local CSV date alignment.
+- The diagnostic returns are synthetic fixture calculations, not market evidence.
+- `alpha_009` is a research feature, not a complete strategy.
+- No local CSV result here should be interpreted without the real-data readiness audit and full experiment-log requirements.
+- User-provided local CSV research, validation splits, universe construction, costs, slippage, and QuantConnect/LEAN implementation remain future stages.
+"""
+
+    result.report_path.write_text(content, encoding="utf-8")
+
+
+def _future_returns(values: pd.DataFrame | pd.Series, *, periods: int) -> pd.DataFrame | pd.Series:
+    return values.pct_change(periods=periods, fill_method=None).shift(-periods)
+
+
+def _resolve_project_fixture(relative_path: str) -> Path:
+    path = Path(relative_path)
+    if path.is_absolute():
+        raise ValueError("fixture paths must be project-relative")
+
+    resolved = (PROJECT_ROOT / path).resolve()
+    if not resolved.is_relative_to(PROJECT_ROOT):
+        raise ValueError("fixture paths must stay inside the project")
+    if not resolved.is_file():
+        raise FileNotFoundError(resolved)
+    return resolved
+
+
+def _validate_config(config: LocalCSVFixtureWorkflowConfig) -> None:
+    if isinstance(config.alpha_window, bool) or not isinstance(config.alpha_window, int):
+        raise TypeError("alpha_window must be an integer")
+    if config.alpha_window < 1:
+        raise ValueError("alpha_window must be at least 1")
+    if (
+        isinstance(config.forward_return_horizon_rows, bool)
+        or not isinstance(config.forward_return_horizon_rows, int)
+    ):
+        raise TypeError("forward_return_horizon_rows must be an integer")
+    if config.forward_return_horizon_rows < 1:
+        raise ValueError("forward_return_horizon_rows must be at least 1")
+    if isinstance(config.ic_min_periods, bool) or not isinstance(config.ic_min_periods, int):
+        raise TypeError("ic_min_periods must be an integer")
+    if config.ic_min_periods < 2:
+        raise ValueError("ic_min_periods must be at least 2")
+    if isinstance(config.quantiles, bool) or not isinstance(config.quantiles, int):
+        raise TypeError("quantiles must be an integer")
+    if config.quantiles < 2:
+        raise ValueError("quantiles must be at least 2")
+    if (
+        isinstance(config.min_assets_per_quantile, bool)
+        or not isinstance(config.min_assets_per_quantile, int)
+    ):
+        raise TypeError("min_assets_per_quantile must be an integer")
+    if config.min_assets_per_quantile < 1:
+        raise ValueError("min_assets_per_quantile must be at least 1")
+
+
+def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) -> None:
+    if not benchmark.index.equals(prices.index):
+        raise ValueError("benchmark fixture dates must match price fixture dates")
+
+
+def _is_default_experiment_log_path(path: Path) -> bool:
+    return Path(path).resolve() == DEFAULT_EXPERIMENT_LOG_PATH.resolve()
+
+
+def _series_to_date_dict(series: pd.Series) -> dict[str, float]:
+    return {
+        pd.Timestamp(index).date().isoformat(): float(value)
+        for index, value in series.items()
+    }
+
+
+def _format_series_table(series: pd.Series) -> str:
+    frame = series.to_frame()
+    return _format_markdown_table(frame)
+
+
+def _format_markdown_table(frame: pd.DataFrame) -> str:
+    headers = ["Date", *[str(column) for column in frame.columns]]
+    separator = ["---", *["---:" for _ in frame.columns]]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(separator) + " |",
+    ]
+    for index, row in frame.iterrows():
+        values = [
+            _format_table_value(column, value)
+            for column, value in row.items()
+        ]
+        lines.append(
+            "| "
+            + " | ".join([pd.Timestamp(index).date().isoformat(), *values])
+            + " |"
+        )
+    return "\n".join(lines)
+
+
+def _format_table_value(column: object, value: object) -> str:
+    if pd.isna(value):
+        return "NaN"
+
+    column_name = str(column)
+    if column_name.endswith("_count") or column_name == "valid_asset_count":
+        return str(int(value))
+
+    return _format_float(float(value))
+
+
+def _format_float(value: float) -> str:
+    if pd.isna(value):
+        return "NaN"
+    return f"{value:.4f}"
+
+
+def _project_relative_path(path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
+def main(
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+    update_registry: bool = True,
+) -> None:
+    """Run the default synthetic local CSV fixture workflow."""
+
+    run_local_csv_fixture_workflow_demo(
+        report_path=report_path,
+        experiment_log_path=experiment_log_path,
+        update_registry=update_registry,
+    )
+
+
+if __name__ == "__main__":
+    main()

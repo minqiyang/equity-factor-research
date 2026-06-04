@@ -1,0 +1,75 @@
+{
+  "assumptions": {
+    "backtest_integration": "not included",
+    "benchmark": "synthetic local CSV benchmark fixture",
+    "benchmark_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_benchmark.csv",
+    "brokerage_integration": false,
+    "data_scope": "synthetic only",
+    "data_source": "committed local CSV fixtures under tests/fixtures/local_csv_loader_smoke; no external data fetch",
+    "date_range": {
+      "end": "2024-01-05",
+      "start": "2024-01-02"
+    },
+    "feature": "alpha_009 with window=1",
+    "feature_timing": "alpha_009 at date t uses close[t] and earlier closes only; no trade timing is defined in this demo",
+    "forward_return_timing": "forward returns are computed after loading as evaluation targets only; they are not feature inputs",
+    "live_trading": false,
+    "missing_value_policy": "strict loader defaults; no fill, forward-fill, backward-fill, or zero defaults",
+    "portfolio_construction": "not included",
+    "price_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv",
+    "slippage_model": "not applicable; no portfolio or trades",
+    "transaction_cost_model": "not applicable; no portfolio or trades",
+    "universe": "3 synthetic fixture assets"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration",
+    "local CSV fixture smoke demo only",
+    "not strategy validation",
+    "not evidence of real-world performance"
+  ],
+  "config": {
+    "alpha_window": 1,
+    "benchmark_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_benchmark.csv",
+    "forward_return_horizon_rows": 1,
+    "ic_min_periods": 2,
+    "min_assets_per_quantile": 1,
+    "price_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv",
+    "quantiles": 3
+  },
+  "diagnostics": {
+    "benchmark_forward_return_valid_observations": 3,
+    "factor_valid_observations": 9,
+    "forward_return_valid_observations": 9,
+    "information_coefficient_by_date": {
+      "2024-01-02": null,
+      "2024-01-03": -0.6216932354008934,
+      "2024-01-04": 0.9997019274994431,
+      "2024-01-05": null
+    },
+    "quantile_spread_valid_dates": 1,
+    "rank_information_coefficient_by_date": {
+      "2024-01-02": null,
+      "2024-01-03": -0.5,
+      "2024-01-04": 0.8660254037844387,
+      "2024-01-05": null
+    }
+  },
+  "experiment_id": "local-csv-fixture-workflow-demo",
+  "experiment_type": "synthetic_local_csv_workflow",
+  "metrics": {},
+  "next_action": "Use this as a local CSV fixture wiring check only; a real user-provided local CSV study still requires readiness-audit approval, explicit sample splits, universe rules, benchmark selection, costs, slippage assumptions, and full caveats.",
+  "outputs": {
+    "asset_count": 3,
+    "benchmark_rows": 4,
+    "experiment_log": "reports/experiment_logs/local_csv_fixture_workflow_demo.json",
+    "markdown_report": "reports/local_csv_fixture_workflow_demo.md",
+    "price_rows": 4
+  },
+  "schema_version": 1,
+  "summary": "Deterministic smoke demo that loads committed synthetic local CSV fixtures, computes alpha_009 as a research feature, and evaluates diagnostic IC, Rank IC, and quantile spread against aligned forward-return targets.",
+  "title": "Local CSV Fixture Workflow Demo"
+}
