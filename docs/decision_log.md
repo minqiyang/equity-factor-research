@@ -15,6 +15,54 @@ investment performance.
 
 ---
 
+## 2026-06-04 - Keep First LEAN-Adjacent Code Signal-Only
+
+Context:
+
+- PR #42 merged the LEAN runnable draft readiness decision.
+- That decision found the repository is not ready for runnable LEAN code under
+  the current guardrails.
+- The active workflow still prohibits real market data fetching, downloads,
+  credentials, live trading, paper trading, brokerage integration, order
+  execution, and profitability claims.
+
+Decision:
+
+- Define the next LEAN-adjacent code boundary as signal-only and
+  metadata-only.
+- Do not allow the next code stage to import `AlgorithmImports`, subclass
+  `QCAlgorithm`, create `config.json`, run LEAN, subscribe to platform data,
+  call history APIs, create portfolio targets, place orders, model fills,
+  configure brokerage, or produce backtest results.
+- If this design is reviewed and merged, the next possible code PR should be a
+  pure-Python `lean/signal_only_momentum_draft.py` plus static scope tests.
+
+Rationale:
+
+- A signal-only draft can make the factor translation boundary auditable
+  without introducing runtime dependencies, account access, data-source
+  semantics, order semantics, or performance interpretation.
+- Keeping the first code step metadata-only preserves forward progress while
+  maintaining the existing simulated-research guardrails.
+
+Consequences:
+
+- Runnable LEAN code remains intentionally blocked.
+- The future signal-only draft must avoid order dates, target weights,
+  brokerage models, fill models, live mode, paper mode, and implemented
+  portfolio behavior.
+- Static tests should continue to reject data downloads, credential reads,
+  runtime LEAN imports, order calls, and profitability or trading-readiness
+  claims.
+
+Follow-up:
+
+- After this design is reviewed and merged, create a small code PR for a
+  pure-Python LEAN signal-only momentum draft with static guardrail tests, or
+  stop if the implementation cannot satisfy the documented boundary.
+
+---
+
 ## 2026-06-04 - Defer Runnable LEAN Draft Until Signal-Only Boundary Is Designed
 
 Context:

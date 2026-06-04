@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/lean_signal_only_draft_design.md` to define a documentation-only
+  boundary for a future pure-Python LEAN signal-only draft before any runnable
+  LEAN code, data access, credentials, brokerage/order behavior, or performance
+  interpretation is introduced.
 - Added `docs/lean_runnable_draft_readiness_decision.md` to record that the
   project is not yet ready for a runnable LEAN draft under the current
   guardrails and should next design a signal-only draft boundary.
