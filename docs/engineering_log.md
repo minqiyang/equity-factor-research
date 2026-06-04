@@ -12,6 +12,53 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - Local CSV Loader Synthetic Fixture Smoke Demo
+
+This test-focused milestone added a committed synthetic local CSV fixture set
+and smoke tests for the existing strict local CSV loader.
+
+Assumption: the next stage recommended by
+`docs/original_goal_gap_analysis.md` should be implemented as a focused test
+and fixture stage, not as a research script or generated report. This keeps the
+stage deterministic and avoids interpreting any result as market evidence.
+
+The new fixtures under `tests/fixtures/local_csv_loader_smoke/` are synthetic,
+small, local-only CSV files:
+
+- `synthetic_adjusted_close.csv`
+- `synthetic_adjusted_close_with_missing.csv`
+- `synthetic_benchmark.csv`
+
+The new smoke tests in `tests/test_local_csv_loader_smoke_demo.py` verify that
+the existing loader can read a local wide adjusted-close panel, preserve
+expected date indexes and asset columns, produce float-valued panels, align a
+benchmark series to the same dates, expose audit summary metadata, and enforce
+the missing-value policy. Missing values are rejected by default and preserved
+only through explicit `allow_missing=True`; no fill, forward-fill,
+backward-fill, or zero default is introduced.
+
+This change does not modify CSV loader source code, feature calculations,
+backtester behavior, metrics, research scripts, generated reports,
+normalization, factor combination, diagnostics, data access, execution
+assumptions, or performance claims. It does not fetch data, download data, add
+vendor access, introduce live trading, add brokerage or order-execution logic,
+store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q tests/test_local_csv_loader_smoke_demo.py tests/test_csv_loader.py
+22 passed
+
+python -m pytest -q
+212 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-03 - Original Goal Gap Analysis Checkpoint
 
 This documentation-only checkpoint added
