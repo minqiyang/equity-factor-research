@@ -12,6 +12,52 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Signal-Only Draft Design
+
+This documentation-only milestone added
+`docs/lean_signal_only_draft_design.md` after the runnable draft readiness
+decision merged.
+
+Assumption: after PR #42 merged, the next unblocked safe stage is the
+signal-only draft design that PR #42 explicitly recommended. The design keeps
+the next LEAN-adjacent code boundary pure Python and metadata-only, without
+LEAN runtime imports, local or cloud LEAN execution, real data access,
+credentials, live trading, paper trading, brokerage integration, order
+execution, or profitability claims.
+
+The design defines the purpose, decision, future file boundary, timing
+contract, static validation plan, out-of-scope items, stop conditions, and the
+recommended next stage. It narrows the next possible code PR to
+`lean/signal_only_momentum_draft.py` and
+`tests/test_lean_signal_only_draft_scope.py`, with optional updates to
+`lean/README.md`, durable logs, and `CHANGELOG.md` if that future PR documents
+the scope.
+
+This change does not modify `src/`, tests, research scripts, generated
+reports, LEAN code, CSV loader behavior, diagnostics behavior, backtester
+behavior, metrics, factor formulas, normalization, combination, or strategy
+logic. It does not add `AlgorithmImports`, `QCAlgorithm`, `config.json`, data
+fetching, downloads, credentials, live or paper trading, brokerage, order
+execution, a LEAN run, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Runnable Draft Readiness Decision
 
 This documentation-only milestone added
