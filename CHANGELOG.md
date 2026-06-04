@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a minimal non-executing LEAN smoke-test scaffold with static guardrail
+  tests, without adding a runnable LEAN project, external data access,
+  credentials, live or paper trading, brokerage integration, order execution,
+  or profitability claims.
 - Added `docs/lean_implementation_planning_checkpoint.md` to choose the exact
   future first LEAN code-PR boundary, validation strategy, review gates, and
   stop conditions before adding any LEAN scaffold or algorithm code.

@@ -23,6 +23,72 @@ problems, include:
 
 ---
 
+## 2026-06-04 - LEAN Scaffold README Guardrail Phrase Mismatch
+
+Original mistake:
+
+- The first version of `lean/README.md` described the same guardrail as
+  "real data downloads" and "real market data fetching or downloads", but the
+  new static guardrail test expected the exact phrase `no real market data`.
+
+Consequence:
+
+- The focused scaffold test failed even though the intended guardrail was
+  present in less exact wording.
+
+Evidence:
+
+```text
+tests/test_lean_smoke_test_scope.py::test_lean_scaffold_readme_preserves_guardrails
+AssertionError: assert 'no real market data' in ...
+```
+
+Investigation:
+
+- Compared the failing expected phrase with `lean/README.md`.
+- Confirmed the README prohibited real data downloads but did not include the
+  exact wording required by the static test.
+- Confirmed this was a documentation/test wording mismatch, not an
+  implementation of real data access.
+
+Correction attempts:
+
+- The test was not weakened and the guardrail expectation was not removed.
+- First correction attempt added `no real market data path`, but the line wrap
+  split the phrase as `no\nreal market data`, so the exact string check still
+  failed.
+- Second correction attempt placed `no real market data` on one line, but the
+  focused test then exposed that other exact README phrases such as
+  `no live trading` and `no brokerage` were still implied rather than written
+  directly.
+
+Final fix:
+
+- Updated `lean/README.md` to include an `Explicit Guardrail Phrases` section
+  containing the exact static-review phrases required by the test.
+
+Verification:
+
+- The focused test and full validation were rerun after the README fix:
+  `python -m pytest -q tests/test_lean_smoke_test_scope.py` reported
+  6 passed, `python -m pytest -q` reported 264 passed,
+  `python -m compileall src tests research` passed,
+  `python -m compileall lean` passed, and `git diff --check` passed with
+  Windows line-ending conversion warnings only.
+
+Remaining caveats:
+
+- Exact-phrase guardrail tests can fail on equivalent wording. In this case
+  the explicit wording is useful because it makes the human-facing README
+  clearer.
+
+Prevention:
+
+- When adding static documentation guardrail tests, copy the required caveat
+  phrases directly into the human-facing document during the same edit pass.
+
+---
+
 ## 2026-06-04 - Stage Edits Started Before Branch Creation
 
 Original mistake:
