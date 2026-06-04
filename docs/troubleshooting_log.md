@@ -23,6 +23,66 @@ problems, include:
 
 ---
 
+## 2026-06-04 - Parallel Pull And State Check Race
+
+Original mistake:
+
+- During the continuation after PR #41 was open, `git pull --ff-only origin
+  main` was run in parallel with `git status` and `git log`.
+
+Consequence:
+
+- The `git log` output could show the pre-pull commit while the pull was
+  fast-forwarding `main`.
+- No files were edited, staged, committed, pushed, or merged during the
+  ambiguous state check, but the state evidence needed to be refreshed before
+  choosing the next stage.
+
+Evidence:
+
+- `git pull --ff-only origin main` fast-forwarded from the PR #40 merge to the
+  PR #41 merge.
+- The parallel `git log` output still showed the PR #40 merge as `HEAD`.
+
+Investigation:
+
+- Treated the parallel state output as potentially stale.
+- Reran `git status`, `git log`, `gh pr view 41`, and `gh pr list --state
+  open` after the pull completed.
+
+Correction attempts:
+
+- No failed correction attempt occurred. The recovery was to rerun the state
+  checks after the branch-changing command completed.
+
+Final fix:
+
+- Used the post-pull state as authoritative.
+- Confirmed `main` was at the PR #41 merge commit before selecting the next
+  stage.
+
+Verification:
+
+- `git log --oneline --decorate -8` showed `main` at the PR #41 merge commit.
+- `gh pr view 41` confirmed PR #41 was merged.
+- `gh pr list --state open` returned no open pull requests.
+- `python -m pytest -q` reported 264 passed.
+- `python -m compileall src tests research` passed.
+
+Remaining caveats:
+
+- Parallel shell commands are appropriate for independent reads only when no
+  command mutates the working tree, branch pointer, or index.
+
+Prevention:
+
+- Do not run `git pull`, `git switch`, or other branch-changing commands in
+  parallel with status or log reads used as authoritative evidence.
+- After any branch-changing command, rerun state checks before selecting a
+  stage or editing files.
+
+---
+
 ## 2026-06-04 - Parallel Read And Branch Switch Race
 
 Original mistake:

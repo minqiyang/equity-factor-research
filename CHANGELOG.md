@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/lean_runnable_draft_readiness_decision.md` to record that the
+  project is not yet ready for a runnable LEAN draft under the current
+  guardrails and should next design a signal-only draft boundary.
 - Added `docs/lean_scaffold_review_checklist.md` to define review questions,
   static checks, safe expansion criteria, and stop conditions before any future
   runnable LEAN draft.
