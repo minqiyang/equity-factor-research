@@ -23,6 +23,66 @@ problems, include:
 
 ---
 
+## 2026-06-04 - README Diff Filter Regex Error
+
+Original mistake:
+
+- During the GitHub landing-page polish scope review, an optional
+  `Select-String` diff-filter command used a regex that included an unescaped
+  `[` character.
+
+Consequence:
+
+- The optional filtered diff display failed before printing its intended
+  heading summary.
+- No repository files were modified by the failed command, and the required
+  validation checks had already passed, but the diff review needed to be rerun
+  with a valid command before commit.
+
+Evidence:
+
+```text
+Select-String : The string ... is not a valid regular expression:
+Unterminated [] set.
+```
+
+Investigation:
+
+- The failing pattern included alternatives such as `^\+![` without escaping
+  the bracket.
+- The failure was isolated to the optional presentation filter, not to
+  Markdown, tests, link checking, or repository content.
+
+Correction attempts:
+
+- The invalid regex was not reused.
+- The diff review was rerun with simpler `git diff --stat` and
+  `Select-String -SimpleMatch` commands.
+
+Final fix:
+
+- Used fixed-string matching for README section headings and the visual asset
+  reference.
+
+Verification:
+
+- The rerun diff review showed the intended README sections and visual asset
+  reference.
+- `git status --short --untracked-files=all` still showed only the intended
+  documentation and asset files.
+
+Remaining caveats:
+
+- The failed command was an inspection aid only; it did not affect repository
+  content.
+
+Prevention:
+
+- Prefer `Select-String -SimpleMatch` for literal diff-heading checks.
+- Escape regex metacharacters when using `Select-String -Pattern`.
+
+---
+
 ## 2026-06-04 - Parallel Pull And State Check Race
 
 Original mistake:

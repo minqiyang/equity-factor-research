@@ -12,6 +12,53 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - Public GitHub Landing Page Polish
+
+This documentation-only milestone improves the public README as a newcomer
+landing page after the LEAN signal-only draft design merged.
+
+Assumption: the next safe public-facing stage is presentation polish rather
+than additional research logic. The update keeps the current research scope
+unchanged and makes the repository easier to evaluate from the GitHub first
+screen.
+
+The README now has a concise tagline, truthful static status labels, a short
+description of what the repository is, runnable synthetic/local-fixture demo
+commands, a beginner-friendly PowerShell Quick Start, a local CSV fixture demo
+walkthrough, a project map, links to key reports and demo files, and an
+explicit safety/scope section. The new `docs/assets/research_workflow.svg`
+diagram is an original workflow visual that explains the research process
+without implying live trading, brokerage integration, order execution, or
+profitability.
+
+This change does not modify `src/`, tests, research scripts, generated reports,
+CSV loader behavior, diagnostics behavior, backtester behavior, metrics, factor
+formulas, normalization, combination, LEAN scaffold behavior, strategy logic,
+private-data protections, or result numbers. It does not add a license file,
+GitHub Actions workflow, real data fetching, credentials, live trading,
+brokerage integration, order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+README relative-link sanity check
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Signal-Only Draft Design
 
 This documentation-only milestone added

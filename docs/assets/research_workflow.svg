@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="310" viewBox="0 0 1100 310" role="img" aria-labelledby="title desc">
+  <title id="title">Equity factor research workflow</title>
+  <desc id="desc">A six step workflow from factor idea through point-in-time features, diagnostics, synthetic demos, caveated reports, and LEAN planning.</desc>
+  <rect width="1100" height="310" fill="#f6f8fa"/>
+  <rect x="24" y="24" width="1052" height="262" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="550" y="58" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#24292f">Auditable Equity Factor Research Workflow</text>
+  <text x="550" y="84" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#57606a">Synthetic and local-fixture research only. No live trading, brokerage, or profitability claim.</text>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <g transform="translate(60 124)">
+      <rect width="140" height="94" rx="10" fill="#ddf4ff" stroke="#54aeff"/>
+      <text x="70" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#0969da">1. Factor Idea</text>
+      <text x="70" y="56" text-anchor="middle" font-size="12" fill="#24292f">Define formula,</text>
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#24292f">inputs, caveats</text>
+    </g>
+
+    <g transform="translate(235 124)">
+      <rect width="140" height="94" rx="10" fill="#dafbe1" stroke="#4ac26b"/>
+      <text x="70" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#1a7f37">2. Features</text>
+      <text x="70" y="56" text-anchor="middle" font-size="12" fill="#24292f">Use only data</text>
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#24292f">known by date t</text>
+    </g>
+
+    <g transform="translate(410 124)">
+      <rect width="140" height="94" rx="10" fill="#fff8c5" stroke="#d4a72c"/>
+      <text x="70" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#9a6700">3. Diagnostics</text>
+      <text x="70" y="56" text-anchor="middle" font-size="12" fill="#24292f">IC, Rank IC,</text>
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#24292f">quantile spread</text>
+    </g>
+
+    <g transform="translate(585 124)">
+      <rect width="140" height="94" rx="10" fill="#fbefff" stroke="#bf87ff"/>
+      <text x="70" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#8250df">4. Demos</text>
+      <text x="70" y="56" text-anchor="middle" font-size="12" fill="#24292f">Synthetic panels</text>
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#24292f">and CSV fixtures</text>
+    </g>
+
+    <g transform="translate(760 124)">
+      <rect width="140" height="94" rx="10" fill="#ffebe9" stroke="#ff8182"/>
+      <text x="70" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#cf222e">5. Reports</text>
+      <text x="70" y="56" text-anchor="middle" font-size="12" fill="#24292f">Logs, caveats,</text>
+      <text x="70" y="74" text-anchor="middle" font-size="12" fill="#24292f">next actions</text>
+    </g>
+
+    <g transform="translate(935 124)">
+      <rect width="120" height="94" rx="10" fill="#f6f8fa" stroke="#8c959f"/>
+      <text x="60" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#57606a">6. LEAN Plan</text>
+      <text x="60" y="56" text-anchor="middle" font-size="12" fill="#24292f">Guarded future</text>
+      <text x="60" y="74" text-anchor="middle" font-size="12" fill="#24292f">translation</text>
+    </g>
+
+    <g stroke="#8c959f" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M204 171 H228"/>
+      <path d="M222 165 L228 171 L222 177"/>
+      <path d="M379 171 H403"/>
+      <path d="M397 165 L403 171 L397 177"/>
+      <path d="M554 171 H578"/>
+      <path d="M572 165 L578 171 L572 177"/>
+      <path d="M729 171 H753"/>
+      <path d="M747 165 L753 171 L747 177"/>
+      <path d="M904 171 H928"/>
+      <path d="M922 165 L928 171 L922 177"/>
+    </g>
+  </g>
+
+  <text x="550" y="254" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#57606a">The workflow emphasizes reproducibility, no-look-ahead discipline, explicit assumptions, and visible limitations.</text>
+</svg>
