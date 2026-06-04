@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/lean_smoke_test_design.md` to turn the LEAN parity checklist into
+  a documentation-only smoke-test design before any LEAN implementation or
+  project scaffold.
 - Added `docs/lean_parity_checklist.md` to map local factor, diagnostics,
   benchmark, fee, slippage, and experiment-log requirements to future
   QuantConnect/LEAN smoke-test assertions before any LEAN algorithm code.
