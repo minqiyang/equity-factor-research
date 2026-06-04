@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a GitHub Actions `CI` workflow for pull requests to `main` and pushes
+  to `main`, running the same pytest and compile checks used locally.
 - Added an original `docs/assets/research_workflow.svg` diagram for the public
   README landing page.
 - Added `docs/lean_signal_only_draft_design.md` to define a documentation-only
@@ -50,6 +52,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Replaced the static README local-test status label with a live GitHub Actions
+  CI badge for `.github/workflows/ci.yml`.
 - Polished `README.md` as a public GitHub landing page with truthful status
   labels, beginner Quick Start commands, demo walkthrough links, a project map,
   key report links, and explicit no-live-trading scope language.
