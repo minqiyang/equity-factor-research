@@ -12,6 +12,60 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - Local CSV Fixture Research Workflow Demo
+
+This code-and-report milestone added a synthetic local CSV fixture workflow
+demo after the local CSV loader smoke tests, synthetic IC / Rank IC
+diagnostics, and synthetic quantile spread diagnostics had merged.
+
+Assumption: after PR #34 merged, the next unblocked safe stage from
+`docs/original_goal_gap_analysis.md` is Stage E: run a complete local-file
+workflow on committed synthetic CSV fixtures only. The stage is intentionally
+small and uses the already-reviewed local CSV loader, `alpha_009`, IC, Rank IC,
+and quantile spread helpers instead of introducing new source-layer behavior.
+
+The new `research/local_csv_fixture_workflow_demo.py` script loads the
+committed synthetic adjusted-close and benchmark fixtures under
+`tests/fixtures/local_csv_loader_smoke/`, verifies benchmark date alignment,
+computes `alpha_009` as a close-only research feature with a one-row diagnostic
+window, computes next-row forward returns as evaluation targets only, and runs
+IC, Rank IC, and quantile spread diagnostics. The forward returns are not
+feature inputs, not a portfolio rule, and not an execution assumption.
+
+The generated report and JSON sidecar log are synthetic fixture diagnostics
+only. They are included to prove that the local CSV path can participate in a
+caveated, auditable workflow without using real data, downloads, vendor APIs,
+credentials, live trading, brokerage integration, order execution, or
+profitability claims. The experiment registry is refreshed so the new
+synthetic local CSV workflow log is discoverable alongside earlier synthetic
+demos.
+
+Focused tests in `tests/test_local_csv_fixture_workflow_demo.py` cover fixture
+loading, date and asset alignment, deterministic outputs, report and log
+caveats, output-suppression behavior for tests, use of existing loader/feature
+and diagnostic helpers, rejection of absolute fixture paths, config
+validation, import guardrails, and caveated profitability language.
+
+This change does not modify CSV loader behavior, feature formulas,
+normalization, factor combination, diagnostics, backtester behavior, metrics,
+or external data access. It does not run a backtest or claim that `alpha_009`
+is useful on real market data.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+11 passed
+
+python -m pytest -q
+258 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-04 - Synthetic Quantile Spread Diagnostics
 
 This code milestone added synthetic-first quantile spread diagnostics to
