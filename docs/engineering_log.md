@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Implementation Planning Checkpoint
+
+This documentation-only milestone added
+`docs/lean_implementation_planning_checkpoint.md` after PR #38 merged.
+
+Assumption: after the LEAN smoke-test design note merged, the next unblocked
+safe LEAN-related stage is an implementation planning checkpoint before any
+LEAN algorithm file or project scaffold. This keeps the workflow moving while
+preserving the merge gate and avoiding external platform access, credentials,
+real data downloads, brokerage integration, order execution, live trading,
+paper trading, and performance interpretation.
+
+The checkpoint chooses the intended boundary for the first future LEAN code
+PR: `lean/README.md`, `lean/smoke_test_algorithm.py`,
+`tests/test_lean_smoke_test_scope.py`, `docs/engineering_log.md`, and
+`CHANGELOG.md`. It also defines the future algorithm draft scope, static local
+validation strategy, review gates, stop conditions, and the recommended next
+stage: a minimal non-executing LEAN scaffold with static guardrail tests.
+
+This change does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, diagnostics behavior, backtester behavior,
+metrics, data access, or strategy logic. It does not fetch data, download data,
+connect to a broker, place orders, add credentials, enable live trading, add
+paper trading, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+258 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Smoke-Test Design Note
 
 This documentation-only milestone added `docs/lean_smoke_test_design.md` after
