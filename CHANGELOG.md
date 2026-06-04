@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added an original `docs/assets/research_workflow.svg` diagram for the public
+  README landing page.
 - Added `docs/lean_signal_only_draft_design.md` to define a documentation-only
   boundary for a future pure-Python LEAN signal-only draft before any runnable
   LEAN code, data access, credentials, brokerage/order behavior, or performance
@@ -48,6 +50,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Polished `README.md` as a public GitHub landing page with truthful status
+  labels, beginner Quick Start commands, demo walkthrough links, a project map,
+  key report links, and explicit no-live-trading scope language.
 - Refreshed `docs/quantconnect_lean_plan.md` to reflect the current local CSV
   loader, synthetic local CSV workflow, IC / Rank IC diagnostics, quantile
   spread diagnostics, and experiment-registry state before any LEAN code.
