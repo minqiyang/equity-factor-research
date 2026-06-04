@@ -4,10 +4,14 @@ import inspect
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 import features.diagnostics as diagnostics
-from features.diagnostics import factor_correlation_matrix
+from features.diagnostics import (
+    factor_correlation_matrix,
+    factor_information_coefficient,
+    factor_rank_information_coefficient,
+)
 
 
 def _panel(values: dict[str, list[object]], *, start: str = "2024-01-01") -> pd.DataFrame:
@@ -185,6 +189,137 @@ def test_factor_correlation_matrix_returns_nan_for_undefined_constant_pair() -> 
     )
 
     assert np.isnan(result.loc["constant", "varying"])
+
+
+def test_factor_information_coefficient_is_hand_calculated_pearson_by_date() -> None:
+    factor = _panel(
+        {
+            "AAA": [1.0, 1.0, 1.0],
+            "BBB": [2.0, 2.0, np.nan],
+            "CCC": [3.0, 3.0, 3.0],
+        },
+    )
+    forward_returns = _panel(
+        {
+            "AAA": [0.01, 0.03, 0.01],
+            "BBB": [0.02, 0.02, 0.04],
+            "CCC": [0.03, 0.01, np.nan],
+        },
+    )
+
+    result = factor_information_coefficient(factor, forward_returns)
+
+    expected = pd.Series(
+        [1.0, -1.0, np.nan],
+        index=factor.index,
+        name="information_coefficient",
+    )
+    assert_series_equal(result, expected)
+
+
+def test_factor_rank_information_coefficient_is_hand_calculated_spearman() -> None:
+    factor = _panel({"AAA": [1.0, 3.0], "BBB": [2.0, 2.0], "CCC": [3.0, 1.0]})
+    forward_returns = _panel(
+        {"AAA": [0.01, 0.30], "BBB": [0.02, 0.20], "CCC": [0.03, 0.10]},
+    )
+
+    result = factor_rank_information_coefficient(factor, forward_returns)
+
+    expected = pd.Series(
+        [1.0, 1.0],
+        index=factor.index,
+        name="rank_information_coefficient",
+    )
+    assert_series_equal(result, expected)
+
+
+def test_factor_information_coefficient_uses_pairwise_overlap_without_filling() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [np.nan], "CCC": [3.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.99], "CCC": [0.03]})
+
+    result = factor_information_coefficient(factor, forward_returns, min_periods=2)
+
+    expected = pd.Series([1.0], index=factor.index, name="information_coefficient")
+    assert_series_equal(result, expected)
+
+
+def test_factor_information_coefficient_preserves_dates_and_returns_nan_for_low_coverage() -> None:
+    factor = _panel({"AAA": [1.0, 1.0], "BBB": [2.0, np.nan], "CCC": [3.0, np.nan]})
+    forward_returns = _panel({"AAA": [0.01, 0.01], "BBB": [0.02, 0.02], "CCC": [0.03, 0.03]})
+
+    result = factor_information_coefficient(factor, forward_returns, min_periods=3)
+
+    expected = pd.Series(
+        [1.0, np.nan],
+        index=factor.index,
+        name="information_coefficient",
+    )
+    assert_series_equal(result, expected)
+
+
+def test_factor_information_coefficient_rejects_mismatched_indexes() -> None:
+    factor = _panel({"AAA": [1.0, 2.0], "BBB": [3.0, 4.0]}, start="2024-01-01")
+    forward_returns = _panel({"AAA": [0.01, 0.02], "BBB": [0.03, 0.04]}, start="2024-01-02")
+
+    with pytest.raises(ValueError, match="identical indexes"):
+        factor_information_coefficient(factor, forward_returns)
+
+
+def test_factor_information_coefficient_rejects_mismatched_columns() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "CCC": [0.02]})
+
+    with pytest.raises(ValueError, match="identical columns"):
+        factor_information_coefficient(factor, forward_returns)
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "NaN", "1.0"])
+def test_factor_information_coefficient_rejects_invalid_string_values(
+    bad_value: str,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [bad_value]})
+
+    with pytest.raises(TypeError, match="numeric non-boolean"):
+        factor_information_coefficient(factor, forward_returns)
+
+
+def test_factor_information_coefficient_rejects_invalid_method() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(ValueError, match="method"):
+        factor_information_coefficient(factor, forward_returns, method="kendall")
+
+
+@pytest.mark.parametrize("bad_min_periods", [0, 1])
+def test_factor_information_coefficient_rejects_too_small_min_periods(
+    bad_min_periods: int,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(ValueError, match="at least 2"):
+        factor_information_coefficient(
+            factor,
+            forward_returns,
+            min_periods=bad_min_periods,
+        )
+
+
+@pytest.mark.parametrize("bad_min_periods", [True, 2.5, "2"])
+def test_factor_information_coefficient_rejects_non_integer_min_periods(
+    bad_min_periods: object,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(TypeError, match="integer"):
+        factor_information_coefficient(
+            factor,
+            forward_returns,
+            min_periods=bad_min_periods,  # type: ignore[arg-type]
+        )
 
 
 def test_diagnostics_module_has_no_backtest_alpha_reporting_or_real_data_imports() -> None:

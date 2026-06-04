@@ -12,6 +12,60 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - Synthetic IC And Rank IC Diagnostics
+
+This code milestone added synthetic-first information coefficient diagnostics
+to `src/features/diagnostics.py`.
+
+Assumption: after the local CSV loader smoke demo merged, the next unblocked
+safe stage from `docs/original_goal_gap_analysis.md` is Stage C: add IC and
+Rank IC helpers using synthetic panels first. The implementation is kept in the
+existing diagnostics module because the helper is diagnostic research
+infrastructure, not a strategy, backtest integration, report generator, or data
+loader.
+
+The new `factor_information_coefficient` helper computes a per-date
+cross-sectional correlation between an already-prepared factor panel and an
+already-aligned forward-return evaluation panel. The helper does not compute
+returns, shift dates, select assets, fill missing values, connect to the
+backtester, or interpret results. `forward_returns` is explicitly treated as an
+evaluation target supplied by the caller, not as a feature input.
+
+The new `factor_rank_information_coefficient` helper wraps the same alignment
+and missing-data behavior with Spearman correlation for Rank IC. Dates with
+fewer than `min_periods` overlapping valid assets return `NaN`; missing values
+are not filled, forward-filled, backward-filled, or converted to zeros.
+
+Focused tests in `tests/test_diagnostics.py` cover hand-calculated Pearson IC,
+hand-calculated Spearman Rank IC, pairwise missing-value overlap without
+filling, low-coverage dates returning `NaN`, date and asset alignment
+validation, invalid string-value rejection, method validation, and
+`min_periods` validation. The existing diagnostics import-boundary test still
+guards against adding backtest, alpha, reporting, vendor download, or real-data
+imports to the diagnostics module.
+
+This change does not modify CSV loader behavior, local CSV fixtures, synthetic
+reports, research scripts, feature formulas, normalization, factor combination,
+backtester behavior, metrics, data access, execution assumptions, or
+performance claims. It does not fetch data, download data, add vendor access,
+introduce live trading, add brokerage or order-execution logic, store
+credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q tests/test_diagnostics.py
+38 passed
+
+python -m pytest -q
+227 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-03 - Local CSV Loader Synthetic Fixture Smoke Demo
 
 This test-focused milestone added a committed synthetic local CSV fixture set

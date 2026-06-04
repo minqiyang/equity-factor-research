@@ -12,6 +12,8 @@ import pandas as pd
 
 from features.operators import validate_panel_data
 
+_SUPPORTED_CORRELATION_METHODS = {"pearson", "spearman"}
+
 
 def factor_correlation_matrix(
     factors: dict[str, pd.DataFrame],
@@ -56,8 +58,7 @@ def factor_correlation_matrix(
     if not factors:
         raise ValueError("factors must not be empty")
 
-    if method not in {"pearson", "spearman"}:
-        raise ValueError("method must be either 'pearson' or 'spearman'")
+    _validate_correlation_method(method)
 
     _validate_min_periods(min_periods)
 
@@ -91,6 +92,85 @@ def factor_correlation_matrix(
     return result
 
 
+def factor_information_coefficient(
+    factor: pd.DataFrame,
+    forward_returns: pd.DataFrame,
+    *,
+    method: str = "pearson",
+    min_periods: int = 2,
+) -> pd.Series:
+    """Compute per-date cross-sectional IC between a factor and returns.
+
+    ``forward_returns`` must already be aligned so each row contains the
+    holding-period return used to evaluate the factor value at that same date.
+    This helper does not calculate returns, shift dates, fill missing values,
+    select assets, connect to a backtest, or interpret the result as evidence
+    of future performance.
+
+    Args:
+        factor: Numeric date-indexed asset factor panel.
+        forward_returns: Numeric date-indexed asset return panel aligned to
+            ``factor``. These returns are evaluation targets, not signal inputs.
+        method: Correlation method. Supported values are ``"pearson"`` and
+            ``"spearman"``.
+        min_periods: Minimum number of overlapping valid assets required on a
+            date. Dates with fewer valid pairs return ``NaN``.
+
+    Returns:
+        Series indexed by date, where each value is that date's cross-sectional
+        information coefficient.
+
+    Raises:
+        TypeError: If either panel fails shared validation or ``min_periods`` is
+            not an integer.
+        ValueError: If panels are misaligned, ``method`` is unsupported, or
+            ``min_periods`` is less than 2.
+    """
+
+    _validate_correlation_method(method)
+    _validate_min_periods(min_periods, minimum=2)
+    factor_panel, returns_panel = _validate_matching_evaluation_panels(
+        factor,
+        forward_returns,
+    )
+
+    values: list[float] = []
+    for date in factor_panel.index:
+        factor_row = factor_panel.loc[date]
+        returns_row = returns_panel.loc[date]
+        valid_pair = factor_row.notna() & returns_row.notna()
+
+        if int(valid_pair.sum()) < min_periods:
+            values.append(np.nan)
+            continue
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            correlation = factor_row[valid_pair].corr(
+                returns_row[valid_pair],
+                method=method,
+            )
+            values.append(float(correlation))
+
+    return pd.Series(values, index=factor_panel.index, name="information_coefficient")
+
+
+def factor_rank_information_coefficient(
+    factor: pd.DataFrame,
+    forward_returns: pd.DataFrame,
+    *,
+    min_periods: int = 2,
+) -> pd.Series:
+    """Compute per-date cross-sectional Rank IC using Spearman correlation."""
+
+    result = factor_information_coefficient(
+        factor,
+        forward_returns,
+        method="spearman",
+        min_periods=min_periods,
+    )
+    return result.rename("rank_information_coefficient")
+
+
 def _validate_factor_panels(
     factors: dict[str, pd.DataFrame],
 ) -> dict[str, pd.DataFrame]:
@@ -115,12 +195,37 @@ def _validate_factor_panels(
     return validated
 
 
-def _validate_min_periods(min_periods: int) -> None:
+def _validate_matching_evaluation_panels(
+    factor: pd.DataFrame,
+    forward_returns: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    factor_panel = validate_panel_data(factor, name="factor")
+    returns_panel = validate_panel_data(forward_returns, name="forward_returns")
+
+    if not factor_panel.index.equals(returns_panel.index):
+        raise ValueError("factor and forward_returns must have identical indexes")
+
+    if not factor_panel.columns.equals(returns_panel.columns):
+        raise ValueError("factor and forward_returns must have identical columns")
+
+    return factor_panel, returns_panel
+
+
+def _validate_correlation_method(method: str) -> None:
+    if method not in _SUPPORTED_CORRELATION_METHODS:
+        raise ValueError("method must be either 'pearson' or 'spearman'")
+
+
+def _validate_min_periods(min_periods: int, *, minimum: int = 1) -> None:
     if isinstance(min_periods, bool) or not isinstance(min_periods, int):
         raise TypeError("min_periods must be an integer")
 
-    if min_periods < 1:
-        raise ValueError("min_periods must be at least 1")
+    if min_periods < minimum:
+        raise ValueError(f"min_periods must be at least {minimum}")
 
 
-__all__ = ["factor_correlation_matrix"]
+__all__ = [
+    "factor_correlation_matrix",
+    "factor_information_coefficient",
+    "factor_rank_information_coefficient",
+]
