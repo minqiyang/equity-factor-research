@@ -25,6 +25,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Refreshed `docs/quantconnect_lean_plan.md` to reflect the current local CSV
+  loader, synthetic local CSV workflow, IC / Rank IC diagnostics, quantile
+  spread diagnostics, and experiment-registry state before any LEAN code.
 - Refreshed `docs/worldquant_alpha_catalog.md` to distinguish current
   `alpha_009` research-feature status from the original catalog-only milestone
   and to restate data prerequisites for future WorldQuant-style alpha stages.

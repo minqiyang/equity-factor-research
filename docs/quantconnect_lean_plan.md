@@ -4,15 +4,30 @@ This document plans a first QuantConnect/LEAN version of the local equity factor
 
 The goal is to translate the local, auditable research logic into a platform-grade LEAN backtest while preserving the same research standards: no live trading, no brokerage connection, no look-ahead bias, explicit costs, explicit slippage, and clear date alignment.
 
+Current local status before any LEAN code:
+
+- strict local CSV loaders exist for wide prices, long prices, and benchmark prices.
+- committed synthetic local CSV fixtures and a local CSV fixture workflow demo exercise the loader path without real data.
+- `alpha_009` exists as a close-only research feature, not a strategy.
+- IC, Rank IC, and quantile spread diagnostics exist for already-aligned factor and forward-return panels.
+- synthetic reports, JSON experiment logs, and the experiment registry exist for auditable workflow outputs.
+- no real-data local CSV study, LEAN implementation, paper trading, live trading, broker integration, order execution, or profitability claim exists.
+
 ## 1. Local Logic to LEAN Mapping
 
 | Local component | Current local role | LEAN mapping |
 | --- | --- | --- |
 | `features.momentum.calculate_12_1_momentum` | Computes 12-1 momentum as `price[t - skip] / price[t - lookback] - 1` with explicit shifting. | Maintain a per-symbol rolling adjusted close history or use `History` / warm-up data. Compute the same score only from completed daily bars. |
+| `features.worldquant_alphas.alpha_009` | Computes one close-only WorldQuant-style research feature from current and prior closes. It is not a strategy or performance claim. | Optional later feature-parity candidate only after local formula behavior and LEAN bar timing are mapped. Do not connect it to orders without a separate reviewed strategy stage. |
+| `data.csv_loader` | Reads user-provided local CSV files only, with strict schema, date, missing-value, and numeric validation. | No direct LEAN equivalent because LEAN uses subscriptions, history, and universe data. Map validation concepts to LEAN dataset, universe, calendar, normalization, and missing-history diagnostics. |
+| `research/local_csv_fixture_workflow_demo.py` | Demonstrates the local CSV path on committed synthetic fixtures, computes `alpha_009`, and runs caveated diagnostics. | Use as a workflow-shape reference only: load or subscribe data, compute a feature, align evaluation targets, log diagnostics, and preserve caveats. It is not a real-data or LEAN parity result. |
+| `features.diagnostics.factor_information_coefficient` and `factor_rank_information_coefficient` | Compute per-date cross-sectional IC / Rank IC from already-aligned factor and forward-return panels without filling missing values. | Export or log factor and realized forward-return panels from LEAN after a smoke run, then compute comparable diagnostics offline or in a research notebook. Avoid using future returns as live signal inputs. |
+| `features.diagnostics.factor_quantile_spread` | Computes top-minus-bottom quantile return diagnostics with explicit coverage counts from aligned panels. | Record selected quantile membership and subsequent returns for LEAN analysis. Treat quantile spread as diagnostic evidence only, not as order logic or a profitability claim. |
 | `backtest.portfolio.run_long_only_backtest` | Selects top-ranked assets, equal-weights them, applies fixed transaction cost to turnover, and records holdings/metrics. | Scheduled rebalance handler ranks current universe, calls `SetHoldings` / portfolio targets for selected symbols, liquidates removed names, and relies on LEAN fill, fee, and slippage models. |
 | Local price `DataFrame` | Aligned wide table of adjusted prices. | LEAN `Symbol` subscriptions and daily bars from the data feed. Use adjusted data normalization for comparability with local adjusted-price calculations. |
 | Local signal `DataFrame` | Precomputed cross-sectional scores by date. | Signals computed inside the algorithm from per-symbol rolling windows after daily bars are available. |
 | Local benchmark price `Series` | Synthetic or external benchmark equity curve. | `SetBenchmark("SPY")` or a subscribed benchmark ETF / index proxy. |
+| `reporting.experiment_log` and `reporting.experiment_registry` | Write deterministic JSON logs and a registry for synthetic/local workflow outputs. | Record LEAN run metadata, parameters, data assumptions, diagnostics, and caveats in a separate experiment-log entry. Do not mix LEAN results into synthetic-only records. |
 | Local reports | Markdown and later plots. | LEAN statistics plus custom logs/charts. Export key diagnostics separately if needed. |
 
 ## 2. Universe Selection Assumptions
@@ -192,6 +207,29 @@ enable live trading, or make a profitability claim. Future LEAN results should
 be treated as a separate research artifact with their own experiment-log entry
 and caveats, not as a direct continuation of a local CSV validation report.
 
+### Local Diagnostic Mapping
+
+The local diagnostics added after the original LEAN plan should shape the first
+LEAN research review, but they should not be converted directly into trading
+rules.
+
+| Local diagnostic | LEAN planning equivalent | Required caveat |
+| --- | --- | --- |
+| IC / Rank IC by date | Export factor scores and realized next-period returns after a LEAN backtest, then compute cross-sectional correlations with the same missing-value policy. | Forward returns are evaluation targets only and must never enter signal generation. |
+| Quantile spread by date | Record factor buckets and subsequent returns for each rebalance period. Include valid asset counts and bucket counts. | Quantile spread is diagnostic visibility, not proof of future performance. |
+| Local CSV fixture workflow report/log | Use as a template for caveated workflow documentation and JSON sidecar metadata. | The fixture is synthetic and tiny; it is not a real-data benchmark or LEAN parity test. |
+| Experiment registry | Keep LEAN experiment records discoverable separately from synthetic local logs. | Registry summaries should not hide weak runs or promote best-only results. |
+
+The first LEAN smoke run should therefore preserve:
+
+- factor formula and timing metadata.
+- latest completed data date used for each rebalance.
+- eligible, skipped, selected, and missing-history symbol counts.
+- benchmark configuration and normalization.
+- fee, slippage, cash buffer, order type, and brokerage model assumptions.
+- diagnostics exported in a form that can be audited outside the engine.
+- explicit caveats that results are simulated research output only.
+
 ## 10. Potential Sources of Mismatch
 
 ### Data Vendor Differences
@@ -257,6 +295,9 @@ Pandas dates are usually date-indexed close observations. LEAN has algorithm tim
 10. Add diagnostics:
     - selected symbols at each rebalance.
     - number of eligible symbols.
+    - number of symbols skipped for missing, stale, non-positive, or incomplete history.
+    - latest completed bar date used for signal calculation.
+    - optional IC, Rank IC, and quantile-spread export fields for offline review.
     - turnover approximation or actual order notional.
     - rejected orders.
     - current benchmark value.
@@ -270,6 +311,7 @@ Pandas dates are usually date-indexed close observations. LEAN has algorithm tim
 13. Compare local and LEAN behavior:
     - use the same universe if possible for a parity test.
     - compare rebalance dates, selected symbols, weights, turnover, fees, and equity curve.
+    - compare diagnostic panel coverage before comparing summary metrics.
     - document mismatches rather than tuning them away.
 14. Record the run in `EXPERIMENT_LOG.md`:
     - hypothesis.
@@ -281,6 +323,29 @@ Pandas dates are usually date-indexed close observations. LEAN has algorithm tim
     - fees and slippage.
     - sample split.
     - failure modes.
+
+## 12. Recommended Next LEAN-Related Stage
+
+The next LEAN-related stage should still be planning or smoke-test scaffolding,
+not a full algorithm.
+
+Recommended PR-sized stage:
+
+- create a LEAN parity checklist document or test plan that maps local
+  `alpha_009`, 12-1 momentum, diagnostics, benchmark, fees, slippage, and
+  experiment-log requirements to specific smoke-test assertions.
+- do not create a LEAN algorithm file yet unless the checklist stage is
+  reviewed and merged.
+- do not fetch data, download data, add credentials, connect to a broker, place
+  orders, enable live trading, or claim profitability.
+
+Stop conditions for the next LEAN stage:
+
+- a real data source, QuantConnect account access, credentials, or external
+  execution path is required.
+- a local-vs-LEAN mismatch cannot be explained from available logs.
+- the work would require source-code changes outside the planned scaffold.
+- any result would need to be interpreted as performance evidence.
 
 ## References
 

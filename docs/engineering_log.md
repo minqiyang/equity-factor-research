@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - QuantConnect/LEAN Plan Refresh After CSV Diagnostics
+
+This documentation-only milestone refreshed `docs/quantconnect_lean_plan.md`
+after the local CSV fixture workflow demo merged.
+
+Assumption: after PR #35 merged and baseline validation passed, the next
+unblocked safe stage from `docs/original_goal_gap_analysis.md` is Stage F:
+refresh the QuantConnect/LEAN plan from the current local modules. The stage is
+kept plan-only because the repository is not ready for LEAN algorithm code,
+real data, platform access, credentials, brokerage integration, order
+execution, or performance interpretation.
+
+The updated plan now records the current local status before any LEAN code:
+strict local CSV loaders, committed synthetic CSV fixtures, the local CSV
+fixture workflow demo, `alpha_009`, IC / Rank IC diagnostics, quantile spread
+diagnostics, experiment logs, and the experiment registry. It maps those local
+components to future LEAN planning concepts while preserving the distinction
+between local synthetic fixtures, user-provided local CSV work, and platform
+subscriptions/history.
+
+The plan also adds diagnostic mapping guidance for IC, Rank IC, and quantile
+spread exports from a future LEAN smoke run. Forward returns remain evaluation
+targets only and must not become signal inputs. Quantile spread remains a
+diagnostic, not a strategy-validation or profitability claim. The recommended
+next LEAN-related stage is a parity checklist or smoke-test plan, not an
+algorithm implementation.
+
+This change does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, diagnostics behavior, backtester behavior,
+metrics, data access, or strategy logic. It does not fetch data, download data,
+connect to a broker, place orders, add credentials, enable live trading, or
+make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+258 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - Local CSV Fixture Research Workflow Demo
 
 This code-and-report milestone added a synthetic local CSV fixture workflow
