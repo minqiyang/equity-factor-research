@@ -12,6 +12,52 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - GitHub Actions CI Badge
+
+This CI/documentation milestone adds the first repository GitHub Actions
+workflow after the public landing-page polish merged.
+
+Assumption: the next safe public-facing stage is a minimal CI workflow that
+uses the repository's existing Python packaging and validation commands. The
+workflow installs dependencies with `python -m pip install -e ".[dev]"`, which
+matches the existing `pyproject.toml` optional dev dependency setup, and uses
+Python 3.11 to satisfy the documented `requires-python >=3.11` boundary.
+
+The new `.github/workflows/ci.yml` workflow is named `CI` and runs on pull
+requests targeting `main` and pushes to `main`. It checks out the repository,
+sets up Python 3.11, installs project and dev dependencies, runs
+`python -m pytest -q`, runs `python -m compileall src tests research`, and
+runs `python -m compileall lean`. The README replaces the static local-test
+status label with a live badge for the new workflow file.
+
+This change does not modify `src/`, tests, research scripts, generated reports,
+CSV loader behavior, diagnostics behavior, backtester behavior, metrics, factor
+formulas, normalization, combination, LEAN scaffold behavior, strategy logic,
+private-data protections, result numbers, repository visibility, or license
+state. It does not add real data fetching, credentials, live trading,
+brokerage integration, order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+
+README badge/workflow target check
+passed
+```
+
+---
+
 ## 2026-06-04 - Public GitHub Landing Page Polish
 
 This documentation-only milestone improves the public README as a newcomer

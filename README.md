@@ -3,7 +3,7 @@
 An educational, research-grade sandbox for building auditable equity factor workflows with synthetic and local fixture data.
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB)
-![Local tests](https://img.shields.io/badge/local%20tests-264%20passed-2EA44F)
+[![CI](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml/badge.svg)](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml)
 ![Data scope](https://img.shields.io/badge/data-synthetic%20%2B%20local%20fixtures-0969DA)
 ![Live trading](https://img.shields.io/badge/live%20trading-not%20supported-B42318)
 ![License](https://img.shields.io/badge/license-not%20selected-6E7781)
@@ -145,7 +145,7 @@ result can be interpreted.
 ## Current Status
 
 The repository has working factor infrastructure, synthetic workflow demos,
-strict local CSV fixture checks, experiment logging, and LEAN planning
-documents. It does not yet have a GitHub Actions workflow, selected license, or
-real-data validation study. License selection remains a recommended follow-up
-before broader public reuse.
+strict local CSV fixture checks, experiment logging, LEAN planning documents,
+and a GitHub Actions CI workflow for the core validation commands. It does not
+yet have a selected license or real-data validation study. License selection
+remains a recommended follow-up before broader public reuse.
