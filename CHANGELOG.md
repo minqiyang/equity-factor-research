@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/lean_parity_checklist.md` to map local factor, diagnostics,
+  benchmark, fee, slippage, and experiment-log requirements to future
+  QuantConnect/LEAN smoke-test assertions before any LEAN algorithm code.
 - Added a local CSV fixture workflow demo that loads committed synthetic CSV
   fixtures, computes `alpha_009` as a research feature, runs IC / Rank IC /
   quantile spread diagnostics, and writes caveated synthetic report/log
