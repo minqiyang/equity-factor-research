@@ -12,6 +12,44 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Smoke-Test Design Note
+
+This documentation-only milestone added `docs/lean_smoke_test_design.md` after
+the LEAN parity checklist merged.
+
+Assumption: after PR #37 merged, the next unblocked safe LEAN-related stage is
+a smoke-test design note, not LEAN algorithm code or a project scaffold. This
+keeps the stage aligned with the checklist recommendation while avoiding
+external platform access, credentials, real data downloads, brokerage
+integration, order execution, live trading, paper trading, or performance
+interpretation.
+
+The design note defines future smoke-test preconditions, a minimal future
+scenario, a timing contract, smoke-test assertions, diagnostics to preserve,
+local-vs-LEAN comparison priorities, experiment-record shape, stop conditions,
+and the next planning checkpoint before any future LEAN code PR.
+
+This change does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, diagnostics behavior, backtester behavior,
+metrics, data access, or strategy logic. It does not fetch data, download data,
+connect to a broker, place orders, add credentials, enable live trading, add
+paper trading, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+258 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Parity Checklist Planning
 
 This documentation-only milestone added `docs/lean_parity_checklist.md` after
