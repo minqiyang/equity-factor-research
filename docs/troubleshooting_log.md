@@ -23,6 +23,69 @@ problems, include:
 
 ---
 
+## 2026-06-04 - Parallel Read And Branch Switch Race
+
+Original mistake:
+
+- During a long-running workflow continuation after PR #40, file reads for
+  roadmap documents were run in parallel with `git switch main`.
+
+Consequence:
+
+- Some displayed document output could have come from the pre-switch branch
+  rather than the synced `main` checkout.
+- No files were edited, staged, committed, pushed, or merged during this
+  ambiguous read window, but the evidence used for next-stage selection needed
+  to be refreshed from the authoritative current branch.
+
+Evidence:
+
+- The parallel output showed PR #40 scaffold content while the branch switch
+  was still occurring.
+- Because the file reads and branch switch were independent parallel tool
+  calls, their exact ordering was not guaranteed.
+
+Investigation:
+
+- Treated the parallel-read output as potentially stale instead of relying on
+  it for stage selection.
+- Confirmed local `main` was then fast-forwarded to the PR #40 merge commit.
+- Reread current scaffold and planning documents from the synced `main`
+  checkout before selecting the next stage.
+
+Correction attempts:
+
+- No failed correction attempt occurred. The immediate recovery was to rerun
+  state checks and reread the relevant current files after `main` was synced.
+
+Final fix:
+
+- Used the post-pull `main` state as authoritative for the next-stage decision.
+- Selected a documentation-only LEAN scaffold review checklist based on the
+  merged PR #40 scaffold and current planning documents.
+
+Verification:
+
+- `git log --oneline --decorate -8` showed `main` at the PR #40 merge commit.
+- `gh pr view 40` confirmed PR #40 was merged.
+- `gh pr list --state open` returned no open pull requests.
+- `python -m pytest -q` reported 264 passed.
+- `python -m compileall src tests research` passed.
+
+Remaining caveats:
+
+- Parallel file reads are safe only when the working tree reference is stable.
+  They are not reliable while a branch switch or pull is changing the checkout.
+
+Prevention:
+
+- Do not run branch-changing commands in parallel with file reads whose content
+  is used for stage selection.
+- After any branch switch or pull, rerun state checks and reread relevant
+  roadmap files before editing.
+
+---
+
 ## 2026-06-04 - LEAN Scaffold README Guardrail Phrase Mismatch
 
 Original mistake:
