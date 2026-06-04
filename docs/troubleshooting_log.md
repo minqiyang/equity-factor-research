@@ -23,6 +23,69 @@ problems, include:
 
 ---
 
+## 2026-06-04 - Stage Edits Started Before Branch Creation
+
+Original mistake:
+
+- During the synthetic IC / Rank IC diagnostics stage, implementation edits
+  began after syncing `main` but before creating the dedicated stage branch.
+
+Consequence:
+
+- The worktree had uncommitted stage changes on local `main`.
+- No files were staged, committed, pushed, or merged, and the remote `main` was
+  not affected, but the local workflow temporarily violated the project rule to
+  use a separate branch for each stage.
+
+Evidence:
+
+- The startup checks showed the repository on `main` after PR #32 was merged
+  and pulled.
+- After implementing the helper and tests, `git diff --name-only` showed local
+  changes in `docs/engineering_log.md`, `src/features/diagnostics.py`, and
+  `tests/test_diagnostics.py` before a stage branch had been created.
+
+Investigation:
+
+- Confirmed the issue was a workflow sequencing error, not a source-code
+  correctness failure.
+- Confirmed the changes were still unstaged and uncommitted, so they could be
+  moved safely onto a branch without rewriting history or touching remote
+  state.
+
+Correction attempts:
+
+- No failed correction attempt occurred. The direct recovery path was to create
+  the branch from the current `main` state while preserving the unstaged
+  changes.
+
+Final fix:
+
+- Ran `git switch -c codex/synthetic-ic-rank-ic-diagnostics`.
+- The uncommitted stage changes moved onto the dedicated branch.
+
+Verification:
+
+- `git branch --show-current` returned
+  `codex/synthetic-ic-rank-ic-diagnostics`.
+- `git status -sb --untracked-files=all` showed only intended unstaged files on
+  that branch before commit review.
+
+Remaining caveats:
+
+- The branch was created after edits instead of before edits. The final branch
+  diff is still reviewable, but the sequencing mistake should remain visible in
+  the durable log.
+
+Prevention:
+
+- After syncing `main` and passing baseline validation, create the stage branch
+  before applying any patch.
+- Treat the branch creation step as part of the pre-edit checklist, not as a
+  pre-commit cleanup step.
+
+---
+
 ## 2026-06-03 - PowerShell Search Pattern Quoting Error
 
 Original mistake:
