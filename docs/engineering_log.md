@@ -12,6 +12,45 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Parity Checklist Planning
+
+This documentation-only milestone added `docs/lean_parity_checklist.md` after
+the refreshed QuantConnect/LEAN plan merged.
+
+Assumption: after PR #36 merged and baseline validation passed, the next
+unblocked safe stage from `docs/quantconnect_lean_plan.md` is a LEAN parity
+checklist or smoke-test plan. The stage is kept documentation-only because the
+repository still needs explicit parity gates before any LEAN algorithm,
+platform scaffold, real data, credentials, brokerage integration, order
+execution, live trading, or performance interpretation.
+
+The checklist maps current local evidence to future LEAN smoke-test
+assertions: 12-1 momentum timing, `alpha_009` feature-only status, strict data
+validation mindset, IC / Rank IC / quantile spread diagnostics, benchmark
+configuration, fees, slippage, cash buffer, simulated order-accounting caveats,
+experiment-log requirements, local-vs-LEAN parity review, and stop conditions.
+
+This change does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, diagnostics behavior, backtester behavior,
+metrics, data access, or strategy logic. It does not fetch data, download data,
+connect to a broker, place orders, add credentials, enable live trading, or
+make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+258 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - QuantConnect/LEAN Plan Refresh After CSV Diagnostics
 
 This documentation-only milestone refreshed `docs/quantconnect_lean_plan.md`
