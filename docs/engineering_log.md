@@ -12,6 +12,97 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-03 - Original Goal Gap Analysis Checkpoint
+
+This documentation-only checkpoint added
+`docs/original_goal_gap_analysis.md` before starting any new feature stage.
+
+The analysis compares the original project objective from `PROJECT_SPEC.md`,
+`README.md`, and `docs/project_overview.md` against the current implemented
+state recorded in checkpoint reports, `docs/engineering_log.md`,
+`CHANGELOG.md`, `EXPERIMENT_LOG.md`, `docs/worldquant_alpha_catalog.md`, and
+`docs/quantconnect_lean_plan.md`.
+
+The current repository has progressed from governance and skeleton work to a
+tested simulated research pipeline with 12-1 momentum, a long-only backtester,
+synthetic demos, synthetic experiment logs and registry, WorldQuant catalog and
+`alpha_009`, reusable operators, normalization, winsorization, factor
+combination, diagnostics, local CSV interface planning, a strict local CSV
+loader, real-data readiness documentation, and QuantConnect/LEAN planning.
+
+The main remaining gap is that the project has not yet completed a full
+local-CSV-based research study. No real-data IC, Rank IC, quantile spread,
+train/validation/test split, benchmark/universe study, or LEAN implementation
+exists yet. Paper and live trading remain intentionally out of scope.
+
+The recommended next stage after this checkpoint PR is a local CSV loader smoke
+demo using a committed synthetic local fixture only. That stage should verify
+local-file workflow wiring without fetching data, interpreting market evidence,
+or adding trading functionality.
+
+During the startup checks for this checkpoint, a low-risk workflow command
+issue occurred:
+
+- Original mistake: a GitHub PR state command used Bash-style `|| true` inside
+  PowerShell.
+- Consequence: PowerShell rejected the command before `gh pr view 30` could
+  run.
+- Evidence: `The token '||' is not a valid statement separator in this
+  version.`
+- Investigation: the command was written with a Bash fallback despite the
+  repository running in a Windows PowerShell shell.
+- Correction attempt: reran PR checks as separate PowerShell-compatible
+  commands.
+- Final fix: `gh pr list --state open` returned no open PRs, and
+  `gh pr view 30` confirmed PR #30 was merged.
+- Verification: baseline validation passed before the documentation was
+  created: `python -m pytest -q` reported 209 passed and
+  `python -m compileall src tests research` passed.
+- Remaining caveat: future shell snippets in this repository should use
+  PowerShell-compatible fallbacks rather than Bash `|| true`.
+- Prevention: split optional `gh` probes into separate PowerShell commands or
+  use explicit PowerShell error handling.
+
+An additional pre-publish formatting issue occurred during commit:
+
+- Original mistake: `git diff --cached --check` and `git commit` were run in
+  the same PowerShell command block.
+- Consequence: the whitespace check reported an issue, but the commit still
+  completed because the command block did not stop after the failed check.
+- Evidence: `docs/original_goal_gap_analysis.md:214: new blank line at EOF.`
+- Investigation: the new checkpoint document ended with an extra blank line,
+  and the command sequencing allowed the commit to proceed before fixing it.
+- Correction attempt: inspected the end of the document, removed the extra EOF
+  blank line, and amended the same commit instead of creating a second cleanup
+  commit.
+- Final fix: the final branch commit contains the corrected document and
+  updated engineering log.
+- Verification: `git diff --check origin/main..HEAD` was rerun after the amend
+  and passed.
+- Remaining caveat: Windows LF-to-CRLF warnings can still appear, but they are
+  not whitespace errors.
+- Prevention: run `git diff --cached --check` as a separate gating command
+  before `git commit`, or explicitly stop on failure before committing.
+
+This change does not modify source code, tests, research scripts, generated
+reports, feature calculations, backtester behavior, metrics, CSV loader
+behavior, normalization, factor combination, diagnostics, data access,
+execution assumptions, or performance claims. It does not fetch data, download
+data, add vendor access, introduce live trading, add brokerage or
+order-execution logic, store credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q
+209 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-03 - WorldQuant Alpha Catalog Status Refresh
 
 This documentation-only milestone refreshed `docs/worldquant_alpha_catalog.md`
