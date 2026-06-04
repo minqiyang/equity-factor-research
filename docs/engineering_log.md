@@ -12,6 +12,60 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - Synthetic Quantile Spread Diagnostics
+
+This code milestone added synthetic-first quantile spread diagnostics to
+`src/features/diagnostics.py`.
+
+Assumption: after the synthetic IC / Rank IC diagnostics PR merged, the next
+unblocked safe stage from `docs/original_goal_gap_analysis.md` is Stage D: add
+a quantile-bucket diagnostic helper using synthetic panels first. The helper is
+kept in the existing diagnostics module because it is research visibility
+infrastructure, not a strategy, backtest integration, report generator, or data
+loader.
+
+The new `factor_quantile_spread` helper computes per-date cross-sectional
+factor quantile diagnostics against an already-aligned forward-return
+evaluation panel. The helper reports bottom-quantile mean return,
+top-quantile mean return, top-minus-bottom spread, valid asset count, and edge
+quantile counts. `forward_returns` is treated as an evaluation target supplied
+by the caller, not as a feature input.
+
+Missing values are handled conservatively: each date uses only overlapping
+non-missing factor and return pairs; missing values are not filled,
+forward-filled, backward-filled, or converted to zeros. Dates with too few
+valid assets, too few distinct factor values to form the requested quantiles,
+or too few assets in either edge quantile return `NaN` for the return and
+spread columns while preserving coverage counts.
+
+Focused tests in `tests/test_diagnostics.py` cover hand-calculated
+top-minus-bottom spreads, pairwise missing-value overlap without filling,
+low-coverage dates, insufficient distinct factor values, minimum edge-bucket
+size checks, date and asset alignment validation, invalid string-value
+rejection, and quantile-parameter validation.
+
+This change does not modify CSV loader behavior, local CSV fixtures, synthetic
+reports, research scripts, feature formulas, normalization, factor combination,
+backtester behavior, metrics, data access, execution assumptions, or
+performance claims. It does not fetch data, download data, add vendor access,
+introduce live trading, add brokerage or order-execution logic, store
+credentials, or make profitability claims.
+
+Validation:
+
+```text
+python -m pytest -q tests/test_diagnostics.py
+58 passed
+
+python -m pytest -q
+247 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-04 - Synthetic IC And Rank IC Diagnostics
 
 This code milestone added synthetic-first information coefficient diagnostics
