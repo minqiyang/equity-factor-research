@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - Minimal Non-Executing LEAN Smoke-Test Scaffold
+
+This scaffold milestone added a first `lean/` directory after the LEAN
+implementation planning checkpoint merged.
+
+Assumption: after PR #39 merged, the next unblocked safe stage is the planned
+minimal non-executing LEAN scaffold with static guardrail tests. The scaffold
+is deliberately metadata-only and does not import the LEAN runtime, create a
+`config.json`, run a local or cloud backtest, fetch data, read credentials,
+connect to a broker, enable live trading or paper trading, submit orders, or
+interpret performance.
+
+The new `lean/README.md` records the scaffold purpose, current files, local
+validation commands, and stop conditions. The new
+`lean/smoke_test_algorithm.py` defines review metadata, configuration fields,
+the timing contract, diagnostic field names, and guardrail constants without
+creating a runnable QuantConnect algorithm. The new
+`tests/test_lean_smoke_test_scope.py` statically validates the scaffold file
+boundary, rejects external data and credential imports, rejects order and
+brokerage calls, and checks for timing, diagnostic, and caveat coverage.
+
+This change does not modify `src/`, research scripts, generated reports, CSV
+loader behavior, diagnostics behavior, backtester behavior, metrics, factor
+formulas, normalization, combination, or strategy logic. It does not fetch
+data, download data, connect to a broker, place orders, add credentials,
+enable live trading, add paper trading, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_lean_smoke_test_scope.py
+6 passed
+
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Implementation Planning Checkpoint
 
 This documentation-only milestone added
