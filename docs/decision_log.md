@@ -15,6 +15,54 @@ investment performance.
 
 ---
 
+## 2026-06-04 - Defer Runnable LEAN Draft Until Signal-Only Boundary Is Designed
+
+Context:
+
+- PR #41 merged the LEAN scaffold review checklist.
+- The repository now has a metadata-only LEAN scaffold and static tests that
+  intentionally reject runtime LEAN imports, credential/data imports,
+  brokerage calls, and order calls in the scaffold.
+- The current workflow guardrails still prohibit real market data fetching,
+  downloads, credentials, live trading, paper trading, brokerage integration,
+  order execution, and profitability claims.
+
+Decision:
+
+- Do not add a runnable LEAN draft in the next stage.
+- Add a readiness decision documenting that runnable LEAN code is not yet
+  approved under current guardrails.
+- Make the next safe LEAN stage a documentation-only signal-only draft design.
+
+Rationale:
+
+- A normal runnable LEAN algorithm would likely use `AlgorithmImports`,
+  `QCAlgorithm`, platform data subscriptions or history, scheduled events,
+  portfolio targets, orders, fills, fee models, and slippage models.
+- Those pieces may be appropriate in a future simulated LEAN backtest, but they
+  need an explicit scope boundary before implementation so they are not
+  confused with live trading, brokerage integration, real data fetching, or
+  profitability evidence.
+- The signal-only design stage can preserve forward progress while keeping the
+  implementation bounded and reviewable.
+
+Consequences:
+
+- Future LEAN code remains blocked until the project defines a signal-only
+  code boundary and static validation plan.
+- The existing non-executing scaffold remains unchanged.
+- No source code, tests, research scripts, reports, data access, execution
+  behavior, credentials, or performance claims are changed by this decision.
+
+Follow-up:
+
+- Create a documentation-only LEAN signal-only draft design after this decision
+  is reviewed and merged.
+- If that design cannot avoid runtime, data, credential, order, or
+  interpretation risks, stop and document the blocker before code is added.
+
+---
+
 ## 2026-06-03 - Refresh WorldQuant Catalog Before More Alpha Work
 
 Context:

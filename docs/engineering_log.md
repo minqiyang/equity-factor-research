@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Runnable Draft Readiness Decision
+
+This documentation-only milestone added
+`docs/lean_runnable_draft_readiness_decision.md` after the LEAN scaffold review
+checklist merged.
+
+Assumption: after PR #41 merged, the next safe stage is an
+implementation-readiness decision rather than a runnable LEAN algorithm draft.
+The current guardrails still prohibit real market data fetching, downloads,
+credentials, live trading, paper trading, brokerage integration, order
+execution, and profitability claims. A normal runnable LEAN draft would likely
+introduce runtime imports, platform data semantics, portfolio target calls,
+orders, fills, fee models, slippage models, and backtest outputs before those
+boundaries are explicitly approved.
+
+The decision records that the repository is not yet ready for runnable LEAN
+code under current guardrails. It identifies blockers around runtime imports,
+data-source semantics, order semantics, credential/account boundaries, and
+result interpretation. It recommends the next stage as a documentation-only
+LEAN signal-only draft design that can define whether any future code PR may
+import LEAN runtime symbols and how static validation should separate signal
+metadata from order execution.
+
+This change does not modify `src/`, tests, research scripts, generated
+reports, the LEAN scaffold code, CSV loader behavior, diagnostics behavior,
+backtester behavior, metrics, factor formulas, normalization, combination, or
+strategy logic. It does not add `AlgorithmImports`, `QCAlgorithm`,
+`config.json`, data access, credentials, live or paper trading, brokerage,
+order execution, a LEAN run, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - LEAN Scaffold Review Checklist
 
 This documentation-only milestone added `docs/lean_scaffold_review_checklist.md`
