@@ -10,6 +10,7 @@ import features.diagnostics as diagnostics
 from features.diagnostics import (
     factor_correlation_matrix,
     factor_information_coefficient,
+    factor_quantile_spread,
     factor_rank_information_coefficient,
 )
 
@@ -319,6 +320,212 @@ def test_factor_information_coefficient_rejects_non_integer_min_periods(
             factor,
             forward_returns,
             min_periods=bad_min_periods,  # type: ignore[arg-type]
+        )
+
+
+def test_factor_quantile_spread_is_hand_calculated_by_date() -> None:
+    factor = _panel(
+        {
+            "AAA": [1.0, 4.0],
+            "BBB": [2.0, 3.0],
+            "CCC": [3.0, 2.0],
+            "DDD": [4.0, 1.0],
+        },
+    )
+    forward_returns = _panel(
+        {
+            "AAA": [0.01, 0.40],
+            "BBB": [0.02, 0.30],
+            "CCC": [0.03, 0.20],
+            "DDD": [0.04, 0.10],
+        },
+    )
+
+    result = factor_quantile_spread(factor, forward_returns, quantiles=2)
+
+    expected = pd.DataFrame(
+        {
+            "bottom_quantile_mean_return": [0.015, 0.15],
+            "top_quantile_mean_return": [0.035, 0.35],
+            "top_minus_bottom_spread": [0.02, 0.20],
+            "valid_asset_count": [4, 4],
+            "bottom_quantile_count": [2, 2],
+            "top_quantile_count": [2, 2],
+        },
+        index=factor.index,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_factor_quantile_spread_uses_overlap_without_filling() -> None:
+    factor = _panel(
+        {"AAA": [1.0], "BBB": [np.nan], "CCC": [3.0], "DDD": [4.0], "EEE": [5.0]},
+    )
+    forward_returns = _panel(
+        {"AAA": [0.01], "BBB": [0.99], "CCC": [np.nan], "DDD": [0.04], "EEE": [0.05]},
+    )
+
+    result = factor_quantile_spread(factor, forward_returns, quantiles=3)
+
+    expected = pd.DataFrame(
+        {
+            "bottom_quantile_mean_return": [0.01],
+            "top_quantile_mean_return": [0.05],
+            "top_minus_bottom_spread": [0.04],
+            "valid_asset_count": [3],
+            "bottom_quantile_count": [1],
+            "top_quantile_count": [1],
+        },
+        index=factor.index,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_factor_quantile_spread_returns_nan_for_low_coverage() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0], "CCC": [3.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02], "CCC": [0.03]})
+
+    result = factor_quantile_spread(factor, forward_returns, quantiles=4)
+
+    expected = pd.DataFrame(
+        {
+            "bottom_quantile_mean_return": [np.nan],
+            "top_quantile_mean_return": [np.nan],
+            "top_minus_bottom_spread": [np.nan],
+            "valid_asset_count": [3],
+            "bottom_quantile_count": [0],
+            "top_quantile_count": [0],
+        },
+        index=factor.index,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_factor_quantile_spread_returns_nan_for_insufficient_distinct_factors() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [1.0], "CCC": [1.0], "DDD": [1.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02], "CCC": [0.03], "DDD": [0.04]})
+
+    result = factor_quantile_spread(factor, forward_returns, quantiles=2)
+
+    expected = pd.DataFrame(
+        {
+            "bottom_quantile_mean_return": [np.nan],
+            "top_quantile_mean_return": [np.nan],
+            "top_minus_bottom_spread": [np.nan],
+            "valid_asset_count": [4],
+            "bottom_quantile_count": [0],
+            "top_quantile_count": [0],
+        },
+        index=factor.index,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_factor_quantile_spread_respects_min_assets_per_quantile() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0], "CCC": [3.0], "DDD": [4.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02], "CCC": [0.03], "DDD": [0.04]})
+
+    result = factor_quantile_spread(
+        factor,
+        forward_returns,
+        quantiles=4,
+        min_assets_per_quantile=2,
+    )
+
+    expected = pd.DataFrame(
+        {
+            "bottom_quantile_mean_return": [np.nan],
+            "top_quantile_mean_return": [np.nan],
+            "top_minus_bottom_spread": [np.nan],
+            "valid_asset_count": [4],
+            "bottom_quantile_count": [1],
+            "top_quantile_count": [1],
+        },
+        index=factor.index,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_factor_quantile_spread_rejects_mismatched_indexes() -> None:
+    factor = _panel({"AAA": [1.0, 2.0], "BBB": [3.0, 4.0]}, start="2024-01-01")
+    forward_returns = _panel({"AAA": [0.01, 0.02], "BBB": [0.03, 0.04]}, start="2024-01-02")
+
+    with pytest.raises(ValueError, match="identical indexes"):
+        factor_quantile_spread(factor, forward_returns)
+
+
+def test_factor_quantile_spread_rejects_mismatched_columns() -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "CCC": [0.02]})
+
+    with pytest.raises(ValueError, match="identical columns"):
+        factor_quantile_spread(factor, forward_returns)
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "NaN", "1.0"])
+def test_factor_quantile_spread_rejects_invalid_string_values(
+    bad_value: str,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [bad_value]})
+
+    with pytest.raises(TypeError, match="numeric non-boolean"):
+        factor_quantile_spread(factor, forward_returns, quantiles=2)
+
+
+@pytest.mark.parametrize("bad_quantiles", [0, 1])
+def test_factor_quantile_spread_rejects_too_small_quantiles(
+    bad_quantiles: int,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(ValueError, match="at least 2"):
+        factor_quantile_spread(factor, forward_returns, quantiles=bad_quantiles)
+
+
+@pytest.mark.parametrize("bad_quantiles", [True, 2.5, "2"])
+def test_factor_quantile_spread_rejects_non_integer_quantiles(
+    bad_quantiles: object,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(TypeError, match="integer"):
+        factor_quantile_spread(
+            factor,
+            forward_returns,
+            quantiles=bad_quantiles,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize("bad_min_assets", [0, -1])
+def test_factor_quantile_spread_rejects_too_small_min_assets_per_quantile(
+    bad_min_assets: int,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(ValueError, match="at least 1"):
+        factor_quantile_spread(
+            factor,
+            forward_returns,
+            min_assets_per_quantile=bad_min_assets,
+        )
+
+
+@pytest.mark.parametrize("bad_min_assets", [True, 1.5, "1"])
+def test_factor_quantile_spread_rejects_non_integer_min_assets_per_quantile(
+    bad_min_assets: object,
+) -> None:
+    factor = _panel({"AAA": [1.0], "BBB": [2.0]})
+    forward_returns = _panel({"AAA": [0.01], "BBB": [0.02]})
+
+    with pytest.raises(TypeError, match="integer"):
+        factor_quantile_spread(
+            factor,
+            forward_returns,
+            min_assets_per_quantile=bad_min_assets,  # type: ignore[arg-type]
         )
 
 

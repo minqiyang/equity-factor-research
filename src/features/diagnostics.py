@@ -13,6 +13,14 @@ import pandas as pd
 from features.operators import validate_panel_data
 
 _SUPPORTED_CORRELATION_METHODS = {"pearson", "spearman"}
+_QUANTILE_SPREAD_COLUMNS = [
+    "bottom_quantile_mean_return",
+    "top_quantile_mean_return",
+    "top_minus_bottom_spread",
+    "valid_asset_count",
+    "bottom_quantile_count",
+    "top_quantile_count",
+]
 
 
 def factor_correlation_matrix(
@@ -171,6 +179,101 @@ def factor_rank_information_coefficient(
     return result.rename("rank_information_coefficient")
 
 
+def factor_quantile_spread(
+    factor: pd.DataFrame,
+    forward_returns: pd.DataFrame,
+    *,
+    quantiles: int = 5,
+    min_assets_per_quantile: int = 1,
+) -> pd.DataFrame:
+    """Compute per-date top-minus-bottom quantile return diagnostics.
+
+    ``forward_returns`` must already be aligned so each row contains the
+    holding-period return used to evaluate the factor value at that same date.
+    This helper does not calculate returns, shift dates, fill missing values,
+    select a portfolio, connect to a backtest, or interpret the spread as
+    evidence of future performance.
+
+    For each date, assets with overlapping non-missing factor and return values
+    are assigned to factor quantiles. The output reports the average return in
+    the bottom and top quantiles, the top-minus-bottom spread, and simple
+    coverage counts. Dates with too few valid assets, too few distinct factor
+    values, or too few assets in either edge quantile return ``NaN`` for the
+    return and spread columns.
+    """
+
+    _validate_minimum_integer(quantiles, "quantiles", minimum=2)
+    _validate_minimum_integer(
+        min_assets_per_quantile,
+        "min_assets_per_quantile",
+        minimum=1,
+    )
+    factor_panel, returns_panel = _validate_matching_evaluation_panels(
+        factor,
+        forward_returns,
+    )
+
+    records: list[dict[str, float | int]] = []
+    for date in factor_panel.index:
+        factor_row = factor_panel.loc[date]
+        returns_row = returns_panel.loc[date]
+        valid_pair = factor_row.notna() & returns_row.notna()
+        factor_values = factor_row[valid_pair]
+        returns_values = returns_row[valid_pair]
+        valid_count = int(valid_pair.sum())
+        record = _empty_quantile_spread_record(valid_count)
+
+        if valid_count < quantiles or factor_values.nunique(dropna=True) < quantiles:
+            records.append(record)
+            continue
+
+        try:
+            quantile_codes = pd.qcut(
+                factor_values,
+                q=quantiles,
+                labels=False,
+                duplicates="drop",
+            )
+        except ValueError:
+            records.append(record)
+            continue
+
+        quantile_codes = pd.Series(quantile_codes, index=factor_values.index)
+        if (
+            quantile_codes.isna().any()
+            or int(quantile_codes.nunique(dropna=True)) != quantiles
+        ):
+            records.append(record)
+            continue
+
+        bottom_mask = quantile_codes == 0
+        top_mask = quantile_codes == quantiles - 1
+        bottom_count = int(bottom_mask.sum())
+        top_count = int(top_mask.sum())
+        record["bottom_quantile_count"] = bottom_count
+        record["top_quantile_count"] = top_count
+
+        if (
+            bottom_count < min_assets_per_quantile
+            or top_count < min_assets_per_quantile
+        ):
+            records.append(record)
+            continue
+
+        bottom_mean = float(returns_values[bottom_mask].mean())
+        top_mean = float(returns_values[top_mask].mean())
+        record["bottom_quantile_mean_return"] = bottom_mean
+        record["top_quantile_mean_return"] = top_mean
+        record["top_minus_bottom_spread"] = top_mean - bottom_mean
+        records.append(record)
+
+    return pd.DataFrame.from_records(
+        records,
+        index=factor_panel.index,
+        columns=_QUANTILE_SPREAD_COLUMNS,
+    )
+
+
 def _validate_factor_panels(
     factors: dict[str, pd.DataFrame],
 ) -> dict[str, pd.DataFrame]:
@@ -216,16 +319,32 @@ def _validate_correlation_method(method: str) -> None:
         raise ValueError("method must be either 'pearson' or 'spearman'")
 
 
-def _validate_min_periods(min_periods: int, *, minimum: int = 1) -> None:
-    if isinstance(min_periods, bool) or not isinstance(min_periods, int):
-        raise TypeError("min_periods must be an integer")
+def _empty_quantile_spread_record(valid_asset_count: int) -> dict[str, float | int]:
+    return {
+        "bottom_quantile_mean_return": np.nan,
+        "top_quantile_mean_return": np.nan,
+        "top_minus_bottom_spread": np.nan,
+        "valid_asset_count": valid_asset_count,
+        "bottom_quantile_count": 0,
+        "top_quantile_count": 0,
+    }
 
-    if min_periods < minimum:
-        raise ValueError(f"min_periods must be at least {minimum}")
+
+def _validate_minimum_integer(value: int, name: str, *, minimum: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+
+
+def _validate_min_periods(min_periods: int, *, minimum: int = 1) -> None:
+    _validate_minimum_integer(min_periods, "min_periods", minimum=minimum)
 
 
 __all__ = [
     "factor_correlation_matrix",
     "factor_information_coefficient",
+    "factor_quantile_spread",
     "factor_rank_information_coefficient",
 ]
