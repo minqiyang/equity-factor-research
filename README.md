@@ -84,20 +84,6 @@ For a broader synthetic workflow, see the combined-score smoke test:
 - Report: [`reports/synthetic_combined_score_backtest_demo.md`](reports/synthetic_combined_score_backtest_demo.md)
 - Log: [`reports/experiment_logs/synthetic_combined_score_backtest_demo.json`](reports/experiment_logs/synthetic_combined_score_backtest_demo.json)
 
-## Why It Is Credible
-
-The repository prioritizes research hygiene over attractive charts:
-
-- Feature dates and signal timing are explicit.
-- Tests cover alignment, missing-data behavior, and off-by-one risks.
-- Synthetic demos are clearly labeled as workflow diagnostics.
-- Backtest smoke tests include transaction-cost assumptions and benchmark
-  comparison caveats.
-- Experiment reports, JSON logs, and the registry keep weak or limited evidence
-  visible.
-- QuantConnect/LEAN work is staged behind design notes and guardrails before
-  any runnable platform implementation.
-
 For a beginner-facing explanation of the project goal, core concepts, current
 components, evaluation standards, and limitations, see
 [`docs/project_overview.md`](docs/project_overview.md).
