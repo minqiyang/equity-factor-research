@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/lean_scaffold_review_checklist.md` to define review questions,
+  static checks, safe expansion criteria, and stop conditions before any future
+  runnable LEAN draft.
 - Added a minimal non-executing LEAN smoke-test scaffold with static guardrail
   tests, without adding a runnable LEAN project, external data access,
   credentials, live or paper trading, brokerage integration, order execution,

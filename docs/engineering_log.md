@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-04 - LEAN Scaffold Review Checklist
+
+This documentation-only milestone added `docs/lean_scaffold_review_checklist.md`
+after the minimal non-executing LEAN scaffold merged.
+
+Assumption: after PR #40 merged, the next unblocked safe stage is a scaffold
+review checklist before deciding whether a future PR can safely create a
+runnable LEAN draft. This keeps the workflow moving while avoiding a premature
+runtime implementation that could require platform access, credentials, real
+data, brokerage integration, order execution, live trading, paper trading, or
+performance interpretation.
+
+The checklist defines the current scaffold files under review, required review
+questions, static checks, safe expansion criteria, stop conditions, and the
+recommended next stage: a narrow implementation-readiness decision. It does
+not approve a runnable LEAN algorithm, `config.json`, local or cloud LEAN run,
+data download, credential path, order path, or profitability claim.
+
+This change does not modify `src/`, tests, research scripts, generated
+reports, the LEAN scaffold code, CSV loader behavior, diagnostics behavior,
+backtester behavior, metrics, factor formulas, normalization, combination, or
+strategy logic.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+264 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - Minimal Non-Executing LEAN Smoke-Test Scaffold
 
 This scaffold milestone added a first `lean/` directory after the LEAN
