@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/current_roadmap_gap_refresh.md` to reconcile the original gap
+  analysis with the current implemented IC / Rank IC, quantile spread, local
+  CSV fixture, and LEAN signal-only milestones.
 - Added a pure-Python LEAN signal-only momentum draft plus static guardrail
   tests, keeping the draft non-runnable and free of data access, credentials,
   brokerage/order behavior, and profitability claims.
