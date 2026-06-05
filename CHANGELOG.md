@@ -67,7 +67,7 @@ profitability, or trading readiness.
 ### Changed
 
 - Updated the README license badge and current-status language to link to the
-  Apache-2.0 license and remove obsolete "no selected license" wording.
+  Apache-2.0 license and remove obsolete license follow-up wording.
 - Replaced the static README local-test status label with a live GitHub Actions
   CI badge for `.github/workflows/ci.yml`.
 - Polished `README.md` as a public GitHub landing page with truthful status

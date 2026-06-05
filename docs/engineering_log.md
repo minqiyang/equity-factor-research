@@ -23,8 +23,8 @@ The file changes add the official Apache-2.0 root `LICENSE`, add a concise
 owner login, and observed git author name, and add
 `docs/assets/social_preview.svg` as an original source asset for a possible
 future GitHub social-preview upload. The README license badge now links to the
-root license file, and the current-status language no longer says the project
-lacks a selected license.
+root license file, and the current-status language now states the Apache-2.0
+license selection.
 
 Assumption: this stage is public-presentation metadata work only. It does not
 change `src/`, `tests/`, `research/`, `reports/`, data loading, factor formulas,
