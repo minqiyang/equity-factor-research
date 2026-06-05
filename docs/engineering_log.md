@@ -12,6 +12,56 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-05 - Local CSV Fixture Split Metadata Workflow Update
+
+This code milestone updated the committed synthetic local CSV fixture workflow
+after the split helper and split-aware IC / Rank IC demo had merged.
+
+Assumption: after the split-aware diagnostic demo, the next safe roadmap stage
+is the local fixture split-aware workflow update recommended by
+`docs/current_roadmap_gap_refresh.md`. The stage applies existing
+train/validation/test metadata to the already-committed synthetic local CSV
+fixture workflow. It remains a fixture wiring and diagnostic coverage check,
+not a real-data study, model-selection result, backtest, strategy validation,
+or performance claim.
+
+The workflow now configures chronological fixture split boundaries, creates a
+`TrainValidationTestSplit` from the loaded price index, slices the `alpha_009`
+factor panel and forward-return target panel with
+`split_panel_by_train_validation_test()`, and computes IC, Rank IC, and
+quantile-spread diagnostics both overall and by split. The generated Markdown
+report and JSON experiment log now include split boundaries, split coverage,
+per-split diagnostic metadata, explicit signal-date split timing caveats, and
+caveats that the output is synthetic, fixture-only, not model selection, and
+not strategy validation.
+
+Test coverage was expanded to check the expected train, validation, and test
+fixture windows; alignment of split factor and target panels; deterministic
+split outputs; caveated report/log fields; helper-use monkeypatch counts;
+invalid split-boundary rejection; forbidden-import checks; and caveated
+profitability language.
+
+This change does not modify CSV loader behavior, alpha formulas, diagnostic
+helper behavior, validation helper behavior, backtester behavior, metrics,
+LEAN code, normalization, combination, real-data access, vendor downloads,
+credentials, live or paper trading, brokerage or order execution, or
+profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+12 passed
+
+python -m pytest -q
+309 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-05 - Synthetic Split-Aware IC / Rank IC Demo
 
 This code milestone added `research/synthetic_split_ic_rank_ic_demo.py` and

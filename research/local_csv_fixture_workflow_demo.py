@@ -22,6 +22,11 @@ from features.diagnostics import (
     factor_quantile_spread,
     factor_rank_information_coefficient,
 )
+from features.validation import (
+    TrainValidationTestSplit,
+    make_train_validation_test_split,
+    split_panel_by_train_validation_test,
+)
 from features.worldquant_alphas import alpha_009
 from reporting.experiment_log import (
     SYNTHETIC_RESEARCH_CAVEATS,
@@ -38,6 +43,7 @@ DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "local_csv_fixture_workflow_dem
 DEFAULT_EXPERIMENT_LOG_PATH = (
     PROJECT_ROOT / "reports" / "experiment_logs" / "local_csv_fixture_workflow_demo.json"
 )
+SPLIT_NAMES = ("train", "validation", "test")
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,9 @@ class LocalCSVFixtureWorkflowConfig:
     ic_min_periods: int = 2
     quantiles: int = 3
     min_assets_per_quantile: int = 1
+    train_end: str = "2024-01-02"
+    validation_end: str = "2024-01-03"
+    test_end: str | None = None
 
 
 @dataclass(frozen=True)
@@ -64,9 +73,16 @@ class LocalCSVFixtureWorkflowResult:
     alpha_009_factor: pd.DataFrame
     forward_returns: pd.DataFrame
     benchmark_forward_returns: pd.Series
+    split: TrainValidationTestSplit
+    alpha_009_factor_by_split: dict[str, pd.DataFrame]
+    forward_returns_by_split: dict[str, pd.DataFrame]
     information_coefficient: pd.Series
     rank_information_coefficient: pd.Series
     quantile_spread: pd.DataFrame
+    information_coefficient_by_split: dict[str, pd.Series]
+    rank_information_coefficient_by_split: dict[str, pd.Series]
+    quantile_spread_by_split: dict[str, pd.DataFrame]
+    split_summary: pd.DataFrame
     report_path: Path
     experiment_log_path: Path
 
@@ -102,6 +118,22 @@ def run_local_csv_fixture_workflow_demo(
         benchmark_prices,
         periods=config.forward_return_horizon_rows,
     )
+    split = make_train_validation_test_split(
+        prices.index,
+        train_end=config.train_end,
+        validation_end=config.validation_end,
+        test_end=config.test_end,
+    )
+    alpha_factor_by_split = split_panel_by_train_validation_test(
+        alpha_factor,
+        split,
+        name="alpha_009_factor",
+    )
+    forward_returns_by_split = split_panel_by_train_validation_test(
+        forward_returns,
+        split,
+        name="forward_returns",
+    )
 
     information_coefficient = factor_information_coefficient(
         alpha_factor,
@@ -119,6 +151,38 @@ def run_local_csv_fixture_workflow_demo(
         quantiles=config.quantiles,
         min_assets_per_quantile=config.min_assets_per_quantile,
     )
+    information_coefficient_by_split = {
+        split_name: factor_information_coefficient(
+            alpha_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            min_periods=config.ic_min_periods,
+        )
+        for split_name in SPLIT_NAMES
+    }
+    rank_information_coefficient_by_split = {
+        split_name: factor_rank_information_coefficient(
+            alpha_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            min_periods=config.ic_min_periods,
+        )
+        for split_name in SPLIT_NAMES
+    }
+    quantile_spread_by_split = {
+        split_name: factor_quantile_spread(
+            alpha_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            quantiles=config.quantiles,
+            min_assets_per_quantile=config.min_assets_per_quantile,
+        )
+        for split_name in SPLIT_NAMES
+    }
+    split_summary = summarize_split_diagnostics(
+        factor_by_split=alpha_factor_by_split,
+        forward_returns_by_split=forward_returns_by_split,
+        information_coefficient_by_split=information_coefficient_by_split,
+        rank_information_coefficient_by_split=rank_information_coefficient_by_split,
+        quantile_spread_by_split=quantile_spread_by_split,
+    )
 
     result = LocalCSVFixtureWorkflowResult(
         prices=prices,
@@ -128,9 +192,16 @@ def run_local_csv_fixture_workflow_demo(
         alpha_009_factor=alpha_factor,
         forward_returns=forward_returns,
         benchmark_forward_returns=benchmark_forward_returns,
+        split=split,
+        alpha_009_factor_by_split=alpha_factor_by_split,
+        forward_returns_by_split=forward_returns_by_split,
         information_coefficient=information_coefficient,
         rank_information_coefficient=rank_information_coefficient,
         quantile_spread=quantile_spread,
+        information_coefficient_by_split=information_coefficient_by_split,
+        rank_information_coefficient_by_split=rank_information_coefficient_by_split,
+        quantile_spread_by_split=quantile_spread_by_split,
+        split_summary=split_summary,
         report_path=Path(report_path),
         experiment_log_path=Path(experiment_log_path),
     )
@@ -142,6 +213,49 @@ def run_local_csv_fixture_workflow_demo(
             write_experiment_registry_report()
 
     return result
+
+
+def summarize_split_diagnostics(
+    *,
+    factor_by_split: dict[str, pd.DataFrame],
+    forward_returns_by_split: dict[str, pd.DataFrame],
+    information_coefficient_by_split: dict[str, pd.Series],
+    rank_information_coefficient_by_split: dict[str, pd.Series],
+    quantile_spread_by_split: dict[str, pd.DataFrame],
+) -> pd.DataFrame:
+    """Build per-split diagnostic coverage for the local CSV fixture workflow."""
+
+    rows = []
+    for split_name in SPLIT_NAMES:
+        factor = factor_by_split[split_name]
+        forward_returns = forward_returns_by_split[split_name]
+        information_coefficient = information_coefficient_by_split[split_name]
+        rank_information_coefficient = rank_information_coefficient_by_split[
+            split_name
+        ]
+        quantile_spread = quantile_spread_by_split[split_name]
+        rows.append(
+            {
+                "split": split_name,
+                "date_count": int(len(factor.index)),
+                "asset_count": int(factor.shape[1]),
+                "factor_valid_observations": int(factor.notna().sum().sum()),
+                "forward_return_valid_observations": int(
+                    forward_returns.notna().sum().sum()
+                ),
+                "ic_valid_dates": int(information_coefficient.notna().sum()),
+                "rank_ic_valid_dates": int(
+                    rank_information_coefficient.notna().sum()
+                ),
+                "quantile_spread_valid_dates": int(
+                    quantile_spread["top_minus_bottom_spread"].notna().sum()
+                ),
+                "mean_ic": float(information_coefficient.mean()),
+                "mean_rank_ic": float(rank_information_coefficient.mean()),
+            }
+        )
+
+    return pd.DataFrame.from_records(rows).set_index("split")
 
 
 def write_workflow_experiment_log(
@@ -185,6 +299,17 @@ def write_workflow_experiment_log(
                 "forward returns are computed after loading as evaluation "
                 "targets only; they are not feature inputs"
             ),
+            "split_policy": (
+                "chronological train/validation/test date windows generated "
+                "from the committed fixture index with no overlap, no "
+                "reindexing, and no parameter selection"
+            ),
+            "split_timing": (
+                "split labels are assigned by factor and evaluation-target "
+                "row date; one-row forward-return targets are diagnostics "
+                "only and are not used for parameter selection"
+            ),
+            "split_boundaries": _split_boundary_dict(result.split),
             "benchmark": "synthetic local CSV benchmark fixture",
             "missing_value_policy": (
                 "strict loader defaults; no fill, forward-fill, backward-fill, "
@@ -203,15 +328,31 @@ def write_workflow_experiment_log(
             "price_rows": result.prices.shape[0],
             "asset_count": result.prices.shape[1],
             "benchmark_rows": int(result.benchmark_prices.shape[0]),
+            "split_names": list(SPLIT_NAMES),
         },
         metrics={},
         diagnostics={
+            "split_summary": result.split_summary.to_dict(orient="index"),
             "information_coefficient_by_date": _series_to_date_dict(
                 result.information_coefficient,
             ),
             "rank_information_coefficient_by_date": _series_to_date_dict(
                 result.rank_information_coefficient,
             ),
+            "information_coefficient_by_split": {
+                split_name: _series_to_date_dict(series)
+                for split_name, series in result.information_coefficient_by_split.items()
+            },
+            "rank_information_coefficient_by_split": {
+                split_name: _series_to_date_dict(series)
+                for split_name, series in result.rank_information_coefficient_by_split.items()
+            },
+            "quantile_spread_valid_dates_by_split": {
+                split_name: int(
+                    frame["top_minus_bottom_spread"].notna().sum()
+                )
+                for split_name, frame in result.quantile_spread_by_split.items()
+            },
             "quantile_spread_valid_dates": int(
                 result.quantile_spread["top_minus_bottom_spread"].notna().sum()
             ),
@@ -224,7 +365,9 @@ def write_workflow_experiment_log(
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
             "local CSV fixture smoke demo only",
+            "split-aware wiring check only",
             "not strategy validation",
+            "not model selection",
             "not evidence of real-world performance",
         ),
         next_action=(
@@ -257,8 +400,9 @@ Exercise the local CSV research path with a small committed fixture:
 2. Load a benchmark CSV and verify date alignment.
 3. Compute `alpha_009` as a close-only research feature.
 4. Compute next-row forward returns as evaluation targets only.
-5. Run IC, Rank IC, and quantile spread diagnostics.
-6. Write a caveated report and JSON experiment log.
+5. Apply chronological train/validation/test split metadata.
+6. Run IC, Rank IC, and quantile spread diagnostics.
+7. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -271,6 +415,9 @@ Exercise the local CSV research path with a small committed fixture:
 | Price rows | `{result.price_summary.source_row_count}` |
 | Asset columns | `{", ".join(result.price_summary.columns)}` |
 | Date range | `{result.prices.index.min().date()}` to `{result.prices.index.max().date()}` |
+| Train end | `{result.split.train_end.date()}` |
+| Validation end | `{result.split.validation_end.date()}` |
+| Test end | `{result.split.test_end.date()}` |
 | Missing price values | `{result.price_summary.missing_value_count}` |
 | Missing benchmark values | `{result.benchmark_summary.missing_value_count}` |
 
@@ -278,7 +425,13 @@ Exercise the local CSV research path with a small committed fixture:
 
 The workflow preserves the loader output date index and asset columns, verifies that the benchmark dates match the price panel dates, and computes `alpha_009` with `window={config.alpha_window}`. Forward returns are aligned to the same date as the factor value for diagnostic evaluation only; they are not used as feature inputs.
 
+The train/validation/test metadata is a chronological fixture split by factor and evaluation-target row date only. The one-row forward returns are diagnostic labels, not feature inputs, and are not used for parameter selection. This tiny fixture split is not model selection, parameter tuning, strategy validation, or real-market evidence.
+
 No missing values were filled. No dates or assets were reindexed. No portfolio construction, execution timing, transaction cost model, slippage model, or backtest is included.
+
+## Split Coverage
+
+{_format_labeled_index_markdown_table(result.split_summary, index_label="split")}
 
 ## Diagnostic Coverage
 
@@ -309,8 +462,9 @@ No missing values were filled. No dates or assets were reindexed. No portfolio c
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - `alpha_009` is a research feature, not a complete strategy.
+- The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
 - No local CSV result here should be interpreted without the real-data readiness audit and full experiment-log requirements.
-- User-provided local CSV research, validation splits, universe construction, costs, slippage, and QuantConnect/LEAN implementation remain future stages.
+- User-provided local CSV research, universe construction, costs, slippage, and QuantConnect/LEAN implementation remain future stages.
 """
 
     result.report_path.write_text(content, encoding="utf-8")
@@ -367,6 +521,14 @@ def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) ->
         raise ValueError("benchmark fixture dates must match price fixture dates")
 
 
+def _split_boundary_dict(split: TrainValidationTestSplit) -> dict[str, str]:
+    return {
+        "train_end": split.train_end.date().isoformat(),
+        "validation_end": split.validation_end.date().isoformat(),
+        "test_end": split.test_end.date().isoformat(),
+    }
+
+
 def _is_default_experiment_log_path(path: Path) -> bool:
     return Path(path).resolve() == DEFAULT_EXPERIMENT_LOG_PATH.resolve()
 
@@ -403,12 +565,37 @@ def _format_markdown_table(frame: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def _format_labeled_index_markdown_table(
+    frame: pd.DataFrame,
+    *,
+    index_label: str,
+) -> str:
+    headers = [index_label, *[str(column) for column in frame.columns]]
+    separator = ["---", *["---:" for _ in frame.columns]]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(separator) + " |",
+    ]
+    for index, row in frame.iterrows():
+        values = [
+            _format_table_value(column, value)
+            for column, value in row.items()
+        ]
+        lines.append("| " + " | ".join([str(index), *values]) + " |")
+    return "\n".join(lines)
+
+
 def _format_table_value(column: object, value: object) -> str:
     if pd.isna(value):
         return "NaN"
 
     column_name = str(column)
-    if column_name.endswith("_count") or column_name == "valid_asset_count":
+    if (
+        column_name.endswith("_count")
+        or column_name.endswith("_observations")
+        or column_name.endswith("_valid_dates")
+        or column_name == "valid_asset_count"
+    ):
         return str(int(value))
 
     return _format_float(float(value))
