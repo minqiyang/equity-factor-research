@@ -14,6 +14,9 @@ profitability, or trading readiness.
   existing GitHub and git author metadata.
 - Added `docs/assets/social_preview.svg` as an original source asset for a
   future GitHub social-preview upload.
+- Added deterministic train/validation/test date-split helpers for synthetic
+  factor research panels, with tests covering chronological boundaries,
+  non-overlap, panel slicing, missing-value preservation, and invalid inputs.
 - Added `docs/current_roadmap_gap_refresh.md` to reconcile the original gap
   analysis with the current implemented IC / Rank IC, quantile spread, local
   CSV fixture, and LEAN signal-only milestones.

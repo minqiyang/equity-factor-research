@@ -36,7 +36,7 @@ Validation at the time of this entry:
 
 ```text
 python -m pytest -q
-272 passed
+297 passed
 
 python -m compileall src tests research
 passed
@@ -49,6 +49,56 @@ passed with Windows line-ending conversion warnings only
 
 gh api licenses/apache-2.0 --jq .spdx_id
 Apache-2.0
+```
+
+---
+
+## 2026-06-05 - Synthetic Train/Validation/Test Split Helper
+
+This code milestone added `src/features/validation.py` and
+`tests/test_validation.py` after the current roadmap gap refresh merged.
+
+Assumption: the next safe implementation stage is the deterministic
+train/validation/test split helper recommended by
+`docs/current_roadmap_gap_refresh.md`. The helper is deliberately limited to
+already-prepared date indexes and numeric factor panels. It does not fetch
+data, calculate returns, choose parameters, run a backtest, modify reports, or
+interpret performance.
+
+The new `make_train_validation_test_split()` helper validates a
+`DatetimeIndex`, preserves chronological order, rejects duplicate or unsorted
+dates, applies inclusive train, validation, and test boundaries, requires
+non-empty windows, and returns a `TrainValidationTestSplit` dataclass. The new
+`split_panel_by_train_validation_test()` helper slices an already-prepared
+numeric panel by those dates and preserves missing values instead of filling
+or coercing them into synthetic observations.
+
+The test coverage includes hand-calculated date windows, timestamp boundary
+handling, split ordering, panel slicing, missing-value preservation, invalid
+date indexes, invalid boundary order, empty windows, non-date boundaries,
+invalid timestamp strings, non-numeric panels, mismatched indexes, and an
+import guardrail check.
+
+This change does not modify research scripts, generated reports, CSV loader
+behavior, diagnostics behavior, backtester behavior, metrics, factor formulas,
+normalization, combination, LEAN code, or strategy logic. It does not add real
+data fetching, downloads, credentials, live or paper trading, brokerage,
+order execution, a LEAN run, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_validation.py
+25 passed
+
+python -m pytest -q
+297 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
 ```
 
 ---
