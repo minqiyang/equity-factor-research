@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-05 - Current Roadmap Gap Refresh
+
+This documentation-only checkpoint added
+`docs/current_roadmap_gap_refresh.md` after PR #46 merged.
+
+Assumption: after the LEAN signal-only momentum draft merged, the safest next
+stage is to refresh the roadmap before adding more code. The older
+`docs/original_goal_gap_analysis.md` still captures the original objective,
+but several of its recommended next stages are now complete: local CSV fixture
+smoke/demo work, IC and Rank IC helpers, quantile spread diagnostics, LEAN
+planning, the non-executing LEAN scaffold, and the LEAN signal-only metadata
+draft.
+
+The checkpoint records current implementation traceability, remaining gaps,
+guardrail status, and a refreshed roadmap. It recommends the next
+implementation stage as a synthetic train/validation/test split helper because
+validation-discipline support is now a larger gap than adding another factor
+or duplicating already-implemented diagnostics.
+
+This change does not modify `src/`, tests, research scripts, generated
+reports, CSV loader behavior, diagnostics behavior, backtester behavior,
+metrics, factor formulas, normalization, combination, LEAN code, or strategy
+logic. It does not add real data fetching, downloads, credentials, live or
+paper trading, brokerage, order execution, a LEAN run, or profitability
+claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+272 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-05 - LEAN Signal-Only Momentum Draft
 
 This code milestone added a pure-Python LEAN-adjacent signal-only draft after
