@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a pure-Python LEAN signal-only momentum draft plus static guardrail
+  tests, keeping the draft non-runnable and free of data access, credentials,
+  brokerage/order behavior, and profitability claims.
 - Added a GitHub Actions `CI` workflow for pull requests to `main` and pushes
   to `main`, running the same pytest and compile checks used locally.
 - Added an original `docs/assets/research_workflow.svg` diagram for the public
