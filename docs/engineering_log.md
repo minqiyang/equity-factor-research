@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-05 - Public Repository Metadata And License Polish
+
+This documentation-stage checkpoint records the owner decision to publish the
+repository under Apache-2.0 and updates the public GitHub shell around the
+already-polished README landing page.
+
+The file changes add the official Apache-2.0 root `LICENSE`, add a concise
+`CITATION.cff` using only the repository URL, SPDX license identifier, GitHub
+owner login, and observed git author name, and add
+`docs/assets/social_preview.svg` as an original source asset for a possible
+future GitHub social-preview upload. The README license badge now links to the
+root license file, and the current-status language now states the Apache-2.0
+license selection.
+
+Assumption: this stage is public-presentation metadata work only. It does not
+change `src/`, `tests/`, `research/`, `reports/`, data loading, factor formulas,
+diagnostics, backtester behavior, generated result numbers, private-data
+protections, LEAN behavior, live or paper trading scope, brokerage integration,
+order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+297 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+
+gh api licenses/apache-2.0 --jq .spdx_id
+Apache-2.0
+```
+
+---
+
 ## 2026-06-05 - Synthetic Train/Validation/Test Split Helper
 
 This code milestone added `src/features/validation.py` and

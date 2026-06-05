@@ -6,7 +6,7 @@ An educational, research-grade sandbox for building auditable equity factor work
 [![CI](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml/badge.svg)](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml)
 ![Data scope](https://img.shields.io/badge/data-synthetic%20%2B%20local%20fixtures-0969DA)
 ![Live trading](https://img.shields.io/badge/live%20trading-not%20supported-B42318)
-![License](https://img.shields.io/badge/license-not%20selected-6E7781)
+[![License](https://img.shields.io/badge/license-Apache--2.0-2EA44F)](LICENSE)
 
 This repository is a local Python research project for studying cross-sectional
 equity factor ideas with explicit date alignment, deterministic tests, caveated
@@ -132,6 +132,5 @@ result can be interpreted.
 
 The repository has working factor infrastructure, synthetic workflow demos,
 strict local CSV fixture checks, experiment logging, LEAN planning documents,
-and a GitHub Actions CI workflow for the core validation commands. It does not
-yet have a selected license or real-data validation study. License selection
-remains a recommended follow-up before broader public reuse.
+and a GitHub Actions CI workflow for the core validation commands. It is
+licensed under Apache-2.0 and does not yet have a real-data validation study.

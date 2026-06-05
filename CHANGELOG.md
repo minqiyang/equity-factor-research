@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added an official root `LICENSE` file for Apache-2.0 public reuse terms.
+- Added `CITATION.cff` with repository citation metadata inferred from
+  existing GitHub and git author metadata.
+- Added `docs/assets/social_preview.svg` as an original source asset for a
+  future GitHub social-preview upload.
 - Added deterministic train/validation/test date-split helpers for synthetic
   factor research panels, with tests covering chronological boundaries,
   non-overlap, panel slicing, missing-value preservation, and invalid inputs.
@@ -61,6 +66,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the README license badge and current-status language to link to the
+  Apache-2.0 license and remove obsolete license follow-up wording.
 - Replaced the static README local-test status label with a live GitHub Actions
   CI badge for `.github/workflows/ci.yml`.
 - Polished `README.md` as a public GitHub landing page with truthful status
