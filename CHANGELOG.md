@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic split-aware IC / Rank IC diagnostic demo that applies the
+  train/validation/test split helper to deterministic synthetic factor and
+  forward-return panels without real data, backtesting, or performance claims.
 - Added an official root `LICENSE` file for Apache-2.0 public reuse terms.
 - Added `CITATION.cff` with repository citation metadata inferred from
   existing GitHub and git author metadata.
