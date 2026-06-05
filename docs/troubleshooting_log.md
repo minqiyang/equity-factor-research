@@ -23,6 +23,170 @@ problems, include:
 
 ---
 
+## 2026-06-05 - Rebase Continue Opened Editor And Timed Out
+
+Original mistake:
+
+- Ran `git rebase --continue` without forcing a non-interactive editor during
+  the split-aware IC / Rank IC demo branch rebase.
+- In this Windows environment, Git opened Notepad++ for the commit message
+  rather than completing the rebase directly.
+
+Consequence:
+
+- The shell command timed out while Git waited for the editor-backed commit to
+  finish.
+- The rebase remained in progress with all conflict resolutions staged.
+- No branch was pushed and no PR was opened while the rebase was incomplete.
+
+Evidence:
+
+```text
+command timed out after 124276 milliseconds
+
+git status
+interactive rebase in progress; onto 4884a53
+all conflicts fixed: run "git rebase --continue"
+
+Get-CimInstance Win32_Process
+git.exe rebase --continue
+git commit -n --no-gpg-sign -F .git/rebase-merge/message -e --allow-empty
+notepad++.exe ... .git/rebase-merge/message
+```
+
+Investigation:
+
+- Checked `git status` and confirmed the rebase was still waiting at the final
+  continue step with all intended files staged.
+- Inspected process command lines and confirmed the timeout was caused by the
+  editor-backed commit step, not by a new merge conflict.
+
+Correction attempts:
+
+- Stopped only the stuck Git processes by exact PID.
+- Left the user-visible Notepad++ process alone.
+- Reran the continue step with a non-interactive editor override.
+
+Final fix:
+
+```text
+git -c core.editor=true rebase --continue
+```
+
+This completed the rebase and rewrote the local split-aware demo commit onto
+the latest `main`.
+
+Verification:
+
+```text
+Successfully rebased and updated refs/heads/codex/synthetic-split-ic-rank-ic-demo.
+
+python -m pytest -q tests/test_synthetic_split_ic_rank_ic_demo.py
+11 passed
+
+python -m pytest -q
+308 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+Remaining caveats:
+
+- This was a Git editor configuration issue, not a source-code or test
+  failure.
+
+Prevention:
+
+- Use `git -c core.editor=true rebase --continue` for non-interactive rebase
+  continuations in this workspace.
+- Avoid plain `git rebase --continue` when a previous conflict resolution has
+  staged all files and only commit-message confirmation remains.
+
+---
+
+## 2026-06-05 - Split-Aware Demo Rebase Conflict After PR #49 Merge
+
+Original assumption:
+
+- The locally committed split-aware IC / Rank IC demo branch could be
+  published after the prior open merge gate cleared.
+- PR #49 merged while this continuation was in progress and modified
+  `CHANGELOG.md` and `docs/engineering_log.md`, which were also touched by the
+  local split-aware demo commit.
+
+Consequence:
+
+- Rebasing `codex/synthetic-split-ic-rank-ic-demo` onto the latest `main`
+  stopped with content conflicts in the two overlapping documentation files.
+- No branch was pushed and no PR was opened before the conflict was resolved.
+
+Evidence:
+
+```text
+CONFLICT (content): Merge conflict in CHANGELOG.md
+CONFLICT (content): Merge conflict in docs/engineering_log.md
+error: could not apply 0280093... Add split-aware IC Rank IC demo
+```
+
+Investigation:
+
+- Confirmed the conflicts were limited to adjacent top-of-file changelog and
+  engineering-log entries.
+- Confirmed the code and test files from the split-aware demo applied cleanly.
+- Confirmed PR #49 was merged and latest `main` passed baseline validation
+  before rebasing the prepared branch.
+
+Correction attempts:
+
+- Resolved `CHANGELOG.md` by keeping both the already-merged Apache-2.0
+  metadata entries and the new split-aware diagnostic demo entry.
+- Resolved `docs/engineering_log.md` by keeping the PR #49 metadata checkpoint
+  and the split-aware demo checkpoint as separate durable entries.
+
+Final fix:
+
+- Removed conflict markers and preserved both stages' documentation.
+- Kept the split-aware demo scope unchanged: synthetic panels only, no real
+  data fetching, no backtest, no broker, no order execution, and no
+  profitability claim.
+
+Verification:
+
+```text
+rg -n "<<<<<<<|=======|>>>>>>>" CHANGELOG.md docs/engineering_log.md docs/troubleshooting_log.md research/synthetic_split_ic_rank_ic_demo.py tests/test_synthetic_split_ic_rank_ic_demo.py
+no matches
+
+python -m pytest -q tests/test_synthetic_split_ic_rank_ic_demo.py
+11 passed
+
+python -m pytest -q
+308 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+Remaining caveats:
+
+- This was a documentation merge conflict only. It did not indicate a
+  functional failure in the split helper, diagnostic helpers, or demo logic.
+
+Prevention:
+
+- When a local branch waits behind an external PR gate, expect overlapping log
+  and changelog conflicts after the gate merges.
+- Rebase onto the newly merged `main`, preserve both log entries, and rerun
+  focused plus full validation before pushing.
+
+---
+
 ## 2026-06-05 - Validation Split Empty-Test Expectation Mismatch
 
 Original mistake:

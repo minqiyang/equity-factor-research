@@ -12,6 +12,60 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-05 - Synthetic Split-Aware IC / Rank IC Demo
+
+This code milestone added `research/synthetic_split_ic_rank_ic_demo.py` and
+`tests/test_synthetic_split_ic_rank_ic_demo.py` after the
+train/validation/test split helper merged.
+
+Assumption: after PR #48 merged, the next safe roadmap stage is the
+split-aware diagnostic demo recommended by
+`docs/current_roadmap_gap_refresh.md`. The stage applies the existing
+chronological split helper to deterministic synthetic factor and
+forward-return panels before computing IC and Rank IC diagnostics. It is a
+wiring and coverage demonstration only, not model selection, strategy
+validation, a backtest, or evidence of factor performance.
+
+The demo builds a small synthetic factor panel, derives synthetic
+forward-return evaluation targets by split, preserves missing values, slices
+both panels through `split_panel_by_train_validation_test()`, computes
+`factor_information_coefficient()` and
+`factor_rank_information_coefficient()` separately for train, validation, and
+test windows, and summarizes date counts, valid observations, valid diagnostic
+dates, mean IC, and mean Rank IC. Optional report and JSON log outputs are
+caveated and can be redirected to temporary paths in tests.
+
+The test coverage includes expected split windows, alignment checks,
+missing-value preservation, deterministic reruns, hand-checked split summary
+diagnostics, skipped output mode, caveated report and log creation, helper-use
+monkeypatch checks, invalid configuration rejection, `main()` output writing,
+forbidden import checks, and caveated profitability-language checks.
+
+This change does not modify source feature formulas, diagnostics helper
+behavior, validation helper behavior, CSV loader behavior, generated reports,
+backtester behavior, metrics, LEAN code, alpha modules, normalization,
+combination, or strategy logic. It does not fetch real data, download data,
+add vendor APIs, add credentials, add live or paper trading, add brokerage or
+order execution, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_synthetic_split_ic_rank_ic_demo.py
+11 passed
+
+python -m pytest -q
+308 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-05 - Public Repository Metadata And License Polish
 
 This documentation-stage checkpoint records the owner decision to publish the
