@@ -23,6 +23,85 @@ problems, include:
 
 ---
 
+## 2026-06-05 - Validation Split Empty-Test Expectation Mismatch
+
+Original mistake:
+
+- The first version of `tests/test_validation.py` included a parameterized
+  empty-window test case with `validation_end="2024-01-06"` while the default
+  `test_end` was also the final index date, `2024-01-06`.
+- The test expected the helper to report an empty test split.
+
+Consequence:
+
+- The focused validation test failed even though the helper was rejecting the
+  input for a stricter and earlier reason: the configured split boundaries did
+  not satisfy the required chronological order.
+- No files were committed, pushed, or merged before the failure was fixed.
+
+Evidence:
+
+```text
+tests/test_validation.py::test_make_train_validation_test_split_rejects_empty_windows[2024-01-02-2024-01-06-test split]
+AssertionError: Regex pattern did not match.
+Expected regex: 'test split'
+Actual message: 'split boundaries must satisfy train_end < validation_end < test_end'
+```
+
+Investigation:
+
+- Reviewed the failing case against the helper contract.
+- Confirmed that when `test_end` is omitted, the helper uses the final
+  available date as the test boundary.
+- Confirmed that `validation_end == test_end` violates the intended strict
+  boundary ordering before any empty-window check should run.
+- Confirmed that another test already covers this invalid boundary-order case.
+
+Correction attempts:
+
+- No code change was needed because the helper behavior was correct.
+- Removed the contradictory duplicate parameter from the empty-window test
+  case instead of weakening the boundary-order validation.
+
+Final fix:
+
+- Kept strict `train_end < validation_end < test_end` validation.
+- Kept empty-window tests for train and validation windows where the boundary
+  ordering remains meaningful.
+- Left the `validation_end == test_end` case covered by the invalid-boundary
+  test.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_validation.py
+25 passed
+
+python -m pytest -q
+297 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+Remaining caveats:
+
+- The helper is intentionally limited to chronological date-window splitting.
+  It does not perform model selection, calculate returns, or interpret any
+  diagnostic result.
+
+Prevention:
+
+- For future split tests, separate invalid-boundary-order cases from
+  empty-window cases.
+- When a helper performs staged validation, assert the earliest intended
+  validation failure rather than a later condition that cannot be reached.
+
+---
+
 ## 2026-06-04 - README Diff Filter Regex Error
 
 Original mistake:
