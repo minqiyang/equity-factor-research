@@ -12,6 +12,63 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-05 - LEAN Signal-Only Momentum Draft
+
+This code milestone added a pure-Python LEAN-adjacent signal-only draft after
+the signal-only design merged and later public-facing README/CI stages were
+also merged.
+
+Assumption: the current next safe stage is the implementation recommended by
+`docs/lean_signal_only_draft_design.md`: a metadata-only
+`lean/signal_only_momentum_draft.py` plus static guardrail tests. The stage is
+code-changing, but it remains pre-runtime and signal-only. It does not import
+LEAN runtime symbols, create a runnable QuantConnect algorithm, create
+`config.json`, run LEAN, fetch data, read credentials, configure brokerage,
+define orders, calculate returns, produce reports, or claim profitability.
+
+The new draft records the signal name, 12-1 momentum lookback and skip-window
+metadata, required input fields, timing contract fields, diagnostic field
+names, guardrails, and caveats. It exposes
+`describe_signal_only_momentum_draft()` so reviewers can inspect the metadata
+without calculating a signal or touching data.
+
+The new `tests/test_lean_signal_only_draft_scope.py` statically checks that
+the draft exists, remains non-runnable, avoids banned runtime/data/credential
+imports, avoids LEAN runtime and order/brokerage calls, declares the required
+timing and diagnostic metadata, returns no performance or order outputs, and
+keeps README guardrail language visible. `lean/README.md` now documents the
+signal-only draft and its focused validation command.
+
+This change does not modify `src/`, research scripts, generated reports, CSV
+loader behavior, diagnostics behavior, backtester behavior, metrics, factor
+formulas, normalization, combination, or strategy logic. It does not add real
+data fetching, downloads, credentials, live or paper trading, brokerage,
+order execution, runnable LEAN code, a LEAN run, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_lean_signal_only_draft_scope.py
+8 passed
+
+python -m pytest -q tests/test_lean_smoke_test_scope.py tests/test_lean_signal_only_draft_scope.py
+14 passed
+
+python -m pytest -q
+272 passed
+
+python -m compileall src tests research
+passed
+
+python -m compileall lean
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-04 - GitHub Actions CI Badge
 
 This CI/documentation milestone adds the first repository GitHub Actions

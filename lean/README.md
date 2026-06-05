@@ -15,6 +15,12 @@ The scaffold gives future review a small file boundary before any executable
 LEAN backtest is added. It records the timing contract, diagnostic fields, and
 guardrails expected by the existing LEAN planning documents.
 
+The signal-only draft gives future review a second, narrower boundary before
+any runnable LEAN code is added. It records the 12-1 momentum signal metadata,
+required input fields, timing contract, diagnostic field names, and caveats
+without calculating a signal, loading data, constructing a portfolio, or
+submitting orders.
+
 The future smoke test should remain focused on workflow shape:
 
 - daily US equity simulated research context.
@@ -30,7 +36,11 @@ data.
 ## Current Files
 
 - `smoke_test_algorithm.py` contains metadata and constants for review only.
+- `signal_only_momentum_draft.py` contains pure-Python signal-only metadata
+  and review helpers for a future 12-1 momentum LEAN translation.
 - `../tests/test_lean_smoke_test_scope.py` validates the scaffold statically.
+- `../tests/test_lean_signal_only_draft_scope.py` validates the signal-only
+  draft statically.
 
 ## Local Validation
 
@@ -38,6 +48,7 @@ Use repository-level validation from the project root:
 
 ```powershell
 python -m pytest -q tests/test_lean_smoke_test_scope.py
+python -m pytest -q tests/test_lean_signal_only_draft_scope.py
 python -m pytest -q
 python -m compileall src tests research
 python -m compileall lean
