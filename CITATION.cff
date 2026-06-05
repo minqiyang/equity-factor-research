@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: "AI-Assisted Equity Factor Research Pipeline"
+type: software
+authors:
+  - name: "Minchee"
+    alias: "minqiyang"
+repository-code: "https://github.com/minqiyang/ai-equity-factor-research"
+license: "Apache-2.0"

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">AI-Assisted Equity Factor Research Pipeline social preview</title>
+  <desc id="desc">A repository social preview for an auditable equity factor research sandbox using synthetic demos and backtesting guardrails.</desc>
+  <rect width="1280" height="640" fill="#0f172a"/>
+  <rect x="64" y="64" width="1152" height="512" rx="24" fill="#f8fafc"/>
+  <rect x="64" y="64" width="1152" height="96" rx="24" fill="#1d4ed8"/>
+  <rect x="64" y="136" width="1152" height="24" fill="#1d4ed8"/>
+  <g fill="#ffffff" font-family="Arial, Helvetica, sans-serif">
+    <text x="104" y="124" font-size="36" font-weight="700">ai-equity-factor-research</text>
+    <text x="1036" y="122" font-size="22" font-weight="700">Apache-2.0</text>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#111827">
+    <text x="104" y="240" font-size="54" font-weight="700">AI-Assisted Equity Factor</text>
+    <text x="104" y="302" font-size="54" font-weight="700">Research Pipeline</text>
+    <text x="106" y="358" font-size="28" fill="#334155">Auditable Python workflows for synthetic demos, factor diagnostics,</text>
+    <text x="106" y="396" font-size="28" fill="#334155">date alignment, experiment logs, and backtesting guardrails.</text>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">
+    <rect x="104" y="452" width="174" height="52" rx="12" fill="#dbeafe"/>
+    <text x="132" y="486" fill="#1d4ed8">Synthetic data</text>
+    <rect x="300" y="452" width="168" height="52" rx="12" fill="#dcfce7"/>
+    <text x="329" y="486" fill="#166534">CI validated</text>
+    <rect x="490" y="452" width="214" height="52" rx="12" fill="#fef3c7"/>
+    <text x="519" y="486" fill="#92400e">No live trading</text>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M852 422 L922 354 L1002 386 L1100 282" stroke="#1d4ed8" stroke-width="12"/>
+    <circle cx="852" cy="422" r="14" fill="#1d4ed8" stroke="#f8fafc" stroke-width="6"/>
+    <circle cx="922" cy="354" r="14" fill="#1d4ed8" stroke="#f8fafc" stroke-width="6"/>
+    <circle cx="1002" cy="386" r="14" fill="#1d4ed8" stroke="#f8fafc" stroke-width="6"/>
+    <circle cx="1100" cy="282" r="14" fill="#1d4ed8" stroke="#f8fafc" stroke-width="6"/>
+    <path d="M830 484 H1128" stroke="#cbd5e1" stroke-width="4"/>
+    <path d="M830 246 V484" stroke="#cbd5e1" stroke-width="4"/>
+  </g>
+</svg>

@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added an official root `LICENSE` file for Apache-2.0 public reuse terms.
+- Added `CITATION.cff` with repository citation metadata inferred from
+  existing GitHub and git author metadata.
+- Added `docs/assets/social_preview.svg` as an original source asset for a
+  future GitHub social-preview upload.
 - Added `docs/current_roadmap_gap_refresh.md` to reconcile the original gap
   analysis with the current implemented IC / Rank IC, quantile spread, local
   CSV fixture, and LEAN signal-only milestones.
@@ -58,6 +63,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the README license badge and current-status language to link to the
+  Apache-2.0 license and remove obsolete "no selected license" wording.
 - Replaced the static README local-test status label with a live GitHub Actions
   CI badge for `.github/workflows/ci.yml`.
 - Polished `README.md` as a public GitHub landing page with truthful status
