@@ -23,6 +23,92 @@ problems, include:
 
 ---
 
+## 2026-06-05 - Local CSV Fixture Split Table Formatter Failure
+
+Original mistake:
+
+- Reused the local CSV fixture workflow's existing Markdown table formatter for
+  the new split summary table.
+- That formatter assumed every DataFrame index value was a date and converted
+  each index through `pd.Timestamp(index)`.
+- The new split summary index values are labels: `train`, `validation`, and
+  `test`.
+
+Consequence:
+
+- The workflow could compute split diagnostics, but report generation failed
+  whenever the split summary table was rendered.
+- This broke focused tests that create the local CSV fixture workflow report.
+
+Evidence:
+
+```text
+tests/test_local_csv_fixture_workflow_demo.py::test_workflow_report_and_experiment_log_are_created_with_caveats
+tests/test_local_csv_fixture_workflow_demo.py::test_main_writes_report_to_requested_path
+tests/test_local_csv_fixture_workflow_demo.py::test_workflow_text_contains_only_caveated_profitability_language
+
+pandas._libs.tslibs.parsing.DateParseError:
+Unknown datetime string format, unable to parse: train
+```
+
+Investigation:
+
+- Confirmed that the factor, forward-return, IC, Rank IC, and quantile-spread
+  computations completed before report writing.
+- Traced the failure to `_format_markdown_table(result.split_summary)`.
+- Confirmed that `_format_markdown_table()` was date-table-specific and should
+  still be used for date-indexed IC and quantile-spread diagnostics.
+- Confirmed that the new split summary needed a labeled-index renderer rather
+  than date parsing.
+
+Correction attempts:
+
+- First added `_format_labeled_index_markdown_table()` and used it only for
+  `result.split_summary`, leaving the existing date-indexed table formatter in
+  place for diagnostic date tables.
+- Reran focused tests. Report generation then succeeded, but one report-text
+  assertion exposed that count-like split summary columns were formatted as
+  `0.0000` because the row dtype was widened by mean columns.
+- Extended `_format_table_value()` so count-like fields ending in
+  `_observations` or `_valid_dates` render as integers, matching the report's
+  diagnostic-count semantics.
+
+Final fix:
+
+- Split-summary rendering now uses a labeled-index Markdown formatter with an
+  explicit `split` index label.
+- Count-like split summary fields now render as integers while mean IC fields
+  remain decimal values and missing means remain `NaN`.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+12 passed
+
+python -m pytest -q
+309 passed
+
+python -m compileall src tests research
+passed
+```
+
+Remaining caveats:
+
+- The fixture split has only four dates, so train and validation windows are
+  intentionally tiny. The report labels this as a synthetic fixture wiring
+  check, not a real train/validation/test research study.
+
+Prevention:
+
+- Do not reuse date-specific renderers for non-date-index tables.
+- When adding report tables with mixed count and mean columns, inspect the
+  rendered Markdown as well as the underlying DataFrame.
+- Keep focused tests that write report and JSON outputs, not only tests that
+  inspect in-memory result objects.
+
+---
+
 ## 2026-06-05 - Rebase Continue Opened Editor And Timed Out
 
 Original mistake:

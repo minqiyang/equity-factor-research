@@ -32,6 +32,14 @@ def test_local_csv_fixture_workflow_loads_committed_fixtures() -> None:
     assert result.benchmark_summary.schema == "benchmark_price"
     assert result.price_summary.missing_value_count == 0
     assert result.benchmark_summary.missing_value_count == 0
+    assert result.split.train.equals(pd.DatetimeIndex(["2024-01-02"], name="date"))
+    assert result.split.validation.equals(pd.DatetimeIndex(["2024-01-03"], name="date"))
+    assert result.split.test.equals(
+        pd.DatetimeIndex(["2024-01-04", "2024-01-05"], name="date")
+    )
+    assert result.split.train_end == pd.Timestamp("2024-01-02")
+    assert result.split.validation_end == pd.Timestamp("2024-01-03")
+    assert result.split.test_end == pd.Timestamp("2024-01-05")
 
 
 def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
@@ -45,10 +53,38 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
     assert result.information_coefficient.index.equals(result.prices.index)
     assert result.rank_information_coefficient.index.equals(result.prices.index)
     assert result.quantile_spread.index.equals(result.prices.index)
+    assert list(result.alpha_009_factor_by_split) == ["train", "validation", "test"]
+    assert list(result.forward_returns_by_split) == ["train", "validation", "test"]
+    assert list(result.split_summary.index) == ["train", "validation", "test"]
+
+    for split_name in ("train", "validation", "test"):
+        assert result.alpha_009_factor_by_split[split_name].index.equals(
+            result.forward_returns_by_split[split_name].index,
+        )
+        assert result.alpha_009_factor_by_split[split_name].columns.equals(
+            result.forward_returns_by_split[split_name].columns,
+        )
+        assert result.information_coefficient_by_split[split_name].index.equals(
+            result.alpha_009_factor_by_split[split_name].index,
+        )
+        assert result.rank_information_coefficient_by_split[split_name].index.equals(
+            result.alpha_009_factor_by_split[split_name].index,
+        )
+        assert result.quantile_spread_by_split[split_name].index.equals(
+            result.alpha_009_factor_by_split[split_name].index,
+        )
 
     assert result.alpha_009_factor.notna().sum().sum() == 9
     assert result.forward_returns.notna().sum().sum() == 9
     assert result.benchmark_forward_returns.notna().sum() == 3
+    assert result.split_summary["date_count"].to_dict() == {
+        "train": 1,
+        "validation": 1,
+        "test": 2,
+    }
+    assert result.split_summary.loc["train", "factor_valid_observations"] == 0
+    assert result.split_summary.loc["validation", "factor_valid_observations"] == 3
+    assert result.split_summary.loc["test", "forward_return_valid_observations"] == 3
 
 
 def test_local_csv_fixture_workflow_is_deterministic() -> None:
@@ -62,6 +98,20 @@ def test_local_csv_fixture_workflow_is_deterministic() -> None:
     assert_series_equal(first.information_coefficient, second.information_coefficient)
     assert_series_equal(first.rank_information_coefficient, second.rank_information_coefficient)
     assert_frame_equal(first.quantile_spread, second.quantile_spread)
+    assert_frame_equal(first.split_summary, second.split_summary)
+    for split_name in ("train", "validation", "test"):
+        assert_frame_equal(
+            first.alpha_009_factor_by_split[split_name],
+            second.alpha_009_factor_by_split[split_name],
+        )
+        assert_frame_equal(
+            first.forward_returns_by_split[split_name],
+            second.forward_returns_by_split[split_name],
+        )
+        assert_series_equal(
+            first.information_coefficient_by_split[split_name],
+            second.information_coefficient_by_split[split_name],
+        )
 
 
 def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: Path) -> None:
@@ -85,6 +135,8 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "not a profitability claim" in report_text
     assert "does not run a backtest" in report_text
     assert "No portfolio construction" in report_text
+    assert "## Split Coverage" in report_text
+    assert "| train | 1 | 3 | 0 | 3 | 0 | 0 | 0 | NaN | NaN |" in report_text
     assert "| Total return |" not in report_text
     assert "Sharpe" not in report_text
 
@@ -97,7 +149,24 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert payload["assumptions"]["portfolio_construction"] == "not included"
     assert payload["assumptions"]["backtest_integration"] == "not included"
     assert payload["assumptions"]["live_trading"] is False
+    assert payload["assumptions"]["split_policy"].startswith("chronological")
+    assert payload["assumptions"]["split_timing"].startswith("split labels")
+    assert payload["assumptions"]["split_boundaries"] == {
+        "train_end": "2024-01-02",
+        "validation_end": "2024-01-03",
+        "test_end": "2024-01-05",
+    }
+    assert payload["outputs"]["split_names"] == ["train", "validation", "test"]
     assert payload["diagnostics"]["factor_valid_observations"] == 9
+    assert payload["diagnostics"]["split_summary"]["train"]["date_count"] == 1
+    assert payload["diagnostics"]["split_summary"]["validation"]["ic_valid_dates"] == 1
+    assert payload["diagnostics"]["quantile_spread_valid_dates_by_split"] == {
+        "train": 0,
+        "validation": 1,
+        "test": 0,
+    }
+    assert "split-aware wiring check only" in payload["caveats"]
+    assert "not model selection" in payload["caveats"]
     assert "not strategy validation" in payload["caveats"]
 
 
@@ -125,6 +194,8 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "price_loader": 0,
         "benchmark_loader": 0,
         "alpha_009": 0,
+        "make_split": 0,
+        "split_panel": 0,
         "ic": 0,
         "rank_ic": 0,
         "quantile_spread": 0,
@@ -132,6 +203,8 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     original_price_loader = demo.load_wide_price_csv
     original_benchmark_loader = demo.load_benchmark_price_csv
     original_alpha_009 = demo.alpha_009
+    original_make_split = demo.make_train_validation_test_split
+    original_split_panel = demo.split_panel_by_train_validation_test
     original_ic = demo.factor_information_coefficient
     original_rank_ic = demo.factor_rank_information_coefficient
     original_quantile_spread = demo.factor_quantile_spread
@@ -148,6 +221,14 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         calls["alpha_009"] += 1
         return original_alpha_009(*args, **kwargs)
 
+    def count_make_split(*args, **kwargs):
+        calls["make_split"] += 1
+        return original_make_split(*args, **kwargs)
+
+    def count_split_panel(*args, **kwargs):
+        calls["split_panel"] += 1
+        return original_split_panel(*args, **kwargs)
+
     def count_ic(*args, **kwargs):
         calls["ic"] += 1
         return original_ic(*args, **kwargs)
@@ -163,6 +244,8 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     monkeypatch.setattr(demo, "load_wide_price_csv", count_price_loader)
     monkeypatch.setattr(demo, "load_benchmark_price_csv", count_benchmark_loader)
     monkeypatch.setattr(demo, "alpha_009", count_alpha_009)
+    monkeypatch.setattr(demo, "make_train_validation_test_split", count_make_split)
+    monkeypatch.setattr(demo, "split_panel_by_train_validation_test", count_split_panel)
     monkeypatch.setattr(demo, "factor_information_coefficient", count_ic)
     monkeypatch.setattr(demo, "factor_rank_information_coefficient", count_rank_ic)
     monkeypatch.setattr(demo, "factor_quantile_spread", count_quantile_spread)
@@ -173,9 +256,11 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "price_loader": 1,
         "benchmark_loader": 1,
         "alpha_009": 1,
-        "ic": 1,
-        "rank_ic": 1,
-        "quantile_spread": 1,
+        "make_split": 1,
+        "split_panel": 2,
+        "ic": 4,
+        "rank_ic": 4,
+        "quantile_spread": 4,
     }
 
 
@@ -190,6 +275,16 @@ def test_workflow_rejects_invalid_config_values() -> None:
     config = LocalCSVFixtureWorkflowConfig(forward_return_horizon_rows=0)
 
     with pytest.raises(ValueError, match="forward_return_horizon_rows"):
+        run_local_csv_fixture_workflow_demo(config=config, write_outputs=False)
+
+
+def test_workflow_rejects_invalid_split_boundaries() -> None:
+    config = LocalCSVFixtureWorkflowConfig(
+        train_end="2024-01-03",
+        validation_end="2024-01-02",
+    )
+
+    with pytest.raises(ValueError, match="split boundaries"):
         run_local_csv_fixture_workflow_demo(config=config, write_outputs=False)
 
 

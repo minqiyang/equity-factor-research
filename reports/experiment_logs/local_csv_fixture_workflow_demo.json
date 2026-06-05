@@ -18,6 +18,13 @@
     "portfolio_construction": "not included",
     "price_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv",
     "slippage_model": "not applicable; no portfolio or trades",
+    "split_boundaries": {
+      "test_end": "2024-01-05",
+      "train_end": "2024-01-02",
+      "validation_end": "2024-01-03"
+    },
+    "split_policy": "chronological train/validation/test date windows generated from the committed fixture index with no overlap, no reindexing, and no parameter selection",
+    "split_timing": "split labels are assigned by factor and evaluation-target row date; one-row forward-return targets are diagnostics only and are not used for parameter selection",
     "transaction_cost_model": "not applicable; no portfolio or trades",
     "universe": "3 synthetic fixture assets"
   },
@@ -28,7 +35,9 @@
     "no real data fetching",
     "no live trading or brokerage integration",
     "local CSV fixture smoke demo only",
+    "split-aware wiring check only",
     "not strategy validation",
+    "not model selection",
     "not evidence of real-world performance"
   ],
   "config": {
@@ -38,7 +47,10 @@
     "ic_min_periods": 2,
     "min_assets_per_quantile": 1,
     "price_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv",
-    "quantiles": 3
+    "quantiles": 3,
+    "test_end": null,
+    "train_end": "2024-01-02",
+    "validation_end": "2024-01-03"
   },
   "diagnostics": {
     "benchmark_forward_return_valid_observations": 3,
@@ -50,12 +62,76 @@
       "2024-01-04": 0.9997019274994431,
       "2024-01-05": null
     },
+    "information_coefficient_by_split": {
+      "test": {
+        "2024-01-04": 0.9997019274994431,
+        "2024-01-05": null
+      },
+      "train": {
+        "2024-01-02": null
+      },
+      "validation": {
+        "2024-01-03": -0.6216932354008934
+      }
+    },
     "quantile_spread_valid_dates": 1,
+    "quantile_spread_valid_dates_by_split": {
+      "test": 0,
+      "train": 0,
+      "validation": 1
+    },
     "rank_information_coefficient_by_date": {
       "2024-01-02": null,
       "2024-01-03": -0.5,
       "2024-01-04": 0.8660254037844387,
       "2024-01-05": null
+    },
+    "rank_information_coefficient_by_split": {
+      "test": {
+        "2024-01-04": 0.8660254037844387,
+        "2024-01-05": null
+      },
+      "train": {
+        "2024-01-02": null
+      },
+      "validation": {
+        "2024-01-03": -0.5
+      }
+    },
+    "split_summary": {
+      "test": {
+        "asset_count": 3,
+        "date_count": 2,
+        "factor_valid_observations": 6,
+        "forward_return_valid_observations": 3,
+        "ic_valid_dates": 1,
+        "mean_ic": 0.9997019274994431,
+        "mean_rank_ic": 0.8660254037844387,
+        "quantile_spread_valid_dates": 0,
+        "rank_ic_valid_dates": 1
+      },
+      "train": {
+        "asset_count": 3,
+        "date_count": 1,
+        "factor_valid_observations": 0,
+        "forward_return_valid_observations": 3,
+        "ic_valid_dates": 0,
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "quantile_spread_valid_dates": 0,
+        "rank_ic_valid_dates": 0
+      },
+      "validation": {
+        "asset_count": 3,
+        "date_count": 1,
+        "factor_valid_observations": 3,
+        "forward_return_valid_observations": 3,
+        "ic_valid_dates": 1,
+        "mean_ic": -0.6216932354008934,
+        "mean_rank_ic": -0.5,
+        "quantile_spread_valid_dates": 1,
+        "rank_ic_valid_dates": 1
+      }
     }
   },
   "experiment_id": "local-csv-fixture-workflow-demo",
@@ -67,7 +143,12 @@
     "benchmark_rows": 4,
     "experiment_log": "reports/experiment_logs/local_csv_fixture_workflow_demo.json",
     "markdown_report": "reports/local_csv_fixture_workflow_demo.md",
-    "price_rows": 4
+    "price_rows": 4,
+    "split_names": [
+      "train",
+      "validation",
+      "test"
+    ]
   },
   "schema_version": 1,
   "summary": "Deterministic smoke demo that loads committed synthetic local CSV fixtures, computes alpha_009 as a research feature, and evaluates diagnostic IC, Rank IC, and quantile spread against aligned forward-return targets.",

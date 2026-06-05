@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added split metadata to the synthetic local CSV fixture workflow, including
+  train/validation/test coverage, per-split IC / Rank IC / quantile-spread
+  diagnostics, and caveated report/log output.
 - Added a synthetic split-aware IC / Rank IC diagnostic demo that applies the
   train/validation/test split helper to deterministic synthetic factor and
   forward-return panels without real data, backtesting, or performance claims.
