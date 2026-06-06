@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Liquidity And Dollar-Volume Universe Planning Gate
+
+This documentation-only milestone added
+`docs/liquidity_dollar_volume_universe_plan.md` after the strict OHLCV loader
+and synthetic OHLCV loader smoke coverage merged.
+
+Assumption: the next safe stage after OHLCV validation and smoke coverage is
+not volume-based filtering code or a volume-dependent alpha. The safer
+PR-sized step is to define local-only liquidity and dollar-volume universe
+rules, date-alignment requirements, zero-volume handling, missing-data
+behavior, and future implementation gates before any code filters assets by
+volume.
+
+The plan defines candidate inputs, average daily volume, dollar-volume, and
+rolling dollar-volume formulas, explicit observation/decision/signal/execution
+date boundaries, strict missing-value and zero-volume policy, candidate
+universe rules, future deterministic test requirements, research risks, and
+future PR-sized stages. It preserves the existing research-only boundary and
+does not implement a universe filter, modify loaders, modify features, modify
+backtests, add research scripts, generate reports, fetch data, add vendor
+access, add credentials, connect to a broker, place orders, support live or
+paper trading, or make profitability claims.
+
+`docs/volume_ohlcv_schema_plan.md` now records the liquidity planning note as
+the completed planning gate before volume-based filtering. The WorldQuant
+alpha catalog now points future liquidity or dollar-volume universe work to
+this plan before implementation.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+327 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-06 - Synthetic OHLCV Loader Smoke Demo
 
 This test milestone added fixture-level smoke coverage for the strict local
