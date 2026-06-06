@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Synthetic Liquidity Eligibility Helper
+
+This code milestone implemented the next safe stage after
+`docs/liquidity_dollar_volume_universe_plan.md`: a narrow synthetic-only
+liquidity eligibility helper with deterministic tests.
+
+Assumption: the reviewed liquidity and dollar-volume planning gate made the
+function boundary clear enough to implement a small helper rather than adding
+another design-only checkpoint. The implementation is limited to already
+prepared numeric panels and does not connect to the CSV loader, fetch data,
+select a portfolio, run a backtest, modify alpha formulas, alter diagnostics,
+generate reports, add vendor access, add credentials, connect to a broker,
+place orders, support live or paper trading, or make profitability claims.
+
+`src/features/liquidity.py` now provides rolling average daily volume and
+rolling average dollar-volume helpers plus lagged eligibility masks. The
+eligibility helpers use full rolling windows only, preserve missing values as
+ineligible observations, reject negative volume and non-positive prices,
+require positive finite thresholds, default to a one-row eligibility lag, and
+require each rolling volume window to contain strictly positive volume by
+default. That default keeps zero-volume rows from being silently accepted as
+liquid while still allowing an explicit non-default policy for synthetic tests.
+
+Focused tests in `tests/test_liquidity.py` cover hand-calculated ADV and
+dollar-volume calculations, date-lag semantics, warm-up ineligibility, missing
+values without filling, default zero-volume exclusion, explicit zero-volume
+policy override, configurable positive lags, invalid thresholds, invalid
+windows, mismatched panels, negative volume, non-positive prices, non-numeric
+inputs, and forbidden import boundaries.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_liquidity.py
+30 passed
+
+python -m pytest -q
+357 passed
+
+python -m compileall src tests research
+passed
+
+.\scripts\audit-skills.ps1
+passed for 2 Skill files
+```
+
+---
+
 ## 2026-06-06 - Liquidity And Dollar-Volume Universe Planning Gate
 
 This documentation-only milestone added
