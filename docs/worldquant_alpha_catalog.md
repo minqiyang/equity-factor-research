@@ -77,6 +77,9 @@ Important priority rules:
   `docs/volume_ohlcv_schema_plan.md` so the local CSV schema, adjustment
   policy, missing-value behavior, and validation tests are reviewed before code
   is added.
+- Future liquidity or dollar-volume universe work should start from
+  `docs/liquidity_dollar_volume_universe_plan.md` before any code filters
+  assets by volume.
 
 ## Classification By Data Requirement
 
@@ -278,7 +281,9 @@ backtesting.
 
 Reasonable next documentation or planning stages include:
 
-- plan volume + close schema requirements before considering `alpha_012`;
+- plan or implement a synthetic-only liquidity eligibility helper after
+  `docs/liquidity_dollar_volume_universe_plan.md` is reviewed;
+- plan volume + close formula requirements before considering `alpha_012`;
 - plan OHLC schema requirements before considering `alpha_101`;
 - review another close-only candidate and list exact formula, operator, and test
   requirements before implementation;

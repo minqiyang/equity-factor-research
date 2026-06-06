@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/liquidity_dollar_volume_universe_plan.md` as a
+  documentation-only planning gate for future synthetic liquidity and
+  dollar-volume universe eligibility work before any code filters assets by
+  volume.
 - Added synthetic OHLCV local CSV loader smoke coverage for the committed
   fixture, including summary metadata, strict missing-value policy, and invalid
   OHLC relationship checks without computing a strategy.
@@ -82,6 +86,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the OHLCV schema plan and WorldQuant alpha catalog to route future
+  volume-based universe work through the liquidity and dollar-volume planning
+  gate before implementation.
 - Updated the CSV interface plan and WorldQuant alpha catalog to reference the
   volume/OHLCV schema planning gate before future volume or OHLC-dependent
   implementation work.

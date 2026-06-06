@@ -202,7 +202,8 @@ before any local CSV result is interpreted.
    policy, OHLC relationships, and summary metadata without computing a
    strategy. Completed by fixture-level smoke tests.
 4. Add a liquidity or dollar-volume universe planning note before any code
-   filters assets by volume.
+   filters assets by volume. Completed by
+   `docs/liquidity_dollar_volume_universe_plan.md`.
 5. Plan the next data-dependent alpha stage, such as `alpha_012` or
    `alpha_101`, only after the relevant local schema and validation tests
    exist.
@@ -215,8 +216,8 @@ brokerage integration, order execution, or profitability claims.
 
 ## Recommended Next Stage After This Plan
 
-After the strict OHLCV loader and synthetic smoke-demo stages are reviewed and
-merged, the next safe stage should be a liquidity or dollar-volume universe
-planning note. That planning stage should define local-only inputs,
-date-alignment rules, zero-volume handling, dollar-volume formulas, and stop
-conditions before any code filters assets by volume.
+After the strict OHLCV loader, synthetic smoke-demo, and liquidity planning
+stages are reviewed and merged, the next safe stage should be a synthetic-only
+liquidity eligibility helper design or implementation decision. That stage
+should stay separate from factor formulas, strategy logic, backtest behavior,
+real data, and performance interpretation.
