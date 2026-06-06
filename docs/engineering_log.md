@@ -12,6 +12,48 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Post-Liquidity Roadmap Checkpoint
+
+This documentation checkpoint refreshed the roadmap after PR #58 merged the
+synthetic local-fixture liquidity eligibility count smoke check.
+
+Assumption: after the OHLCV and liquidity sequence, the next safest PR-sized
+stage is to reconcile stale roadmap recommendations before starting another
+feature implementation. `docs/original_goal_gap_analysis.md` and
+`docs/current_roadmap_gap_refresh.md` still contain useful original-goal
+context, but they predate several completed stages: IC / Rank IC diagnostics,
+quantile spread diagnostics, validation split helpers, local CSV fixture
+workflow, strict OHLCV loading, synthetic liquidity eligibility helpers, and
+the local fixture liquidity count smoke check.
+
+`docs/post_liquidity_checkpoint_report.md` now records the current
+implementation state, completed roadmap items, remaining gaps, guardrail
+review, and a next-stage recommendation. The report identifies
+`src/features/reversal.py` and `src/features/volatility.py` as placeholder
+modules only and recommends short-term reversal feature design or
+implementation as the next safe stage, subject to explicit score-sign and
+missing-value tests.
+
+This stage is documentation-only. It does not modify source code, tests,
+research scripts, generated reports, strategy logic, backtester behavior,
+metrics, data access, execution assumptions, real data handling, vendor
+access, credentials, live or paper trading, brokerage integration, order
+execution, or profitability claims.
+
+Validation before this checkpoint:
+
+```text
+python -m pytest -q
+358 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Synthetic Liquidity Eligibility Fixture Smoke Check
 
 This code milestone extended the committed synthetic local CSV fixture workflow

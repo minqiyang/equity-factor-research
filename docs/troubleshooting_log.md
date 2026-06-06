@@ -23,6 +23,69 @@ problems, include:
 
 ---
 
+## 2026-06-06 - PowerShell Multi-Path Listing Command Failed
+
+Original mistake:
+
+- During the post-liquidity checkpoint review, attempted to list files across
+  multiple directories with `Get-ChildItem -Path src/features tests research
+  reports -File -Recurse`.
+- This syntax treated later path tokens as positional arguments instead of as
+  a single array passed to `-Path`.
+
+Consequence:
+
+- The exploratory file listing failed and did not produce evidence for the
+  checkpoint report.
+- No repository files were modified by the failed command.
+
+Evidence:
+
+```text
+Get-ChildItem : A positional parameter cannot be found that accepts argument 'research'.
+```
+
+Investigation:
+
+- Confirmed the failure was command syntax, not a repository-state issue.
+- Replaced the PowerShell command with `rg --files src/features tests research
+  reports`, which accepts multiple search roots and produced the intended
+  evidence list.
+
+Correction attempts:
+
+- Did not retry with broad or destructive filesystem operations.
+- Used `rg --files` for the file inventory and a focused `rg -n` search for
+  implemented helper functions.
+
+Final fix:
+
+```text
+rg --files src/features tests research reports | Sort-Object
+rg -n "def factor_information_coefficient|def factor_rank_information_coefficient|def factor_quantile_spread|def make_train_validation_test_split|def average_daily_volume_eligibility|def average_dollar_volume_eligibility" src tests research
+```
+
+Verification:
+
+- The corrected commands listed the current feature, test, research, and report
+  files.
+- They confirmed that diagnostics, validation split, and liquidity helper
+  functions already exist.
+
+Remaining caveats:
+
+- This was a tooling syntax issue only; it did not affect source code,
+  tests, generated reports, data access, trading behavior, or experiment
+  results.
+
+Prevention:
+
+- Prefer `rg --files` for multi-root file inventories.
+- When using PowerShell `Get-ChildItem` with multiple paths, pass an explicit
+  array such as `-Path @("src/features", "tests", "research", "reports")`.
+
+---
+
 ## 2026-06-05 - Local CSV Fixture Split Table Formatter Failure
 
 Original mistake:
