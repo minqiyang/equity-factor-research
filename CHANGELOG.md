@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_liquidity_checkpoint_report.md` to refresh the roadmap
+  after the OHLCV and liquidity eligibility stages and recommend the next
+  short-term reversal stage from current evidence.
 - Added a synthetic liquidity eligibility count smoke check to the local CSV
   fixture workflow demo, using the committed OHLCV fixture to report lagged ADV
   and dollar-volume eligibility counts without constructing a universe or
