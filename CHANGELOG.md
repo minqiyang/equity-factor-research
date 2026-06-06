@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added synthetic OHLCV local CSV loader smoke coverage for the committed
+  fixture, including summary metadata, strict missing-value policy, and invalid
+  OHLC relationship checks without computing a strategy.
 - Added a strict local OHLCV long-format CSV loader with committed synthetic
   fixture coverage for raw-string validation, missing-value sentinels,
   duplicate `(date, symbol)` rows, positive OHLC prices, non-negative volume,

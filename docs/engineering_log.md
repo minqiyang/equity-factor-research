@@ -12,6 +12,48 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Synthetic OHLCV Loader Smoke Demo
+
+This test milestone added fixture-level smoke coverage for the strict local
+OHLCV CSV loader after the loader implementation merged.
+
+Assumption: after the strict `load_ohlcv_csv()` stage, the next safe
+PR-sized step is Stage 3 from `docs/volume_ohlcv_schema_plan.md`: validate the
+committed synthetic OHLCV fixture at the smoke-demo level before any
+liquidity filter, dollar-volume workflow, OHLC-dependent alpha, strategy
+logic, or generated report is added.
+
+The stage extends `tests/test_local_csv_loader_smoke_demo.py` rather than
+creating a research script. That keeps the work focused on loader wiring and
+audit metadata: the committed synthetic OHLCV fixture loads with the expected
+schema, sorted dates, duplicate-free date-symbol pairs, float numeric fields,
+positive OHLC relationships, summary metadata, and required adjusted-close
+policy. Additional synthetic temporary files test that missing values remain
+strict by default and invalid OHLC relationships are rejected.
+
+`docs/volume_ohlcv_schema_plan.md` now reflects the completed loader and smoke
+coverage and recommends a future liquidity or dollar-volume universe planning
+note before any code filters assets by volume. This change remains local and
+synthetic only. It does not modify source code, research scripts, reports,
+feature formulas, alpha modules, diagnostics, backtester behavior, metrics,
+real-data access, vendor downloads, credentials, live or paper trading,
+brokerage or order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_loader_smoke_demo.py
+6 passed
+
+python -m pytest -q
+327 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-06 - Strict Local OHLCV CSV Loader
 
 This code milestone implemented the next stage recommended by

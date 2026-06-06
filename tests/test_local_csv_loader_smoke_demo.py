@@ -5,10 +5,19 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_index_equal
 
-from data.csv_loader import load_benchmark_price_csv, load_wide_price_csv
+from data.csv_loader import (
+    load_benchmark_price_csv,
+    load_ohlcv_csv,
+    load_wide_price_csv,
+)
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "local_csv_loader_smoke"
+
+
+def _write_csv(path: Path, text: str) -> Path:
+    path.write_text(text, encoding="utf-8")
+    return path
 
 
 def test_local_synthetic_wide_price_fixture_loads_with_expected_audit_summary() -> None:
@@ -61,3 +70,88 @@ def test_local_synthetic_fixture_missing_values_require_explicit_policy() -> Non
     assert np.isnan(result.data.loc[pd.Timestamp("2024-01-03"), "BBB"])
     assert result.data.loc[pd.Timestamp("2024-01-02"), "BBB"] == 50.00
     assert result.data.loc[pd.Timestamp("2024-01-04"), "BBB"] == 50.50
+
+
+def test_local_synthetic_ohlcv_fixture_loads_with_expected_audit_summary() -> None:
+    result = load_ohlcv_csv(
+        FIXTURE_DIR / "synthetic_ohlcv.csv",
+        require_adjusted_close=True,
+    )
+
+    assert list(result.data.columns) == [
+        "date",
+        "symbol",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "adjusted_close",
+    ]
+    assert result.data["date"].tolist() == [
+        pd.Timestamp("2024-01-02"),
+        pd.Timestamp("2024-01-02"),
+        pd.Timestamp("2024-01-03"),
+        pd.Timestamp("2024-01-03"),
+    ]
+    assert result.data["symbol"].tolist() == ["AAA", "BBB", "AAA", "BBB"]
+    assert not result.data[["date", "symbol"]].duplicated().any()
+
+    numeric_columns = ["open", "high", "low", "close", "volume", "adjusted_close"]
+    assert result.data[numeric_columns].dtypes.eq(float).all()
+    assert result.data.loc[2, "close"] == 101.25
+    assert result.data.loc[3, "volume"] == 260000.0
+
+    assert (result.data["high"] >= result.data["low"]).all()
+    assert (result.data["high"] >= result.data["open"]).all()
+    assert (result.data["high"] >= result.data["close"]).all()
+    assert (result.data["low"] <= result.data["open"]).all()
+    assert (result.data["low"] <= result.data["close"]).all()
+
+    assert result.summary.schema == "ohlcv_long"
+    assert result.summary.source_path == FIXTURE_DIR / "synthetic_ohlcv.csv"
+    assert result.summary.source_row_count == 4
+    assert result.summary.value_column_count == 6
+    assert result.summary.start_date == pd.Timestamp("2024-01-02")
+    assert result.summary.end_date == pd.Timestamp("2024-01-03")
+    assert result.summary.missing_value_count == 0
+    assert result.summary.columns == (
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "adjusted_close",
+    )
+
+
+def test_local_synthetic_ohlcv_fixture_missing_values_require_explicit_policy(
+    tmp_path: Path,
+) -> None:
+    missing_fixture = _write_csv(
+        tmp_path / "synthetic_ohlcv_with_missing.csv",
+        "date,symbol,open,high,low,close,volume,adjusted_close\n"
+        "2024-01-02,AAA,100.00,101.00,99.50,100.50,100000,100.50\n"
+        "2024-01-03,AAA,,102.00,100.00,101.25,110000,101.25\n",
+    )
+
+    with pytest.raises(ValueError, match="missing values"):
+        load_ohlcv_csv(missing_fixture)
+
+    result = load_ohlcv_csv(missing_fixture, allow_missing=True)
+
+    assert result.summary.missing_value_count == 1
+    assert np.isnan(result.data.loc[1, "open"])
+
+
+def test_local_synthetic_ohlcv_smoke_demo_rejects_impossible_relationships(
+    tmp_path: Path,
+) -> None:
+    invalid_fixture = _write_csv(
+        tmp_path / "synthetic_ohlcv_invalid_relationship.csv",
+        "date,symbol,open,high,low,close,volume,adjusted_close\n"
+        "2024-01-02,AAA,100.00,99.00,99.50,100.50,100000,100.50\n",
+    )
+
+    with pytest.raises(ValueError, match="OHLC relationship"):
+        load_ohlcv_csv(invalid_fixture)
