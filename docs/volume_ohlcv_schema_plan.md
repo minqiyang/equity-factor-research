@@ -130,8 +130,9 @@ behavior:
 - Reject boolean columns as numeric market data.
 - Reject non-finite numeric values.
 - Reject negative volume.
-- Decide in a future implementation whether zero volume is valid but reported,
-  or invalid by default for the selected workflow.
+- Treat zero volume as valid loader input because it is non-negative local
+  market data; future liquidity or dollar-volume workflows must explicitly
+  report, filter, or reject zero-volume rows in their own scope.
 - Require positive `open`, `high`, `low`, `close`, and `adjusted_close` values
   when present.
 - Reject impossible OHLC relationships:

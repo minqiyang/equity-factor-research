@@ -12,6 +12,57 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Strict Local OHLCV CSV Loader
+
+This code milestone implemented the next stage recommended by
+`docs/volume_ohlcv_schema_plan.md`: a strict local OHLCV long-format CSV
+loader using committed synthetic fixtures only.
+
+Assumption: the reviewed OHLCV schema plan made the implementation scope clear
+enough to proceed without an additional documentation-only checklist. The
+stage is limited to local CSV validation and does not compute a strategy,
+generate reports, modify alpha formulas, modify diagnostics, modify the
+backtester, fetch data, add vendor APIs, add credentials, connect to a broker,
+place orders, support live or paper trading, or make profitability claims.
+
+`src/data/csv_loader.py` now exposes `load_ohlcv_csv()` and
+`ValidatedCSVFrame`. The loader preserves raw CSV strings through validation,
+requires local `.csv` paths, rejects duplicate headers, validates required
+`date`, `symbol`, `open`, `high`, `low`, `close`, and `volume` columns,
+supports optional or required `adjusted_close`, rejects duplicate
+`(date, symbol)` rows, rejects missing symbols, rejects missing or invalid
+numeric sentinels by default, preserves missing values only when
+`allow_missing=True`, requires positive OHLC and `adjusted_close` values when
+present, allows zero volume but rejects negative volume, and rejects impossible
+OHLC relationships.
+
+The zero-volume decision is intentionally narrow: zero volume is accepted as a
+non-negative local loader value so the loader does not impose liquidity-policy
+assumptions. Future liquidity or dollar-volume stages must explicitly report,
+filter, or reject zero-volume rows in their own tests and documentation.
+
+Test coverage in `tests/test_csv_loader.py` and
+`tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv` covers valid
+synthetic OHLCV loading, summary metadata, strict missing-value rejection,
+explicit missing preservation, duplicate date-symbol pairs, missing symbols,
+required adjusted close, negative and zero volume behavior, non-positive
+prices, and invalid OHLC relationships.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_csv_loader.py
+34 passed
+
+python -m pytest -q
+324 passed
+
+python -m compileall src tests research
+passed
+```
+
+---
+
 ## 2026-06-06 - Volume And OHLCV Schema Planning Gate
 
 This documentation-only milestone added

@@ -57,6 +57,14 @@ class ValidatedCSVSeries:
     summary: CSVValidationSummary
 
 
+@dataclass(frozen=True)
+class ValidatedCSVFrame:
+    """Validated long-form data frame plus audit metadata."""
+
+    data: pd.DataFrame
+    summary: CSVValidationSummary
+
+
 def load_wide_price_csv(
     csv_path: str | Path,
     *,
@@ -193,6 +201,112 @@ def load_benchmark_price_csv(
     )
 
 
+def load_ohlcv_csv(
+    csv_path: str | Path,
+    *,
+    date_column: str = "date",
+    symbol_column: str = "symbol",
+    open_column: str = "open",
+    high_column: str = "high",
+    low_column: str = "low",
+    close_column: str = "close",
+    volume_column: str = "volume",
+    adjusted_close_column: str = "adjusted_close",
+    require_adjusted_close: bool = False,
+    allow_missing: bool = False,
+) -> ValidatedCSVFrame:
+    """Load long-form OHLCV rows from a local CSV file.
+
+    The CSV must contain one row per date and symbol, with required open, high,
+    low, close, and volume columns. The optional adjusted-close column is
+    validated when present, or required when ``require_adjusted_close=True``.
+    Missing values are rejected by default and preserved only when
+    ``allow_missing=True``.
+    """
+
+    _validate_distinct_column_names(
+        [
+            date_column,
+            symbol_column,
+            open_column,
+            high_column,
+            low_column,
+            close_column,
+            volume_column,
+            adjusted_close_column,
+        ],
+        schema="ohlcv_long",
+    )
+
+    path = _validate_local_csv_path(csv_path)
+    raw = _read_local_csv(path)
+
+    required_columns = [
+        date_column,
+        symbol_column,
+        open_column,
+        high_column,
+        low_column,
+        close_column,
+        volume_column,
+    ]
+    if require_adjusted_close:
+        required_columns.append(adjusted_close_column)
+    _require_columns(raw, required_columns, schema="ohlcv_long")
+
+    dates = _parse_dates(raw[date_column], field_name=date_column)
+    symbols = _parse_symbols(raw[symbol_column], field_name=symbol_column)
+
+    duplicate_rows = pd.DataFrame({date_column: dates, symbol_column: symbols}).duplicated()
+    if duplicate_rows.any():
+        raise ValueError("ohlcv_long CSV must not contain duplicate (date, symbol) rows")
+
+    price_columns = [open_column, high_column, low_column, close_column]
+    value_columns = price_columns + [volume_column]
+    if adjusted_close_column in raw.columns:
+        value_columns.append(adjusted_close_column)
+
+    data: dict[str, Any] = {
+        date_column: dates,
+        symbol_column: symbols,
+    }
+    for column in value_columns:
+        data[column] = _parse_numeric_column(
+            raw[column],
+            field_name=column,
+            allow_missing=allow_missing,
+        ).to_numpy()
+
+    frame = pd.DataFrame(data)
+    _validate_positive_values(frame[price_columns], field_name="ohlcv_long price values")
+    if adjusted_close_column in frame.columns:
+        _validate_positive_values(frame[adjusted_close_column], field_name=adjusted_close_column)
+    _validate_non_negative_values(frame[volume_column], field_name=volume_column)
+    _validate_ohlc_relationships(
+        frame,
+        open_column=open_column,
+        high_column=high_column,
+        low_column=low_column,
+        close_column=close_column,
+    )
+
+    frame = frame.assign(_source_order=np.arange(len(frame)))
+    frame = frame.sort_values([date_column, "_source_order"], kind="mergesort")
+    frame = frame.drop(columns="_source_order").reset_index(drop=True)
+
+    return ValidatedCSVFrame(
+        data=frame,
+        summary=_frame_summary(
+            schema="ohlcv_long",
+            source_path=path,
+            source_row_count=len(raw),
+            frame=frame,
+            date_column=date_column,
+            value_columns=value_columns,
+        ),
+    )
+
+
 def _validate_local_csv_path(csv_path: str | Path) -> Path:
     raw_path = str(csv_path).strip()
     if raw_path.lower().startswith(REMOTE_PATH_PREFIXES):
@@ -228,6 +342,12 @@ def _require_columns(frame: pd.DataFrame, columns: list[str], *, schema: str) ->
     missing = [column for column in columns if column not in frame.columns]
     if missing:
         raise ValueError(f"{schema} CSV is missing required columns: {missing}")
+
+
+def _validate_distinct_column_names(columns: list[str], *, schema: str) -> None:
+    duplicates = _duplicates(columns)
+    if duplicates:
+        raise ValueError(f"{schema} column names must be distinct: {duplicates}")
 
 
 def _parse_dates(values: pd.Series, *, field_name: str) -> pd.DatetimeIndex:
@@ -314,6 +434,59 @@ def _validate_positive_values(values: pd.DataFrame | pd.Series, *, field_name: s
         raise ValueError(f"{field_name} must contain only positive values when present")
 
 
+def _validate_non_negative_values(values: pd.Series, *, field_name: str) -> None:
+    invalid = values.notna() & values.lt(0.0)
+    if bool(invalid.any()):
+        raise ValueError(f"{field_name} must contain only non-negative values when present")
+
+
+def _validate_ohlc_relationships(
+    frame: pd.DataFrame,
+    *,
+    open_column: str,
+    high_column: str,
+    low_column: str,
+    close_column: str,
+) -> None:
+    relationships = [
+        (
+            high_column,
+            low_column,
+            frame[high_column] < frame[low_column],
+            f"{high_column} >= {low_column}",
+        ),
+        (
+            high_column,
+            open_column,
+            frame[high_column] < frame[open_column],
+            f"{high_column} >= {open_column}",
+        ),
+        (
+            high_column,
+            close_column,
+            frame[high_column] < frame[close_column],
+            f"{high_column} >= {close_column}",
+        ),
+        (
+            low_column,
+            open_column,
+            frame[low_column] > frame[open_column],
+            f"{low_column} <= {open_column}",
+        ),
+        (
+            low_column,
+            close_column,
+            frame[low_column] > frame[close_column],
+            f"{low_column} <= {close_column}",
+        ),
+    ]
+
+    for left_column, right_column, invalid, requirement in relationships:
+        comparable = frame[left_column].notna() & frame[right_column].notna()
+        if bool((comparable & invalid).any()):
+            raise ValueError(f"ohlcv_long CSV has invalid OHLC relationship: {requirement}")
+
+
 def _panel_summary(
     *,
     schema: str,
@@ -333,6 +506,27 @@ def _panel_summary(
     )
 
 
+def _frame_summary(
+    *,
+    schema: str,
+    source_path: Path,
+    source_row_count: int,
+    frame: pd.DataFrame,
+    date_column: str,
+    value_columns: list[str],
+) -> CSVValidationSummary:
+    return CSVValidationSummary(
+        schema=schema,
+        source_path=source_path,
+        source_row_count=source_row_count,
+        value_column_count=len(value_columns),
+        start_date=frame[date_column].min(),
+        end_date=frame[date_column].max(),
+        missing_value_count=int(frame[value_columns].isna().sum().sum()),
+        columns=tuple(value_columns),
+    )
+
+
 def _unique_in_order(values: pd.Series) -> list[Any]:
     return list(dict.fromkeys(values.to_list()))
 
@@ -349,9 +543,11 @@ def _duplicates(values: list[str]) -> list[str]:
 
 __all__ = [
     "CSVValidationSummary",
+    "ValidatedCSVFrame",
     "ValidatedCSVPanel",
     "ValidatedCSVSeries",
     "load_benchmark_price_csv",
     "load_long_price_csv",
+    "load_ohlcv_csv",
     "load_wide_price_csv",
 ]

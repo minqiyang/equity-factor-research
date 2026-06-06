@@ -10,10 +10,15 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 import data.csv_loader as csv_loader
 from data.csv_loader import (
     CSVValidationSummary,
+    ValidatedCSVFrame,
     load_benchmark_price_csv,
     load_long_price_csv,
+    load_ohlcv_csv,
     load_wide_price_csv,
 )
+
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures" / "local_csv_loader_smoke"
 
 
 def _write_csv(path: Path, text: str) -> Path:
@@ -162,6 +167,157 @@ def test_load_long_price_csv_rejects_duplicate_pairs_and_missing_symbols(
     )
     with pytest.raises(ValueError, match="missing symbols"):
         load_long_price_csv(missing_symbol_path)
+
+
+def test_load_ohlcv_csv_returns_validated_frame_and_summary() -> None:
+    result = load_ohlcv_csv(FIXTURE_DIR / "synthetic_ohlcv.csv")
+
+    expected = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                ["2024-01-02", "2024-01-02", "2024-01-03", "2024-01-03"]
+            ),
+            "symbol": ["AAA", "BBB", "AAA", "BBB"],
+            "open": [100.00, 50.00, 100.50, 50.25],
+            "high": [101.00, 50.75, 102.00, 51.00],
+            "low": [99.50, 49.75, 100.00, 50.00],
+            "close": [100.50, 50.25, 101.25, 50.75],
+            "volume": [100000.0, 250000.0, 110000.0, 260000.0],
+            "adjusted_close": [100.50, 50.25, 101.25, 50.75],
+        }
+    )
+    assert_frame_equal(result.data, expected)
+    assert isinstance(result, ValidatedCSVFrame)
+    assert result.summary.schema == "ohlcv_long"
+    assert result.summary.source_row_count == 4
+    assert result.summary.value_column_count == 6
+    assert result.summary.missing_value_count == 0
+    assert result.summary.columns == (
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "adjusted_close",
+    )
+
+
+@pytest.mark.parametrize("bad_value", ["bad", "nan", "NaN", "NA", "null", "", " ", "   "])
+def test_load_ohlcv_csv_rejects_invalid_or_missing_numeric_values_by_default(
+    tmp_path: Path,
+    bad_value: str,
+) -> None:
+    csv_path = _write_csv(
+        tmp_path / f"bad_ohlcv_{bad_value or 'blank'}.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,100000\n"
+        f"2024-01-03,AAA,100.5,102,100,101.25,{bad_value}\n",
+    )
+
+    with pytest.raises((TypeError, ValueError)):
+        load_ohlcv_csv(csv_path)
+
+
+def test_load_ohlcv_csv_can_preserve_missing_values_when_explicit(tmp_path: Path) -> None:
+    csv_path = _write_csv(
+        tmp_path / "ohlcv_missing_allowed.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,100000\n"
+        "2024-01-03,AAA,,102,100,101.25,110000\n",
+    )
+
+    result = load_ohlcv_csv(csv_path, allow_missing=True)
+
+    assert np.isnan(result.data.loc[1, "open"])
+    assert result.summary.missing_value_count == 1
+
+
+def test_load_ohlcv_csv_rejects_duplicate_pairs_and_missing_symbols(
+    tmp_path: Path,
+) -> None:
+    duplicate_path = _write_csv(
+        tmp_path / "duplicate_ohlcv_pair.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,100000\n"
+        "2024-01-02,AAA,101,102,100,101.5,110000\n",
+    )
+    with pytest.raises(ValueError, match="duplicate"):
+        load_ohlcv_csv(duplicate_path)
+
+    missing_symbol_path = _write_csv(
+        tmp_path / "missing_ohlcv_symbol.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,,100,101,99,100.5,100000\n",
+    )
+    with pytest.raises(ValueError, match="missing symbols"):
+        load_ohlcv_csv(missing_symbol_path)
+
+
+def test_load_ohlcv_csv_validates_adjusted_close_policy(tmp_path: Path) -> None:
+    no_adjusted_close_path = _write_csv(
+        tmp_path / "ohlcv_no_adjusted_close.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,100000\n",
+    )
+    with pytest.raises(ValueError, match="adjusted_close"):
+        load_ohlcv_csv(no_adjusted_close_path, require_adjusted_close=True)
+
+    result = load_ohlcv_csv(FIXTURE_DIR / "synthetic_ohlcv.csv", require_adjusted_close=True)
+
+    assert "adjusted_close" in result.data.columns
+    assert result.summary.columns == (
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "adjusted_close",
+    )
+
+
+def test_load_ohlcv_csv_rejects_negative_volume_but_allows_zero_volume(
+    tmp_path: Path,
+) -> None:
+    negative_volume_path = _write_csv(
+        tmp_path / "negative_volume.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,-1\n",
+    )
+    with pytest.raises(ValueError, match="non-negative"):
+        load_ohlcv_csv(negative_volume_path)
+
+    zero_volume_path = _write_csv(
+        tmp_path / "zero_volume.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,101,99,100.5,0\n",
+    )
+    result = load_ohlcv_csv(zero_volume_path)
+
+    assert result.data.loc[0, "volume"] == 0.0
+
+
+def test_load_ohlcv_csv_rejects_non_positive_prices(tmp_path: Path) -> None:
+    csv_path = _write_csv(
+        tmp_path / "non_positive_ohlcv.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,0,101,99,100.5,100000\n",
+    )
+
+    with pytest.raises(ValueError, match="positive"):
+        load_ohlcv_csv(csv_path)
+
+
+def test_load_ohlcv_csv_rejects_impossible_ohlc_relationships(
+    tmp_path: Path,
+) -> None:
+    csv_path = _write_csv(
+        tmp_path / "bad_ohlc_relationship.csv",
+        "date,symbol,open,high,low,close,volume\n"
+        "2024-01-02,AAA,100,98,99,100.5,100000\n",
+    )
+
+    with pytest.raises(ValueError, match="OHLC relationship"):
+        load_ohlcv_csv(csv_path)
 
 
 def test_load_benchmark_price_csv_returns_validated_series(tmp_path: Path) -> None:

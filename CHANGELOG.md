@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a strict local OHLCV long-format CSV loader with committed synthetic
+  fixture coverage for raw-string validation, missing-value sentinels,
+  duplicate `(date, symbol)` rows, positive OHLC prices, non-negative volume,
+  optional `adjusted_close`, and impossible OHLC relationships.
 - Added `docs/volume_ohlcv_schema_plan.md` as a documentation-only planning
   gate for future local volume and OHLCV CSV schema support before any
   volume-dependent factor or OHLC-dependent alpha implementation.
