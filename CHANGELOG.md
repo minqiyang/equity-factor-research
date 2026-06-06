@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added synthetic-only liquidity eligibility helpers for rolling average daily
+  volume and rolling average dollar volume, with explicit lag, warm-up,
+  missing-value, and zero-volume tests.
 - Added `docs/liquidity_dollar_volume_universe_plan.md` as a
   documentation-only planning gate for future synthetic liquidity and
   dollar-volume universe eligibility work before any code filters assets by
