@@ -41,19 +41,22 @@ brokerage integration, and no performance interpretation.
 
 ## Current State
 
-Current local CSV support is intentionally narrow:
+Current local CSV support is intentionally narrow and local-file-only:
 
 | Current loader | Input shape | Current role |
 | --- | --- | --- |
 | `load_wide_price_csv()` | `date` plus one adjusted-close column per asset | Wide adjusted-close research panel |
 | `load_long_price_csv()` | `date`, `symbol`, `adjusted_close` | Long adjusted-close rows pivoted to a wide panel |
 | `load_benchmark_price_csv()` | `date`, `benchmark_price` | Date-indexed benchmark price series |
+| `load_ohlcv_csv()` | `date`, `symbol`, `open`, `high`, `low`, `close`, `volume`, optional `adjusted_close` | Long OHLCV validation frame for fixture diagnostics and future data-dependent planning |
 
-The current loader already rejects remote URL-like paths, duplicate headers,
-bad dates, duplicate dates, duplicate `(date, symbol)` rows, non-positive
-prices, invalid numeric strings, default missing values, and silent
-string-to-`NaN` coercion. Those strict defaults should carry forward into any
-future volume or OHLCV loader.
+The current loader rejects remote URL-like paths, duplicate headers, bad dates,
+duplicate dates or duplicate `(date, symbol)` rows where applicable,
+non-positive price fields, negative volume, invalid numeric strings, default
+missing values, silent string-to-`NaN` coercion, and invalid OHLC
+relationships. These strict defaults should carry forward into any future
+volume-only loader, liquidity filter, dollar-volume workflow, or OHLC-dependent
+alpha stage.
 
 ## Proposed Future Schemas
 
@@ -190,12 +193,14 @@ before any local CSV result is interpreted.
 ## Future PR-Sized Stages
 
 1. Add a synthetic volume/OHLCV loader design review test plan, still
-   documentation-only if implementation details remain ambiguous.
+   documentation-only if implementation details remain ambiguous. Completed by
+   this planning gate because the implementation boundary was clear enough to
+   proceed directly.
 2. Implement a strict local OHLCV long-format loader using committed synthetic
-   fixtures only.
+   fixtures only. Completed by `load_ohlcv_csv()` and focused loader tests.
 3. Add a synthetic OHLCV loader smoke demo that validates schema, missing-value
    policy, OHLC relationships, and summary metadata without computing a
-   strategy.
+   strategy. Completed by fixture-level smoke tests.
 4. Add a liquidity or dollar-volume universe planning note before any code
    filters assets by volume.
 5. Plan the next data-dependent alpha stage, such as `alpha_012` or
@@ -210,7 +215,8 @@ brokerage integration, order execution, or profitability claims.
 
 ## Recommended Next Stage After This Plan
 
-After this plan is reviewed and merged, the next safe stage should be a strict
-local OHLCV long-format loader design or implementation decision. If the scope
-is clear, implement the loader with committed synthetic fixtures only. If the
-scope is still ambiguous, add a short implementation checklist first.
+After the strict OHLCV loader and synthetic smoke-demo stages are reviewed and
+merged, the next safe stage should be a liquidity or dollar-volume universe
+planning note. That planning stage should define local-only inputs,
+date-alignment rules, zero-volume handling, dollar-volume formulas, and stop
+conditions before any code filters assets by volume.
