@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Short-Term Reversal Feature
+
+This code milestone implemented the next safe stage recommended by
+`docs/post_liquidity_checkpoint_report.md`: a small close-price
+short-term reversal research feature.
+
+Assumption: the reversal score convention should make higher values represent
+stronger contrarian candidates. `calculate_short_term_reversal()` therefore
+computes the negative trailing return over a configurable lookback window:
+
+```text
+-(price[t] / price[t - lookback_periods] - 1)
+```
+
+The feature uses explicit current and trailing price anchors only. It preserves
+the input dates and asset columns, does not sort or reindex input data, does
+not fill missing values, and returns `NaN` when either required anchor is
+missing or non-positive. Execution timing, signal lag, portfolio construction,
+costs, slippage, backtesting, and interpretation remain separate later-stage
+responsibilities.
+
+Focused tests in `tests/test_reversal.py` cover hand-calculated sign
+convention, no-lookahead behavior, date/column alignment, missing anchor
+handling without fills, non-positive anchor handling, sorted and duplicate date
+validation, lookback validation, and non-numeric input rejection.
+
+This stage does not fetch real data, add vendor access, add credentials,
+connect to a broker, place orders, support live or paper trading, modify the
+backtester, generate reports, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_reversal.py
+13 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Post-Liquidity Roadmap Checkpoint
 
 This documentation checkpoint refreshed the roadmap after PR #58 merged the

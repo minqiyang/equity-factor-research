@@ -23,6 +23,82 @@ problems, include:
 
 ---
 
+## 2026-06-06 - Reversal Missing-Value Test Assumed Full Interior Window
+
+Original mistake:
+
+- Wrote the first short-term reversal missing-value test as if every row inside
+  the lookback span had to be non-missing.
+- The implemented and documented formula uses explicit current and trailing
+  price anchors:
+
+```text
+-(price[t] / price[t - lookback_periods] - 1)
+```
+
+- Under that anchor-based formula, a missing non-anchor price inside the span is
+  not used in the calculation and should not force the score to `NaN`.
+
+Consequence:
+
+- The focused reversal test suite failed even though the implementation
+  matched the explicit anchor formula.
+- The failure exposed that the test was enforcing an unstated rolling-window
+  completeness policy rather than the chosen return-anchor policy.
+
+Evidence:
+
+```text
+tests/test_reversal.py::test_short_term_reversal_does_not_fill_missing_values
+
+AssertionError: assert np.False_
+where np.False_ = np.isnan(np.float64(0.09999999999999998))
+```
+
+Investigation:
+
+- Checked the failing row and confirmed `lookback_periods=2` at
+  `2024-03-31` used the valid anchors `2024-01-31` and `2024-03-31`.
+- Confirmed the missing value on `2024-02-29` was an interior non-anchor value.
+- Compared the design to the existing momentum implementation, which also uses
+  explicit anchors rather than requiring every interior row to be present.
+
+Correction attempts:
+
+- Did not change the implementation to require full interior windows because
+  that would silently change the stated reversal formula and make it less
+  consistent with the existing momentum feature style.
+- Updated the test to assert the valid anchor-based score for the interior-gap
+  row and retain `NaN` expectations for missing current or trailing anchors.
+
+Final fix:
+
+- `tests/test_reversal.py` now verifies that missing anchor values produce
+  `NaN`, while a missing non-anchor row does not alter the explicit
+  anchor-based return calculation.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_reversal.py
+13 passed
+```
+
+Remaining caveats:
+
+- If a future reversal definition needs a full-window cumulative-return or
+  rolling-quality policy, it should be added as a separately named helper with
+  its own tests rather than changing this anchor-based feature silently.
+
+Prevention:
+
+- When testing feature missing-data behavior, first identify exactly which
+  observations the formula consumes.
+- Keep formula-level tests aligned with the documented calculation instead of
+  adding stricter data-quality requirements implicitly.
+
+---
+
 ## 2026-06-06 - PowerShell Multi-Path Listing Command Failed
 
 Original mistake:

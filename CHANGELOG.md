@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a short-term reversal research feature that computes negative trailing
+  returns from adjusted-close panels with deterministic date-alignment,
+  missing-anchor, non-positive-anchor, and input-validation tests.
 - Added `docs/post_liquidity_checkpoint_report.md` to refresh the roadmap
   after the OHLCV and liquidity eligibility stages and recommend the next
   short-term reversal stage from current evidence.
