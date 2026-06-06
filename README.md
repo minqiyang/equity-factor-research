@@ -113,16 +113,6 @@ components, evaluation standards, and limitations, see
 
 ## Research Safety And Scope
 
-This project is not:
-
-- live trading.
-- paper trading.
-- broker integration.
-- order execution logic.
-- a data downloader.
-- financial advice.
-- proof that any strategy is profitable.
-
 All current reports use synthetic data or committed synthetic local fixtures.
 Future real-data work must document the data source, universe, sample splits,
 benchmark, costs, slippage, limitations, and validation process before any
