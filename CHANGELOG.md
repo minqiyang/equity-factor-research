@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a realized volatility research feature that computes trailing standard
+  deviation of one-period adjusted-price returns with deterministic
+  no-lookahead, full-window, missing-anchor, non-positive-anchor, and
+  input-validation tests.
 - Added a short-term reversal research feature that computes negative trailing
   returns from adjusted-close panels with deterministic date-alignment,
   missing-anchor, non-positive-anchor, and input-validation tests.
