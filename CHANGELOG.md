@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic liquidity eligibility count smoke check to the local CSV
+  fixture workflow demo, using the committed OHLCV fixture to report lagged ADV
+  and dollar-volume eligibility counts without constructing a universe or
+  interpreting performance.
 - Added synthetic-only liquidity eligibility helpers for rolling average daily
   volume and rolling average dollar volume, with explicit lag, warm-up,
   missing-value, and zero-volume tests.

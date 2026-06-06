@@ -8,6 +8,7 @@ support live trading, run a backtest, or make a profitability claim.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -15,6 +16,7 @@ import pandas as pd
 from data.csv_loader import (
     CSVValidationSummary,
     load_benchmark_price_csv,
+    load_ohlcv_csv,
     load_wide_price_csv,
 )
 from features.diagnostics import (
@@ -26,6 +28,10 @@ from features.validation import (
     TrainValidationTestSplit,
     make_train_validation_test_split,
     split_panel_by_train_validation_test,
+)
+from features.liquidity import (
+    average_daily_volume_eligibility,
+    average_dollar_volume_eligibility,
 )
 from features.worldquant_alphas import alpha_009
 from reporting.experiment_log import (
@@ -39,6 +45,7 @@ from reporting.experiment_registry import write_experiment_registry_report
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PRICE_FIXTURE = "tests/fixtures/local_csv_loader_smoke/synthetic_adjusted_close.csv"
 DEFAULT_BENCHMARK_FIXTURE = "tests/fixtures/local_csv_loader_smoke/synthetic_benchmark.csv"
+DEFAULT_OHLCV_FIXTURE = "tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv"
 DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "local_csv_fixture_workflow_demo.md"
 DEFAULT_EXPERIMENT_LOG_PATH = (
     PROJECT_ROOT / "reports" / "experiment_logs" / "local_csv_fixture_workflow_demo.json"
@@ -52,6 +59,7 @@ class LocalCSVFixtureWorkflowConfig:
 
     price_fixture: str = DEFAULT_PRICE_FIXTURE
     benchmark_fixture: str = DEFAULT_BENCHMARK_FIXTURE
+    ohlcv_fixture: str = DEFAULT_OHLCV_FIXTURE
     alpha_window: int = 1
     forward_return_horizon_rows: int = 1
     ic_min_periods: int = 2
@@ -60,6 +68,11 @@ class LocalCSVFixtureWorkflowConfig:
     train_end: str = "2024-01-02"
     validation_end: str = "2024-01-03"
     test_end: str | None = None
+    liquidity_window: int = 2
+    min_average_volume: float = 100_000.0
+    min_average_dollar_volume: float = 11_000_000.0
+    liquidity_eligibility_lag: int = 1
+    liquidity_price_column: str = "adjusted_close"
 
 
 @dataclass(frozen=True)
@@ -68,8 +81,15 @@ class LocalCSVFixtureWorkflowResult:
 
     prices: pd.DataFrame
     benchmark_prices: pd.Series
+    ohlcv: pd.DataFrame
     price_summary: CSVValidationSummary
     benchmark_summary: CSVValidationSummary
+    ohlcv_summary: CSVValidationSummary
+    liquidity_price_panel: pd.DataFrame
+    liquidity_volume_panel: pd.DataFrame
+    average_daily_volume_eligibility: pd.DataFrame
+    average_dollar_volume_eligibility: pd.DataFrame
+    liquidity_eligibility_summary: pd.DataFrame
     alpha_009_factor: pd.DataFrame
     forward_returns: pd.DataFrame
     benchmark_forward_returns: pd.Series
@@ -108,9 +128,45 @@ def run_local_csv_fixture_workflow_demo(
     benchmark_result = load_benchmark_price_csv(
         _resolve_project_fixture(config.benchmark_fixture),
     )
+    ohlcv_result = load_ohlcv_csv(
+        _resolve_project_fixture(config.ohlcv_fixture),
+        require_adjusted_close=True,
+    )
     prices = price_result.data
     benchmark_prices = benchmark_result.data
+    ohlcv = ohlcv_result.data
     _validate_benchmark_alignment(prices, benchmark_prices)
+
+    liquidity_price_panel = _pivot_ohlcv_panel(
+        ohlcv,
+        value_column=config.liquidity_price_column,
+        index=prices.index,
+        columns=prices.columns,
+    )
+    liquidity_volume_panel = _pivot_ohlcv_panel(
+        ohlcv,
+        value_column="volume",
+        index=prices.index,
+        columns=prices.columns,
+    )
+    adv_eligibility = average_daily_volume_eligibility(
+        liquidity_volume_panel,
+        window=config.liquidity_window,
+        min_average_volume=config.min_average_volume,
+        eligibility_lag=config.liquidity_eligibility_lag,
+    )
+    dollar_volume_eligibility = average_dollar_volume_eligibility(
+        liquidity_price_panel,
+        liquidity_volume_panel,
+        window=config.liquidity_window,
+        min_average_dollar_volume=config.min_average_dollar_volume,
+        eligibility_lag=config.liquidity_eligibility_lag,
+    )
+    liquidity_eligibility_summary = summarize_liquidity_eligibility(
+        volume_panel=liquidity_volume_panel,
+        adv_eligibility=adv_eligibility,
+        dollar_volume_eligibility=dollar_volume_eligibility,
+    )
 
     alpha_factor = alpha_009(prices, window=config.alpha_window)
     forward_returns = _future_returns(prices, periods=config.forward_return_horizon_rows)
@@ -187,8 +243,15 @@ def run_local_csv_fixture_workflow_demo(
     result = LocalCSVFixtureWorkflowResult(
         prices=prices,
         benchmark_prices=benchmark_prices,
+        ohlcv=ohlcv,
         price_summary=price_result.summary,
         benchmark_summary=benchmark_result.summary,
+        ohlcv_summary=ohlcv_result.summary,
+        liquidity_price_panel=liquidity_price_panel,
+        liquidity_volume_panel=liquidity_volume_panel,
+        average_daily_volume_eligibility=adv_eligibility,
+        average_dollar_volume_eligibility=dollar_volume_eligibility,
+        liquidity_eligibility_summary=liquidity_eligibility_summary,
         alpha_009_factor=alpha_factor,
         forward_returns=forward_returns,
         benchmark_forward_returns=benchmark_forward_returns,
@@ -213,6 +276,39 @@ def run_local_csv_fixture_workflow_demo(
             write_experiment_registry_report()
 
     return result
+
+
+def summarize_liquidity_eligibility(
+    *,
+    volume_panel: pd.DataFrame,
+    adv_eligibility: pd.DataFrame,
+    dollar_volume_eligibility: pd.DataFrame,
+) -> pd.DataFrame:
+    """Summarize synthetic liquidity eligibility counts by decision date."""
+
+    if not adv_eligibility.index.equals(dollar_volume_eligibility.index):
+        raise ValueError("liquidity eligibility masks must have identical indexes")
+    if not adv_eligibility.columns.equals(dollar_volume_eligibility.columns):
+        raise ValueError("liquidity eligibility masks must have identical columns")
+    if not volume_panel.index.equals(adv_eligibility.index):
+        raise ValueError("volume panel and eligibility masks must have identical indexes")
+    if not volume_panel.columns.equals(adv_eligibility.columns):
+        raise ValueError("volume panel and eligibility masks must have identical columns")
+
+    both_eligible = adv_eligibility & dollar_volume_eligibility
+    summary = pd.DataFrame(
+        {
+            "asset_count": len(volume_panel.columns),
+            "volume_observed_asset_count": volume_panel.notna().sum(axis=1),
+            "missing_volume_count": volume_panel.isna().sum(axis=1),
+            "zero_volume_count": volume_panel.eq(0.0).sum(axis=1),
+            "adv_eligible_count": adv_eligibility.sum(axis=1),
+            "dollar_volume_eligible_count": dollar_volume_eligibility.sum(axis=1),
+            "both_eligible_count": both_eligible.sum(axis=1),
+        },
+        index=volume_panel.index,
+    )
+    return summary.astype(int)
 
 
 def summarize_split_diagnostics(
@@ -273,8 +369,8 @@ def write_workflow_experiment_log(
         summary=(
             "Deterministic smoke demo that loads committed synthetic local CSV "
             "fixtures, computes alpha_009 as a research feature, and evaluates "
-            "diagnostic IC, Rank IC, and quantile spread against aligned "
-            "forward-return targets."
+            "diagnostic liquidity eligibility counts, IC, Rank IC, and "
+            "quantile spread against aligned forward-return targets."
         ),
         config=config,
         assumptions={
@@ -285,11 +381,26 @@ def write_workflow_experiment_log(
             ),
             "price_fixture": config.price_fixture,
             "benchmark_fixture": config.benchmark_fixture,
+            "ohlcv_fixture": config.ohlcv_fixture,
             "universe": f"{result.prices.shape[1]} synthetic fixture assets",
             "date_range": {
                 "start": result.prices.index.min().date(),
                 "end": result.prices.index.max().date(),
             },
+            "liquidity_check": (
+                "synthetic decision-date eligibility count smoke check only; "
+                "not a universe-selection study"
+            ),
+            "liquidity_window": config.liquidity_window,
+            "liquidity_eligibility_lag": config.liquidity_eligibility_lag,
+            "liquidity_price_column": config.liquidity_price_column,
+            "min_average_volume": config.min_average_volume,
+            "min_average_dollar_volume": config.min_average_dollar_volume,
+            "liquidity_timing": (
+                "rolling liquidity observations through date t are shifted by "
+                "one row before appearing on a decision date; missing and "
+                "zero-volume counts are reported separately and are not filled"
+            ),
             "feature": f"alpha_009 with window={config.alpha_window}",
             "feature_timing": (
                 "alpha_009 at date t uses close[t] and earlier closes only; "
@@ -328,10 +439,23 @@ def write_workflow_experiment_log(
             "price_rows": result.prices.shape[0],
             "asset_count": result.prices.shape[1],
             "benchmark_rows": int(result.benchmark_prices.shape[0]),
+            "ohlcv_rows": int(result.ohlcv.shape[0]),
             "split_names": list(SPLIT_NAMES),
         },
         metrics={},
         diagnostics={
+            "liquidity_eligibility_summary": _date_indexed_frame_to_dict(
+                result.liquidity_eligibility_summary,
+            ),
+            "adv_eligible_counts_by_date": _series_to_date_dict(
+                result.liquidity_eligibility_summary["adv_eligible_count"],
+            ),
+            "dollar_volume_eligible_counts_by_date": _series_to_date_dict(
+                result.liquidity_eligibility_summary["dollar_volume_eligible_count"],
+            ),
+            "both_liquidity_rules_eligible_counts_by_date": _series_to_date_dict(
+                result.liquidity_eligibility_summary["both_eligible_count"],
+            ),
             "split_summary": result.split_summary.to_dict(orient="index"),
             "information_coefficient_by_date": _series_to_date_dict(
                 result.information_coefficient,
@@ -366,6 +490,8 @@ def write_workflow_experiment_log(
             *SYNTHETIC_RESEARCH_CAVEATS,
             "local CSV fixture smoke demo only",
             "split-aware wiring check only",
+            "liquidity eligibility count smoke check only",
+            "not universe construction",
             "not strategy validation",
             "not model selection",
             "not evidence of real-world performance",
@@ -398,11 +524,13 @@ Exercise the local CSV research path with a small committed fixture:
 
 1. Load a wide adjusted-close CSV with the strict local loader.
 2. Load a benchmark CSV and verify date alignment.
-3. Compute `alpha_009` as a close-only research feature.
-4. Compute next-row forward returns as evaluation targets only.
-5. Apply chronological train/validation/test split metadata.
-6. Run IC, Rank IC, and quantile spread diagnostics.
-7. Write a caveated report and JSON experiment log.
+3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
+4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
+5. Compute `alpha_009` as a close-only research feature.
+6. Compute next-row forward returns as evaluation targets only.
+7. Apply chronological train/validation/test split metadata.
+8. Run IC, Rank IC, and quantile spread diagnostics.
+9. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -410,9 +538,12 @@ Exercise the local CSV research path with a small committed fixture:
 | --- | --- |
 | Price fixture | `{config.price_fixture}` |
 | Benchmark fixture | `{config.benchmark_fixture}` |
+| OHLCV fixture | `{config.ohlcv_fixture}` |
 | Price schema | `{result.price_summary.schema}` |
 | Benchmark schema | `{result.benchmark_summary.schema}` |
+| OHLCV schema | `{result.ohlcv_summary.schema}` |
 | Price rows | `{result.price_summary.source_row_count}` |
+| OHLCV rows | `{result.ohlcv_summary.source_row_count}` |
 | Asset columns | `{", ".join(result.price_summary.columns)}` |
 | Date range | `{result.prices.index.min().date()}` to `{result.prices.index.max().date()}` |
 | Train end | `{result.split.train_end.date()}` |
@@ -428,6 +559,14 @@ The workflow preserves the loader output date index and asset columns, verifies 
 The train/validation/test metadata is a chronological fixture split by factor and evaluation-target row date only. The one-row forward returns are diagnostic labels, not feature inputs, and are not used for parameter selection. This tiny fixture split is not model selection, parameter tuning, strategy validation, or real-market evidence.
 
 No missing values were filled. No dates or assets were reindexed. No portfolio construction, execution timing, transaction cost model, slippage model, or backtest is included.
+
+## Liquidity Eligibility Smoke Check
+
+The workflow loads the committed synthetic OHLCV fixture and pivots `{config.liquidity_price_column}` and `volume` into panels aligned to the adjusted-close fixture's dates and assets. Missing OHLCV rows after that alignment remain missing; there is no fill, forward-fill, backward-fill, interpolation, or zero default.
+
+Eligibility counts below are decision-date diagnostics only. They use `window={config.liquidity_window}`, `eligibility_lag={config.liquidity_eligibility_lag}`, `min_average_volume={_format_float(config.min_average_volume)}`, and `min_average_dollar_volume={_format_float(config.min_average_dollar_volume)}`. They do not construct a universe, run a strategy, or validate market tradability.
+
+{_format_markdown_table(result.liquidity_eligibility_summary)}
 
 ## Split Coverage
 
@@ -461,6 +600,7 @@ No missing values were filled. No dates or assets were reindexed. No portfolio c
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
+- The liquidity eligibility counts are synthetic decision-date diagnostics, not universe construction or tradeability evidence.
 - `alpha_009` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
 - No local CSV result here should be interpreted without the real-data readiness audit and full experiment-log requirements.
@@ -514,11 +654,60 @@ def _validate_config(config: LocalCSVFixtureWorkflowConfig) -> None:
         raise TypeError("min_assets_per_quantile must be an integer")
     if config.min_assets_per_quantile < 1:
         raise ValueError("min_assets_per_quantile must be at least 1")
+    if (
+        isinstance(config.liquidity_window, bool)
+        or not isinstance(config.liquidity_window, int)
+    ):
+        raise TypeError("liquidity_window must be an integer")
+    if config.liquidity_window < 1:
+        raise ValueError("liquidity_window must be at least 1")
+    if (
+        isinstance(config.liquidity_eligibility_lag, bool)
+        or not isinstance(config.liquidity_eligibility_lag, int)
+    ):
+        raise TypeError("liquidity_eligibility_lag must be an integer")
+    if config.liquidity_eligibility_lag < 1:
+        raise ValueError("liquidity_eligibility_lag must be at least 1")
+    _validate_positive_finite_float(
+        config.min_average_volume,
+        "min_average_volume",
+    )
+    _validate_positive_finite_float(
+        config.min_average_dollar_volume,
+        "min_average_dollar_volume",
+    )
+    if config.liquidity_price_column not in {"close", "adjusted_close"}:
+        raise ValueError("liquidity_price_column must be 'close' or 'adjusted_close'")
 
 
 def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) -> None:
     if not benchmark.index.equals(prices.index):
         raise ValueError("benchmark fixture dates must match price fixture dates")
+
+
+def _validate_positive_finite_float(value: float, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be numeric")
+    if not math.isfinite(float(value)) or float(value) <= 0.0:
+        raise ValueError(f"{name} must be a positive finite value")
+
+
+def _pivot_ohlcv_panel(
+    frame: pd.DataFrame,
+    *,
+    value_column: str,
+    index: pd.DatetimeIndex,
+    columns: pd.Index,
+) -> pd.DataFrame:
+    if value_column not in frame.columns:
+        raise ValueError(f"OHLCV fixture is missing {value_column}")
+
+    panel = frame.pivot(index="date", columns="symbol", values=value_column)
+    panel = panel.sort_index()
+    panel.columns.name = None
+    panel = panel.reindex(index=index, columns=columns)
+    panel.index.name = index.name
+    return panel.astype(float)
 
 
 def _split_boundary_dict(split: TrainValidationTestSplit) -> dict[str, str]:
@@ -537,6 +726,16 @@ def _series_to_date_dict(series: pd.Series) -> dict[str, float]:
     return {
         pd.Timestamp(index).date().isoformat(): float(value)
         for index, value in series.items()
+    }
+
+
+def _date_indexed_frame_to_dict(frame: pd.DataFrame) -> dict[str, dict[str, float]]:
+    return {
+        pd.Timestamp(index).date().isoformat(): {
+            str(column): float(value)
+            for column, value in row.items()
+        }
+        for index, row in frame.iterrows()
     }
 
 

@@ -10,6 +10,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 import research.local_csv_fixture_workflow_demo as demo
 from research.local_csv_fixture_workflow_demo import (
     DEFAULT_BENCHMARK_FIXTURE,
+    DEFAULT_OHLCV_FIXTURE,
     DEFAULT_PRICE_FIXTURE,
     LocalCSVFixtureWorkflowConfig,
     main,
@@ -28,10 +29,13 @@ def test_local_csv_fixture_workflow_loads_committed_fixtures() -> None:
         )
     )
     assert result.benchmark_prices.index.equals(result.prices.index)
+    assert result.ohlcv["symbol"].tolist() == ["AAA", "BBB", "AAA", "BBB"]
     assert result.price_summary.schema == "wide_price"
     assert result.benchmark_summary.schema == "benchmark_price"
+    assert result.ohlcv_summary.schema == "ohlcv_long"
     assert result.price_summary.missing_value_count == 0
     assert result.benchmark_summary.missing_value_count == 0
+    assert result.ohlcv_summary.missing_value_count == 0
     assert result.split.train.equals(pd.DatetimeIndex(["2024-01-02"], name="date"))
     assert result.split.validation.equals(pd.DatetimeIndex(["2024-01-03"], name="date"))
     assert result.split.test.equals(
@@ -50,6 +54,15 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
     assert result.forward_returns.index.equals(result.prices.index)
     assert result.forward_returns.columns.equals(result.prices.columns)
     assert result.benchmark_forward_returns.index.equals(result.prices.index)
+    assert result.liquidity_price_panel.index.equals(result.prices.index)
+    assert result.liquidity_price_panel.columns.equals(result.prices.columns)
+    assert result.liquidity_volume_panel.index.equals(result.prices.index)
+    assert result.liquidity_volume_panel.columns.equals(result.prices.columns)
+    assert result.average_daily_volume_eligibility.index.equals(result.prices.index)
+    assert result.average_daily_volume_eligibility.columns.equals(result.prices.columns)
+    assert result.average_dollar_volume_eligibility.index.equals(result.prices.index)
+    assert result.average_dollar_volume_eligibility.columns.equals(result.prices.columns)
+    assert result.liquidity_eligibility_summary.index.equals(result.prices.index)
     assert result.information_coefficient.index.equals(result.prices.index)
     assert result.rank_information_coefficient.index.equals(result.prices.index)
     assert result.quantile_spread.index.equals(result.prices.index)
@@ -77,6 +90,36 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
     assert result.alpha_009_factor.notna().sum().sum() == 9
     assert result.forward_returns.notna().sum().sum() == 9
     assert result.benchmark_forward_returns.notna().sum() == 3
+    assert result.liquidity_volume_panel.notna().sum(axis=1).to_dict() == {
+        pd.Timestamp("2024-01-02"): 2,
+        pd.Timestamp("2024-01-03"): 2,
+        pd.Timestamp("2024-01-04"): 0,
+        pd.Timestamp("2024-01-05"): 0,
+    }
+    assert result.average_daily_volume_eligibility.sum(axis=1).to_dict() == {
+        pd.Timestamp("2024-01-02"): 0,
+        pd.Timestamp("2024-01-03"): 0,
+        pd.Timestamp("2024-01-04"): 2,
+        pd.Timestamp("2024-01-05"): 0,
+    }
+    assert result.average_dollar_volume_eligibility.sum(axis=1).to_dict() == {
+        pd.Timestamp("2024-01-02"): 0,
+        pd.Timestamp("2024-01-03"): 0,
+        pd.Timestamp("2024-01-04"): 1,
+        pd.Timestamp("2024-01-05"): 0,
+    }
+    assert result.liquidity_eligibility_summary["missing_volume_count"].to_dict() == {
+        pd.Timestamp("2024-01-02"): 1,
+        pd.Timestamp("2024-01-03"): 1,
+        pd.Timestamp("2024-01-04"): 3,
+        pd.Timestamp("2024-01-05"): 3,
+    }
+    assert result.liquidity_eligibility_summary["zero_volume_count"].to_dict() == {
+        pd.Timestamp("2024-01-02"): 0,
+        pd.Timestamp("2024-01-03"): 0,
+        pd.Timestamp("2024-01-04"): 0,
+        pd.Timestamp("2024-01-05"): 0,
+    }
     assert result.split_summary["date_count"].to_dict() == {
         "train": 1,
         "validation": 1,
@@ -95,6 +138,17 @@ def test_local_csv_fixture_workflow_is_deterministic() -> None:
     assert_series_equal(first.benchmark_prices, second.benchmark_prices)
     assert_frame_equal(first.alpha_009_factor, second.alpha_009_factor)
     assert_frame_equal(first.forward_returns, second.forward_returns)
+    assert_frame_equal(first.liquidity_price_panel, second.liquidity_price_panel)
+    assert_frame_equal(first.liquidity_volume_panel, second.liquidity_volume_panel)
+    assert_frame_equal(
+        first.average_daily_volume_eligibility,
+        second.average_daily_volume_eligibility,
+    )
+    assert_frame_equal(
+        first.average_dollar_volume_eligibility,
+        second.average_dollar_volume_eligibility,
+    )
+    assert_frame_equal(first.liquidity_eligibility_summary, second.liquidity_eligibility_summary)
     assert_series_equal(first.information_coefficient, second.information_coefficient)
     assert_series_equal(first.rank_information_coefficient, second.rank_information_coefficient)
     assert_frame_equal(first.quantile_spread, second.quantile_spread)
@@ -135,6 +189,9 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "not a profitability claim" in report_text
     assert "does not run a backtest" in report_text
     assert "No portfolio construction" in report_text
+    assert "## Liquidity Eligibility Smoke Check" in report_text
+    assert "not universe construction" in report_text
+    assert "| 2024-01-04 | 3 | 0 | 3 | 0 | 2 | 1 | 1 |" in report_text
     assert "## Split Coverage" in report_text
     assert "| train | 1 | 3 | 0 | 3 | 0 | 0 | 0 | NaN | NaN |" in report_text
     assert "| Total return |" not in report_text
@@ -146,6 +203,10 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert payload["assumptions"]["data_scope"] == "synthetic only"
     assert payload["assumptions"]["price_fixture"] == DEFAULT_PRICE_FIXTURE
     assert payload["assumptions"]["benchmark_fixture"] == DEFAULT_BENCHMARK_FIXTURE
+    assert payload["assumptions"]["ohlcv_fixture"] == DEFAULT_OHLCV_FIXTURE
+    assert payload["assumptions"]["liquidity_check"].startswith("synthetic")
+    assert payload["assumptions"]["liquidity_eligibility_lag"] == 1
+    assert payload["assumptions"]["liquidity_price_column"] == "adjusted_close"
     assert payload["assumptions"]["portfolio_construction"] == "not included"
     assert payload["assumptions"]["backtest_integration"] == "not included"
     assert payload["assumptions"]["live_trading"] is False
@@ -157,6 +218,28 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
         "test_end": "2024-01-05",
     }
     assert payload["outputs"]["split_names"] == ["train", "validation", "test"]
+    assert payload["outputs"]["ohlcv_rows"] == 4
+    assert payload["diagnostics"]["adv_eligible_counts_by_date"] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 0.0,
+        "2024-01-04": 2.0,
+        "2024-01-05": 0.0,
+    }
+    assert payload["diagnostics"]["dollar_volume_eligible_counts_by_date"] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 0.0,
+        "2024-01-04": 1.0,
+        "2024-01-05": 0.0,
+    }
+    assert payload["diagnostics"]["liquidity_eligibility_summary"]["2024-01-04"] == {
+        "adv_eligible_count": 2.0,
+        "asset_count": 3.0,
+        "both_eligible_count": 1.0,
+        "dollar_volume_eligible_count": 1.0,
+        "missing_volume_count": 3.0,
+        "volume_observed_asset_count": 0.0,
+        "zero_volume_count": 0.0,
+    }
     assert payload["diagnostics"]["factor_valid_observations"] == 9
     assert payload["diagnostics"]["split_summary"]["train"]["date_count"] == 1
     assert payload["diagnostics"]["split_summary"]["validation"]["ic_valid_dates"] == 1
@@ -166,6 +249,8 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
         "test": 0,
     }
     assert "split-aware wiring check only" in payload["caveats"]
+    assert "liquidity eligibility count smoke check only" in payload["caveats"]
+    assert "not universe construction" in payload["caveats"]
     assert "not model selection" in payload["caveats"]
     assert "not strategy validation" in payload["caveats"]
 
@@ -193,6 +278,9 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     calls = {
         "price_loader": 0,
         "benchmark_loader": 0,
+        "ohlcv_loader": 0,
+        "adv_eligibility": 0,
+        "dollar_volume_eligibility": 0,
         "alpha_009": 0,
         "make_split": 0,
         "split_panel": 0,
@@ -202,6 +290,9 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     }
     original_price_loader = demo.load_wide_price_csv
     original_benchmark_loader = demo.load_benchmark_price_csv
+    original_ohlcv_loader = demo.load_ohlcv_csv
+    original_adv_eligibility = demo.average_daily_volume_eligibility
+    original_dollar_volume_eligibility = demo.average_dollar_volume_eligibility
     original_alpha_009 = demo.alpha_009
     original_make_split = demo.make_train_validation_test_split
     original_split_panel = demo.split_panel_by_train_validation_test
@@ -216,6 +307,18 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     def count_benchmark_loader(*args, **kwargs):
         calls["benchmark_loader"] += 1
         return original_benchmark_loader(*args, **kwargs)
+
+    def count_ohlcv_loader(*args, **kwargs):
+        calls["ohlcv_loader"] += 1
+        return original_ohlcv_loader(*args, **kwargs)
+
+    def count_adv_eligibility(*args, **kwargs):
+        calls["adv_eligibility"] += 1
+        return original_adv_eligibility(*args, **kwargs)
+
+    def count_dollar_volume_eligibility(*args, **kwargs):
+        calls["dollar_volume_eligibility"] += 1
+        return original_dollar_volume_eligibility(*args, **kwargs)
 
     def count_alpha_009(*args, **kwargs):
         calls["alpha_009"] += 1
@@ -243,6 +346,13 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
 
     monkeypatch.setattr(demo, "load_wide_price_csv", count_price_loader)
     monkeypatch.setattr(demo, "load_benchmark_price_csv", count_benchmark_loader)
+    monkeypatch.setattr(demo, "load_ohlcv_csv", count_ohlcv_loader)
+    monkeypatch.setattr(demo, "average_daily_volume_eligibility", count_adv_eligibility)
+    monkeypatch.setattr(
+        demo,
+        "average_dollar_volume_eligibility",
+        count_dollar_volume_eligibility,
+    )
     monkeypatch.setattr(demo, "alpha_009", count_alpha_009)
     monkeypatch.setattr(demo, "make_train_validation_test_split", count_make_split)
     monkeypatch.setattr(demo, "split_panel_by_train_validation_test", count_split_panel)
@@ -255,6 +365,9 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     assert calls == {
         "price_loader": 1,
         "benchmark_loader": 1,
+        "ohlcv_loader": 1,
+        "adv_eligibility": 1,
+        "dollar_volume_eligibility": 1,
         "alpha_009": 1,
         "make_split": 1,
         "split_panel": 2,
@@ -275,6 +388,13 @@ def test_workflow_rejects_invalid_config_values() -> None:
     config = LocalCSVFixtureWorkflowConfig(forward_return_horizon_rows=0)
 
     with pytest.raises(ValueError, match="forward_return_horizon_rows"):
+        run_local_csv_fixture_workflow_demo(config=config, write_outputs=False)
+
+
+def test_workflow_rejects_invalid_liquidity_config_values() -> None:
+    config = LocalCSVFixtureWorkflowConfig(min_average_dollar_volume=0.0)
+
+    with pytest.raises(ValueError, match="min_average_dollar_volume"):
         run_local_csv_fixture_workflow_demo(config=config, write_outputs=False)
 
 

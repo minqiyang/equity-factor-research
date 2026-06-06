@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Synthetic Liquidity Eligibility Fixture Smoke Check
+
+This code milestone extended the committed synthetic local CSV fixture workflow
+with a narrow liquidity eligibility count smoke check after the synthetic-only
+liquidity helper merged.
+
+Assumption: the next safe PR-sized stage is not universe construction,
+strategy validation, backtesting, or real-data interpretation. It is a wiring
+check that proves the existing strict local CSV workflow can load the committed
+synthetic OHLCV fixture, pivot `adjusted_close` and `volume`, align those panels
+to the synthetic adjusted-close fixture, and report lagged ADV and
+dollar-volume eligibility counts without filling missing volume.
+
+`research/local_csv_fixture_workflow_demo.py` now loads the synthetic OHLCV
+fixture with `load_ohlcv_csv()`, computes lagged eligibility masks with
+`average_daily_volume_eligibility()` and
+`average_dollar_volume_eligibility()`, and writes decision-date count
+diagnostics to the synthetic report and JSON experiment log. The default smoke
+parameters use a two-row window, one-row eligibility lag, a minimum average
+volume threshold, and a minimum average dollar-volume threshold. Missing and
+zero-volume counts remain visible in the report; no forward-fill,
+backward-fill, interpolation, zero default, universe construction, portfolio,
+backtest, external data access, broker connection, order execution, or
+profitability claim is added.
+
+Focused tests in `tests/test_local_csv_fixture_workflow_demo.py` assert the
+aligned liquidity panels, expected lagged eligibility counts, missing-volume
+counts, zero-volume counts, report caveats, JSON diagnostics, and integration
+with the existing loader and liquidity helpers.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+13 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Synthetic Liquidity Eligibility Helper
 
 This code milestone implemented the next safe stage after
