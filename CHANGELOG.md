@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/volume_close_alpha_plan.md` as a documentation-only planning
+  gate before any volume + close WorldQuant-style alpha implementation.
 - Added a realized volatility research feature that computes trailing standard
   deviation of one-period adjusted-price returns with deterministic
   no-lookahead, full-window, missing-anchor, non-positive-anchor, and
