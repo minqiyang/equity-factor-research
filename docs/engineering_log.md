@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Volume And OHLCV Schema Planning Gate
+
+This documentation-only milestone added
+`docs/volume_ohlcv_schema_plan.md` after the local CSV fixture split metadata
+workflow merged.
+
+Assumption: after Stage C in `docs/current_roadmap_gap_refresh.md` was
+completed by the local CSV fixture split metadata workflow, the next safe
+roadmap stage is Stage D: volume/OHLCV schema planning. The planning gate is
+needed before implementing volume-dependent factors, OHLC-dependent
+WorldQuant-style alphas, or liquidity-based universe filters.
+
+The plan defines future local volume-only and OHLCV long-format schemas,
+optional metadata sidecar expectations, strict validation rules, alignment
+requirements with existing feature and backtest modules, research risks, and
+future PR-sized stages. It preserves the existing local-file-only boundary and
+does not implement a loader, add fixtures, modify `src/`, modify tests,
+generate reports, fetch data, add vendor access, add credentials, connect to a
+broker, place orders, support live or paper trading, or make profitability
+claims.
+
+`docs/csv_data_interface_plan.md` now points to this plan as the schema gate
+before volume or OHLCV loader support. `docs/worldquant_alpha_catalog.md` now
+points future volume or OHLC-dependent alpha work to the plan before code is
+added.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+309 passed
+
+python -m compileall src tests research
+passed
+
+git diff --check
+passed with Windows line-ending conversion warnings only
+```
+
+---
+
 ## 2026-06-05 - Local CSV Fixture Split Metadata Workflow Update
 
 This code milestone updated the committed synthetic local CSV fixture workflow

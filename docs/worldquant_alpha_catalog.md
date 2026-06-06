@@ -73,6 +73,10 @@ Important priority rules:
 - All VWAP, market cap, and industry-neutral categories are deferred as `P3`.
 - No new formula should be implemented until its data requirements, operator
   coverage, missing-data behavior, and tests are explicitly scoped.
+- Future volume or OHLC-dependent formula work should start from
+  `docs/volume_ohlcv_schema_plan.md` so the local CSV schema, adjustment
+  policy, missing-value behavior, and validation tests are reviewed before code
+  is added.
 
 ## Classification By Data Requirement
 
