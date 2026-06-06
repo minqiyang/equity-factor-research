@@ -12,6 +12,52 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Realized Volatility Feature
+
+This code milestone implemented the next safe stage after the short-term
+reversal feature: a small adjusted-price realized volatility research feature.
+
+Assumption: the first volatility helper should compute unannualized trailing
+realized volatility from simple one-period returns, leaving any annualization,
+risk scaling, filtering threshold, portfolio construction, execution timing,
+costs, slippage, backtesting, and interpretation to later explicit stages.
+`calculate_realized_volatility()` therefore computes adjacent-price returns:
+
+```text
+price[t] / price[t - 1] - 1
+```
+
+and then calculates a full-window trailing standard deviation ending at the
+signal date. The default window is 21 return observations and the default
+degrees-of-freedom setting is `ddof=0`.
+
+The feature uses only current and historical prices. It preserves the input
+dates and asset columns, does not sort or reindex input data, does not fill
+missing values, and treats returns as missing when either adjacent price anchor
+is missing or non-positive. Any missing return inside the required trailing
+window keeps the volatility value as `NaN`.
+
+Focused tests in `tests/test_volatility.py` cover hand-calculated simple-return
+volatility, no-lookahead behavior, date/column alignment, full-window
+requirements, missing-price behavior without fills, non-positive anchor
+handling, `ddof` behavior, sorted and duplicate date validation, window and
+`ddof` validation, and non-numeric input rejection.
+
+This stage does not fetch real data, add vendor access, add credentials,
+connect to a broker, place orders, support live or paper trading, modify the
+backtester, generate reports, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_volatility.py
+20 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Short-Term Reversal Feature
 
 This code milestone implemented the next safe stage recommended by
