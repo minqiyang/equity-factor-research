@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/volume_ohlcv_schema_plan.md` as a documentation-only planning
+  gate for future local volume and OHLCV CSV schema support before any
+  volume-dependent factor or OHLC-dependent alpha implementation.
 - Added split metadata to the synthetic local CSV fixture workflow, including
   train/validation/test coverage, per-split IC / Rank IC / quantile-spread
   diagnostics, and caveated report/log output.
@@ -72,6 +75,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the CSV interface plan and WorldQuant alpha catalog to reference the
+  volume/OHLCV schema planning gate before future volume or OHLC-dependent
+  implementation work.
 - Updated the README license badge and current-status language to link to the
   Apache-2.0 license and remove obsolete license follow-up wording.
 - Replaced the static README local-test status label with a live GitHub Actions

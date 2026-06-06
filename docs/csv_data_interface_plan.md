@@ -84,6 +84,10 @@ checking duplicate `(date, symbol)` rows and numeric price validity.
 Use for future volume-aware or OHLC-dependent research. This schema is
 documentation-only in this stage.
 
+See `docs/volume_ohlcv_schema_plan.md` for the follow-up planning gate that
+details future volume-only, OHLCV, metadata, validation, alignment, and
+implementation-stage requirements before any loader support is added.
+
 | Column | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `date` | date-like string | yes | Observation date |
@@ -164,14 +168,16 @@ real-data research output is interpreted.
 
 ## Future Stages
 
-1. Implement a local CSV loader for user-provided local CSV files only, with
+1. Use `docs/volume_ohlcv_schema_plan.md` as the planning gate before adding
+   any volume or OHLCV loader support.
+2. Implement a local CSV loader for user-provided local CSV files only, with
    schema selection and strict validation tests.
-2. Add a real-data readiness audit that checks data provenance, adjustment
+3. Add a real-data readiness audit that checks data provenance, adjustment
    policy, universe construction, benchmark choice, sample splits, costs, and
    slippage assumptions before any real-data experiment.
-3. Update the QuantConnect/LEAN plan to describe how local CSV validation maps
+4. Update the QuantConnect/LEAN plan to describe how local CSV validation maps
    to platform data assumptions and where the two workflows can diverge.
-4. Add experiment-log requirements for local CSV runs, including source path,
+5. Add experiment-log requirements for local CSV runs, including source path,
    file hash or version identifier, schema, validation summary, universe rules,
    and known data limitations.
 
