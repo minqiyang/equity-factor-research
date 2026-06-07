@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `alpha_012` as a single volume + close WorldQuant-style research
+  feature with deterministic formula, alignment, missing-value, zero-volume,
+  negative-volume, and no-lookahead tests.
 - Added `docs/volume_close_alpha_plan.md` as a documentation-only planning
   gate before any volume + close WorldQuant-style alpha implementation.
 - Added a realized volatility research feature that computes trailing standard

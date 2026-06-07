@@ -23,6 +23,77 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Alpha#012 Hand-Calculation Test Sign Error
+
+Original mistake:
+
+- During the first Alpha#012 implementation stage, the hand-calculated
+  expected value for ticker `BBB` on the first valid date was written as
+  `+1.0`.
+- The public formula being implemented is:
+
+```text
+sign(delta(volume, 1)) * (-1 * delta(close, 1))
+```
+
+- For that test row, volume decreased from `50.0` to `40.0`, so
+  `sign(delta(volume, 1))` is `-1`. Close decreased from `20.0` to `19.0`,
+  so `(-1 * delta(close, 1))` is `+1`. The correct product is `-1`.
+
+Consequence:
+
+- The focused WorldQuant alpha test suite failed before the stage could be
+  validated.
+- No files were staged, committed, pushed, or merged while the failure was
+  present.
+
+Evidence:
+
+```text
+tests/test_worldquant_alphas.py::test_alpha_012_matches_public_formula_hand_calculation
+
+E       assert np.float64(-1.0) == 1.0 +/- 1.0e-06
+E         Obtained: -1.0
+E         Expected: 1.0 +/- 1.0e-06
+```
+
+Investigation:
+
+- Recomputed the formula terms for the failing row.
+- Confirmed the implementation output matched the source formula.
+- Confirmed only the test expectation had the wrong sign.
+
+Correction attempts:
+
+- Did not change the implementation because the implementation matched the
+  reviewed formula.
+- Corrected the expected value in
+  `tests/test_worldquant_alphas.py::test_alpha_012_matches_public_formula_hand_calculation`
+  from `+1.0` to `-1.0`.
+
+Final fix:
+
+- The test now matches the hand calculation for both falling-volume /
+  falling-close and mixed-sign cases.
+
+Verification:
+
+- Focused and full validation are rerun in the Alpha#012 PR after this fix.
+
+Remaining caveats:
+
+- Alpha#012 is still a research feature only. Passing formula tests does not
+  imply factor validity, strategy performance, or profitability.
+
+Prevention:
+
+- For future formula tests, write each hand-calculated term explicitly before
+  asserting the final product, especially when nested signs are involved.
+- Keep any failed formula-transcription or hand-calculation check visible in
+  this log before committing.
+
+---
+
 ## 2026-06-06 - Reversal Missing-Value Test Assumed Full Interior Window
 
 Original mistake:

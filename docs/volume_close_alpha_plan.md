@@ -81,6 +81,25 @@ The future implementation should answer these questions before code is added:
 | Zero-volume behavior | Does zero volume remain a valid input to the formula, or does it force `NaN`? |
 | Panel alignment | Must close and volume indexes and columns match exactly before calculation? |
 
+## Alpha#012 Implementation Status
+
+`alpha_012()` is now implemented as the first volume + close research feature
+in `src/features/worldquant_alphas.py`.
+
+The implementation maps the public formula:
+
+```text
+sign(delta(volume, 1)) * (-1 * delta(close, 1))
+```
+
+to exactly aligned caller-provided close and volume panels. It keeps the
+function as a feature calculation only: no loader, universe, backtest,
+portfolio, execution, reporting, real-data, or profitability behavior is added.
+
+Remaining volume + close alphas still require their own formula provenance,
+input policy, missing-data policy, zero-volume policy, and tests before code is
+added.
+
 ## Proposed Future Function Shape
 
 A future code PR can consider a narrow helper in `src/features/worldquant_alphas.py`:
@@ -168,7 +187,8 @@ future real-data readiness audits.
 ## Future PR-Sized Stages
 
 1. Formula provenance and implementation PR for one volume + close alpha only,
-   if the exact formula and tests are unambiguous.
+   if the exact formula and tests are unambiguous. Completed for `alpha_012()`;
+   still required separately for any other volume + close alpha.
 2. Synthetic local-fixture smoke check that loads committed OHLCV data and
    computes the new alpha as a feature only, without backtesting or performance
    interpretation.
