@@ -12,6 +12,49 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Liquidity Universe Construction Design
+
+This documentation milestone defined the next liquidity-related boundary after
+the Alpha#012 LEAN planning refresh merged.
+
+Assumption: after synthetic rolling ADV and rolling dollar-volume eligibility
+helpers, local-fixture eligibility count smoke coverage, and Alpha#012
+planning are complete, the next safest PR-sized stage is not code and not a
+backtest. It is a design that specifies how a future universe mask and audit
+summary should behave before any liquidity eligibility is consumed by
+portfolio construction.
+
+`docs/liquidity_universe_construction_design.md` now defines the purpose,
+non-goals, timing definitions, proposed future API boundary, mask semantics,
+audit-summary contract, module alignment, required future tests, risks, and
+next stages for a synthetic-only liquidity universe construction helper.
+
+`docs/liquidity_dollar_volume_universe_plan.md` now marks the eligibility
+helper, local-fixture count smoke, and experiment-log field work as completed
+for synthetic fixtures, then routes future work through the new universe-mask
+design. `docs/decision_log.md` records the decision to keep liquidity
+eligibility, universe-mask construction, and backtest consumption as separate
+reviewed stages.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, data access, backtester behavior, metrics, strategy logic, real-data
+handling, vendor access, credentials, live or paper trading, brokerage
+integration, order execution, runnable LEAN behavior, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+402 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-07 - Alpha#012 QuantConnect/LEAN Plan Refresh
 
 This documentation milestone refreshed the QuantConnect/LEAN planning path

@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-06-07 - Keep Liquidity Universe Construction Separate From Backtesting
+
+Context:
+
+- The repository has synthetic-only rolling ADV and rolling dollar-volume
+  eligibility helpers.
+- The committed synthetic local CSV fixture workflow reports liquidity
+  eligibility counts.
+- No reviewed helper yet defines a final universe mask, an audit summary, or
+  how such a mask should interact with factor scores, rebalance schedules,
+  costs, slippage, benchmarks, or execution assumptions.
+- The active workflow still prohibits real data fetching, downloads,
+  credentials, live trading, paper trading, brokerage integration, order
+  execution, and profitability claims.
+
+Decision:
+
+- Treat liquidity eligibility, final universe mask construction, and backtest
+  consumption as separate stages.
+- Add a documentation-only universe construction design before any code uses
+  liquidity eligibility as a final research universe mask.
+- Do not wire liquidity eligibility directly into the backtester until a later
+  reviewed stage defines the universe mask API, audit summary, signal timing,
+  rebalance timing, execution assumptions, costs, slippage, and benchmark
+  interaction.
+
+Rationale:
+
+- Liquidity filters are a major survivorship-bias and look-ahead-bias risk if
+  they are connected directly to portfolio construction without a reviewed
+  timing boundary.
+- A universe mask needs its own audit summary so low coverage, missing
+  eligibility, capped names, additions, removals, and caveats remain visible.
+- Keeping the stages separate preserves progress while preventing a liquidity
+  helper from being mistaken for a tradable universe or performance result.
+
+Consequences:
+
+- Future liquidity universe code should be synthetic-only and should return a
+  mask plus inspectable summary before any report or backtest integration.
+- Backtester integration remains blocked until a separate design defines the
+  complete signal/universe/rebalance/execution contract.
+- User-provided local CSV universe interpretation remains gated by the
+  real-data readiness audit and experiment-log requirements.
+
+Follow-up:
+
+- Implement a small synthetic-only universe-mask helper and deterministic tests
+  only after `docs/liquidity_universe_construction_design.md` is reviewed and
+  merged.
+
+---
+
 ## 2026-06-04 - Keep First LEAN-Adjacent Code Signal-Only
 
 Context:

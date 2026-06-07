@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/liquidity_universe_construction_design.md` to define a
+  documentation-only future liquidity universe-mask API and audit-summary
+  boundary before any backtest consumes liquidity eligibility.
 - Added `docs/post_alpha012_checkpoint_report.md` to refresh the roadmap after
   Alpha#012 implementation, synthetic OHLCV smoke coverage, and local-fixture
   diagnostics.
@@ -117,6 +120,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the liquidity universe plan and decision log to separate liquidity
+  eligibility, universe-mask construction, and backtest consumption into
+  distinct reviewed stages.
 - Refreshed the QuantConnect/LEAN plan and parity checklist for Alpha#012
   signal mapping, keeping the LEAN path documentation-only, non-runnable, and
   free of data subscriptions, credentials, brokerage/order behavior, and
