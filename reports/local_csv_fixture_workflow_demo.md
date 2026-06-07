@@ -10,12 +10,13 @@ Exercise the local CSV research path with a small committed fixture:
 2. Load a benchmark CSV and verify date alignment.
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
-5. Compute `alpha_009` as a close-only research feature.
-6. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-7. Compute next-row forward returns as evaluation targets only.
-8. Apply chronological train/validation/test split metadata.
-9. Run IC, Rank IC, and quantile spread diagnostics.
-10. Write a caveated report and JSON experiment log.
+5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
+6. Compute `alpha_009` as a close-only research feature.
+7. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+8. Compute next-row forward returns as evaluation targets only.
+9. Apply chronological train/validation/test split metadata.
+10. Run IC, Rank IC, and quantile spread diagnostics.
+11. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -49,7 +50,7 @@ No missing values were filled. No dates or assets were reindexed. No portfolio c
 
 The workflow loads the committed synthetic OHLCV fixture and pivots `adjusted_close` and `volume` into panels aligned to the adjusted-close fixture's dates and assets. Missing OHLCV rows after that alignment remain missing; there is no fill, forward-fill, backward-fill, interpolation, or zero default.
 
-Eligibility counts below are decision-date diagnostics only. They use `window=2`, `eligibility_lag=1`, `min_average_volume=100000.0000`, and `min_average_dollar_volume=11000000.0000`. They do not construct a universe, run a strategy, or validate market tradability.
+Eligibility counts below are decision-date diagnostics only. They use `window=2`, `eligibility_lag=1`, `min_average_volume=100000.0000`, and `min_average_dollar_volume=11000000.0000`. They do not run a strategy, construct a portfolio, or validate market tradability.
 
 | Date | asset_count | volume_observed_asset_count | missing_volume_count | zero_volume_count | adv_eligible_count | dollar_volume_eligible_count | both_eligible_count |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -57,6 +58,17 @@ Eligibility counts below are decision-date diagnostics only. They use `window=2`
 | 2024-01-03 | 3 | 2 | 1 | 0 | 0 | 0 | 0 |
 | 2024-01-04 | 3 | 0 | 3 | 0 | 2 | 1 | 1 |
 | 2024-01-05 | 3 | 0 | 3 | 0 | 0 | 0 | 0 |
+
+## Liquidity Universe Mask Smoke Check
+
+The synthetic universe mask below is constructed from the intersection of the ADV and dollar-volume eligibility masks. It reports count and audit fields from `construct_liquidity_universe()` only. It does not create target weights, trades, positions, orders, returns, benchmark comparisons, or a tradeable universe claim.
+
+| Date | raw_eligible_count | universe_count | missing_eligibility_count | missing_ranking_count | capped_count | added_count | removed_count | low_coverage |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2024-01-02 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | true |
+| 2024-01-03 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | true |
+| 2024-01-04 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | false |
+| 2024-01-05 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | true |
 
 ## Split Coverage
 
@@ -148,7 +160,7 @@ Eligibility counts below are decision-date diagnostics only. They use `window=2`
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
-- The liquidity eligibility counts are synthetic decision-date diagnostics, not universe construction or tradeability evidence.
+- The liquidity eligibility and universe-mask counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.

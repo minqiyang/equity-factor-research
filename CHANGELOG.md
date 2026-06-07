@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic liquidity universe-mask count smoke check to the local CSV
+  fixture workflow demo, reusing the committed synthetic OHLCV fixture and
+  existing liquidity universe helper without backtest integration,
+  tradeability claims, real data, or performance interpretation.
 - Added a synthetic/local-panel liquidity universe helper that returns an
   inspectable mask and audit summary without backtesting, report generation,
   real data, or performance interpretation.

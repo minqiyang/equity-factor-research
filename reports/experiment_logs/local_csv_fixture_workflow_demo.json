@@ -15,10 +15,12 @@
     "feature": "alpha_009 with window=1",
     "feature_timing": "alpha_009 at date t uses close[t] and earlier closes only; no trade timing is defined in this demo",
     "forward_return_timing": "forward returns are computed after loading as evaluation targets only; they are not feature inputs",
-    "liquidity_check": "synthetic decision-date eligibility count smoke check only; not a universe-selection study",
+    "liquidity_check": "synthetic decision-date eligibility count smoke check only; not a tradeable universe-selection study",
     "liquidity_eligibility_lag": 1,
     "liquidity_price_column": "adjusted_close",
     "liquidity_timing": "rolling liquidity observations through date t are shifted by one row before appearing on a decision date; missing and zero-volume counts are reported separately and are not filled",
+    "liquidity_universe_check": "synthetic universe-mask count smoke check only; not backtest integration, portfolio construction, or tradeability evidence",
+    "liquidity_universe_min_assets_per_date": 1,
     "liquidity_window": 2,
     "live_trading": false,
     "min_average_dollar_volume": 11000000.0,
@@ -47,7 +49,9 @@
     "local CSV fixture smoke demo only",
     "split-aware wiring check only",
     "liquidity eligibility count smoke check only",
-    "not universe construction",
+    "liquidity universe mask count smoke check only",
+    "not backtest universe integration",
+    "not tradeability evidence",
     "not strategy validation",
     "not model selection",
     "not evidence of real-world performance"
@@ -59,6 +63,7 @@
     "ic_min_periods": 2,
     "liquidity_eligibility_lag": 1,
     "liquidity_price_column": "adjusted_close",
+    "liquidity_universe_min_assets_per_date": 1,
     "liquidity_window": 2,
     "min_assets_per_quantile": 1,
     "min_average_dollar_volume": 11000000.0,
@@ -190,6 +195,59 @@
         "missing_volume_count": 3.0,
         "volume_observed_asset_count": 0.0,
         "zero_volume_count": 0.0
+      }
+    },
+    "liquidity_universe_counts_by_date": {
+      "2024-01-02": 0.0,
+      "2024-01-03": 0.0,
+      "2024-01-04": 1.0,
+      "2024-01-05": 0.0
+    },
+    "liquidity_universe_low_coverage_dates": [
+      "2024-01-02",
+      "2024-01-03",
+      "2024-01-05"
+    ],
+    "liquidity_universe_summary": {
+      "2024-01-02": {
+        "added_count": 0.0,
+        "capped_count": 0.0,
+        "low_coverage": true,
+        "missing_eligibility_count": 0.0,
+        "missing_ranking_count": 0.0,
+        "raw_eligible_count": 0.0,
+        "removed_count": 0.0,
+        "universe_count": 0.0
+      },
+      "2024-01-03": {
+        "added_count": 0.0,
+        "capped_count": 0.0,
+        "low_coverage": true,
+        "missing_eligibility_count": 0.0,
+        "missing_ranking_count": 0.0,
+        "raw_eligible_count": 0.0,
+        "removed_count": 0.0,
+        "universe_count": 0.0
+      },
+      "2024-01-04": {
+        "added_count": 1.0,
+        "capped_count": 0.0,
+        "low_coverage": false,
+        "missing_eligibility_count": 0.0,
+        "missing_ranking_count": 0.0,
+        "raw_eligible_count": 1.0,
+        "removed_count": 0.0,
+        "universe_count": 1.0
+      },
+      "2024-01-05": {
+        "added_count": 0.0,
+        "capped_count": 0.0,
+        "low_coverage": true,
+        "missing_eligibility_count": 0.0,
+        "missing_ranking_count": 0.0,
+        "raw_eligible_count": 0.0,
+        "removed_count": 1.0,
+        "universe_count": 0.0
       }
     },
     "quantile_spread_valid_dates": 1,
