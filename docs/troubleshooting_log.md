@@ -23,6 +23,68 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Alpha#012 Fixture Rank IC Exact-Float Test Expectation
+
+Original mistake:
+
+- During the Alpha#012 local-fixture diagnostics stage, the new JSON-log test
+  asserted that the serialized Alpha#012 Rank IC value for `2024-01-03` was
+  exactly `1.0`.
+
+Consequence:
+
+- The focused local CSV fixture workflow test failed even though the diagnostic
+  calculation produced the expected perfect rank relationship within normal
+  floating-point precision.
+
+Evidence:
+
+```text
+tests/test_local_csv_fixture_workflow_demo.py::test_workflow_report_and_experiment_log_are_created_with_caveats
+AssertionError: {'2024-01-03': 0.9999999999999999} != {'2024-01-03': 1.0}
+```
+
+Investigation:
+
+- The Alpha#012 fixture values on the only valid diagnostic date have two
+  overlapping assets, so the expected Rank IC is effectively 1.
+- The value is computed through pandas/Spearman correlation and JSON
+  serialization, which can represent the result as `0.9999999999999999`
+  instead of exactly `1.0`.
+- This was a test-expectation precision issue, not a workflow, alignment,
+  missing-data, or guardrail failure.
+
+Correction attempts:
+
+- The diagnostic calculation was not changed.
+- The test was not weakened to ignore the diagnostic.
+- The assertion was changed to keep exact `None` checks for missing dates while
+  using `pytest.approx(1.0)` for the finite Rank IC value.
+
+Final fix:
+
+- Updated `tests/test_local_csv_fixture_workflow_demo.py` to compare the
+  finite Alpha#012 Rank IC JSON value with approximate floating-point equality.
+
+Verification:
+
+- The focused workflow test was rerun after the assertion fix:
+  `python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py`
+  reported 13 passed.
+
+Remaining caveats:
+
+- Exact JSON equality remains useful for structural fields and missing dates,
+  but floating correlation values should use tolerance-based comparisons.
+
+Prevention:
+
+- Future tests for Pearson, Spearman, IC, Rank IC, and other floating
+  diagnostics should assert exact structure and use approximate comparisons for
+  finite computed floats.
+
+---
+
 ## 2026-06-07 - Alpha#012 Hand-Calculation Test Sign Error
 
 Original mistake:

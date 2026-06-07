@@ -1,5 +1,7 @@
 {
   "assumptions": {
+    "alpha_012_feature": "alpha_012 from adjusted_close and volume OHLCV panels",
+    "alpha_012_feature_timing": "alpha_012 at date t uses adjusted_close[t], volume[t], and their one-row trailing anchors only; no trade timing is defined in this demo",
     "backtest_integration": "not included",
     "benchmark": "synthetic local CSV benchmark fixture",
     "benchmark_fixture": "tests/fixtures/local_csv_loader_smoke/synthetic_benchmark.csv",
@@ -74,6 +76,50 @@
       "2024-01-03": 0.0,
       "2024-01-04": 2.0,
       "2024-01-05": 0.0
+    },
+    "alpha_009_factor_valid_observations": 9,
+    "alpha_012_factor_valid_observations": 2,
+    "alpha_012_information_coefficient_by_date": {
+      "2024-01-02": null,
+      "2024-01-03": 1.0,
+      "2024-01-04": null,
+      "2024-01-05": null
+    },
+    "alpha_012_information_coefficient_by_split": {
+      "test": {
+        "2024-01-04": null,
+        "2024-01-05": null
+      },
+      "train": {
+        "2024-01-02": null
+      },
+      "validation": {
+        "2024-01-03": 1.0
+      }
+    },
+    "alpha_012_quantile_spread_valid_dates": 0,
+    "alpha_012_quantile_spread_valid_dates_by_split": {
+      "test": 0,
+      "train": 0,
+      "validation": 0
+    },
+    "alpha_012_rank_information_coefficient_by_date": {
+      "2024-01-02": null,
+      "2024-01-03": 0.9999999999999999,
+      "2024-01-04": null,
+      "2024-01-05": null
+    },
+    "alpha_012_rank_information_coefficient_by_split": {
+      "test": {
+        "2024-01-04": null,
+        "2024-01-05": null
+      },
+      "train": {
+        "2024-01-02": null
+      },
+      "validation": {
+        "2024-01-03": 0.9999999999999999
+      }
     },
     "benchmark_forward_return_valid_observations": 3,
     "both_liquidity_rules_eligible_counts_by_date": {
@@ -224,6 +270,6 @@
     ]
   },
   "schema_version": 1,
-  "summary": "Deterministic smoke demo that loads committed synthetic local CSV fixtures, computes alpha_009 as a research feature, and evaluates diagnostic liquidity eligibility counts, IC, Rank IC, and quantile spread against aligned forward-return targets.",
+  "summary": "Deterministic smoke demo that loads committed synthetic local CSV fixtures, computes alpha_009 and alpha_012 as research features, and evaluates diagnostic liquidity eligibility counts, IC, Rank IC, and quantile spread against aligned forward-return targets.",
   "title": "Local CSV Fixture Workflow Demo"
 }

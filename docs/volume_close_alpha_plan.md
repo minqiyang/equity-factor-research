@@ -205,6 +205,7 @@ future real-data readiness audits.
    interpretation. Completed for `alpha_012()`.
 3. Diagnostics-only update that evaluates the feature with existing synthetic
    IC / Rank IC / quantile spread helpers, still without strategy claims.
+   Completed for `alpha_012()` in the synthetic local CSV fixture workflow.
 4. QuantConnect/LEAN plan refresh if the volume + close feature changes the
    local-to-LEAN signal mapping assumptions.
 5. Separate planning gate for any OHLC, VWAP, market-cap, or industry-neutral

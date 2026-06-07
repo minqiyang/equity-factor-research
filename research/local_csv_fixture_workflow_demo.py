@@ -33,7 +33,7 @@ from features.liquidity import (
     average_daily_volume_eligibility,
     average_dollar_volume_eligibility,
 )
-from features.worldquant_alphas import alpha_009
+from features.worldquant_alphas import alpha_009, alpha_012
 from reporting.experiment_log import (
     SYNTHETIC_RESEARCH_CAVEATS,
     resolve_experiment_log_path,
@@ -91,17 +91,25 @@ class LocalCSVFixtureWorkflowResult:
     average_dollar_volume_eligibility: pd.DataFrame
     liquidity_eligibility_summary: pd.DataFrame
     alpha_009_factor: pd.DataFrame
+    alpha_012_factor: pd.DataFrame
     forward_returns: pd.DataFrame
     benchmark_forward_returns: pd.Series
     split: TrainValidationTestSplit
     alpha_009_factor_by_split: dict[str, pd.DataFrame]
+    alpha_012_factor_by_split: dict[str, pd.DataFrame]
     forward_returns_by_split: dict[str, pd.DataFrame]
     information_coefficient: pd.Series
     rank_information_coefficient: pd.Series
     quantile_spread: pd.DataFrame
+    alpha_012_information_coefficient: pd.Series
+    alpha_012_rank_information_coefficient: pd.Series
+    alpha_012_quantile_spread: pd.DataFrame
     information_coefficient_by_split: dict[str, pd.Series]
     rank_information_coefficient_by_split: dict[str, pd.Series]
     quantile_spread_by_split: dict[str, pd.DataFrame]
+    alpha_012_information_coefficient_by_split: dict[str, pd.Series]
+    alpha_012_rank_information_coefficient_by_split: dict[str, pd.Series]
+    alpha_012_quantile_spread_by_split: dict[str, pd.DataFrame]
     split_summary: pd.DataFrame
     report_path: Path
     experiment_log_path: Path
@@ -169,6 +177,7 @@ def run_local_csv_fixture_workflow_demo(
     )
 
     alpha_factor = alpha_009(prices, window=config.alpha_window)
+    alpha_012_factor = alpha_012(liquidity_price_panel, liquidity_volume_panel)
     forward_returns = _future_returns(prices, periods=config.forward_return_horizon_rows)
     benchmark_forward_returns = _future_returns(
         benchmark_prices,
@@ -184,6 +193,11 @@ def run_local_csv_fixture_workflow_demo(
         alpha_factor,
         split,
         name="alpha_009_factor",
+    )
+    alpha_012_factor_by_split = split_panel_by_train_validation_test(
+        alpha_012_factor,
+        split,
+        name="alpha_012_factor",
     )
     forward_returns_by_split = split_panel_by_train_validation_test(
         forward_returns,
@@ -203,6 +217,22 @@ def run_local_csv_fixture_workflow_demo(
     )
     quantile_spread = factor_quantile_spread(
         alpha_factor,
+        forward_returns,
+        quantiles=config.quantiles,
+        min_assets_per_quantile=config.min_assets_per_quantile,
+    )
+    alpha_012_information_coefficient = factor_information_coefficient(
+        alpha_012_factor,
+        forward_returns,
+        min_periods=config.ic_min_periods,
+    )
+    alpha_012_rank_information_coefficient = factor_rank_information_coefficient(
+        alpha_012_factor,
+        forward_returns,
+        min_periods=config.ic_min_periods,
+    )
+    alpha_012_quantile_spread = factor_quantile_spread(
+        alpha_012_factor,
         forward_returns,
         quantiles=config.quantiles,
         min_assets_per_quantile=config.min_assets_per_quantile,
@@ -232,6 +262,31 @@ def run_local_csv_fixture_workflow_demo(
         )
         for split_name in SPLIT_NAMES
     }
+    alpha_012_information_coefficient_by_split = {
+        split_name: factor_information_coefficient(
+            alpha_012_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            min_periods=config.ic_min_periods,
+        )
+        for split_name in SPLIT_NAMES
+    }
+    alpha_012_rank_information_coefficient_by_split = {
+        split_name: factor_rank_information_coefficient(
+            alpha_012_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            min_periods=config.ic_min_periods,
+        )
+        for split_name in SPLIT_NAMES
+    }
+    alpha_012_quantile_spread_by_split = {
+        split_name: factor_quantile_spread(
+            alpha_012_factor_by_split[split_name],
+            forward_returns_by_split[split_name],
+            quantiles=config.quantiles,
+            min_assets_per_quantile=config.min_assets_per_quantile,
+        )
+        for split_name in SPLIT_NAMES
+    }
     split_summary = summarize_split_diagnostics(
         factor_by_split=alpha_factor_by_split,
         forward_returns_by_split=forward_returns_by_split,
@@ -253,17 +308,29 @@ def run_local_csv_fixture_workflow_demo(
         average_dollar_volume_eligibility=dollar_volume_eligibility,
         liquidity_eligibility_summary=liquidity_eligibility_summary,
         alpha_009_factor=alpha_factor,
+        alpha_012_factor=alpha_012_factor,
         forward_returns=forward_returns,
         benchmark_forward_returns=benchmark_forward_returns,
         split=split,
         alpha_009_factor_by_split=alpha_factor_by_split,
+        alpha_012_factor_by_split=alpha_012_factor_by_split,
         forward_returns_by_split=forward_returns_by_split,
         information_coefficient=information_coefficient,
         rank_information_coefficient=rank_information_coefficient,
         quantile_spread=quantile_spread,
+        alpha_012_information_coefficient=alpha_012_information_coefficient,
+        alpha_012_rank_information_coefficient=alpha_012_rank_information_coefficient,
+        alpha_012_quantile_spread=alpha_012_quantile_spread,
         information_coefficient_by_split=information_coefficient_by_split,
         rank_information_coefficient_by_split=rank_information_coefficient_by_split,
         quantile_spread_by_split=quantile_spread_by_split,
+        alpha_012_information_coefficient_by_split=(
+            alpha_012_information_coefficient_by_split
+        ),
+        alpha_012_rank_information_coefficient_by_split=(
+            alpha_012_rank_information_coefficient_by_split
+        ),
+        alpha_012_quantile_spread_by_split=alpha_012_quantile_spread_by_split,
         split_summary=split_summary,
         report_path=Path(report_path),
         experiment_log_path=Path(experiment_log_path),
@@ -368,9 +435,10 @@ def write_workflow_experiment_log(
         experiment_type="synthetic_local_csv_workflow",
         summary=(
             "Deterministic smoke demo that loads committed synthetic local CSV "
-            "fixtures, computes alpha_009 as a research feature, and evaluates "
-            "diagnostic liquidity eligibility counts, IC, Rank IC, and "
-            "quantile spread against aligned forward-return targets."
+            "fixtures, computes alpha_009 and alpha_012 as research features, "
+            "and evaluates diagnostic liquidity eligibility counts, IC, "
+            "Rank IC, and quantile spread against aligned forward-return "
+            "targets."
         ),
         config=config,
         assumptions={
@@ -405,6 +473,12 @@ def write_workflow_experiment_log(
             "feature_timing": (
                 "alpha_009 at date t uses close[t] and earlier closes only; "
                 "no trade timing is defined in this demo"
+            ),
+            "alpha_012_feature": "alpha_012 from adjusted_close and volume OHLCV panels",
+            "alpha_012_feature_timing": (
+                "alpha_012 at date t uses adjusted_close[t], volume[t], and "
+                "their one-row trailing anchors only; no trade timing is "
+                "defined in this demo"
             ),
             "forward_return_timing": (
                 "forward returns are computed after loading as evaluation "
@@ -480,7 +554,32 @@ def write_workflow_experiment_log(
             "quantile_spread_valid_dates": int(
                 result.quantile_spread["top_minus_bottom_spread"].notna().sum()
             ),
+            "alpha_012_information_coefficient_by_date": _series_to_date_dict(
+                result.alpha_012_information_coefficient,
+            ),
+            "alpha_012_rank_information_coefficient_by_date": _series_to_date_dict(
+                result.alpha_012_rank_information_coefficient,
+            ),
+            "alpha_012_information_coefficient_by_split": {
+                split_name: _series_to_date_dict(series)
+                for split_name, series in result.alpha_012_information_coefficient_by_split.items()
+            },
+            "alpha_012_rank_information_coefficient_by_split": {
+                split_name: _series_to_date_dict(series)
+                for split_name, series in result.alpha_012_rank_information_coefficient_by_split.items()
+            },
+            "alpha_012_quantile_spread_valid_dates_by_split": {
+                split_name: int(
+                    frame["top_minus_bottom_spread"].notna().sum()
+                )
+                for split_name, frame in result.alpha_012_quantile_spread_by_split.items()
+            },
+            "alpha_012_quantile_spread_valid_dates": int(
+                result.alpha_012_quantile_spread["top_minus_bottom_spread"].notna().sum()
+            ),
             "factor_valid_observations": int(result.alpha_009_factor.notna().sum().sum()),
+            "alpha_009_factor_valid_observations": int(result.alpha_009_factor.notna().sum().sum()),
+            "alpha_012_factor_valid_observations": int(result.alpha_012_factor.notna().sum().sum()),
             "forward_return_valid_observations": int(result.forward_returns.notna().sum().sum()),
             "benchmark_forward_return_valid_observations": int(
                 result.benchmark_forward_returns.notna().sum()
@@ -527,10 +626,11 @@ Exercise the local CSV research path with a small committed fixture:
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
 5. Compute `alpha_009` as a close-only research feature.
-6. Compute next-row forward returns as evaluation targets only.
-7. Apply chronological train/validation/test split metadata.
-8. Run IC, Rank IC, and quantile spread diagnostics.
-9. Write a caveated report and JSON experiment log.
+6. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+7. Compute next-row forward returns as evaluation targets only.
+8. Apply chronological train/validation/test split metadata.
+9. Run IC, Rank IC, and quantile spread diagnostics.
+10. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -554,7 +654,7 @@ Exercise the local CSV research path with a small committed fixture:
 
 ## Processing Summary
 
-The workflow preserves the loader output date index and asset columns, verifies that the benchmark dates match the price panel dates, and computes `alpha_009` with `window={config.alpha_window}`. Forward returns are aligned to the same date as the factor value for diagnostic evaluation only; they are not used as feature inputs.
+The workflow preserves the loader output date index and asset columns, verifies that the benchmark dates match the price panel dates, computes `alpha_009` with `window={config.alpha_window}`, and computes `alpha_012` from the synthetic OHLCV `adjusted_close` and `volume` panels. Forward returns are aligned to the same date as the factor value for diagnostic evaluation only; they are not used as feature inputs.
 
 The train/validation/test metadata is a chronological fixture split by factor and evaluation-target row date only. The one-row forward returns are diagnostic labels, not feature inputs, and are not used for parameter selection. This tiny fixture split is not model selection, parameter tuning, strategy validation, or real-market evidence.
 
@@ -572,7 +672,7 @@ Eligibility counts below are decision-date diagnostics only. They use `window={c
 
 {_format_labeled_index_markdown_table(result.split_summary, index_label="split")}
 
-## Diagnostic Coverage
+## Alpha#009 Diagnostic Coverage
 
 | Diagnostic | Value |
 | --- | ---: |
@@ -583,17 +683,41 @@ Eligibility counts below are decision-date diagnostics only. They use `window={c
 | Rank IC valid dates | `{int(result.rank_information_coefficient.notna().sum())}` |
 | Quantile spread valid dates | `{int(result.quantile_spread["top_minus_bottom_spread"].notna().sum())}` |
 
-## Information Coefficient Diagnostics
+## Alpha#009 Information Coefficient Diagnostics
 
 {_format_series_table(result.information_coefficient)}
 
-## Rank Information Coefficient Diagnostics
+## Alpha#009 Rank Information Coefficient Diagnostics
 
 {_format_series_table(result.rank_information_coefficient)}
 
-## Quantile Spread Diagnostics
+## Alpha#009 Quantile Spread Diagnostics
 
 {_format_markdown_table(result.quantile_spread)}
+
+## Alpha#012 Diagnostic Coverage
+
+`alpha_012` uses only the synthetic OHLCV dates and assets with available adjusted close and volume anchors. Missing OHLCV rows remain missing after alignment to the wider adjusted-close fixture. These diagnostics are feature-evaluation wiring checks only, not strategy validation.
+
+| Diagnostic | Value |
+| --- | ---: |
+| Factor valid observations | `{int(result.alpha_012_factor.notna().sum().sum())}` |
+| Forward-return valid observations | `{int(result.forward_returns.notna().sum().sum())}` |
+| IC valid dates | `{int(result.alpha_012_information_coefficient.notna().sum())}` |
+| Rank IC valid dates | `{int(result.alpha_012_rank_information_coefficient.notna().sum())}` |
+| Quantile spread valid dates | `{int(result.alpha_012_quantile_spread["top_minus_bottom_spread"].notna().sum())}` |
+
+## Alpha#012 Information Coefficient Diagnostics
+
+{_format_series_table(result.alpha_012_information_coefficient)}
+
+## Alpha#012 Rank Information Coefficient Diagnostics
+
+{_format_series_table(result.alpha_012_rank_information_coefficient)}
+
+## Alpha#012 Quantile Spread Diagnostics
+
+{_format_markdown_table(result.alpha_012_quantile_spread)}
 
 ## Limitations
 
@@ -602,6 +726,7 @@ Eligibility counts below are decision-date diagnostics only. They use `window={c
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - The liquidity eligibility counts are synthetic decision-date diagnostics, not universe construction or tradeability evidence.
 - `alpha_009` is a research feature, not a complete strategy.
+- `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
 - No local CSV result here should be interpreted without the real-data readiness audit and full experiment-log requirements.
 - User-provided local CSV research, universe construction, costs, slippage, and QuantConnect/LEAN implementation remain future stages.

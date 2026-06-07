@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added Alpha#012 diagnostics to the synthetic local CSV fixture workflow,
+  reusing existing IC, Rank IC, and quantile-spread helpers on committed
+  fixture data only.
 - Added a synthetic OHLCV fixture smoke check that loads the committed local
   fixture and computes `alpha_012` as a feature-only output without reports,
   backtesting, real data, or performance interpretation.
