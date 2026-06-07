@@ -100,6 +100,17 @@ Remaining volume + close alphas still require their own formula provenance,
 input policy, missing-data policy, zero-volume policy, and tests before code is
 added.
 
+## Alpha#012 Synthetic Fixture Smoke Status
+
+The committed synthetic OHLCV fixture now has feature-only smoke coverage for
+`alpha_012()`.
+
+`tests/test_local_csv_loader_smoke_demo.py` loads
+`tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv`, pivots
+`adjusted_close` and `volume` into aligned panels, and computes the feature
+without running diagnostics, reports, backtests, portfolio construction, data
+downloads, broker logic, order execution, or performance interpretation.
+
 ## Proposed Future Function Shape
 
 A future code PR can consider a narrow helper in `src/features/worldquant_alphas.py`:
@@ -191,7 +202,7 @@ future real-data readiness audits.
    still required separately for any other volume + close alpha.
 2. Synthetic local-fixture smoke check that loads committed OHLCV data and
    computes the new alpha as a feature only, without backtesting or performance
-   interpretation.
+   interpretation. Completed for `alpha_012()`.
 3. Diagnostics-only update that evaluates the feature with existing synthetic
    IC / Rank IC / quantile spread helpers, still without strategy claims.
 4. QuantConnect/LEAN plan refresh if the volume + close feature changes the
