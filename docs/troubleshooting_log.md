@@ -23,6 +23,80 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Alpha#012 LEAN Plan Patch Context Mismatch
+
+Original mistake:
+
+- During the Alpha#012 QuantConnect/LEAN plan refresh, the first attempted
+  patch used an imprecise context line for the universe filter section in
+  `docs/quantconnect_lean_plan.md`.
+- The patch expected `Candidate filter:` without matching the exact markdown
+  bullet context used in the file.
+
+Consequence:
+
+- `apply_patch` rejected the combined patch before any file changes from that
+  patch were applied.
+- The documentation stage could not proceed safely until the exact current file
+  context was inspected.
+
+Evidence:
+
+```text
+apply_patch verification failed: Failed to find expected lines in
+D:\Users\MINQI\Documents\New project\docs\quantconnect_lean_plan.md:
+Candidate filter:
+  - price above a minimum threshold, such as `$5`.
+  - positive dollar volume.
+  - sufficient daily history for 252-day lookback plus 21-day skip.
+  - exclude symbols with missing or stale data at rebalance.
+```
+
+Investigation:
+
+- Checked `git status -sb --untracked-files=all` to verify that the failed
+  patch did not leave partial changes.
+- Used `Select-String` around `Current local status`, `Local component`,
+  `Candidate filter`, `Signal Generation Timing`, and
+  `Recommended Next LEAN` to inspect the exact current markdown structure.
+- Confirmed the failed context was a patch-authoring issue, not a repository
+  content problem or test failure.
+
+Correction attempts:
+
+- Did not force the combined patch.
+- Reapplied the same intended documentation changes as smaller patches with
+  exact nearby context.
+- Kept the stage scope documentation-only and limited to the LEAN planning
+  docs, durable logs, and changelog.
+
+Final fix:
+
+- Updated `docs/quantconnect_lean_plan.md` in smaller chunks for current
+  status, local-to-LEAN mapping, universe/history assumptions, signal timing,
+  diagnostic export, and next LEAN-related stage.
+- Updated `docs/lean_parity_checklist.md` separately for Alpha#012 assertions
+  and coverage requirements.
+
+Verification:
+
+- `git diff --check` passed after the corrected patches.
+- Full validation is rerun before the associated PR is committed and opened.
+
+Remaining caveats:
+
+- The failed patch was local tooling friction only. It did not modify source
+  code, tests, research scripts, generated reports, data access, execution
+  behavior, credentials, brokerage behavior, or performance language.
+
+Prevention:
+
+- For future edits to long markdown files, inspect the exact target section
+  before applying broad multi-section patches, and prefer smaller patches when
+  the file has recently changed.
+
+---
+
 ## 2026-06-07 - Alpha#012 Fixture Rank IC Exact-Float Test Expectation
 
 Original mistake:

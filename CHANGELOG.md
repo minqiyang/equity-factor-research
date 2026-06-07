@@ -117,6 +117,10 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Refreshed the QuantConnect/LEAN plan and parity checklist for Alpha#012
+  signal mapping, keeping the LEAN path documentation-only, non-runnable, and
+  free of data subscriptions, credentials, brokerage/order behavior, and
+  performance interpretation.
 - Updated the Alpha#012 and WorldQuant roadmap docs to mark the completed
   Alpha#012 fixture diagnostics stage and recommend a LEAN plan refresh before
   any Alpha#012 LEAN mapping work.

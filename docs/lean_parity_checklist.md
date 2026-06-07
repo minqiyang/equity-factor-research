@@ -45,6 +45,7 @@ This checklist does not authorize:
 | --- | --- |
 | `src/features/momentum.py` | 12-1 momentum formula and lagged close-price timing. |
 | `src/features/worldquant_alphas.py` | `alpha_009` as a close-only research feature, not a strategy. |
+| `src/features/worldquant_alphas.py` | `alpha_012` as a volume + close research feature, not a strategy, universe filter, or order rule. |
 | `src/data/csv_loader.py` | Strict validation mindset: schema, dates, numeric fields, missing values, and provenance. |
 | `src/features/diagnostics.py` | IC, Rank IC, and quantile spread as evaluation diagnostics only. |
 | `src/backtest/portfolio.py` | Long-only equal-weight target concepts, simplified turnover cost caveats, and signal lag. |
@@ -90,6 +91,16 @@ This checklist does not authorize:
 | Formula parity is checked against completed close data only. | Sample input/output rows or an offline parity check are preserved. |
 | Missing values are not filled into scores. | Diagnostics record valid and missing score counts. |
 
+### `alpha_012`
+
+| Assertion | Expected smoke-test evidence |
+| --- | --- |
+| `alpha_012` remains a research feature unless a separate reviewed strategy stage explicitly changes that. | PR scope and experiment notes say it is not order logic, universe construction, or portfolio construction. |
+| The formula uses completed close and volume bars only: `sign(delta(volume, 1)) * (-1 * delta(close, 1))`. | Sample close, volume, delta, sign, and output rows are preserved for at least one reviewed symbol/date. |
+| Close and volume dates match before a score is produced. | Rebalance or diagnostic logs record latest completed close and volume dates. |
+| Missing close, missing volume, incomplete one-period anchors, and stale bars are not filled into scores. | Skip counts and skipped-symbol reasons are logged. |
+| Negative volume is invalid and zero volume remains visible. | Diagnostics distinguish negative-volume invalid input from zero-volume observations. |
+
 ## 7. Diagnostic Export Checks
 
 Diagnostics are evaluation tools, not signal inputs.
@@ -100,6 +111,7 @@ Diagnostics are evaluation tools, not signal inputs.
 | Rank IC | Missing factor/return pairs are dropped pairwise without filling. | Valid count per date is recorded. |
 | Quantile spread | Top-minus-bottom spread is labeled diagnostic and includes bucket counts. | Edge-bucket counts, valid asset counts, and caveats are preserved. |
 | Coverage | Dates with insufficient assets remain visible. | `NaN` diagnostics or explicit insufficient-coverage records are retained. |
+| Alpha#012 coverage | Close/volume score coverage is visible before any diagnostic is interpreted. | Valid score counts and skip reasons for missing close, missing volume, mismatched dates, negative volume, stale volume, and incomplete anchors are preserved. |
 
 Forward returns must never be used as features, selection inputs, or rebalance
 inputs.
