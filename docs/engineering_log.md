@@ -12,6 +12,50 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Liquidity Universe Backtest Integration Design
+
+This documentation milestone defined the next reviewed boundary after the
+synthetic liquidity universe helper and fixture universe-mask smoke check
+merged.
+
+Assumption: the next safest PR-sized stage is not source-code integration into
+`run_long_only_backtest()`. It is a design gate that specifies how liquidity
+universe masks, factor signals, rebalance schedules, costs, slippage,
+benchmarks, and execution lag should interact before any backtest consumes a
+universe mask.
+
+`docs/liquidity_universe_backtest_integration_design.md` now defines the
+purpose, current evidence, non-goals, proposed future signal-masking adapter,
+strict signal/mask alignment contract, timing contract, selection and coverage
+semantics, required future backtest assumptions, required future tests, and
+suggested next stages.
+
+`docs/liquidity_universe_construction_design.md` now marks the first three
+recommended follow-up stages as complete and points the next step to the new
+backtest-integration design. `docs/liquidity_dollar_volume_universe_plan.md`
+also now reflects the completed universe-mask helper and fixture smoke stages.
+`docs/decision_log.md` records the decision to require this design before code
+consumes liquidity universe masks.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, data loaders, backtester behavior, metrics, strategy logic, real-data
+handling, vendor access, credentials, live or paper trading, brokerage
+integration, order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+417 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Liquidity Universe Fixture Smoke Check
 
 This stage connected the reviewed synthetic liquidity universe helper to the

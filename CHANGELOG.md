@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/liquidity_universe_backtest_integration_design.md` to define a
+  documentation-only contract for future signal masking and simulated
+  backtest consumption of liquidity universe masks before any source code
+  changes.
 - Added a synthetic liquidity universe-mask count smoke check to the local CSV
   fixture workflow demo, reusing the committed synthetic OHLCV fixture and
   existing liquidity universe helper without backtest integration,

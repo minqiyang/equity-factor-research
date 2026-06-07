@@ -15,6 +15,56 @@ investment performance.
 
 ---
 
+## 2026-06-07 - Require Universe-Mask Backtest Integration Design Before Code
+
+Context:
+
+- The synthetic liquidity universe helper has merged.
+- The local CSV fixture workflow now reports universe-mask counts on committed
+  synthetic fixtures only.
+- `run_long_only_backtest()` currently consumes prices and signals, not
+  universe masks.
+- Feeding a universe mask directly into a backtest without a reviewed contract
+  could blur universe dates, signal dates, rebalance dates, return measurement
+  dates, low-coverage handling, benchmark assumptions, and performance
+  interpretation.
+
+Decision:
+
+- Add a documentation-only liquidity universe backtest-integration design
+  before any source code consumes a liquidity universe mask in the backtester.
+- Treat the likely first implementation as a narrow signal-masking adapter,
+  not a broad backtester rewrite.
+- Require strict signal/mask alignment, explicit timing, visible low-coverage
+  and empty-rebalance summaries, and caveated synthetic-only interpretation.
+
+Rationale:
+
+- The project already has the lower-level universe-mask primitive.
+- The next correctness risk is not mask construction; it is unsafe consumption
+  of the mask in simulated portfolio research.
+- A design gate keeps universe construction, signal masking, portfolio
+  selection, costs, slippage, benchmark comparison, and execution timing
+  reviewable as separate concerns.
+
+Consequences:
+
+- Backtester source code remains unchanged in this stage.
+- Future code should mask signals before ranking and should not silently
+  repair missing universe or signal values.
+- Future synthetic backtests that consume a universe mask must record universe
+  parameters, coverage, low-coverage dates, timing assumptions, and caveats.
+- Real user-provided local CSV interpretation remains blocked by the
+  real-data readiness audit and experiment-log requirements.
+
+Follow-up:
+
+- After the design is reviewed and merged, the next narrow code stage can add
+  a deterministic synthetic `apply_universe_mask_to_signals()` adapter and
+  tests, without running a backtest if keeping the PR narrower is safer.
+
+---
+
 ## 2026-06-07 - Keep Liquidity Universe Construction Separate From Backtesting
 
 Context:

@@ -196,15 +196,21 @@ Future implementation tests should cover:
 
 ## 11. Recommended Next Stages
 
-1. Implement a small `LiquidityUniverseResult` and
-   `construct_liquidity_universe()` helper using synthetic panels only.
-2. Add deterministic tests for mask semantics, summary fields, cap behavior,
-   missing values, low coverage, and no-lookahead.
-3. Add a local synthetic fixture workflow smoke update that reports universe
-   mask counts only, without backtesting or performance interpretation.
-4. Only after those stages, consider a separate backtester integration design
-   that defines how a universe mask, factor score, rebalance schedule, costs,
-   slippage, benchmark, and execution lag interact.
+Completed after this design:
+
+1. `LiquidityUniverseResult` and `construct_liquidity_universe()` were
+   implemented using synthetic/local panels only.
+2. Deterministic tests were added for mask semantics, summary fields, cap
+   behavior, missing values, low coverage, and no-lookahead.
+3. The local synthetic fixture workflow now reports universe-mask counts only,
+   without backtesting or performance interpretation.
+
+Next:
+
+4. Add a separate backtester integration design that defines how a universe
+   mask, factor score, rebalance schedule, costs, slippage, benchmark, and
+   execution lag interact before any source code consumes the universe mask in
+   a backtest.
 
 Stop any future stage if it requires real data, downloads, vendor credentials,
 live or paper trading, brokerage integration, order execution, or
