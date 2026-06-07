@@ -12,6 +12,55 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Alpha#012 Volume + Close Research Feature
+
+This code milestone implemented `alpha_012` as one reviewed volume + close
+WorldQuant-style research feature after the planning gate in
+`docs/volume_close_alpha_plan.md` merged.
+
+Formula provenance: the public arXiv version of Zura Kakushadze's
+`101 Formulaic Alphas` lists Alpha#012 as:
+
+```text
+sign(delta(volume, 1)) * (-1 * delta(close, 1))
+```
+
+`alpha_012()` maps that formula to caller-provided close and volume panels. It
+requires exactly matching dates and asset columns, rejects negative volume,
+does not fill missing close or volume values, preserves zero-volume behavior
+explicitly, and returns `NaN` when either one-period delta endpoint is missing.
+The feature at date `t` uses only `close[t]`, `volume[t]`, and their one-row
+trailing anchors. Execution lag, ranking direction, universe selection,
+portfolio construction, costs, slippage, backtesting, and interpretation
+remain separate later-stage responsibilities.
+
+Focused tests in `tests/test_worldquant_alphas.py` cover hand-calculated
+formula output, shape preservation, no-lookahead behavior for both close and
+volume, missing endpoints, zero-volume and zero-volume-delta behavior,
+negative-volume rejection, panel alignment, invalid close and volume inputs,
+and continued absence of backtest integration imports.
+
+During the stage, the first hand-calculated test had an incorrect expected
+sign for one row. The implementation matched the reviewed formula; the test
+expectation was corrected and the full failure-to-fix chain is recorded in
+`docs/troubleshooting_log.md`.
+
+This stage does not fetch real data, add vendor access, add credentials,
+connect to a broker, place orders, support live or paper trading, implement
+bulk WorldQuant 101, modify loaders, modify the backtester, generate reports,
+or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_worldquant_alphas.py
+24 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Volume + Close Alpha Planning Gate
 
 This documentation milestone added `docs/volume_close_alpha_plan.md` before

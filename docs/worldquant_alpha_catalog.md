@@ -39,14 +39,16 @@ reviewed way.
 | --- | --- |
 | Reusable operator layer | Implemented and tested for core pandas panel operators in `src/features/operators.py`. |
 | `alpha_009` | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
+| `alpha_012` | Implemented and tested in `src/features/worldquant_alphas.py` as a volume + close research feature. |
 | Other WorldQuant-style alphas | Not implemented. |
 | WorldQuant-style alpha backtest integration | Not implemented. |
 | Bulk WorldQuant 101 implementation | Not implemented and still out of scope. |
 
-`alpha_009` is not a full strategy, not a trading recommendation, not connected
-to a dedicated alpha strategy backtest, and not evidence of profitability. It
-only shows that one close-only formula can be represented as a tested research
-feature with explicit date-alignment assumptions.
+`alpha_009` and `alpha_012` are not full strategies, not trading
+recommendations, not connected to dedicated alpha strategy backtests, and not
+evidence of profitability. They only show that reviewed formulas can be
+represented as tested research features with explicit date-alignment and
+missing-data assumptions.
 
 ## Priority System
 
@@ -66,9 +68,11 @@ Priority labels:
 Important priority rules:
 
 - `alpha_009` is implemented as a research feature only.
+- `alpha_012` is implemented as a research feature only.
 - Remaining close-only alphas are future `P1` candidates, not automatic
   implementation tasks.
-- `alpha_012` is not an immediate implementation task; it is `P2` because it requires volume + close support.
+- Remaining volume + close alphas are future `P2` candidates, not automatic
+  implementation tasks.
 - `alpha_101` is not an immediate implementation task; it is `P2` because it requires OHLC support.
 - All VWAP, market cap, and industry-neutral categories are deferred as `P3`.
 - No new formula should be implemented until its data requirements, operator
@@ -223,7 +227,7 @@ volume + close + high + low + industry:
 | high only | 23 | P2 | Requires high data support. |
 | open + close | 8, 18, 33, 37, 38 | P2 | Requires open data support. |
 | open + close + high + low | 20, 54, 101 | P2 | Requires OHLC support; alpha_101 is not immediate. |
-| volume + close | 7, 12, 13, 17, 21, 30, 39, 43, 45 | P2 | Requires volume support; alpha_012 is not immediate. |
+| volume + close | 7, 12, 13, 17, 21, 30, 39, 43, 45 | P2 | `alpha_012` is implemented as a research feature only; remaining volume + close references require separate formula review and tests before implementation. |
 | volume + open + close | 2, 14 | P2 | Requires volume and open data support. |
 | volume + open | 3, 6 | P2 | Requires volume and open data support. |
 | volume + high | 15, 16, 26, 40, 44 | P2 | Requires volume and high data support. |
