@@ -48,6 +48,8 @@ Current local data support relevant to liquidity planning:
 | --- | --- | --- |
 | Strict local OHLCV loader | `load_ohlcv_csv()` in `src/data/csv_loader.py` | Implemented and tested. |
 | Synthetic OHLCV fixture smoke coverage | `tests/test_local_csv_loader_smoke_demo.py` and `tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv` | Implemented with committed synthetic fixture only. |
+| Synthetic liquidity eligibility helpers | `src/features/liquidity.py` and `tests/test_liquidity.py` | Implemented for rolling ADV and rolling dollar volume with explicit lag, warm-up, missing-value, and zero-volume behavior. |
+| Synthetic local-fixture liquidity count smoke check | `research/local_csv_fixture_workflow_demo.py`, report/log artifacts, and tests | Implemented as count diagnostics only; no universe mask or backtest integration. |
 | Split-aware diagnostics | `src/features/validation.py`, `src/features/diagnostics.py`, and related tests | Implemented for synthetic/local-fixture workflows. |
 | Real-data readiness gate | `docs/real_data_readiness_audit.md` | Documentation gate only; no real-data run approved. |
 | Experiment-log requirements | `EXPERIMENT_LOG.md` and reporting helpers | Synthetic logging exists; real-data records remain gated. |
@@ -231,16 +233,24 @@ real-data readiness audits before any result is interpreted.
 ## Future PR-Sized Stages
 
 1. Add a synthetic liquidity eligibility helper design or implementation
-   decision if the exact function boundary is still ambiguous.
+   decision if the exact function boundary is still ambiguous. Completed by
+   the synthetic liquidity helper stage.
 2. Implement a small synthetic-only liquidity eligibility helper with tests for
    rolling ADV or rolling dollar volume, missing values, zero volume, and
-   date lag.
+   date lag. Completed for rolling ADV and rolling dollar volume.
 3. Add a synthetic local-fixture workflow check that reports liquidity
-   eligibility counts without running a strategy.
+   eligibility counts without running a strategy. Completed with committed
+   synthetic fixtures only.
 4. Add experiment-log fields for liquidity threshold, rolling window, price
-   field, volume policy, zero-volume count, and eligibility lag.
-5. Revisit `alpha_012` or other volume-dependent factor planning only after
-   liquidity eligibility and volume input handling are tested.
+   field, volume policy, zero-volume count, and eligibility lag. Completed for
+   the synthetic local-fixture workflow.
+5. Add a documentation-only liquidity universe construction design before any
+   code uses liquidity eligibility as a final research universe mask.
+6. Implement a synthetic-only universe-mask helper and audit summary after the
+   design is reviewed.
+7. Revisit backtester integration only after universe mask semantics, signal
+   timing, rebalance timing, costs, slippage, benchmark choice, and execution
+   assumptions are reviewed together.
 
 Each stage should stop if it requires real data, external downloads, vendor
 credentials, live or paper trading, brokerage integration, order execution, or
@@ -248,9 +258,10 @@ profitability claims.
 
 ## Recommended Next Stage
 
-After this plan is reviewed and merged, the next safe stage should be a
-synthetic-only liquidity eligibility helper design or implementation decision.
+After the liquidity eligibility helper and fixture count stages are complete,
+the next safe stage should be a documentation-only liquidity universe
+construction design.
 
-If scope is clear, implement a small helper that produces date-symbol
-eligibility from validated synthetic panels using an explicit lag. If scope is
-still ambiguous, add a narrower checklist first.
+That design should define the first future universe-mask API, audit summary,
+date-alignment rules, missing-value behavior, optional cap semantics, and stop
+conditions before any backtest consumes liquidity eligibility.
