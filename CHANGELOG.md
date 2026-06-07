@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_alpha012_checkpoint_report.md` to refresh the roadmap after
+  Alpha#012 implementation, synthetic OHLCV smoke coverage, and local-fixture
+  diagnostics.
 - Added Alpha#012 diagnostics to the synthetic local CSV fixture workflow,
   reusing existing IC, Rank IC, and quantile-spread helpers on committed
   fixture data only.
@@ -114,6 +117,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Updated the Alpha#012 and WorldQuant roadmap docs to mark the completed
+  Alpha#012 fixture diagnostics stage and recommend a LEAN plan refresh before
+  any Alpha#012 LEAN mapping work.
 - Updated the OHLCV schema plan and WorldQuant alpha catalog to route future
   volume-based universe work through the liquidity and dollar-volume planning
   gate before implementation.
