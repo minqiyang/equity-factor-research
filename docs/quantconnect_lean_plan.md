@@ -9,6 +9,10 @@ Current local status before any LEAN code:
 - strict local CSV loaders exist for wide prices, long prices, and benchmark prices.
 - committed synthetic local CSV fixtures and a local CSV fixture workflow demo exercise the loader path without real data.
 - `alpha_009` exists as a close-only research feature, not a strategy.
+- `alpha_012` exists as a volume + close research feature and is covered by
+  formula tests, synthetic OHLCV fixture smoke coverage, and local-fixture
+  diagnostics. It is not a strategy, not order logic, and not performance
+  evidence.
 - IC, Rank IC, and quantile spread diagnostics exist for already-aligned factor and forward-return panels.
 - synthetic reports, JSON experiment logs, and the experiment registry exist for auditable workflow outputs.
 - no real-data local CSV study, LEAN implementation, paper trading, live trading, broker integration, order execution, or profitability claim exists.
@@ -19,8 +23,9 @@ Current local status before any LEAN code:
 | --- | --- | --- |
 | `features.momentum.calculate_12_1_momentum` | Computes 12-1 momentum as `price[t - skip] / price[t - lookback] - 1` with explicit shifting. | Maintain a per-symbol rolling adjusted close history or use `History` / warm-up data. Compute the same score only from completed daily bars. |
 | `features.worldquant_alphas.alpha_009` | Computes one close-only WorldQuant-style research feature from current and prior closes. It is not a strategy or performance claim. | Optional later feature-parity candidate only after local formula behavior and LEAN bar timing are mapped. Do not connect it to orders without a separate reviewed strategy stage. |
+| `features.worldquant_alphas.alpha_012` | Computes `sign(delta(volume, 1)) * (-1 * delta(close, 1))` from exactly aligned close and volume panels. It rejects negative volume, preserves missing values, and is not a strategy or performance claim. | Optional later feature-parity candidate only after completed daily close and volume timing are mapped. The first LEAN-adjacent treatment should be signal-export or metadata-only, not order logic. |
 | `data.csv_loader` | Reads user-provided local CSV files only, with strict schema, date, missing-value, and numeric validation. | No direct LEAN equivalent because LEAN uses subscriptions, history, and universe data. Map validation concepts to LEAN dataset, universe, calendar, normalization, and missing-history diagnostics. |
-| `research/local_csv_fixture_workflow_demo.py` | Demonstrates the local CSV path on committed synthetic fixtures, computes `alpha_009`, and runs caveated diagnostics. | Use as a workflow-shape reference only: load or subscribe data, compute a feature, align evaluation targets, log diagnostics, and preserve caveats. It is not a real-data or LEAN parity result. |
+| `research/local_csv_fixture_workflow_demo.py` | Demonstrates the local CSV path on committed synthetic fixtures, computes `alpha_009` and `alpha_012`, and runs caveated diagnostics. | Use as a workflow-shape reference only: load or subscribe data, compute a feature, align evaluation targets, log diagnostics, and preserve caveats. It is not a real-data or LEAN parity result. |
 | `features.diagnostics.factor_information_coefficient` and `factor_rank_information_coefficient` | Compute per-date cross-sectional IC / Rank IC from already-aligned factor and forward-return panels without filling missing values. | Export or log factor and realized forward-return panels from LEAN after a smoke run, then compute comparable diagnostics offline or in a research notebook. Avoid using future returns as live signal inputs. |
 | `features.diagnostics.factor_quantile_spread` | Computes top-minus-bottom quantile return diagnostics with explicit coverage counts from aligned panels. | Record selected quantile membership and subsequent returns for LEAN analysis. Treat quantile spread as diagnostic evidence only, not as order logic or a profitability claim. |
 | `backtest.portfolio.run_long_only_backtest` | Selects top-ranked assets, equal-weights them, applies fixed transaction cost to turnover, and records holdings/metrics. | Scheduled rebalance handler ranks current universe, calls `SetHoldings` / portfolio targets for selected symbols, liquidates removed names, and relies on LEAN fill, fee, and slippage models. |
@@ -41,6 +46,9 @@ First version universe should be simple and liquid:
   - price above a minimum threshold, such as `$5`.
   - positive dollar volume.
   - sufficient daily history for 252-day lookback plus 21-day skip.
+  - if an Alpha#012-style signal is reviewed later, sufficient completed
+    close and volume history for the one-period deltas and a logged policy for
+    missing, zero, or stale volume.
   - exclude symbols with missing or stale data at rebalance.
 - Universe size: start with 100-500 most liquid names to keep the first LEAN run debuggable.
 - Survivorship bias: prefer LEAN universe selection over a static modern ticker list. A fixed ticker list can be used only as a debugging mode and must be labeled survivorship-biased.
@@ -66,6 +74,11 @@ Alternative parity mode:
 
 ## 4. Signal Generation Timing
 
+Signal timing must be documented separately for each reviewed feature. The
+first runnable LEAN path should not treat feature parity as strategy approval.
+
+### 12-1 Momentum
+
 Signal rule:
 
 ```text
@@ -85,6 +98,33 @@ Implementation options:
 - Maintain `RollingWindow[TradeBar]` or a custom rolling close buffer per symbol.
 - Or request history at each rebalance for the active universe, then compute scores in one pass.
 - For the first version, history requests are simpler and easier to audit; rolling windows are more efficient later.
+
+### Alpha#012
+
+Reviewed local formula:
+
+```text
+alpha_012[t] = sign(volume[t] - volume[t - 1]) * (-(close[t] - close[t - 1]))
+```
+
+LEAN mapping assumptions before any future code:
+
+- Use only completed daily bars for both close and volume.
+- Record whether `close` means adjusted close, raw close, or another reviewed
+  normalization mode before comparing with local outputs.
+- Treat share volume as caller-reviewed volume; do not infer split-adjusted
+  volume behavior without documenting the data source and normalization.
+- Require the latest completed close and volume date to be the same for each
+  scored symbol.
+- Missing close, missing volume, incomplete one-period anchors, stale bars, or
+  non-positive close observations should produce no score and should be logged
+  as skipped-symbol reasons.
+- Negative volume should be treated as invalid input. Zero volume should remain
+  visible and should not be silently converted to missing or positive volume.
+- The first LEAN-adjacent Alpha#012 artifact should be signal metadata,
+  feature export, or parity diagnostics only. It should not create portfolio
+  targets, submit orders, select a universe by factor value, or interpret
+  results as performance evidence.
 
 ## 5. Order Execution Timing
 
@@ -220,6 +260,19 @@ rules.
 | Local CSV fixture workflow report/log | Use as a template for caveated workflow documentation and JSON sidecar metadata. | The fixture is synthetic and tiny; it is not a real-data benchmark or LEAN parity test. |
 | Experiment registry | Keep LEAN experiment records discoverable separately from synthetic local logs. | Registry summaries should not hide weak runs or promote best-only results. |
 
+Alpha#012-specific diagnostic exports should additionally record:
+
+- close normalization mode used for the `close[t] - close[t - 1]` term.
+- volume field source and whether the value is raw, adjusted, or
+  caller-reviewed without adjustment.
+- counts of skipped symbols for missing close, missing volume, mismatched close
+  and volume dates, negative volume, stale volume, and incomplete one-period
+  anchors.
+- valid Alpha#012 score counts before IC, Rank IC, or quantile-spread
+  diagnostics are computed.
+- explicit caveats that Alpha#012 diagnostics are feature diagnostics only,
+  not a standalone strategy, portfolio rule, or profitability claim.
+
 The first LEAN smoke run should therefore preserve:
 
 - factor formula and timing metadata.
@@ -280,6 +333,9 @@ Pandas dates are usually date-indexed close observations. LEAN has algorithm tim
    - skip symbols without complete required anchors.
 6. Implement signal calculation only:
    - compute 12-1 momentum from completed daily bars.
+   - if Alpha#012 parity is in scope for a later reviewed stage, compute it
+     only from completed close and volume bars and export scores as
+     diagnostics, not as order or universe-selection logic.
    - log a few symbol-level scores on the first rebalance for audit.
 7. Implement monthly scheduled rebalance:
    - schedule after market open on the first trading day of each month.
@@ -326,16 +382,16 @@ Pandas dates are usually date-indexed close observations. LEAN has algorithm tim
 
 ## 12. Recommended Next LEAN-Related Stage
 
-The next LEAN-related stage should still be planning or smoke-test scaffolding,
-not a full algorithm.
+The next LEAN-related stage should still be planning or signal-boundary
+documentation, not a full algorithm.
 
 Recommended PR-sized stage:
 
-- create a LEAN parity checklist document or test plan that maps local
-  `alpha_009`, 12-1 momentum, diagnostics, benchmark, fees, slippage, and
-  experiment-log requirements to specific smoke-test assertions.
-- do not create a LEAN algorithm file yet unless the checklist stage is
-  reviewed and merged.
+- create a documentation-only Alpha#012 signal-boundary design or checklist
+  addendum that defines metadata fields, timing fields, skipped-symbol reasons,
+  and static guardrails before any Alpha#012 LEAN-adjacent code exists.
+- keep any future Alpha#012 LEAN-adjacent code signal-only until a separate
+  design is reviewed and merged.
 - do not fetch data, download data, add credentials, connect to a broker, place
   orders, enable live trading, or claim profitability.
 

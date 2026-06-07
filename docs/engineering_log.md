@@ -12,6 +12,49 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Alpha#012 QuantConnect/LEAN Plan Refresh
+
+This documentation milestone refreshed the QuantConnect/LEAN planning path
+after the post-Alpha#012 roadmap checkpoint merged.
+
+Assumption: the next safest PR-sized stage after the Alpha#012 local feature,
+fixture smoke, diagnostics, and checkpoint sequence is a planning refresh, not
+runnable LEAN code. The local Alpha#012 feature changes the local-to-LEAN
+signal mapping assumptions because it requires both completed close and volume
+bars, an explicit close normalization policy, a reviewed volume policy, and
+visible skip reasons for missing, stale, mismatched, or invalid inputs.
+
+`docs/quantconnect_lean_plan.md` now records Alpha#012 as an implemented
+local research feature and maps it to future LEAN planning requirements:
+completed close and volume timing, close normalization, volume-source policy,
+date matching, missing and stale data handling, negative-volume rejection,
+zero-volume visibility, feature export, and diagnostic-only treatment.
+
+`docs/lean_parity_checklist.md` now includes Alpha#012 parity assertions and
+diagnostic coverage requirements. These checklist entries keep Alpha#012 out
+of order logic, universe construction, portfolio construction, performance
+interpretation, and strategy claims unless a later reviewed stage explicitly
+changes that boundary.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, data access, backtester behavior, metrics, strategy logic, real-data
+handling, vendor access, credentials, live or paper trading, brokerage
+integration, order execution, runnable LEAN behavior, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+402 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-07 - Post-Alpha#012 Roadmap Checkpoint
 
 This documentation checkpoint refreshed the staged roadmap after PR #65 merged
