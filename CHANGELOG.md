@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic/local-panel liquidity universe helper that returns an
+  inspectable mask and audit summary without backtesting, report generation,
+  real data, or performance interpretation.
 - Added `docs/liquidity_universe_construction_design.md` to define a
   documentation-only future liquidity universe-mask API and audit-summary
   boundary before any backtest consumes liquidity eligibility.
