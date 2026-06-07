@@ -23,6 +23,100 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Local CSV Fixture Universe-Mask Test Expectation Drift
+
+Original mistake:
+
+- The first partial update to the local CSV fixture workflow added a
+  universe-mask count diagnostic to the report and JSON log, but the existing
+  report/log test still asserted the old caveat text
+  `not universe construction`.
+- That old assertion was correct before the helper existed, but it became stale
+  once this stage intentionally began reporting a synthetic universe-mask
+  count smoke check.
+
+Consequence:
+
+- The first full test run on the branch failed with one test failure.
+- The branch was not safe to commit because the tests no longer described the
+  intended workflow boundary: there is now a universe-mask diagnostic, but
+  still no tradeable universe study, backtest integration, portfolio
+  construction, execution logic, or performance interpretation.
+
+Evidence:
+
+```text
+tests/test_local_csv_fixture_workflow_demo.py::test_workflow_report_and_experiment_log_are_created_with_caveats
+AssertionError: assert 'not universe construction' in '# Local CSV Fixture Workflow Demo\n...'
+
+1 failed, 416 passed
+```
+
+Investigation:
+
+- Inspected the working diff and confirmed the code had intentionally added
+  `construct_liquidity_universe()` to the local fixture workflow.
+- Checked the generated report text and confirmed it now contains a
+  `Liquidity Universe Mask Smoke Check` section with count-only audit output.
+- Verified the mismatch was not a real-data, trading, credential, brokerage,
+  order-execution, profitability, loader, backtester, or metrics issue.
+- Identified the root cause as test expectation drift: the old test was still
+  checking for "no universe construction" wording instead of the new, narrower
+  "universe-mask count only, no backtest/tradeability integration" boundary.
+
+Correction attempts:
+
+- Did not restore the old wording because that would hide the newly intended
+  universe-mask smoke diagnostic.
+- Did not weaken the test to ignore the liquidity section.
+- Updated the test to assert the new Markdown section, expected count row,
+  JSON universe-count diagnostics, low-coverage dates, caveats, and helper
+  call count.
+- Tightened JSON serialization so the `low_coverage` audit flag remains a
+  boolean instead of being serialized as a numeric value.
+
+Final fix:
+
+- `research/local_csv_fixture_workflow_demo.py` now serializes universe-mask
+  audit summaries with boolean `low_coverage` values and preserves caveated
+  count-only wording.
+- `tests/test_local_csv_fixture_workflow_demo.py` now verifies the universe
+  mask, summary, low-coverage dates, generated report section, JSON
+  diagnostics, caveats, helper reuse, and invalid universe-mask config.
+- The default synthetic report and experiment log were regenerated from the
+  committed fixture only.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+13 passed
+
+python -m pytest -q
+417 passed
+
+python -m compileall src tests research
+passed
+```
+
+Remaining caveats:
+
+- This remains a committed synthetic fixture smoke check only.
+- It does not integrate a liquidity universe into the backtester, produce
+  weights, create trades, fetch real data, validate market tradeability, or
+  support any performance interpretation.
+
+Prevention:
+
+- When a staged PR intentionally changes a caveat boundary from "not present"
+  to "present only as a diagnostic," update tests to assert the new positive
+  diagnostic contract and the negative guardrails together.
+- Keep future liquidity stages split between eligibility counts, universe-mask
+  diagnostics, and backtest consumption so stale wording does not blur the
+  scope boundary.
+
+---
+
 ## 2026-06-07 - Liquidity Universe Missing-Eligibility Downcast Warning
 
 Original mistake:

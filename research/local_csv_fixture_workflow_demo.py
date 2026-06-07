@@ -32,6 +32,8 @@ from features.validation import (
 from features.liquidity import (
     average_daily_volume_eligibility,
     average_dollar_volume_eligibility,
+    construct_liquidity_universe,
+    LiquidityUniverseResult,
 )
 from features.worldquant_alphas import alpha_009, alpha_012
 from reporting.experiment_log import (
@@ -73,6 +75,7 @@ class LocalCSVFixtureWorkflowConfig:
     min_average_dollar_volume: float = 11_000_000.0
     liquidity_eligibility_lag: int = 1
     liquidity_price_column: str = "adjusted_close"
+    liquidity_universe_min_assets_per_date: int = 1
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,7 @@ class LocalCSVFixtureWorkflowResult:
     average_daily_volume_eligibility: pd.DataFrame
     average_dollar_volume_eligibility: pd.DataFrame
     liquidity_eligibility_summary: pd.DataFrame
+    liquidity_universe_result: LiquidityUniverseResult
     alpha_009_factor: pd.DataFrame
     alpha_012_factor: pd.DataFrame
     forward_returns: pd.DataFrame
@@ -174,6 +178,11 @@ def run_local_csv_fixture_workflow_demo(
         volume_panel=liquidity_volume_panel,
         adv_eligibility=adv_eligibility,
         dollar_volume_eligibility=dollar_volume_eligibility,
+    )
+    liquidity_universe_result = construct_liquidity_universe(
+        adv_eligibility & dollar_volume_eligibility,
+        min_assets_per_date=config.liquidity_universe_min_assets_per_date,
+        name="synthetic_fixture_liquidity_universe",
     )
 
     alpha_factor = alpha_009(prices, window=config.alpha_window)
@@ -307,6 +316,7 @@ def run_local_csv_fixture_workflow_demo(
         average_daily_volume_eligibility=adv_eligibility,
         average_dollar_volume_eligibility=dollar_volume_eligibility,
         liquidity_eligibility_summary=liquidity_eligibility_summary,
+        liquidity_universe_result=liquidity_universe_result,
         alpha_009_factor=alpha_factor,
         alpha_012_factor=alpha_012_factor,
         forward_returns=forward_returns,
@@ -457,11 +467,18 @@ def write_workflow_experiment_log(
             },
             "liquidity_check": (
                 "synthetic decision-date eligibility count smoke check only; "
-                "not a universe-selection study"
+                "not a tradeable universe-selection study"
+            ),
+            "liquidity_universe_check": (
+                "synthetic universe-mask count smoke check only; not backtest "
+                "integration, portfolio construction, or tradeability evidence"
             ),
             "liquidity_window": config.liquidity_window,
             "liquidity_eligibility_lag": config.liquidity_eligibility_lag,
             "liquidity_price_column": config.liquidity_price_column,
+            "liquidity_universe_min_assets_per_date": (
+                config.liquidity_universe_min_assets_per_date
+            ),
             "min_average_volume": config.min_average_volume,
             "min_average_dollar_volume": config.min_average_dollar_volume,
             "liquidity_timing": (
@@ -530,6 +547,16 @@ def write_workflow_experiment_log(
             "both_liquidity_rules_eligible_counts_by_date": _series_to_date_dict(
                 result.liquidity_eligibility_summary["both_eligible_count"],
             ),
+            "liquidity_universe_summary": _date_indexed_frame_to_dict(
+                result.liquidity_universe_result.summary,
+            ),
+            "liquidity_universe_counts_by_date": _series_to_date_dict(
+                result.liquidity_universe_result.summary["universe_count"],
+            ),
+            "liquidity_universe_low_coverage_dates": [
+                date.date().isoformat()
+                for date in result.liquidity_universe_result.low_coverage_dates
+            ],
             "split_summary": result.split_summary.to_dict(orient="index"),
             "information_coefficient_by_date": _series_to_date_dict(
                 result.information_coefficient,
@@ -590,7 +617,9 @@ def write_workflow_experiment_log(
             "local CSV fixture smoke demo only",
             "split-aware wiring check only",
             "liquidity eligibility count smoke check only",
-            "not universe construction",
+            "liquidity universe mask count smoke check only",
+            "not backtest universe integration",
+            "not tradeability evidence",
             "not strategy validation",
             "not model selection",
             "not evidence of real-world performance",
@@ -625,12 +654,13 @@ Exercise the local CSV research path with a small committed fixture:
 2. Load a benchmark CSV and verify date alignment.
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
-5. Compute `alpha_009` as a close-only research feature.
-6. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-7. Compute next-row forward returns as evaluation targets only.
-8. Apply chronological train/validation/test split metadata.
-9. Run IC, Rank IC, and quantile spread diagnostics.
-10. Write a caveated report and JSON experiment log.
+5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
+6. Compute `alpha_009` as a close-only research feature.
+7. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+8. Compute next-row forward returns as evaluation targets only.
+9. Apply chronological train/validation/test split metadata.
+10. Run IC, Rank IC, and quantile spread diagnostics.
+11. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -664,9 +694,15 @@ No missing values were filled. No dates or assets were reindexed. No portfolio c
 
 The workflow loads the committed synthetic OHLCV fixture and pivots `{config.liquidity_price_column}` and `volume` into panels aligned to the adjusted-close fixture's dates and assets. Missing OHLCV rows after that alignment remain missing; there is no fill, forward-fill, backward-fill, interpolation, or zero default.
 
-Eligibility counts below are decision-date diagnostics only. They use `window={config.liquidity_window}`, `eligibility_lag={config.liquidity_eligibility_lag}`, `min_average_volume={_format_float(config.min_average_volume)}`, and `min_average_dollar_volume={_format_float(config.min_average_dollar_volume)}`. They do not construct a universe, run a strategy, or validate market tradability.
+Eligibility counts below are decision-date diagnostics only. They use `window={config.liquidity_window}`, `eligibility_lag={config.liquidity_eligibility_lag}`, `min_average_volume={_format_float(config.min_average_volume)}`, and `min_average_dollar_volume={_format_float(config.min_average_dollar_volume)}`. They do not run a strategy, construct a portfolio, or validate market tradability.
 
 {_format_markdown_table(result.liquidity_eligibility_summary)}
+
+## Liquidity Universe Mask Smoke Check
+
+The synthetic universe mask below is constructed from the intersection of the ADV and dollar-volume eligibility masks. It reports count and audit fields from `construct_liquidity_universe()` only. It does not create target weights, trades, positions, orders, returns, benchmark comparisons, or a tradeable universe claim.
+
+{_format_markdown_table(result.liquidity_universe_result.summary)}
 
 ## Split Coverage
 
@@ -724,7 +760,7 @@ Eligibility counts below are decision-date diagnostics only. They use `window={c
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
-- The liquidity eligibility counts are synthetic decision-date diagnostics, not universe construction or tradeability evidence.
+- The liquidity eligibility and universe-mask counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
@@ -803,6 +839,13 @@ def _validate_config(config: LocalCSVFixtureWorkflowConfig) -> None:
     )
     if config.liquidity_price_column not in {"close", "adjusted_close"}:
         raise ValueError("liquidity_price_column must be 'close' or 'adjusted_close'")
+    if (
+        isinstance(config.liquidity_universe_min_assets_per_date, bool)
+        or not isinstance(config.liquidity_universe_min_assets_per_date, int)
+    ):
+        raise TypeError("liquidity_universe_min_assets_per_date must be an integer")
+    if config.liquidity_universe_min_assets_per_date < 1:
+        raise ValueError("liquidity_universe_min_assets_per_date must be at least 1")
 
 
 def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) -> None:
@@ -854,10 +897,10 @@ def _series_to_date_dict(series: pd.Series) -> dict[str, float]:
     }
 
 
-def _date_indexed_frame_to_dict(frame: pd.DataFrame) -> dict[str, dict[str, float]]:
+def _date_indexed_frame_to_dict(frame: pd.DataFrame) -> dict[str, dict[str, object]]:
     return {
         pd.Timestamp(index).date().isoformat(): {
-            str(column): float(value)
+            str(column): _json_scalar(column, value)
             for column, value in row.items()
         }
         for index, row in frame.iterrows()
@@ -914,6 +957,8 @@ def _format_table_value(column: object, value: object) -> str:
         return "NaN"
 
     column_name = str(column)
+    if column_name == "low_coverage":
+        return str(bool(value)).lower()
     if (
         column_name.endswith("_count")
         or column_name.endswith("_observations")
@@ -929,6 +974,14 @@ def _format_float(value: float) -> str:
     if pd.isna(value):
         return "NaN"
     return f"{value:.4f}"
+
+
+def _json_scalar(column: object, value: object) -> object:
+    if str(column) == "low_coverage":
+        return bool(value)
+    if pd.isna(value):
+        return None
+    return float(value)
 
 
 def _project_relative_path(path: Path) -> str:

@@ -12,6 +12,58 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Liquidity Universe Fixture Smoke Check
+
+This stage connected the reviewed synthetic liquidity universe helper to the
+committed local CSV fixture workflow as a count-only smoke check.
+
+Assumption: after the standalone helper merged, the next safest PR-sized stage
+was not backtest consumption, ranking/capping research, threshold tuning, or a
+real-data workflow. It was a narrow fixture workflow update that proves the
+existing ADV and dollar-volume eligibility masks can be combined into
+`construct_liquidity_universe()` and reported as audit counts only.
+
+`research/local_csv_fixture_workflow_demo.py` now constructs a
+`synthetic_fixture_liquidity_universe` result from the intersection of the
+lagged ADV and dollar-volume eligibility masks. The generated Markdown report
+and JSON experiment log include universe-mask counts, low-coverage dates, and
+caveats that keep the output separate from portfolio construction, backtest
+universe integration, tradeability evidence, trading behavior, or performance
+interpretation.
+
+`tests/test_local_csv_fixture_workflow_demo.py` now verifies the universe mask
+alignment, deterministic summary, low-coverage dates, JSON diagnostics,
+Markdown report section, helper reuse, and invalid `min_assets_per_date`
+configuration. The default synthetic report and experiment-log sidecar were
+regenerated from the committed fixture only.
+
+During implementation, the first full test run failed because the test suite
+still expected the pre-helper caveat text `not universe construction` while
+the workflow had intentionally changed to a universe-mask count diagnostic.
+The full failure-to-fix chain is recorded in `docs/troubleshooting_log.md`.
+
+This stage does not fetch real data, add vendor access, add credentials,
+modify loaders, modify backtester or metrics, create target weights, place
+orders, support live or paper trading, tune liquidity thresholds, or make
+profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+13 passed
+
+python -m pytest -q
+417 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Synthetic Liquidity Universe Helper
 
 This code milestone implemented the first reviewed liquidity universe-mask
