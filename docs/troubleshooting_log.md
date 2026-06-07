@@ -23,6 +23,77 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Liquidity Universe Missing-Eligibility Downcast Warning
+
+Original mistake:
+
+- The first implementation of `construct_liquidity_universe()` cleaned a
+  boolean-or-missing eligibility panel with `fillna(False).astype(bool)`.
+- That worked for the current test data, but object-dtype panels containing
+  booleans and `NaN` triggered pandas' future silent-downcasting warning.
+
+Consequence:
+
+- The focused liquidity tests passed, but the run emitted a warning that could
+  become a future behavior change or hide an avoidable dtype assumption.
+- The stage was not ready for commit while validation was warning-clean only by
+  coincidence.
+
+Evidence:
+
+```text
+tests/test_liquidity.py::test_construct_liquidity_universe_counts_missing_eligibility_before_excluding
+FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated
+and will change in a future version.
+src\features\liquidity.py:314: clean_mask = eligibility_mask.fillna(False).astype(bool)
+```
+
+Investigation:
+
+- The warning came from the missing-eligibility path, where tests intentionally
+  use an object-dtype panel so `True`, `False`, and `NaN` can coexist before
+  validation.
+- Non-missing values were already validated to be actual booleans, so missing
+  values did not need string, numeric, or sentinel coercion.
+
+Correction attempts:
+
+- Did not suppress the warning.
+- Did not relax the missing-value test.
+- Did not replace missing eligibility with forward-fill, backward-fill, zero
+  defaults, or any repair policy.
+- First replaced `fillna(False).astype(bool)` with `eq(True).astype(bool)`.
+- A follow-up robustness check showed that pandas nullable `boolean` dtype can
+  preserve `<NA>` after `eq(True)`, causing `astype(bool)` to fail.
+
+Final fix:
+
+- Replaced `fillna(False).astype(bool)` with
+  `eq(True).fillna(False).astype(bool)`.
+- This keeps only explicit `True` values eligible and maps `False`, `NaN`, or
+  nullable `<NA>` values to `False` without relying on object-array
+  downcasting.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_liquidity.py
+44 passed
+```
+
+Remaining caveats:
+
+- This helper still consumes synthetic/local panels only. It does not validate
+  real-data provenance or make a liquidity rule tradable.
+
+Prevention:
+
+- For future pandas object panels that intentionally preserve missing values,
+  prefer explicit boolean comparisons or typed construction over
+  `fillna(...).astype(...)` when pandas warns about silent downcasting.
+
+---
+
 ## 2026-06-07 - Alpha#012 LEAN Plan Patch Context Mismatch
 
 Original mistake:

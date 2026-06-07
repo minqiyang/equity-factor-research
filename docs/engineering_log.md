@@ -12,6 +12,57 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Synthetic Liquidity Universe Helper
+
+This code milestone implemented the first reviewed liquidity universe-mask
+boundary after the documentation-only construction design merged.
+
+Assumption: the next safest PR-sized stage after
+`docs/liquidity_universe_construction_design.md` is a narrow synthetic/local
+panel helper, not a research workflow update, backtest integration, report
+generation, threshold-tuning step, or real-data study.
+
+`src/features/liquidity.py` now exposes `LiquidityUniverseResult` and
+`construct_liquidity_universe()`. The helper accepts an already-reviewed
+boolean eligibility panel, records missing eligibility before treating it as
+ineligible, optionally caps eligible assets by an aligned ranking metric with
+stable input-column tie handling, and returns both the final boolean universe
+mask and an inspectable per-date audit summary. The summary keeps raw eligible
+counts, final universe counts, missing eligibility counts, missing ranking
+counts, capped counts, additions, removals, and low-coverage flags visible.
+
+Focused tests in `tests/test_liquidity.py` cover summary fields, missing
+eligibility exclusion for object and nullable boolean panels, rejection of
+non-boolean eligibility values, capped selection, missing ranking exclusion,
+deterministic tie handling, mismatched ranking panels, no-lookahead behavior
+for ranking values, parameter validation, and continued absence of data,
+trading, or backtest imports.
+
+During the stage, the first missing-eligibility implementation passed tests
+but emitted a pandas `FutureWarning` because object boolean panels were cleaned
+with `fillna(False).astype(bool)`. The conversion was replaced with
+`eq(True).fillna(False).astype(bool)`, preserving explicit missing-value
+exclusion for both object and nullable boolean panels while avoiding future
+silent-downcasting behavior. The full warning-to-fix chain is recorded in
+`docs/troubleshooting_log.md`.
+
+This stage does not fetch real data, add vendor access, add credentials,
+modify loaders, modify research scripts, generate reports, connect to a
+broker, place orders, support live or paper trading, modify the backtester or
+metrics, create portfolio weights, tune thresholds, or make profitability
+claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_liquidity.py
+44 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Liquidity Universe Construction Design
 
 This documentation milestone defined the next liquidity-related boundary after

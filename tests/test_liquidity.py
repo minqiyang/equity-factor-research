@@ -10,6 +10,7 @@ import features.liquidity as liquidity
 from features.liquidity import (
     average_daily_volume_eligibility,
     average_dollar_volume_eligibility,
+    construct_liquidity_universe,
     rolling_average_daily_volume,
     rolling_average_dollar_volume,
 )
@@ -142,6 +143,196 @@ def test_zero_volume_window_policy_can_be_made_explicit() -> None:
         index=volume.index,
     )
     assert_frame_equal(result, expected)
+
+
+def test_construct_liquidity_universe_preserves_mask_and_builds_summary() -> None:
+    eligibility = _panel(
+        {
+            "AAA": [True, True, False],
+            "BBB": [False, True, False],
+            "CCC": [True, False, False],
+        },
+    )
+
+    result = construct_liquidity_universe(
+        eligibility,
+        min_assets_per_date=2,
+        name="test_universe",
+    )
+
+    assert result.name == "test_universe"
+    assert result.asset_count == 3
+    assert result.start_date == eligibility.index[0]
+    assert result.end_date == eligibility.index[-1]
+    assert result.parameters["tie_break"] == "input_column_order"
+    assert "no_profitability_claim" in result.caveats
+    assert_frame_equal(result.universe_mask, eligibility.astype(bool))
+
+    expected_summary = pd.DataFrame(
+        {
+            "raw_eligible_count": [2, 2, 0],
+            "universe_count": [2, 2, 0],
+            "missing_eligibility_count": [0, 0, 0],
+            "missing_ranking_count": [0, 0, 0],
+            "capped_count": [0, 0, 0],
+            "added_count": [2, 1, 0],
+            "removed_count": [0, 1, 2],
+            "low_coverage": [False, False, True],
+        },
+        index=eligibility.index,
+    )
+    assert_frame_equal(result.summary, expected_summary)
+    assert result.low_coverage_dates == (eligibility.index[-1],)
+
+
+def test_construct_liquidity_universe_counts_missing_eligibility_before_excluding() -> None:
+    eligibility = _panel(
+        {
+            "AAA": [True, np.nan, False],
+            "BBB": [np.nan, True, True],
+        },
+    )
+
+    result = construct_liquidity_universe(eligibility)
+
+    expected_mask = pd.DataFrame(
+        {
+            "AAA": [True, False, False],
+            "BBB": [False, True, True],
+        },
+        index=eligibility.index,
+    )
+    assert_frame_equal(result.universe_mask, expected_mask)
+    assert result.summary["missing_eligibility_count"].tolist() == [1, 1, 0]
+
+
+def test_construct_liquidity_universe_handles_nullable_boolean_eligibility() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    eligibility = pd.DataFrame(
+        {
+            "AAA": pd.Series([True, pd.NA, False], dtype="boolean").array,
+            "BBB": pd.Series([pd.NA, True, True], dtype="boolean").array,
+        },
+        index=dates,
+    )
+
+    result = construct_liquidity_universe(eligibility)
+
+    expected_mask = pd.DataFrame(
+        {
+            "AAA": [True, False, False],
+            "BBB": [False, True, True],
+        },
+        index=dates,
+    )
+    assert_frame_equal(result.universe_mask, expected_mask)
+    assert result.summary["missing_eligibility_count"].tolist() == [1, 1, 0]
+
+
+@pytest.mark.parametrize("bad_value", [1, 0, "True", "False"])
+def test_construct_liquidity_universe_rejects_non_boolean_eligibility_values(
+    bad_value: object,
+) -> None:
+    eligibility = _panel({"AAA": [True, bad_value]})
+
+    with pytest.raises(TypeError, match="boolean values or missing values"):
+        construct_liquidity_universe(eligibility)
+
+
+def test_construct_liquidity_universe_caps_by_ranking_and_counts_exclusions() -> None:
+    eligibility = _panel({"AAA": [True], "BBB": [True], "CCC": [True]})
+    ranking = _panel({"AAA": [10.0], "BBB": [np.nan], "CCC": [5.0]})
+
+    result = construct_liquidity_universe(
+        eligibility,
+        ranking_metric=ranking,
+        max_assets_per_date=1,
+    )
+
+    expected_mask = pd.DataFrame(
+        {"AAA": [True], "BBB": [False], "CCC": [False]},
+        index=eligibility.index,
+    )
+    assert_frame_equal(result.universe_mask, expected_mask)
+    assert result.summary["missing_ranking_count"].tolist() == [1]
+    assert result.summary["capped_count"].tolist() == [1]
+
+
+def test_construct_liquidity_universe_uses_input_column_order_for_rank_ties() -> None:
+    eligibility = _panel({"CCC": [True], "AAA": [True], "BBB": [True]})
+    ranking = _panel({"CCC": [1.0], "AAA": [1.0], "BBB": [1.0]})
+
+    result = construct_liquidity_universe(
+        eligibility,
+        ranking_metric=ranking,
+        max_assets_per_date=2,
+    )
+
+    expected_mask = pd.DataFrame(
+        {"CCC": [True], "AAA": [True], "BBB": [False]},
+        index=eligibility.index,
+    )
+    assert_frame_equal(result.universe_mask, expected_mask)
+
+
+def test_construct_liquidity_universe_requires_ranking_when_cap_is_set() -> None:
+    eligibility = _panel({"AAA": [True], "BBB": [True]})
+
+    with pytest.raises(ValueError, match="ranking_metric is required"):
+        construct_liquidity_universe(eligibility, max_assets_per_date=1)
+
+
+def test_construct_liquidity_universe_rejects_mismatched_ranking_panel() -> None:
+    eligibility = _panel({"AAA": [True], "BBB": [True]})
+    ranking = _panel({"AAA": [1.0], "CCC": [2.0]})
+
+    with pytest.raises(ValueError, match="identical columns"):
+        construct_liquidity_universe(
+            eligibility,
+            ranking_metric=ranking,
+            max_assets_per_date=1,
+        )
+
+
+def test_construct_liquidity_universe_does_not_use_future_ranking_values() -> None:
+    eligibility = _panel({"AAA": [True, True], "BBB": [True, True]})
+    ranking = _panel({"AAA": [2.0, 0.0], "BBB": [1.0, 100.0]})
+    changed_future_ranking = _panel({"AAA": [2.0, 100.0], "BBB": [1.0, 0.0]})
+
+    result = construct_liquidity_universe(
+        eligibility,
+        ranking_metric=ranking,
+        max_assets_per_date=1,
+    )
+    changed_result = construct_liquidity_universe(
+        eligibility,
+        ranking_metric=changed_future_ranking,
+        max_assets_per_date=1,
+    )
+
+    assert result.universe_mask.iloc[0].to_dict() == {"AAA": True, "BBB": False}
+    assert changed_result.universe_mask.iloc[0].to_dict() == {
+        "AAA": True,
+        "BBB": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"max_assets_per_date": 0}, "at least 1"),
+        ({"min_assets_per_date": 0}, "at least 1"),
+        ({"name": " "}, "must not be empty"),
+    ],
+)
+def test_construct_liquidity_universe_rejects_invalid_parameters(
+    kwargs: dict[str, object],
+    match: str,
+) -> None:
+    eligibility = _panel({"AAA": [True]})
+
+    with pytest.raises((TypeError, ValueError), match=match):
+        construct_liquidity_universe(eligibility, **kwargs)
 
 
 def test_average_daily_volume_eligibility_uses_configurable_positive_lag() -> None:
