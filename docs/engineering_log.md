@@ -12,6 +12,51 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Alpha#012 Local Fixture Diagnostics
+
+This workflow milestone extended the committed synthetic local CSV fixture
+workflow after the Alpha#012 OHLCV fixture smoke check merged.
+
+Assumption: the next smallest safe stage is a diagnostics-only workflow update
+for `alpha_012()`, not a backtest, strategy rule, report interpretation,
+additional formula, or real-data study. The existing local fixture workflow
+already loads the committed synthetic OHLCV fixture, aligns adjusted close and
+volume panels, computes forward-return evaluation targets, applies
+train/validation/test split metadata, and runs IC, Rank IC, and quantile-spread
+diagnostics for `alpha_009()`.
+
+`research/local_csv_fixture_workflow_demo.py` now computes `alpha_012()` from
+the aligned synthetic OHLCV `adjusted_close` and `volume` panels and evaluates
+it with the same existing diagnostic helpers against already-aligned
+forward-return targets. The generated Markdown report and JSON experiment log
+record Alpha#012 diagnostic coverage separately from Alpha#009. The tiny
+fixture produces two valid Alpha#012 observations on the validation date, one
+valid IC date, one valid Rank IC date, and no valid Alpha#012 quantile-spread
+dates because the configured three-quantile diagnostic requires more valid
+assets than the fixture supplies.
+
+During the stage, a new JSON-log test initially asserted exact equality for a
+computed Rank IC value that serialized as `0.9999999999999999` instead of
+`1.0`. The assertion was corrected to use approximate equality for the finite
+computed float while preserving exact structural checks; the full
+failure-to-fix chain is recorded in `docs/troubleshooting_log.md`.
+
+This stage remains synthetic/local-fixture only. It does not fetch real data,
+add vendor access, add credentials, connect to a broker, place orders, support
+live or paper trading, modify feature formulas, modify loaders, modify the
+backtester, create a portfolio, tune parameters, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+13 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-07 - Alpha#012 Synthetic OHLCV Fixture Smoke Check
 
 This test milestone added a narrow local-fixture smoke check after PR #63
