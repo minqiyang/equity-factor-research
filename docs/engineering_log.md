@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-06 - Volume + Close Alpha Planning Gate
+
+This documentation milestone added `docs/volume_close_alpha_plan.md` before
+any volume-dependent WorldQuant-style alpha implementation.
+
+Assumption: after PR #61 merged the realized volatility feature, the older
+`docs/original_goal_gap_analysis.md` recommendation for a synthetic IC /
+Rank IC helper is stale because `factor_information_coefficient()` and
+`factor_rank_information_coefficient()` already exist in
+`src/features/diagnostics.py` and are covered by tests. The current
+post-liquidity roadmap points to volume-dependent alpha planning as the next
+small safe stage after reversal and realized volatility are settled.
+
+The new plan keeps the next formula stage separate from data access, loader
+changes, universe construction, portfolio construction, backtesting,
+QuantConnect/LEAN runtime work, and interpretation. It records prerequisites,
+non-goals, formula provenance requirements, close and volume policy questions,
+date-alignment rules, missing and zero-volume behavior, required future tests,
+research risks, and PR-sized next steps for a single future volume + close
+alpha candidate such as `alpha_012`.
+
+No source code, tests, research scripts, generated reports, data loaders,
+backtester behavior, metrics, normalization, combination, diagnostics,
+synthetic demos, real data fetching, vendor access, credentials, live or paper
+trading, brokerage integration, order execution, or profitability claims were
+changed.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+391 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-06 - Realized Volatility Feature
 
 This code milestone implemented the next safe stage after the short-term
