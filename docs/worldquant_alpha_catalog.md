@@ -39,7 +39,7 @@ reviewed way.
 | --- | --- |
 | Reusable operator layer | Implemented and tested for core pandas panel operators in `src/features/operators.py`. |
 | `alpha_009` | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
-| `alpha_012` | Implemented and tested in `src/features/worldquant_alphas.py` as a volume + close research feature. |
+| `alpha_012` | Implemented and tested in `src/features/worldquant_alphas.py` as a volume + close research feature; also covered by synthetic OHLCV fixture smoke and local-fixture diagnostics. |
 | Other WorldQuant-style alphas | Not implemented. |
 | WorldQuant-style alpha backtest integration | Not implemented. |
 | Bulk WorldQuant 101 implementation | Not implemented and still out of scope. |
@@ -81,9 +81,9 @@ Important priority rules:
   `docs/volume_ohlcv_schema_plan.md` so the local CSV schema, adjustment
   policy, missing-value behavior, and validation tests are reviewed before code
   is added.
-- Future volume + close formula work should start from
-  `docs/volume_close_alpha_plan.md` before any `alpha_012` or similar
-  implementation PR is opened.
+- Future volume + close formula work for any remaining candidate should start
+  from `docs/volume_close_alpha_plan.md` and use a separate formula-specific
+  review before implementation.
 - Future liquidity or dollar-volume universe work should start from
   `docs/liquidity_dollar_volume_universe_plan.md` before any code filters
   assets by volume.
@@ -288,10 +288,13 @@ backtesting.
 
 Reasonable next documentation or planning stages include:
 
-- plan or implement a synthetic-only liquidity eligibility helper after
-  `docs/liquidity_dollar_volume_universe_plan.md` is reviewed;
-- review `docs/volume_close_alpha_plan.md` before considering `alpha_012` or
-  any other volume + close alpha implementation;
+- refresh the QuantConnect/LEAN plan for Alpha#012 signal mapping while
+  keeping the LEAN path non-executing and free of data subscriptions or
+  orders;
+- design the first liquidity universe construction API before any backtest
+  uses liquidity eligibility;
+- review `docs/volume_close_alpha_plan.md` before considering any remaining
+  volume + close alpha implementation;
 - plan OHLC schema requirements before considering `alpha_101`;
 - review another close-only candidate and list exact formula, operator, and test
   requirements before implementation;

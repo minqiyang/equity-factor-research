@@ -111,6 +111,18 @@ The committed synthetic OHLCV fixture now has feature-only smoke coverage for
 without running diagnostics, reports, backtests, portfolio construction, data
 downloads, broker logic, order execution, or performance interpretation.
 
+## Alpha#012 Synthetic Fixture Diagnostics Status
+
+The synthetic local CSV fixture workflow now evaluates `alpha_012()` with the
+existing IC, Rank IC, and quantile-spread diagnostics.
+
+`research/local_csv_fixture_workflow_demo.py` computes `alpha_012()` from the
+committed synthetic OHLCV fixture's aligned `adjusted_close` and `volume`
+panels. The generated report and JSON experiment log keep Alpha#012 diagnostic
+coverage separate from Alpha#009 and label the output as synthetic
+local-fixture diagnostics only. No backtest, universe construction, portfolio,
+execution, real-data, or profitability behavior is added.
+
 ## Proposed Future Function Shape
 
 A future code PR can consider a narrow helper in `src/features/worldquant_alphas.py`:
@@ -217,10 +229,13 @@ integration, order execution, or profitability claims.
 
 ## Recommended Next Stage After This Plan
 
-After this planning gate is reviewed and merged, the next safe stage should be
-a single volume + close formula provenance and implementation PR if the formula
-can be verified without ambiguity.
+After the Alpha#012 implementation, fixture smoke check, and fixture
+diagnostics stages have merged, the next safe stage should be a
+documentation-only QuantConnect/LEAN plan refresh if the feature changes
+local-to-LEAN signal mapping assumptions.
 
-If formula transcription, data-adjustment policy, or zero-volume semantics are
-unclear, the next stage should be a formula-specific design note rather than
-code.
+That future stage should not add runnable LEAN code, data subscriptions,
+platform access, credentials, brokerage behavior, orders, portfolio
+construction, or performance interpretation. Remaining volume + close alphas
+still require separate formula provenance, input-policy, missing-data, and test
+review before any code is added.

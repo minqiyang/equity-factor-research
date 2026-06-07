@@ -12,6 +12,51 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Post-Alpha#012 Roadmap Checkpoint
+
+This documentation checkpoint refreshed the staged roadmap after PR #65 merged
+the Alpha#012 synthetic local-fixture diagnostics.
+
+Assumption: after Alpha#012 implementation, synthetic OHLCV fixture smoke
+coverage, and local-fixture diagnostics all merged, the next safest PR-sized
+stage is not another formula or a backtest. It is a checkpoint that reconciles
+the now-completed Alpha#012 sequence and chooses the next stage from current
+evidence.
+
+`docs/post_alpha012_checkpoint_report.md` now records the current
+implementation state, completed Alpha#012 stages, remaining original-goal
+gaps, guardrail status, and a recommended next roadmap.
+`docs/volume_close_alpha_plan.md` now marks the synthetic fixture diagnostics
+stage as complete and updates the recommended next stage.
+`docs/worldquant_alpha_catalog.md` now reflects that Alpha#012 has fixture
+smoke and diagnostics coverage, while keeping all remaining WorldQuant-style
+formulas separate and PR-sized.
+
+The checkpoint recommends a documentation-only QuantConnect/LEAN plan refresh
+for Alpha#012 signal mapping as the next safe stage. That recommendation is
+limited to planning: no runnable LEAN code, data subscriptions, credentials,
+brokerage behavior, orders, portfolio construction, or performance
+interpretation should be added.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, data access, backtester behavior, metrics, strategy logic, real-data
+handling, vendor access, credentials, live or paper trading, brokerage
+integration, order execution, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+402 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-07 - Alpha#012 Local Fixture Diagnostics
 
 This workflow milestone extended the committed synthetic local CSV fixture
