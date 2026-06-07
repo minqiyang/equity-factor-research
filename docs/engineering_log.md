@@ -12,6 +12,42 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Alpha#012 Synthetic OHLCV Fixture Smoke Check
+
+This test milestone added a narrow local-fixture smoke check after PR #63
+merged `alpha_012()`.
+
+Assumption: the next safest stage after the Alpha#012 implementation is not
+diagnostics, report generation, backtesting, or another alpha formula. It is a
+small wiring check from the existing strict OHLCV loader to the new feature
+using the committed synthetic OHLCV fixture only.
+
+`tests/test_local_csv_loader_smoke_demo.py` now loads
+`tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv` with
+`load_ohlcv_csv(require_adjusted_close=True)`, pivots `adjusted_close` and
+`volume` into aligned date-asset panels, and computes `alpha_012(close,
+volume)`. The test verifies the fixture dates and assets, the first-row `NaN`
+delta behavior, and hand-calculated second-row outputs of `-0.75` for `AAA`
+and `-0.50` for `BBB`.
+
+This stage is feature-only smoke coverage. It does not modify source feature
+logic, loaders, diagnostics, research scripts, reports, generated experiment
+logs, backtester behavior, metrics, normalization, factor combination,
+QuantConnect/LEAN artifacts, data access, vendor access, credentials, live or
+paper trading, brokerage integration, order execution, or profitability
+claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_loader_smoke_demo.py
+7 passed
+```
+
+Full validation is recorded in the associated PR summary.
+
+---
+
 ## 2026-06-07 - Alpha#012 Volume + Close Research Feature
 
 This code milestone implemented `alpha_012` as one reviewed volume + close

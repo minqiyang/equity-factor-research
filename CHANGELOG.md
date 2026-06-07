@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic OHLCV fixture smoke check that loads the committed local
+  fixture and computes `alpha_012` as a feature-only output without reports,
+  backtesting, real data, or performance interpretation.
 - Added `alpha_012` as a single volume + close WorldQuant-style research
   feature with deterministic formula, alignment, missing-value, zero-volume,
   negative-volume, and no-lookahead tests.

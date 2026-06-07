@@ -10,6 +10,7 @@ from data.csv_loader import (
     load_ohlcv_csv,
     load_wide_price_csv,
 )
+from features.worldquant_alphas import alpha_012
 
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "local_csv_loader_smoke"
@@ -18,6 +19,12 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures" / "local_csv_loader_smoke"
 def _write_csv(path: Path, text: str) -> Path:
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def _pivot_ohlcv_panel(frame: pd.DataFrame, value_column: str) -> pd.DataFrame:
+    panel = frame.pivot(index="date", columns="symbol", values=value_column)
+    panel.columns.name = None
+    return panel
 
 
 def test_local_synthetic_wide_price_fixture_loads_with_expected_audit_summary() -> None:
@@ -123,6 +130,26 @@ def test_local_synthetic_ohlcv_fixture_loads_with_expected_audit_summary() -> No
         "volume",
         "adjusted_close",
     )
+
+
+def test_local_synthetic_ohlcv_fixture_computes_alpha_012_feature_only() -> None:
+    result = load_ohlcv_csv(
+        FIXTURE_DIR / "synthetic_ohlcv.csv",
+        require_adjusted_close=True,
+    )
+
+    close = _pivot_ohlcv_panel(result.data, "adjusted_close")
+    volume = _pivot_ohlcv_panel(result.data, "volume")
+    alpha = alpha_012(close, volume)
+
+    assert_index_equal(
+        alpha.index,
+        pd.DatetimeIndex(["2024-01-02", "2024-01-03"], name="date"),
+    )
+    assert alpha.columns.tolist() == ["AAA", "BBB"]
+    assert alpha.loc[pd.Timestamp("2024-01-02"), ["AAA", "BBB"]].isna().all()
+    assert alpha.loc[pd.Timestamp("2024-01-03"), "AAA"] == pytest.approx(-0.75)
+    assert alpha.loc[pd.Timestamp("2024-01-03"), "BBB"] == pytest.approx(-0.50)
 
 
 def test_local_synthetic_ohlcv_fixture_missing_values_require_explicit_policy(
