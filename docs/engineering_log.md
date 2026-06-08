@@ -12,6 +12,42 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Local CSV Readiness Checkpoint
+
+This documentation milestone records the local CSV readiness state after the
+fixture workflow was updated with liquidity universe masks and
+universe-masked signal audit counts.
+
+Assumption: the safest PR-sized Stage 76 is a checkpoint before planning any
+user-provided local CSV research. The project has enough synthetic and
+committed-fixture infrastructure to define a future plan, but not enough
+provenance, adjustment-policy, universe, benchmark, cost, slippage, or sample
+split evidence to interpret real user-provided local CSV results.
+
+`docs/local_csv_readiness_checkpoint.md` summarizes the current implemented
+state, readiness assessment, guardrail review, stop conditions before
+user-provided local CSV interpretation, and the recommended next stage:
+documentation-only user-provided local CSV research planning.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, strategy logic, data access, execution assumptions, live or paper
+trading scope, brokerage integration, order execution, or profitability
+language.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+434 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Synthetic Masked-Signal Backtest Smoke Test
 
 This test milestone added the first synthetic smoke check that passes

@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_readiness_checkpoint.md` to record the post-fixture
+  local CSV readiness state, current gaps, guardrails, stop conditions, and
+  the next documentation-only user-provided local CSV planning stage.
 - Added a synthetic local CSV fixture universe-masked signal smoke check that
   applies the reviewed liquidity universe mask to the existing `alpha_009`
   fixture signal panel, records masked-signal audit counts, and keeps the
