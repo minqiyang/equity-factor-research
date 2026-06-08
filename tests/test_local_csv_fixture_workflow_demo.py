@@ -12,6 +12,7 @@ from research.local_csv_fixture_workflow_demo import (
     DEFAULT_BENCHMARK_FIXTURE,
     DEFAULT_OHLCV_FIXTURE,
     DEFAULT_PRICE_FIXTURE,
+    build_synthetic_fixture_inventory,
     LocalCSVFixtureWorkflowConfig,
     main,
     run_local_csv_fixture_workflow_demo,
@@ -33,6 +34,35 @@ def test_local_csv_fixture_workflow_loads_committed_fixtures() -> None:
     assert result.price_summary.schema == "wide_price"
     assert result.benchmark_summary.schema == "benchmark_price"
     assert result.ohlcv_summary.schema == "ohlcv_long"
+    assert len(result.inventory_review.summaries) == 3
+    assert result.inventory_review.issue_count_by_severity == {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+    }
+    assert not result.inventory_review.has_high_or_medium_issues
+    assert [summary.input_name for summary in result.inventory_review.summaries] == [
+        "adjusted_close_prices",
+        "benchmark_prices",
+        "ohlcv_prices_volume",
+    ]
+    assert [summary.schema for summary in result.inventory_review.summaries] == [
+        "wide_price",
+        "benchmark_price",
+        "ohlcv_long",
+    ]
+    assert all(summary.path_declared for summary in result.inventory_review.summaries)
+    assert all(summary.source_declared for summary in result.inventory_review.summaries)
+    assert all(summary.version_declared for summary in result.inventory_review.summaries)
+    assert all(
+        summary.known_manual_edits_declared
+        for summary in result.inventory_review.summaries
+    )
+    assert not any(summary.mutable for summary in result.inventory_review.summaries)
+    assert not any(
+        hasattr(summary, "local_path")
+        for summary in result.inventory_review.summaries
+    )
     assert result.price_summary.missing_value_count == 0
     assert result.benchmark_summary.missing_value_count == 0
     assert result.ohlcv_summary.missing_value_count == 0
@@ -227,6 +257,7 @@ def test_local_csv_fixture_workflow_is_deterministic() -> None:
     first = run_local_csv_fixture_workflow_demo(write_outputs=False)
     second = run_local_csv_fixture_workflow_demo(write_outputs=False)
 
+    assert first.inventory_review == second.inventory_review
     assert_frame_equal(first.prices, second.prices)
     assert_series_equal(first.benchmark_prices, second.benchmark_prices)
     assert_frame_equal(first.alpha_009_factor, second.alpha_009_factor)
@@ -316,6 +347,13 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "not a profitability claim" in report_text
     assert "does not run a backtest" in report_text
     assert "No portfolio construction" in report_text
+    assert "## Inventory Dry-Run Rehearsal" in report_text
+    assert "metadata-only dry-run inventory review" in report_text
+    assert "| Declared inputs | `3` |" in report_text
+    assert "| High issues | `0` |" in report_text
+    assert "| Medium issues | `0` |" in report_text
+    assert "| Low issues | `0` |" in report_text
+    assert "| adjusted_close_prices | wide_price | true | true | true | true | false |" in report_text
     assert "## Liquidity Eligibility Smoke Check" in report_text
     assert "## Liquidity Universe Mask Smoke Check" in report_text
     assert "## Universe-Masked Alpha#009 Signal Smoke Check" in report_text
@@ -339,6 +377,10 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert payload["assumptions"]["price_fixture"] == DEFAULT_PRICE_FIXTURE
     assert payload["assumptions"]["benchmark_fixture"] == DEFAULT_BENCHMARK_FIXTURE
     assert payload["assumptions"]["ohlcv_fixture"] == DEFAULT_OHLCV_FIXTURE
+    assert payload["assumptions"]["inventory_review"].startswith(
+        "metadata-only dry-run",
+    )
+    assert payload["assumptions"]["inventory_high_or_medium_issues"] is False
     assert payload["assumptions"]["liquidity_check"].startswith("synthetic")
     assert payload["assumptions"]["liquidity_universe_check"].startswith(
         "synthetic universe-mask",
@@ -365,6 +407,48 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     }
     assert payload["outputs"]["split_names"] == ["train", "validation", "test"]
     assert payload["outputs"]["ohlcv_rows"] == 4
+    assert payload["outputs"]["inventory_input_count"] == 3
+    assert payload["diagnostics"]["inventory_issue_count_by_severity"] == {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+    }
+    assert payload["diagnostics"]["inventory_summaries"] == [
+        {
+            "input_name": "adjusted_close_prices",
+            "schema": "wide_price",
+            "path_declared": True,
+            "source_declared": True,
+            "version_declared": True,
+            "file_hash_declared": False,
+            "hash_plan_declared": False,
+            "known_manual_edits_declared": True,
+            "mutable": False,
+        },
+        {
+            "input_name": "benchmark_prices",
+            "schema": "benchmark_price",
+            "path_declared": True,
+            "source_declared": True,
+            "version_declared": True,
+            "file_hash_declared": False,
+            "hash_plan_declared": False,
+            "known_manual_edits_declared": True,
+            "mutable": False,
+        },
+        {
+            "input_name": "ohlcv_prices_volume",
+            "schema": "ohlcv_long",
+            "path_declared": True,
+            "source_declared": True,
+            "version_declared": True,
+            "file_hash_declared": False,
+            "hash_plan_declared": False,
+            "known_manual_edits_declared": True,
+            "mutable": False,
+        },
+    ]
+    assert "local_path" not in json.dumps(payload["diagnostics"]["inventory_summaries"])
     assert payload["diagnostics"]["adv_eligible_counts_by_date"] == {
         "2024-01-02": 0.0,
         "2024-01-03": 0.0,
@@ -460,6 +544,7 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
         "test": 0,
     }
     assert "split-aware wiring check only" in payload["caveats"]
+    assert "local CSV inventory dry-run only" in payload["caveats"]
     assert "liquidity eligibility count smoke check only" in payload["caveats"]
     assert "liquidity universe mask count smoke check only" in payload["caveats"]
     assert "liquidity universe-masked signal smoke check only" in payload["caveats"]
@@ -490,6 +575,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     monkeypatch,
 ) -> None:
     calls = {
+        "inventory_validator": 0,
         "price_loader": 0,
         "benchmark_loader": 0,
         "ohlcv_loader": 0,
@@ -505,6 +591,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "rank_ic": 0,
         "quantile_spread": 0,
     }
+    original_inventory_validator = demo.validate_local_csv_inventory
     original_price_loader = demo.load_wide_price_csv
     original_benchmark_loader = demo.load_benchmark_price_csv
     original_ohlcv_loader = demo.load_ohlcv_csv
@@ -519,6 +606,10 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     original_ic = demo.factor_information_coefficient
     original_rank_ic = demo.factor_rank_information_coefficient
     original_quantile_spread = demo.factor_quantile_spread
+
+    def count_inventory_validator(*args, **kwargs):
+        calls["inventory_validator"] += 1
+        return original_inventory_validator(*args, **kwargs)
 
     def count_price_loader(*args, **kwargs):
         calls["price_loader"] += 1
@@ -576,6 +667,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         calls["quantile_spread"] += 1
         return original_quantile_spread(*args, **kwargs)
 
+    monkeypatch.setattr(demo, "validate_local_csv_inventory", count_inventory_validator)
     monkeypatch.setattr(demo, "load_wide_price_csv", count_price_loader)
     monkeypatch.setattr(demo, "load_benchmark_price_csv", count_benchmark_loader)
     monkeypatch.setattr(demo, "load_ohlcv_csv", count_ohlcv_loader)
@@ -598,6 +690,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     run_local_csv_fixture_workflow_demo(write_outputs=False)
 
     assert calls == {
+        "inventory_validator": 1,
         "price_loader": 1,
         "benchmark_loader": 1,
         "ohlcv_loader": 1,
@@ -613,6 +706,40 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "rank_ic": 8,
         "quantile_spread": 8,
     }
+
+
+def test_synthetic_fixture_inventory_is_metadata_only() -> None:
+    inventory = build_synthetic_fixture_inventory(LocalCSVFixtureWorkflowConfig())
+
+    assert inventory == (
+        {
+            "input_name": "adjusted_close_prices",
+            "schema": "wide_price",
+            "local_path": DEFAULT_PRICE_FIXTURE,
+            "source_name": "committed synthetic adjusted-close fixture",
+            "timestamp_or_version": "committed synthetic fixture in repository",
+            "known_manual_edits": "none known; fixture is committed for deterministic tests",
+            "mutable": False,
+        },
+        {
+            "input_name": "benchmark_prices",
+            "schema": "benchmark_price",
+            "local_path": DEFAULT_BENCHMARK_FIXTURE,
+            "source_name": "committed synthetic benchmark fixture",
+            "timestamp_or_version": "committed synthetic fixture in repository",
+            "known_manual_edits": "none known; fixture is committed for deterministic tests",
+            "mutable": False,
+        },
+        {
+            "input_name": "ohlcv_prices_volume",
+            "schema": "ohlcv_long",
+            "local_path": DEFAULT_OHLCV_FIXTURE,
+            "source_name": "committed synthetic OHLCV fixture",
+            "timestamp_or_version": "committed synthetic fixture in repository",
+            "known_manual_edits": "none known; fixture is committed for deterministic tests",
+            "mutable": False,
+        },
+    )
 
 
 def test_workflow_rejects_absolute_fixture_paths(tmp_path: Path) -> None:

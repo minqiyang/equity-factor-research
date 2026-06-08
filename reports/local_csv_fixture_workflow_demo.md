@@ -10,14 +10,15 @@ Exercise the local CSV research path with a small committed fixture:
 2. Load a benchmark CSV and verify date alignment.
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
-5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
-6. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
-7. Compute `alpha_009` as a close-only research feature.
-8. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-9. Compute next-row forward returns as evaluation targets only.
-10. Apply chronological train/validation/test split metadata.
-11. Run IC, Rank IC, and quantile spread diagnostics.
-12. Write a caveated report and JSON experiment log.
+5. Run a metadata-only dry-run inventory review for the declared committed fixture inputs.
+6. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
+7. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
+8. Compute `alpha_009` as a close-only research feature.
+9. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+10. Compute next-row forward returns as evaluation targets only.
+11. Apply chronological train/validation/test split metadata.
+12. Run IC, Rank IC, and quantile spread diagnostics.
+13. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -38,6 +39,24 @@ Exercise the local CSV research path with a small committed fixture:
 | Test end | `2024-01-05` |
 | Missing price values | `0` |
 | Missing benchmark values | `0` |
+
+## Inventory Dry-Run Rehearsal
+
+The workflow declares a small local CSV inventory for the committed synthetic fixtures and validates that metadata with `validate_local_csv_inventory()` before interpreting any loader output. The review is a dry-run gate only: it does not read files, check path existence, compute file hashes, store raw local paths in its result, fetch data, call vendor APIs, use credentials, or authorize real-data interpretation.
+
+| Item | Value |
+| --- | ---: |
+| Declared inputs | `3` |
+| High issues | `0` |
+| Medium issues | `0` |
+| Low issues | `0` |
+| High or medium issue gate triggered | `false` |
+
+| input_name | schema | path_declared | source_declared | version_declared | known_manual_edits_declared | mutable |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| adjusted_close_prices | wide_price | true | true | true | true | false |
+| benchmark_prices | benchmark_price | true | true | true | true | false |
+| ohlcv_prices_volume | ohlcv_long | true | true | true | true | false |
 
 ## Processing Summary
 
@@ -170,6 +189,7 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 ## Limitations
 
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
+- The inventory review is a metadata-only rehearsal and is not evidence that a user-provided local data bundle is research-ready.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.

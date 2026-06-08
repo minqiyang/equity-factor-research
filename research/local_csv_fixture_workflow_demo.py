@@ -19,6 +19,10 @@ from data.csv_loader import (
     load_ohlcv_csv,
     load_wide_price_csv,
 )
+from data.local_csv_inventory import (
+    LocalCSVInventoryReview,
+    validate_local_csv_inventory,
+)
 from features.diagnostics import (
     factor_information_coefficient,
     factor_quantile_spread,
@@ -85,6 +89,7 @@ class LocalCSVFixtureWorkflowConfig:
 class LocalCSVFixtureWorkflowResult:
     """Container for local CSV fixture workflow outputs."""
 
+    inventory_review: LocalCSVInventoryReview
     prices: pd.DataFrame
     benchmark_prices: pd.Series
     ohlcv: pd.DataFrame
@@ -140,6 +145,9 @@ def run_local_csv_fixture_workflow_demo(
         default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
     ) if experiment_log_path is None else experiment_log_path
 
+    inventory_review = validate_local_csv_inventory(
+        build_synthetic_fixture_inventory(config),
+    )
     price_result = load_wide_price_csv(_resolve_project_fixture(config.price_fixture))
     benchmark_result = load_benchmark_price_csv(
         _resolve_project_fixture(config.benchmark_fixture),
@@ -315,6 +323,7 @@ def run_local_csv_fixture_workflow_demo(
     )
 
     result = LocalCSVFixtureWorkflowResult(
+        inventory_review=inventory_review,
         prices=prices,
         benchmark_prices=benchmark_prices,
         ohlcv=ohlcv,
@@ -364,6 +373,33 @@ def run_local_csv_fixture_workflow_demo(
             write_experiment_registry_report()
 
     return result
+
+
+def build_synthetic_fixture_inventory(
+    config: LocalCSVFixtureWorkflowConfig,
+) -> tuple[dict[str, object], ...]:
+    """Build metadata-only inventory declarations for committed fixtures."""
+
+    return (
+        _fixture_inventory_item(
+            input_name="adjusted_close_prices",
+            schema="wide_price",
+            local_path=config.price_fixture,
+            source_name="committed synthetic adjusted-close fixture",
+        ),
+        _fixture_inventory_item(
+            input_name="benchmark_prices",
+            schema="benchmark_price",
+            local_path=config.benchmark_fixture,
+            source_name="committed synthetic benchmark fixture",
+        ),
+        _fixture_inventory_item(
+            input_name="ohlcv_prices_volume",
+            schema="ohlcv_long",
+            local_path=config.ohlcv_fixture,
+            source_name="committed synthetic OHLCV fixture",
+        ),
+    )
 
 
 def summarize_liquidity_eligibility(
@@ -471,6 +507,14 @@ def write_workflow_experiment_log(
             "price_fixture": config.price_fixture,
             "benchmark_fixture": config.benchmark_fixture,
             "ohlcv_fixture": config.ohlcv_fixture,
+            "inventory_review": (
+                "metadata-only dry-run review of declared committed synthetic "
+                "fixture inputs before loading; raw local paths are not stored "
+                "in the review result"
+            ),
+            "inventory_high_or_medium_issues": (
+                result.inventory_review.has_high_or_medium_issues
+            ),
             "universe": f"{result.prices.shape[1]} synthetic fixture assets",
             "date_range": {
                 "start": result.prices.index.min().date(),
@@ -550,10 +594,30 @@ def write_workflow_experiment_log(
             "asset_count": result.prices.shape[1],
             "benchmark_rows": int(result.benchmark_prices.shape[0]),
             "ohlcv_rows": int(result.ohlcv.shape[0]),
+            "inventory_input_count": len(result.inventory_review.summaries),
             "split_names": list(SPLIT_NAMES),
         },
         metrics={},
         diagnostics={
+            "inventory_issue_count_by_severity": dict(
+                result.inventory_review.issue_count_by_severity,
+            ),
+            "inventory_summaries": [
+                {
+                    "input_name": summary.input_name,
+                    "schema": summary.schema,
+                    "path_declared": summary.path_declared,
+                    "source_declared": summary.source_declared,
+                    "version_declared": summary.version_declared,
+                    "file_hash_declared": summary.file_hash_declared,
+                    "hash_plan_declared": summary.hash_plan_declared,
+                    "known_manual_edits_declared": (
+                        summary.known_manual_edits_declared
+                    ),
+                    "mutable": summary.mutable,
+                }
+                for summary in result.inventory_review.summaries
+            ],
             "liquidity_eligibility_summary": _date_indexed_frame_to_dict(
                 result.liquidity_eligibility_summary,
             ),
@@ -647,6 +711,7 @@ def write_workflow_experiment_log(
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
             "local CSV fixture smoke demo only",
+            "local CSV inventory dry-run only",
             "split-aware wiring check only",
             "liquidity eligibility count smoke check only",
             "liquidity universe mask count smoke check only",
@@ -687,14 +752,15 @@ Exercise the local CSV research path with a small committed fixture:
 2. Load a benchmark CSV and verify date alignment.
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
-5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
-6. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
-7. Compute `alpha_009` as a close-only research feature.
-8. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-9. Compute next-row forward returns as evaluation targets only.
-10. Apply chronological train/validation/test split metadata.
-11. Run IC, Rank IC, and quantile spread diagnostics.
-12. Write a caveated report and JSON experiment log.
+5. Run a metadata-only dry-run inventory review for the declared committed fixture inputs.
+6. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
+7. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
+8. Compute `alpha_009` as a close-only research feature.
+9. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+10. Compute next-row forward returns as evaluation targets only.
+11. Apply chronological train/validation/test split metadata.
+12. Run IC, Rank IC, and quantile spread diagnostics.
+13. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -715,6 +781,20 @@ Exercise the local CSV research path with a small committed fixture:
 | Test end | `{result.split.test_end.date()}` |
 | Missing price values | `{result.price_summary.missing_value_count}` |
 | Missing benchmark values | `{result.benchmark_summary.missing_value_count}` |
+
+## Inventory Dry-Run Rehearsal
+
+The workflow declares a small local CSV inventory for the committed synthetic fixtures and validates that metadata with `validate_local_csv_inventory()` before interpreting any loader output. The review is a dry-run gate only: it does not read files, check path existence, compute file hashes, store raw local paths in its result, fetch data, call vendor APIs, use credentials, or authorize real-data interpretation.
+
+| Item | Value |
+| --- | ---: |
+| Declared inputs | `{len(result.inventory_review.summaries)}` |
+| High issues | `{result.inventory_review.issue_count_by_severity["high"]}` |
+| Medium issues | `{result.inventory_review.issue_count_by_severity["medium"]}` |
+| Low issues | `{result.inventory_review.issue_count_by_severity["low"]}` |
+| High or medium issue gate triggered | `{str(result.inventory_review.has_high_or_medium_issues).lower()}` |
+
+{_format_inventory_summary_table(result.inventory_review)}
 
 ## Processing Summary
 
@@ -798,6 +878,7 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 ## Limitations
 
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
+- The inventory review is a metadata-only rehearsal and is not evidence that a user-provided local data bundle is research-ready.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
@@ -813,6 +894,24 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 
 def _future_returns(values: pd.DataFrame | pd.Series, *, periods: int) -> pd.DataFrame | pd.Series:
     return values.pct_change(periods=periods, fill_method=None).shift(-periods)
+
+
+def _fixture_inventory_item(
+    *,
+    input_name: str,
+    schema: str,
+    local_path: str,
+    source_name: str,
+) -> dict[str, object]:
+    return {
+        "input_name": input_name,
+        "schema": schema,
+        "local_path": local_path,
+        "source_name": source_name,
+        "timestamp_or_version": "committed synthetic fixture in repository",
+        "known_manual_edits": "none known; fixture is committed for deterministic tests",
+        "mutable": False,
+    }
 
 
 def _resolve_project_fixture(relative_path: str) -> Path:
@@ -996,6 +1095,34 @@ def _format_labeled_index_markdown_table(
             for column, value in row.items()
         ]
         lines.append("| " + " | ".join([str(index), *values]) + " |")
+    return "\n".join(lines)
+
+
+def _format_inventory_summary_table(review: LocalCSVInventoryReview) -> str:
+    headers = [
+        "input_name",
+        "schema",
+        "path_declared",
+        "source_declared",
+        "version_declared",
+        "known_manual_edits_declared",
+        "mutable",
+    ]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for summary in review.summaries:
+        values = [
+            summary.input_name,
+            summary.schema,
+            str(summary.path_declared).lower(),
+            str(summary.source_declared).lower(),
+            str(summary.version_declared).lower(),
+            str(summary.known_manual_edits_declared).lower(),
+            str(summary.mutable).lower(),
+        ]
+        lines.append("| " + " | ".join(values) + " |")
     return "\n".join(lines)
 
 

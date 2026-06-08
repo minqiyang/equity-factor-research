@@ -12,6 +12,49 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Local CSV Fixture Inventory Dry-Run Rehearsal
+
+This code-and-report milestone connects the local CSV inventory dry-run
+validator to the committed synthetic fixture workflow.
+
+Assumption: after the metadata-only inventory validator merged, the safest
+PR-sized next stage is a synthetic fixture rehearsal of the user-provided
+local CSV research plan. The rehearsal should prove that declared local CSV
+inventory metadata can be reviewed and reported before loader output is
+interpreted, while still avoiding user-provided files, downloads, vendor APIs,
+credentials, trading behavior, and profitability language.
+
+`research/local_csv_fixture_workflow_demo.py` now builds a metadata-only
+inventory declaration for the committed synthetic adjusted-close, benchmark,
+and OHLCV fixtures and runs `validate_local_csv_inventory()` before loading
+those fixtures. The workflow result, Markdown report, and JSON sidecar log now
+include redacted inventory review summaries and issue counts. The review
+records metadata flags only; it does not store raw local paths in its result,
+read files, check path existence, compute hashes, fetch data, or authorize
+real-data interpretation.
+
+`tests/test_local_csv_fixture_workflow_demo.py` now verifies the inventory
+review has three declared inputs, no high/medium/low issues for the committed
+synthetic fixture metadata, no raw-path field on review summaries, deterministic
+review output, report/log inventory sections, helper reuse, and caveats.
+
+The generated report and JSON experiment log were regenerated from committed
+synthetic fixtures only. This stage does not modify CSV loader behavior, factor
+formulas, diagnostics semantics, backtester behavior, metrics, private data,
+real-data access, execution assumptions, live or paper trading scope,
+brokerage integration, order execution, or profitability language.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+14 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Local CSV Inventory Dry-Run Validator
 
 This code milestone adds the next local CSV planning gate after the study
