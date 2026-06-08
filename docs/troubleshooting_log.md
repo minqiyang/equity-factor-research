@@ -23,6 +23,79 @@ problems, include:
 
 ---
 
+## 2026-06-07 - Universe-Masked Signal Duplicate-Column Validation Order
+
+Original mistake:
+
+- The first `apply_universe_mask_to_signals()` implementation checked
+  duplicate signal columns only after passing `signals` through
+  `validate_panel_data()`.
+- `validate_panel_data()` is designed for normal unique-column numeric panels.
+  With duplicate column labels, `data[column]` can return a DataFrame rather
+  than a Series, so the validator may try to read a DataFrame `.dtype`
+  attribute before the new helper reports the clearer duplicate-column
+  problem.
+
+Consequence:
+
+- A new duplicate-column boundary test failed.
+- The helper still rejected the bad input, but the failure path was an
+  implementation-detail `AttributeError` rather than the intended auditable
+  `ValueError`.
+
+Evidence:
+
+```text
+tests/test_liquidity.py::test_apply_universe_mask_to_signals_rejects_duplicate_columns
+AttributeError: 'DataFrame' object has no attribute 'dtype'. Did you mean: 'dtypes'?
+
+1 failed, 57 passed
+```
+
+Investigation:
+
+- The failure occurred before `_validate_unique_columns(signal_panel,
+  "signals")` was reached.
+- The root cause was validation order, not masking semantics, real-data
+  handling, backtest integration, trading behavior, or profitability language.
+- `universe_mask` already checked duplicate columns before dtype validation,
+  so the issue was limited to the signal-panel path.
+
+Correction attempts:
+
+- Did not remove or weaken the duplicate-column test.
+- Did not modify the shared `validate_panel_data()` helper because this stage
+  is scoped to the universe-masked signal adapter.
+- Moved the duplicate-column check ahead of `validate_panel_data()` only when
+  `signals` is already a pandas DataFrame, preserving the existing non-DataFrame
+  type error from the shared validator.
+
+Final fix:
+
+- `apply_universe_mask_to_signals()` now checks duplicate signal columns on
+  the raw `signals` DataFrame before numeric panel validation.
+- Duplicate labels now raise the intended `ValueError` with
+  `columns must not contain duplicates`.
+
+Verification:
+
+```text
+python -m pytest -q tests/test_liquidity.py
+58 passed
+```
+
+Remaining caveats:
+
+- The fix is local to the new adapter. Other helpers that rely directly on
+  `validate_panel_data()` were not changed in this Stage 72 PR.
+
+Prevention:
+
+- For future strict panel adapters, validate duplicate labels before selecting
+  columns by label or delegating to validators that assume unique columns.
+
+---
+
 ## 2026-06-07 - Local CSV Fixture Universe-Mask Test Expectation Drift
 
 Original mistake:

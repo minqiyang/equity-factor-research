@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic/local-panel universe-masked signal adapter that applies an
+  already-constructed boolean liquidity universe mask to an already-computed
+  factor signal panel with strict alignment, missing-mask rejection, and
+  deterministic audit counts, without backtest integration, report generation,
+  real data, trading behavior, or performance interpretation.
 - Added `docs/liquidity_universe_backtest_integration_design.md` to define a
   documentation-only contract for future signal masking and simulated
   backtest consumption of liquidity universe masks before any source code

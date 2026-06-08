@@ -13,6 +13,7 @@ import math
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype
 
 from features.operators import validate_panel_data
 
@@ -28,6 +29,26 @@ class LiquidityUniverseResult:
 
     name: str
     universe_mask: pd.DataFrame
+    summary: pd.DataFrame
+    parameters: dict[str, object]
+    caveats: tuple[str, ...]
+    start_date: pd.Timestamp
+    end_date: pd.Timestamp
+    asset_count: int
+    low_coverage_dates: tuple[pd.Timestamp, ...]
+
+
+@dataclass(frozen=True)
+class UniverseMaskedSignalsResult:
+    """Universe-masked signal panel plus audit metadata.
+
+    The result is a research infrastructure artifact only. It does not contain
+    target weights, trades, returns, benchmark comparisons, or performance
+    interpretation.
+    """
+
+    name: str
+    signals: pd.DataFrame
     summary: pd.DataFrame
     parameters: dict[str, object]
     caveats: tuple[str, ...]
@@ -214,6 +235,82 @@ def construct_liquidity_universe(
     )
 
 
+def apply_universe_mask_to_signals(
+    signals: pd.DataFrame,
+    universe_mask: pd.DataFrame,
+    *,
+    name: str = "universe_masked_signals",
+    min_valid_signals_per_date: int = 1,
+) -> UniverseMaskedSignalsResult:
+    """Apply an already-constructed universe mask to a signal panel.
+
+    ``True`` universe-mask cells preserve the original signal. ``False`` cells
+    become missing values, not zero scores. Existing signal missing values are
+    preserved. Inputs must already be strictly aligned; this helper never
+    reindexes, forward-fills, backward-fills, or repairs missing universe
+    values.
+    """
+
+    _validate_non_empty_name(name)
+    _validate_positive_integer(
+        min_valid_signals_per_date,
+        "min_valid_signals_per_date",
+    )
+
+    if isinstance(signals, pd.DataFrame):
+        _validate_unique_columns(signals, "signals")
+    signal_panel = validate_panel_data(signals, name="signals")
+    mask_panel = _validate_universe_mask(universe_mask, signal_panel)
+
+    masked_signals = signal_panel.where(mask_panel)
+
+    raw_valid_signal_count = signal_panel.notna().sum(axis=1).astype(int)
+    universe_eligible_count = mask_panel.sum(axis=1).astype(int)
+    valid_masked_signal_count = masked_signals.notna().sum(axis=1).astype(int)
+    missing_signal_count = signal_panel.isna().sum(axis=1).astype(int)
+    excluded_by_universe_count = (
+        signal_panel.notna() & ~mask_panel
+    ).sum(axis=1).astype(int)
+    low_coverage = valid_masked_signal_count < min_valid_signals_per_date
+
+    summary = pd.DataFrame(
+        {
+            "raw_valid_signal_count": raw_valid_signal_count,
+            "universe_eligible_count": universe_eligible_count,
+            "valid_masked_signal_count": valid_masked_signal_count,
+            "excluded_by_universe_count": excluded_by_universe_count,
+            "missing_signal_count": missing_signal_count,
+            "low_coverage": low_coverage.astype(bool),
+        },
+        index=signal_panel.index,
+    )
+
+    parameters: dict[str, object] = {
+        "name": name,
+        "min_valid_signals_per_date": min_valid_signals_per_date,
+    }
+    caveats = (
+        "synthetic_or_local_panel_only",
+        "not_real_data_evidence",
+        "not_backtest_or_portfolio_construction",
+        "no_trading_or_order_execution",
+        "no_profitability_claim",
+    )
+    low_coverage_dates = tuple(summary.index[summary["low_coverage"]])
+
+    return UniverseMaskedSignalsResult(
+        name=name,
+        signals=masked_signals,
+        summary=summary,
+        parameters=parameters,
+        caveats=caveats,
+        start_date=pd.Timestamp(signal_panel.index[0]),
+        end_date=pd.Timestamp(signal_panel.index[-1]),
+        asset_count=len(signal_panel.columns),
+        low_coverage_dates=low_coverage_dates,
+    )
+
+
 def _apply_universe_cap(
     eligible_mask: pd.DataFrame,
     *,
@@ -315,6 +412,53 @@ def _validate_eligibility_mask(
     return clean_mask, missing_eligibility
 
 
+def _validate_universe_mask(
+    universe_mask: pd.DataFrame,
+    signals: pd.DataFrame,
+) -> pd.DataFrame:
+    if not isinstance(universe_mask, pd.DataFrame):
+        raise TypeError("universe_mask must be a pandas DataFrame")
+
+    if not isinstance(universe_mask.index, pd.DatetimeIndex):
+        raise TypeError("universe_mask must be indexed by a pandas DatetimeIndex")
+
+    if universe_mask.empty:
+        raise ValueError("universe_mask must not be empty")
+
+    if universe_mask.index.has_duplicates:
+        raise ValueError("universe_mask index must not contain duplicate dates")
+
+    if not universe_mask.index.is_monotonic_increasing:
+        raise ValueError("universe_mask index must be sorted in increasing date order")
+
+    _validate_unique_columns(universe_mask, "universe_mask")
+
+    if not universe_mask.index.equals(signals.index):
+        raise ValueError("signals and universe_mask must have identical indexes")
+
+    if not universe_mask.columns.equals(signals.columns):
+        raise ValueError("signals and universe_mask must have identical columns")
+
+    invalid_columns = [
+        column
+        for column in universe_mask.columns
+        if not is_bool_dtype(universe_mask[column].dtype)
+    ]
+    if invalid_columns:
+        raise TypeError(
+            "universe_mask must contain boolean or nullable boolean dtypes only; "
+            f"invalid columns: {invalid_columns}"
+        )
+
+    if universe_mask.isna().any().any():
+        raise ValueError(
+            "universe_mask must not contain missing values; construct or audit "
+            "the universe mask before applying it to signals"
+        )
+
+    return universe_mask.astype(bool)
+
+
 def _validate_ranking_metric(
     ranking_metric: pd.DataFrame,
     eligibility_mask: pd.DataFrame,
@@ -391,8 +535,15 @@ def _validate_non_empty_name(value: str) -> None:
         raise ValueError("name must not be empty")
 
 
+def _validate_unique_columns(data: pd.DataFrame, name: str) -> None:
+    if data.columns.has_duplicates:
+        raise ValueError(f"{name} columns must not contain duplicates")
+
+
 __all__ = [
     "LiquidityUniverseResult",
+    "UniverseMaskedSignalsResult",
+    "apply_universe_mask_to_signals",
     "average_daily_volume_eligibility",
     "average_dollar_volume_eligibility",
     "construct_liquidity_universe",
