@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic masked-signal backtest smoke test that feeds
+  universe-masked signals into the existing long-only backtester and verifies
+  lagged holdings, signal coverage, and transaction-cost accounting without
+  changing backtester behavior, generating reports, using real data, or
+  interpreting performance.
 - Added a synthetic masked-signal smoke test that composes liquidity
   eligibility, liquidity universe construction, and universe-mask signal
   application on deterministic synthetic panels without running a backtest,
