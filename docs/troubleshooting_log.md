@@ -97,6 +97,79 @@ Prevention:
 
 ---
 
+## 2026-06-08 - PowerShell PR Body Quoting Error
+
+Original mistake:
+
+- During the local CSV fixture inventory dry-run rehearsal stage, the first
+  `gh pr create` command passed a long Markdown PR body inside a PowerShell
+  double-quoted argument.
+- The body text contained Markdown backticks around file names and commands.
+- In PowerShell, backticks are escape characters, so the shell parsed the
+  command string before `gh` could receive the intended body.
+
+Consequence:
+
+- PR creation failed on the first attempt.
+- No repository files, staged content, commits, branches, or remote PRs were
+  modified by the failed command.
+- The stage was not complete until the PR body was submitted with
+  PowerShell-safe quoting and this recovery was logged.
+
+Evidence:
+
+```text
+The string is missing the terminator: ".
+CategoryInfo          : ParserError
+FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
+```
+
+Investigation:
+
+- The failure was a shell parse error, not a GitHub, git, test, source-code,
+  data, trading, credential, or profitability issue.
+- The command used Markdown backticks inside a double-quoted PowerShell string.
+- The repository remained clean after the existing commit, and the failed
+  command did not open a PR.
+
+Correction attempts:
+
+- Did not retry the same double-quoted command.
+- Recreated the PR body as a PowerShell single-quoted here-string assigned to
+  a variable.
+- Passed that variable to `gh pr create --body`, so Markdown backticks were
+  treated as literal content rather than PowerShell escapes.
+
+Final fix:
+
+- Opened the ready-for-review PR with the here-string body command.
+- The resulting PR is
+  `https://github.com/minqiyang/ai-equity-factor-research/pull/80`.
+
+Verification:
+
+- `gh pr create` returned the PR #80 URL successfully.
+- The failed command did not modify the working tree.
+- This troubleshooting entry is added as a follow-up log-only update to the
+  same PR branch.
+
+Remaining caveats:
+
+- This was command-line quoting friction only. It did not affect the local CSV
+  fixture workflow implementation, generated synthetic report, JSON sidecar
+  log, tests, data access, trading scope, or profitability language.
+
+Prevention:
+
+- Use PowerShell here-strings or `--body-file` for long Markdown PR bodies in
+  this workspace.
+- Avoid PowerShell double-quoted strings for Markdown text containing
+  backticks.
+- Treat PR creation failures as workflow problems that require durable logging
+  when they occur during the staged workflow.
+
+---
+
 ## 2026-06-07 - PowerShell Rejected Bash Here-Doc Syntax
 
 Original mistake:
