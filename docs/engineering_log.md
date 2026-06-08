@@ -49,6 +49,49 @@ Full validation is rerun before the associated PR is committed and opened.
 
 ---
 
+## 2026-06-07 - Local CSV Fixture Universe-Masked Signal Smoke Check
+
+This code-and-report milestone updated the committed synthetic local CSV
+fixture workflow after the synthetic masked-signal backtest smoke PR merged.
+
+Assumption: the safest PR-sized Stage 75 is not another backtest, not a
+portfolio-construction change, not a real-data workflow, and not a parameter
+study. It is a narrow local-fixture wiring check that applies the reviewed
+liquidity universe mask to an already-computed `alpha_009` signal panel and
+records the resulting masked-signal audit counts.
+
+`research/local_csv_fixture_workflow_demo.py` now calls
+`apply_universe_mask_to_signals()` after constructing the synthetic fixture
+liquidity universe. The resulting `masked_alpha_009_signals` panel keeps the
+original signal only where the universe mask is `True`, turns ineligible cells
+into missing values rather than zero scores, preserves existing signal missing
+values, and records per-date raw valid signal counts, eligible universe
+counts, valid masked signal counts, excluded-by-universe counts, missing signal
+counts, and low-coverage dates.
+
+The generated fixture report and JSON sidecar log now include a
+universe-masked `alpha_009` signal smoke-check section. The output is a
+signal-panel wiring diagnostic only. It does not rank assets, create weights,
+run a backtest, create trades, compare benchmark returns, fetch real data,
+connect to a broker, support live or paper trading, or make profitability
+claims.
+
+`tests/test_local_csv_fixture_workflow_demo.py` now verifies the masked signal
+alignment, deterministic output, exact fixture masked-signal values, report
+section, JSON diagnostics, helper reuse, caveats, and configuration
+validation.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py
+13 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Synthetic Masked-Signal Smoke Test
 
 This test milestone added the first synthetic smoke check after the

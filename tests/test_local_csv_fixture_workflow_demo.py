@@ -70,6 +70,9 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
         result.prices.columns,
     )
     assert result.liquidity_universe_result.summary.index.equals(result.prices.index)
+    assert result.masked_alpha_009_signals.signals.index.equals(result.prices.index)
+    assert result.masked_alpha_009_signals.signals.columns.equals(result.prices.columns)
+    assert result.masked_alpha_009_signals.summary.index.equals(result.prices.index)
     assert result.alpha_012_factor.index.equals(result.prices.index)
     assert result.alpha_012_factor.columns.equals(result.prices.columns)
     assert result.information_coefficient.index.equals(result.prices.index)
@@ -177,6 +180,39 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
         pd.Timestamp("2024-01-03"),
         pd.Timestamp("2024-01-05"),
     )
+    expected_masked_alpha_009_signals = pd.DataFrame(
+        {
+            "AAA": [float("nan"), float("nan"), float("nan"), float("nan")],
+            "BBB": [float("nan"), float("nan"), 0.75, float("nan")],
+            "CCC": [float("nan"), float("nan"), float("nan"), float("nan")],
+        },
+        index=result.prices.index,
+    )
+    assert_frame_equal(
+        result.masked_alpha_009_signals.signals,
+        expected_masked_alpha_009_signals,
+    )
+    assert result.masked_alpha_009_signals.summary[
+        "valid_masked_signal_count"
+    ].to_dict() == {
+        pd.Timestamp("2024-01-02"): 0,
+        pd.Timestamp("2024-01-03"): 0,
+        pd.Timestamp("2024-01-04"): 1,
+        pd.Timestamp("2024-01-05"): 0,
+    }
+    assert result.masked_alpha_009_signals.summary[
+        "excluded_by_universe_count"
+    ].to_dict() == {
+        pd.Timestamp("2024-01-02"): 0,
+        pd.Timestamp("2024-01-03"): 3,
+        pd.Timestamp("2024-01-04"): 2,
+        pd.Timestamp("2024-01-05"): 3,
+    }
+    assert result.masked_alpha_009_signals.low_coverage_dates == (
+        pd.Timestamp("2024-01-02"),
+        pd.Timestamp("2024-01-03"),
+        pd.Timestamp("2024-01-05"),
+    )
     assert result.split_summary["date_count"].to_dict() == {
         "train": 1,
         "validation": 1,
@@ -214,6 +250,14 @@ def test_local_csv_fixture_workflow_is_deterministic() -> None:
     assert_frame_equal(
         first.liquidity_universe_result.summary,
         second.liquidity_universe_result.summary,
+    )
+    assert_frame_equal(
+        first.masked_alpha_009_signals.signals,
+        second.masked_alpha_009_signals.signals,
+    )
+    assert_frame_equal(
+        first.masked_alpha_009_signals.summary,
+        second.masked_alpha_009_signals.summary,
     )
     assert_series_equal(first.information_coefficient, second.information_coefficient)
     assert_series_equal(first.rank_information_coefficient, second.rank_information_coefficient)
@@ -274,9 +318,12 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "No portfolio construction" in report_text
     assert "## Liquidity Eligibility Smoke Check" in report_text
     assert "## Liquidity Universe Mask Smoke Check" in report_text
+    assert "## Universe-Masked Alpha#009 Signal Smoke Check" in report_text
+    assert "signal-panel wiring check only" in report_text
     assert "not tradeability evidence or backtest universe integration" in report_text
     assert "| 2024-01-04 | 3 | 0 | 3 | 0 | 2 | 1 | 1 |" in report_text
     assert "| 2024-01-04 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | false |" in report_text
+    assert "| 2024-01-04 | 3 | 1 | 1 | 2 | 0 | false |" in report_text
     assert "## Split Coverage" in report_text
     assert "## Alpha#012 Diagnostic Coverage" in report_text
     assert "## Alpha#012 Information Coefficient Diagnostics" in report_text
@@ -296,9 +343,13 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert payload["assumptions"]["liquidity_universe_check"].startswith(
         "synthetic universe-mask",
     )
+    assert payload["assumptions"]["liquidity_masked_signal_check"].startswith(
+        "synthetic universe-masked alpha_009",
+    )
     assert payload["assumptions"]["liquidity_eligibility_lag"] == 1
     assert payload["assumptions"]["liquidity_price_column"] == "adjusted_close"
     assert payload["assumptions"]["liquidity_universe_min_assets_per_date"] == 1
+    assert payload["assumptions"]["masked_signal_min_valid_signals_per_date"] == 1
     assert payload["assumptions"]["alpha_012_feature"] == (
         "alpha_012 from adjusted_close and volume OHLCV panels"
     )
@@ -356,8 +407,28 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
         "removed_count": 0.0,
         "universe_count": 1.0,
     }
+    assert payload["diagnostics"]["masked_alpha_009_signal_counts_by_date"] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 0.0,
+        "2024-01-04": 1.0,
+        "2024-01-05": 0.0,
+    }
+    assert payload["diagnostics"]["masked_alpha_009_signal_low_coverage_dates"] == [
+        "2024-01-02",
+        "2024-01-03",
+        "2024-01-05",
+    ]
+    assert payload["diagnostics"]["masked_alpha_009_signal_summary"]["2024-01-04"] == {
+        "excluded_by_universe_count": 2.0,
+        "low_coverage": False,
+        "missing_signal_count": 0.0,
+        "raw_valid_signal_count": 3.0,
+        "universe_eligible_count": 1.0,
+        "valid_masked_signal_count": 1.0,
+    }
     assert payload["diagnostics"]["factor_valid_observations"] == 9
     assert payload["diagnostics"]["alpha_009_factor_valid_observations"] == 9
+    assert payload["diagnostics"]["masked_alpha_009_signal_valid_observations"] == 1
     assert payload["diagnostics"]["alpha_012_factor_valid_observations"] == 2
     alpha_012_ic_by_date = payload["diagnostics"][
         "alpha_012_information_coefficient_by_date"
@@ -391,6 +462,7 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "split-aware wiring check only" in payload["caveats"]
     assert "liquidity eligibility count smoke check only" in payload["caveats"]
     assert "liquidity universe mask count smoke check only" in payload["caveats"]
+    assert "liquidity universe-masked signal smoke check only" in payload["caveats"]
     assert "not backtest universe integration" in payload["caveats"]
     assert "not tradeability evidence" in payload["caveats"]
     assert "not model selection" in payload["caveats"]
@@ -424,6 +496,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "adv_eligibility": 0,
         "dollar_volume_eligibility": 0,
         "liquidity_universe": 0,
+        "mask_signals": 0,
         "alpha_009": 0,
         "alpha_012": 0,
         "make_split": 0,
@@ -438,6 +511,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     original_adv_eligibility = demo.average_daily_volume_eligibility
     original_dollar_volume_eligibility = demo.average_dollar_volume_eligibility
     original_liquidity_universe = demo.construct_liquidity_universe
+    original_mask_signals = demo.apply_universe_mask_to_signals
     original_alpha_009 = demo.alpha_009
     original_alpha_012 = demo.alpha_012
     original_make_split = demo.make_train_validation_test_split
@@ -469,6 +543,10 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     def count_liquidity_universe(*args, **kwargs):
         calls["liquidity_universe"] += 1
         return original_liquidity_universe(*args, **kwargs)
+
+    def count_mask_signals(*args, **kwargs):
+        calls["mask_signals"] += 1
+        return original_mask_signals(*args, **kwargs)
 
     def count_alpha_009(*args, **kwargs):
         calls["alpha_009"] += 1
@@ -508,6 +586,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         count_dollar_volume_eligibility,
     )
     monkeypatch.setattr(demo, "construct_liquidity_universe", count_liquidity_universe)
+    monkeypatch.setattr(demo, "apply_universe_mask_to_signals", count_mask_signals)
     monkeypatch.setattr(demo, "alpha_009", count_alpha_009)
     monkeypatch.setattr(demo, "alpha_012", count_alpha_012)
     monkeypatch.setattr(demo, "make_train_validation_test_split", count_make_split)
@@ -525,6 +604,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "adv_eligibility": 1,
         "dollar_volume_eligibility": 1,
         "liquidity_universe": 1,
+        "mask_signals": 1,
         "alpha_009": 1,
         "alpha_012": 1,
         "make_split": 1,
@@ -566,6 +646,24 @@ def test_workflow_rejects_invalid_liquidity_config_values() -> None:
     )
     with pytest.raises(ValueError, match="liquidity_universe_min_assets_per_date"):
         run_local_csv_fixture_workflow_demo(config=bad_value_config, write_outputs=False)
+
+    bad_mask_type_config = LocalCSVFixtureWorkflowConfig(
+        masked_signal_min_valid_signals_per_date=True,
+    )
+    with pytest.raises(TypeError, match="masked_signal_min_valid_signals_per_date"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_mask_type_config,
+            write_outputs=False,
+        )
+
+    bad_mask_value_config = LocalCSVFixtureWorkflowConfig(
+        masked_signal_min_valid_signals_per_date=0,
+    )
+    with pytest.raises(ValueError, match="masked_signal_min_valid_signals_per_date"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_mask_value_config,
+            write_outputs=False,
+        )
 
 
 def test_workflow_rejects_invalid_split_boundaries() -> None:

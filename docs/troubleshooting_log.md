@@ -23,6 +23,73 @@ problems, include:
 
 ---
 
+## 2026-06-07 - PowerShell Rejected Bash Here-Doc Syntax
+
+Original mistake:
+
+- During the local CSV fixture universe-masked signal smoke stage, a quick
+  Python inspection snippet was run with Bash here-doc syntax:
+  `python - <<'PY'`.
+- The active shell for this workspace is Windows PowerShell, not Bash.
+
+Consequence:
+
+- PowerShell rejected the command before Python ran.
+- No repository files were modified by the failed command, but the intended
+  inspection of exact masked-signal values still had to be rerun.
+
+Evidence:
+
+```text
+At line:2 char:11
++ python - <<'PY'
++           ~
+Missing file specification after redirection operator.
+The '<' operator is reserved for future use.
+```
+
+Investigation:
+
+- The error occurred at shell-parse time, before any Python import or fixture
+  workflow code executed.
+- The command used a Bash redirection pattern that is not valid PowerShell
+  syntax.
+- The issue was an environment/command-form mistake, not a data, strategy,
+  liquidity, backtest, trading, credential, or profitability issue.
+
+Correction attempts:
+
+- Did not change code or tests in response to the failed command.
+- Replaced the Bash here-doc with a PowerShell here-string piped to Python:
+  `@' ... '@ | python -`.
+
+Final fix:
+
+- Reran the inspection with PowerShell-compatible syntax and printed the
+  `alpha_009` fixture factor, masked signal panel, masked-signal summary, and
+  low-coverage dates.
+
+Verification:
+
+- The corrected command completed successfully.
+- It confirmed the fixture universe mask keeps only `BBB` on `2024-01-04`,
+  the masked `alpha_009` valid observation count is `1`, and low-coverage
+  dates are `2024-01-02`, `2024-01-03`, and `2024-01-05`.
+
+Remaining caveats:
+
+- This was a local command syntax issue only. It did not affect repository
+  behavior or generated outputs.
+
+Prevention:
+
+- Use PowerShell here-strings or `python -c` for ad hoc Python snippets in
+  this workspace.
+- Treat shell syntax failures as failed checks and rerun the intended check
+  before relying on the result.
+
+---
+
 ## 2026-06-07 - Universe-Masked Signal Duplicate-Column Validation Order
 
 Original mistake:
