@@ -49,7 +49,7 @@ Current local data support relevant to liquidity planning:
 | Strict local OHLCV loader | `load_ohlcv_csv()` in `src/data/csv_loader.py` | Implemented and tested. |
 | Synthetic OHLCV fixture smoke coverage | `tests/test_local_csv_loader_smoke_demo.py` and `tests/fixtures/local_csv_loader_smoke/synthetic_ohlcv.csv` | Implemented with committed synthetic fixture only. |
 | Synthetic liquidity eligibility helpers | `src/features/liquidity.py` and `tests/test_liquidity.py` | Implemented for rolling ADV and rolling dollar volume with explicit lag, warm-up, missing-value, and zero-volume behavior. |
-| Synthetic local-fixture liquidity count smoke check | `research/local_csv_fixture_workflow_demo.py`, report/log artifacts, and tests | Implemented as count diagnostics only; no universe mask or backtest integration. |
+| Synthetic local-fixture liquidity and universe-mask count smoke checks | `research/local_csv_fixture_workflow_demo.py`, report/log artifacts, and tests | Implemented as count diagnostics only; no backtest integration or performance interpretation. |
 | Split-aware diagnostics | `src/features/validation.py`, `src/features/diagnostics.py`, and related tests | Implemented for synthetic/local-fixture workflows. |
 | Real-data readiness gate | `docs/real_data_readiness_audit.md` | Documentation gate only; no real-data run approved. |
 | Experiment-log requirements | `EXPERIMENT_LOG.md` and reporting helpers | Synthetic logging exists; real-data records remain gated. |
@@ -246,11 +246,17 @@ real-data readiness audits before any result is interpreted.
    the synthetic local-fixture workflow.
 5. Add a documentation-only liquidity universe construction design before any
    code uses liquidity eligibility as a final research universe mask.
+   Completed by `docs/liquidity_universe_construction_design.md`.
 6. Implement a synthetic-only universe-mask helper and audit summary after the
-   design is reviewed.
-7. Revisit backtester integration only after universe mask semantics, signal
-   timing, rebalance timing, costs, slippage, benchmark choice, and execution
-   assumptions are reviewed together.
+   design is reviewed. Completed by the synthetic liquidity universe helper
+   stage.
+7. Add a local synthetic fixture workflow smoke update that reports
+   universe-mask counts only, without backtesting or performance
+   interpretation. Completed by the liquidity universe fixture smoke stage.
+8. Add a documentation-only backtester integration design that reviews universe
+   mask semantics, signal timing, rebalance timing, costs, slippage, benchmark
+   choice, and execution assumptions together before any backtest consumes a
+   liquidity universe mask.
 
 Each stage should stop if it requires real data, external downloads, vendor
 credentials, live or paper trading, brokerage integration, order execution, or
@@ -258,10 +264,11 @@ profitability claims.
 
 ## Recommended Next Stage
 
-After the liquidity eligibility helper and fixture count stages are complete,
-the next safe stage should be a documentation-only liquidity universe
-construction design.
+After the universe construction helper and fixture universe-mask count stages
+are complete, the next safe stage should be a documentation-only liquidity
+universe backtest-integration design.
 
-That design should define the first future universe-mask API, audit summary,
-date-alignment rules, missing-value behavior, optional cap semantics, and stop
-conditions before any backtest consumes liquidity eligibility.
+That design should define how a future universe mask, factor score, rebalance
+schedule, cost model, slippage assumption, benchmark choice, and execution lag
+interact before any source code consumes a liquidity universe mask in a
+backtest.
