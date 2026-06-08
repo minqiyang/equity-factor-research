@@ -11,12 +11,13 @@ Exercise the local CSV research path with a small committed fixture:
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
 5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
-6. Compute `alpha_009` as a close-only research feature.
-7. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-8. Compute next-row forward returns as evaluation targets only.
-9. Apply chronological train/validation/test split metadata.
-10. Run IC, Rank IC, and quantile spread diagnostics.
-11. Write a caveated report and JSON experiment log.
+6. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
+7. Compute `alpha_009` as a close-only research feature.
+8. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+9. Compute next-row forward returns as evaluation targets only.
+10. Apply chronological train/validation/test split metadata.
+11. Run IC, Rank IC, and quantile spread diagnostics.
+12. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -69,6 +70,17 @@ The synthetic universe mask below is constructed from the intersection of the AD
 | 2024-01-03 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | true |
 | 2024-01-04 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | false |
 | 2024-01-05 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | true |
+
+## Universe-Masked Alpha#009 Signal Smoke Check
+
+The synthetic signal summary below applies the liquidity universe mask to the already-computed `alpha_009` factor panel. `True` mask cells preserve the original signal, `False` mask cells become missing values, and existing signal missing values remain missing. This is a signal-panel wiring check only; it does not rank assets, create weights, run a backtest, create trades, compare a benchmark, or validate performance.
+
+| Date | raw_valid_signal_count | universe_eligible_count | valid_masked_signal_count | excluded_by_universe_count | missing_signal_count | low_coverage |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2024-01-02 | 0 | 0 | 0 | 0 | 3 | true |
+| 2024-01-03 | 3 | 0 | 0 | 3 | 0 | true |
+| 2024-01-04 | 3 | 1 | 1 | 2 | 0 | false |
+| 2024-01-05 | 3 | 0 | 0 | 3 | 0 | true |
 
 ## Split Coverage
 
@@ -160,7 +172,7 @@ The synthetic universe mask below is constructed from the intersection of the AD
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
-- The liquidity eligibility and universe-mask counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
+- The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.

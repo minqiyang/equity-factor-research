@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic local CSV fixture universe-masked signal smoke check that
+  applies the reviewed liquidity universe mask to the existing `alpha_009`
+  fixture signal panel, records masked-signal audit counts, and keeps the
+  workflow free of backtesting, ranking, target weights, real data, trading
+  behavior, or performance interpretation.
 - Added a synthetic masked-signal backtest smoke test that feeds
   universe-masked signals into the existing long-only backtester and verifies
   lagged holdings, signal coverage, and transaction-cost accounting without

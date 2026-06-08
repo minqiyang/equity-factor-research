@@ -30,10 +30,12 @@ from features.validation import (
     split_panel_by_train_validation_test,
 )
 from features.liquidity import (
+    apply_universe_mask_to_signals,
     average_daily_volume_eligibility,
     average_dollar_volume_eligibility,
     construct_liquidity_universe,
     LiquidityUniverseResult,
+    UniverseMaskedSignalsResult,
 )
 from features.worldquant_alphas import alpha_009, alpha_012
 from reporting.experiment_log import (
@@ -76,6 +78,7 @@ class LocalCSVFixtureWorkflowConfig:
     liquidity_eligibility_lag: int = 1
     liquidity_price_column: str = "adjusted_close"
     liquidity_universe_min_assets_per_date: int = 1
+    masked_signal_min_valid_signals_per_date: int = 1
 
 
 @dataclass(frozen=True)
@@ -94,6 +97,7 @@ class LocalCSVFixtureWorkflowResult:
     average_dollar_volume_eligibility: pd.DataFrame
     liquidity_eligibility_summary: pd.DataFrame
     liquidity_universe_result: LiquidityUniverseResult
+    masked_alpha_009_signals: UniverseMaskedSignalsResult
     alpha_009_factor: pd.DataFrame
     alpha_012_factor: pd.DataFrame
     forward_returns: pd.DataFrame
@@ -186,6 +190,12 @@ def run_local_csv_fixture_workflow_demo(
     )
 
     alpha_factor = alpha_009(prices, window=config.alpha_window)
+    masked_alpha_009_signals = apply_universe_mask_to_signals(
+        alpha_factor,
+        liquidity_universe_result.universe_mask,
+        name="synthetic_fixture_masked_alpha_009_signals",
+        min_valid_signals_per_date=config.masked_signal_min_valid_signals_per_date,
+    )
     alpha_012_factor = alpha_012(liquidity_price_panel, liquidity_volume_panel)
     forward_returns = _future_returns(prices, periods=config.forward_return_horizon_rows)
     benchmark_forward_returns = _future_returns(
@@ -317,6 +327,7 @@ def run_local_csv_fixture_workflow_demo(
         average_dollar_volume_eligibility=dollar_volume_eligibility,
         liquidity_eligibility_summary=liquidity_eligibility_summary,
         liquidity_universe_result=liquidity_universe_result,
+        masked_alpha_009_signals=masked_alpha_009_signals,
         alpha_009_factor=alpha_factor,
         alpha_012_factor=alpha_012_factor,
         forward_returns=forward_returns,
@@ -473,11 +484,19 @@ def write_workflow_experiment_log(
                 "synthetic universe-mask count smoke check only; not backtest "
                 "integration, portfolio construction, or tradeability evidence"
             ),
+            "liquidity_masked_signal_check": (
+                "synthetic universe-masked alpha_009 signal smoke check only; "
+                "not ranking, weights, backtest integration, portfolio "
+                "construction, or tradeability evidence"
+            ),
             "liquidity_window": config.liquidity_window,
             "liquidity_eligibility_lag": config.liquidity_eligibility_lag,
             "liquidity_price_column": config.liquidity_price_column,
             "liquidity_universe_min_assets_per_date": (
                 config.liquidity_universe_min_assets_per_date
+            ),
+            "masked_signal_min_valid_signals_per_date": (
+                config.masked_signal_min_valid_signals_per_date
             ),
             "min_average_volume": config.min_average_volume,
             "min_average_dollar_volume": config.min_average_dollar_volume,
@@ -557,6 +576,16 @@ def write_workflow_experiment_log(
                 date.date().isoformat()
                 for date in result.liquidity_universe_result.low_coverage_dates
             ],
+            "masked_alpha_009_signal_summary": _date_indexed_frame_to_dict(
+                result.masked_alpha_009_signals.summary,
+            ),
+            "masked_alpha_009_signal_counts_by_date": _series_to_date_dict(
+                result.masked_alpha_009_signals.summary["valid_masked_signal_count"],
+            ),
+            "masked_alpha_009_signal_low_coverage_dates": [
+                date.date().isoformat()
+                for date in result.masked_alpha_009_signals.low_coverage_dates
+            ],
             "split_summary": result.split_summary.to_dict(orient="index"),
             "information_coefficient_by_date": _series_to_date_dict(
                 result.information_coefficient,
@@ -606,6 +635,9 @@ def write_workflow_experiment_log(
             ),
             "factor_valid_observations": int(result.alpha_009_factor.notna().sum().sum()),
             "alpha_009_factor_valid_observations": int(result.alpha_009_factor.notna().sum().sum()),
+            "masked_alpha_009_signal_valid_observations": int(
+                result.masked_alpha_009_signals.signals.notna().sum().sum()
+            ),
             "alpha_012_factor_valid_observations": int(result.alpha_012_factor.notna().sum().sum()),
             "forward_return_valid_observations": int(result.forward_returns.notna().sum().sum()),
             "benchmark_forward_return_valid_observations": int(
@@ -618,6 +650,7 @@ def write_workflow_experiment_log(
             "split-aware wiring check only",
             "liquidity eligibility count smoke check only",
             "liquidity universe mask count smoke check only",
+            "liquidity universe-masked signal smoke check only",
             "not backtest universe integration",
             "not tradeability evidence",
             "not strategy validation",
@@ -655,12 +688,13 @@ Exercise the local CSV research path with a small committed fixture:
 3. Load a synthetic OHLCV CSV for a liquidity eligibility count smoke check.
 4. Compute lagged ADV and dollar-volume eligibility masks without filling missing volume.
 5. Construct a synthetic liquidity universe mask count diagnostic from the intersection of both eligibility rules.
-6. Compute `alpha_009` as a close-only research feature.
-7. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
-8. Compute next-row forward returns as evaluation targets only.
-9. Apply chronological train/validation/test split metadata.
-10. Run IC, Rank IC, and quantile spread diagnostics.
-11. Write a caveated report and JSON experiment log.
+6. Apply the universe mask to `alpha_009` as a signal-panel smoke check only.
+7. Compute `alpha_009` as a close-only research feature.
+8. Compute `alpha_012` as a volume + close research feature from the OHLCV fixture.
+9. Compute next-row forward returns as evaluation targets only.
+10. Apply chronological train/validation/test split metadata.
+11. Run IC, Rank IC, and quantile spread diagnostics.
+12. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -703,6 +737,12 @@ Eligibility counts below are decision-date diagnostics only. They use `window={c
 The synthetic universe mask below is constructed from the intersection of the ADV and dollar-volume eligibility masks. It reports count and audit fields from `construct_liquidity_universe()` only. It does not create target weights, trades, positions, orders, returns, benchmark comparisons, or a tradeable universe claim.
 
 {_format_markdown_table(result.liquidity_universe_result.summary)}
+
+## Universe-Masked Alpha#009 Signal Smoke Check
+
+The synthetic signal summary below applies the liquidity universe mask to the already-computed `alpha_009` factor panel. `True` mask cells preserve the original signal, `False` mask cells become missing values, and existing signal missing values remain missing. This is a signal-panel wiring check only; it does not rank assets, create weights, run a backtest, create trades, compare a benchmark, or validate performance.
+
+{_format_markdown_table(result.masked_alpha_009_signals.summary)}
 
 ## Split Coverage
 
@@ -760,7 +800,7 @@ The synthetic universe mask below is constructed from the intersection of the AD
 - The CSV files are tiny synthetic fixtures committed for workflow testing.
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
-- The liquidity eligibility and universe-mask counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
+- The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
@@ -846,6 +886,13 @@ def _validate_config(config: LocalCSVFixtureWorkflowConfig) -> None:
         raise TypeError("liquidity_universe_min_assets_per_date must be an integer")
     if config.liquidity_universe_min_assets_per_date < 1:
         raise ValueError("liquidity_universe_min_assets_per_date must be at least 1")
+    if (
+        isinstance(config.masked_signal_min_valid_signals_per_date, bool)
+        or not isinstance(config.masked_signal_min_valid_signals_per_date, int)
+    ):
+        raise TypeError("masked_signal_min_valid_signals_per_date must be an integer")
+    if config.masked_signal_min_valid_signals_per_date < 1:
+        raise ValueError("masked_signal_min_valid_signals_per_date must be at least 1")
 
 
 def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) -> None:
