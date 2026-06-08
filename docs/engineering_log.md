@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Post Local CSV Readiness Gates Checkpoint
+
+This documentation milestone records the repository state after the local CSV
+study checklist, metadata-only inventory dry-run validator, committed synthetic
+fixture rehearsal, and manual readiness audit report template merged.
+
+Assumption: after PR #81 merged, the next safe stage is not an actual
+user-provided local CSV smoke run because no user-supplied local CSV bundle,
+completed scope statement, completed checklist, completed readiness audit
+report, or local CSV `EXPERIMENT_LOG.md` entry exists in the repository
+context. The safest PR-sized stage is a checkpoint that distinguishes
+"readiness gates are available" from "a user-provided dataset is ready for
+interpretation."
+
+`docs/post_local_csv_readiness_gates_checkpoint.md` now records the current
+review baseline, completed local CSV readiness artifacts, readiness assessment,
+remaining stop conditions, guardrail review, and recommended next stage under
+two conditions: no user data available, or a future user-supplied local CSV
+bundle available outside the repository.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, or profitability language.
+
+Validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Local CSV Readiness Audit Report Template
 
 This documentation milestone adds the next manual gate after the committed

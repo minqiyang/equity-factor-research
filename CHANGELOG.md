@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_local_csv_readiness_gates_checkpoint.md` to record the
+  post-readiness-gates local CSV state, remaining stop conditions, and the
+  boundary between prepared audit artifacts and any future user-provided local
+  CSV smoke run.
 - Added `docs/local_csv_readiness_audit_report_template.md` as a
   documentation-only manual audit report format for future user-provided local
   CSV studies, recording evidence, high/medium/low issues, stop conditions,
