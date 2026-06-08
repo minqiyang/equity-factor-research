@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a local CSV inventory dry-run validator that checks declared local
+  file metadata before loading user files, keeps raw local paths out of review
+  results, and remains free of data fetching, vendor APIs, credentials,
+  trading behavior, report generation, and profitability interpretation.
 - Added `docs/local_csv_study_checklist.md` as a documentation-only pre-run
   checklist for future user-provided local CSV studies before any user file is
   loaded, diagnosed, reported, or interpreted.
