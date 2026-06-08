@@ -12,6 +12,58 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Universe-Masked Signal Adapter
+
+This code milestone implemented the first narrow helper from the liquidity
+universe backtest-integration design after PR #71 merged.
+
+Assumption: the safest PR-sized Stage 72 is a synthetic/local-panel signal
+masking adapter only, not a backtest integration, ranking rule, target-weight
+constructor, research-script update, generated report, or real-data workflow.
+
+`src/features/liquidity.py` now exposes `UniverseMaskedSignalsResult` and
+`apply_universe_mask_to_signals()`. The helper accepts an already-computed
+numeric signal panel and an already-constructed boolean universe mask with
+identical dates and assets. `True` mask cells preserve the original signal,
+`False` mask cells become missing values rather than zero scores, and existing
+signal missing values remain missing. The helper rejects mismatched indexes,
+mismatched columns, non-boolean masks, duplicate labels, unsorted dates, and
+missing universe-mask values by default. It does not reindex, forward-fill,
+backward-fill, zero-fill, rank assets, create weights, run a backtest, write
+reports, fetch data, or interpret performance.
+
+Focused tests in `tests/test_liquidity.py` cover a hand-calculated masking
+example, index and column preservation, ineligible signals becoming `NaN` and
+not zero, preservation of existing signal `NaN` values, nullable boolean mask
+acceptance, mismatched index rejection, mismatched column rejection,
+unsorted and duplicate date rejection, duplicate-column rejection, non-boolean
+mask rejection, missing mask rejection by default, and invalid parameter
+rejection.
+
+During the stage, a new duplicate-column test initially exposed a validation
+order issue: duplicate signal columns reached the shared numeric panel
+validator before the adapter's duplicate-column check, producing a pandas
+`AttributeError` instead of the intended `ValueError`. The adapter now checks
+duplicate signal columns before numeric validation. The full failure-to-fix
+chain is recorded in `docs/troubleshooting_log.md`.
+
+This stage remains synthetic/local-panel research infrastructure only. It does
+not fetch real data, add vendor access, add credentials, modify loaders,
+modify research scripts, generate reports, connect to a broker, place orders,
+support live or paper trading, modify the backtester or metrics, tune
+thresholds, or make profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_liquidity.py
+58 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Liquidity Universe Backtest Integration Design
 
 This documentation milestone defined the next reviewed boundary after the

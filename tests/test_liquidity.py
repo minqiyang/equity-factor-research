@@ -8,6 +8,7 @@ from pandas.testing import assert_frame_equal
 
 import features.liquidity as liquidity
 from features.liquidity import (
+    apply_universe_mask_to_signals,
     average_daily_volume_eligibility,
     average_dollar_volume_eligibility,
     construct_liquidity_universe,
@@ -333,6 +334,197 @@ def test_construct_liquidity_universe_rejects_invalid_parameters(
 
     with pytest.raises((TypeError, ValueError), match=match):
         construct_liquidity_universe(eligibility, **kwargs)
+
+
+def test_apply_universe_mask_to_signals_is_hand_calculated() -> None:
+    signals = _panel(
+        {
+            "AAA": [1.5, 2.0, np.nan],
+            "BBB": [-1.0, np.nan, 3.0],
+            "CCC": [0.0, 4.0, 5.0],
+        },
+    )
+    universe_mask = pd.DataFrame(
+        {
+            "AAA": [True, False, True],
+            "BBB": [False, True, True],
+            "CCC": [True, True, False],
+        },
+        index=signals.index,
+    )
+
+    result = apply_universe_mask_to_signals(
+        signals,
+        universe_mask,
+        name="test_masked_signals",
+        min_valid_signals_per_date=2,
+    )
+
+    expected_signals = pd.DataFrame(
+        {
+            "AAA": [1.5, np.nan, np.nan],
+            "BBB": [np.nan, np.nan, 3.0],
+            "CCC": [0.0, 4.0, np.nan],
+        },
+        index=signals.index,
+    )
+    assert result.name == "test_masked_signals"
+    assert result.asset_count == 3
+    assert result.start_date == signals.index[0]
+    assert result.end_date == signals.index[-1]
+    assert result.parameters["min_valid_signals_per_date"] == 2
+    assert "no_profitability_claim" in result.caveats
+    assert_frame_equal(result.signals, expected_signals)
+
+    expected_summary = pd.DataFrame(
+        {
+            "raw_valid_signal_count": [3, 2, 2],
+            "universe_eligible_count": [2, 2, 2],
+            "valid_masked_signal_count": [2, 1, 1],
+            "excluded_by_universe_count": [1, 1, 1],
+            "missing_signal_count": [0, 1, 1],
+            "low_coverage": [False, True, True],
+        },
+        index=signals.index,
+    )
+    assert_frame_equal(result.summary, expected_summary)
+    assert result.low_coverage_dates == (signals.index[1], signals.index[2])
+
+
+def test_apply_universe_mask_to_signals_preserves_index_and_columns() -> None:
+    signals = _panel({"CCC": [3.0, 4.0], "AAA": [1.0, 2.0]})
+    universe_mask = pd.DataFrame(
+        {"CCC": [True, False], "AAA": [False, True]},
+        index=signals.index,
+    )
+
+    result = apply_universe_mask_to_signals(signals, universe_mask)
+
+    assert result.signals.index.equals(signals.index)
+    assert result.signals.columns.equals(signals.columns)
+
+
+def test_apply_universe_mask_to_signals_turns_false_mask_to_nan_not_zero() -> None:
+    signals = _panel({"AAA": [7.0], "BBB": [-3.0]})
+    universe_mask = pd.DataFrame(
+        {"AAA": [False], "BBB": [True]},
+        index=signals.index,
+    )
+
+    result = apply_universe_mask_to_signals(signals, universe_mask)
+
+    assert pd.isna(result.signals.loc[signals.index[0], "AAA"])
+    assert result.signals.loc[signals.index[0], "BBB"] == -3.0
+
+
+def test_apply_universe_mask_to_signals_preserves_existing_signal_nans() -> None:
+    signals = _panel({"AAA": [np.nan, 2.0], "BBB": [1.0, np.nan]})
+    universe_mask = pd.DataFrame(
+        {"AAA": [True, True], "BBB": [True, True]},
+        index=signals.index,
+    )
+
+    result = apply_universe_mask_to_signals(signals, universe_mask)
+
+    assert_frame_equal(result.signals, signals.astype(float))
+    assert result.summary["missing_signal_count"].tolist() == [1, 1]
+
+
+def test_apply_universe_mask_to_signals_accepts_nullable_boolean_mask() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    signals = pd.DataFrame({"AAA": [1.0, 2.0]}, index=dates)
+    universe_mask = pd.DataFrame(
+        {"AAA": pd.Series([True, False], dtype="boolean").array},
+        index=dates,
+    )
+
+    result = apply_universe_mask_to_signals(signals, universe_mask)
+
+    expected = pd.DataFrame({"AAA": [1.0, np.nan]}, index=dates)
+    assert_frame_equal(result.signals, expected)
+
+
+def test_apply_universe_mask_to_signals_rejects_mismatched_index() -> None:
+    signals = _panel({"AAA": [1.0, 2.0]})
+    universe_mask = pd.DataFrame(
+        {"AAA": [True, True]},
+        index=pd.date_range("2024-02-01", periods=2, freq="D"),
+    )
+
+    with pytest.raises(ValueError, match="identical indexes"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_mismatched_columns() -> None:
+    signals = _panel({"AAA": [1.0, 2.0]})
+    universe_mask = pd.DataFrame(
+        {"BBB": [True, True]},
+        index=signals.index,
+    )
+
+    with pytest.raises(ValueError, match="identical columns"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_unsorted_dates() -> None:
+    dates = pd.to_datetime(["2024-01-02", "2024-01-01"])
+    signals = pd.DataFrame({"AAA": [2.0, 1.0]}, index=dates)
+    universe_mask = pd.DataFrame({"AAA": [True, True]}, index=dates)
+
+    with pytest.raises(ValueError, match="sorted"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_duplicate_dates() -> None:
+    dates = pd.to_datetime(["2024-01-01", "2024-01-01"])
+    signals = pd.DataFrame({"AAA": [1.0, 2.0]}, index=dates)
+    universe_mask = pd.DataFrame({"AAA": [True, True]}, index=dates)
+
+    with pytest.raises(ValueError, match="duplicate dates"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_duplicate_columns() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    signals = pd.DataFrame([[1.0, 2.0], [3.0, 4.0]], index=dates)
+    signals.columns = ["AAA", "AAA"]
+    universe_mask = pd.DataFrame([[True, True], [True, False]], index=dates)
+    universe_mask.columns = ["AAA", "AAA"]
+
+    with pytest.raises(ValueError, match="columns must not contain duplicates"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_non_boolean_mask() -> None:
+    signals = _panel({"AAA": [1.0, 2.0]})
+    universe_mask = pd.DataFrame({"AAA": [1, 0]}, index=signals.index)
+
+    with pytest.raises(TypeError, match="boolean or nullable boolean"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_missing_mask_values_by_default() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    signals = pd.DataFrame({"AAA": [1.0, 2.0]}, index=dates)
+    universe_mask = pd.DataFrame(
+        {"AAA": pd.Series([True, pd.NA], dtype="boolean").array},
+        index=dates,
+    )
+
+    with pytest.raises(ValueError, match="must not contain missing values"):
+        apply_universe_mask_to_signals(signals, universe_mask)
+
+
+def test_apply_universe_mask_to_signals_rejects_invalid_parameters() -> None:
+    signals = _panel({"AAA": [1.0]})
+    universe_mask = pd.DataFrame({"AAA": [True]}, index=signals.index)
+
+    with pytest.raises(ValueError, match="at least 1"):
+        apply_universe_mask_to_signals(
+            signals,
+            universe_mask,
+            min_valid_signals_per_date=0,
+        )
 
 
 def test_average_daily_volume_eligibility_uses_configurable_positive_lag() -> None:
