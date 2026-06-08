@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Local CSV Study Checklist Template
+
+This documentation milestone adds the first concrete checklist template after
+the user-provided local CSV research plan merged.
+
+Assumption: the safest PR-sized next stage is still documentation-only. The
+project should prepare a reusable pre-run checklist before any stage loads,
+validates, diagnoses, reports, or interprets user-provided local CSV files.
+
+`docs/local_csv_study_checklist.md` now provides a copyable checklist for
+scope, file inventory, schema mapping, provenance, adjustment policy,
+validation evidence, universe and benchmark assumptions, feature timing,
+sample splits, costs, slippage, readiness-audit summary, experiment-log
+preparation, and final stop conditions. It is designed to be completed before
+any user file is loaded, and it explicitly keeps downloads, vendor APIs,
+credentials, live or paper trading, brokerage integration, order execution,
+silent missing-data repair, and profitability language out of scope.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, strategy logic, data access, execution assumptions, live or paper
+trading scope, brokerage integration, order execution, or profitability
+language.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+434 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - User-Provided Local CSV Research Plan
 
 This documentation milestone defines the Stage 77 plan for future

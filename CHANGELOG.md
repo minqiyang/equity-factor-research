@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_study_checklist.md` as a documentation-only pre-run
+  checklist for future user-provided local CSV studies before any user file is
+  loaded, diagnosed, reported, or interpreted.
 - Added `docs/user_provided_local_csv_research_plan.md` to define a
   documentation-only plan, scope template, validation gates, stop conditions,
   and future PR-sized stages before any user-provided local CSV result is
