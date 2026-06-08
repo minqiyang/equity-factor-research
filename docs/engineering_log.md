@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - User-Provided Local CSV Research Plan
+
+This documentation milestone defines the Stage 77 plan for future
+user-provided local CSV research without loading user files or interpreting
+real-data results.
+
+Assumption: after the local CSV readiness checkpoint merged, the safest
+PR-sized next stage is a documentation-only planning artifact. The project has
+strict local loaders, committed synthetic fixtures, factor diagnostics,
+liquidity eligibility, universe masks, universe-masked signals, and synthetic
+backtest smoke coverage, but it still needs a clear local-file study plan
+before any user-provided CSV result can be interpreted.
+
+`docs/user_provided_local_csv_research_plan.md` now defines the intended
+future workflow gates, local input bundle, scope statement template,
+validation requirements, research design requirements, interpretation levels,
+stop conditions, and next PR-sized stages. It keeps user-provided local CSV
+work gated by provenance, schema validation, adjustment policy, universe
+documentation, benchmark compatibility, sample splits, cost/slippage
+assumptions, experiment logging, and the real-data readiness audit.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, strategy logic, data access, execution assumptions, live or paper
+trading scope, brokerage integration, order execution, or profitability
+language.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+434 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Local CSV Readiness Checkpoint
 
 This documentation milestone records the local CSV readiness state after the

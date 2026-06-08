@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/user_provided_local_csv_research_plan.md` to define a
+  documentation-only plan, scope template, validation gates, stop conditions,
+  and future PR-sized stages before any user-provided local CSV result is
+  interpreted.
 - Added `docs/local_csv_readiness_checkpoint.md` to record the post-fixture
   local CSV readiness state, current gaps, guardrails, stop conditions, and
   the next documentation-only user-provided local CSV planning stage.
