@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Synthetic Masked-Signal Backtest Smoke Test
+
+This test milestone added the first synthetic smoke check that passes
+universe-masked signals into the existing long-only backtester after the
+synthetic masked-signal adapter smoke test merged.
+
+Assumption: the safest PR-sized Stage 74 is a focused test-only backtest smoke
+check, not a new research script, report, experiment log, backtester rewrite,
+portfolio-construction change, parameter study, or real-data workflow.
+
+`tests/test_liquidity_masked_signal_backtest_smoke.py` now builds
+deterministic synthetic price, volume, and raw-signal panels, computes lagged
+ADV and dollar-volume eligibility, constructs a liquidity universe mask,
+applies that mask to raw signals, and passes the masked signal panel to
+`run_long_only_backtest()`. The test verifies the exact masked signals,
+resulting holdings, aligned signal coverage, transaction-cost impact, and the
+existing `signal_lag_periods=1` timing. A second test confirms that a current
+rebalance uses the prior masked-signal row, so a same-date universe/signal
+change does not affect the current rebalance.
+
+This stage does not modify source helpers, backtester behavior, metrics,
+loaders, research scripts, generated reports, real-data handling, vendor
+access, credentials, live or paper trading, brokerage integration, order
+execution, strategy parameters, reusable report outputs, or profitability
+claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_liquidity_masked_signal_backtest_smoke.py
+2 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Synthetic Masked-Signal Smoke Test
 
 This test milestone added the first synthetic smoke check after the
