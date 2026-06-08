@@ -12,6 +12,38 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Local CSV Readiness Audit Report Template
+
+This documentation milestone adds the next manual gate after the committed
+synthetic fixture inventory rehearsal.
+
+Assumption: the safest PR-sized next stage is still documentation-only. The
+project already has a study checklist, metadata-only inventory dry-run
+validator, and synthetic fixture rehearsal. The remaining stage named in the
+user-provided local CSV plan is a manually fillable real-data readiness audit
+report format that records evidence, high/medium/low issues, stop conditions,
+and the final gate decision before any user-provided local CSV result is
+interpreted.
+
+`docs/local_csv_readiness_audit_report_template.md` now provides that report
+format. It covers audit identity, redacted input inventory, schema and loader
+validation evidence, provenance and adjustment policy, universe and benchmark
+review, date alignment and timing, sample splits, parameter policy, costs,
+slippage, issue register, gate decision, experiment-log handoff, and final stop
+statements. The template explicitly states that local CSV diagnostics are not
+profitability evidence and that unresolved high or medium issues stop
+interpretation.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, or profitability language.
+
+Validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Local CSV Fixture Inventory Dry-Run Rehearsal
 
 This code-and-report milestone connects the local CSV inventory dry-run

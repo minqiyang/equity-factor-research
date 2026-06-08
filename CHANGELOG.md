@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_readiness_audit_report_template.md` as a
+  documentation-only manual audit report format for future user-provided local
+  CSV studies, recording evidence, high/medium/low issues, stop conditions,
+  and gate decisions before interpretation.
 - Added a committed synthetic-fixture inventory dry-run rehearsal to the local
   CSV fixture workflow, recording redacted inventory review summaries before
   loader output is interpreted and keeping the workflow free of real user
