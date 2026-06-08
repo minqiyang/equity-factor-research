@@ -15,6 +15,8 @@
     "feature": "alpha_009 with window=1",
     "feature_timing": "alpha_009 at date t uses close[t] and earlier closes only; no trade timing is defined in this demo",
     "forward_return_timing": "forward returns are computed after loading as evaluation targets only; they are not feature inputs",
+    "inventory_high_or_medium_issues": false,
+    "inventory_review": "metadata-only dry-run review of declared committed synthetic fixture inputs before loading; raw local paths are not stored in the review result",
     "liquidity_check": "synthetic decision-date eligibility count smoke check only; not a tradeable universe-selection study",
     "liquidity_eligibility_lag": 1,
     "liquidity_masked_signal_check": "synthetic universe-masked alpha_009 signal smoke check only; not ranking, weights, backtest integration, portfolio construction, or tradeability evidence",
@@ -49,6 +51,7 @@
     "no real data fetching",
     "no live trading or brokerage integration",
     "local CSV fixture smoke demo only",
+    "local CSV inventory dry-run only",
     "split-aware wiring check only",
     "liquidity eligibility count smoke check only",
     "liquidity universe mask count smoke check only",
@@ -163,6 +166,46 @@
         "2024-01-03": -0.6216932354008934
       }
     },
+    "inventory_issue_count_by_severity": {
+      "high": 0,
+      "low": 0,
+      "medium": 0
+    },
+    "inventory_summaries": [
+      {
+        "file_hash_declared": false,
+        "hash_plan_declared": false,
+        "input_name": "adjusted_close_prices",
+        "known_manual_edits_declared": true,
+        "mutable": false,
+        "path_declared": true,
+        "schema": "wide_price",
+        "source_declared": true,
+        "version_declared": true
+      },
+      {
+        "file_hash_declared": false,
+        "hash_plan_declared": false,
+        "input_name": "benchmark_prices",
+        "known_manual_edits_declared": true,
+        "mutable": false,
+        "path_declared": true,
+        "schema": "benchmark_price",
+        "source_declared": true,
+        "version_declared": true
+      },
+      {
+        "file_hash_declared": false,
+        "hash_plan_declared": false,
+        "input_name": "ohlcv_prices_volume",
+        "known_manual_edits_declared": true,
+        "mutable": false,
+        "path_declared": true,
+        "schema": "ohlcv_long",
+        "source_declared": true,
+        "version_declared": true
+      }
+    ],
     "liquidity_eligibility_summary": {
       "2024-01-02": {
         "adv_eligible_count": 0.0,
@@ -368,6 +411,7 @@
     "asset_count": 3,
     "benchmark_rows": 4,
     "experiment_log": "reports/experiment_logs/local_csv_fixture_workflow_demo.json",
+    "inventory_input_count": 3,
     "markdown_report": "reports/local_csv_fixture_workflow_demo.md",
     "ohlcv_rows": 4,
     "price_rows": 4,

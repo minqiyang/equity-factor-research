@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a committed synthetic-fixture inventory dry-run rehearsal to the local
+  CSV fixture workflow, recording redacted inventory review summaries before
+  loader output is interpreted and keeping the workflow free of real user
+  files, downloads, credentials, trading behavior, and profitability claims.
 - Added a local CSV inventory dry-run validator that checks declared local
   file metadata before loading user files, keeps raw local paths out of review
   results, and remains free of data fetching, vendor APIs, credentials,
