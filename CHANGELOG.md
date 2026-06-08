@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic masked-signal smoke test that composes liquidity
+  eligibility, liquidity universe construction, and universe-mask signal
+  application on deterministic synthetic panels without running a backtest,
+  generating reports, using real data, or interpreting performance.
 - Added a synthetic/local-panel universe-masked signal adapter that applies an
   already-constructed boolean liquidity universe mask to an already-computed
   factor signal panel with strict alignment, missing-mask rejection, and
