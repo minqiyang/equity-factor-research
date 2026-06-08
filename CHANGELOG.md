@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_fixture_readiness_audit_rehearsal.md` to fill the
+  local CSV readiness audit report format with committed synthetic fixture
+  evidence only, preserving the no-user-data and no-profitability boundary.
 - Added `docs/post_local_csv_readiness_gates_checkpoint.md` to record the
   post-readiness-gates local CSV state, remaining stop conditions, and the
   boundary between prepared audit artifacts and any future user-provided local
