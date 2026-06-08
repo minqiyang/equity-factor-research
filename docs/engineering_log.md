@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-07 - Synthetic Masked-Signal Smoke Test
+
+This test milestone added the first synthetic smoke check after the
+universe-masked signal adapter merged.
+
+Assumption: the safest PR-sized Stage 73 is an integration-style test that
+proves the reviewed liquidity eligibility helpers, liquidity universe
+constructor, and `apply_universe_mask_to_signals()` adapter compose into the
+masked signal panel a future backtest would consume. It is not yet a backtest
+stage, research-script update, generated-report stage, parameter study, or
+real-data workflow.
+
+`tests/test_liquidity_masked_signal_smoke.py` now builds deterministic
+synthetic price, volume, and raw-signal panels. The smoke test computes lagged
+ADV and dollar-volume eligibility masks, constructs a liquidity universe mask,
+applies that mask to raw signals, and checks the exact universe mask, masked
+signals, and audit summary. Ineligible signals become `NaN`, not zero, and an
+existing raw signal `NaN` remains visible in the summary. A second test changes
+a future liquidity observation and confirms earlier masked-signal rows do not
+change.
+
+This stage does not modify source helpers, backtester behavior, metrics,
+loaders, research scripts, generated reports, real-data handling, vendor
+access, credentials, live or paper trading, brokerage integration, order
+execution, target weights, portfolio construction, or profitability claims.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_liquidity_masked_signal_smoke.py
+2 passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-07 - Universe-Masked Signal Adapter
 
 This code milestone implemented the first narrow helper from the liquidity
