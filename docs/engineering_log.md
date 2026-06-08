@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Local CSV Fixture Readiness Audit Rehearsal
+
+This documentation milestone fills the manual local CSV readiness audit report
+format using the already-committed synthetic local CSV fixture workflow.
+
+Assumption: after the post-readiness-gates checkpoint merged, no user-provided
+local CSV bundle, completed user-data checklist, or completed user-data audit
+is available. The next safe repository-internal stage is therefore not a real
+local CSV smoke run. A synthetic-only audit rehearsal can still move the
+project forward by proving that the new audit report format can represent
+known fixture evidence, issue levels, limitations, and gate decisions without
+crossing into user-data interpretation.
+
+`docs/local_csv_fixture_readiness_audit_rehearsal.md` now records the audit
+identity, fixture input inventory, schema and loader evidence, provenance and
+adjustment policy, universe and benchmark review, date-alignment review,
+sample split and execution assumptions, low issue register, gate decision, and
+experiment-log handoff for the committed synthetic fixture workflow.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, or profitability language.
+
+Validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Post Local CSV Readiness Gates Checkpoint
 
 This documentation milestone records the repository state after the local CSV
