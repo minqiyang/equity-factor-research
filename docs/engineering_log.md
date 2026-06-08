@@ -12,6 +12,55 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Local CSV Inventory Dry-Run Validator
+
+This code milestone adds the next local CSV planning gate after the study
+checklist template merged.
+
+Assumption: the safest PR-sized next stage is a metadata-only dry-run
+validator for a declared local CSV inventory. The helper should review the
+declared file labels, schema labels, provenance fields, version/hash evidence,
+known-manual-edit disclosure, remote path markers, and credential-like path
+markers before any user file is loaded. It should not read files, check path
+existence, compute file hashes, write reports, store raw paths in its review
+result, fetch data, or interpret research output.
+
+`src/data/local_csv_inventory.py` now exposes
+`validate_local_csv_inventory()` plus redacted review, summary, and issue
+dataclasses. The result deliberately stores per-input metadata flags rather
+than raw local paths so later reports can cite inventory readiness without
+leaking private filesystem details. High or medium issues keep the future
+local CSV workflow stopped before loading or interpreting data.
+
+`tests/test_local_csv_inventory.py` covers valid inventory metadata, raw-path
+redaction, missing required fields, hash or hash-plan version evidence,
+unknown schemas, remote paths, credential-like path markers, non-CSV path
+warnings, redacted CSV placeholders, duplicate input names, invalid inventory
+shape, and absence of file I/O, remote-data, vendor, broker, order, or live
+trading imports.
+
+This stage does not modify CSV loaders, factor helpers, diagnostics,
+backtester behavior, metrics, research scripts, generated reports, strategy
+logic, real data access, execution assumptions, live or paper trading scope,
+brokerage integration, order execution, or profitability language.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q tests/test_local_csv_inventory.py
+19 passed
+
+python -m pytest -q
+453 passed
+
+python -m compileall src tests research
+passed
+```
+
+Full validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Local CSV Study Checklist Template
 
 This documentation milestone adds the first concrete checklist template after

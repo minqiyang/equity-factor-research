@@ -23,6 +23,80 @@ problems, include:
 
 ---
 
+## 2026-06-08 - Local CSV Inventory Patch Context Mismatch
+
+Original mistake:
+
+- During the local CSV inventory dry-run validator stage, the first combined
+  `apply_patch` attempted to add the new source file, tests, engineering-log
+  entry, and changelog entry in one patch.
+- The patch used a stale `CHANGELOG.md` context that expected
+  `docs/user_provided_local_csv_research_plan.md` to be the first item under
+  `### Added`.
+- After PR #78 merged, `docs/local_csv_study_checklist.md` was the first item.
+
+Consequence:
+
+- `apply_patch` rejected the entire combined patch.
+- No repository files were modified by that failed patch, but the stage needed
+  to be reapplied in smaller chunks against the current main state.
+
+Evidence:
+
+```text
+apply_patch verification failed: Failed to find expected lines in
+D:\Users\MINQI\Documents\New project\CHANGELOG.md:
+### Added
+
+- Added `docs/user_provided_local_csv_research_plan.md` to define a
+  documentation-only plan, scope template, validation gates, stop conditions,
+  and future PR-sized stages before any user-provided local CSV result is
+  interpreted.
+```
+
+Investigation:
+
+- Checked `git status -sb --untracked-files=all` and confirmed the failed
+  combined patch left no modified or untracked files.
+- Read the top of `CHANGELOG.md` and confirmed PR #78 had inserted the local
+  CSV study checklist entry above the user-provided local CSV research plan
+  entry.
+- Confirmed this was a patch-authoring/context issue only, not a source-code,
+  data, CSV-loader, test, trading, credential, or profitability issue.
+
+Correction attempts:
+
+- Did not force the stale patch context.
+- Reapplied the source module, tests, API export, engineering-log entry,
+  changelog entry, and this troubleshooting note as smaller patches using the
+  current file context.
+
+Final fix:
+
+- Added the local CSV inventory dry-run validator and focused tests in scoped
+  patches.
+- Updated the durable logs using the current post-PR #78 changelog and
+  engineering-log context.
+
+Verification:
+
+- Focused and full validation are rerun before this stage is committed and
+  opened as a PR.
+
+Remaining caveats:
+
+- This was local patch tooling friction only. It did not change project
+  behavior until the corrected patches were applied.
+
+Prevention:
+
+- After syncing a newly merged PR, inspect the exact top-of-file changelog and
+  log context before applying broad multi-file documentation patches.
+- Prefer smaller patches when recent merged stages have touched the same
+  durable logs.
+
+---
+
 ## 2026-06-07 - PowerShell Rejected Bash Here-Doc Syntax
 
 Original mistake:
