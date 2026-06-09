@@ -28,7 +28,7 @@ Current local status before any LEAN code:
 | `research/local_csv_fixture_workflow_demo.py` | Demonstrates the local CSV path on committed synthetic fixtures, computes `alpha_009` and `alpha_012`, and runs caveated diagnostics. | Use as a workflow-shape reference only: load or subscribe data, compute a feature, align evaluation targets, log diagnostics, and preserve caveats. It is not a real-data or LEAN parity result. |
 | `features.diagnostics.factor_information_coefficient` and `factor_rank_information_coefficient` | Compute per-date cross-sectional IC / Rank IC from already-aligned factor and forward-return panels without filling missing values. | Export or log factor and realized forward-return panels from LEAN after a smoke run, then compute comparable diagnostics offline or in a research notebook. Avoid using future returns as live signal inputs. |
 | `features.diagnostics.factor_quantile_spread` | Computes top-minus-bottom quantile return diagnostics with explicit coverage counts from aligned panels. | Record selected quantile membership and subsequent returns for LEAN analysis. Treat quantile spread as diagnostic evidence only, not as order logic or a profitability claim. |
-| `backtest.portfolio.run_long_only_backtest` | Selects top-ranked assets, equal-weights them, applies fixed transaction cost to turnover, and records holdings/metrics. | Scheduled rebalance handler ranks current universe, calls `SetHoldings` / portfolio targets for selected symbols, liquidates removed names, and relies on LEAN fill, fee, and slippage models. |
+| `backtest.portfolio.run_long_only_backtest` | Selects top-ranked assets, equal-weights them, applies fixed transaction cost and fixed-bps slippage assumptions to target-weight turnover, and records holdings, metrics, and separate cost/slippage impact series. | Scheduled rebalance handler ranks current universe, calls `SetHoldings` / portfolio targets for selected symbols, liquidates removed names, and relies on LEAN fill, fee, and slippage models. |
 | Local price `DataFrame` | Aligned wide table of adjusted prices. | LEAN `Symbol` subscriptions and daily bars from the data feed. Use adjusted data normalization for comparability with local adjusted-price calculations. |
 | Local signal `DataFrame` | Precomputed cross-sectional scores by date. | Signals computed inside the algorithm from per-symbol rolling windows after daily bars are available. |
 | Local benchmark price `Series` | Synthetic or external benchmark equity curve. | `SetBenchmark("SPY")` or a subscribed benchmark ETF / index proxy. |
@@ -154,7 +154,8 @@ First version should make fees and slippage explicit:
   - Use a simple constant slippage assumption first, or explicitly document if using zero slippage for a diagnostic run.
   - Do not present zero-slippage results as realistic.
 - Local comparison:
-  - Local engine currently uses `transaction_cost_bps` applied to target-weight turnover.
+  - Local engine currently uses `transaction_cost_bps` and `slippage_bps` applied to target-weight turnover.
+  - Local output records transaction cost impact, slippage impact, and combined total trading impact separately.
   - LEAN costs are order-based, so cost totals may differ because order size, price, fills, and cash constraints are modeled differently.
 
 Each LEAN run should record:
@@ -215,7 +216,7 @@ The first LEAN version should call `SetBenchmark` with the selected benchmark an
 | Execution | Simplified target-weight change; holdings affect next row. | Orders, fills, cash, buying power, fees, slippage, and brokerage models. |
 | Turnover | Target-weight turnover. | Must be calculated from actual orders/fills or portfolio holdings if needed. |
 | Fees | Basis points applied to turnover. | Fee model applied to orders/fills. |
-| Slippage | Currently not separate from transaction cost unless added later. | Slippage model per security. |
+| Slippage | Separate fixed-bps `slippage_bps` impact applied to target-weight turnover; zero slippage is labeled diagnostic. | Slippage model per security. |
 | Metrics | Local deterministic metric helpers. | LEAN statistics plus any custom metrics logged/exported. |
 
 ### Local CSV Validation Mapping
@@ -303,7 +304,7 @@ The local engine assumes target weights are achieved mechanically. LEAN has fill
 
 ### Slippage
 
-Local cost assumptions may be fixed basis points. LEAN slippage models can be zero, constant, volume-share, or custom. Differences can materially change results.
+Local cost and slippage assumptions may be fixed basis points applied to target-weight turnover. LEAN slippage models can be zero, constant, volume-share, or custom and are applied through engine order/fill semantics. Differences can materially change results.
 
 ### Fees
 

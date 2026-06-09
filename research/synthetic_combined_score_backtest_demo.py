@@ -63,6 +63,7 @@ class SyntheticCombinedScoreBacktestConfig:
     rebalance_frequency: str = "ME"
     top_n: int = 4
     transaction_cost_bps: float = 10.0
+    slippage_bps: float = 0.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
 
@@ -165,6 +166,7 @@ def run_synthetic_combined_score_backtest_demo(
         rebalance_frequency=config.rebalance_frequency,
         top_n=config.top_n,
         transaction_cost_bps=config.transaction_cost_bps,
+        slippage_bps=config.slippage_bps,
         benchmark_prices=benchmark_prices,
         signal_lag_periods=config.signal_lag_periods,
         periods_per_year=config.periods_per_year,
@@ -205,7 +207,8 @@ def write_demo_experiment_log(
         summary=(
             "Deterministic synthetic smoke test that connects existing factor "
             "preprocessing and combination helpers to the existing long-only "
-            "backtester with explicit signal lag and transaction costs."
+            "backtester with explicit signal lag, transaction costs, and "
+            "fixed-bps slippage assumptions."
         ),
         config=config,
         assumptions={
@@ -224,9 +227,18 @@ def write_demo_experiment_log(
             "signal_lag_periods": config.signal_lag_periods,
             "benchmark": "synthetic equal-weight universe benchmark",
             "transaction_cost_model": (
+                f"{result.backtest_result.assumptions['cost_model']}; "
                 f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
             ),
-            "slippage_model": "not separately modeled; diagnostic synthetic smoke test only",
+            "transaction_cost_bps": config.transaction_cost_bps,
+            "slippage_model": (
+                f"{result.backtest_result.assumptions['slippage_model']}; "
+                f"{config.slippage_bps:.2f} bps per unit of target-weight turnover"
+            ),
+            "slippage_bps": config.slippage_bps,
+            "zero_cost_or_slippage_is_diagnostic": result.backtest_result.assumptions[
+                "zero_cost_or_slippage_is_diagnostic"
+            ],
             "turnover_model": result.backtest_result.assumptions["turnover_model"],
             "long_only": result.backtest_result.assumptions["long_only"],
             "live_trading": False,
@@ -302,6 +314,8 @@ Exercise the integration path from existing factor research helpers into the exi
 | Rebalance frequency | `{config.rebalance_frequency}` |
 | Selected assets per rebalance | `{config.top_n}` |
 | Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of target-weight turnover |
+| Slippage | `{config.slippage_bps:.2f}` bps per unit of target-weight turnover |
+| Zero cost or slippage diagnostic | `{result.backtest_result.assumptions["zero_cost_or_slippage_is_diagnostic"]}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
 
@@ -325,6 +339,8 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Average turnover | `{_format_percent(metrics["average_turnover"])}` |
 | Total turnover | `{_format_number(metrics["total_turnover"])}` |
 | Total transaction cost impact | `{_format_percent(metrics["total_transaction_cost_impact"])}` |
+| Total slippage cost impact | `{_format_percent(metrics["total_slippage_cost_impact"])}` |
+| Total trading cost impact | `{_format_percent(metrics["total_trading_cost_impact"])}` |
 | Benchmark total return | `{_format_percent(metrics["benchmark_total_return"])}` |
 | Excess total return vs synthetic benchmark | `{_format_percent(metrics["excess_total_return"])}` |
 
@@ -335,6 +351,7 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 - The backtest is a smoke test of workflow wiring only.
 - There is no real data source, universe construction, liquidity model, market-impact model, or validation split.
 - The existing backtester uses simplified target-weight turnover.
+- The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results should not be used as investment evidence or a strategy-quality claim.
 """
 

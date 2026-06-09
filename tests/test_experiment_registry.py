@@ -36,8 +36,14 @@ def _write_log(
             "date_range": {"start": "2024-01-02", "end": "2024-02-01"},
             "universe": "3 synthetic assets",
             "benchmark": "synthetic benchmark",
-            "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
-            "slippage_model": "not separately modeled; diagnostic synthetic run only",
+            "transaction_cost_model": (
+                "fixed_bps_on_target_weight_turnover; "
+                "10.00 bps per unit of target-weight turnover"
+            ),
+            "slippage_model": (
+                "fixed_bps_on_target_weight_turnover; "
+                "0.00 bps per unit of target-weight turnover"
+            ),
         },
         outputs={
             "markdown_report": f"reports/{experiment_id}.md",
@@ -71,7 +77,7 @@ def test_build_experiment_registry_is_structured_and_sorted(tmp_path: Path) -> N
     assert bool(registry.loc[1, "metrics_available"]) is True
     assert registry.loc[1, "total_return"] == -0.01
     assert registry.loc[1, "data_scope"] == "synthetic only"
-    assert registry.loc[1, "slippage_model"].startswith("not separately modeled")
+    assert registry.loc[1, "slippage_model"].startswith("fixed_bps_on_target_weight_turnover")
 
 
 def test_write_experiment_registry_report_contains_caveats_and_metrics(tmp_path: Path) -> None:

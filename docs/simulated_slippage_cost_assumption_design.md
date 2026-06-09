@@ -2,8 +2,10 @@
 
 Date: 2026-06-09
 
-This is a documentation-only design for future simulated transaction-cost and
-slippage handling in the local Python backtester.
+This began as a documentation-only design for future simulated transaction-cost
+and slippage handling in the local Python backtester. The first fixed-bps
+implementation boundary described below has since been implemented; this
+document remains the design record and current-semantics reference.
 
 It does not modify source code, tests, research scripts, generated reports,
 CSV loaders, factor formulas, diagnostics, metrics, portfolio construction,
@@ -30,7 +32,7 @@ visible, testable, and hard to over-interpret.
 
 | Area | Current evidence | Current status |
 | --- | --- | --- |
-| Backtester cost path | `src/backtest/portfolio.py` | `transaction_cost_bps` is applied to target-weight turnover and deducted from portfolio return. |
+| Backtester cost path | `src/backtest/portfolio.py` | `transaction_cost_bps` and `slippage_bps` are applied separately to target-weight turnover, deducted from portfolio return, and reported as separate plus total trading impact series. |
 | Turnover semantics | `tests/test_backtest_portfolio.py` | Tests cover target-weight turnover and cost deduction. |
 | Project requirement | `PROJECT_SPEC.md` | Costs, slippage, turnover, and execution assumptions must be explicit. |
 | Readiness gate | `docs/real_data_readiness_audit.md` | Backtest-like runs must state transaction cost model, slippage model, turnover model, rebalance frequency, execution timing, and benchmark choice. |
@@ -56,8 +58,15 @@ sum(abs(target_weight[t] - previous_target_weight[t]))
 turnover[t] * transaction_cost_bps / 10000
 ```
 
-- The cost impact is deducted from the simulated return on the rebalance date.
-- Slippage is not separately represented.
+- Slippage impact is:
+
+```text
+turnover[t] * slippage_bps / 10000
+```
+
+- The transaction cost and slippage impacts are deducted from the simulated
+  return on the rebalance date.
+- Zero cost or zero slippage settings are labeled diagnostic.
 - Market impact is not represented.
 
 This is a deterministic research accounting convention, not an order-fill

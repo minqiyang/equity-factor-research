@@ -12,9 +12,13 @@
     "feature_timing": "12-1 momentum uses shifted historical price anchors; signal lag keeps portfolio formation after signal availability",
     "live_trading": false,
     "rebalance_frequency": "ME",
-    "slippage_model": "not separately modeled; diagnostic synthetic run only",
-    "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
-    "universe": "20 synthetic assets"
+    "slippage_bps": 0.0,
+    "slippage_model": "fixed_bps_on_target_weight_turnover; 0.00 bps per unit of target-weight turnover",
+    "transaction_cost_bps": 10.0,
+    "transaction_cost_model": "fixed_bps_on_target_weight_turnover; 10.00 bps per unit of target-weight turnover",
+    "turnover_model": "target_weight_turnover",
+    "universe": "20 synthetic assets",
+    "zero_cost_or_slippage_is_diagnostic": true
   },
   "caveats": [
     "synthetic data only",
@@ -33,6 +37,7 @@
     "rebalance_frequency": "ME",
     "seed": 20260521,
     "skip_periods": 21,
+    "slippage_bps": 0.0,
     "start_date": "2021-01-01",
     "starting_price": 100.0,
     "top_n": 5,
@@ -50,6 +55,8 @@
     "max_drawdown": -0.2255157992812763,
     "sharpe_ratio": -0.21606908416519152,
     "total_return": -0.07948963335829784,
+    "total_slippage_cost_impact": 0.0,
+    "total_trading_cost_impact": 0.0126,
     "total_transaction_cost_impact": 0.0126,
     "total_turnover": 12.600000000000001
   },
@@ -61,6 +68,6 @@
     "markdown_report": "reports/synthetic_momentum_demo.md"
   },
   "schema_version": 1,
-  "summary": "Deterministic synthetic 12-1 momentum workflow that generates local synthetic prices, computes a lagged momentum signal, and runs the existing long-only backtester as a smoke test.",
+  "summary": "Deterministic synthetic 12-1 momentum workflow that generates local synthetic prices, computes a lagged momentum signal, and runs the existing long-only backtester as a smoke test with explicit fixed-bps cost and slippage assumptions.",
   "title": "Synthetic Momentum Demo"
 }

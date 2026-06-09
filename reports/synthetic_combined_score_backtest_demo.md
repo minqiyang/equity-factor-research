@@ -30,6 +30,8 @@ Exercise the integration path from existing factor research helpers into the exi
 | Rebalance frequency | `ME` |
 | Selected assets per rebalance | `4` |
 | Transaction cost | `10.00` bps per unit of target-weight turnover |
+| Slippage | `0.00` bps per unit of target-weight turnover |
+| Zero cost or slippage diagnostic | `True` |
 | Signal lag periods | `1` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
 
@@ -57,6 +59,8 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Average turnover | `5.31%` |
 | Total turnover | `8.5000` |
 | Total transaction cost impact | `0.85%` |
+| Total slippage cost impact | `0.00%` |
+| Total trading cost impact | `0.85%` |
 | Benchmark total return | `15.96%` |
 | Excess total return vs synthetic benchmark | `-7.35%` |
 
@@ -67,4 +71,5 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 - The backtest is a smoke test of workflow wiring only.
 - There is no real data source, universe construction, liquidity model, market-impact model, or validation split.
 - The existing backtester uses simplified target-weight turnover.
+- The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results should not be used as investment evidence or a strategy-quality claim.

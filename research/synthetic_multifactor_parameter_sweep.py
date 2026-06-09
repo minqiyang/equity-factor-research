@@ -74,6 +74,7 @@ class SyntheticParameterSweepConfig:
     winsor_upper_quantile: float = 0.95
     rebalance_frequency: str = "ME"
     transaction_cost_bps: float = 10.0
+    slippage_bps: float = 0.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
 
@@ -135,6 +136,12 @@ def run_synthetic_multifactor_parameter_sweep(
                     "total_transaction_cost_impact": metrics[
                         "total_transaction_cost_impact"
                     ],
+                    "total_slippage_cost_impact": metrics[
+                        "total_slippage_cost_impact"
+                    ],
+                    "total_trading_cost_impact": metrics[
+                        "total_trading_cost_impact"
+                    ],
                     "benchmark_total_return": metrics["benchmark_total_return"],
                     "excess_total_return": metrics["excess_total_return"],
                 }
@@ -173,7 +180,7 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 
 1. Keep the same synthetic price and factor generators across every case.
 2. Vary only explicit factor weights and selected-asset counts.
-3. Run the existing long-only backtester with signal lag and transaction costs.
+3. Run the existing long-only backtester with signal lag, transaction costs, and fixed-bps slippage assumptions.
 4. Report every case, including weak or negative diagnostics.
 
 ## Fixed Assumptions
@@ -188,7 +195,8 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 | Factor names | `{", ".join(FACTOR_NAMES)}` |
 | Rebalance frequency | `{config.rebalance_frequency}` |
 | Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of target-weight turnover |
-| Slippage model | `not separately modeled; diagnostic synthetic sweep only` |
+| Slippage | `{config.slippage_bps:.2f}` bps per unit of target-weight turnover |
+| Zero cost or slippage diagnostic | `{config.transaction_cost_bps == 0.0 or config.slippage_bps == 0.0}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
 
@@ -212,7 +220,7 @@ These metrics are deterministic diagnostics from synthetic data. They are not ev
 - This is a parameter sensitivity smoke test, not model selection.
 - The report does not identify a best parameter set or recommend a strategy.
 - There is no real data source, universe construction, liquidity model, market-impact model, or validation split.
-- Slippage is not separately modeled beyond the simplified transaction-cost assumption.
+- The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results should not be used as investment evidence or a strategy-quality claim.
 """
     result.report_path.write_text(content, encoding="utf-8")
@@ -247,6 +255,7 @@ def write_sweep_experiment_log(
             "winsor_upper_quantile": config.winsor_upper_quantile,
             "rebalance_frequency": config.rebalance_frequency,
             "transaction_cost_bps": config.transaction_cost_bps,
+            "slippage_bps": config.slippage_bps,
             "signal_lag_periods": config.signal_lag_periods,
             "periods_per_year": config.periods_per_year,
         },
@@ -264,9 +273,18 @@ def write_sweep_experiment_log(
             "rebalance_frequency": config.rebalance_frequency,
             "benchmark": "synthetic equal-weight universe benchmark",
             "transaction_cost_model": (
+                f"fixed_bps_on_target_weight_turnover; "
                 f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
             ),
-            "slippage_model": "not separately modeled; diagnostic synthetic sweep only",
+            "transaction_cost_bps": config.transaction_cost_bps,
+            "slippage_model": (
+                f"fixed_bps_on_target_weight_turnover; "
+                f"{config.slippage_bps:.2f} bps per unit of target-weight turnover"
+            ),
+            "slippage_bps": config.slippage_bps,
+            "zero_cost_or_slippage_is_diagnostic": (
+                config.transaction_cost_bps == 0.0 or config.slippage_bps == 0.0
+            ),
             "turnover_model": "target_weight_turnover",
             "long_only": True,
             "live_trading": False,
@@ -317,6 +335,7 @@ def _combined_config(
         rebalance_frequency=sweep_config.rebalance_frequency,
         top_n=top_n,
         transaction_cost_bps=sweep_config.transaction_cost_bps,
+        slippage_bps=sweep_config.slippage_bps,
         signal_lag_periods=sweep_config.signal_lag_periods,
         periods_per_year=sweep_config.periods_per_year,
     )
@@ -371,6 +390,8 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "max_drawdown",
         "average_turnover",
         "total_transaction_cost_impact",
+        "total_slippage_cost_impact",
+        "total_trading_cost_impact",
         "benchmark_total_return",
         "excess_total_return",
     ]
@@ -384,7 +405,9 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "Sharpe ratio",
         "Max drawdown",
         "Average turnover",
-        "Cost impact",
+        "Transaction cost impact",
+        "Slippage impact",
+        "Total trading impact",
         "Benchmark total return",
         "Excess total return",
     ]
@@ -408,6 +431,8 @@ def _format_results_table(results: pd.DataFrame) -> str:
                     _format_percent(row["max_drawdown"]),
                     _format_percent(row["average_turnover"]),
                     _format_percent(row["total_transaction_cost_impact"]),
+                    _format_percent(row["total_slippage_cost_impact"]),
+                    _format_percent(row["total_trading_cost_impact"]),
                     _format_percent(row["benchmark_total_return"]),
                     _format_percent(row["excess_total_return"]),
                 ]

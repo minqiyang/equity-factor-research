@@ -23,6 +23,69 @@ problems, include:
 
 ---
 
+## 2026-06-09 - PowerShell `rg` Glob Pattern Failed During Roadmap Search
+
+Original mistake:
+
+- During the synthetic backtest slippage report/log refresh stage, the roadmap
+  search command used a Unix-style file glob directly in PowerShell:
+  `rg -n -i "..." docs/*.md`.
+- That form assumes shell glob expansion behavior that PowerShell did not
+  provide to `rg` in this context.
+
+Consequence:
+
+- The first roadmap search failed before checking the documentation set.
+- No repository files were modified by the failed command, but the stage
+  selection evidence needed to be gathered again with a compatible command.
+
+Evidence:
+
+```text
+rg: docs/*.md: IO error for operation on docs/*.md: The filename, directory
+name, or volume label syntax is incorrect. (os error 123)
+```
+
+Investigation:
+
+- Confirmed the failure came from the `docs/*.md` path expression rather than
+  from repository content, tests, data access, or a missing documentation file.
+- The earlier source-of-truth reads and baseline checks had already succeeded.
+
+Correction attempts:
+
+- Did not reuse the failing glob form.
+- Reran the search against the `docs` directory path directly:
+  `rg -n -i "recommended next|next safe|next stage|follow-up|future stage|remaining gap|slippage|cost" docs`.
+
+Final fix:
+
+- The corrected search completed and identified the current slippage/cost
+  roadmap evidence, including the already-completed implementation stage and
+  the follow-up need to refresh synthetic generated outputs.
+
+Verification:
+
+- The corrected search returned matches from `docs/simulated_slippage_cost_assumption_design.md`,
+  `docs/post_local_csv_fixture_audit_rehearsal_checkpoint.md`,
+  `docs/quantconnect_lean_plan.md`, and other roadmap/log files.
+- The stage continued using the corrected search output and current repository
+  state.
+
+Remaining caveats:
+
+- PowerShell glob behavior can differ from Unix shell behavior, especially
+  when a command receives an unexpanded path pattern.
+
+Prevention:
+
+- Prefer directory arguments plus `rg`'s own recursive search on Windows, or
+  use `rg --glob "*.md" ... docs` when a file pattern is needed.
+- Treat search-command failures as failed evidence gathering and rerun them
+  before selecting or committing a stage.
+
+---
+
 ## 2026-06-08 - Local CSV Inventory Patch Context Mismatch
 
 Original mistake:

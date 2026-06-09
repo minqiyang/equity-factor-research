@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Synthetic Backtest Slippage Report/Log Refresh
+
+This generated-output milestone refreshes the synthetic backtest demos after
+the fixed-bps slippage backtester extension merged.
+
+Assumption: after `run_long_only_backtest()` began exposing separate
+transaction cost, slippage, and total trading impact fields, generated
+synthetic backtest reports and JSON logs should no longer say slippage is "not
+separately modeled." The safest next stage is to update synthetic outputs only,
+preserving the existing default `slippage_bps=0.0` as an explicit diagnostic
+simplification rather than changing synthetic return paths.
+
+Updated synthetic backtest generators now carry `slippage_bps` in their config,
+pass it into the local backtester, record the fixed-bps cost and slippage model
+names, record `zero_cost_or_slippage_is_diagnostic`, and include total
+slippage cost impact and total trading cost impact in reports/logs. The
+experiment registry was regenerated from the updated JSON logs so the registry
+shows current fixed-bps cost/slippage assumptions.
+
+`docs/simulated_slippage_cost_assumption_design.md` and
+`docs/quantconnect_lean_plan.md` were narrowly refreshed so current roadmap and
+planning documents no longer say local slippage is unimplemented. The LEAN plan
+still distinguishes local target-weight turnover friction from LEAN
+order/fill-level fee and slippage models.
+
+This stage does not change backtester logic, factor formulas, CSV loaders,
+local user-data handling, generated private data, real-data access, live or
+paper trading scope, brokerage integration, order execution, LEAN runtime
+behavior, volume-aware slippage, market-impact modeling, or profitability
+language.
+
+Validation:
+
+- `python -m pytest -q tests/test_synthetic_momentum_demo.py tests/test_synthetic_combined_score_backtest_demo.py tests/test_synthetic_multifactor_parameter_sweep.py tests/test_experiment_registry.py` - 27 passed.
+- `python -m pytest -q` - 461 passed.
+- `python -m compileall src tests research` - passed.
+- `git diff --check` - passed with only Windows LF/CRLF notices.
+
+---
+
 ## 2026-06-09 - Fixed-Bps Slippage Backtester Extension
 
 This code milestone implements the narrow fixed-basis-point slippage extension
