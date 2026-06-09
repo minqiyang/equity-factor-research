@@ -13,6 +13,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from backtest.slippage import (
+    VolumeAwareSlippageDiagnostics,
+    calculate_volume_aware_slippage_diagnostics,
+)
 from data.csv_loader import (
     CSVValidationSummary,
     load_benchmark_price_csv,
@@ -83,6 +87,10 @@ class LocalCSVFixtureWorkflowConfig:
     liquidity_price_column: str = "adjusted_close"
     liquidity_universe_min_assets_per_date: int = 1
     masked_signal_min_valid_signals_per_date: int = 1
+    slippage_smoke_window: int = 1
+    slippage_smoke_volume_lag: int = 1
+    slippage_smoke_portfolio_notional: float = 100_000.0
+    slippage_smoke_max_participation: float = 0.1
 
 
 @dataclass(frozen=True)
@@ -103,6 +111,9 @@ class LocalCSVFixtureWorkflowResult:
     liquidity_eligibility_summary: pd.DataFrame
     liquidity_universe_result: LiquidityUniverseResult
     masked_alpha_009_signals: UniverseMaskedSignalsResult
+    volume_aware_slippage_target_weights: pd.DataFrame
+    volume_aware_slippage_diagnostics: VolumeAwareSlippageDiagnostics
+    volume_aware_slippage_smoke_summary: pd.DataFrame
     alpha_009_factor: pd.DataFrame
     alpha_012_factor: pd.DataFrame
     forward_returns: pd.DataFrame
@@ -203,6 +214,27 @@ def run_local_csv_fixture_workflow_demo(
         liquidity_universe_result.universe_mask,
         name="synthetic_fixture_masked_alpha_009_signals",
         min_valid_signals_per_date=config.masked_signal_min_valid_signals_per_date,
+    )
+    (
+        volume_aware_slippage_target_weights,
+        volume_aware_slippage_price_panel,
+        volume_aware_slippage_volume_panel,
+    ) = _build_volume_aware_slippage_smoke_inputs(
+        price_panel=liquidity_price_panel,
+        volume_panel=liquidity_volume_panel,
+    )
+    volume_aware_slippage_diagnostics = calculate_volume_aware_slippage_diagnostics(
+        volume_aware_slippage_target_weights,
+        volume_aware_slippage_price_panel,
+        volume_aware_slippage_volume_panel,
+        window=config.slippage_smoke_window,
+        portfolio_notional=config.slippage_smoke_portfolio_notional,
+        volume_lag=config.slippage_smoke_volume_lag,
+        max_participation=config.slippage_smoke_max_participation,
+        name="synthetic_fixture_volume_aware_slippage_smoke",
+    )
+    volume_aware_slippage_smoke_summary = summarize_volume_aware_slippage_smoke(
+        volume_aware_slippage_diagnostics,
     )
     alpha_012_factor = alpha_012(liquidity_price_panel, liquidity_volume_panel)
     forward_returns = _future_returns(prices, periods=config.forward_return_horizon_rows)
@@ -337,6 +369,9 @@ def run_local_csv_fixture_workflow_demo(
         liquidity_eligibility_summary=liquidity_eligibility_summary,
         liquidity_universe_result=liquidity_universe_result,
         masked_alpha_009_signals=masked_alpha_009_signals,
+        volume_aware_slippage_target_weights=volume_aware_slippage_target_weights,
+        volume_aware_slippage_diagnostics=volume_aware_slippage_diagnostics,
+        volume_aware_slippage_smoke_summary=volume_aware_slippage_smoke_summary,
         alpha_009_factor=alpha_factor,
         alpha_012_factor=alpha_012_factor,
         forward_returns=forward_returns,
@@ -433,6 +468,37 @@ def summarize_liquidity_eligibility(
         index=volume_panel.index,
     )
     return summary.astype(int)
+
+
+def summarize_volume_aware_slippage_smoke(
+    diagnostics: VolumeAwareSlippageDiagnostics,
+) -> pd.DataFrame:
+    """Report participation/count fields without applying slippage to returns."""
+
+    summary = diagnostics.summary[
+        [
+            "trade_count",
+            "total_trade_weight",
+            "total_trade_notional",
+            "max_participation",
+            "missing_capacity_count",
+            "zero_capacity_count",
+            "zero_volume_window_count",
+        ]
+    ].copy()
+    summary["rejected_capacity_count"] = (
+        summary["missing_capacity_count"]
+        + summary["zero_capacity_count"]
+        + summary["zero_volume_window_count"]
+    )
+    summary["participation_cap_breach_count"] = (
+        diagnostics.participation.gt(
+            float(diagnostics.parameters["max_participation"]),
+        )
+        .sum(axis=1)
+        .astype(int)
+    )
+    return summary
 
 
 def summarize_split_diagnostics(
@@ -533,6 +599,11 @@ def write_workflow_experiment_log(
                 "not ranking, weights, backtest integration, portfolio "
                 "construction, or tradeability evidence"
             ),
+            "volume_aware_slippage_smoke": (
+                "synthetic two-date target-weight smoke diagnostic only; "
+                "reports participation and rejected/cap counts without "
+                "applying slippage to returns"
+            ),
             "liquidity_window": config.liquidity_window,
             "liquidity_eligibility_lag": config.liquidity_eligibility_lag,
             "liquidity_price_column": config.liquidity_price_column,
@@ -548,6 +619,19 @@ def write_workflow_experiment_log(
                 "rolling liquidity observations through date t are shifted by "
                 "one row before appearing on a decision date; missing and "
                 "zero-volume counts are reported separately and are not filled"
+            ),
+            "slippage_smoke_window": config.slippage_smoke_window,
+            "slippage_smoke_volume_lag": config.slippage_smoke_volume_lag,
+            "slippage_smoke_portfolio_notional": (
+                config.slippage_smoke_portfolio_notional
+            ),
+            "slippage_smoke_max_participation": (
+                config.slippage_smoke_max_participation
+            ),
+            "slippage_smoke_timing": (
+                "the fixed diagnostic target weights trade only after a "
+                "warm-up row; rolling dollar volume is shifted by "
+                "slippage_smoke_volume_lag before participation is computed"
             ),
             "feature": f"alpha_009 with window={config.alpha_window}",
             "feature_timing": (
@@ -580,10 +664,15 @@ def write_workflow_experiment_log(
                 "strict loader defaults; no fill, forward-fill, backward-fill, "
                 "or zero defaults"
             ),
-            "portfolio_construction": "not included",
+            "portfolio_construction": (
+                "not included as a strategy; fixed diagnostic target weights "
+                "exist only to smoke-test the slippage helper"
+            ),
             "backtest_integration": "not included",
-            "transaction_cost_model": "not applicable; no portfolio or trades",
-            "slippage_model": "not applicable; no portfolio or trades",
+            "transaction_cost_model": "not applied; no backtest or net returns",
+            "slippage_model": (
+                "volume-aware diagnostic helper only; not applied to returns"
+            ),
             "live_trading": False,
             "brokerage_integration": False,
         },
@@ -650,6 +739,30 @@ def write_workflow_experiment_log(
                 date.date().isoformat()
                 for date in result.masked_alpha_009_signals.low_coverage_dates
             ],
+            "volume_aware_slippage_smoke_summary": _date_indexed_frame_to_dict(
+                result.volume_aware_slippage_smoke_summary,
+            ),
+            "volume_aware_slippage_trade_counts_by_date": _series_to_date_dict(
+                result.volume_aware_slippage_smoke_summary["trade_count"],
+            ),
+            "volume_aware_slippage_max_participation_by_date": _series_to_date_dict(
+                result.volume_aware_slippage_smoke_summary["max_participation"],
+            ),
+            "volume_aware_slippage_rejected_capacity_counts_by_date": (
+                _series_to_date_dict(
+                    result.volume_aware_slippage_smoke_summary[
+                        "rejected_capacity_count"
+                    ],
+                )
+            ),
+            "volume_aware_slippage_cap_breach_counts_by_date": _series_to_date_dict(
+                result.volume_aware_slippage_smoke_summary[
+                    "participation_cap_breach_count"
+                ],
+            ),
+            "volume_aware_slippage_caveats": list(
+                result.volume_aware_slippage_diagnostics.caveats,
+            ),
             "split_summary": result.split_summary.to_dict(orient="index"),
             "information_coefficient_by_date": _series_to_date_dict(
                 result.information_coefficient,
@@ -716,6 +829,8 @@ def write_workflow_experiment_log(
             "liquidity eligibility count smoke check only",
             "liquidity universe mask count smoke check only",
             "liquidity universe-masked signal smoke check only",
+            "volume-aware slippage smoke diagnostic only",
+            "volume-aware slippage not applied to returns",
             "not backtest universe integration",
             "not tradeability evidence",
             "not strategy validation",
@@ -742,7 +857,7 @@ def write_report(
 
     content = f"""# Local CSV Fixture Workflow Demo
 
-This report uses committed synthetic local CSV fixtures only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not run a backtest, construct a portfolio, fetch real data, connect to a broker, place orders, or support live trading.
+This report uses committed synthetic local CSV fixtures only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not run a backtest, construct a strategy portfolio, fetch real data, connect to a broker, place orders, or support live trading.
 
 ## Purpose
 
@@ -760,7 +875,8 @@ Exercise the local CSV research path with a small committed fixture:
 10. Compute next-row forward returns as evaluation targets only.
 11. Apply chronological train/validation/test split metadata.
 12. Run IC, Rank IC, and quantile spread diagnostics.
-13. Write a caveated report and JSON experiment log.
+13. Run a synthetic volume-aware slippage participation/count smoke diagnostic.
+14. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -781,6 +897,8 @@ Exercise the local CSV research path with a small committed fixture:
 | Test end | `{result.split.test_end.date()}` |
 | Missing price values | `{result.price_summary.missing_value_count}` |
 | Missing benchmark values | `{result.benchmark_summary.missing_value_count}` |
+| Slippage smoke notional | `{_format_float(config.slippage_smoke_portfolio_notional)}` |
+| Slippage smoke max participation | `{_format_float(config.slippage_smoke_max_participation)}` |
 
 ## Inventory Dry-Run Rehearsal
 
@@ -802,7 +920,7 @@ The workflow preserves the loader output date index and asset columns, verifies 
 
 The train/validation/test metadata is a chronological fixture split by factor and evaluation-target row date only. The one-row forward returns are diagnostic labels, not feature inputs, and are not used for parameter selection. This tiny fixture split is not model selection, parameter tuning, strategy validation, or real-market evidence.
 
-No missing values were filled. No dates or assets were reindexed. No portfolio construction, execution timing, transaction cost model, slippage model, or backtest is included.
+No missing values were filled. No dates or assets were reindexed. No strategy portfolio construction, execution timing, transaction cost model, or backtest is included.
 
 ## Liquidity Eligibility Smoke Check
 
@@ -823,6 +941,14 @@ The synthetic universe mask below is constructed from the intersection of the AD
 The synthetic signal summary below applies the liquidity universe mask to the already-computed `alpha_009` factor panel. `True` mask cells preserve the original signal, `False` mask cells become missing values, and existing signal missing values remain missing. This is a signal-panel wiring check only; it does not rank assets, create weights, run a backtest, create trades, compare a benchmark, or validate performance.
 
 {_format_markdown_table(result.masked_alpha_009_signals.summary)}
+
+## Volume-Aware Slippage Smoke Diagnostic
+
+This smoke diagnostic calls `calculate_volume_aware_slippage_diagnostics()` on a tiny synthetic target-weight panel built from complete OHLCV fixture rows only. The target weights are fixed constants for helper wiring, not factor-ranked weights, model-selected weights, strategy portfolio construction, orders, fills, or trade recommendations.
+
+The diagnostic uses `window={config.slippage_smoke_window}`, `volume_lag={config.slippage_smoke_volume_lag}`, `portfolio_notional={_format_float(config.slippage_smoke_portfolio_notional)}`, and `max_participation={_format_float(config.slippage_smoke_max_participation)}`. Only participation and rejection/cap counts are reported here. Candidate slippage impact fields are not applied to returns, and this workflow still does not run a backtest.
+
+{_format_markdown_table(result.volume_aware_slippage_smoke_summary)}
 
 ## Split Coverage
 
@@ -882,6 +1008,7 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
+- The volume-aware slippage smoke diagnostic reports participation and capacity/cap counts only; it is not applied to returns and is not a trading-cost conclusion.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
@@ -894,6 +1021,41 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 
 def _future_returns(values: pd.DataFrame | pd.Series, *, periods: int) -> pd.DataFrame | pd.Series:
     return values.pct_change(periods=periods, fill_method=None).shift(-periods)
+
+
+def _build_volume_aware_slippage_smoke_inputs(
+    *,
+    price_panel: pd.DataFrame,
+    volume_panel: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    available = price_panel.notna() & volume_panel.notna()
+    available_date_counts = available.sum(axis=1)
+    smoke_index = available_date_counts[available_date_counts >= 2].index[:2]
+    if len(smoke_index) < 2:
+        raise ValueError(
+            "volume-aware slippage smoke diagnostic requires at least two "
+            "dates with two complete OHLCV assets",
+        )
+
+    smoke_columns = available.loc[smoke_index].all(axis=0)
+    smoke_columns = smoke_columns[smoke_columns].index[:2]
+    if len(smoke_columns) < 2:
+        raise ValueError(
+            "volume-aware slippage smoke diagnostic requires at least two "
+            "complete OHLCV assets across the selected smoke dates",
+        )
+
+    smoke_price_panel = price_panel.loc[smoke_index, smoke_columns].astype(float)
+    smoke_volume_panel = volume_panel.loc[smoke_index, smoke_columns].astype(float)
+    target_weights = pd.DataFrame(
+        0.0,
+        index=smoke_index,
+        columns=smoke_columns,
+    )
+    target_weights.iloc[1, 0] = 0.4
+    target_weights.iloc[1, 1] = 0.3
+
+    return target_weights, smoke_price_panel, smoke_volume_panel
 
 
 def _fixture_inventory_item(
@@ -992,6 +1154,28 @@ def _validate_config(config: LocalCSVFixtureWorkflowConfig) -> None:
         raise TypeError("masked_signal_min_valid_signals_per_date must be an integer")
     if config.masked_signal_min_valid_signals_per_date < 1:
         raise ValueError("masked_signal_min_valid_signals_per_date must be at least 1")
+    if (
+        isinstance(config.slippage_smoke_window, bool)
+        or not isinstance(config.slippage_smoke_window, int)
+    ):
+        raise TypeError("slippage_smoke_window must be an integer")
+    if config.slippage_smoke_window < 1:
+        raise ValueError("slippage_smoke_window must be at least 1")
+    if (
+        isinstance(config.slippage_smoke_volume_lag, bool)
+        or not isinstance(config.slippage_smoke_volume_lag, int)
+    ):
+        raise TypeError("slippage_smoke_volume_lag must be an integer")
+    if config.slippage_smoke_volume_lag < 1:
+        raise ValueError("slippage_smoke_volume_lag must be at least 1")
+    _validate_positive_finite_float(
+        config.slippage_smoke_portfolio_notional,
+        "slippage_smoke_portfolio_notional",
+    )
+    _validate_positive_finite_float(
+        config.slippage_smoke_max_participation,
+        "slippage_smoke_max_participation",
+    )
 
 
 def _validate_benchmark_alignment(prices: pd.DataFrame, benchmark: pd.Series) -> None:

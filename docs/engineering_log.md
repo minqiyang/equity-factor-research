@@ -12,6 +12,51 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Local Fixture Volume-Aware Slippage Smoke Diagnostic
+
+This code milestone wires the reviewed volume-aware slippage diagnostic helper
+into the committed synthetic local CSV fixture workflow as a smoke diagnostic
+only.
+
+Assumption: after PR #91 merged and no open PR gate remained, the next safe
+stage was the handoff-recommended synthetic/local-fixture smoke diagnostic
+that reports participation and rejected/cap counts only. It should not
+integrate volume-aware slippage into backtester net returns, generated
+performance interpretation, real-data workflows, LEAN runtime behavior, or
+trading/execution code.
+
+`research/local_csv_fixture_workflow_demo.py` now builds a tiny deterministic
+two-date target-weight panel from complete synthetic OHLCV fixture rows, calls
+`calculate_volume_aware_slippage_diagnostics()`, and stores a reduced smoke
+summary containing trade count, trade weight/notional, max participation,
+missing/zero/zero-window rejection counts, total rejected-capacity count, and
+participation-cap breach count. The workflow intentionally does not report or
+apply candidate slippage impact to returns.
+
+`tests/test_local_csv_fixture_workflow_demo.py` now verifies the fixed target
+weights, date/asset alignment, helper invocation, deterministic participation
+summary, Markdown report caveats, JSON experiment-log diagnostics, and
+invalid slippage-smoke config rejection.
+
+This stage does not modify `src/backtest/portfolio.py`,
+`src/backtest/metrics.py`, the CSV loader, alpha formulas, normalization,
+combination, diagnostics helpers, generated reports, user data, real-data
+access, vendor APIs, credentials, live or paper trading scope, brokerage
+integration, order execution, or profitability language.
+
+Validation before PR creation:
+
+- `python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py` - 14
+  passed.
+- `python -m pytest -q tests/test_volume_aware_slippage.py` - 17 passed.
+- Full validation recorded in the PR summary after the final gate.
+
+Troubleshooting note: this stage also recorded an output-truncation and patch
+context recovery chain in `docs/troubleshooting_log.md`. The final
+implementation used capped reads and smaller patches.
+
+---
+
 ## 2026-06-09 - Volume-Aware Slippage Diagnostic Helper
 
 This code milestone adds a standalone synthetic-only diagnostic helper for
