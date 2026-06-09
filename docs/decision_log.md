@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-06-09 - Require Volume-Aware Slippage Design Before Implementation
+
+Context:
+
+- PR #85 added the simulated slippage and cost assumption design.
+- PR #86 implemented the narrow fixed-bps local backtester slippage extension.
+- PR #87 refreshed synthetic backtest reports, JSON logs, registry output, and
+  current slippage planning docs.
+- The fixed-bps path is now represented in design, code, deterministic tests,
+  and synthetic generated outputs.
+- Volume-aware slippage and market impact remain deferred.
+
+Decision:
+
+- Treat the fixed-bps slippage sequence as complete for the current synthetic
+  research pipeline.
+- Do not proceed directly to a volume-aware slippage helper or backtester
+  extension.
+- Require a documentation-only volume-aware slippage design before any
+  volume-based cost/slippage implementation, generated-output update, or
+  local CSV interpretation.
+
+Rationale:
+
+- Volume-aware slippage has higher leakage and interpretation risk than fixed
+  basis-point turnover friction.
+- A future model would need explicit policy for adjusted versus raw volume,
+  dollar-volume alignment, lag rules, zero volume, missing volume, stale data,
+  participation assumptions, liquidity caps, and benchmark/universe mismatch.
+- Synthetic/local fixtures can test wiring and edge cases, but they cannot
+  prove realistic execution or market impact.
+
+Consequences:
+
+- The next safe repository-internal stage can be a design gate for
+  volume-aware slippage.
+- Any future implementation must remain synthetic/local-fixture only until
+  user-provided local CSV readiness gates are completed for a specific dataset.
+- User-provided local CSV interpretation remains blocked by the readiness
+  audit and `EXPERIMENT_LOG.md` requirements.
+- No source code, tests, research scripts, reports, data access, execution
+  behavior, credentials, or performance claims are changed by this decision.
+
+Follow-up:
+
+- Add a documentation-only volume-aware slippage design if no higher-priority
+  merge gate, blocker, or stale roadmap issue appears.
+- Stop before implementation if the next stage would require real data,
+  downloads, vendor APIs, credentials, live or paper trading, brokerage
+  integration, order execution, or profitability claims.
+
+---
+
 ## 2026-06-09 - Require Slippage And Cost Design Before Implementation
 
 Context:

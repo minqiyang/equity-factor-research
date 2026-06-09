@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_slippage_cost_checkpoint.md` to record that the fixed-bps
+  slippage design, implementation, and synthetic report/log refresh sequence is
+  complete, and to route future volume-aware slippage work through a
+  documentation-only design gate.
 - Refreshed synthetic backtest reports, JSON experiment logs, and the
   experiment registry so fixed-bps transaction cost, fixed-bps slippage,
   zero-slippage diagnostics, and total trading cost impact are explicit after
