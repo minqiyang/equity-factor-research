@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_local_csv_fixture_audit_rehearsal_checkpoint.md` to record
+  the post-PR #83 local CSV readiness gate state and recommend a
+  documentation-only simulated slippage and cost assumption design before any
+  cost/slippage implementation.
 - Added `docs/local_csv_fixture_readiness_audit_rehearsal.md` to fill the
   local CSV readiness audit report format with committed synthetic fixture
   evidence only, preserving the no-user-data and no-profitability boundary.
