@@ -12,6 +12,39 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Simulated Slippage And Cost Assumption Design
+
+This documentation milestone defines the reviewed boundary for future local
+backtester cost and slippage expansion.
+
+Assumption: after the post-local-CSV-fixture audit rehearsal checkpoint merged,
+the safest repository-internal next stage is not a code change. The current
+backtester has deterministic target-weight turnover costs through
+`transaction_cost_bps`, but it does not separately represent slippage or market
+impact. A design gate keeps transaction cost, slippage, zero-slippage
+diagnostics, market-impact caveats, experiment-log fields, and future tests
+reviewable before source code changes.
+
+`docs/simulated_slippage_cost_assumption_design.md` now records current
+backtester semantics, non-goals, definitions, design principles, a proposed
+fixed-basis-point slippage boundary, deferred volume-aware slippage and market
+impact scope, future experiment-log fields, required tests, module alignment,
+risks, and recommended next stages.
+
+`docs/decision_log.md` records the durable decision to require this design
+before cost/slippage implementation. `CHANGELOG.md` records the user-visible
+documentation addition.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, or profitability language.
+
+Validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Post Local CSV Fixture Audit Rehearsal Checkpoint
 
 This documentation milestone records the repository state after the committed
