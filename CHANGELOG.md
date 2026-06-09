@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/volume_aware_slippage_design.md` to define a documentation-only
+  design gate for future lagged dollar-volume, participation, missing/zero
+  volume, notional-scale, cap-policy, and caveat handling before any
+  volume-aware slippage implementation.
 - Added `docs/current_handoff.md`, `scripts/repo_map.py`, and
   `docs/repo_map.md` workflow controls so future Codex stages can start from a
   concise durable handoff, regenerate a short repo map, and preserve capped

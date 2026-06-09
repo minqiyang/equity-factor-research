@@ -15,6 +15,60 @@ investment performance.
 
 ---
 
+## 2026-06-09 - Define Volume-Aware Slippage Design Boundary
+
+Context:
+
+- PR #85 designed fixed-bps transaction cost and slippage assumptions.
+- PR #86 implemented fixed-bps slippage in the local backtester.
+- PR #87 refreshed synthetic reports and logs for fixed-bps slippage fields.
+- PR #88 recorded that the fixed-bps slippage path is complete and that
+  volume-aware slippage requires a design gate before implementation.
+- PR #89 added token-efficient workflow controls, so the current stage can use
+  the handoff and repo map instead of broad repo scans.
+
+Decision:
+
+- Add `docs/volume_aware_slippage_design.md` as a documentation-only boundary
+  before any volume-aware slippage helper, backtester integration,
+  generated-output update, or local CSV interpretation.
+- Treat lagged rolling dollar volume, explicit portfolio notional,
+  missing/zero-volume handling, participation caps, and adjustment-policy
+  compatibility as required design inputs for any future code.
+- Keep same-day volume, silent missing-data repair, silent cap clipping, real
+  data fetching, broker/order behavior, and execution-realism claims out of
+  scope.
+
+Rationale:
+
+- Volume-aware slippage has higher look-ahead and interpretation risk than
+  fixed-bps target-weight turnover friction.
+- Current backtests are normalized research accounting; dollar-volume
+  capacity requires an explicit notional scale before participation can be
+  calculated.
+- Zero volume, missing volume, stale volume, and incompatible price/volume
+  adjustment policies can make a volume-aware estimate invalid even when the
+  CSV loader accepts the rows.
+
+Consequences:
+
+- The next possible code stage should be a synthetic-only helper or diagnostic
+  stage, not immediate backtester net-return integration.
+- Any future implementation must default to strict missing/zero-liquidity and
+  participation-cap behavior, with no silent fills or silent clipping.
+- User-provided local CSV interpretation remains blocked until readiness audit
+  and `EXPERIMENT_LOG.md` gates are complete for a specific dataset.
+
+Follow-up:
+
+- After this design is reviewed and merged, consider a narrow synthetic-only
+  participation/slippage diagnostic helper with deterministic tests.
+- Stop if implementation would require real data, downloads, vendor APIs,
+  credentials, live or paper trading, brokerage integration, order execution,
+  silent missing-data repair, or profitability claims.
+
+---
+
 ## 2026-06-09 - Require Volume-Aware Slippage Design Before Implementation
 
 Context:
