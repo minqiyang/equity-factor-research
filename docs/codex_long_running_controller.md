@@ -10,31 +10,50 @@ profitability claims.
 
 ## Startup Checklist
 
-At the start of a continuation, read the current-state sources before choosing
-work:
+At the start of a continuation, read `docs/current_handoff.md` first. Then read
+`AGENTS.md`, this controller, and `.agents/skills/staged-quant-workflow/SKILL.md`
+as governing workflow documents. Use `docs/repo_map.md` for concise repository
+orientation before broad scans.
 
-1. `README.md`
-2. `AGENTS.md`
-3. `.agents/skills/staged-quant-workflow/SKILL.md`
-4. `docs/codex_long_running_controller.md`
-5. `docs/engineering_log.md`
-6. `docs/decision_log.md`
-7. `docs/troubleshooting_log.md`
-8. `CHANGELOG.md`
+Read deeper logs and long documents only when `docs/current_handoff.md` points
+to them, the active stage requires them, a check fails, or a guardrail-sensitive
+decision needs source evidence. Deeper sources include:
+
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `docs/troubleshooting_log.md`
+- `CHANGELOG.md`
+- `EXPERIMENT_LOG.md`
+- generated reports under `reports/`
 
 Then run the state checks from the staged workflow Skill:
 
 ```bash
 git fetch origin
 git branch --show-current
-git status -sb --untracked-files=all
-git log --oneline --decorate -12
-gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title,headRefName,baseRefName
+git status --porcelain | head -n 50
+git log --oneline -20
+gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title,headRefName,baseRefName 2>&1 | head -c 8000
 ```
 
 If an expected controller, log, or Skill file is missing, treat that as a
 workflow-control gap. The next safe stage may be to add or repair the missing
 process artifact before continuing research work.
+
+## Command Output Budget
+
+Protect token budget without hiding evidence:
+
+- cap unknown large command output by default.
+- prefer `git status --porcelain | head -n 50`.
+- prefer `git log --oneline -20`.
+- prefer `git diff --name-only | head -n 80`.
+- use `COMMAND 2>&1 | head -c 8000` for unknown output.
+- in PowerShell, use equivalent caps such as `Select-Object -First` when
+  `head` is unavailable.
+- write full output to temp files and inspect targeted ranges only if full
+  review is needed.
+- never `cat` full generated reports or large logs by default.
 
 ## Merge Gate
 
@@ -46,7 +65,7 @@ If the previous stage PR has merged:
 ```bash
 git switch main
 git pull --ff-only origin main
-git status -sb --untracked-files=all
+git status --porcelain | head -n 50
 python -m pytest -q
 python -m compileall src tests research
 ```
@@ -159,18 +178,21 @@ Before committing:
 ```bash
 python -m pytest -q
 python -m compileall src tests research
-git diff --check
+git diff --check origin/main..HEAD
 ```
 
 For Skill or workflow-control changes, also run:
 
 ```powershell
 .\scripts\audit-skills.ps1
+python scripts/repo_map.py
 ```
 
 Before opening a PR, confirm:
 
 - changed files match the intended stage.
+- `git diff --name-only origin/main..HEAD | head -n 80` contains only intended
+  files.
 - guardrail grep results are prohibitions, caveats, tests, or documentation
   warnings only.
 - no generated reports changed unless explicitly intended.

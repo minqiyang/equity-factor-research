@@ -2,6 +2,24 @@
 
 This repository is a serious simulated quantitative research project. AI coding agents must preserve auditability, reproducibility, and research discipline.
 
+## Startup And Context Budget
+
+- For staged workflow continuations, read `docs/current_handoff.md` first.
+- Use `docs/repo_map.md` for concise orientation before broad repository scans.
+- Read deeper logs and long documents only when the handoff points to them, the active stage requires them, a check fails, or a guardrail-sensitive decision needs source evidence.
+- Regenerate the repo map with `python scripts/repo_map.py` after workflow-control changes that alter the repository map.
+
+## Command Output Protection
+
+- Cap unknown large command output by default.
+- Prefer `git status --porcelain | head -n 50` for quick status checks.
+- Prefer `git log --oneline -20` for recent history.
+- Prefer `git diff --name-only | head -n 80` for scope checks.
+- Use `COMMAND 2>&1 | head -c 8000` for unknown commands that may print large output.
+- In PowerShell, use equivalent caps such as `Select-Object -First` for line limits.
+- Write full command output to temp files and inspect targeted ranges only when full review is needed.
+- Never `cat` full generated reports or large logs by default.
+
 ## Required Behavior
 
 - Before editing, summarize the intended changes.
