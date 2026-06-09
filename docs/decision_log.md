@@ -15,6 +15,58 @@ investment performance.
 
 ---
 
+## 2026-06-09 - Keep Volume-Aware Slippage Helper Diagnostic-Only
+
+Context:
+
+- PR #90 added `docs/volume_aware_slippage_design.md`.
+- That design recommends a synthetic-only helper or diagnostic stage before
+  any backtester net-return integration.
+- The current backtester already has fixed-bps slippage, so adding a
+  volume-aware path directly to `run_long_only_backtest()` would change
+  strategy accounting before the new data and capacity semantics are
+  independently tested.
+
+Decision:
+
+- Add a standalone diagnostic helper under `src/backtest/slippage.py`.
+- Do not integrate the helper with `run_long_only_backtest()`,
+  `calculate_basic_metrics()`, research scripts, generated reports, or local
+  CSV workflows in this stage.
+- Default to strict behavior: missing lagged capacity, zero or incomplete
+  volume windows, zero lagged dollar volume, missing inputs, invalid notional,
+  and participation above cap raise instead of being filled, clipped, or
+  ignored.
+
+Rationale:
+
+- A standalone helper keeps the PR reviewable and makes the volume-aware
+  assumptions testable before they affect simulated returns.
+- Explicit `portfolio_notional` prevents normalized backtest capital from
+  being mistaken for real tradable capital.
+- Strict missing and zero-liquidity behavior preserves the project rule
+  against silent missing-data repair.
+
+Consequences:
+
+- Future work can inspect participation and candidate slippage impact on
+  deterministic synthetic panels without changing existing backtest output.
+- Backtester integration remains a separate reviewed decision after helper
+  behavior and caveats are accepted.
+- User-provided local CSV interpretation remains blocked by readiness-audit
+  and `EXPERIMENT_LOG.md` gates.
+
+Follow-up:
+
+- After this helper is reviewed and merged, consider a synthetic/local-fixture
+  smoke diagnostic that reports participation and rejected/capped counts only.
+- Stop if the next stage would require real data, downloads, vendor APIs,
+  credentials, live or paper trading, brokerage integration, order execution,
+  silent fill/clip policies, generated performance interpretation, or
+  profitability claims.
+
+---
+
 ## 2026-06-09 - Define Volume-Aware Slippage Design Boundary
 
 Context:
