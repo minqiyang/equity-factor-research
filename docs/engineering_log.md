@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Post Slippage And Cost Checkpoint
+
+This documentation checkpoint records the repository state after the fixed-bps
+slippage design, implementation, and synthetic report/log refresh merged.
+
+Assumption: after PR #87 merged, the previous checkpoint's recommended
+slippage/cost sequence is complete. The safest next stage is not a direct
+volume-aware implementation and not a user-provided local CSV run. The safe
+repository-internal stage is a checkpoint that marks fixed-bps slippage as
+reflected in code and generated synthetic outputs, then routes any broader
+slippage work through a new design gate.
+
+`docs/post_slippage_cost_checkpoint.md` now records the current review
+baseline, completed slippage/cost state, remaining original-goal gaps,
+guardrail review, and recommended next roadmap. It recommends a
+documentation-only volume-aware slippage design before any helper,
+backtester-extension, generated-output, or local CSV interpretation stage.
+
+`docs/decision_log.md` records the durable decision to require a
+volume-aware slippage design before implementation. `CHANGELOG.md` records the
+user-visible checkpoint addition.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, volume-aware slippage implementation,
+market-impact modeling, or profitability language.
+
+Validation:
+
+- `python -m pytest -q` - 461 passed.
+- `python -m compileall src tests research` - passed.
+- `git diff --check` - passed with only Windows LF/CRLF notices.
+
+---
+
 ## 2026-06-09 - Synthetic Backtest Slippage Report/Log Refresh
 
 This generated-output milestone refreshes the synthetic backtest demos after
