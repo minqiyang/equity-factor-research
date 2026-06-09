@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Volume-Aware Slippage Design Gate
+
+This documentation-only design stage defines the boundary for any future
+volume-aware slippage work after the fixed-bps slippage sequence and
+token-efficient workflow controls merged.
+
+Assumption: after PR #89 merged and the open-PR gate was clear, the current
+handoff and checkpoint documents still identify volume-aware slippage design
+as the next safe repository-internal stage. The correct next step is not a
+helper implementation, generated-output refresh, local CSV interpretation, or
+LEAN/runtime integration.
+
+`docs/volume_aware_slippage_design.md` now records the required future input
+contract, lagged liquidity-reference policy, candidate participation and
+slippage-impact semantics, portfolio-notional requirement, zero/missing/stale
+volume policy, participation-cap policy, adjustment-policy constraints,
+future reporting fields, required tests, module alignment, and risks.
+
+`docs/decision_log.md` records the durable decision that volume-aware slippage
+requires explicit lagged dollar-volume, notional, missing-data, cap, and
+adjustment-policy semantics before code. `docs/current_handoff.md` is updated
+so the next continuation starts from the current post-PR #89 state.
+`CHANGELOG.md` records the user-visible design document addition.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+behavior, live or paper trading scope, brokerage integration, order execution,
+LEAN runtime behavior, market-impact modeling, or profitability language.
+
+Validation:
+
+- `python -m pytest -q` - 461 passed.
+- `python -m compileall src tests research` - passed.
+- `python -m compileall lean` - passed.
+- `.\scripts\audit-skills.ps1` - passed for 2 Skill files.
+- `python scripts/repo_map.py` - wrote `docs/repo_map.md`.
+- `git diff --check` - passed with only Windows LF/CRLF notices.
+
+---
+
 ## 2026-06-09 - Token-Efficient Codex Workflow Controls
 
 This documentation and workflow-tooling milestone adds a short durable handoff
