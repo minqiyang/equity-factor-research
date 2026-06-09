@@ -31,6 +31,8 @@ class BacktestResult:
     holdings: pd.DataFrame
     turnover: pd.Series
     transaction_costs: pd.Series
+    slippage_costs: pd.Series
+    total_trading_costs: pd.Series
     metrics: dict[str, float]
     benchmark_equity_curve: pd.Series | None
     assumptions: dict[str, Any]
@@ -44,6 +46,7 @@ def run_long_only_backtest(
     top_n: int | None = None,
     top_pct: float | None = None,
     transaction_cost_bps: float = 0.0,
+    slippage_bps: float = 0.0,
     benchmark_prices: pd.Series | None = None,
     initial_capital: float = 1.0,
     signal_lag_periods: int = 1,
@@ -70,6 +73,9 @@ def run_long_only_backtest(
     - Transaction costs are a fixed basis-point cost applied to target-weight
       turnover on rebalance dates and deducted from that date's portfolio
       return.
+    - Slippage is a separate fixed basis-point impact applied to the same
+      target-weight turnover model. This is a deterministic research
+      assumption, not an order-fill or market-impact model.
     - Missing held-asset returns raise by default. Passing
       ``missing_price_policy="zero_return"`` is an explicit diagnostic fallback
       that treats missing held returns as 0.0.
@@ -89,6 +95,7 @@ def run_long_only_backtest(
         top_n=top_n,
         top_pct=top_pct,
         transaction_cost_bps=transaction_cost_bps,
+        slippage_bps=slippage_bps,
         initial_capital=initial_capital,
         signal_lag_periods=signal_lag_periods,
         missing_price_policy=missing_price_policy,
@@ -125,7 +132,9 @@ def run_long_only_backtest(
     turnover_weights.iloc[0] = holdings.iloc[0].abs()
     turnover = turnover_weights.sum(axis=1)
     transaction_costs = turnover * (transaction_cost_bps / 10_000.0)
-    net_returns = gross_returns - transaction_costs
+    slippage_costs = turnover * (slippage_bps / 10_000.0)
+    total_trading_costs = transaction_costs + slippage_costs
+    net_returns = gross_returns - total_trading_costs
     equity_curve = initial_capital * (1.0 + net_returns).cumprod()
 
     benchmark_equity_curve = _calculate_benchmark_equity_curve(
@@ -140,6 +149,7 @@ def run_long_only_backtest(
         net_returns,
         turnover=turnover,
         transaction_costs=transaction_costs,
+        slippage_costs=slippage_costs,
         benchmark_equity_curve=benchmark_equity_curve,
         initial_capital=initial_capital,
         periods_per_year=periods_per_year,
@@ -152,6 +162,8 @@ def run_long_only_backtest(
         holdings=holdings,
         turnover=turnover.rename("turnover"),
         transaction_costs=transaction_costs.rename("transaction_cost_impact"),
+        slippage_costs=slippage_costs.rename("slippage_impact"),
+        total_trading_costs=total_trading_costs.rename("total_trading_cost_impact"),
         metrics=metrics,
         benchmark_equity_curve=benchmark_equity_curve,
         assumptions={
@@ -159,12 +171,16 @@ def run_long_only_backtest(
             "top_n": top_n,
             "top_pct": top_pct,
             "transaction_cost_bps": transaction_cost_bps,
+            "slippage_bps": slippage_bps,
             "signal_lag_periods": signal_lag_periods,
             "missing_price_policy": missing_price_policy,
             "benchmark_missing_policy": benchmark_missing_policy,
             "aligned_signal_coverage": _calculate_signal_coverage(signal_data),
             "execution_timing": "signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row",
             "turnover_model": "target_weight_turnover",
+            "cost_model": "fixed_bps_on_target_weight_turnover",
+            "slippage_model": "fixed_bps_on_target_weight_turnover",
+            "zero_cost_or_slippage_is_diagnostic": transaction_cost_bps == 0.0 or slippage_bps == 0.0,
             "long_only": True,
             "leverage": "none",
         },
@@ -289,6 +305,7 @@ def _validate_backtest_inputs(
     top_n: int | None,
     top_pct: float | None,
     transaction_cost_bps: float,
+    slippage_bps: float,
     initial_capital: float,
     signal_lag_periods: int,
     missing_price_policy: str,
@@ -321,6 +338,8 @@ def _validate_backtest_inputs(
         raise ValueError("top_pct must be greater than 0 and no more than 1")
     if transaction_cost_bps < 0:
         raise ValueError("transaction_cost_bps must be non-negative")
+    if slippage_bps < 0:
+        raise ValueError("slippage_bps must be non-negative")
     if initial_capital <= 0:
         raise ValueError("initial_capital must be positive")
     if signal_lag_periods < 0:

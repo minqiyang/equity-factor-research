@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a narrow fixed-bps `slippage_bps` extension to the simulated
+  backtester, keeping slippage impact separate from transaction-cost impact
+  and recording explicit diagnostic assumptions without adding real data,
+  broker/order logic, or generated report changes.
 - Added `docs/simulated_slippage_cost_assumption_design.md` to define a
   documentation-only boundary for future fixed-bps slippage, transaction cost,
   zero-slippage diagnostics, and deferred market-impact assumptions before any

@@ -1,6 +1,10 @@
+import ast
+import inspect
+
 import pandas as pd
 import pytest
 
+import backtest.portfolio as portfolio
 from backtest.portfolio import run_long_only_backtest
 
 
@@ -94,9 +98,130 @@ def test_transaction_cost_is_deducted_from_equity_curve() -> None:
     )
 
     assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.01)
+    assert result.slippage_costs.loc[dates[1]] == pytest.approx(0.0)
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.01)
     assert result.returns.loc[dates[1]] == pytest.approx(-0.01)
     assert result.equity_curve.loc[dates[1]] == pytest.approx(0.99)
     assert result.equity_curve.loc[dates[2]] == pytest.approx(0.99)
+    assert result.metrics["total_transaction_cost_impact"] == pytest.approx(0.01)
+    assert result.metrics["total_slippage_cost_impact"] == pytest.approx(0.0)
+    assert result.metrics["total_trading_cost_impact"] == pytest.approx(0.01)
+
+
+def test_fixed_bps_slippage_is_deducted_separately_from_transaction_cost() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=100.0,
+        slippage_bps=50.0,
+    )
+
+    assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.01)
+    assert result.slippage_costs.loc[dates[1]] == pytest.approx(0.005)
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.015)
+    assert result.returns.loc[dates[1]] == pytest.approx(-0.015)
+    assert result.equity_curve.loc[dates[1]] == pytest.approx(0.985)
+    assert result.metrics["total_transaction_cost_impact"] == pytest.approx(0.01)
+    assert result.metrics["total_slippage_cost_impact"] == pytest.approx(0.005)
+    assert result.metrics["total_trading_cost_impact"] == pytest.approx(0.015)
+    assert result.assumptions["transaction_cost_bps"] == pytest.approx(100.0)
+    assert result.assumptions["slippage_bps"] == pytest.approx(50.0)
+    assert result.assumptions["cost_model"] == "fixed_bps_on_target_weight_turnover"
+    assert result.assumptions["slippage_model"] == "fixed_bps_on_target_weight_turnover"
+
+
+def test_slippage_without_transaction_cost_is_explicit_diagnostic() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=0.0,
+        slippage_bps=25.0,
+    )
+
+    assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.0)
+    assert result.slippage_costs.loc[dates[1]] == pytest.approx(0.0025)
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.0025)
+    assert result.returns.loc[dates[1]] == pytest.approx(-0.0025)
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
+
+
+def test_transaction_cost_without_slippage_is_explicit_diagnostic() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=25.0,
+        slippage_bps=0.0,
+    )
+
+    assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.0025)
+    assert result.slippage_costs.loc[dates[1]] == pytest.approx(0.0)
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.0025)
+    assert result.returns.loc[dates[1]] == pytest.approx(-0.0025)
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
+
+
+def test_total_return_uses_initial_capital_base_when_first_row_has_slippage() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        slippage_bps=100.0,
+        signal_lag_periods=0,
+    )
+
+    assert result.slippage_costs.loc[dates[0]] == pytest.approx(0.01)
+    assert result.total_trading_costs.loc[dates[0]] == pytest.approx(0.01)
+    assert result.equity_curve.loc[dates[0]] == pytest.approx(0.99)
+    assert result.metrics["total_return"] == pytest.approx(-0.01)
+
+
+def test_positive_transaction_cost_and_slippage_are_not_zero_diagnostic() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=10.0,
+        slippage_bps=10.0,
+    )
+
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is False
+
+
+def test_negative_slippage_bps_raises() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=dates)
+
+    with pytest.raises(ValueError, match="slippage_bps must be non-negative"):
+        run_long_only_backtest(prices, signals, rebalance_frequency="D", top_n=1, slippage_bps=-1.0)
 
 
 def test_total_return_uses_initial_capital_base_when_first_row_has_cost() -> None:
@@ -203,3 +328,32 @@ def test_simple_synthetic_price_example() -> None:
     assert result.returns.loc[dates[3]] == pytest.approx(0.10)
     assert result.equity_curve.loc[dates[3]] == pytest.approx(1.21)
     assert result.metrics["total_return"] == pytest.approx(0.21)
+
+
+def test_backtester_has_no_data_vendor_credential_or_execution_imports() -> None:
+    source = inspect.getsource(portfolio)
+    tree = ast.parse(source)
+    forbidden_terms = {
+        "requests",
+        "urllib",
+        "yfinance",
+        "alpaca",
+        "ccxt",
+        "broker",
+        "brokerage",
+        "order",
+        "credential",
+        "dotenv",
+        "subprocess",
+        "AlgorithmImports",
+    }
+    imported_modules: list[str] = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            imported_modules.append(node.module)
+
+    for module_name in imported_modules:
+        assert not any(term.lower() in module_name.lower() for term in forbidden_terms)

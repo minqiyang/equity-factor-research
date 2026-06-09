@@ -12,6 +12,50 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Fixed-Bps Slippage Backtester Extension
+
+This code milestone implements the narrow fixed-basis-point slippage extension
+designed in `docs/simulated_slippage_cost_assumption_design.md`.
+
+Assumption: after the slippage and cost assumption design merged, the next safe
+code stage is the first fixed-bps implementation only. The implementation
+should preserve the existing target-weight turnover model, keep transaction
+cost and slippage as separate impact series, keep total trading impact
+inspectable, and avoid volume-aware slippage, market impact, generated report
+updates, real data, broker fills, order execution, or performance
+interpretation.
+
+`run_long_only_backtest()` now accepts `slippage_bps` with default `0.0`.
+Slippage impact is calculated as target-weight turnover times
+`slippage_bps / 10000`, separately from `transaction_cost_bps`, and both are
+deducted from simulated net returns. `BacktestResult` now exposes
+`slippage_costs` and `total_trading_costs` in addition to the existing
+`transaction_costs`. Backtest assumptions now record the cost model, slippage
+model, `slippage_bps`, and whether a zero cost or zero slippage setting is a
+diagnostic simplification.
+
+`calculate_basic_metrics()` now records total transaction cost impact, total
+slippage cost impact, and total trading cost impact when the relevant series
+are supplied. Focused tests cover separate transaction cost and slippage
+deduction, zero-cost or zero-slippage diagnostic labeling, first-row slippage
+impact with `signal_lag_periods=0`, positive combined impact, and validation
+that negative `slippage_bps` raises.
+
+This stage does not modify research scripts, generated reports, CSV loader
+behavior, factor formulas, diagnostics semantics, private data, real-data
+access, live or paper trading scope, brokerage integration, order execution,
+LEAN runtime behavior, volume-aware slippage, market-impact modeling, or
+profitability language.
+
+Validation:
+
+- `python -m pytest -q tests/test_backtest_portfolio.py` - 17 passed.
+- `python -m pytest -q` - 461 passed.
+- `python -m compileall src tests research` - passed.
+- `git diff --check` - passed with only Windows LF/CRLF notices.
+
+---
+
 ## 2026-06-09 - Simulated Slippage And Cost Assumption Design
 
 This documentation milestone defines the reviewed boundary for future local

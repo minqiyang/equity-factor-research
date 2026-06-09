@@ -32,6 +32,7 @@ def calculate_basic_metrics(
     *,
     turnover: pd.Series | None = None,
     transaction_costs: pd.Series | None = None,
+    slippage_costs: pd.Series | None = None,
     benchmark_equity_curve: pd.Series | None = None,
     initial_capital: float = 1.0,
     periods_per_year: int = 252,
@@ -76,6 +77,14 @@ def calculate_basic_metrics(
 
     if transaction_costs is not None:
         metrics["total_transaction_cost_impact"] = float(transaction_costs.sum())
+
+    if slippage_costs is not None:
+        metrics["total_slippage_cost_impact"] = float(slippage_costs.sum())
+
+    if transaction_costs is not None or slippage_costs is not None:
+        transaction_total = 0.0 if transaction_costs is None else float(transaction_costs.sum())
+        slippage_total = 0.0 if slippage_costs is None else float(slippage_costs.sum())
+        metrics["total_trading_cost_impact"] = transaction_total + slippage_total
 
     if benchmark_equity_curve is not None:
         benchmark_total_return = float(benchmark_equity_curve.iloc[-1] / initial_capital - 1.0)
