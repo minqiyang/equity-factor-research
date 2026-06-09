@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic-only volume-aware slippage diagnostic helper with
+  deterministic tests for lagged rolling dollar volume, explicit notional
+  scaling, participation, missing/zero liquidity, and participation caps
+  without changing backtester returns or generated reports.
 - Added `docs/volume_aware_slippage_design.md` to define a documentation-only
   design gate for future lagged dollar-volume, participation, missing/zero
   volume, notional-scale, cap-policy, and caveat handling before any

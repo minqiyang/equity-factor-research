@@ -12,6 +12,71 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Volume-Aware Slippage Diagnostic Helper
+
+This code milestone adds a standalone synthetic-only diagnostic helper for
+volume-aware slippage assumptions after PR #90's design gate merged.
+
+Assumption: the next safe stage is a narrow helper and deterministic tests, not
+backtester net-return integration, generated-output refresh, local CSV
+interpretation, or LEAN/runtime work. The helper should make notional,
+liquidity lag, participation, missing-data, zero-volume, and cap assumptions
+explicit before any later stage decides whether those diagnostics should
+affect simulated returns.
+
+`src/backtest/slippage.py` now exposes
+`calculate_volume_aware_slippage_diagnostics()` and
+`VolumeAwareSlippageDiagnostics`. The helper calculates target-weight trade
+changes, lagged rolling dollar volume, trade notional, participation,
+candidate asset-level slippage basis points, asset-level slippage impact, and
+portfolio-level slippage impact. It requires explicit `portfolio_notional`,
+uses rolling dollar volume shifted by `volume_lag`, and raises by default for
+missing capacity, non-positive capacity, incomplete or zero-volume windows,
+participation above cap, invalid target weights, and invalid parameters.
+
+`tests/test_volume_aware_slippage.py` adds hand-calculated deterministic
+coverage for the diagnostic calculation, lagged capacity rather than same-day
+volume, required notional, warm-up capacity failures, missing price/volume,
+zero-volume windows, zero lagged dollar volume, participation caps, panel
+alignment, target-weight validation, invalid parameters, and forbidden import
+guardrails.
+
+This stage does not modify `src/backtest/portfolio.py`,
+`src/backtest/metrics.py`, research scripts, generated reports, CSV loader
+behavior, factor formulas, diagnostics semantics, private data, real-data
+access, execution behavior, live or paper trading scope, brokerage
+integration, order execution, LEAN runtime behavior, market-impact modeling,
+or profitability language.
+
+Validation:
+
+- `python -m pytest -q tests/test_volume_aware_slippage.py` - 17 passed.
+- `python -m pytest -q` - 478 passed.
+- `python -m compileall src tests research` - passed.
+- `python scripts/repo_map.py` - wrote `docs/repo_map.md`.
+- `git diff --check` - passed with only Windows LF/CRLF notices.
+
+Warning recovery:
+
+- Original implementation used `.fillna(False)` on the shifted
+  `positive_volume_window` boolean mask.
+- Consequence: focused tests passed, but pandas emitted a `FutureWarning`
+  about silent downcasting on `.fillna`, which could become brittle in a
+  future pandas release.
+- Evidence: `python -m pytest -q tests/test_volume_aware_slippage.py` reported
+  17 passed with warnings from `src/backtest/slippage.py`.
+- Investigation: the shifted rolling-window mask can carry missing values and
+  object dtype after lagging. The helper only needs to treat literal `True` as
+  valid capacity.
+- Final fix: replace `.fillna(False)` with `.eq(True)`, avoiding silent
+  downcasting while keeping missing values ineligible.
+- Verification: focused helper tests were rerun and passed without warnings;
+  full pytest also passed with 478 tests.
+- Prevention: prefer explicit boolean comparisons for lagged nullable masks
+  instead of relying on pandas fill/downcast behavior.
+
+---
+
 ## 2026-06-09 - Volume-Aware Slippage Design Gate
 
 This documentation-only design stage defines the boundary for any future
