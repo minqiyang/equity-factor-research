@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a synthetic local CSV fixture smoke diagnostic that calls the
+  volume-aware slippage helper on fixed diagnostic target weights and reports
+  participation plus rejected/cap counts without applying slippage to returns
+  or changing backtester behavior.
 - Added a synthetic-only volume-aware slippage diagnostic helper with
   deterministic tests for lagged rolling dollar volume, explicit notional
   scaling, participation, missing/zero liquidity, and participation caps

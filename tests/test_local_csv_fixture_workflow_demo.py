@@ -74,6 +74,22 @@ def test_local_csv_fixture_workflow_loads_committed_fixtures() -> None:
     assert result.split.train_end == pd.Timestamp("2024-01-02")
     assert result.split.validation_end == pd.Timestamp("2024-01-03")
     assert result.split.test_end == pd.Timestamp("2024-01-05")
+    expected_slippage_targets = pd.DataFrame(
+        {
+            "AAA": [0.0, 0.4],
+            "BBB": [0.0, 0.3],
+        },
+        index=pd.DatetimeIndex(["2024-01-02", "2024-01-03"], name="date"),
+    )
+    assert_frame_equal(
+        result.volume_aware_slippage_target_weights,
+        expected_slippage_targets,
+    )
+    assert result.volume_aware_slippage_diagnostics.name == (
+        "synthetic_fixture_volume_aware_slippage_smoke"
+    )
+    assert "not_backtest_integration" in result.volume_aware_slippage_diagnostics.caveats
+    assert "no_profitability_claim" in result.volume_aware_slippage_diagnostics.caveats
 
 
 def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
@@ -92,6 +108,18 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
     assert result.average_daily_volume_eligibility.columns.equals(result.prices.columns)
     assert result.average_dollar_volume_eligibility.index.equals(result.prices.index)
     assert result.average_dollar_volume_eligibility.columns.equals(result.prices.columns)
+    assert result.volume_aware_slippage_target_weights.index.equals(
+        pd.DatetimeIndex(["2024-01-02", "2024-01-03"], name="date"),
+    )
+    assert result.volume_aware_slippage_target_weights.columns.equals(
+        pd.Index(["AAA", "BBB"]),
+    )
+    assert result.volume_aware_slippage_diagnostics.summary.index.equals(
+        result.volume_aware_slippage_target_weights.index,
+    )
+    assert result.volume_aware_slippage_diagnostics.summary.index.equals(
+        result.volume_aware_slippage_smoke_summary.index,
+    )
     assert result.liquidity_eligibility_summary.index.equals(result.prices.index)
     assert result.liquidity_universe_result.universe_mask.index.equals(
         result.prices.index,
@@ -273,6 +301,18 @@ def test_local_csv_fixture_workflow_is_deterministic() -> None:
         first.average_dollar_volume_eligibility,
         second.average_dollar_volume_eligibility,
     )
+    assert_frame_equal(
+        first.volume_aware_slippage_target_weights,
+        second.volume_aware_slippage_target_weights,
+    )
+    assert_frame_equal(
+        first.volume_aware_slippage_diagnostics.participation,
+        second.volume_aware_slippage_diagnostics.participation,
+    )
+    assert_frame_equal(
+        first.volume_aware_slippage_smoke_summary,
+        second.volume_aware_slippage_smoke_summary,
+    )
     assert_frame_equal(first.liquidity_eligibility_summary, second.liquidity_eligibility_summary)
     assert_frame_equal(
         first.liquidity_universe_result.universe_mask,
@@ -346,7 +386,7 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "not financial advice" in report_text
     assert "not a profitability claim" in report_text
     assert "does not run a backtest" in report_text
-    assert "No portfolio construction" in report_text
+    assert "No strategy portfolio construction" in report_text
     assert "## Inventory Dry-Run Rehearsal" in report_text
     assert "metadata-only dry-run inventory review" in report_text
     assert "| Declared inputs | `3` |" in report_text
@@ -359,9 +399,13 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "## Universe-Masked Alpha#009 Signal Smoke Check" in report_text
     assert "signal-panel wiring check only" in report_text
     assert "not tradeability evidence or backtest universe integration" in report_text
+    assert "## Volume-Aware Slippage Smoke Diagnostic" in report_text
+    assert "participation and rejection/cap counts" in report_text
+    assert "not applied to returns" in report_text
     assert "| 2024-01-04 | 3 | 0 | 3 | 0 | 2 | 1 | 1 |" in report_text
     assert "| 2024-01-04 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | false |" in report_text
     assert "| 2024-01-04 | 3 | 1 | 1 | 2 | 0 | false |" in report_text
+    assert "| 2024-01-03 | 2 | 0.7000 | 70000.0000 | 0.0040 | 0 | 0 | 0 | 0 | 0 |" in report_text
     assert "## Split Coverage" in report_text
     assert "## Alpha#012 Diagnostic Coverage" in report_text
     assert "## Alpha#012 Information Coefficient Diagnostics" in report_text
@@ -388,15 +432,27 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert payload["assumptions"]["liquidity_masked_signal_check"].startswith(
         "synthetic universe-masked alpha_009",
     )
+    assert payload["assumptions"]["volume_aware_slippage_smoke"].startswith(
+        "synthetic two-date target-weight",
+    )
     assert payload["assumptions"]["liquidity_eligibility_lag"] == 1
     assert payload["assumptions"]["liquidity_price_column"] == "adjusted_close"
     assert payload["assumptions"]["liquidity_universe_min_assets_per_date"] == 1
     assert payload["assumptions"]["masked_signal_min_valid_signals_per_date"] == 1
+    assert payload["assumptions"]["slippage_smoke_window"] == 1
+    assert payload["assumptions"]["slippage_smoke_volume_lag"] == 1
+    assert payload["assumptions"]["slippage_smoke_portfolio_notional"] == 100_000.0
+    assert payload["assumptions"]["slippage_smoke_max_participation"] == 0.1
     assert payload["assumptions"]["alpha_012_feature"] == (
         "alpha_012 from adjusted_close and volume OHLCV panels"
     )
-    assert payload["assumptions"]["portfolio_construction"] == "not included"
+    assert payload["assumptions"]["portfolio_construction"].startswith(
+        "not included as a strategy",
+    )
     assert payload["assumptions"]["backtest_integration"] == "not included"
+    assert payload["assumptions"]["slippage_model"].endswith(
+        "not applied to returns",
+    )
     assert payload["assumptions"]["live_trading"] is False
     assert payload["assumptions"]["split_policy"].startswith("chronological")
     assert payload["assumptions"]["split_timing"].startswith("split labels")
@@ -510,6 +566,37 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
         "universe_eligible_count": 1.0,
         "valid_masked_signal_count": 1.0,
     }
+    assert payload["diagnostics"]["volume_aware_slippage_trade_counts_by_date"] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 2.0,
+    }
+    assert payload["diagnostics"]["volume_aware_slippage_max_participation_by_date"][
+        "2024-01-03"
+    ] == pytest.approx(40_000.0 / 10_050_000.0)
+    assert payload["diagnostics"][
+        "volume_aware_slippage_rejected_capacity_counts_by_date"
+    ] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 0.0,
+    }
+    assert payload["diagnostics"]["volume_aware_slippage_cap_breach_counts_by_date"] == {
+        "2024-01-02": 0.0,
+        "2024-01-03": 0.0,
+    }
+    assert payload["diagnostics"]["volume_aware_slippage_smoke_summary"]["2024-01-03"] == {
+        "max_participation": pytest.approx(40_000.0 / 10_050_000.0),
+        "missing_capacity_count": 0.0,
+        "participation_cap_breach_count": 0.0,
+        "rejected_capacity_count": 0.0,
+        "total_trade_notional": 70_000.0,
+        "total_trade_weight": 0.7,
+        "trade_count": 2.0,
+        "zero_capacity_count": 0.0,
+        "zero_volume_window_count": 0.0,
+    }
+    assert "not_backtest_integration" in payload["diagnostics"][
+        "volume_aware_slippage_caveats"
+    ]
     assert payload["diagnostics"]["factor_valid_observations"] == 9
     assert payload["diagnostics"]["alpha_009_factor_valid_observations"] == 9
     assert payload["diagnostics"]["masked_alpha_009_signal_valid_observations"] == 1
@@ -548,6 +635,8 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "liquidity eligibility count smoke check only" in payload["caveats"]
     assert "liquidity universe mask count smoke check only" in payload["caveats"]
     assert "liquidity universe-masked signal smoke check only" in payload["caveats"]
+    assert "volume-aware slippage smoke diagnostic only" in payload["caveats"]
+    assert "volume-aware slippage not applied to returns" in payload["caveats"]
     assert "not backtest universe integration" in payload["caveats"]
     assert "not tradeability evidence" in payload["caveats"]
     assert "not model selection" in payload["caveats"]
@@ -590,6 +679,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "ic": 0,
         "rank_ic": 0,
         "quantile_spread": 0,
+        "volume_aware_slippage": 0,
     }
     original_inventory_validator = demo.validate_local_csv_inventory
     original_price_loader = demo.load_wide_price_csv
@@ -606,6 +696,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     original_ic = demo.factor_information_coefficient
     original_rank_ic = demo.factor_rank_information_coefficient
     original_quantile_spread = demo.factor_quantile_spread
+    original_volume_aware_slippage = demo.calculate_volume_aware_slippage_diagnostics
 
     def count_inventory_validator(*args, **kwargs):
         calls["inventory_validator"] += 1
@@ -667,6 +758,10 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         calls["quantile_spread"] += 1
         return original_quantile_spread(*args, **kwargs)
 
+    def count_volume_aware_slippage(*args, **kwargs):
+        calls["volume_aware_slippage"] += 1
+        return original_volume_aware_slippage(*args, **kwargs)
+
     monkeypatch.setattr(demo, "validate_local_csv_inventory", count_inventory_validator)
     monkeypatch.setattr(demo, "load_wide_price_csv", count_price_loader)
     monkeypatch.setattr(demo, "load_benchmark_price_csv", count_benchmark_loader)
@@ -686,6 +781,11 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
     monkeypatch.setattr(demo, "factor_information_coefficient", count_ic)
     monkeypatch.setattr(demo, "factor_rank_information_coefficient", count_rank_ic)
     monkeypatch.setattr(demo, "factor_quantile_spread", count_quantile_spread)
+    monkeypatch.setattr(
+        demo,
+        "calculate_volume_aware_slippage_diagnostics",
+        count_volume_aware_slippage,
+    )
 
     run_local_csv_fixture_workflow_demo(write_outputs=False)
 
@@ -705,6 +805,7 @@ def test_workflow_uses_existing_loader_feature_and_diagnostic_helpers(
         "ic": 8,
         "rank_ic": 8,
         "quantile_spread": 8,
+        "volume_aware_slippage": 1,
     }
 
 
@@ -789,6 +890,42 @@ def test_workflow_rejects_invalid_liquidity_config_values() -> None:
     with pytest.raises(ValueError, match="masked_signal_min_valid_signals_per_date"):
         run_local_csv_fixture_workflow_demo(
             config=bad_mask_value_config,
+            write_outputs=False,
+        )
+
+    bad_slippage_window_config = LocalCSVFixtureWorkflowConfig(
+        slippage_smoke_window=0,
+    )
+    with pytest.raises(ValueError, match="slippage_smoke_window"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_slippage_window_config,
+            write_outputs=False,
+        )
+
+    bad_slippage_lag_config = LocalCSVFixtureWorkflowConfig(
+        slippage_smoke_volume_lag=False,
+    )
+    with pytest.raises(TypeError, match="slippage_smoke_volume_lag"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_slippage_lag_config,
+            write_outputs=False,
+        )
+
+    bad_slippage_notional_config = LocalCSVFixtureWorkflowConfig(
+        slippage_smoke_portfolio_notional=0.0,
+    )
+    with pytest.raises(ValueError, match="slippage_smoke_portfolio_notional"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_slippage_notional_config,
+            write_outputs=False,
+        )
+
+    bad_slippage_cap_config = LocalCSVFixtureWorkflowConfig(
+        slippage_smoke_max_participation=0.0,
+    )
+    with pytest.raises(ValueError, match="slippage_smoke_max_participation"):
+        run_local_csv_fixture_workflow_demo(
+            config=bad_slippage_cap_config,
             write_outputs=False,
         )
 

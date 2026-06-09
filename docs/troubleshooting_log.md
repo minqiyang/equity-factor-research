@@ -23,6 +23,83 @@ problems, include:
 
 ---
 
+## 2026-06-09 - Slippage Smoke Stage Output And Patch Recovery
+
+Original mistakes:
+
+- During the local fixture slippage smoke diagnostic stage, an early context
+  read requested several full files and broad search output in parallel.
+- The first implementation patch then attempted to edit many sections of
+  `research/local_csv_fixture_workflow_demo.py` in one large patch with a
+  context hunk that did not match the current file exactly.
+
+Consequences:
+
+- The broad read produced more output than the tool context could safely
+  return, so the stage needed to recover with targeted, capped reads before
+  implementation.
+- The first large patch was rejected. No repository files were modified by
+  that failed patch, but the implementation needed to be split into smaller
+  verified patches.
+
+Evidence:
+
+```text
+Output exceeded the available model context and was truncated
+apply_patch verification failed: Failed to find expected lines in
+research/local_csv_fixture_workflow_demo.py
+```
+
+Investigation:
+
+- Confirmed the output issue was caused by the command shape rather than by a
+  test, data, or repository failure.
+- Re-read only the needed sections with PowerShell output caps and targeted
+  `rg` patterns.
+- Inspected the local fixture workflow around dataclasses, the run function,
+  report/log writers, config validation, and the relevant tests before
+  editing again.
+
+Correction attempts:
+
+- Replaced broad file reads with `Select-Object -First` / `Select-Object
+  -Skip ... -First ...` and targeted `rg` commands.
+- Replaced the large patch with smaller patches for imports, dataclass fields,
+  run-function integration, summary helpers, report/log fields, config
+  validation, and tests.
+
+Final fix:
+
+- The stage now uses the existing volume-aware slippage diagnostic helper from
+  `src/backtest/slippage.py` in the committed synthetic local CSV fixture
+  workflow, while reporting only participation and rejection/cap counts.
+- The workflow does not apply candidate slippage fields to returns, does not
+  run a backtest, and does not fetch or interpret real data.
+
+Verification:
+
+- `python -m pytest -q tests/test_local_csv_fixture_workflow_demo.py` passed
+  with 14 tests.
+- `python -m pytest -q tests/test_volume_aware_slippage.py` passed with 17
+  tests before the full validation gate.
+
+Remaining caveats:
+
+- The smoke diagnostic is a wiring check on tiny committed synthetic fixtures
+  only. It is not a capacity study, transaction-cost conclusion, real-market
+  evidence, or profitability support.
+
+Prevention:
+
+- Keep unknown file reads capped by default, especially for long workflow
+  scripts and tests.
+- Prefer smaller patches when a file has several distant edit locations.
+- Treat rejected patches and truncated command output as workflow issues that
+  need a durable troubleshooting entry, even when no repository file was
+  modified by the failed attempt.
+
+---
+
 ## 2026-06-09 - PowerShell `rg` Glob Pattern Failed During Roadmap Search
 
 Original mistake:
