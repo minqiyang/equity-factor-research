@@ -15,6 +15,60 @@ investment performance.
 
 ---
 
+## 2026-06-09 - Refresh Local Fixture Outputs Before Backtester Slippage Integration
+
+Context:
+
+- PR #90 added the volume-aware slippage design boundary.
+- PR #91 added the standalone synthetic-only diagnostic helper.
+- PR #92 added a committed synthetic local CSV fixture smoke diagnostic that
+  calls the helper and reports participation plus rejected/cap counts only.
+- PR #92 intentionally did not refresh committed generated reports/logs and
+  did not integrate volume-aware slippage into backtester net returns.
+
+Decision:
+
+- Treat the volume-aware design, helper, and local fixture smoke diagnostic
+  sequence as complete at the code/test level.
+- Before considering any backtester net-return integration, refresh the
+  committed synthetic local CSV fixture generated report/log/registry in a
+  separate narrow stage if the checkpoint is reviewed and merged.
+- Keep any generated-output refresh synthetic-only and caveated. It may record
+  participation and rejected/cap counts, but it must not treat candidate
+  slippage diagnostics as real-data evidence, execution realism, or
+  profitability support.
+
+Rationale:
+
+- The repository should not carry stale generated artifacts after a workflow
+  report/log writer changes.
+- Generated-output refresh is lower risk than backtester integration because
+  it does not change source behavior or net returns.
+- Separating artifact refresh from code changes keeps PR scope reviewable and
+  prevents generated report diffs from hiding implementation changes.
+
+Consequences:
+
+- The next safe stage after the checkpoint can be a local fixture generated
+  artifact refresh, not a new alpha, real-data study, or backtester slippage
+  integration.
+- Volume-aware slippage remains diagnostic-only until a later design stage
+  explicitly reviews whether it should affect simulated returns.
+- User-provided local CSV interpretation remains blocked by readiness-audit
+  and `EXPERIMENT_LOG.md` gates.
+
+Follow-up:
+
+- Refresh `reports/local_csv_fixture_workflow_demo.md`,
+  `reports/experiment_logs/local_csv_fixture_workflow_demo.json`, and
+  `reports/experiment_registry.md` in a separate stage after this checkpoint
+  merges.
+- Stop if the refresh would require real data, downloads, vendor APIs,
+  credentials, live or paper trading, brokerage integration, order execution,
+  backtester behavior changes, or profitability claims.
+
+---
+
 ## 2026-06-09 - Keep Volume-Aware Slippage Helper Diagnostic-Only
 
 Context:
