@@ -15,6 +15,56 @@ investment performance.
 
 ---
 
+## 2026-06-09 - Require Slippage And Cost Design Before Implementation
+
+Context:
+
+- PR #84 merged the post-local-CSV-fixture audit rehearsal checkpoint.
+- That checkpoint recommends simulated slippage and cost assumption design as
+  the next repository-internal stage.
+- The local backtester currently applies `transaction_cost_bps` to
+  target-weight turnover, but it does not separately represent slippage or
+  market impact.
+- The project specification requires transaction costs, slippage, turnover,
+  and execution assumptions to be explicit.
+
+Decision:
+
+- Add a documentation-only design before any local backtester cost/slippage
+  implementation changes.
+- Treat the first future implementation, if approved later, as a narrow fixed
+  basis-point slippage extension on the current target-weight turnover model.
+- Defer volume-aware slippage and market impact until separate policy, data,
+  lag, and testing requirements are reviewed.
+
+Rationale:
+
+- Cost and slippage assumptions can materially affect simulated results.
+- A design gate prevents a small-looking parameter addition from becoming an
+  implicit execution model.
+- Fixed-basis-point turnover friction is deterministic and testable, but it
+  must remain caveated as simulated research accounting rather than realistic
+  execution evidence.
+
+Consequences:
+
+- Backtester source code remains unchanged by this decision.
+- Future code must keep transaction cost and slippage assumptions visible in
+  outputs and logs.
+- Zero-cost or no-slippage runs remain diagnostics only.
+- User-provided local CSV interpretation remains blocked by the readiness
+  audit and experiment-log gates.
+
+Follow-up:
+
+- After the design is reviewed and merged, consider a narrow synthetic-only
+  implementation PR with deterministic tests for separate fixed-bps slippage.
+- Stop before implementation if the next stage would require real data,
+  broker fills, order execution, credential access, or performance
+  interpretation.
+
+---
+
 ## 2026-06-08 - Pause User-Provided Local CSV Work At The Readiness Gate
 
 Context:
