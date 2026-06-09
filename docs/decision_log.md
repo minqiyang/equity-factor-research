@@ -15,6 +15,55 @@ investment performance.
 
 ---
 
+## 2026-06-08 - Pause User-Provided Local CSV Work At The Readiness Gate
+
+Context:
+
+- PR #83 merged the committed synthetic local CSV fixture readiness audit
+  rehearsal.
+- The repository now has the future local CSV study plan, checklist, inventory
+  validator, audit report template, and synthetic fixture rehearsal artifacts.
+- No user-provided local CSV bundle, completed scope statement, completed
+  checklist, completed inventory review, completed readiness audit report, or
+  prepared user-data `EXPERIMENT_LOG.md` entry is available.
+- Starting a user-data smoke run would require external files and human review
+  decisions that are not present in the repository context.
+
+Decision:
+
+- Do not proceed to a user-provided local CSV smoke run by default.
+- Treat local CSV user-data interpretation as blocked until the required
+  bundle, checklist, inventory, readiness audit, and experiment-log gates are
+  complete.
+- Route the next repository-internal stage toward simulated slippage and cost
+  assumption design before any cost/slippage implementation changes.
+
+Rationale:
+
+- The local CSV readiness artifacts are preparation gates, not evidence that a
+  specific user dataset is safe to interpret.
+- The original project specification requires explicit transaction costs,
+  slippage, turnover, and execution assumptions.
+- The current backtester has fixed basis-point transaction costs but no
+  separate slippage or market-impact model; a design gate keeps that boundary
+  reviewable before source code changes.
+
+Consequences:
+
+- Local CSV work remains synthetic, local-fixture only, or documentation-only
+  until user data and completed audit artifacts are available.
+- The next stage should not fetch data, add vendor APIs, add credentials, add
+  live or paper trading, add brokerage/order logic, or claim profitability.
+- Backtester source code remains unchanged by this decision.
+
+Follow-up:
+
+- Add a documentation-only simulated slippage and cost assumption design stage.
+- Stop before implementation if the design would require real market data,
+  broker fills, order execution, or performance interpretation.
+
+---
+
 ## 2026-06-07 - Require Universe-Mask Backtest Integration Design Before Code
 
 Context:

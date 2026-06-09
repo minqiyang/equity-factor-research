@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-08 - Post Local CSV Fixture Audit Rehearsal Checkpoint
+
+This documentation milestone records the repository state after the committed
+synthetic local CSV fixture readiness audit rehearsal merged.
+
+Assumption: no user-provided local CSV bundle, completed user-data checklist,
+completed inventory review, completed readiness audit report, or prepared
+user-data `EXPERIMENT_LOG.md` entry is available in the current repository
+context. The next safe stage is therefore not a real local CSV smoke run. The
+safe repository-internal stage is a checkpoint that closes the local CSV
+readiness-artifact sequence for now and selects the next non-user-data
+roadmap item.
+
+`docs/post_local_csv_fixture_audit_rehearsal_checkpoint.md` now records the
+post-PR #83 review baseline, completed local CSV readiness artifacts, remaining
+user-data gates, original-goal gaps, guardrail review, and recommended next
+stage. It recommends a documentation-only simulated slippage and cost
+assumption design before any backtester cost/slippage code changes.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, execution
+assumptions, live or paper trading scope, brokerage integration, order
+execution, or profitability language.
+
+Validation is rerun before the associated PR is committed and opened.
+
+---
+
 ## 2026-06-08 - Local CSV Fixture Readiness Audit Rehearsal
 
 This documentation milestone fills the manual local CSV readiness audit report
