@@ -20,10 +20,13 @@
     "rebalance_frequency": "ME",
     "selected_assets_per_rebalance": 4,
     "signal_lag_periods": 1,
-    "slippage_model": "not separately modeled; diagnostic synthetic smoke test only",
-    "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
+    "slippage_bps": 0.0,
+    "slippage_model": "fixed_bps_on_target_weight_turnover; 0.00 bps per unit of target-weight turnover",
+    "transaction_cost_bps": 10.0,
+    "transaction_cost_model": "fixed_bps_on_target_weight_turnover; 10.00 bps per unit of target-weight turnover",
     "turnover_model": "target_weight_turnover",
-    "universe": "12 synthetic assets"
+    "universe": "12 synthetic assets",
+    "zero_cost_or_slippage_is_diagnostic": true
   },
   "caveats": [
     "synthetic data only",
@@ -43,6 +46,7 @@
     "price_seed": 20260529,
     "rebalance_frequency": "ME",
     "signal_lag_periods": 1,
+    "slippage_bps": 0.0,
     "start_date": "2024-01-02",
     "starting_price": 100.0,
     "top_n": 4,
@@ -71,6 +75,8 @@
     "max_drawdown": -0.05135363466081455,
     "sharpe_ratio": 1.2840020536287478,
     "total_return": 0.08608153650215389,
+    "total_slippage_cost_impact": 0.0,
+    "total_trading_cost_impact": 0.0085,
     "total_transaction_cost_impact": 0.0085,
     "total_turnover": 8.5
   },
@@ -82,6 +88,6 @@
     "price_rows": 160
   },
   "schema_version": 1,
-  "summary": "Deterministic synthetic smoke test that connects existing factor preprocessing and combination helpers to the existing long-only backtester with explicit signal lag and transaction costs.",
+  "summary": "Deterministic synthetic smoke test that connects existing factor preprocessing and combination helpers to the existing long-only backtester with explicit signal lag, transaction costs, and fixed-bps slippage assumptions.",
   "title": "Synthetic Combined-Score Backtest Smoke Test"
 }

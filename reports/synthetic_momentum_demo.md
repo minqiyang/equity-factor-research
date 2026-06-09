@@ -10,7 +10,8 @@ Demonstrate the local research workflow:
 2. Compute 12-1 month momentum.
 3. Run a long-only, top-ranked, equal-weight backtest.
 4. Include fixed transaction costs.
-5. Record basic metrics and limitations.
+5. Record explicit fixed-bps slippage assumptions.
+6. Record basic metrics and limitations.
 
 ## Configuration
 
@@ -23,6 +24,8 @@ Demonstrate the local research workflow:
 - Rebalance frequency: `ME`
 - Selected assets per rebalance: `5`
 - Transaction cost: `10.00` bps per unit of target-weight turnover
+- Slippage: `0.00` bps per unit of target-weight turnover
+- Zero cost or slippage diagnostic: `True`
 - Benchmark: synthetic equal-weight universe benchmark
 - Execution timing: signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row
 
@@ -38,6 +41,8 @@ Demonstrate the local research workflow:
 | Average turnover | 1.67% |
 | Total turnover | 12.6000 |
 | Total transaction cost impact | 1.26% |
+| Total slippage cost impact | 0.00% |
+| Total trading cost impact | 1.26% |
 | Benchmark total return | 28.16% |
 | Excess total return vs synthetic benchmark | -36.11% |
 
@@ -46,6 +51,7 @@ Demonstrate the local research workflow:
 - Synthetic prices are not calibrated to actual equities.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model.
 - The backtester uses simplified target-weight turnover, not drift-adjusted trade accounting.
+- The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results depend on the synthetic random seed and are workflow diagnostics only.
 - No claim of strategy profitability is made.
 

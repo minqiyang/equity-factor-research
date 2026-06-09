@@ -88,10 +88,14 @@ def test_backtest_result_exists_and_records_transaction_costs(tmp_path: Path) ->
 
     assert isinstance(result.backtest_result, BacktestResult)
     assert result.backtest_result.assumptions["transaction_cost_bps"] == 12.5
+    assert result.backtest_result.assumptions["slippage_bps"] == 0.0
     assert result.backtest_result.assumptions["signal_lag_periods"] == 1
     assert result.backtest_result.assumptions["long_only"] is True
     assert "total_transaction_cost_impact" in result.backtest_result.metrics
+    assert "total_slippage_cost_impact" in result.backtest_result.metrics
+    assert "total_trading_cost_impact" in result.backtest_result.metrics
     assert result.backtest_result.transaction_costs.ge(0.0).all()
+    assert result.backtest_result.slippage_costs.eq(0.0).all()
 
 
 def test_report_is_created_with_required_warning_language(tmp_path: Path) -> None:
@@ -141,10 +145,21 @@ def test_combined_score_demo_writes_experiment_log(tmp_path: Path) -> None:
     assert payload["assumptions"]["data_scope"] == "synthetic only"
     assert payload["assumptions"]["benchmark"] == "synthetic equal-weight universe benchmark"
     assert payload["assumptions"]["signal_lag_periods"] == 1
-    assert payload["assumptions"]["transaction_cost_model"].startswith("10.00 bps")
-    assert payload["assumptions"]["slippage_model"].startswith("not separately modeled")
+    assert payload["assumptions"]["transaction_cost_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["transaction_cost_bps"] == 10.0
+    assert payload["assumptions"]["slippage_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["slippage_bps"] == 0.0
+    assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
     assert payload["assumptions"]["live_trading"] is False
     assert payload["metrics"]["total_return"] == result.backtest_result.metrics["total_return"]
+    assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
+    assert payload["metrics"]["total_trading_cost_impact"] == result.backtest_result.metrics[
+        "total_trading_cost_impact"
+    ]
     assert payload["diagnostics"]["aligned_signal_coverage"] == 1.0
     assert "not strategy validation" in payload["caveats"]
 

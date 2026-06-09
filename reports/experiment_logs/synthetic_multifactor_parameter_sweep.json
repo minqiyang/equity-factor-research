@@ -14,10 +14,13 @@
     "long_only": true,
     "parameter_policy": "all configured cases are reported; no best-only filtering",
     "rebalance_frequency": "ME",
-    "slippage_model": "not separately modeled; diagnostic synthetic sweep only",
-    "transaction_cost_model": "10.00 bps per unit of target-weight turnover",
+    "slippage_bps": 0.0,
+    "slippage_model": "fixed_bps_on_target_weight_turnover; 0.00 bps per unit of target-weight turnover",
+    "transaction_cost_bps": 10.0,
+    "transaction_cost_model": "fixed_bps_on_target_weight_turnover; 10.00 bps per unit of target-weight turnover",
     "turnover_model": "target_weight_turnover",
-    "universe": "12 synthetic assets"
+    "universe": "12 synthetic assets",
+    "zero_cost_or_slippage_is_diagnostic": true
   },
   "caveats": [
     "synthetic data only",
@@ -37,6 +40,7 @@
     "price_seed": 20260529,
     "rebalance_frequency": "ME",
     "signal_lag_periods": 1,
+    "slippage_bps": 0.0,
     "start_date": "2024-01-02",
     "top_n_values": [
       3,
@@ -84,6 +88,8 @@
         "sharpe_ratio": 2.4156101642258934,
         "top_n": 3,
         "total_return": 0.16649693048556835,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.004333333333333333,
         "total_transaction_cost_impact": 0.004333333333333333,
         "total_turnover": 4.333333333333333,
         "weight_set": "balanced"
@@ -102,6 +108,8 @@
         "sharpe_ratio": 3.263820530295013,
         "top_n": 4,
         "total_return": 0.21434397372385772,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.0025,
         "total_transaction_cost_impact": 0.0025,
         "total_turnover": 2.5,
         "weight_set": "balanced"
@@ -120,6 +128,8 @@
         "sharpe_ratio": 1.4804799005408993,
         "top_n": 3,
         "total_return": 0.11374185472339926,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.002333333333333333,
         "total_transaction_cost_impact": 0.002333333333333333,
         "total_turnover": 2.333333333333333,
         "weight_set": "momentum_tilt"
@@ -138,6 +148,8 @@
         "sharpe_ratio": 1.784309093921589,
         "top_n": 4,
         "total_return": 0.12405549421757023,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.004,
         "total_transaction_cost_impact": 0.004,
         "total_turnover": 4.0,
         "weight_set": "momentum_tilt"
@@ -156,6 +168,8 @@
         "sharpe_ratio": 2.9568550155697526,
         "top_n": 3,
         "total_return": 0.20416617824112993,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.001,
         "total_transaction_cost_impact": 0.001,
         "total_turnover": 1.0,
         "weight_set": "quality_tilt"
@@ -174,6 +188,8 @@
         "sharpe_ratio": 3.137550567364547,
         "top_n": 4,
         "total_return": 0.20903539340689004,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.002,
         "total_transaction_cost_impact": 0.002,
         "total_turnover": 2.0,
         "weight_set": "quality_tilt"
@@ -192,6 +208,8 @@
         "sharpe_ratio": 2.316841044843419,
         "top_n": 3,
         "total_return": 0.15808962439167762,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.004333333333333333,
         "total_transaction_cost_impact": 0.004333333333333333,
         "total_turnover": 4.333333333333333,
         "weight_set": "reversal_tilt"
@@ -210,6 +228,8 @@
         "sharpe_ratio": 3.263820530295013,
         "top_n": 4,
         "total_return": 0.21434397372385772,
+        "total_slippage_cost_impact": 0.0,
+        "total_trading_cost_impact": 0.0025,
         "total_transaction_cost_impact": 0.0025,
         "total_turnover": 2.5,
         "weight_set": "reversal_tilt"

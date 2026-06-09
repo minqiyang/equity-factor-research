@@ -76,11 +76,23 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert "weak or negative diagnostics" in report_text
     assert "not evidence of real-world performance or strategy validation" in report_text
     assert "does not identify a best parameter set" in report_text
+    assert "Zero cost or slippage diagnostic" in report_text
     assert payload["experiment_id"] == "synthetic-multifactor-parameter-sweep"
     assert payload["experiment_type"] == "synthetic_parameter_sweep"
     assert payload["metrics"] == {}
     assert payload["outputs"]["case_count"] == len(result.results)
     assert len(payload["diagnostics"]["cases"]) == len(result.results)
+    assert "total_slippage_cost_impact" in payload["diagnostics"]["cases"][0]
+    assert "total_trading_cost_impact" in payload["diagnostics"]["cases"][0]
+    assert payload["assumptions"]["transaction_cost_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["transaction_cost_bps"] == 10.0
+    assert payload["assumptions"]["slippage_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["slippage_bps"] == 0.0
+    assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
     assert "all parameter cases reported" in payload["caveats"]
     assert "not parameter optimization" in payload["caveats"]
     assert payload["assumptions"]["parameter_policy"] == "all configured cases are reported; no best-only filtering"

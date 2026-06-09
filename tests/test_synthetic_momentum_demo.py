@@ -52,9 +52,21 @@ def test_synthetic_demo_writes_experiment_log(tmp_path: Path) -> None:
     assert payload["assumptions"]["data_scope"] == "synthetic only"
     assert payload["assumptions"]["data_source"] == "local deterministic generator; no external data fetch"
     assert payload["assumptions"]["benchmark"] == "synthetic equal-weight universe benchmark"
-    assert payload["assumptions"]["slippage_model"].startswith("not separately modeled")
+    assert payload["assumptions"]["transaction_cost_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["transaction_cost_bps"] == 10.0
+    assert payload["assumptions"]["slippage_model"].startswith(
+        "fixed_bps_on_target_weight_turnover"
+    )
+    assert payload["assumptions"]["slippage_bps"] == 0.0
+    assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
     assert payload["assumptions"]["live_trading"] is False
     assert payload["assumptions"]["brokerage_integration"] is False
     assert payload["metrics"]["total_return"] == result.metrics["total_return"]
+    assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
+    assert payload["metrics"]["total_trading_cost_impact"] == result.metrics[
+        "total_trading_cost_impact"
+    ]
     assert "not a profitability claim" in payload["caveats"]
     assert "not evidence of real-world strategy performance" in payload["caveats"]
