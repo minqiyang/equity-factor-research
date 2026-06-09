@@ -12,6 +12,54 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Token-Efficient Codex Workflow Controls
+
+This documentation and workflow-tooling milestone adds a short durable handoff
+and capped-output rules so future staged Codex runs can spend less context on
+stable repository state while preserving review quality.
+
+Assumption: after PR #88 merged, the next safe stage is workflow-control only.
+The current open-PR gate was clear at branch creation, and no research source,
+tests, research scripts, generated reports, CSV loader, backtester, metrics,
+alpha files, normalization, combination, diagnostics, LEAN code, real-data
+access, broker/order behavior, credentials, or `PROJECT_SPEC.md` changes are
+needed to improve Codex context discipline.
+
+`docs/current_handoff.md` now provides the first-read project state summary.
+`scripts/repo_map.py` reads repository paths and writes only
+`docs/repo_map.md`, skipping cache/build directories, generated reports, and
+large artifacts by default. `AGENTS.md`, the long-running controller, and the
+staged workflow Skill now require handoff-first startup, capped output for
+unknown large commands, targeted inspection of temp-file captures when full
+output is needed, and no full generated-report or large-log printing by
+default.
+
+Validation before commit:
+
+- `python -m pytest -q` - 461 passed.
+- `python -m compileall src tests research` - passed.
+- `.\scripts\audit-skills.ps1` - passed for 2 Skill files.
+- `python scripts/repo_map.py` - wrote `docs/repo_map.md`.
+- `git diff --check` - passed before commit.
+
+Workflow recovery:
+
+- Original assumption: the GitHub connector could create the PR after the
+  branch was pushed.
+- Consequence: PR creation stopped on the connector path.
+- Evidence: the connector returned `403 Resource not accessible by
+  integration`.
+- Investigation: `gh repo view` confirmed the canonical repository is
+  `minqiyang/equity-factor-research` with base branch `main`, and the branch
+  had already pushed successfully.
+- Correction attempt and final fix: used the documented GitHub CLI fallback
+  with a temp Markdown body file, and `gh pr create` opened ready-for-review
+  PR #89.
+- Verification: the PR URL was returned by `gh`; future runs should continue
+  to fall back to `gh pr create` when the connector returns this 403.
+
+---
+
 ## 2026-06-09 - Post Slippage And Cost Checkpoint
 
 This documentation checkpoint records the repository state after the fixed-bps

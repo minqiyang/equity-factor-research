@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/current_handoff.md`, `scripts/repo_map.py`, and
+  `docs/repo_map.md` workflow controls so future Codex stages can start from a
+  concise durable handoff, regenerate a short repo map, and preserve capped
+  command-output discipline without weakening safety guardrails.
 - Added `docs/post_slippage_cost_checkpoint.md` to record that the fixed-bps
   slippage design, implementation, and synthetic report/log refresh sequence is
   complete, and to route future volume-aware slippage work through a

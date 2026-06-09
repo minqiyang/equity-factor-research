@@ -32,17 +32,20 @@ Codex should be able to advance one small, reviewable stage at a time without wa
 
 ## Inputs and context to collect
 
-Start each continuation by collecting:
+Start each continuation by reading `docs/current_handoff.md` first, then
+`docs/repo_map.md` for concise orientation when needed. Read deeper logs and
+long documents only when the handoff points to them, the active stage requires
+them, a check fails, or a guardrail-sensitive decision needs source evidence.
+
+After the handoff, collect:
 
 - current branch and working-tree status;
 - latest local and remote `main`;
 - recent git history;
 - open and recently merged PRs;
 - `docs/codex_long_running_controller.md`;
-- `docs/decision_log.md`;
-- `docs/troubleshooting_log.md`;
-- `CHANGELOG.md`;
-- latest checkpoint or roadmap docs;
+- deeper decision, troubleshooting, changelog, checkpoint, or roadmap docs only
+  when needed for the active stage;
 - current test status when continuing beyond a merge gate.
 
 If a previous stage PR is still open, stop and report the merge gate instead of starting a new stage.
@@ -89,9 +92,9 @@ Reliable state checks:
 ```bash
 git fetch origin
 git branch --show-current
-git status -sb --untracked-files=all
-git log --oneline --decorate -12
-gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title,headRefName,baseRefName
+git status --porcelain | head -n 50
+git log --oneline -20
+gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title,headRefName,baseRefName 2>&1 | head -c 8000
 ```
 
 Merge-gate sync:
@@ -99,7 +102,7 @@ Merge-gate sync:
 ```bash
 git switch main
 git pull --ff-only origin main
-git status -sb --untracked-files=all
+git status --porcelain | head -n 50
 ```
 
 Baseline validation:
@@ -107,7 +110,7 @@ Baseline validation:
 ```bash
 python -m pytest -q
 python -m compileall src tests research
-git diff --check
+git diff --check origin/main..HEAD
 ```
 
 Skill audit:
@@ -115,6 +118,23 @@ Skill audit:
 ```powershell
 .\scripts\audit-skills.ps1
 ```
+
+Workflow map refresh:
+
+```bash
+python scripts/repo_map.py
+```
+
+Command-output protection:
+
+```bash
+git diff --name-only | head -n 80
+COMMAND 2>&1 | head -c 8000
+```
+
+Use equivalent PowerShell caps such as `Select-Object -First` when needed.
+Write full output to temp files and inspect targeted ranges only if full review
+is necessary. Never print full generated reports or large logs by default.
 
 Guardrail review:
 
