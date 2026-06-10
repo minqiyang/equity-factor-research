@@ -12,6 +12,44 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-09 - Post Volume-Aware Slippage Smoke Checkpoint
+
+This documentation-only checkpoint records the repository state after PR #92
+merged the committed synthetic local CSV fixture smoke diagnostic for
+volume-aware slippage.
+
+Assumption: after syncing `main` to PR #92 and verifying no open PR gates,
+the next safe stage is a checkpoint, not generated-output refresh,
+backtester net-return integration, user-provided local CSV interpretation,
+or LEAN/runtime work. The checkpoint should make the next step explicit before
+any committed reports/logs are regenerated.
+
+`docs/post_volume_aware_slippage_smoke_checkpoint.md` now records the reviewed
+baseline, completed design/helper/smoke sequence, diagnostic-only boundary,
+remaining gaps, guardrail review, and recommended next roadmap. The
+recommendation is a narrow synthetic local CSV fixture generated-output
+refresh so committed report/log artifacts reflect the new smoke diagnostic.
+
+`docs/decision_log.md` records the durable decision to refresh local fixture
+generated outputs before considering any backtester slippage integration.
+`docs/current_handoff.md` is updated so future continuations pause at this
+checkpoint PR and, after merge, route to the generated-output refresh stage.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact modeling, or profitability
+language.
+
+Validation before PR creation:
+
+- `python -m pytest -q` - 478 passed.
+- `python -m compileall src tests research` - passed.
+- Full final validation is recorded in the PR summary after the final gate.
+
+---
+
 ## 2026-06-09 - Local Fixture Volume-Aware Slippage Smoke Diagnostic
 
 This code milestone wires the reviewed volume-aware slippage diagnostic helper

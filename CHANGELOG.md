@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_volume_aware_slippage_smoke_checkpoint.md` to record the
+  completed volume-aware slippage design/helper/local-fixture smoke sequence
+  and route the next safe stage toward synthetic generated-output refresh
+  before any backtester integration.
 - Added a synthetic local CSV fixture smoke diagnostic that calls the
   volume-aware slippage helper on fixed diagnostic target weights and reports
   participation plus rejected/cap counts without applying slippage to returns
