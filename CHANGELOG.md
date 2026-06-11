@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added an explicit precomputed volume-aware slippage impact path to the local
+  backtester, with deterministic tests and separate result, metric, and
+  assumption fields while keeping `diagnostic_only` as the default and leaving
+  generated reports unchanged.
 - Added `docs/volume_aware_slippage_backtester_integration_test_plan.md` to
   define the deterministic unit, integration, failure-mode, guardrail,
   result-field, audit-field, report-field, and experiment-log tests required

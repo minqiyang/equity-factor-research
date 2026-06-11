@@ -15,6 +15,52 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Add Precomputed Volume-Aware Slippage Backtester Boundary
+
+Context:
+
+- PR #99 added the documentation-only test plan for volume-aware slippage
+  backtester integration.
+- The reviewed design and test plan both recommend keeping helper calculation
+  outside the backtester and using a precomputed impact boundary for the first
+  implementation.
+
+Decision:
+
+- Add a narrow `apply_precomputed_impact` path to `run_long_only_backtest()`.
+- Keep `volume_aware_slippage_mode="diagnostic_only"` as the default.
+- Add a separate `volume_aware_slippage_costs` result series, separate metrics,
+  and explicit assumption fields for applied volume-aware slippage metadata.
+- Reject positive fixed-bps slippage plus positive applied volume-aware impact
+  by default to avoid hidden double counting.
+- Do not make the backtester compute rolling dollar volume, read OHLCV panels,
+  fetch data, use vendor APIs, connect to brokers, or place orders.
+
+Rationale:
+
+- A precomputed series keeps date alignment, notional scale, volume policy,
+  missing/zero/stale liquidity policy, and participation-cap handling in the
+  diagnostic helper boundary.
+- Separate result and metric fields keep fixed transaction costs, fixed-bps
+  slippage, volume-aware candidate slippage, and total trading impact
+  inspectable.
+- The default diagnostic mode preserves existing behavior unless callers
+  explicitly opt into applied precomputed impact with required metadata.
+
+Consequences:
+
+- Future generated reports and experiment logs may need a separate refresh or
+  review stage so new metrics and audit fields are visible and caveated.
+- User-provided local CSV interpretation remains blocked by readiness-audit,
+  provenance, alignment, and experiment-handoff gates.
+
+Follow-up:
+
+- After this implementation PR merges, review and refresh affected synthetic
+  generated outputs in a separate PR if the diff confirms new default fields.
+
+---
+
 ## 2026-06-11 - Require Tests Before Volume-Aware Slippage Backtester Implementation
 
 Context:
