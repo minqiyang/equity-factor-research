@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_local_fixture_slippage_output_refresh_checkpoint.md` to
+  record the post-PR #94 generated-output refresh state, keep volume-aware
+  slippage diagnostic-only, and route the next safe stage toward a
+  documentation-only backtester integration design.
 - Added a context-budget and retrieval policy to the long-running controller
   and staged workflow Skill so future continuations start from the handoff and
   repo map, avoid broad parallel reads of long logs/reports, and recover

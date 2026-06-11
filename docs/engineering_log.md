@@ -12,6 +12,38 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Post Local Fixture Slippage Output Refresh Checkpoint
+
+This documentation-only checkpoint records the repository state after PR #94
+refreshed the synthetic local CSV fixture generated outputs and PRs #95/#96
+added and refined the context-budget retrieval policy.
+
+Assumption: after syncing `main` to PR #96, verifying no open PR gates, and
+passing baseline validation, the next safe stage is a checkpoint before any
+backtester net-return integration design. It is not source code changes, CSV
+loader changes, research script changes, generated report changes,
+user-provided local CSV interpretation, or LEAN/runtime work.
+
+`docs/post_local_fixture_slippage_output_refresh_checkpoint.md` records the
+reviewed baseline, completed volume-aware slippage design/helper/smoke/output
+refresh sequence, diagnostic-only boundary, remaining gaps, guardrail review,
+and recommended next roadmap. The recommendation is a documentation-only
+volume-aware slippage backtester integration design after this checkpoint is
+reviewed and merged.
+
+`docs/current_handoff.md` now routes future continuations through this
+checkpoint PR, and `docs/repo_map.md` is refreshed because a docs file was
+added.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact modeling, or profitability
+language.
+
+---
+
 ## 2026-06-11 - Context Budget Policy For Staged Workflow
 
 This workflow-control update adds a context-budget and retrieval policy to the
