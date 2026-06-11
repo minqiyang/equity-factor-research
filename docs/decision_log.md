@@ -15,6 +15,56 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Require Design Before Volume-Aware Slippage Net-Return Integration
+
+Context:
+
+- PR #90 added the volume-aware slippage design boundary.
+- PR #91 added the standalone synthetic-only diagnostic helper.
+- PR #92 added a committed synthetic local CSV fixture smoke diagnostic.
+- PR #93 checkpointed the smoke diagnostic before generated-output refresh.
+- PR #94 refreshed the committed synthetic local CSV fixture report, JSON
+  experiment log, and experiment registry with the diagnostic outputs.
+- None of those stages applied candidate volume-aware slippage to simulated
+  portfolio returns.
+
+Decision:
+
+- Treat the volume-aware slippage design/helper/smoke/output-refresh sequence
+  as complete at the diagnostic artifact level.
+- Require a separate documentation-only integration design before any future
+  stage changes `run_long_only_backtest()`, metrics, reports, or generated
+  logs so volume-aware slippage affects simulated net returns.
+
+Rationale:
+
+- Net-return accounting needs explicit semantics for gross returns, fixed
+  transaction costs, fixed-bps slippage, candidate volume-aware slippage,
+  rejected/capped trades, zero-slippage diagnostics, and caveats.
+- A design gate is lower risk than implementation and keeps the next PR
+  reviewable.
+- Synthetic/local fixture diagnostics are useful for plumbing and audit
+  visibility, but they are not real-data evidence or profitability support.
+
+Consequences:
+
+- The next safe stage after the checkpoint can be a documentation-only
+  volume-aware slippage backtester integration design.
+- Source code, tests, research scripts, generated reports, and backtester
+  behavior should remain unchanged until that design is reviewed.
+- User-provided local CSV interpretation remains blocked by readiness-audit,
+  provenance, schema, alignment, and experiment-handoff gates.
+
+Follow-up:
+
+- Draft `docs/volume_aware_slippage_backtester_integration_design.md` in a
+  later PR after the checkpoint merges.
+- Stop if the design would require real data, downloads, vendor APIs,
+  credentials, live or paper trading, brokerage integration, order execution,
+  silent missing-data repair, or profitability claims.
+
+---
+
 ## 2026-06-09 - Refresh Local Fixture Outputs Before Backtester Slippage Integration
 
 Context:
