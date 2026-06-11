@@ -24,6 +24,12 @@ retrieval ladder from git/PR state through targeted log searches; discourages
 parallel broad reads of long logs, reports, experiment JSON, and checkpoint
 documents; and requires targeted rereads after truncation.
 
+Follow-up refinement: the short-entry files are now explicitly maintained as
+retrieval controls. `docs/current_handoff.md` should stay around 100-200 lines,
+`docs/repo_map.md` should remain an index rather than history, and long logs
+plus `CHANGELOG.md` should be accessed by tail, keyword search, stats, or small
+line ranges by default.
+
 This stage changes workflow documentation and logs only. It does not modify
 source code, tests, research scripts, generated reports, CSV loader behavior,
 backtester behavior, metrics, alpha files, normalization, combination,
