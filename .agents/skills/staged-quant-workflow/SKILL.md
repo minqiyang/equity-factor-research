@@ -66,11 +66,29 @@ First-pass context is limited to:
 - `docs/codex_long_running_controller.md`
 - `.agents/skills/staged-quant-workflow/SKILL.md`
 
+Treat the short-entry files as retrieval controls:
+
+- `docs/current_handoff.md` should stay short, ideally 100-200 lines, and
+  include the latest merged PR, current open PR gate, next recommended stage,
+  known blockers, recent validation result, and a reminder not to read full
+  logs by default.
+- `docs/repo_map.md` should be an index rather than history: directory
+  structure, folder purposes, key file locations, and which files are long
+  enough to require search, tail, or small-range reads.
+- `docs/codex_long_running_controller.md` should define workflow behavior and
+  stop conditions, not duplicate detailed stage history.
+
 Do not read multiple long logs, generated reports, experiment JSON logs, or
 checkpoint/design reports in parallel. Long files include
 `docs/engineering_log.md`, `docs/decision_log.md`,
 `docs/troubleshooting_log.md`, `CHANGELOG.md`, `reports/*.md`,
 `reports/experiment_logs/*.json`, and long checkpoint or design docs.
+
+Detailed logs can remain comprehensive, but default access is restricted.
+Use tail, keyword search, or small line ranges for `docs/engineering_log.md`,
+`docs/decision_log.md`, and `docs/troubleshooting_log.md`. For `CHANGELOG.md`,
+prefer `git log`, `git show --stat`, `rg -n "Unreleased" CHANGELOG.md`, or a
+tail read instead of a full-file read.
 
 Context ladder:
 
