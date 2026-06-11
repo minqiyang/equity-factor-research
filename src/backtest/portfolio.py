@@ -8,12 +8,29 @@ fetch data.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
 
 from backtest.metrics import calculate_basic_metrics
+
+
+_VOLUME_AWARE_SLIPPAGE_MODES = {"diagnostic_only", "apply_precomputed_impact"}
+_REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
+    "base_slippage_bps",
+    "max_participation",
+    "missing_or_zero_liquidity_policy",
+    "participation_above_cap_policy",
+    "participation_slope_bps",
+    "portfolio_notional",
+    "price_field",
+    "slippage_model",
+    "stale_volume_policy",
+    "volume_lag",
+    "volume_policy",
+    "window",
+}
 
 
 @dataclass(frozen=True)
@@ -32,6 +49,7 @@ class BacktestResult:
     turnover: pd.Series
     transaction_costs: pd.Series
     slippage_costs: pd.Series
+    volume_aware_slippage_costs: pd.Series
     total_trading_costs: pd.Series
     metrics: dict[str, float]
     benchmark_equity_curve: pd.Series | None
@@ -47,6 +65,9 @@ def run_long_only_backtest(
     top_pct: float | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    volume_aware_slippage_mode: str = "diagnostic_only",
+    volume_aware_slippage_impact: pd.Series | None = None,
+    volume_aware_slippage_metadata: Mapping[str, Any] | None = None,
     benchmark_prices: pd.Series | None = None,
     initial_capital: float = 1.0,
     signal_lag_periods: int = 1,
@@ -76,6 +97,9 @@ def run_long_only_backtest(
     - Slippage is a separate fixed basis-point impact applied to the same
       target-weight turnover model. This is a deterministic research
       assumption, not an order-fill or market-impact model.
+    - Volume-aware slippage remains diagnostic-only by default. The first
+      supported integration path accepts an explicit precomputed impact series
+      and metadata; the backtester does not calculate rolling dollar volume.
     - Missing held-asset returns raise by default. Passing
       ``missing_price_policy="zero_return"`` is an explicit diagnostic fallback
       that treats missing held returns as 0.0.
@@ -96,6 +120,7 @@ def run_long_only_backtest(
         top_pct=top_pct,
         transaction_cost_bps=transaction_cost_bps,
         slippage_bps=slippage_bps,
+        volume_aware_slippage_mode=volume_aware_slippage_mode,
         initial_capital=initial_capital,
         signal_lag_periods=signal_lag_periods,
         missing_price_policy=missing_price_policy,
@@ -133,7 +158,16 @@ def run_long_only_backtest(
     turnover = turnover_weights.sum(axis=1)
     transaction_costs = turnover * (transaction_cost_bps / 10_000.0)
     slippage_costs = turnover * (slippage_bps / 10_000.0)
-    total_trading_costs = transaction_costs + slippage_costs
+    volume_aware_slippage_costs = _prepare_volume_aware_slippage_costs(
+        price_index=price_data.index,
+        mode=volume_aware_slippage_mode,
+        impact=volume_aware_slippage_impact,
+        metadata=volume_aware_slippage_metadata,
+        fixed_slippage_bps=slippage_bps,
+    )
+    total_trading_costs = (
+        transaction_costs + slippage_costs + volume_aware_slippage_costs
+    )
     net_returns = gross_returns - total_trading_costs
     equity_curve = initial_capital * (1.0 + net_returns).cumprod()
 
@@ -150,9 +184,22 @@ def run_long_only_backtest(
         turnover=turnover,
         transaction_costs=transaction_costs,
         slippage_costs=slippage_costs,
+        volume_aware_slippage_costs=volume_aware_slippage_costs,
         benchmark_equity_curve=benchmark_equity_curve,
         initial_capital=initial_capital,
         periods_per_year=periods_per_year,
+    )
+
+    volume_aware_assumptions = _build_volume_aware_slippage_assumptions(
+        mode=volume_aware_slippage_mode,
+        metadata=volume_aware_slippage_metadata,
+    )
+    volume_aware_slippage_applied = (
+        volume_aware_slippage_mode == "apply_precomputed_impact"
+        and volume_aware_slippage_costs.gt(0.0).any()
+    )
+    zero_cost_or_slippage_is_diagnostic = transaction_cost_bps == 0.0 or (
+        slippage_bps == 0.0 and not volume_aware_slippage_applied
     )
 
     return BacktestResult(
@@ -163,6 +210,9 @@ def run_long_only_backtest(
         turnover=turnover.rename("turnover"),
         transaction_costs=transaction_costs.rename("transaction_cost_impact"),
         slippage_costs=slippage_costs.rename("slippage_impact"),
+        volume_aware_slippage_costs=volume_aware_slippage_costs.rename(
+            "volume_aware_slippage_impact",
+        ),
         total_trading_costs=total_trading_costs.rename("total_trading_cost_impact"),
         metrics=metrics,
         benchmark_equity_curve=benchmark_equity_curve,
@@ -180,9 +230,10 @@ def run_long_only_backtest(
             "turnover_model": "target_weight_turnover",
             "cost_model": "fixed_bps_on_target_weight_turnover",
             "slippage_model": "fixed_bps_on_target_weight_turnover",
-            "zero_cost_or_slippage_is_diagnostic": transaction_cost_bps == 0.0 or slippage_bps == 0.0,
+            "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
+            **volume_aware_assumptions,
         },
     )
 
@@ -306,6 +357,7 @@ def _validate_backtest_inputs(
     top_pct: float | None,
     transaction_cost_bps: float,
     slippage_bps: float,
+    volume_aware_slippage_mode: str,
     initial_capital: float,
     signal_lag_periods: int,
     missing_price_policy: str,
@@ -340,6 +392,11 @@ def _validate_backtest_inputs(
         raise ValueError("transaction_cost_bps must be non-negative")
     if slippage_bps < 0:
         raise ValueError("slippage_bps must be non-negative")
+    if volume_aware_slippage_mode not in _VOLUME_AWARE_SLIPPAGE_MODES:
+        raise ValueError(
+            "volume_aware_slippage_mode must be 'diagnostic_only' or "
+            "'apply_precomputed_impact'"
+        )
     if initial_capital <= 0:
         raise ValueError("initial_capital must be positive")
     if signal_lag_periods < 0:
@@ -350,3 +407,135 @@ def _validate_backtest_inputs(
         raise ValueError("benchmark_missing_policy must be 'raise' or 'zero_return'")
     if periods_per_year <= 0:
         raise ValueError("periods_per_year must be positive")
+
+
+def _prepare_volume_aware_slippage_costs(
+    *,
+    price_index: pd.DatetimeIndex,
+    mode: str,
+    impact: pd.Series | None,
+    metadata: Mapping[str, Any] | None,
+    fixed_slippage_bps: float,
+) -> pd.Series:
+    zero_costs = pd.Series(0.0, index=price_index, name="volume_aware_slippage_impact")
+
+    if mode == "diagnostic_only":
+        if impact is not None:
+            _validate_precomputed_volume_aware_slippage_impact(
+                impact=impact,
+                price_index=price_index,
+            )
+        return zero_costs
+
+    if impact is None:
+        raise ValueError(
+            "volume_aware_slippage_impact is required when "
+            "volume_aware_slippage_mode='apply_precomputed_impact'"
+        )
+
+    _validate_volume_aware_slippage_metadata(metadata)
+    costs = _validate_precomputed_volume_aware_slippage_impact(
+        impact=impact,
+        price_index=price_index,
+    )
+
+    if fixed_slippage_bps > 0.0 and costs.gt(0.0).any():
+        raise ValueError(
+            "positive slippage_bps cannot be combined with positive "
+            "volume_aware_slippage_impact without a reviewed combined-model policy"
+        )
+
+    return costs
+
+
+def _validate_precomputed_volume_aware_slippage_impact(
+    *,
+    impact: pd.Series,
+    price_index: pd.DatetimeIndex,
+) -> pd.Series:
+    if not isinstance(impact, pd.Series):
+        raise TypeError("volume_aware_slippage_impact must be a pandas Series")
+    if not isinstance(impact.index, pd.DatetimeIndex):
+        raise TypeError(
+            "volume_aware_slippage_impact must be indexed by a pandas DatetimeIndex"
+        )
+    if impact.index.has_duplicates:
+        raise ValueError("volume_aware_slippage_impact index must not contain duplicate dates")
+    if not impact.index.is_monotonic_increasing:
+        raise ValueError(
+            "volume_aware_slippage_impact index must be sorted in increasing date order"
+        )
+    if not impact.index.equals(price_index):
+        raise ValueError(
+            "volume_aware_slippage_impact index must exactly match backtest dates"
+        )
+
+    try:
+        costs = impact.astype(float)
+    except (TypeError, ValueError) as exc:
+        raise TypeError("volume_aware_slippage_impact must contain numeric values") from exc
+
+    if costs.isna().any():
+        first_missing_date = costs[costs.isna()].index[0]
+        raise ValueError(
+            "volume_aware_slippage_impact must not contain missing values; "
+            f"first missing date is {first_missing_date.date()}"
+        )
+    if not np.isfinite(costs.to_numpy()).all():
+        raise ValueError("volume_aware_slippage_impact must contain finite values")
+    if costs.lt(0.0).any():
+        first_negative_date = costs[costs.lt(0.0)].index[0]
+        raise ValueError(
+            "volume_aware_slippage_impact must be non-negative; "
+            f"first negative date is {first_negative_date.date()}"
+        )
+
+    return costs.rename("volume_aware_slippage_impact")
+
+
+def _validate_volume_aware_slippage_metadata(
+    metadata: Mapping[str, Any] | None,
+) -> None:
+    if metadata is None:
+        raise ValueError(
+            "volume_aware_slippage_metadata is required when applying "
+            "precomputed volume-aware slippage impact"
+        )
+    if not isinstance(metadata, Mapping):
+        raise TypeError("volume_aware_slippage_metadata must be a mapping")
+
+    missing_keys = sorted(_REQUIRED_VOLUME_AWARE_METADATA_KEYS.difference(metadata))
+    if missing_keys:
+        raise ValueError(
+            "volume_aware_slippage_metadata missing required keys: "
+            + ", ".join(missing_keys)
+        )
+
+
+def _build_volume_aware_slippage_assumptions(
+    *,
+    mode: str,
+    metadata: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    metadata_values: Mapping[str, Any] = {} if metadata is None else metadata
+
+    return {
+        "volume_aware_slippage_mode": mode,
+        "volume_aware_slippage_applied_to_returns": mode == "apply_precomputed_impact",
+        "volume_aware_slippage_model": metadata_values.get("slippage_model"),
+        "volume_aware_slippage_source": metadata_values.get("name"),
+        "portfolio_notional": metadata_values.get("portfolio_notional"),
+        "volume_aware_price_field": metadata_values.get("price_field"),
+        "volume_policy": metadata_values.get("volume_policy"),
+        "volume_lag": metadata_values.get("volume_lag"),
+        "rolling_dollar_volume_window": metadata_values.get("window"),
+        "stale_volume_policy": metadata_values.get("stale_volume_policy"),
+        "max_volume_age": metadata_values.get("max_volume_age"),
+        "max_participation": metadata_values.get("max_participation"),
+        "participation_above_cap_policy": metadata_values.get(
+            "participation_above_cap_policy",
+        ),
+        "missing_or_zero_liquidity_policy": metadata_values.get(
+            "missing_or_zero_liquidity_policy",
+        ),
+    }

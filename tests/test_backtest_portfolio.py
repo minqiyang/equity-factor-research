@@ -6,6 +6,27 @@ import pytest
 
 import backtest.portfolio as portfolio
 from backtest.portfolio import run_long_only_backtest
+from backtest.slippage import calculate_volume_aware_slippage_diagnostics
+
+
+def _volume_aware_metadata(**overrides: object) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "name": "unit_test_volume_aware_slippage",
+        "slippage_model": "candidate_linear_participation_slippage",
+        "portfolio_notional": 100_000.0,
+        "price_field": "adjusted_close",
+        "volume_policy": "synthetic_share_volume",
+        "window": 1,
+        "volume_lag": 1,
+        "base_slippage_bps": 0.0,
+        "participation_slope_bps": 100.0,
+        "max_participation": 0.1,
+        "missing_or_zero_liquidity_policy": "raise",
+        "stale_volume_policy": "raise",
+        "participation_above_cap_policy": "raise",
+    }
+    metadata.update(overrides)
+    return metadata
 
 
 def test_backtest_does_not_use_future_signals_for_current_rebalance() -> None:
@@ -134,6 +155,242 @@ def test_fixed_bps_slippage_is_deducted_separately_from_transaction_cost() -> No
     assert result.assumptions["slippage_bps"] == pytest.approx(50.0)
     assert result.assumptions["cost_model"] == "fixed_bps_on_target_weight_turnover"
     assert result.assumptions["slippage_model"] == "fixed_bps_on_target_weight_turnover"
+
+
+def test_volume_aware_slippage_default_is_diagnostic_only() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    candidate_impact = pd.Series(
+        [0.0, 0.01, 0.0],
+        index=dates,
+        name="portfolio_slippage_impact",
+    )
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        volume_aware_slippage_impact=candidate_impact,
+        volume_aware_slippage_metadata=_volume_aware_metadata(),
+    )
+
+    assert result.returns.loc[dates[1]] == pytest.approx(0.0)
+    assert result.equity_curve.loc[dates[2]] == pytest.approx(1.0)
+    assert result.volume_aware_slippage_costs.eq(0.0).all()
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.0)
+    assert result.metrics["total_volume_aware_slippage_cost_impact"] == pytest.approx(0.0)
+    assert result.assumptions["volume_aware_slippage_mode"] == "diagnostic_only"
+    assert result.assumptions["volume_aware_slippage_applied_to_returns"] is False
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
+
+
+def test_precomputed_volume_aware_slippage_is_deducted_separately() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series([0.0, 0.003, 0.0], index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=100.0,
+        volume_aware_slippage_mode="apply_precomputed_impact",
+        volume_aware_slippage_impact=impact,
+        volume_aware_slippage_metadata=_volume_aware_metadata(),
+    )
+
+    assert result.gross_returns.loc[dates[1]] == pytest.approx(0.0)
+    assert result.holdings.loc[dates[1], "AAA"] == pytest.approx(1.0)
+    assert result.turnover.loc[dates[1]] == pytest.approx(1.0)
+    assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.01)
+    assert result.slippage_costs.loc[dates[1]] == pytest.approx(0.0)
+    assert result.volume_aware_slippage_costs.loc[dates[1]] == pytest.approx(0.003)
+    assert result.total_trading_costs.loc[dates[1]] == pytest.approx(0.013)
+    assert result.returns.loc[dates[1]] == pytest.approx(-0.013)
+    assert result.equity_curve.loc[dates[1]] == pytest.approx(0.987)
+    assert result.metrics["total_transaction_cost_impact"] == pytest.approx(0.01)
+    assert result.metrics["total_slippage_cost_impact"] == pytest.approx(0.0)
+    assert result.metrics["total_volume_aware_slippage_cost_impact"] == pytest.approx(0.003)
+    assert result.metrics["total_trading_cost_impact"] == pytest.approx(0.013)
+    assert result.assumptions["volume_aware_slippage_mode"] == "apply_precomputed_impact"
+    assert result.assumptions["volume_aware_slippage_applied_to_returns"] is True
+    assert result.assumptions["volume_aware_slippage_model"] == "candidate_linear_participation_slippage"
+    assert result.assumptions["volume_aware_slippage_source"] == "unit_test_volume_aware_slippage"
+    assert result.assumptions["portfolio_notional"] == pytest.approx(100_000.0)
+    assert result.assumptions["volume_aware_price_field"] == "adjusted_close"
+    assert result.assumptions["volume_policy"] == "synthetic_share_volume"
+    assert result.assumptions["volume_lag"] == 1
+    assert result.assumptions["rolling_dollar_volume_window"] == 1
+    assert result.assumptions["stale_volume_policy"] == "raise"
+    assert result.assumptions["max_participation"] == pytest.approx(0.1)
+    assert result.assumptions["participation_above_cap_policy"] == "raise"
+    assert result.assumptions["missing_or_zero_liquidity_policy"] == "raise"
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is False
+
+
+def test_volume_aware_slippage_helper_output_can_feed_precomputed_boundary() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame(
+        {"AAA": [100.0, 100.0, 100.0, 100.0], "BBB": [100.0, 100.0, 100.0, 100.0]},
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {"AAA": [1.0, 1.0, 1.0, 1.0], "BBB": [0.0, 0.0, 0.0, 0.0]},
+        index=dates,
+    )
+    target_weights = pd.DataFrame(
+        {"AAA": [0.0, 1.0, 1.0, 1.0], "BBB": [0.0, 0.0, 0.0, 0.0]},
+        index=dates,
+    )
+    volume = pd.DataFrame(
+        {"AAA": [100.0, 100.0, 100.0, 100.0], "BBB": [100.0, 100.0, 100.0, 100.0]},
+        index=dates,
+    )
+
+    diagnostics = calculate_volume_aware_slippage_diagnostics(
+        target_weights,
+        prices,
+        volume,
+        window=1,
+        portfolio_notional=100.0,
+        participation_slope_bps=100.0,
+        volume_lag=1,
+        max_participation=1.0,
+        name="helper_integration_test",
+    )
+    metadata = {
+        **diagnostics.parameters,
+        "price_field": "adjusted_close",
+        "volume_policy": "synthetic_share_volume",
+        "stale_volume_policy": "raise",
+    }
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        volume_aware_slippage_mode="apply_precomputed_impact",
+        volume_aware_slippage_impact=diagnostics.portfolio_slippage_impact,
+        volume_aware_slippage_metadata=metadata,
+    )
+
+    assert diagnostics.portfolio_slippage_impact.loc[dates[1]] == pytest.approx(0.0001)
+    assert result.volume_aware_slippage_costs.loc[dates[1]] == pytest.approx(0.0001)
+    assert result.returns.loc[dates[1]] == pytest.approx(-0.0001)
+    assert result.assumptions["volume_aware_slippage_source"] == "helper_integration_test"
+
+
+@pytest.mark.parametrize(
+    ("impact", "match"),
+    [
+        (
+            pd.Series([0.0, 0.001], index=pd.date_range("2024-01-01", periods=2, freq="D")),
+            "index must exactly match",
+        ),
+        (
+            pd.Series([0.0, None, 0.0], index=pd.date_range("2024-01-01", periods=3, freq="D")),
+            "must not contain missing values",
+        ),
+        (
+            pd.Series([0.0, -0.001, 0.0], index=pd.date_range("2024-01-01", periods=3, freq="D")),
+            "must be non-negative",
+        ),
+    ],
+)
+def test_precomputed_volume_aware_slippage_rejects_invalid_impact_series(
+    impact: pd.Series,
+    match: str,
+) -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    with pytest.raises(ValueError, match=match):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=_volume_aware_metadata(),
+        )
+
+
+def test_precomputed_volume_aware_slippage_requires_metadata() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series([0.0, 0.001, 0.0], index=dates)
+
+    with pytest.raises(ValueError, match="volume_aware_slippage_metadata is required"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+        )
+
+
+def test_precomputed_volume_aware_slippage_rejects_missing_metadata_keys() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series([0.0, 0.001, 0.0], index=dates)
+    metadata = _volume_aware_metadata()
+    metadata.pop("portfolio_notional")
+
+    with pytest.raises(ValueError, match="portfolio_notional"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=metadata,
+        )
+
+
+def test_positive_fixed_and_volume_aware_slippage_cannot_be_combined_by_default() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series([0.0, 0.001, 0.0], index=dates)
+
+    with pytest.raises(ValueError, match="combined-model policy"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            slippage_bps=1.0,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=_volume_aware_metadata(),
+        )
+
+
+def test_invalid_volume_aware_slippage_mode_raises() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=dates)
+
+    with pytest.raises(ValueError, match="volume_aware_slippage_mode"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_internal_volume_model",
+        )
 
 
 def test_slippage_without_transaction_cost_is_explicit_diagnostic() -> None:

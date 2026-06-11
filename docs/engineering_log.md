@@ -12,6 +12,39 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Precomputed Volume-Aware Slippage Backtester Integration
+
+This code-changing stage implements the reviewed precomputed-impact boundary
+for volume-aware slippage without moving OHLCV or rolling dollar-volume
+calculation into the backtester.
+
+Assumption: after PR #99 merged and synced `main` passed baseline validation,
+the next safe stage was the narrow implementation described by
+`docs/volume_aware_slippage_backtester_integration_test_plan.md`, with
+deterministic tests in the same PR and no generated-output refresh.
+
+`run_long_only_backtest()` now keeps `volume_aware_slippage_mode` at
+`diagnostic_only` by default. A caller may explicitly use
+`apply_precomputed_impact` with an aligned precomputed impact series and
+required audit metadata. Applied impact is recorded in a separate
+`volume_aware_slippage_costs` series, included in total trading impact, and
+reported through a separate metric while fixed transaction costs and fixed-bps
+slippage remain separately inspectable.
+
+The implementation rejects invalid impact indexes, missing or negative impact
+values, missing required metadata, invalid modes, and positive fixed-bps
+slippage combined with positive applied volume-aware impact. Tests also cover
+the integration path where `calculate_volume_aware_slippage_diagnostics()`
+feeds the precomputed boundary from outside the backtester.
+
+This stage does not modify data loaders, feature logic, diagnostics helper
+behavior, research scripts, generated reports, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact calibration, or profitability
+language.
+
+---
+
 ## 2026-06-11 - Volume-Aware Slippage Backtester Integration Test Plan
 
 This documentation-only stage defines the test coverage required before any
