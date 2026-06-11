@@ -1,6 +1,6 @@
 # Local CSV Fixture Workflow Demo
 
-This report uses committed synthetic local CSV fixtures only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not run a backtest, construct a portfolio, fetch real data, connect to a broker, place orders, or support live trading.
+This report uses committed synthetic local CSV fixtures only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not run a backtest, construct a strategy portfolio, fetch real data, connect to a broker, place orders, or support live trading.
 
 ## Purpose
 
@@ -18,7 +18,8 @@ Exercise the local CSV research path with a small committed fixture:
 10. Compute next-row forward returns as evaluation targets only.
 11. Apply chronological train/validation/test split metadata.
 12. Run IC, Rank IC, and quantile spread diagnostics.
-13. Write a caveated report and JSON experiment log.
+13. Run a synthetic volume-aware slippage participation/count smoke diagnostic.
+14. Write a caveated report and JSON experiment log.
 
 ## Inputs
 
@@ -39,6 +40,8 @@ Exercise the local CSV research path with a small committed fixture:
 | Test end | `2024-01-05` |
 | Missing price values | `0` |
 | Missing benchmark values | `0` |
+| Slippage smoke notional | `100000.0000` |
+| Slippage smoke max participation | `0.1000` |
 
 ## Inventory Dry-Run Rehearsal
 
@@ -64,7 +67,7 @@ The workflow preserves the loader output date index and asset columns, verifies 
 
 The train/validation/test metadata is a chronological fixture split by factor and evaluation-target row date only. The one-row forward returns are diagnostic labels, not feature inputs, and are not used for parameter selection. This tiny fixture split is not model selection, parameter tuning, strategy validation, or real-market evidence.
 
-No missing values were filled. No dates or assets were reindexed. No portfolio construction, execution timing, transaction cost model, slippage model, or backtest is included.
+No missing values were filled. No dates or assets were reindexed. No strategy portfolio construction, execution timing, transaction cost model, or backtest is included.
 
 ## Liquidity Eligibility Smoke Check
 
@@ -100,6 +103,17 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 | 2024-01-03 | 3 | 0 | 0 | 3 | 0 | true |
 | 2024-01-04 | 3 | 1 | 1 | 2 | 0 | false |
 | 2024-01-05 | 3 | 0 | 0 | 3 | 0 | true |
+
+## Volume-Aware Slippage Smoke Diagnostic
+
+This smoke diagnostic calls `calculate_volume_aware_slippage_diagnostics()` on a tiny synthetic target-weight panel built from complete OHLCV fixture rows only. The target weights are fixed constants for helper wiring, not factor-ranked weights, model-selected weights, strategy portfolio construction, orders, fills, or trade recommendations.
+
+The diagnostic uses `window=1`, `volume_lag=1`, `portfolio_notional=100000.0000`, and `max_participation=0.1000`. Only participation and rejection/cap counts are reported here. Candidate slippage impact fields are not applied to returns, and this workflow still does not run a backtest.
+
+| Date | trade_count | total_trade_weight | total_trade_notional | max_participation | missing_capacity_count | zero_capacity_count | zero_volume_window_count | rejected_capacity_count | participation_cap_breach_count |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2024-01-02 | 0 | 0.0000 | 0.0000 | 0.0000 | 0 | 0 | 0 | 0 | 0 |
+| 2024-01-03 | 2 | 0.7000 | 70000.0000 | 0.0040 | 0 | 0 | 0 | 0 | 0 |
 
 ## Split Coverage
 
@@ -193,6 +207,7 @@ The synthetic signal summary below applies the liquidity universe mask to the al
 - The benchmark is synthetic and used only to verify local CSV date alignment.
 - The diagnostic returns are synthetic fixture calculations, not market evidence.
 - The liquidity eligibility, universe-mask, and universe-masked signal counts are synthetic decision-date diagnostics, not tradeability evidence or backtest universe integration.
+- The volume-aware slippage smoke diagnostic reports participation and capacity/cap counts only; it is not applied to returns and is not a trading-cost conclusion.
 - `alpha_009` is a research feature, not a complete strategy.
 - `alpha_012` is a research feature, not a complete strategy.
 - The split metadata is a wiring check for the committed fixture, not a train/validation/test study on real data.
