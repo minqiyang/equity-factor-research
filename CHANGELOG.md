@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/volume_aware_slippage_backtester_integration_test_plan.md` to
+  define the deterministic unit, integration, failure-mode, guardrail,
+  result-field, audit-field, report-field, and experiment-log tests required
+  before any future volume-aware slippage backtester implementation.
 - Added `docs/volume_aware_slippage_backtester_integration_design.md` to
   define a documentation-only boundary for any future integration of the
   existing volume-aware slippage diagnostic helper into simulated backtester

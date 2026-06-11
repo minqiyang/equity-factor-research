@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Volume-Aware Slippage Backtester Integration Test Plan
+
+This documentation-only stage defines the test coverage required before any
+future implementation applies volume-aware slippage to simulated local
+backtester returns.
+
+Assumption: after PR #98 merged and `main` was synced, the next safe stage is a
+test plan, not source code changes, test file changes, research script changes,
+generated report changes, backtester integration, or metrics changes.
+
+`docs/volume_aware_slippage_backtester_integration_test_plan.md` records the
+required unit tests, integration tests, failure-mode tests, edge-case expected
+behavior, zero-slippage diagnostic behavior, separate inspection requirements,
+future result/audit fields, experiment-log/report fields, guardrail tests,
+stop conditions, and the recommended next PR-sized stage.
+
+The plan keeps helper calculation outside the backtester for the first future
+implementation, keeps `diagnostic_only` as default, and requires deterministic
+tests in the same PR as any later precomputed-impact implementation.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact modeling, or profitability
+language.
+
+---
+
 ## 2026-06-11 - Volume-Aware Slippage Backtester Integration Design
 
 This documentation-only stage defines whether and how the existing

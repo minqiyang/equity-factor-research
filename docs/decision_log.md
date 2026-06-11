@@ -15,6 +15,56 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Require Tests Before Volume-Aware Slippage Backtester Implementation
+
+Context:
+
+- PR #98 added the documentation-only backtester integration design for
+  volume-aware slippage.
+- The design recommends keeping `diagnostic_only` as default and using a
+  precomputed-impact boundary if volume-aware slippage is later applied to
+  simulated returns.
+- No source code, tests, research scripts, generated reports, backtester
+  behavior, metrics behavior, or diagnostics behavior changed in this stage.
+
+Decision:
+
+- Add `docs/volume_aware_slippage_backtester_integration_test_plan.md` as the
+  acceptance checklist before any implementation.
+- Require deterministic unit, integration, failure-mode, guardrail, result
+  field, audit field, report-field, and experiment-log tests before or with any
+  future code-changing integration PR.
+- Keep generated reports unchanged until after a future implementation is
+  reviewed and merged.
+
+Rationale:
+
+- Applying volume-aware slippage to net returns is an accounting change, not a
+  documentation detail.
+- Tests must prove date alignment, separate cost/slippage inspection, zero
+  diagnostic behavior, invalid-liquidity failures, and no double counting
+  before behavior changes.
+- A test plan keeps the next implementation PR smaller and less ambiguous.
+
+Consequences:
+
+- The next possible implementation must keep helper calculation outside the
+  backtester, keep `diagnostic_only` as default, and add deterministic tests in
+  the same PR.
+- Implementation must stop for missing, zero, stale, or incomplete volume
+  ambiguity; invalid notional; excessive participation; ambiguous fixed-bps
+  plus volume-aware slippage semantics; real-data needs; vendor APIs;
+  credentials; brokerage; live or paper trading; order execution; or
+  profitability language.
+
+Follow-up:
+
+- After this test-plan PR merges, consider a narrow code-changing
+  precomputed-impact implementation PR with deterministic tests and no
+  generated-output refresh.
+
+---
+
 ## 2026-06-11 - Define Volume-Aware Slippage Backtester Integration Boundary
 
 Context:
