@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Volume-Aware Slippage Backtester Integration Design
+
+This documentation-only stage defines whether and how the existing
+volume-aware slippage diagnostic helper could later affect simulated local
+backtester net returns.
+
+Assumption: after PR #97 merged and `main` was synced, the next safe stage is a
+design boundary, not source code changes, test changes, research script
+changes, generated report changes, or backtester integration.
+
+`docs/volume_aware_slippage_backtester_integration_design.md` records the
+problem statement, diagnostic-only rationale, required inputs, recommended
+future precomputed-impact integration shape, return/cost/audit semantics,
+strict defaults and stop conditions, required tests, experiment-log/report
+fields, non-goals, and the recommended next PR-sized stage.
+
+The design recommends keeping `diagnostic_only` as the default and deferring
+any `run_long_only_backtest()` integration until a separate test-plan stage is
+reviewed. If implemented later, the first integration should pass a validated,
+date-aligned `portfolio_slippage_impact` series and audit metadata into the
+backtester or wrapper rather than making the backtester own OHLCV validation.
+
+This stage does not modify source code, tests, research scripts, generated
+reports, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics, private data, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact modeling, or profitability
+language.
+
+---
+
 ## 2026-06-11 - Post Local Fixture Slippage Output Refresh Checkpoint
 
 This documentation-only checkpoint records the repository state after PR #94
