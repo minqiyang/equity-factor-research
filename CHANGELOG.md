@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a context-budget and retrieval policy to the long-running controller
+  and staged workflow Skill so future continuations start from the handoff and
+  repo map, avoid broad parallel reads of long logs/reports, and recover
+  safely from truncated tool output.
 - Refreshed the synthetic local CSV fixture report, JSON experiment log, and
   experiment registry so the generated artifacts include the volume-aware
   slippage smoke diagnostic while preserving the no-backtest and
