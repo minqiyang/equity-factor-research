@@ -15,6 +15,61 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Define Volume-Aware Slippage Backtester Integration Boundary
+
+Context:
+
+- PR #97 merged the post local fixture slippage output refresh checkpoint.
+- The repository has a standalone volume-aware slippage diagnostic helper and
+  synthetic/local-fixture outputs that report participation and rejected/cap
+  counts.
+- Candidate volume-aware slippage is still not applied to simulated backtester
+  net returns.
+
+Decision:
+
+- Add `docs/volume_aware_slippage_backtester_integration_design.md` as the
+  reviewed boundary before any future net-return integration.
+- Keep volume-aware slippage diagnostic-only by default.
+- If implemented later, prefer a precomputed-impact boundary: compute the
+  diagnostic outside the backtester, pass an aligned
+  `portfolio_slippage_impact` series plus audit metadata into the backtester or
+  wrapper, and deduct it from net returns only under an explicit opt-in.
+- Defer internal backtester calculation from price and volume panels until a
+  separate design justifies making the backtester own OHLCV semantics.
+
+Rationale:
+
+- Applying volume-aware slippage to returns would change cost accounting and
+  report interpretation.
+- A precomputed-impact boundary keeps volume validation, notional scale, lagged
+  dollar-volume construction, stale-volume handling, and participation caps
+  auditable before net-return behavior changes.
+- Fixed-bps slippage and volume-aware candidate slippage can be double-counted
+  unless a reviewed rule blocks or explicitly permits combination.
+
+Consequences:
+
+- Source code, tests, research scripts, generated reports, loaders, backtester
+  behavior, metrics behavior, diagnostics behavior, LEAN code, and real-data
+  access remain unchanged in this stage.
+- Any future implementation must define strict defaults and stop conditions for
+  missing volume, zero volume, stale volume, invalid notional, and excessive
+  participation before touching returns.
+- Reports and experiment logs must distinguish transaction costs, fixed-bps
+  slippage, volume-aware candidate slippage, total trading impact, diagnostic
+  flags, and caveats.
+
+Follow-up:
+
+- After this design merges, the next safe stage is a documentation-only
+  backtester integration test plan, not implementation.
+- Stop if a later stage needs real data, downloads, vendor APIs, credentials,
+  brokerage, live or paper trading, order execution, silent missing-data repair,
+  or profitability claims.
+
+---
+
 ## 2026-06-11 - Require Design Before Volume-Aware Slippage Net-Return Integration
 
 Context:

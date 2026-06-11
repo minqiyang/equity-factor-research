@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/volume_aware_slippage_backtester_integration_design.md` to
+  define a documentation-only boundary for any future integration of the
+  existing volume-aware slippage diagnostic helper into simulated backtester
+  accounting, including required inputs, strict stop conditions, reporting
+  fields, tests, non-goals, and the next test-plan stage.
 - Added `docs/post_local_fixture_slippage_output_refresh_checkpoint.md` to
   record the post-PR #94 generated-output refresh state, keep volume-aware
   slippage diagnostic-only, and route the next safe stage toward a
