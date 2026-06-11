@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Context Budget Policy For Staged Workflow
+
+This workflow-control update adds a context-budget and retrieval policy to the
+long-running controller and staged workflow Skill after a continuation
+encountered tool-output truncation while reading too much context at once.
+
+The policy limits first-pass context to the handoff, repo map, governing agent
+rules, project spec, controller, and staged workflow Skill; defines a
+retrieval ladder from git/PR state through targeted log searches; discourages
+parallel broad reads of long logs, reports, experiment JSON, and checkpoint
+documents; and requires targeted rereads after truncation.
+
+This stage changes workflow documentation and logs only. It does not modify
+source code, tests, research scripts, generated reports, CSV loader behavior,
+backtester behavior, metrics, alpha files, normalization, combination,
+diagnostics, `PROJECT_SPEC.md`, real-data access, vendor APIs, credentials,
+trading scope, order execution, or profitability language.
+
+---
+
 ## 2026-06-10 - Local Fixture Slippage Generated-Output Refresh
 
 This generated-output refresh syncs the committed synthetic local CSV fixture

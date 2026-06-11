@@ -52,6 +52,52 @@ If a previous stage PR is still open, stop and report the merge gate instead of 
 
 If a prompt expects a missing file, do not silently treat that as fatal. Create the file in a separate workflow-control PR when it is a low-risk documentation, logging, controller, or audit-script scaffold. Stop and report when the missing file affects product behavior, strategy logic, data access, execution, credentials, or external systems.
 
+## Context Budget And Retrieval Policy
+
+Use a staged retrieval ladder so continuation work stays current without
+overloading context.
+
+First-pass context is limited to:
+
+- `docs/current_handoff.md`
+- `docs/repo_map.md`
+- `AGENTS.md`
+- `PROJECT_SPEC.md`
+- `docs/codex_long_running_controller.md`
+- `.agents/skills/staged-quant-workflow/SKILL.md`
+
+Do not read multiple long logs, generated reports, experiment JSON logs, or
+checkpoint/design reports in parallel. Long files include
+`docs/engineering_log.md`, `docs/decision_log.md`,
+`docs/troubleshooting_log.md`, `CHANGELOG.md`, `reports/*.md`,
+`reports/experiment_logs/*.json`, and long checkpoint or design docs.
+
+Context ladder:
+
+- Level 0: git, PR, branch, and status commands only.
+- Level 1: `docs/current_handoff.md` and `docs/repo_map.md`.
+- Level 2: one targeted roadmap or design doc for the active stage only.
+- Level 3: tail or keyword search in long logs.
+- Level 4: full-file read only if absolutely required; explain why.
+
+Prefer targeted commands such as `git diff --name-only`, `git diff --stat`,
+`git show --stat`, `rg -n "keyword" file`, `Get-Content -Tail`, and
+`Select-String` with explicit patterns. Avoid uncapped full-file reads.
+
+Do not paste full large files. Summarize command results, cap log output, and
+switch to narrower searches if output is too large. If tool output reports
+`Output exceeded the available model context and was truncated`, do not rely
+on the truncated output. Stop broad reading, record the issue in
+`docs/troubleshooting_log.md` if meaningful, resume from
+`docs/current_handoff.md` and `docs/repo_map.md`, and reread only the targeted
+sections needed for the active stage.
+
+Do not read or print full generated reports unless the current stage
+specifically concerns that report. Prefer headings, grep, or small snippets.
+
+Keep final reports concise: branch, PR, files changed, checks, issues,
+assumptions, next stage, and confirmation that Codex did not merge.
+
 ## Workflow guidance
 
 Begin with read-only state inspection. If the previous required PR has merged, switch to `main`, fast-forward from `origin/main`, and rerun baseline validation before branching.

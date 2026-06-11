@@ -23,6 +23,135 @@ problems, include:
 
 ---
 
+## 2026-06-11 - PowerShell PR Body Quoting Failure
+
+Original mistake:
+
+- The first `gh pr create` attempt passed a multi-line Markdown PR body
+  directly through a PowerShell double-quoted command string.
+- The body included Markdown backticks and line breaks, which made the shell
+  parse the command before `gh` received the intended text.
+
+Consequence:
+
+- PR creation failed after the branch had already been pushed.
+- No repository files, source code, tests, reports, data, credentials, or
+  remote PRs were changed by the failed command.
+
+Evidence:
+
+```text
+The string is missing the terminator: ".
+CategoryInfo          : ParserError
+FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
+```
+
+Investigation:
+
+- Confirmed the failure was a PowerShell parser error, not a GitHub, network,
+  permission, branch, validation, or repository-content failure.
+- Identified the shell quoting shape as the only failed component.
+
+Correction attempts:
+
+- Stopped using the failed double-quoted multi-line command form.
+- Switched to a PowerShell single-quoted here-string for the PR body so
+  Markdown backticks and line breaks are passed literally to `gh`.
+
+Final fix:
+
+- Use a local `$body = @' ... '@` here-string and pass it to
+  `gh pr create --body $body` for multi-line PR descriptions in PowerShell.
+
+Verification:
+
+- The corrected PR creation command is rerun after this log entry is amended
+  into the workflow-control commit.
+
+Remaining caveats:
+
+- Shell quoting remains environment-specific. Commands that work in Bash may
+  fail in PowerShell when Markdown backticks are embedded in double-quoted
+  strings.
+
+Prevention:
+
+- Use single-quoted PowerShell strings or here-strings for Markdown containing
+  backticks.
+- Treat PR body quoting failures as workflow issues and log them before
+  publishing the corrected PR.
+
+---
+
+## 2026-06-11 - Continuation Context Read Output Truncation
+
+Original mistakes:
+
+- During a staged workflow continuation, the first context-gathering attempt
+  requested several workflow documents and memory/search output in one broad
+  parallel batch.
+- The read assumed that several individually capped outputs would still fit
+  safely when returned together.
+
+Consequences:
+
+- The combined tool output exceeded the available context and was truncated.
+- The continuation could not safely rely on that truncated output for stage
+  selection or scope review.
+
+Evidence:
+
+```text
+Output exceeded the available model context and was truncated
+```
+
+Investigation:
+
+- Confirmed the truncation occurred during context gathering before the
+  workflow-control policy update.
+- Confirmed the issue was caused by output volume, not by project tests,
+  repository data, or source-code behavior.
+- Re-read current workflow state using narrower, targeted files and snippets.
+
+Correction attempts:
+
+- Stopped relying on the truncated output.
+- Switched to targeted reads for `docs/current_handoff.md`,
+  `docs/repo_map.md`, the controller, and the staged workflow Skill.
+- Avoided printing full generated reports or long logs.
+
+Final fix:
+
+- Added a reusable "Context Budget And Retrieval Policy" to the long-running
+  controller and staged workflow Skill.
+- The policy limits first-pass context, defines a retrieval ladder, prohibits
+  parallel broad reads of long logs/reports, and defines recovery steps when
+  truncation occurs.
+
+Verification:
+
+- The policy update is validated in the PR checks for this workflow-control
+  stage.
+- No source code, tests, research scripts, generated reports, data loaders,
+  backtester, metrics, alpha files, normalization, combination, diagnostics,
+  real-data access, vendor API, credential, trading, order-execution, or
+  profitability behavior is changed by this fix.
+
+Remaining caveats:
+
+- New sessions can still exceed context if they ignore the policy or read many
+  long files at once.
+- Full-file reads remain allowed only when absolutely required and explained.
+
+Prevention:
+
+- Start from `docs/current_handoff.md` and `docs/repo_map.md`.
+- Use keyword search, tails, stats, and small snippets for long files.
+- If truncation occurs, stop broad reading and reread only the targeted
+  sections needed for the active stage.
+
+---
+
 ## 2026-06-09 - Slippage Smoke Stage Output And Patch Recovery
 
 Original mistakes:

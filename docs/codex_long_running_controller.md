@@ -55,6 +55,91 @@ Protect token budget without hiding evidence:
   review is needed.
 - never `cat` full generated reports or large logs by default.
 
+## Context Budget And Retrieval Policy
+
+Keep staged workflow continuations evidence-based without exhausting context.
+
+First-pass context is limited to:
+
+- `docs/current_handoff.md`
+- `docs/repo_map.md`
+- `AGENTS.md`
+- `PROJECT_SPEC.md`
+- `docs/codex_long_running_controller.md`
+- `.agents/skills/staged-quant-workflow/SKILL.md`
+
+Do not read multiple long logs or checkpoint reports in parallel. Long files
+include:
+
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `docs/troubleshooting_log.md`
+- `CHANGELOG.md`
+- `reports/*.md`
+- `reports/experiment_logs/*.json`
+- long checkpoint or design docs
+
+Use this context ladder:
+
+- Level 0: git, PR, branch, and status commands only.
+- Level 1: `docs/current_handoff.md` and `docs/repo_map.md`.
+- Level 2: one targeted roadmap or design document for the active stage only.
+- Level 3: tail or keyword search in long logs.
+- Level 4: full-file read only when absolutely required; explain why before
+  relying on it.
+
+Prefer targeted commands:
+
+```bash
+git diff --name-only
+git diff --stat
+git show --stat
+rg -n "keyword" file
+```
+
+In PowerShell, prefer:
+
+```powershell
+Get-Content path -Tail 120
+Select-String -Path path -Pattern "keyword"
+```
+
+Avoid `cat`, uncapped `Get-Content`, or printing entire long files.
+
+Output policy:
+
+- Do not paste full large files.
+- Summarize command results.
+- Cap output when reading logs.
+- If output is too large, stop and switch to narrower searches.
+- If truncation occurs, do not rely on the truncated output; reread only the
+  targeted sections needed for the active stage.
+
+Generated reports policy:
+
+- Do not read or print full generated reports unless the current stage
+  specifically concerns that report.
+- Prefer headings, keyword search, or small snippets for report inspection.
+
+Final report policy:
+
+- Keep final reports concise.
+- Include branch, PR, files changed, checks, issues, assumptions, and next
+  stage.
+- Do not paste large logs.
+
+Recovery rule:
+
+If this appears:
+
+```text
+Output exceeded the available model context and was truncated
+```
+
+then stop broad reading, record the issue in `docs/troubleshooting_log.md` if
+meaningful, resume with `docs/current_handoff.md` and `docs/repo_map.md`, and
+reread only the targeted files or sections needed for the active stage.
+
 ## Merge Gate
 
 Do not start a new stage while a previous stage PR is open and awaiting human
