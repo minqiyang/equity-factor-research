@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Refreshed the synthetic local CSV fixture report, JSON experiment log, and
+  experiment registry so the generated artifacts include the volume-aware
+  slippage smoke diagnostic while preserving the no-backtest and
+  no-profitability boundary.
 - Added `docs/post_volume_aware_slippage_smoke_checkpoint.md` to record the
   completed volume-aware slippage design/helper/local-fixture smoke sequence
   and route the next safe stage toward synthetic generated-output refresh

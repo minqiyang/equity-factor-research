@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-10 - Local Fixture Slippage Generated-Output Refresh
+
+This generated-output refresh syncs the committed synthetic local CSV fixture
+report, JSON experiment log, and experiment registry after PR #92 added the
+volume-aware slippage smoke diagnostic and PR #93 recorded the checkpoint.
+
+Assumption: after PR #93 merged and no open PR gate remained, the next safe
+stage was the checkpoint-recommended generated-output refresh, not source code
+changes, backtester net-return integration, user-provided local CSV
+interpretation, or LEAN/runtime work.
+
+`python research/local_csv_fixture_workflow_demo.py` was run from the project
+root. It uses committed synthetic fixtures under
+`tests/fixtures/local_csv_loader_smoke` and updates:
+
+- `reports/local_csv_fixture_workflow_demo.md`
+- `reports/experiment_logs/local_csv_fixture_workflow_demo.json`
+- `reports/experiment_registry.md`
+
+The refreshed artifacts now include the volume-aware slippage smoke diagnostic
+assumptions, participation and rejected/cap counts, and caveats that the
+diagnostic is not applied to returns and is not a trading-cost conclusion.
+
+This stage does not modify source code, tests, research scripts, CSV loader
+behavior, factor formulas, diagnostics semantics, backtester behavior, metrics,
+private data, real-data access, vendor APIs, credentials, live or paper trading
+scope, brokerage integration, order execution, LEAN runtime behavior,
+market-impact modeling, or profitability language.
+
+Validation before PR creation:
+
+- `python -m pytest -q` - 478 passed before the refresh branch.
+- `python -m compileall src tests research` - passed before the refresh branch.
+- Full final validation is recorded in the PR summary after the final gate.
+
+---
+
 ## 2026-06-09 - Post Volume-Aware Slippage Smoke Checkpoint
 
 This documentation-only checkpoint records the repository state after PR #92
