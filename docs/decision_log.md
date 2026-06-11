@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Refresh Synthetic Logs For Default Volume-Aware Metric
+
+Context:
+
+- PR #100 added a precomputed volume-aware slippage boundary to the local
+  backtester while keeping `volume_aware_slippage_mode="diagnostic_only"` as
+  the default.
+- The implementation added a separate
+  `total_volume_aware_slippage_cost_impact` metric, with default diagnostic
+  value `0.0` when no precomputed impact is applied.
+- The current handoff recommended a synthetic generated-output review or
+  refresh after PR #100 merged.
+
+Decision:
+
+- Refresh only committed synthetic experiment logs that serialize the full
+  backtester metrics payload and therefore need the new default metric field.
+- Keep unchanged generated artifacts unchanged when reruns produce no diff.
+- Do not modify source code, tests, research scripts, backtester behavior,
+  metrics logic, data loaders, diagnostics helper behavior, generated Markdown
+  reports, the experiment registry, real-data workflows, or LEAN/runtime code
+  in this generated-output PR.
+
+Rationale:
+
+- The committed logs should match the current deterministic synthetic
+  backtester schema so downstream registry, report, and audit readers do not
+  see stale metric payloads.
+- A separate generated-output PR keeps schema refresh diffs from obscuring the
+  PR #100 implementation review.
+- A `0.0` volume-aware slippage metric in default diagnostic mode is an audit
+  field, not a claim about execution realism, real-data capacity, or
+  profitability.
+
+Consequences:
+
+- `reports/experiment_logs/synthetic_momentum_demo.json` and
+  `reports/experiment_logs/synthetic_combined_score_backtest_demo.json` carry
+  the new default metric.
+- The synthetic parameter sweep, Markdown reports, and experiment registry do
+  not change in this stage because reruns produced no committed diffs there.
+- User-provided local CSV interpretation remains blocked by readiness-audit,
+  provenance, alignment, and experiment-handoff gates.
+
+Follow-up:
+
+- After this generated-log refresh PR merges, run a documentation-only
+  checkpoint for the completed precomputed volume-aware slippage implementation
+  plus generated-log refresh sequence before any new code, real-data, or
+  LEAN/runtime stage.
+
+---
+
 ## 2026-06-11 - Add Precomputed Volume-Aware Slippage Backtester Boundary
 
 Context:

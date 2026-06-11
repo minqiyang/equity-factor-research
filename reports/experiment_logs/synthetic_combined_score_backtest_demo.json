@@ -78,7 +78,8 @@
     "total_slippage_cost_impact": 0.0,
     "total_trading_cost_impact": 0.0085,
     "total_transaction_cost_impact": 0.0085,
-    "total_turnover": 8.5
+    "total_turnover": 8.5,
+    "total_volume_aware_slippage_cost_impact": 0.0
   },
   "next_action": "Use as a reproducible synthetic smoke-test log only; real-data readiness still requires explicit data interfaces, validation splits, liquidity assumptions, and slippage modeling.",
   "outputs": {

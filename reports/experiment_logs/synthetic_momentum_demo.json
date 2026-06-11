@@ -58,7 +58,8 @@
     "total_slippage_cost_impact": 0.0,
     "total_trading_cost_impact": 0.0126,
     "total_transaction_cost_impact": 0.0126,
-    "total_turnover": 12.600000000000001
+    "total_turnover": 12.600000000000001,
+    "total_volume_aware_slippage_cost_impact": 0.0
   },
   "next_action": "Use as a reproducible smoke-test log only; real-data experiments still require explicit data-source, universe, slippage, benchmark, and validation-split documentation.",
   "outputs": {

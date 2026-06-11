@@ -247,6 +247,11 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Refreshed the synthetic momentum and synthetic combined-score JSON
+  experiment logs so their deterministic metrics payloads include the default
+  `total_volume_aware_slippage_cost_impact` field after the precomputed
+  volume-aware slippage backtester path, with the value remaining `0.0` in
+  diagnostic-only mode.
 - Updated the liquidity universe plan and decision log to separate liquidity
   eligibility, universe-mask construction, and backtest consumption into
   distinct reviewed stages.
