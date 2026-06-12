@@ -15,6 +15,52 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Refresh Roadmap After Volume-Aware Slippage Sequence
+
+Context:
+
+- PR #102 checkpointed the completed volume-aware slippage design, test-plan,
+  precomputed-impact implementation, and generated-log refresh sequence.
+- `docs/current_roadmap_gap_refresh.md` was written earlier and still
+  recommended stages that are now implemented or superseded.
+- No user-provided local CSV bundle or real-data readiness handoff is
+  available.
+
+Decision:
+
+- Refresh `docs/current_roadmap_gap_refresh.md` from current repository
+  evidence.
+- Keep the next recommended stage documentation-only:
+  `docs/synthetic_robustness_validation_plan.md`.
+- Do not proceed directly to new source code, generated-output refresh,
+  real-data interpretation, LEAN runtime work, or execution-related scope.
+
+Rationale:
+
+- The repository now has split helpers, synthetic diagnostics, local fixture
+  demos, backtest accounting, fixed-bps cost/slippage, and a precomputed
+  volume-aware slippage boundary.
+- The next original-goal gap is robustness and split-aware validation policy:
+  all-case reporting, split windows, benchmark assumptions, cost/slippage
+  assumptions, and no-best-only filtering.
+- A documentation plan is lower risk than implementation and keeps the next
+  code or generated-output stage reviewable.
+
+Consequences:
+
+- Future continuations should route through the updated roadmap and handoff.
+- User-provided local CSV interpretation remains blocked by readiness-audit,
+  provenance, alignment, benchmark/universe, and experiment-handoff gates.
+- GitHub auto-merge may be considered only for clearly low-risk PRs with
+  verifiable protections; otherwise stop for human review.
+
+Follow-up:
+
+- After this roadmap refresh PR merges, add a documentation-only synthetic
+  robustness and split-aware validation plan.
+
+---
+
 ## 2026-06-11 - Checkpoint Completed Precomputed Volume-Aware Slippage Sequence
 
 Context:

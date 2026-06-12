@@ -12,6 +12,40 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Post-Volume-Aware Roadmap Gap Refresh
+
+This documentation-only stage refreshes `docs/current_roadmap_gap_refresh.md`
+after the split, liquidity, fixed-bps slippage, volume-aware diagnostic,
+precomputed-impact, generated-log, and checkpoint stages.
+
+Assumption: after PR #102 merged, no open PR gate remained, and synced `main`
+passed baseline validation, the next safe stage was the checkpoint-recommended
+roadmap refresh, not source code, tests, research-script changes,
+generated-output changes, real-data workflows, or LEAN/runtime work.
+
+The refreshed roadmap records the current implementation traceability,
+remaining original-goal gaps, guardrail state, and recommended next roadmap.
+The next recommended PR-sized stage is a documentation-only synthetic
+robustness and split-aware validation plan before any implementation or
+generated-output refresh.
+
+Validation:
+
+- `python -m pytest -q` passed with 488 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` ran and produced no `docs/repo_map.md` diff.
+- `git diff --check` passed.
+- `.\scripts\audit-skills.ps1` passed.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics logic, private data, real-data access, vendor
+APIs, credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact calibration, or profitability
+language.
+
+---
+
 ## 2026-06-11 - Post Precomputed Volume-Aware Slippage Checkpoint
 
 This documentation-only checkpoint records the completed PR #98 through
