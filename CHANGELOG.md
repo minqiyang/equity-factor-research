@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_synthetic_robustness_generated_output_checkpoint.md` to
+  record the completed synthetic split-aware robustness plan,
+  implementation, report/log support, generated-output refresh, and next
+  local-fixture robustness planning boundary.
 - Added the committed synthetic split-aware robustness Markdown report, JSON
   experiment log, and refreshed experiment registry with all-case and
   invalid-case diagnostics preserved as synthetic-only outputs.
