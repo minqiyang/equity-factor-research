@@ -1,6 +1,6 @@
 # AI-Assisted Equity Factor Research Pipeline
 
-An educational, research-grade sandbox for building auditable equity factor workflows with synthetic and local fixture data.
+A sandbox for building auditable equity factor workflows with synthetic and local fixture data.
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB)
 [![CI](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml/badge.svg)](https://github.com/minqiyang/ai-equity-factor-research/actions/workflows/ci.yml)
