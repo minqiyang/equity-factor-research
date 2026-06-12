@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added a deterministic synthetic split-aware robustness demo that reports
+  every configured signal case across train, validation, and test splits,
+  including invalid diagnostics, without writing generated reports or logs.
 - Added `docs/synthetic_robustness_validation_plan.md` to define the
   documentation gate for future synthetic/local-fixture robustness summaries,
   including split policy, all-case reporting, missing-data stop conditions,

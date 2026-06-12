@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Synthetic Split-Aware Robustness Demo
+
+This implementation stage adds `research/synthetic_split_robustness_demo.py`
+and focused tests after the reviewed synthetic robustness validation plan.
+
+The demo reuses the existing deterministic split-aware synthetic factor and
+forward-return panels, then reports every configured signal case across train,
+validation, and test windows. The default cases are an identity signal, inverse
+signal, and constant invalid signal. The summary is sorted by stable case and
+split order, includes every case/split row, preserves missing values, records
+invalid reasons for undefined IC/Rank IC diagnostics, and keeps assumptions for
+benchmark, costs, fixed-bps slippage, volume-aware slippage, portfolio
+construction, and backtest integration separately inspectable.
+
+Assumption: this PR deliberately avoids generated report/log changes so the
+review can focus on deterministic all-case implementation and tests. A later
+stage can add report/log output or committed generated artifacts if explicitly
+scoped.
+
+Validation:
+
+- `python -m pytest tests/test_synthetic_split_robustness_demo.py -q` passed
+  with 10 tests.
+- `python -m research.synthetic_split_robustness_demo` passed without writing
+  outputs.
+- `python -m pytest -q` passed with 498 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` refreshed `docs/repo_map.md`.
+- `git diff --check` passed.
+- `.\scripts\audit-skills.ps1` passed.
+- Guardrail grep found only prohibition, caveat, and test assertion wording.
+
+This stage does not modify source package modules, generated reports/logs, CSV
+loader behavior, factor formulas, existing diagnostics helpers, backtester
+behavior, metrics logic, private data, real-data access, vendor APIs,
+credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact calibration, or profitability
+language.
+
+---
+
 ## 2026-06-12 - Synthetic Robustness And Split-Aware Validation Plan
 
 This documentation-only stage adds
