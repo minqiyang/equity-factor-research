@@ -15,6 +15,47 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Implement Synthetic Robustness Demo Without Generated Outputs
+
+Context:
+
+- PR #104 added the plan for synthetic robustness and split-aware validation.
+- The plan requires all configured cases and all configured splits to remain
+  visible before any generated-output refresh.
+- Generated reports and experiment logs are review-sensitive because they can
+  be mistaken for stronger evidence than synthetic diagnostics support.
+
+Decision:
+
+- Add the first synthetic split-aware robustness implementation as a research
+  helper plus focused tests only.
+- Include default identity, inverse, and constant invalid signal cases so the
+  all-case table includes favorable, unfavorable, and invalid diagnostics.
+- Preserve missing observations across synthetic transforms and record invalid
+  reasons instead of silently filling or dropping cases.
+- Do not write generated reports or experiment logs in this implementation PR.
+
+Rationale:
+
+- Keeping implementation separate from generated-output refresh makes the PR
+  small and keeps review focused on deterministic behavior and guardrails.
+- The constant invalid case exercises the insufficient/undefined diagnostic
+  path required by the plan without requiring real data or external inputs.
+
+Consequences:
+
+- Future report/log support should reuse the all-case summary rather than
+  recomputing or filtering cases.
+- Any generated-output PR should explicitly scope output files and verify the
+  caveats, all-case table, invalid-case table, and assumption fields.
+
+Follow-up:
+
+- After this PR merges, consider adding caveated report/log support or a
+  generated-output refresh for this synthetic robustness demo.
+
+---
+
 ## 2026-06-12 - Plan Synthetic Robustness Before Implementation
 
 Context:
