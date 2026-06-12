@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Post Synthetic Robustness Generated-Output Checkpoint
+
+This documentation-only checkpoint records the state after PR #108 merged the
+synthetic split-aware robustness Markdown report, JSON experiment log, and
+refreshed experiment registry.
+
+The checkpoint preserves the reviewed sequence from plan, deterministic
+all-case implementation, opt-in report/log support, PR-gate governance, and
+committed generated artifacts. It also records remaining gaps before any
+local-fixture robustness refresh or user-provided local CSV interpretation:
+the all-case split summary format has not yet been mapped to committed local
+fixtures, no real-data IC/Rank IC or benchmark-relative study exists, and
+readiness/provenance gates still block user-data interpretation.
+
+Validation before this checkpoint branch:
+
+- `python -m pytest -q` passed with 501 tests after syncing `main` at PR #108.
+- `python -m compileall src tests research` passed after syncing `main` at
+  PR #108.
+
+Checkpoint branch validation:
+
+- Markdown fence checks passed for the checkpoint and updated workflow docs.
+- Guardrail text checks confirmed no-real-data, no-vendor-API,
+  no-live-trading, no-order-execution, and no-profitability boundaries.
+- Scope review found no `src/`, `tests/`, `research/`, `reports/`, or `lean/`
+  changes.
+- `python -m pytest -q` passed with 501 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` ran.
+- `git diff --check` passed before commit.
+
+This stage is documentation-only. It does not modify source code, tests,
+research scripts, generated reports/logs, data loaders, backtester behavior,
+metrics behavior, factor logic, diagnostics helpers, LEAN code, real-data
+access, vendor APIs, credentials, live/paper trading, brokerage/order logic,
+or profitability language.
+
+---
+
 ## 2026-06-12 - Synthetic Robustness Generated Output Refresh
 
 This generated-output stage commits the default Markdown report, JSON

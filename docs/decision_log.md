@@ -15,6 +15,50 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Add Checkpoint After Synthetic Robustness Generated Outputs
+
+Context:
+
+- PR #108 merged the deterministic synthetic split-aware robustness Markdown
+  report, JSON experiment log, and refreshed experiment registry.
+- The current handoff routes the next safe stage to a documentation or
+  research-process checkpoint before any real-data interpretation.
+- The older roadmap already recommends applying the reviewed robustness format
+  to local fixtures only after the synthetic implementation path is complete.
+
+Decision:
+
+- Add `docs/post_synthetic_robustness_generated_output_checkpoint.md` as a
+  documentation-only checkpoint.
+- Record the completed PR #104-#108 sequence, generated-output state,
+  guardrails, remaining gaps, and recommended next roadmap.
+- Route the next stage toward a documentation-only local fixture
+  robustness/report refresh plan before changing fixture workflows or
+  generated artifacts.
+
+Rationale:
+
+- A checkpoint makes the post-#108 state explicit before starting another
+  workflow or generated-output branch.
+- The local fixture path needs a mapped plan so the all-case split summary,
+  invalid rows, cost/slippage assumptions, and caveats remain visible without
+  implying user-data validation.
+
+Consequences:
+
+- Future work should not jump directly from synthetic generated outputs to
+  real-data interpretation.
+- The next PR-sized stage can remain documentation-only and define fixture
+  refresh requirements before any source, test, research-script, or generated
+  artifact change.
+
+Follow-up:
+
+- After this checkpoint PR merges, create the local fixture robustness/report
+  refresh plan unless current evidence or user scope changes.
+
+---
+
 ## 2026-06-12 - Commit Synthetic Robustness Generated Outputs After Support Path
 
 Context:
