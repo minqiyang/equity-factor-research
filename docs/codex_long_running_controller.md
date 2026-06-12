@@ -36,6 +36,11 @@ git log --oneline -20
 gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title,headRefName,baseRefName 2>&1 | head -c 8000
 ```
 
+If the previous stage PR is not verified merged after this current-state check,
+stop and report the gate. Do not repeatedly check reviews, checks, branch
+protection, auto-merge eligibility, or baseline validation while that PR remains
+unmerged unless the user explicitly asks for PR inspection.
+
 If an expected controller, log, or Skill file is missing, treat that as a
 workflow-control gap. The next safe stage may be to add or repair the missing
 process artifact before continuing research work.
@@ -163,8 +168,10 @@ reread only the targeted files or sections needed for the active stage.
 
 ## Merge Gate
 
-Do not start a new stage while a previous stage PR is open and awaiting human
-review or merge.
+Do not start a new stage while a previous stage PR is open, closed-unmerged,
+unknown, or otherwise not verified merged. Check the PR state once, report the
+gate, and pause. Do not repeatedly poll or reclassify the same not-merged PR
+gate in automatic continuations.
 
 If the previous stage PR has merged:
 
@@ -224,6 +231,8 @@ If a file is missing but the current prompt expects it:
 Stop and report instead of continuing when any of these occurs:
 
 - an open PR requires human review, approval, merge, or close decision.
+- a previous PR is not verified merged; pause after one status check without
+  rerunning PR checks, protection queries, or baseline validation.
 - a push, PR creation, or merge decision is needed after local validation.
 - a PR has been opened and is ready for human review or merge.
 - the working tree is dirty before a new stage starts.

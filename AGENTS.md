@@ -45,6 +45,10 @@ This repository is a serious simulated quantitative research project. AI coding 
 - Do not combine unrelated changes in one PR.
 - Use separate PRs for distinct features, bug fixes, test hardening, documentation updates, and refactors.
 - Use a separate branch for each stage or milestone.
+- If a previous PR is not verified merged, pause after one current-state status
+  check and report the gate; do not repeatedly re-check, poll, rerun baseline
+  validation, or start another stage until the PR is merged or the user
+  explicitly asks for PR inspection.
 - For research features, prefer this sequence:
   1. planning
   2. tests or documentation
