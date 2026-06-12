@@ -1,5 +1,7 @@
 import ast
 import inspect
+import json
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -10,6 +12,7 @@ from research.synthetic_split_robustness_demo import (
     SyntheticRobustnessCase,
     SyntheticSplitRobustnessConfig,
     build_synthetic_robustness_cases,
+    main,
     run_synthetic_split_robustness_demo,
 )
 
@@ -122,6 +125,74 @@ def test_synthetic_split_robustness_assumptions_keep_costs_separate() -> None:
     assert result.assumptions["profitability_claim"] is False
 
 
+def test_synthetic_split_robustness_can_skip_outputs(tmp_path: Path) -> None:
+    report_path = tmp_path / "skipped.md"
+    log_path = tmp_path / "skipped.json"
+
+    result = run_synthetic_split_robustness_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+    )
+
+    assert result.report_path == report_path
+    assert result.experiment_log_path == log_path
+    assert not report_path.exists()
+    assert not log_path.exists()
+
+
+def test_synthetic_split_robustness_writes_caveated_report_and_log(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "synthetic_split_robustness_demo.md"
+    log_path = tmp_path / "synthetic_split_robustness_demo.json"
+
+    result = run_synthetic_split_robustness_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+        write_outputs=True,
+    )
+
+    report_text = report_path.read_text(encoding="utf-8")
+    payload = json.loads(log_path.read_text(encoding="utf-8"))
+
+    assert result.report_path == report_path
+    assert result.experiment_log_path == log_path
+    assert "# Synthetic Split-Aware Robustness Demo" in report_text
+    assert "deterministic synthetic panels only" in report_text
+    assert "not real-market evidence" in report_text
+    assert "not a profitability claim" in report_text
+    assert "No real data fetching" in report_text
+    assert "Every configured case is reported" in report_text
+    assert "All-Case Split Summary" in report_text
+    assert "Invalid Or Insufficient Cases" in report_text
+
+    assert payload["experiment_id"] == "synthetic-split-robustness-demo"
+    assert payload["experiment_type"] == "synthetic_split_robustness_diagnostic_demo"
+    assert payload["metrics"] == {}
+    assert payload["outputs"]["reported_case_count"] == 3
+    assert payload["outputs"]["invalid_case_count"] == 3
+    assert len(payload["diagnostics"]["all_case_summary"]) == 9
+    assert len(payload["diagnostics"]["invalid_case_summary"]) == 3
+    assert "all configured cases reported" in payload["caveats"]
+    assert "not parameter selection" in payload["caveats"]
+    assert payload["assumptions"]["volume_aware_slippage_mode"] == "absent"
+
+
+def test_synthetic_split_robustness_main_writes_requested_report(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "module_report.md"
+    log_path = tmp_path / "module_log.json"
+
+    main(report_path=report_path, experiment_log_path=log_path, write_outputs=True)
+
+    assert report_path.is_file()
+    assert log_path.is_file()
+    assert "# Synthetic Split-Aware Robustness Demo" in report_path.read_text(
+        encoding="utf-8",
+    )
+
+
 def test_build_synthetic_robustness_cases_rejects_duplicate_case_ids() -> None:
     base_factor = run_synthetic_split_robustness_demo().base_factor
 
@@ -186,7 +257,7 @@ def test_synthetic_split_robustness_module_has_no_forbidden_imports() -> None:
 def test_synthetic_split_robustness_text_contains_only_caveated_claim_language() -> None:
     source_text = inspect.getsource(demo).lower()
 
-    assert "make profitability claims" in source_text
+    assert "profitability claims" in source_text
     assert "is profitable" not in source_text
     assert "profitable strategy" not in source_text
-    assert "write generated reports" in source_text
+    assert "write generated reports\nunless explicitly requested" in source_text

@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Add Report/Log Support Before Generated Output Refresh
+
+Context:
+
+- PR #105 added a deterministic synthetic split-aware robustness demo and
+  focused tests, but intentionally left generated reports/logs unchanged.
+- The next handoff allowed either explicit caveated report/log support or a
+  generated-output refresh if deliberately scoped.
+
+Decision:
+
+- Add opt-in report/log support before refreshing any committed generated
+  artifacts.
+- Keep default module execution no-output so validation can prove support code
+  exists without mutating `reports/`.
+- Require the report/log path to preserve all-case diagnostics, invalid-case
+  diagnostics, caveats, and separately inspectable cost/slippage assumptions.
+
+Rationale:
+
+- Separating output support from generated artifact refresh keeps review
+  smaller and makes report/log schema and caveats testable before committing
+  generated files.
+- The generated-output refresh should only occur after this support path is
+  reviewed.
+
+Consequences:
+
+- Future generated-output PRs should call the explicit output-writing path and
+  review the Markdown/JSON diffs for caveats, all-case rows, invalid-case rows,
+  and assumption fields.
+- Real-data interpretation remains blocked by readiness, provenance,
+  survivorship, benchmark/universe, and experiment-handoff gates.
+
+Follow-up:
+
+- After this support PR merges, consider a generated-output refresh for
+  `reports/synthetic_split_robustness_demo.md`,
+  `reports/experiment_logs/synthetic_split_robustness_demo.json`, and the
+  experiment registry.
+
+---
+
 ## 2026-06-12 - Implement Synthetic Robustness Demo Without Generated Outputs
 
 Context:

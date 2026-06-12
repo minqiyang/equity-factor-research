@@ -2,13 +2,15 @@
 
 This module reports every configured synthetic signal case across
 train/validation/test windows. It does not fetch data, use real market data,
-select factors, choose parameters, run a backtest, write generated reports,
-place orders, support live trading, or make profitability claims.
+select factors, choose parameters, run a backtest, write generated reports
+unless explicitly requested, place orders, support live trading, or make
+profitability claims.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -28,7 +30,17 @@ from research.synthetic_split_ic_rank_ic_demo import (
     generate_synthetic_factor_panel,
     generate_synthetic_forward_returns,
 )
+from reporting.experiment_log import (
+    SYNTHETIC_RESEARCH_CAVEATS,
+    resolve_experiment_log_path,
+    write_experiment_log,
+)
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "synthetic_split_robustness_demo.md"
+DEFAULT_EXPERIMENT_LOG_PATH = (
+    PROJECT_ROOT / "reports" / "experiment_logs" / "synthetic_split_robustness_demo.json"
+)
 SPLIT_NAMES = ("train", "validation", "test")
 SUPPORTED_TRANSFORMS = {"identity", "inverse", "constant"}
 SyntheticTransform = Literal["identity", "inverse", "constant"]
@@ -65,6 +77,8 @@ class SyntheticSplitRobustnessResult:
     factor_cases: dict[str, pd.DataFrame]
     summary: pd.DataFrame
     assumptions: dict[str, object]
+    report_path: Path
+    experiment_log_path: Path
 
     @property
     def reported_case_count(self) -> int:
@@ -81,10 +95,23 @@ class SyntheticSplitRobustnessResult:
 
 def run_synthetic_split_robustness_demo(
     config: SyntheticSplitRobustnessConfig = SyntheticSplitRobustnessConfig(),
+    *,
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+    write_outputs: bool = False,
 ) -> SyntheticSplitRobustnessResult:
     """Run a deterministic all-case split-aware robustness diagnostic."""
 
     _validate_config(config)
+    experiment_log_path = (
+        resolve_experiment_log_path(
+            report_path,
+            default_report_path=DEFAULT_REPORT_PATH,
+            default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+        )
+        if experiment_log_path is None
+        else experiment_log_path
+    )
     base_factor = generate_synthetic_factor_panel(config.base_config)
     split = make_train_validation_test_split(
         base_factor.index,
@@ -104,7 +131,7 @@ def run_synthetic_split_robustness_demo(
         min_periods=config.base_config.ic_min_periods,
     )
 
-    return SyntheticSplitRobustnessResult(
+    result = SyntheticSplitRobustnessResult(
         config=config,
         base_factor=base_factor,
         forward_returns=forward_returns,
@@ -112,7 +139,15 @@ def run_synthetic_split_robustness_demo(
         factor_cases=factor_cases,
         summary=summary,
         assumptions=build_synthetic_robustness_assumptions(config),
+        report_path=Path(report_path),
+        experiment_log_path=Path(experiment_log_path),
     )
+
+    if write_outputs:
+        write_report(result=result)
+        write_demo_experiment_log(result=result)
+
+    return result
 
 
 def build_synthetic_robustness_cases(
@@ -260,6 +295,124 @@ def build_synthetic_robustness_assumptions(
     }
 
 
+def write_demo_experiment_log(
+    *,
+    result: SyntheticSplitRobustnessResult,
+) -> dict[str, object]:
+    """Write a deterministic JSON log for the synthetic robustness demo."""
+
+    return write_experiment_log(
+        log_path=result.experiment_log_path,
+        experiment_id="synthetic-split-robustness-demo",
+        title="Synthetic Split-Aware Robustness Demo",
+        experiment_type="synthetic_split_robustness_diagnostic_demo",
+        summary=(
+            "Deterministic synthetic demo that reports every configured signal "
+            "case across train/validation/test splits without selecting winners."
+        ),
+        config=result.config,
+        assumptions=result.assumptions,
+        outputs={
+            "markdown_report": _project_relative_path(result.report_path),
+            "experiment_log": _project_relative_path(result.experiment_log_path),
+            "reported_case_count": result.reported_case_count,
+            "invalid_case_count": result.invalid_case_count,
+            "split_names": list(SPLIT_NAMES),
+        },
+        metrics={},
+        diagnostics={
+            "split_windows": _split_window_records(result.split),
+            "all_case_summary": _summary_records(result.summary),
+            "invalid_case_summary": _invalid_summary_records(result.summary),
+        },
+        caveats=(
+            *SYNTHETIC_RESEARCH_CAVEATS,
+            "diagnostics only",
+            "not strategy validation",
+            "not model selection",
+            "not parameter selection",
+            "all configured cases reported",
+        ),
+        next_action=(
+            "Use this as a synthetic robustness wiring check only. Generated "
+            "report/log refreshes and real user-provided local CSV research "
+            "remain separate explicitly scoped stages."
+        ),
+    )
+
+
+def write_report(
+    *,
+    result: SyntheticSplitRobustnessResult,
+) -> None:
+    """Write a deterministic Markdown report for the robustness demo."""
+
+    result.report_path.parent.mkdir(parents=True, exist_ok=True)
+    invalid_summary = result.summary[result.summary["invalid_reason"].notna()]
+    content = f"""# Synthetic Split-Aware Robustness Demo
+
+This report uses deterministic synthetic panels only. It is not real-market evidence, not financial advice, and not a profitability claim. It does not fetch real data, run a backtest, construct a portfolio, connect to a broker, place orders, or support live trading.
+
+## Purpose
+
+Report every configured synthetic signal case across chronological train, validation, and test windows. The table includes favorable, unfavorable, and invalid diagnostics so the demo cannot hide weak or undefined cases.
+
+## Input Artifacts
+
+| Item | Value |
+| --- | --- |
+| Data scope | `{result.assumptions["data_scope"]}` |
+| Source artifacts | `{", ".join(result.assumptions["source_artifacts"])}` |
+| Synthetic seed | `{result.assumptions["synthetic_seed"]}` |
+| Target return definition | `{result.assumptions["target_return_definition"]}` |
+| Signal lag | `{result.assumptions["signal_lag"]}` |
+
+## Split Windows
+
+{_format_markdown_table(pd.DataFrame.from_records(_split_window_records(result.split)).set_index("split"))}
+
+## Parameter Grid
+
+{_format_markdown_table(pd.DataFrame.from_records(result.assumptions["parameter_grid"]).set_index("case_id"))}
+
+## All-Case Split Summary
+
+{_format_markdown_table(result.summary.drop(columns=["case_order", "split_order"]))}
+
+## Invalid Or Insufficient Cases
+
+{_format_markdown_table(invalid_summary[["invalid_reason", "ic_valid_dates", "rank_ic_valid_dates"]])}
+
+## Benchmark, Cost, And Slippage Assumptions
+
+| Assumption | Value |
+| --- | --- |
+| Benchmark | `{result.assumptions["benchmark_assumption"]}` |
+| Rebalance frequency | `{result.assumptions["rebalance_frequency"]}` |
+| Execution timing | `{result.assumptions["execution_timing"]}` |
+| Transaction cost bps | `{result.assumptions["transaction_cost_bps"]}` |
+| Fixed slippage bps | `{result.assumptions["slippage_bps"]}` |
+| Volume-aware slippage mode | `{result.assumptions["volume_aware_slippage_mode"]}` |
+| Portfolio construction | `{result.assumptions["portfolio_construction"]}` |
+| Backtest integration | `{result.assumptions["backtest_integration"]}` |
+
+## Guardrails
+
+- Synthetic data only.
+- Diagnostics only.
+- No real data fetching.
+- No vendor APIs or credentials.
+- No live trading, paper trading, brokerage integration, or order execution.
+- No profitability, model-selection, or parameter-selection claim.
+- Every configured case is reported.
+
+## Next Step
+
+Only refresh committed generated artifacts in a separate explicitly scoped PR after this report/log support is reviewed.
+"""
+    result.report_path.write_text(content, encoding="utf-8")
+
+
 def _validate_config(config: SyntheticSplitRobustnessConfig) -> None:
     if not isinstance(config, SyntheticSplitRobustnessConfig):
         raise TypeError("config must be a SyntheticSplitRobustnessConfig")
@@ -332,10 +485,82 @@ def _invalid_reason(ic_valid_dates: int, rank_ic_valid_dates: int) -> str | None
     return None
 
 
-def main() -> None:
-    """Run the synthetic split-aware robustness demo without writing outputs."""
+def _split_window_records(split: TrainValidationTestSplit) -> list[dict[str, object]]:
+    return [
+        {
+            "split": split_name,
+            "start": dates.min().date().isoformat(),
+            "end": dates.max().date().isoformat(),
+            "date_count": int(len(dates)),
+        }
+        for split_name, dates in split.as_dict().items()
+    ]
 
-    run_synthetic_split_robustness_demo()
+
+def _summary_records(summary: pd.DataFrame) -> list[dict[str, object]]:
+    return summary.reset_index().drop(columns=["case_order", "split_order"]).to_dict(
+        orient="records",
+    )
+
+
+def _invalid_summary_records(summary: pd.DataFrame) -> list[dict[str, object]]:
+    invalid_summary = summary[summary["invalid_reason"].notna()]
+    return _summary_records(invalid_summary)
+
+
+def _format_markdown_table(frame: pd.DataFrame) -> str:
+    index_names = [name if name is not None else "index" for name in frame.index.names]
+    headers = [*index_names, *[str(column) for column in frame.columns]]
+    separator = ["---" for _ in index_names] + ["---:" for _ in frame.columns]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(separator) + " |",
+    ]
+    for index, row in frame.iterrows():
+        index_values = index if isinstance(index, tuple) else (index,)
+        row_values = [_format_table_value(value) for value in row]
+        lines.append(
+            "| "
+            + " | ".join([*(str(value) for value in index_values), *row_values])
+            + " |"
+        )
+    return "\n".join(lines)
+
+
+def _format_table_value(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if pd.isna(value):
+        return "NaN"
+    if isinstance(value, (int, np.integer)):
+        return str(int(value))
+    if isinstance(value, (float, np.floating)):
+        return f"{float(value):.4f}"
+    return str(value)
+
+
+def _project_relative_path(path: Path) -> str:
+    try:
+        return Path(path).resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
+
+
+def main(
+    report_path: Path = DEFAULT_REPORT_PATH,
+    experiment_log_path: Path | None = None,
+    *,
+    write_outputs: bool = False,
+) -> None:
+    """Run the robustness demo; output writing must be explicit."""
+
+    run_synthetic_split_robustness_demo(
+        report_path=report_path,
+        experiment_log_path=experiment_log_path,
+        write_outputs=write_outputs,
+    )
 
 
 if __name__ == "__main__":
