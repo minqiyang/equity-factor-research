@@ -1,0 +1,300 @@
+{
+  "assumptions": {
+    "backtest_integration": "not included",
+    "benchmark_assumption": "not included",
+    "brokerage_integration": false,
+    "data_scope": "synthetic only",
+    "execution_timing": "not included",
+    "live_trading": false,
+    "order_execution": false,
+    "paper_trading": false,
+    "parameter_grid": [
+      {
+        "case_id": "base_signal",
+        "transform": "identity"
+      },
+      {
+        "case_id": "inverse_signal",
+        "transform": "inverse"
+      },
+      {
+        "case_id": "constant_signal",
+        "transform": "constant"
+      }
+    ],
+    "portfolio_construction": "not included",
+    "profitability_claim": false,
+    "rebalance_frequency": "not included",
+    "signal_lag": "not applicable; deterministic aligned diagnostic inputs",
+    "slippage_bps": 0.0,
+    "source_artifacts": [
+      "research/synthetic_split_robustness_demo.py"
+    ],
+    "split_policy": "chronological train/validation/test windows",
+    "synthetic_seed": "deterministic formula; no random seed",
+    "target_return_definition": "synthetic forward-return evaluation target",
+    "transaction_cost_bps": 0.0,
+    "volume_aware_slippage_mode": "absent"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration",
+    "diagnostics only",
+    "not strategy validation",
+    "not model selection",
+    "not parameter selection",
+    "all configured cases reported"
+  ],
+  "config": {
+    "base_config": {
+      "asset_count": 6,
+      "ic_min_periods": 3,
+      "periods": 12,
+      "start_date": "2024-01-02",
+      "test_end": null,
+      "train_end": "2024-01-05",
+      "validation_end": "2024-01-11"
+    },
+    "cases": [
+      {
+        "case_id": "base_signal",
+        "transform": "identity"
+      },
+      {
+        "case_id": "inverse_signal",
+        "transform": "inverse"
+      },
+      {
+        "case_id": "constant_signal",
+        "transform": "constant"
+      }
+    ]
+  },
+  "diagnostics": {
+    "all_case_summary": [
+      {
+        "asset_count": 6,
+        "case_id": "base_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 24,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": 1.0,
+        "mean_rank_ic": 1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "train",
+        "split_end": "2024-01-05",
+        "split_start": "2024-01-02"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "base_signal",
+        "date_count": 4,
+        "factor_valid_observations": 23,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": -1.0,
+        "mean_rank_ic": -1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "validation",
+        "split_end": "2024-01-11",
+        "split_start": "2024-01-08"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "base_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": 1.0,
+        "mean_rank_ic": 1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "test",
+        "split_end": "2024-01-17",
+        "split_start": "2024-01-12"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "inverse_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 24,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": -1.0,
+        "mean_rank_ic": -1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "train",
+        "split_end": "2024-01-05",
+        "split_start": "2024-01-02"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "inverse_signal",
+        "date_count": 4,
+        "factor_valid_observations": 23,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": 1.0,
+        "mean_rank_ic": 1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "validation",
+        "split_end": "2024-01-11",
+        "split_start": "2024-01-08"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "inverse_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 4,
+        "invalid_reason": null,
+        "mean_ic": -1.0,
+        "mean_rank_ic": -1.0,
+        "rank_ic_valid_dates": 4,
+        "split": "test",
+        "split_end": "2024-01-17",
+        "split_start": "2024-01-12"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 24,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "train",
+        "split_end": "2024-01-05",
+        "split_start": "2024-01-02"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 23,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "validation",
+        "split_end": "2024-01-11",
+        "split_start": "2024-01-08"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "test",
+        "split_end": "2024-01-17",
+        "split_start": "2024-01-12"
+      }
+    ],
+    "invalid_case_summary": [
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 24,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "train",
+        "split_end": "2024-01-05",
+        "split_start": "2024-01-02"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 23,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "validation",
+        "split_end": "2024-01-11",
+        "split_start": "2024-01-08"
+      },
+      {
+        "asset_count": 6,
+        "case_id": "constant_signal",
+        "date_count": 4,
+        "factor_valid_observations": 24,
+        "forward_return_valid_observations": 23,
+        "ic_valid_dates": 0,
+        "invalid_reason": "no_valid_ic_or_rank_ic_dates",
+        "mean_ic": null,
+        "mean_rank_ic": null,
+        "rank_ic_valid_dates": 0,
+        "split": "test",
+        "split_end": "2024-01-17",
+        "split_start": "2024-01-12"
+      }
+    ],
+    "split_windows": [
+      {
+        "date_count": 4,
+        "end": "2024-01-05",
+        "split": "train",
+        "start": "2024-01-02"
+      },
+      {
+        "date_count": 4,
+        "end": "2024-01-11",
+        "split": "validation",
+        "start": "2024-01-08"
+      },
+      {
+        "date_count": 4,
+        "end": "2024-01-17",
+        "split": "test",
+        "start": "2024-01-12"
+      }
+    ]
+  },
+  "experiment_id": "synthetic-split-robustness-demo",
+  "experiment_type": "synthetic_split_robustness_diagnostic_demo",
+  "metrics": {},
+  "next_action": "Use this as a synthetic robustness wiring check only. Generated report/log refreshes and real user-provided local CSV research remain separate explicitly scoped stages.",
+  "outputs": {
+    "experiment_log": "reports/experiment_logs/synthetic_split_robustness_demo.json",
+    "invalid_case_count": 3,
+    "markdown_report": "reports/synthetic_split_robustness_demo.md",
+    "reported_case_count": 3,
+    "split_names": [
+      "train",
+      "validation",
+      "test"
+    ]
+  },
+  "schema_version": 1,
+  "summary": "Deterministic synthetic demo that reports every configured signal case across train/validation/test splits without selecting winners.",
+  "title": "Synthetic Split-Aware Robustness Demo"
+}

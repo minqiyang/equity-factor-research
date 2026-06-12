@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added the committed synthetic split-aware robustness Markdown report, JSON
+  experiment log, and refreshed experiment registry with all-case and
+  invalid-case diagnostics preserved as synthetic-only outputs.
 - Added PR-gate governance that pauses after one current-state check when a
   previous-stage PR is not verified merged, avoiding repeated PR polling or
   baseline validation while the gate remains unresolved.
