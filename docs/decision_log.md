@@ -15,6 +15,51 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Plan Synthetic Robustness Before Implementation
+
+Context:
+
+- PR #103 refreshed the roadmap and identified robustness and split-aware
+  validation policy as the next original-goal gap.
+- The repository already has split helpers, synthetic diagnostics, local
+  fixture workflows, fixed-bps cost/slippage accounting, and a volume-aware
+  diagnostic/precomputed-impact boundary.
+- No user-provided local CSV bundle or real-data readiness handoff is
+  available.
+
+Decision:
+
+- Add `docs/synthetic_robustness_validation_plan.md` before implementing any
+  new robustness summary.
+- Require future implementations to report every configured parameter case
+  across every configured split, including invalid or insufficient cases.
+- Keep transaction costs, fixed-bps slippage, and volume-aware diagnostics or
+  precomputed impacts separately inspectable in future logs and reports.
+
+Rationale:
+
+- A plan-first stage reduces the risk of cherry-picking, accidental
+  performance framing, or hidden missing-data behavior in future synthetic
+  reports.
+- Chronological split policy, all-case reporting, and guardrail caveats should
+  be reviewed before changing research scripts or generated outputs.
+
+Consequences:
+
+- The next implementation stage should add deterministic tests before or with
+  any synthetic robustness code.
+- Generated reports/logs should remain unchanged until an explicit
+  generated-output stage or implementation PR scopes them.
+- Real-data interpretation remains blocked by readiness, provenance,
+  survivorship, benchmark/universe, and experiment-handoff gates.
+
+Follow-up:
+
+- After this plan merges, consider a synthetic split-aware robustness
+  implementation PR with deterministic tests and no real-data access.
+
+---
+
 ## 2026-06-12 - Refresh Roadmap After Volume-Aware Slippage Sequence
 
 Context:

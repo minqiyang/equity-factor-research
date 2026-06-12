@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/synthetic_robustness_validation_plan.md` to define the
+  documentation gate for future synthetic/local-fixture robustness summaries,
+  including split policy, all-case reporting, missing-data stop conditions,
+  future tests, and future report/log fields before implementation.
 - Added `docs/post_precomputed_volume_aware_slippage_checkpoint.md` to record
   the completed volume-aware slippage integration design, test-plan,
   precomputed-impact implementation, and synthetic generated-log refresh
