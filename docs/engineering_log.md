@@ -12,6 +12,41 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Synthetic Robustness And Split-Aware Validation Plan
+
+This documentation-only stage adds
+`docs/synthetic_robustness_validation_plan.md` after the roadmap refresh
+identified robustness and split-aware validation policy as the next blocker.
+
+Assumption: after PR #103 merged and synced `main` passed baseline validation,
+the next safe stage was a plan for robustness reporting, not implementation,
+generated-output refresh, real-data interpretation, or LEAN/runtime work.
+
+The plan defines required inputs, chronological split policy, all-case
+robustness reporting behavior, missing-data and insufficient-window stop
+conditions, future deterministic test coverage, future experiment-log fields,
+and future Markdown report fields. It keeps fixed-bps transaction costs,
+fixed-bps slippage, and volume-aware diagnostics or precomputed impacts
+separately inspectable.
+
+Validation:
+
+- `python -m pytest -q` passed with 488 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` refreshed `docs/repo_map.md` for the new plan.
+- `git diff --check` passed.
+- `.\scripts\audit-skills.ps1` passed.
+- Guardrail grep found only existing prohibition, caveat, and policy wording.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics logic, private data, real-data access, vendor
+APIs, credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact calibration, or profitability
+language.
+
+---
+
 ## 2026-06-12 - Post-Volume-Aware Roadmap Gap Refresh
 
 This documentation-only stage refreshes `docs/current_roadmap_gap_refresh.md`
