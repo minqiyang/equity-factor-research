@@ -252,6 +252,11 @@ profitability, or trading readiness.
 
 ### Changed
 
+- Refreshed `docs/current_roadmap_gap_refresh.md` after the completed split,
+  liquidity, fixed-bps slippage, volume-aware diagnostic,
+  precomputed-impact, generated-log, and checkpoint stages, and routed the
+  next safe stage toward a documentation-only synthetic robustness and
+  split-aware validation plan.
 - Refreshed the synthetic momentum and synthetic combined-score JSON
   experiment logs so their deterministic metrics payloads include the default
   `total_volume_aware_slippage_cost_impact` field after the precomputed
