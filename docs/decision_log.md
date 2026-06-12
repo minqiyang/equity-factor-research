@@ -15,6 +15,47 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Commit Synthetic Robustness Generated Outputs After Support Path
+
+Context:
+
+- PR #105 added the deterministic synthetic split-aware robustness demo without
+  committed generated outputs.
+- PR #106 added explicit report/log support with default no-output module
+  execution.
+- The current handoff routes the next safe stage to a scoped generated-output
+  refresh if caveats, all-case fields, and invalid-case fields are verified.
+
+Decision:
+
+- Commit the default Markdown report and JSON experiment log for the synthetic
+  robustness demo.
+- Refresh the experiment registry so the new JSON log is discoverable beside
+  the other synthetic demo logs.
+- Keep the refresh generated-output-only and do not change implementation code
+  or tests in this PR.
+
+Rationale:
+
+- The generated artifacts are useful review and handoff evidence only after
+  the output-writing path is tested and merged.
+- Committing the all-case and invalid-case output makes caveats and failure
+  modes visible rather than preserving only favorable diagnostics.
+
+Consequences:
+
+- Reviewers can inspect the generated Markdown/JSON artifacts directly.
+- These outputs remain deterministic synthetic diagnostics, not real-market
+  evidence, not strategy validation, and not a profitability claim.
+
+Follow-up:
+
+- After this generated-output PR merges, choose the next stage from current
+  evidence and avoid real-data interpretation until readiness/provenance gates
+  are satisfied.
+
+---
+
 ## 2026-06-12 - Pause After One Not-Merged PR Gate Check
 
 Context:

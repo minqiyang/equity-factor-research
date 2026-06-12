@@ -12,6 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Synthetic Robustness Generated Output Refresh
+
+This generated-output stage commits the default Markdown report, JSON
+experiment log, and refreshed experiment registry for the synthetic
+split-aware robustness demo after the report/log support path was reviewed and
+merged.
+
+The refresh calls the explicit `write_outputs=True` path for
+`research.synthetic_split_robustness_demo` and then regenerates the synthetic
+experiment registry from committed JSON logs. The committed report preserves
+the all-case split summary, invalid/insufficient-case table, synthetic-only
+caveats, no-real-data/no-trading guardrails, and separately inspectable
+cost/slippage assumptions. The JSON log records three configured cases, nine
+all-case rows, three invalid-case rows, empty metrics, and
+`volume_aware_slippage_mode` as `absent`.
+
+Validation:
+
+- `python -m pytest tests/test_synthetic_split_robustness_demo.py -q` passed
+  with 13 tests.
+- Direct JSON/report content checks confirmed the expected experiment id,
+  experiment type, reported/invalid case counts, nine all-case rows, three
+  invalid-case rows, empty metrics, `volume_aware_slippage_mode=absent`, and
+  required caveat strings.
+- `python -m pytest -q` passed with 501 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` ran.
+- `.\scripts\audit-skills.ps1` passed.
+- `git diff --check origin/main..HEAD` passed.
+
+This stage does not modify source code, tests, research scripts, data loaders,
+backtester behavior, metrics behavior, factor logic, diagnostics helpers, LEAN
+code, real-data access, vendor APIs, credentials, live/paper trading,
+brokerage/order logic, or profitability language.
+
+---
+
 ## 2026-06-12 - PR Gate Pause Rule Refresh
 
 This workflow-control stage updates the project PR-gate rules so future
