@@ -12,6 +12,52 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Synthetic Volume-Aware Slippage Generated-Log Refresh
+
+This generated-output stage refreshes the committed synthetic experiment logs
+after PR #100 added the default `total_volume_aware_slippage_cost_impact`
+metric to the local backtester result metrics.
+
+Assumption: after PR #100 merged and synced `main` passed baseline validation,
+the next safe stage was the handoff-recommended generated-output review or
+refresh for synthetic/local-fixture artifacts, not source code, tests, research
+script behavior, real-data workflows, or LEAN/runtime work.
+
+`python research\synthetic_momentum_demo.py` completed and refreshed the
+synthetic momentum experiment log. Direct file invocation of
+`research\synthetic_combined_score_backtest_demo.py` and
+`research\synthetic_multifactor_parameter_sweep.py` failed with
+`ModuleNotFoundError: No module named 'research'` because those scripts import
+package-qualified `research.*` modules. Rerunning them as
+`python -m research.synthetic_combined_score_backtest_demo` and
+`python -m research.synthetic_multifactor_parameter_sweep` completed
+successfully. No source or research-script changes were needed.
+
+Only these committed synthetic JSON experiment logs changed:
+
+- `reports/experiment_logs/synthetic_momentum_demo.json`
+- `reports/experiment_logs/synthetic_combined_score_backtest_demo.json`
+
+Both now include `total_volume_aware_slippage_cost_impact: 0.0` in the metrics
+payload. The synthetic parameter sweep produced no committed diff, and no
+Markdown report or experiment-registry file changed.
+
+This stage does not modify source code, tests, research scripts, CSV loader
+behavior, factor formulas, diagnostics semantics, backtester behavior, metrics
+logic, private data, real-data access, vendor APIs, credentials, live or paper
+trading scope, brokerage integration, order execution, LEAN runtime behavior,
+market-impact calibration, or profitability language.
+
+Validation:
+
+- `python -m pytest -q` passed with 488 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` ran and produced no `docs/repo_map.md` diff.
+- `git diff --check origin/main..HEAD` passed.
+- `.\scripts\audit-skills.ps1` passed.
+
+---
+
 ## 2026-06-11 - Precomputed Volume-Aware Slippage Backtester Integration
 
 This code-changing stage implements the reviewed precomputed-impact boundary
