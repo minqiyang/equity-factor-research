@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added PR-gate governance that pauses after one current-state check when a
+  previous-stage PR is not verified merged, avoiding repeated PR polling or
+  baseline validation while the gate remains unresolved.
 - Added opt-in Markdown report and JSON experiment-log support for the
   synthetic split-aware robustness demo while keeping default module execution
   free of committed generated-output changes.

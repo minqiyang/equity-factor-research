@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - PR Gate Pause Rule Refresh
+
+This workflow-control stage updates the project PR-gate rules so future
+continuations pause after one current-state check when a previous-stage PR is
+not verified merged.
+
+The rule prevents repeated PR polling, protection checks, review checks,
+auto-merge reclassification, baseline validation, or next-stage startup while
+the same PR gate remains open, closed-unmerged, unknown, or otherwise unproven
+merged. A merged PR still requires the normal `main` fast-forward and baseline
+validation before any next stage begins.
+
+This stage changes only workflow documentation and the project staged workflow
+Skill. It does not modify source code, tests, research scripts, generated
+reports/logs, data access, strategy logic, backtester behavior, metrics, real
+data fetching, vendor APIs, credentials, live/paper trading, brokerage/order
+logic, or profitability language.
+
+---
+
 ## 2026-06-12 - Synthetic Robustness Report/Log Support
 
 This implementation stage adds opt-in Markdown report and JSON experiment-log

@@ -21,6 +21,9 @@ Codex should be able to advance one small, reviewable stage at a time without wa
 ## Success criteria
 
 - The current repo and PR state are verified before making decisions.
+- A previous-stage PR that is not verified merged pauses the workflow after one
+  status check; Codex does not repeatedly re-check, poll, rerun baseline
+  validation, or start the next stage while the gate remains unmerged.
 - The next stage is chosen from current evidence: latest merged PRs, checkpoint reports, `docs/engineering_log.md`, `PROJECT_SPEC.md`, `EXPERIMENT_LOG.md`, and relevant roadmap docs.
 - Changes are tightly scoped to one coherent documentation update, test improvement, bugfix, feature, or research-process milestone.
 - Documentation-only and low-risk checkpoint PRs are opened ready for review, not draft.
@@ -48,7 +51,11 @@ After the handoff, collect:
   when needed for the active stage;
 - current test status when continuing beyond a merge gate.
 
-If a previous stage PR is still open, stop and report the merge gate instead of starting a new stage.
+If a previous stage PR is open, closed-unmerged, unknown, or otherwise not
+verified merged, stop after one concise gate report instead of starting a new
+stage. Do not repeatedly re-check checks, reviews, branch protection, or
+auto-merge eligibility unless the user explicitly asks to inspect or update
+that PR.
 
 If a prompt expects a missing file, do not silently treat that as fatal. Create the file in a separate workflow-control PR when it is a low-risk documentation, logging, controller, or audit-script scaffold. Stop and report when the missing file affects product behavior, strategy logic, data access, execution, credentials, or external systems.
 
@@ -118,7 +125,10 @@ assumptions, next stage, and confirmation that Codex did not merge.
 
 ## Workflow guidance
 
-Begin with read-only state inspection. If the previous required PR has merged, switch to `main`, fast-forward from `origin/main`, and rerun baseline validation before branching.
+Begin with read-only state inspection. If the previous required PR is not
+verified merged, pause after one current-state status check. If the previous
+required PR has merged, switch to `main`, fast-forward from `origin/main`, and
+rerun baseline validation before branching.
 
 Choose the next stage conservatively from the latest checkpoint recommendation. Prefer documentation or planning stages when roadmap state is stale, when data prerequisites are missing, or when guardrails need clarification before implementation. Prefer code only when the needed design, tests, and scope boundaries are already clear.
 
@@ -143,6 +153,9 @@ Commit only intended files. Push the branch and create a ready-for-review PR whe
 ## Known pitfalls
 
 - Do not continue to a new stage merely because the user says "merged"; verify the PR state and sync `main`.
+- Do not repeatedly inspect the same not-merged PR gate; one current-state check
+  is enough to pause until external state changes or the user explicitly asks
+  for PR inspection.
 - Do not mix bugfixes into unrelated stage branches. Split independent fixes into separate PRs.
 - Do not treat synthetic diagnostics as real-data evidence or profitability support.
 - Do not let pandas or line-ending behavior hide meaningful CSV validation bugs; inspect semantic diffs and line-ending-only diffs when relevant.
@@ -213,6 +226,7 @@ Interpret guardrail matches carefully. Prohibitions, caveats, tests, and warning
 Before finalizing a stage, report:
 
 - PR or merge gate status;
+- whether any not-verified-merged PR gate paused after one status check;
 - branch name;
 - commit hash, if committed;
 - PR link, if opened;

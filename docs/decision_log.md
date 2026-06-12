@@ -15,6 +15,44 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Pause After One Not-Merged PR Gate Check
+
+Context:
+
+- Repeated automatic continuations can keep rechecking the same previous-stage
+  PR when that PR is still not merged.
+- The staged workflow already requires a merge gate before starting a new
+  stage and forbids Codex from merging PRs without explicit instruction.
+
+Decision:
+
+- Treat open, closed-unmerged, unknown, or otherwise not-verified-merged PR
+  state as an immediate pause gate after one current-state status check.
+- Do not repeatedly poll PR checks, reviews, branch protection, auto-merge
+  eligibility, or baseline validation while that gate remains unmerged.
+- Continue to sync `main` and run baseline validation only after the previous
+  PR is verified merged.
+
+Rationale:
+
+- One authoritative status check is enough to prove the workflow cannot safely
+  start the next stage.
+- Repeated rechecks add noise and token cost without changing the external
+  merge state.
+
+Consequences:
+
+- Future continuations should report the not-merged gate and pause directly.
+- Explicit user requests can still inspect or update a PR, but automatic
+  staged continuation should not keep reclassifying the same unmerged gate.
+
+Follow-up:
+
+- If a future continuation still repeats the same not-merged gate, tighten the
+  controller or Skill wording further.
+
+---
+
 ## 2026-06-12 - Add Report/Log Support Before Generated Output Refresh
 
 Context:
