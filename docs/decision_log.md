@@ -15,6 +15,56 @@ investment performance.
 
 ---
 
+## 2026-06-11 - Checkpoint Completed Precomputed Volume-Aware Slippage Sequence
+
+Context:
+
+- PR #98 added the documentation-only integration design.
+- PR #99 added the documentation-only integration test plan.
+- PR #100 added the precomputed-impact backtester path with
+  `diagnostic_only` as the default.
+- PR #101 refreshed affected synthetic JSON experiment logs so full metrics
+  payloads include `total_volume_aware_slippage_cost_impact: 0.0` in default
+  diagnostic mode.
+
+Decision:
+
+- Add a documentation-only checkpoint for the completed design, test-plan,
+  implementation, and generated-log sequence.
+- Keep the next stage documentation-only by routing to a post-volume-aware
+  roadmap gap refresh before any new code or generated-output stage.
+- Preserve the current boundary: no real data, no vendor APIs, no credentials,
+  no brokerage, no live or paper trading, no order execution, and no
+  profitability claims.
+
+Rationale:
+
+- The volume-aware slippage path now has design, tests, implementation, and
+  refreshed synthetic logs, so future stages need a current roadmap rather
+  than another integration step by default.
+- The older `docs/current_roadmap_gap_refresh.md` predates several completed
+  split, liquidity, fixed-bps slippage, volume-aware diagnostic,
+  precomputed-impact, and generated-log stages.
+- A checkpoint keeps the audit trail explicit before selecting the next
+  research-pipeline milestone.
+
+Consequences:
+
+- Future continuations should not treat volume-aware slippage as real-data
+  capacity evidence or execution realism.
+- User-provided local CSV interpretation remains blocked by readiness-audit,
+  provenance, alignment, and experiment-handoff gates.
+- The next recommended PR-sized stage is a documentation-only roadmap gap
+  refresh.
+
+Follow-up:
+
+- After this checkpoint PR merges, refresh the current roadmap gap document
+  from latest repository evidence before choosing additional implementation
+  work.
+
+---
+
 ## 2026-06-11 - Refresh Synthetic Logs For Default Volume-Aware Metric
 
 Context:

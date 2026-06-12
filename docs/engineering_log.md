@@ -12,6 +12,44 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-11 - Post Precomputed Volume-Aware Slippage Checkpoint
+
+This documentation-only checkpoint records the completed PR #98 through
+PR #101 sequence for volume-aware slippage backtester integration:
+documentation-only design, documentation-only test plan, precomputed-impact
+implementation, and synthetic generated-log refresh.
+
+Assumption: after PR #101 merged and synced `main` passed baseline validation,
+the next safe stage was the handoff-recommended checkpoint, not new code,
+research-script changes, generated-output changes, real-data workflows, or
+LEAN/runtime work.
+
+`docs/post_precomputed_volume_aware_slippage_checkpoint.md` records the
+baseline, completed implementation and generated-log state, guardrail review,
+remaining gaps, and recommended next roadmap. The recommendation is a
+documentation-only post-volume-aware roadmap gap refresh because
+`docs/current_roadmap_gap_refresh.md` predates several completed split,
+liquidity, fixed-bps slippage, volume-aware diagnostic, precomputed-impact, and
+generated-log stages.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, CSV loader behavior, factor formulas, diagnostics semantics,
+backtester behavior, metrics logic, private data, real-data access, vendor
+APIs, credentials, live or paper trading scope, brokerage integration, order
+execution, LEAN runtime behavior, market-impact calibration, or profitability
+language.
+
+Validation:
+
+- `python -m pytest -q` passed with 488 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` refreshed `docs/repo_map.md` for the new
+  checkpoint document.
+- `git diff --check origin/main..HEAD` passed.
+- `.\scripts\audit-skills.ps1` passed.
+
+---
+
 ## 2026-06-11 - Synthetic Volume-Aware Slippage Generated-Log Refresh
 
 This generated-output stage refreshes the committed synthetic experiment logs

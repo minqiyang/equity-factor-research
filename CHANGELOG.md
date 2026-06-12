@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/post_precomputed_volume_aware_slippage_checkpoint.md` to record
+  the completed volume-aware slippage integration design, test-plan,
+  precomputed-impact implementation, and synthetic generated-log refresh
+  sequence, and to route the next safe stage toward a documentation-only
+  roadmap gap refresh.
 - Added an explicit precomputed volume-aware slippage impact path to the local
   backtester, with deterministic tests and separate result, metric, and
   assumption fields while keeping `diagnostic_only` as the default and leaving
