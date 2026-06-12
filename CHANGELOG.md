@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added opt-in Markdown report and JSON experiment-log support for the
+  synthetic split-aware robustness demo while keeping default module execution
+  free of committed generated-output changes.
 - Added a deterministic synthetic split-aware robustness demo that reports
   every configured signal case across train, validation, and test splits,
   including invalid diagnostics, without writing generated reports or logs.

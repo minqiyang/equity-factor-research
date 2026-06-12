@@ -12,6 +12,44 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Synthetic Robustness Report/Log Support
+
+This implementation stage adds opt-in Markdown report and JSON experiment-log
+support to `research/synthetic_split_robustness_demo.py` after PR #105 added
+the deterministic all-case summary.
+
+The report/log support keeps output writing explicit through `write_outputs`.
+Default module execution still runs the synthetic demo without creating
+committed generated artifacts. The Markdown report includes input artifacts,
+split windows, parameter grid, all-case split summary, invalid/insufficient
+cases, benchmark/cost/slippage assumptions, and guardrails. The JSON log uses
+the existing deterministic experiment-log helper and records empty metrics,
+all-case diagnostics, invalid-case diagnostics, caveats, and separately
+inspectable cost, fixed-slippage, and volume-aware-slippage assumptions.
+
+Validation:
+
+- `python -m pytest tests/test_synthetic_split_robustness_demo.py -q` passed
+  with 13 tests after updating one wording assertion to match the revised
+  opt-in output caveat.
+- `python -m research.synthetic_split_robustness_demo` passed without creating
+  default report/log files.
+- `python -m pytest -q` passed with 501 tests.
+- `python -m compileall src tests research` passed.
+- `python scripts/repo_map.py` ran and produced no `docs/repo_map.md` diff.
+- `git diff --check` passed.
+- `.\scripts\audit-skills.ps1` passed.
+
+This stage does not refresh committed generated reports/logs, modify source
+package modules, change CSV loader behavior, change factor formulas, change
+existing diagnostics helpers, change backtester behavior, change metrics
+logic, access private data, fetch real data, add vendor APIs, add credentials,
+add live or paper trading scope, add brokerage integration, add order
+execution, change LEAN runtime behavior, calibrate market impact, or add
+profitability language.
+
+---
+
 ## 2026-06-12 - Synthetic Split-Aware Robustness Demo
 
 This implementation stage adds `research/synthetic_split_robustness_demo.py`
