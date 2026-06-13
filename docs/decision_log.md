@@ -15,6 +15,52 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Plan Local Fixture Robustness Before Refreshing Outputs
+
+Context:
+
+- PR #109 merged the post-synthetic robustness generated-output checkpoint.
+- That checkpoint routed the next safe stage to a documentation-only local
+  fixture robustness/report refresh plan.
+- The local CSV fixture workflow already has split metadata, caveats,
+  synthetic-only inventory review, liquidity diagnostics, factor diagnostics,
+  and diagnostic-only volume-aware slippage smoke output.
+
+Decision:
+
+- Add `docs/local_fixture_robustness_report_refresh_plan.md` before changing
+  fixture workflow behavior or generated artifacts.
+- Require future fixture robustness output to preserve all configured cases,
+  every configured split, invalid or insufficient rows, deterministic ordering,
+  cost/slippage assumptions, diagnostic-only volume-aware fields, and
+  guardrail caveats.
+- Keep generated-output refresh as a later, separately reviewed stage unless a
+  future reviewed implementation scope explicitly includes it.
+
+Rationale:
+
+- The reviewed synthetic all-case format should be mapped onto committed local
+  fixtures before another output refresh.
+- Planning first reduces the risk of cherry-picked fixture diagnostics,
+  hidden invalid cases, or wording that implies real-data evidence.
+
+Consequences:
+
+- The next implementation PR should be test-first and should prove all-case,
+  all-split, invalid-row, and guardrail behavior before writing refreshed
+  reports or logs.
+- Real-data interpretation remains blocked until user-provided data scope,
+  provenance, readiness audit, benchmark, and experiment-handoff gates are
+  available.
+
+Follow-up:
+
+- After this plan PR merges, add focused local fixture robustness/report
+  support tests and implementation without fetching data or changing
+  backtester behavior.
+
+---
+
 ## 2026-06-12 - Add Checkpoint After Synthetic Robustness Generated Outputs
 
 Context:

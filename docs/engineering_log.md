@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Local Fixture Robustness Report Refresh Plan
+
+This documentation-only stage adds a reviewed plan for applying the
+all-case, split-aware synthetic robustness reporting discipline to the
+committed synthetic local CSV fixture workflow before any fixture workflow,
+test, research-script, or generated-output changes.
+
+The plan records the current local fixture boundary, required future inputs,
+all-case and all-split reporting behavior, invalid-row preservation,
+missing/zero/stale/incomplete volume stop conditions, invalid notional and
+target-weight handling, separately inspectable transaction-cost,
+fixed-slippage, and volume-aware diagnostic fields, future tests, required
+report/log fields, and explicit non-goals.
+
+Validation before this plan branch:
+
+- `python -m pytest -q` passed with 501 tests after syncing `main` at PR #109.
+- `python -m compileall src tests research` passed after syncing `main` at
+  PR #109.
+
+Branch validation is pending for this stage.
+
+This stage is documentation-only. It does not modify source code, tests,
+research scripts, generated reports/logs, data loaders, backtester behavior,
+metrics behavior, factor logic, diagnostics helpers, LEAN code, real-data
+access, vendor APIs, credentials, live/paper trading, brokerage/order logic,
+or profitability language.
+
+---
+
 ## 2026-06-12 - Post Synthetic Robustness Generated-Output Checkpoint
 
 This documentation-only checkpoint records the state after PR #108 merged the
