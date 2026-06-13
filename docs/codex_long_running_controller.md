@@ -37,9 +37,12 @@ gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title
 ```
 
 If the previous stage PR is not verified merged after this current-state check,
-stop and report the gate. Do not repeatedly check reviews, checks, branch
+report one concise gate summary, enter a paused external PR gate state, and
+wait for explicit user resume. Do not repeatedly check reviews, checks, branch
 protection, auto-merge eligibility, or baseline validation while that PR remains
-unmerged unless the user explicitly asks for PR inspection.
+unmerged unless the user explicitly says the PR merged, asks to resume after
+merge, or asks for PR inspection. If the interface forces a response during the
+paused state, return only: `Waiting for PR #X to merge; no checks run.`
 
 If an expected controller, log, or Skill file is missing, treat that as a
 workflow-control gap. The next safe stage may be to add or repair the missing
@@ -170,8 +173,10 @@ reread only the targeted files or sections needed for the active stage.
 
 Do not start a new stage while a previous stage PR is open, closed-unmerged,
 unknown, or otherwise not verified merged. Check the PR state once, report the
-gate, and pause. Do not repeatedly poll or reclassify the same not-merged PR
-gate in automatic continuations.
+gate, and enter a paused external PR gate state. Automatic continuations without
+a user-stated merge/resume/inspect instruction must not query GitHub again,
+repeat gate reports, print repeated pause notes, mark the goal complete, or mark
+the goal blocked merely because the same external PR is still pending.
 
 If the previous stage PR has merged:
 
@@ -231,8 +236,9 @@ If a file is missing but the current prompt expects it:
 Stop and report instead of continuing when any of these occurs:
 
 - an open PR requires human review, approval, merge, or close decision.
-- a previous PR is not verified merged; pause after one status check without
-  rerunning PR checks, protection queries, or baseline validation.
+- a previous PR is not verified merged; enter a paused external wait state after
+  one status check without rerunning PR checks, protection queries, or baseline
+  validation.
 - a push, PR creation, or merge decision is needed after local validation.
 - a PR has been opened and is ready for human review or merge.
 - the working tree is dirty before a new stage starts.
