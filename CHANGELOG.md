@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_fixture_robustness_report_refresh_plan.md` to define the
+  documentation gate for applying all-case, split-aware robustness reporting to
+  committed synthetic local CSV fixtures before changing fixture workflows or
+  generated outputs.
 - Added `docs/post_synthetic_robustness_generated_output_checkpoint.md` to
   record the completed synthetic split-aware robustness plan,
   implementation, report/log support, generated-output refresh, and next
