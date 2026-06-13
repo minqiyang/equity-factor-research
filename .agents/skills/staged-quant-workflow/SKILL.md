@@ -21,9 +21,11 @@ Codex should be able to advance one small, reviewable stage at a time without wa
 ## Success criteria
 
 - The current repo and PR state are verified before making decisions.
-- A previous-stage PR that is not verified merged pauses the workflow after one
-  status check; Codex does not repeatedly re-check, poll, rerun baseline
-  validation, or start the next stage while the gate remains unmerged.
+- A previous-stage PR that is not verified merged enters a paused external PR
+  gate state after one status check; Codex does not repeatedly re-check, poll,
+  print pause notes, rerun baseline validation, mark complete, mark blocked
+  merely because the same external PR remains pending, or start the next stage
+  while the gate remains unmerged.
 - The next stage is chosen from current evidence: latest merged PRs, checkpoint reports, `docs/engineering_log.md`, `PROJECT_SPEC.md`, `EXPERIMENT_LOG.md`, and relevant roadmap docs.
 - Changes are tightly scoped to one coherent documentation update, test improvement, bugfix, feature, or research-process milestone.
 - Documentation-only and low-risk checkpoint PRs are opened ready for review, not draft.
@@ -56,6 +58,15 @@ verified merged, stop after one concise gate report instead of starting a new
 stage. Do not repeatedly re-check checks, reviews, branch protection, or
 auto-merge eligibility unless the user explicitly asks to inspect or update
 that PR.
+
+Paused External PR Gate State: An open or not-verified-merged PR gate is an
+external wait state. After reporting it once, Codex must pause the active goal
+and wait for explicit user resume. Automatic continuation without a user-stated
+merge/resume/inspect instruction must not query GitHub again, must not repeat
+gate reports, must not mark the goal complete, and must not mark the goal
+blocked merely because the same external PR is still pending. If the interface
+forces a response during this state, return only:
+`Waiting for PR #X to merge; no checks run.`
 
 If a prompt expects a missing file, do not silently treat that as fatal. Create the file in a separate workflow-control PR when it is a low-risk documentation, logging, controller, or audit-script scaffold. Stop and report when the missing file affects product behavior, strategy logic, data access, execution, credentials, or external systems.
 
@@ -126,9 +137,9 @@ assumptions, next stage, and confirmation that Codex did not merge.
 ## Workflow guidance
 
 Begin with read-only state inspection. If the previous required PR is not
-verified merged, pause after one current-state status check. If the previous
-required PR has merged, switch to `main`, fast-forward from `origin/main`, and
-rerun baseline validation before branching.
+verified merged, report it once and enter the paused external PR gate state. If
+the previous required PR has merged, switch to `main`, fast-forward from
+`origin/main`, and rerun baseline validation before branching.
 
 Choose the next stage conservatively from the latest checkpoint recommendation. Prefer documentation or planning stages when roadmap state is stale, when data prerequisites are missing, or when guardrails need clarification before implementation. Prefer code only when the needed design, tests, and scope boundaries are already clear.
 
@@ -154,8 +165,11 @@ Commit only intended files. Push the branch and create a ready-for-review PR whe
 
 - Do not continue to a new stage merely because the user says "merged"; verify the PR state and sync `main`.
 - Do not repeatedly inspect the same not-merged PR gate; one current-state check
-  is enough to pause until external state changes or the user explicitly asks
-  for PR inspection.
+  is enough to enter the paused external PR gate state until external state
+  changes or the user explicitly asks to resume or inspect the PR.
+- Do not treat automatic goal continuations as permission to re-query GitHub,
+  repeat gate reports, print repeated pause notes, mark complete, or mark
+  blocked merely because the same external PR remains pending.
 - Do not mix bugfixes into unrelated stage branches. Split independent fixes into separate PRs.
 - Do not treat synthetic diagnostics as real-data evidence or profitability support.
 - Do not let pandas or line-ending behavior hide meaningful CSV validation bugs; inspect semantic diffs and line-ending-only diffs when relevant.
@@ -226,7 +240,8 @@ Interpret guardrail matches carefully. Prohibitions, caveats, tests, and warning
 Before finalizing a stage, report:
 
 - PR or merge gate status;
-- whether any not-verified-merged PR gate paused after one status check;
+- whether any not-verified-merged PR gate entered a paused external wait state
+  after one status check;
 - branch name;
 - commit hash, if committed;
 - PR link, if opened;

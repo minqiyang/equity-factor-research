@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added paused external PR gate governance so an open or not-verified-merged PR
+  is reported once, then treated as an external wait state without repeated
+  GitHub checks, gate reports, pause notes, goal completion, or blocked status
+  unless the user explicitly resumes, says the PR merged, or asks for PR
+  inspection.
 - Added `docs/local_fixture_robustness_report_refresh_plan.md` to define the
   documentation gate for applying all-case, split-aware robustness reporting to
   committed synthetic local CSV fixtures before changing fixture workflows or

@@ -45,10 +45,12 @@ This repository is a serious simulated quantitative research project. AI coding 
 - Do not combine unrelated changes in one PR.
 - Use separate PRs for distinct features, bug fixes, test hardening, documentation updates, and refactors.
 - Use a separate branch for each stage or milestone.
-- If a previous PR is not verified merged, pause after one current-state status
-  check and report the gate; do not repeatedly re-check, poll, rerun baseline
-  validation, or start another stage until the PR is merged or the user
-  explicitly asks for PR inspection.
+- If a previous PR is not verified merged, report the gate once, enter a
+  paused external PR gate state, and wait for explicit user resume. Automatic
+  continuations without a user-stated merge/resume/inspect instruction must
+  not query GitHub again, repeat gate reports, print repeated pause notes, mark
+  the goal complete, mark the goal blocked merely because the same external PR
+  remains pending, rerun baseline validation, or start another stage.
 - For research features, prefer this sequence:
   1. planning
   2. tests or documentation

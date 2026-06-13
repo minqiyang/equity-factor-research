@@ -12,6 +12,41 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-12 - Paused External PR Gate Governance Update
+
+This workflow-control stage tightens the repository's PR gate behavior after
+automatic goal continuations produced repeated pause messages for the same open
+or not-verified-merged PR gate.
+
+Root cause:
+
+- Existing governance said to pause after one current-state check, but did not
+  define the gate as a terminal external-wait state for the current
+  continuation.
+- The rule also did not prescribe the exact forced-response behavior when the
+  UI or active-goal system resumes without a user-stated merge, resume, or
+  inspect instruction.
+
+Fix:
+
+- `AGENTS.md`, `.agents/skills/staged-quant-workflow/SKILL.md`, and
+  `docs/codex_long_running_controller.md` now require a paused external PR gate
+  state after the first concise gate report.
+- Automatic continuations without explicit user merge/resume/inspect input must
+  not query GitHub, repeat gate reports, print repeated pause notes, rerun
+  validation, mark complete, or mark blocked merely because the same external
+  PR remains pending.
+- If a response is forced during that state, the only allowed response is
+  `Waiting for PR #X to merge; no checks run.`
+
+This stage is documentation/workflow-only. It does not modify source code,
+tests, research scripts, generated reports, data, loaders, backtester behavior,
+metrics behavior, factor logic, diagnostics helpers, real-data access, vendor
+APIs, credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-12 - Local Fixture Robustness Report Refresh Plan
 
 This documentation-only stage adds a reviewed plan for applying the

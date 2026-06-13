@@ -15,6 +15,44 @@ investment performance.
 
 ---
 
+## 2026-06-12 - Treat Unmerged PR Gates As External Wait State
+
+Context:
+
+- A prior workflow-control rule told Codex to report an unmerged PR gate once
+  and pause.
+- Active-goal automatic continuations can still resume without a user-stated
+  merge, resume, or inspect instruction, which caused repeated pause output for
+  the same external PR gate.
+
+Decision:
+
+- Treat any open, closed-unmerged, unknown, or otherwise not-verified-merged PR
+  gate as a paused external wait state after one concise current-state report.
+- Automatic continuations without explicit user merge/resume/inspect input must
+  not query GitHub again, repeat gate reports, print repeated pause notes, mark
+  the goal complete, or mark the goal blocked merely because the same external
+  PR remains pending.
+- If the interface forces a response while paused, use only:
+  `Waiting for PR #X to merge; no checks run.`
+
+Rationale:
+
+- A pending PR review or merge is external state, not work Codex can advance by
+  rechecking the same gate.
+- Completion would be false because the staged goal still depends on the merge.
+- Blocked status is also too strong when the workflow is intentionally waiting
+  for human review or GitHub merge completion.
+
+Consequences:
+
+- Conservative auto-merge remains unchanged: direct merge is forbidden, `--admin`
+  is forbidden, and medium/high/unclear-risk PRs still stop for human review.
+- Future staged continuations resume only after the user says the PR merged,
+  asks to resume after merge, or asks to inspect the PR.
+
+---
+
 ## 2026-06-12 - Plan Local Fixture Robustness Before Refreshing Outputs
 
 Context:
