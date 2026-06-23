@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added protected PR merge governance so non-high-risk PRs authored/pushed by
+  `minqiyang` may use GitHub auto-merge or normal protected PR merge only after
+  author/head-owner, branch protection, required checks, required reviews, and
+  changed-file scope are verified, while direct `main` pushes, protection
+  bypass, and `--admin` remain forbidden.
 - Added local fixture configured-case summary support with focused tests that
   preserve every configured case/split row, invalid reasons, and separately
   inspectable cost/slippage diagnostic fields without regenerating reports.

@@ -12,6 +12,30 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-23 - Protected PR Merge Governance Update
+
+This workflow-control stage updates the repository staged workflow so Codex no
+longer has to stop for manual merge after every PR. The new policy keeps PRs,
+branch protection, required checks, required reviews, and merge queues as the
+gate. It permits GitHub auto-merge or normal protected PR merge only when risk
+is not high or unclear, GitHub PR metadata verifies `minqiyang` as author/head
+owner, protection is verifiable, checks pass or auto-merge handles pending
+checks, no required review is pending, and changed-file scope matches the
+declared stage.
+
+The update explicitly forbids direct-pushing or direct-merging to `main`,
+bypassing protection/rulesets/checks/reviews/merge queue, and using
+`gh pr merge --admin`. It preserves the paused external PR gate rule for
+ineligible, blocked, high-risk, unclear, or unverified PRs.
+
+This stage is workflow/documentation-only. It does not modify source code,
+tests, research scripts, generated reports/logs, data files, loaders,
+backtester behavior, metrics behavior, factor logic, diagnostics helpers,
+LEAN code, real-data access, vendor APIs, credentials, live/paper trading,
+brokerage/order logic, or profitability language.
+
+---
+
 ## 2026-06-22 - Local Fixture Robustness Support Checkpoint
 
 This implementation stage adds a pure configured-case summary helper for the

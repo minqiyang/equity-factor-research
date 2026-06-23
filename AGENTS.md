@@ -51,6 +51,18 @@ This repository is a serious simulated quantitative research project. AI coding 
   not query GitHub again, repeat gate reports, print repeated pause notes, mark
   the goal complete, mark the goal blocked merely because the same external PR
   remains pending, rerun baseline validation, or start another stage.
+- After creating a PR, Codex may enable GitHub auto-merge or perform a normal
+  protected PR merge only when the PR is not high-risk or unclear, the PR
+  author/head owner is verified from GitHub metadata as `minqiyang`, branch
+  protection or rulesets are verifiable, required checks pass or auto-merge is
+  used for pending checks, no required review is pending, and changed-file scope
+  matches the declared stage.
+- Codex must not direct-push or direct-merge to `main`, bypass branch
+  protection/rulesets/checks/reviews/merge queue, or use `gh pr merge --admin`.
+- If risk is high or unclear, author/pusher identity cannot be verified from
+  GitHub PR metadata, protection/check/review status cannot be verified, CI is
+  unstable or blocked after a bounded wait, or scope does not match the stage,
+  stop for human review.
 - For research features, prefer this sequence:
   1. planning
   2. tests or documentation
@@ -58,7 +70,8 @@ This repository is a serious simulated quantitative research project. AI coding 
   4. read-only review
   5. commit
   6. PR
-  7. merge only after review
+  7. protected PR merge or GitHub auto-merge only when the risk/protection/check
+     policy above allows it
 - When a PR has multiple meaningful commits, preserve them unless the commit history is messy.
 - Do not treat PR count or commit count as a quality metric by itself.
 

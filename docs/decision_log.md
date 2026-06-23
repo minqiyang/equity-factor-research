@@ -15,6 +15,47 @@ investment performance.
 
 ---
 
+## 2026-06-23 - Allow Protected PR Merge For Eligible Governance Stages
+
+Context:
+
+- The prior workflow required Codex to pause for manual merge after each PR.
+- Recent checkpoint work showed that branch protection can be verified, required
+  checks can be observed, and PR author/head-owner metadata can confirm the
+  branch was pushed by `minqiyang`.
+
+Decision:
+
+- Keep PR creation mandatory for reviewability and branch protection.
+- For non-high-risk PRs, allow GitHub auto-merge or normal protected PR merge
+  only when GitHub metadata verifies `minqiyang` as author/head owner, branch
+  protection or rulesets are verifiable, required checks pass or auto-merge is
+  used for pending checks, no required review is pending, and changed-file scope
+  matches the declared stage.
+- Continue to stop for human review when risk is high or unclear, author/pusher
+  identity cannot be verified, protection/check/review status cannot be
+  verified, CI is unstable after a bounded wait, or scope is unclear.
+- Continue to forbid direct pushes or direct merges to `main`, branch
+  protection bypass, ruleset/check/review/merge-queue bypass, and
+  `gh pr merge --admin`.
+
+Rationale:
+
+- GitHub-managed auto-merge and normal protected PR merge preserve PR history
+  and branch protection while avoiding unnecessary manual merge gates for
+  low-risk or otherwise clearly eligible stages.
+- Verifying identity from GitHub metadata is safer than trusting local git
+  config.
+
+Consequences:
+
+- Staged continuations may proceed through multiple PR-sized stages when each
+  PR is eligible and GitHub merges it during the run.
+- Existing paused external PR gate behavior still applies to ineligible,
+  blocked, high-risk, unclear, or unverified PRs.
+
+---
+
 ## 2026-06-12 - Treat Unmerged PR Gates As External Wait State
 
 Context:

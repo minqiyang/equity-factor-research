@@ -38,8 +38,10 @@ gh pr list --state all --limit 10 --json number,state,isDraft,mergedAt,url,title
 
 If the previous stage PR is not verified merged after this current-state check,
 report one concise gate summary, enter a paused external PR gate state, and
-wait for explicit user resume. Do not repeatedly check reviews, checks, branch
-protection, auto-merge eligibility, or baseline validation while that PR remains
+wait for explicit user resume unless the PR is eligible for GitHub-managed
+auto-merge or normal protected PR merge under this controller's protected PR
+merge policy. Do not repeatedly check reviews, checks, branch protection,
+auto-merge eligibility, or baseline validation while an ineligible PR remains
 unmerged unless the user explicitly says the PR merged, asks to resume after
 merge, or asks for PR inspection. If the interface forces a response during the
 paused state, return only: `Waiting for PR #X to merge; no checks run.`
@@ -172,11 +174,13 @@ reread only the targeted files or sections needed for the active stage.
 ## Merge Gate
 
 Do not start a new stage while a previous stage PR is open, closed-unmerged,
-unknown, or otherwise not verified merged. Check the PR state once, report the
-gate, and enter a paused external PR gate state. Automatic continuations without
-a user-stated merge/resume/inspect instruction must not query GitHub again,
-repeat gate reports, print repeated pause notes, mark the goal complete, or mark
-the goal blocked merely because the same external PR is still pending.
+unknown, or otherwise not verified merged unless that PR is eligible for
+GitHub-managed auto-merge or normal protected PR merge. Check the PR state once,
+report the gate, and enter a paused external PR gate state when the PR is not
+eligible. Automatic continuations without a user-stated merge/resume/inspect
+instruction must not query GitHub again, repeat gate reports, print repeated
+pause notes, mark the goal complete, or mark the goal blocked merely because
+the same ineligible external PR is still pending.
 
 If the previous stage PR has merged:
 
@@ -239,8 +243,10 @@ Stop and report instead of continuing when any of these occurs:
 - a previous PR is not verified merged; enter a paused external wait state after
   one status check without rerunning PR checks, protection queries, or baseline
   validation.
-- a push, PR creation, or merge decision is needed after local validation.
-- a PR has been opened and is ready for human review or merge.
+- a push, PR creation, or protected PR merge decision is needed after local
+  validation and the policy below cannot resolve it.
+- a PR has been opened but is not eligible for GitHub-managed auto-merge or
+  normal protected PR merge.
 - the working tree is dirty before a new stage starts.
 - baseline tests fail.
 - `python -m compileall src tests research` fails.
@@ -250,7 +256,7 @@ Stop and report instead of continuing when any of these occurs:
 - missing credentials or external access are required.
 - a new production dependency would be required.
 - tests fail in a way that cannot be fixed safely within the current scope.
-- a read-only review finds a high or medium issue.
+- a read-only review finds a high issue or unclear risk.
 - security, privacy, data-loss, or irreversible-operation risk appears.
 - the stage conflicts with `AGENTS.md`, `PROJECT_SPEC.md`, this controller, or
   the staged workflow Skill.
@@ -261,7 +267,31 @@ Stop and report instead of continuing when any of these occurs:
 - a technical or methodological issue needs human input after reasonable local
   investigation.
 
-Do not merge PRs unless the user explicitly instructs Codex to merge.
+## Protected PR Merge Policy
+
+Codex must create PRs for reviewability and branch protection. Codex must not
+direct-push or direct-merge to `main`, bypass branch protection, rulesets,
+required checks, required reviews, or merge queue, or use `gh pr merge --admin`.
+
+After creating a PR, Codex may enable GitHub auto-merge or perform a normal
+protected PR merge only when all of these are true:
+
+- risk is not high or unclear.
+- GitHub PR metadata verifies the author/head owner as `minqiyang`.
+- branch protection or rulesets are verifiable.
+- required checks pass, or auto-merge is enabled while checks are pending.
+- no required review is pending.
+- changed-file scope matches the declared stage.
+
+If author/head owner, protection, checks, reviews, merge queue, conflict status,
+or changed-file scope cannot be verified, stop for human review. If CI remains
+pending, unstable, blocked, or unclear after a bounded wait, pause and report
+the gate.
+
+Generated-output-heavy PRs are not automatically human-gated merely because
+they are generated-output-heavy. They may use the protected PR merge path when
+they are non-high-risk, synthetic-only, fully validated, and pushed by
+`minqiyang`.
 
 ## Logging Requirements
 
@@ -320,5 +350,8 @@ Before opening a PR, confirm:
 - no real data, live trading, brokerage, order execution, credential, or
   profitability logic was added.
 
-After opening a PR, pause and report branch, commit, PR link, changed files,
-validation, issues, and that Codex did not merge.
+After opening a PR, report branch, commit, PR link, changed files, validation,
+issues, risk classification, GitHub author/head-owner verification, branch
+protection/check/review verification, auto-merge or normal protected PR merge
+status, and confirmation that Codex did not direct-push/direct-merge to `main`,
+bypass protection, or use `--admin`.
