@@ -30,7 +30,15 @@ Codex should be able to advance one small, reviewable stage at a time without wa
 - Changes are tightly scoped to one coherent documentation update, test improvement, bugfix, feature, or research-process milestone.
 - Documentation-only and low-risk checkpoint PRs are opened ready for review, not draft.
 - Code-changing PRs are opened ready for review only after tests pass and a read-only review finds no high or medium issues.
-- Codex does not merge PRs unless the user explicitly instructs it to merge.
+- Codex creates PRs and never direct-pushes or direct-merges to `main`, never
+  bypasses branch protection/rulesets/checks/reviews/merge queue, and never
+  uses `gh pr merge --admin`.
+- After PR creation, Codex may enable GitHub auto-merge or perform a normal
+  protected PR merge only when risk is not high or unclear, GitHub PR metadata
+  verifies author/head owner as `minqiyang`, branch protection is verifiable,
+  required checks pass or auto-merge is used while checks are pending, no
+  required review is pending, and changed-file scope matches the declared
+  stage.
 - Guardrails remain intact: no real data fetching, no live trading, no brokerage or order execution, no credentials, and no profitability claims.
 - Any technical, methodological, environment, testing, workflow, or reasoning problem is recorded in the relevant log with the full failure-to-fix chain.
 - Low-risk ambiguity is handled by making a reasonable assumption, recording it in the final report and relevant log, and continuing.
@@ -159,7 +167,13 @@ Run a read-only scope review before committing. Confirm changed files match the 
 
 For workflow-control or Skill changes, run `.\scripts\audit-skills.ps1` before committing when the script exists.
 
-Commit only intended files. Push the branch and create a ready-for-review PR when the applicable readiness gate is met. Pause after PR creation.
+Commit only intended files. Push the branch and create a ready-for-review PR
+when the applicable readiness gate is met. After PR creation, classify risk and
+verify GitHub author/head owner, branch protection, required checks, required
+reviews, and changed-file scope. If the PR satisfies the protected PR merge
+policy, enable GitHub auto-merge or perform a normal protected PR merge. If CI
+is still pending after a bounded wait, or any eligibility point is unclear,
+pause and report the gate.
 
 ## Known pitfalls
 
@@ -245,10 +259,15 @@ Before finalizing a stage, report:
 - branch name;
 - commit hash, if committed;
 - PR link, if opened;
+- risk classification;
+- GitHub author/head-owner verification;
+- branch protection, required check, and required review verification;
+- auto-merge or normal protected PR merge status;
 - files changed;
 - tests and checks run;
 - high, medium, and low issues;
-- confirmation that Codex paused after PR creation and did not merge.
+- confirmation that Codex did not direct-push/direct-merge to `main`, did not
+  bypass protection, and did not use `--admin`.
 
 ## Update policy
 
