@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Refreshed the roadmap gap checkpoint after the local fixture configured-case
+  output sequence, routing the next default stage to user-provided local CSV
+  readiness inputs instead of more synthetic output.
 - Refreshed the committed synthetic local fixture Markdown report and JSON
   experiment log with the opt-in configured-case summary, preserving every
   configured case/split row and invalid reason without changing registry

@@ -12,6 +12,28 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-23 - Post Local Fixture Roadmap Reconciliation
+
+This documentation-only stage refreshes `docs/current_roadmap_gap_refresh.md`
+after the synthetic and committed-local-fixture robustness/reporting sequence
+completed through generated outputs. The roadmap now treats additional
+synthetic output as non-default and routes the next default boundary to
+user-provided local CSV readiness inputs before any real-data interpretation.
+
+The handoff is updated to point future continuations at readiness inputs or a
+documentation-only readiness-gate clarification if the user asks to continue
+without local data.
+Validation passed with full pytest, compileall for `src`, `tests`, and
+`research`, repo map refresh, and `git diff --check`.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, data files, CSV loaders, backtester behavior, metrics behavior,
+factor formulas, diagnostics helpers, LEAN code, real-data access, vendor APIs,
+credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-23 - Local Fixture Configured-Case Generated-Output Refresh
 
 This generated-output stage refreshes the committed synthetic local CSV fixture

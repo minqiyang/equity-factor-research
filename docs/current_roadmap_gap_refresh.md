@@ -1,11 +1,12 @@
 # Current Roadmap Gap Refresh
 
-Date: 2026-06-12
+Date: 2026-06-23
 
-This checkpoint refreshes the repository roadmap after PR #102 merged the post
-precomputed volume-aware slippage checkpoint and after the latest `main`
-description update. It reconciles the older roadmap with the current
-implementation so the next PR-sized stage does not duplicate completed work.
+This checkpoint refreshes the repository roadmap after the protected PR merge
+governance update, the opt-in local fixture configured-case report/log support,
+and the committed local fixture configured-case generated-output refresh. It
+reconciles the older roadmap with the current implementation so the next
+PR-sized stage does not duplicate completed synthetic or local-fixture work.
 
 It is documentation only. It does not modify source code, tests, research
 scripts, generated reports, strategy logic, backtester behavior, metrics, data
@@ -20,18 +21,18 @@ Current synced state before this checkpoint:
 
 ```text
 Branch reviewed: main
-HEAD reviewed: 91c2fc9 Update project description in README
-Latest merged staged PR reviewed: PR #102, [codex] Add post precomputed slippage checkpoint
+HEAD reviewed: 546784d Merge pull request #115 from minqiyang/codex/local-fixture-configured-output-refresh
+Latest merged staged PR reviewed: PR #115, [codex] Refresh local fixture configured-case outputs
 Open pull requests before branch creation: none
 ```
 
 Validation before creating this checkpoint:
 
 ```text
-python -m pytest -q
-488 passed
+.venv/bin/python -m pytest -q
+503 passed
 
-python -m compileall src tests research
+.venv/bin/python -m compileall src tests research
 passed
 ```
 
@@ -47,7 +48,8 @@ Since then, the repository has added or refreshed:
 | --- | --- | --- |
 | Train/validation/test split helper | `src/features/validation.py`, `tests/test_validation.py` | Implemented and tested on synthetic/local panels. |
 | Split-aware IC / Rank IC demo | `research/synthetic_split_ic_rank_ic_demo.py`, `tests/test_synthetic_split_ic_rank_ic_demo.py` | Implemented as synthetic diagnostics only; no committed generated report/log is present for this demo. |
-| Local fixture split metadata | `research/local_csv_fixture_workflow_demo.py`, `reports/local_csv_fixture_workflow_demo.md`, `reports/experiment_logs/local_csv_fixture_workflow_demo.json` | Implemented for committed synthetic fixture workflow only. |
+| Synthetic split-aware robustness sequence | `docs/synthetic_robustness_validation_plan.md`, `research/synthetic_split_robustness_demo.py`, `tests/test_synthetic_split_robustness_demo.py`, `reports/synthetic_split_robustness_demo.md`, `reports/experiment_logs/synthetic_split_robustness_demo.json` | Completed through plan, implementation, opt-in output support, and generated-output refresh. |
+| Local fixture configured-case robustness sequence | `docs/local_fixture_robustness_report_refresh_plan.md`, `research/local_csv_fixture_workflow_demo.py`, `tests/test_local_csv_fixture_workflow_demo.py`, `reports/local_csv_fixture_workflow_demo.md`, `reports/experiment_logs/local_csv_fixture_workflow_demo.json` | Completed for committed synthetic local fixtures only; all configured fixture case/split rows and invalid reasons are now reported. |
 | OHLCV/local CSV readiness path | `docs/volume_ohlcv_schema_plan.md`, `src/data/csv_loader.py`, `tests/test_csv_loader.py`, `tests/fixtures/local_csv_loader_smoke/` | Planned and implemented for strict local fixture loading, not real-data interpretation. |
 | Alpha#012 and volume/close smoke coverage | `docs/volume_close_alpha_plan.md`, `src/features/worldquant_alphas.py`, `tests/test_worldquant_alphas.py`, `research/local_csv_fixture_workflow_demo.py` | Implemented as feature and fixture diagnostics only. |
 | Liquidity eligibility and universe-mask sequence | `docs/liquidity_dollar_volume_universe_plan.md`, `docs/liquidity_universe_construction_design.md`, `docs/liquidity_universe_backtest_integration_design.md`, `src/features/liquidity.py`, `tests/test_liquidity.py`, `tests/test_liquidity_masked_signal_smoke.py`, `tests/test_liquidity_masked_signal_backtest_smoke.py` | Implemented through synthetic/local-panel helpers and smoke tests. |
@@ -64,7 +66,7 @@ Since then, the repository has added or refreshed:
 | Factor features | Momentum, reversal, volatility, liquidity, alpha#009, and alpha#012 research features exist. | `src/features/momentum.py`, `src/features/reversal.py`, `src/features/volatility.py`, `src/features/liquidity.py`, `src/features/worldquant_alphas.py`, tests under `tests/` | Additional factors remain future work; no bulk WorldQuant implementation. |
 | Factor preprocessing and diagnostics | Normalization, winsorization, factor combination, correlation diagnostics, IC, Rank IC, quantile spread, and split helpers exist. | `src/features/normalize.py`, `src/features/combine.py`, `src/features/diagnostics.py`, `src/features/validation.py`, related tests | Robustness and parameter-sensitivity policy is not yet documented for split-aware research runs. |
 | Local CSV path | Strict local CSV loader, inventory review, committed synthetic fixtures, and fixture workflow demos exist. | `src/data/csv_loader.py`, `src/data/local_csv_inventory.py`, `tests/fixtures/local_csv_loader_smoke/`, `research/local_csv_fixture_workflow_demo.py` | No user-provided local CSV bundle has passed readiness/provenance/alignment review. |
-| Experiment records and reports | Synthetic JSON sidecar logs, registry, and caveated Markdown reports exist. | `src/reporting/experiment_log.py`, `src/reporting/experiment_registry.py`, `reports/experiment_logs/`, `reports/experiment_registry.md` | Real-data experiment records remain blocked; robustness summaries need a documented policy before expansion. |
+| Experiment records and reports | Synthetic JSON sidecar logs, registry, and caveated Markdown reports exist. | `src/reporting/experiment_log.py`, `src/reporting/experiment_registry.py`, `reports/experiment_logs/`, `reports/experiment_registry.md` | Real-data experiment records remain blocked until user-provided local CSV readiness gates are complete. |
 | Simulated backtesting | Long-only local backtester includes benchmark, costs, fixed-bps slippage, turnover, and optional precomputed volume-aware impact. | `src/backtest/portfolio.py`, `src/backtest/metrics.py`, `src/backtest/slippage.py`, `tests/test_backtest_portfolio.py`, `tests/test_volume_aware_slippage.py` | No real-data benchmark/universe study; volume-aware capacity remains synthetic/local-fixture only. |
 | LEAN path | Non-executing scaffold and pure-Python signal-only metadata draft exist. | `lean/README.md`, `lean/smoke_test_algorithm.py`, `lean/signal_only_momentum_draft.py`, `tests/test_lean_*` | Runnable LEAN, live trading, paper trading, brokerage, and order execution remain blocked. |
 
@@ -84,8 +86,9 @@ Remaining gaps:
   policy has been accepted for a user-provided dataset.
 - No real-data volume, participation, capacity, or market-impact conclusion
   exists.
-- No documented robustness and parameter-sensitivity policy exists for
-  split-aware synthetic or local-fixture research runs.
+- No documented robustness and parameter-sensitivity interpretation exists for
+  any user-provided local CSV research run because no such run has passed
+  readiness gates.
 - Generated reports and experiment logs remain synthetic diagnostics or
   committed-fixture smoke checks, not investment evidence.
 - LEAN work remains non-executing and must not imply live, paper, brokerage,
@@ -107,37 +110,38 @@ Current guardrail status:
 
 ## 6. Recommended Next Roadmap
 
-The next stages should improve validation discipline and robustness reporting
-without touching real data or execution systems.
+The synthetic and committed-local-fixture robustness/reporting path is complete
+through generated outputs. The next stages should not add more synthetic output
+by default. They should either wait for user-provided local CSV readiness inputs
+or, if the user explicitly asks to continue without local data, stay
+documentation-only and clarify the next real-data gate.
 
 | Stage | Purpose | Expected files | Tests/checks | Stop condition |
 | --- | --- | --- | --- | --- |
-| Synthetic robustness and split-aware validation plan | Define how future synthetic/local-fixture research should report train/validation/test splits, parameter sensitivity, all-case reporting, benchmark assumptions, cost/slippage assumptions, and no-best-only filtering before new implementation. | `docs/synthetic_robustness_validation_plan.md`, `docs/current_handoff.md`, `docs/engineering_log.md`, `docs/decision_log.md`, `CHANGELOG.md`, `docs/repo_map.md` if regenerated | `python -m pytest -q`; `python -m compileall src tests research`; `python scripts/repo_map.py`; `git diff --check origin/main..HEAD`; Skill audit if workflow files change | Stop if the stage requires real data, external APIs, performance interpretation, or code behavior changes. |
-| Synthetic split-aware robustness implementation | Only after the plan is reviewed, add deterministic synthetic summaries that report all configured cases across split windows without selecting winners. | Likely `research/`, `tests/`, and generated outputs only if explicitly scoped | Focused tests, full baseline, generated-output diff review | Stop if outputs imply strategy validation or profitability. |
-| Local fixture robustness/report refresh | If synthetic robustness implementation merges, apply the reviewed summary format to committed local fixtures only. | Fixture workflow, tests, reports/logs if scoped | Focused workflow tests, full baseline, output review | Stop if a user-provided dataset is required. |
-| User-provided local CSV readiness run | Only when a user explicitly provides dataset scope, run the readiness audit before interpretation. | Readiness audit artifacts and experiment handoff only | Readiness checks defined by the project Skill | Stop for missing provenance, schema ambiguity, survivorship ambiguity, benchmark ambiguity, credentials, vendor APIs, or profitability framing. |
+| User-provided local CSV readiness intake | Only when the user supplies dataset scope and confirms local files should be considered, prepare or review the scope statement, inventory, schema map, readiness audit, and experiment handoff before loading or interpreting data. | Readiness audit artifacts and experiment handoff only; no private data committed. | Readiness checks defined by the project Skill; full pytest and compileall if repo files change. | Stop for missing provenance, schema ambiguity, survivorship ambiguity, benchmark ambiguity, credentials, vendor APIs, private data exposure, or profitability framing. |
+| Real-data readiness gate reconciliation | If the user asks to continue without providing local data, reconcile the readiness checklist, audit template, and handoff so the next required user inputs are explicit. | `docs/current_handoff.md`, readiness docs, logs, changelog, `docs/repo_map.md` if regenerated. | Full pytest, compileall, repo map refresh, and `git diff --check origin/main..HEAD`. | Stop if the stage would imply that a real-data study can proceed without the readiness artifacts. |
+| Registry schema review | Only if configured-case diagnostics need to become discoverable in `reports/experiment_registry.md`, first add a documentation-only schema review. | Narrow docs first; code/generated outputs only in a later explicitly scoped PR. | Full pytest, compileall, and guardrail review. | Stop if registry fields would imply real-data validation, tradeability, execution realism, or profitability. |
 
 ## 7. Final Recommendation
 
 The next PR-sized stage after this roadmap refresh merges should be:
 
 ```text
-Synthetic robustness and split-aware validation plan
+Pause for user-provided local CSV readiness inputs before any real-data interpretation.
 ```
 
 Reason:
 
-- The repository now has split helpers, synthetic diagnostics, local fixture
-  demos, backtest accounting, fixed-bps cost/slippage, and a precomputed
-  volume-aware slippage boundary.
-- The next original-goal gap is not another metric field by default; it is a
-  reviewed policy for how to evaluate robustness without cherry-picking or
-  implying real-data validation.
-- A documentation-only plan is safer than implementation because it can define
-  all-case reporting, split windows, benchmark assumptions, transaction-cost
-  assumptions, slippage assumptions, and stop conditions before any new
-  research script or generated-output change.
+- The synthetic and committed-local-fixture robustness/reporting path now has
+  reviewed plans, tests, opt-in report/log support, and committed generated
+  artifacts.
+- The remaining original-goal gap is not more synthetic evidence; it is a
+  user-provided local CSV bundle that passes scope, provenance, schema,
+  survivorship, benchmark, split, cost/slippage, and readiness-audit gates.
+- Without those inputs, a real-data study would require assumptions the project
+  explicitly forbids.
 
-The next stage should remain synthetic/local-fixture only and should not fetch
-data, use vendor APIs, add credentials, add live or paper trading, add
-brokerage/order logic, or claim profitability.
+If the user asks to keep advancing without local data, the next stage should be
+documentation-only and should make the required readiness inputs clearer. It
+should not fetch data, use vendor APIs, add credentials, add live or paper
+trading, add brokerage/order logic, or claim profitability.
