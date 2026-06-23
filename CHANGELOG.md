@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_readiness_input_checkpoint.md` to make the required
+  user-provided local CSV readiness package explicit before any real-data
+  interpretation, while preserving the default pause at the readiness boundary.
 - Refreshed the roadmap gap checkpoint after the local fixture configured-case
   output sequence, routing the next default stage to user-provided local CSV
   readiness inputs instead of more synthetic output.

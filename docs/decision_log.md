@@ -15,6 +15,43 @@ investment performance.
 
 ---
 
+## 2026-06-23 - Require An Explicit Local CSV Readiness Input Package
+
+Context:
+
+- PR #116 reconciled the current roadmap after the committed local fixture
+  generated-output refresh.
+- The next default boundary is user-provided local CSV readiness inputs.
+- The user asked to continue without starting unsafe real-data work, so the
+  next safe action is to make the readiness input package explicit.
+
+Decision:
+
+- Require an explicit readiness package before any future local CSV research
+  run is loaded, transformed, reported, or interpreted as real-market evidence.
+- Treat the package as metadata and planning first: scope statement,
+  metadata-only inventory, schema map, readiness audit, experiment handoff
+  draft, and explicit approval boundary.
+- Keep the default next checkpoint paused until those inputs exist, unless the
+  user requests another narrow documentation/test-plan clarification.
+
+Rationale:
+
+- The project can document the gate without reading private/raw local data.
+- Real-data interpretation without the package would require assumptions about
+  provenance, survivorship, benchmark choice, alignment, splits, costs,
+  slippage, and privacy that the project guardrails forbid.
+
+Consequences:
+
+- Future continuations should ask for or review the readiness package before
+  touching local CSV contents.
+- Documentation-only readiness-template or registry-schema work remains
+  possible, but it must not imply that a real-data study can proceed without
+  the package.
+
+---
+
 ## 2026-06-23 - Pause Default Work At Local CSV Readiness Boundary
 
 Context:
