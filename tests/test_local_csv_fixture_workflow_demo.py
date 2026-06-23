@@ -733,6 +733,68 @@ def test_workflow_report_and_experiment_log_are_created_with_caveats(tmp_path: P
     assert "not strategy validation" in payload["caveats"]
 
 
+def test_opt_in_configured_fixture_case_summary_is_reported_and_logged(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "local_csv_fixture_workflow_demo.md"
+    log_path = tmp_path / "local_csv_fixture_workflow_demo.json"
+
+    result = run_local_csv_fixture_workflow_demo(
+        report_path=report_path,
+        experiment_log_path=log_path,
+        update_registry=False,
+        include_configured_case_summary=True,
+    )
+
+    report_text = report_path.read_text(encoding="utf-8")
+    payload = json.loads(log_path.read_text(encoding="utf-8"))
+    summary = result.configured_case_summary
+
+    assert summary is not None
+    assert list(summary[["case_id", "split"]].itertuples(index=False, name=None)) == [
+        ("alpha_009", "train"),
+        ("alpha_009", "validation"),
+        ("alpha_009", "test"),
+        ("alpha_012", "train"),
+        ("alpha_012", "validation"),
+        ("alpha_012", "test"),
+    ]
+    assert summary["valid"].tolist() == [False, True, True, False, True, False]
+    assert summary.loc[4, "coverage"] == pytest.approx(2 / 3)
+    assert "## Configured Case Summary" in report_text
+    assert "Invalid or insufficient rows stay visible with reasons" in report_text
+    assert (
+        "| alpha_012 | Alpha#012 local fixture | validation | true |  | 0.6667 | "
+        "1 | 1 | 0 | NaN | NaN | absent | false | committed synthetic fixture "
+        "only; diagnostic metrics only; not profitability evidence |"
+    ) in report_text
+    assert payload["outputs"]["configured_fixture_case_count"] == 2
+    assert payload["outputs"]["configured_fixture_case_split_row_count"] == 6
+    assert payload["diagnostics"]["configured_fixture_invalid_case_split_count"] == 3
+    assert payload["diagnostics"]["configured_fixture_invalid_case_reasons"] == [
+        "insufficient_metric_observations",
+    ]
+    assert payload["diagnostics"]["configured_fixture_case_summary"][4] == {
+        "case_id": "alpha_012",
+        "case_label": "Alpha#012 local fixture",
+        "split": "validation",
+        "valid": True,
+        "invalid_reason": "",
+        "coverage": pytest.approx(2 / 3),
+        "ic_valid_dates": 1,
+        "rank_ic_valid_dates": 1,
+        "quantile_spread_valid_dates": 0,
+        "transaction_cost_bps": None,
+        "slippage_bps": None,
+        "volume_aware_slippage_mode": "absent",
+        "zero_slippage_diagnostic": False,
+        "caveats": (
+            "committed synthetic fixture only; diagnostic metrics only; "
+            "not profitability evidence"
+        ),
+    }
+
+
 def test_workflow_can_skip_report_log_and_registry_outputs(tmp_path: Path) -> None:
     report_path = tmp_path / "skipped.md"
     log_path = tmp_path / "skipped.json"
