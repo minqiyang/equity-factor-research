@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-23 - Local CSV Readiness Input Checkpoint
+
+This documentation-only stage adds
+`docs/local_csv_readiness_input_checkpoint.md` so the readiness boundary is
+explicit about what the user must provide before any future local CSV research
+run can be interpreted as real-market evidence. The checkpoint lists the
+required scope statement, metadata-only inventory, schema map, readiness audit,
+experiment handoff draft, and explicit approval boundary, plus stop conditions
+for provenance, schema, point-in-time alignment, benchmark, split,
+cost/slippage, privacy, credential, and profitability-framing issues.
+
+The handoff is updated to point future continuations at metadata-only
+readiness intake if the user supplies the package, or a narrow
+documentation/test-plan clarification if the user asks to continue without
+local data.
+
+Validation passed with full pytest, compileall for `src`, `tests`, and
+`research`, repo map refresh, `git diff --check`, and guardrail grep. The
+guardrail grep matches were documentation prohibitions, caveats, and stop
+conditions only.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, data files, CSV loaders, backtester behavior, metrics behavior,
+factor formulas, diagnostics helpers, LEAN code, real-data access, vendor APIs,
+credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-23 - Post Local Fixture Roadmap Reconciliation
 
 This documentation-only stage refreshes `docs/current_roadmap_gap_refresh.md`
