@@ -12,6 +12,45 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-22 - Local Fixture Robustness Support Checkpoint
+
+This implementation stage adds a pure configured-case summary helper for the
+committed synthetic local CSV fixture workflow. The helper produces
+deterministic all-case, all-split rows, keeps invalid or missing split rows
+visible with reasons, and keeps transaction-cost, fixed-slippage, volume-aware
+slippage mode, and zero-slippage diagnostic fields separately inspectable.
+
+Focused tests cover configured row ordering, missing split preservation,
+invalid-case preservation, caveat retention, and separate cost/slippage fields.
+The stage does not regenerate committed Markdown reports, JSON experiment logs,
+or the experiment registry.
+
+Environment note: after migration, `python` is not on `PATH`; `/usr/bin/python3`
+does not have `pytest` or `pandas`; and `/Users/rhapsoul/.local/bin/pytest`
+runs under Python 3.9 without `pandas`. An ignored `.venv` was created from the
+Codex bundled Python and given only the missing test runner/dependency pieces
+needed for focused validation. See `docs/troubleshooting_log.md` for the
+failure-to-workaround chain.
+
+Validation:
+
+- Ignored `.venv` focused pytest passed for
+  `tests/test_local_csv_fixture_workflow_demo.py` with 15 tests.
+- Direct bundled-Python helper assertion passed with six all-case/all-split
+  rows.
+- Bundled-Python `compileall` passed for
+  `research/local_csv_fixture_workflow_demo.py` and
+  `tests/test_local_csv_fixture_workflow_demo.py`.
+- `git diff --check` passed.
+- Full pytest has not been run in this migrated Mac environment.
+
+This stage does not modify data files, generated reports/logs, loaders,
+backtester behavior, metrics behavior, factor logic, real-data access, vendor
+APIs, credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-12 - Paused External PR Gate Governance Update
 
 This workflow-control stage tightens the repository's PR gate behavior after

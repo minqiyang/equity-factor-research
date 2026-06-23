@@ -544,6 +544,67 @@ def summarize_split_diagnostics(
     return pd.DataFrame.from_records(rows).set_index("split")
 
 
+def summarize_configured_fixture_cases(
+    configured_cases: list[dict[str, object]],
+    *,
+    split_names: tuple[str, ...] = SPLIT_NAMES,
+) -> pd.DataFrame:
+    """Build deterministic all-case, all-split rows for future fixture reports."""
+
+    rows = []
+    for case in configured_cases:
+        case_id = str(case["case_id"])
+        case_valid = bool(case.get("valid", True))
+        case_invalid_reason = str(case.get("invalid_reason", ""))
+        split_results = case.get("split_results", {})
+        if not isinstance(split_results, dict):
+            raise TypeError("split_results must be a mapping of split name to metrics")
+
+        for split_name in split_names:
+            has_split = split_name in split_results
+            split_result = split_results.get(split_name, {})
+            if not isinstance(split_result, dict):
+                raise TypeError("split result must be a mapping")
+
+            valid = case_valid and has_split and bool(split_result.get("valid", True))
+            invalid_reason = ""
+            if not case_valid:
+                invalid_reason = case_invalid_reason or "invalid_case"
+            elif not has_split:
+                invalid_reason = "missing_split_result"
+            elif not valid:
+                invalid_reason = str(split_result.get("invalid_reason", "invalid_split"))
+
+            rows.append(
+                {
+                    "case_id": case_id,
+                    "case_label": str(case.get("case_label", case_id)),
+                    "split": split_name,
+                    "valid": valid,
+                    "invalid_reason": invalid_reason,
+                    "coverage": split_result.get("coverage"),
+                    "ic_valid_dates": int(split_result.get("ic_valid_dates", 0)),
+                    "rank_ic_valid_dates": int(
+                        split_result.get("rank_ic_valid_dates", 0),
+                    ),
+                    "quantile_spread_valid_dates": int(
+                        split_result.get("quantile_spread_valid_dates", 0),
+                    ),
+                    "transaction_cost_bps": case.get("transaction_cost_bps"),
+                    "slippage_bps": case.get("slippage_bps"),
+                    "volume_aware_slippage_mode": str(
+                        case.get("volume_aware_slippage_mode", "absent"),
+                    ),
+                    "zero_slippage_diagnostic": bool(
+                        case.get("zero_slippage_diagnostic", False),
+                    ),
+                    "caveats": _join_case_caveats(case.get("caveats", ())),
+                }
+            )
+
+    return pd.DataFrame.from_records(rows)
+
+
 def write_workflow_experiment_log(
     *,
     config: LocalCSVFixtureWorkflowConfig,
@@ -1214,6 +1275,12 @@ def _split_boundary_dict(split: TrainValidationTestSplit) -> dict[str, str]:
         "validation_end": split.validation_end.date().isoformat(),
         "test_end": split.test_end.date().isoformat(),
     }
+
+
+def _join_case_caveats(caveats: object) -> str:
+    if isinstance(caveats, str):
+        return caveats
+    return "; ".join(str(caveat) for caveat in caveats)
 
 
 def _is_default_experiment_log_path(path: Path) -> bool:
