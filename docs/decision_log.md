@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-06-23 - Pause Default Work At Local CSV Readiness Boundary
+
+Context:
+
+- PR #115 completed the committed synthetic local fixture configured-case
+  generated-output refresh.
+- The synthetic and local-fixture robustness/reporting sequence now has
+  reviewed plans, implementation, tests, and committed generated artifacts.
+- No user-provided local CSV bundle, completed readiness audit, or experiment
+  handoff is available.
+
+Decision:
+
+- Treat user-provided local CSV readiness inputs as the next default boundary
+  before any real-data interpretation.
+- Do not add more synthetic or local-fixture generated output by default.
+- If the user asks to continue without local data, choose only a
+  documentation/test-plan stage that clarifies readiness gates or registry
+  schema choices without implying real-data validation.
+
+Rationale:
+
+- More synthetic output would not answer whether stock factors are verifiable
+  stock-selection signals on accepted data.
+- Proceeding to real-data interpretation without scope, provenance, schema,
+  survivorship, benchmark, split, cost/slippage, and readiness-audit evidence
+  would violate project guardrails.
+
+Consequences:
+
+- Future continuations should pause at the local CSV readiness boundary unless
+  the user supplies the required inputs or explicitly asks for a narrow
+  documentation/test-plan clarification.
+
+---
+
 ## 2026-06-23 - Allow Protected PR Merge For Eligible Governance Stages
 
 Context:
