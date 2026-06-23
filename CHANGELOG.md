@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Refreshed the committed synthetic local fixture Markdown report and JSON
+  experiment log with the opt-in configured-case summary, preserving every
+  configured case/split row and invalid reason without changing registry
+  output.
 - Added opt-in local fixture configured-case report/log wiring so the
   committed synthetic fixture workflow can include all-case/all-split summary
   rows in ad hoc outputs without refreshing committed generated artifacts.

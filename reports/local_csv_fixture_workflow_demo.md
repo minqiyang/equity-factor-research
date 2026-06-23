@@ -123,6 +123,21 @@ The diagnostic uses `window=1`, `volume_lag=1`, `portfolio_notional=100000.0000`
 | validation | 1 | 3 | 3 | 3 | 1 | 1 | 1 | -0.6217 | -0.5000 |
 | test | 2 | 3 | 6 | 3 | 1 | 1 | 0 | 0.9997 | 0.8660 |
 
+
+## Configured Case Summary
+
+This opt-in table reports every configured fixture case across every split. Invalid or insufficient rows stay visible with reasons. Transaction cost, fixed-bps slippage, and volume-aware slippage fields are separate diagnostic fields only; no cost or slippage model is applied to returns.
+
+| case_id | case_label | split | valid | invalid_reason | coverage | ic_valid_dates | rank_ic_valid_dates | quantile_spread_valid_dates | transaction_cost_bps | slippage_bps | volume_aware_slippage_mode | zero_slippage_diagnostic | caveats |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| alpha_009 | Alpha#009 local fixture | train | false | insufficient_metric_observations | 0.0000 | 0 | 0 | 0 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+| alpha_009 | Alpha#009 local fixture | validation | true |  | 1.0000 | 1 | 1 | 1 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+| alpha_009 | Alpha#009 local fixture | test | true |  | 1.0000 | 1 | 1 | 0 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+| alpha_012 | Alpha#012 local fixture | train | false | insufficient_metric_observations | 0.0000 | 0 | 0 | 0 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+| alpha_012 | Alpha#012 local fixture | validation | true |  | 0.6667 | 1 | 1 | 0 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+| alpha_012 | Alpha#012 local fixture | test | false | insufficient_metric_observations | 0.0000 | 0 | 0 | 0 | NaN | NaN | absent | false | committed synthetic fixture only; diagnostic metrics only; not profitability evidence |
+
+
 ## Alpha#009 Diagnostic Coverage
 
 | Diagnostic | Value |
