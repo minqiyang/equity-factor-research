@@ -135,6 +135,7 @@ class LocalCSVFixtureWorkflowResult:
     alpha_012_rank_information_coefficient_by_split: dict[str, pd.Series]
     alpha_012_quantile_spread_by_split: dict[str, pd.DataFrame]
     split_summary: pd.DataFrame
+    configured_case_summary: pd.DataFrame | None
     report_path: Path
     experiment_log_path: Path
 
@@ -146,6 +147,7 @@ def run_local_csv_fixture_workflow_demo(
     experiment_log_path: Path | None = None,
     write_outputs: bool = True,
     update_registry: bool = True,
+    include_configured_case_summary: bool = False,
 ) -> LocalCSVFixtureWorkflowResult:
     """Run the synthetic local CSV fixture workflow and optionally write outputs."""
 
@@ -353,6 +355,22 @@ def run_local_csv_fixture_workflow_demo(
         rank_information_coefficient_by_split=rank_information_coefficient_by_split,
         quantile_spread_by_split=quantile_spread_by_split,
     )
+    configured_case_summary = (
+        summarize_default_configured_fixture_cases(
+            alpha_009_split_summary=split_summary,
+            alpha_012_factor_by_split=alpha_012_factor_by_split,
+            forward_returns_by_split=forward_returns_by_split,
+            alpha_012_information_coefficient_by_split=(
+                alpha_012_information_coefficient_by_split
+            ),
+            alpha_012_rank_information_coefficient_by_split=(
+                alpha_012_rank_information_coefficient_by_split
+            ),
+            alpha_012_quantile_spread_by_split=alpha_012_quantile_spread_by_split,
+        )
+        if include_configured_case_summary
+        else None
+    )
 
     result = LocalCSVFixtureWorkflowResult(
         inventory_review=inventory_review,
@@ -397,6 +415,7 @@ def run_local_csv_fixture_workflow_demo(
         ),
         alpha_012_quantile_spread_by_split=alpha_012_quantile_spread_by_split,
         split_summary=split_summary,
+        configured_case_summary=configured_case_summary,
         report_path=Path(report_path),
         experiment_log_path=Path(experiment_log_path),
     )
@@ -605,6 +624,42 @@ def summarize_configured_fixture_cases(
     return pd.DataFrame.from_records(rows)
 
 
+def summarize_default_configured_fixture_cases(
+    *,
+    alpha_009_split_summary: pd.DataFrame,
+    alpha_012_factor_by_split: dict[str, pd.DataFrame],
+    forward_returns_by_split: dict[str, pd.DataFrame],
+    alpha_012_information_coefficient_by_split: dict[str, pd.Series],
+    alpha_012_rank_information_coefficient_by_split: dict[str, pd.Series],
+    alpha_012_quantile_spread_by_split: dict[str, pd.DataFrame],
+) -> pd.DataFrame:
+    """Build the opt-in configured-case summary for fixture report/log output."""
+
+    alpha_012_split_summary = summarize_split_diagnostics(
+        factor_by_split=alpha_012_factor_by_split,
+        forward_returns_by_split=forward_returns_by_split,
+        information_coefficient_by_split=alpha_012_information_coefficient_by_split,
+        rank_information_coefficient_by_split=(
+            alpha_012_rank_information_coefficient_by_split
+        ),
+        quantile_spread_by_split=alpha_012_quantile_spread_by_split,
+    )
+    return summarize_configured_fixture_cases(
+        [
+            _configured_fixture_case(
+                case_id="alpha_009",
+                case_label="Alpha#009 local fixture",
+                split_summary=alpha_009_split_summary,
+            ),
+            _configured_fixture_case(
+                case_id="alpha_012",
+                case_label="Alpha#012 local fixture",
+                split_summary=alpha_012_split_summary,
+            ),
+        ],
+    )
+
+
 def write_workflow_experiment_log(
     *,
     config: LocalCSVFixtureWorkflowConfig,
@@ -746,6 +801,7 @@ def write_workflow_experiment_log(
             "ohlcv_rows": int(result.ohlcv.shape[0]),
             "inventory_input_count": len(result.inventory_review.summaries),
             "split_names": list(SPLIT_NAMES),
+            **_configured_case_log_outputs(result.configured_case_summary),
         },
         metrics={},
         diagnostics={
@@ -881,6 +937,7 @@ def write_workflow_experiment_log(
             "benchmark_forward_return_valid_observations": int(
                 result.benchmark_forward_returns.notna().sum()
             ),
+            **_configured_case_log_diagnostics(result.configured_case_summary),
         },
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
@@ -1014,6 +1071,7 @@ The diagnostic uses `window={config.slippage_smoke_window}`, `volume_lag={config
 ## Split Coverage
 
 {_format_labeled_index_markdown_table(result.split_summary, index_label="split")}
+{_format_configured_case_summary_section(result.configured_case_summary)}
 
 ## Alpha#009 Diagnostic Coverage
 
@@ -1283,6 +1341,100 @@ def _join_case_caveats(caveats: object) -> str:
     return "; ".join(str(caveat) for caveat in caveats)
 
 
+def _configured_fixture_case(
+    *,
+    case_id: str,
+    case_label: str,
+    split_summary: pd.DataFrame,
+) -> dict[str, object]:
+    return {
+        "case_id": case_id,
+        "case_label": case_label,
+        "split_results": _configured_split_results(split_summary),
+        "transaction_cost_bps": None,
+        "slippage_bps": None,
+        "volume_aware_slippage_mode": "absent",
+        "zero_slippage_diagnostic": False,
+        "caveats": (
+            "committed synthetic fixture only",
+            "diagnostic metrics only",
+            "not profitability evidence",
+        ),
+    }
+
+
+def _configured_split_results(split_summary: pd.DataFrame) -> dict[str, dict[str, object]]:
+    results = {}
+    for split_name in SPLIT_NAMES:
+        row = split_summary.loc[split_name]
+        denominator = int(row["date_count"]) * int(row["asset_count"])
+        metric_dates = (
+            int(row["ic_valid_dates"])
+            + int(row["rank_ic_valid_dates"])
+            + int(row["quantile_spread_valid_dates"])
+        )
+        results[split_name] = {
+            "valid": metric_dates > 0,
+            "invalid_reason": (
+                "" if metric_dates > 0 else "insufficient_metric_observations"
+            ),
+            "coverage": (
+                float(row["factor_valid_observations"]) / denominator
+                if denominator
+                else None
+            ),
+            "ic_valid_dates": int(row["ic_valid_dates"]),
+            "rank_ic_valid_dates": int(row["rank_ic_valid_dates"]),
+            "quantile_spread_valid_dates": int(row["quantile_spread_valid_dates"]),
+        }
+    return results
+
+
+def _configured_case_log_outputs(summary: pd.DataFrame | None) -> dict[str, int]:
+    if summary is None:
+        return {}
+
+    return {
+        "configured_fixture_case_count": int(summary["case_id"].nunique()),
+        "configured_fixture_case_split_row_count": int(len(summary.index)),
+    }
+
+
+def _configured_case_log_diagnostics(summary: pd.DataFrame | None) -> dict[str, object]:
+    if summary is None:
+        return {}
+
+    return {
+        "configured_fixture_case_summary": _configured_case_records(summary),
+        "configured_fixture_invalid_case_split_count": int((~summary["valid"]).sum()),
+        "configured_fixture_invalid_case_reasons": sorted(
+            reason
+            for reason in summary["invalid_reason"].dropna().unique()
+            if str(reason)
+        ),
+    }
+
+
+def _configured_case_records(summary: pd.DataFrame) -> list[dict[str, object]]:
+    return [
+        {
+            str(column): _json_configured_case_scalar(value)
+            for column, value in row.items()
+        }
+        for _, row in summary.iterrows()
+    ]
+
+
+def _json_configured_case_scalar(value: object) -> object:
+    if pd.isna(value):
+        return None
+    if hasattr(value, "item") and callable(value.item):
+        return _json_configured_case_scalar(value.item())
+    if isinstance(value, bool | int | float | str):
+        return value
+    return str(value)
+
+
 def _is_default_experiment_log_path(path: Path) -> bool:
     return Path(path).resolve() == DEFAULT_EXPERIMENT_LOG_PATH.resolve()
 
@@ -1377,6 +1529,49 @@ def _format_inventory_summary_table(review: LocalCSVInventoryReview) -> str:
     return "\n".join(lines)
 
 
+def _format_configured_case_summary_section(summary: pd.DataFrame | None) -> str:
+    if summary is None:
+        return ""
+
+    return f"""
+
+## Configured Case Summary
+
+This opt-in table reports every configured fixture case across every split. Invalid or insufficient rows stay visible with reasons. Transaction cost, fixed-bps slippage, and volume-aware slippage fields are separate diagnostic fields only; no cost or slippage model is applied to returns.
+
+{_format_configured_case_summary_table(summary)}
+"""
+
+
+def _format_configured_case_summary_table(frame: pd.DataFrame) -> str:
+    headers = [str(column) for column in frame.columns]
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for _, row in frame.iterrows():
+        lines.append(
+            "| "
+            + " | ".join(_format_configured_case_value(value) for value in row)
+            + " |"
+        )
+    return "\n".join(lines)
+
+
+def _format_configured_case_value(value: object) -> str:
+    if pd.isna(value):
+        return "NaN"
+    if hasattr(value, "item") and callable(value.item):
+        return _format_configured_case_value(value.item())
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return _format_float(value)
+    return str(value)
+
+
 def _format_table_value(column: object, value: object) -> str:
     if pd.isna(value):
         return "NaN"
@@ -1420,6 +1615,7 @@ def main(
     report_path: Path = DEFAULT_REPORT_PATH,
     experiment_log_path: Path | None = None,
     update_registry: bool = True,
+    include_configured_case_summary: bool = False,
 ) -> None:
     """Run the default synthetic local CSV fixture workflow."""
 
@@ -1427,6 +1623,7 @@ def main(
         report_path=report_path,
         experiment_log_path=experiment_log_path,
         update_registry=update_registry,
+        include_configured_case_summary=include_configured_case_summary,
     )
 
 

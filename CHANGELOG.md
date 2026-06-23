@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added opt-in local fixture configured-case report/log wiring so the
+  committed synthetic fixture workflow can include all-case/all-split summary
+  rows in ad hoc outputs without refreshing committed generated artifacts.
 - Added protected PR merge governance so non-high-risk PRs authored/pushed by
   `minqiyang` may use GitHub auto-merge or normal protected PR merge only after
   author/head-owner, branch protection, required checks, required reviews, and

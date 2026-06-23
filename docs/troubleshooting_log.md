@@ -23,6 +23,59 @@ problems, include:
 
 ---
 
+## 2026-06-23 - Continuation Command Output And Python Path Guardrails
+
+Original mistake:
+
+- Reused the objective's `python -m pytest` and `python -m compileall`
+  commands even though the migrated Mac shell does not provide `python`.
+- Also ran one broad `rg` search across code and long docs for local-fixture
+  terms.
+
+Consequence:
+
+- The first baseline validation attempt failed before running tests.
+- The broad search output was truncated and could not be used as evidence.
+
+Evidence:
+
+```text
+zsh:1: command not found: python
+Warning: truncated output
+```
+
+Investigation:
+
+- Verified the repo-local `.venv/bin/python` can run the same pytest and
+  compileall checks.
+- Switched from broad search output to targeted file ranges in the local
+  fixture workflow, tests, and refresh plan.
+
+Final fix:
+
+- Use `.venv/bin/python` for validation on this Mac until a deliberate project
+  environment adds a `python` shim.
+- Cap or narrow local-fixture searches before reading long logs or docs.
+
+Verification:
+
+- `.venv/bin/python -m pytest -q` passed before starting the stage.
+- `.venv/bin/python -m compileall src tests research` passed before starting
+  the stage.
+- Focused local fixture workflow tests passed after the code change.
+
+Remaining caveats:
+
+- The shell still has no `python` command on `PATH`; future prompts that
+  specify `python ...` need the repo venv equivalent.
+
+Prevention:
+
+- Prefer the repo venv command in this migrated Mac workspace and keep search
+  output scoped to the active files.
+
+---
+
 ## 2026-06-22 - New Mac Python Validation Environment Missing Pytest/Pandas
 
 Original mistake:

@@ -12,6 +12,33 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-23 - Opt-In Local Fixture Configured-Case Report/Log Support
+
+This implementation stage wires the existing configured-case summary discipline
+into the committed synthetic local CSV fixture workflow's optional output path.
+`run_local_csv_fixture_workflow_demo()` now accepts an opt-in flag that adds an
+all-case, all-split configured fixture summary to ad hoc Markdown reports and
+JSON experiment logs. The default path stays unchanged so committed generated
+reports, JSON logs, and the registry are not refreshed in this PR.
+
+The summary reports `alpha_009` and `alpha_012` fixture cases across train,
+validation, and test splits. Insufficient split rows remain visible with
+`insufficient_metric_observations`; transaction-cost, fixed-slippage,
+volume-aware slippage mode, and zero-slippage diagnostic fields remain separate
+diagnostic fields and are not applied to returns.
+
+Focused tests cover deterministic row ordering, invalid-row preservation,
+Markdown output, JSON output counts, invalid reasons, and the `alpha_012`
+validation coverage row. Validation passed with focused local fixture workflow
+tests, full pytest, compileall for `src`, `tests`, and `research`, and
+`git diff --check`. This stage does not modify CSV loaders, backtester
+behavior, metrics behavior, factor formulas, diagnostics helpers, committed
+generated reports/logs, data files, LEAN code, real-data access, vendor APIs,
+credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-23 - Protected PR Merge Governance Update
 
 This workflow-control stage updates the repository staged workflow so Codex no
