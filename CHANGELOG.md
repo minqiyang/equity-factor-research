@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added local fixture configured-case summary support with focused tests that
+  preserve every configured case/split row, invalid reasons, and separately
+  inspectable cost/slippage diagnostic fields without regenerating reports.
 - Added paused external PR gate governance so an open or not-verified-merged PR
   is reported once, then treated as an external wait state without repeated
   GitHub checks, gate reports, pause notes, goal completion, or blocked status

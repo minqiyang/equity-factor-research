@@ -281,6 +281,96 @@ def test_local_csv_fixture_workflow_outputs_are_aligned() -> None:
     assert result.split_summary.loc["test", "forward_return_valid_observations"] == 3
 
 
+def test_configured_fixture_case_summary_preserves_all_case_split_rows() -> None:
+    summary = demo.summarize_configured_fixture_cases(
+        [
+            {
+                "case_id": "alpha_009",
+                "case_label": "Alpha#009 local fixture",
+                "split_results": {
+                    "train": {
+                        "coverage": 0.0,
+                        "ic_valid_dates": 0,
+                        "rank_ic_valid_dates": 0,
+                        "quantile_spread_valid_dates": 0,
+                    },
+                    "validation": {
+                        "coverage": 1.0,
+                        "ic_valid_dates": 1,
+                        "rank_ic_valid_dates": 1,
+                        "quantile_spread_valid_dates": 1,
+                    },
+                },
+                "transaction_cost_bps": 0.0,
+                "slippage_bps": 0.0,
+                "zero_slippage_diagnostic": True,
+                "caveats": ("synthetic fixture only", "not profitability evidence"),
+            },
+            {
+                "case_id": "stale_volume",
+                "case_label": "Stale volume guardrail",
+                "valid": False,
+                "invalid_reason": "stale_volume_policy_missing",
+                "volume_aware_slippage_mode": "diagnostic_only",
+                "caveats": ("invalid row retained",),
+            },
+        ],
+    )
+
+    assert list(summary[["case_id", "split"]].itertuples(index=False, name=None)) == [
+        ("alpha_009", "train"),
+        ("alpha_009", "validation"),
+        ("alpha_009", "test"),
+        ("stale_volume", "train"),
+        ("stale_volume", "validation"),
+        ("stale_volume", "test"),
+    ]
+    assert list(summary.columns) == [
+        "case_id",
+        "case_label",
+        "split",
+        "valid",
+        "invalid_reason",
+        "coverage",
+        "ic_valid_dates",
+        "rank_ic_valid_dates",
+        "quantile_spread_valid_dates",
+        "transaction_cost_bps",
+        "slippage_bps",
+        "volume_aware_slippage_mode",
+        "zero_slippage_diagnostic",
+        "caveats",
+    ]
+
+    alpha_validation = summary[
+        (summary["case_id"] == "alpha_009") & (summary["split"] == "validation")
+    ].iloc[0]
+    assert alpha_validation["valid"]
+    assert alpha_validation["coverage"] == pytest.approx(1.0)
+    assert alpha_validation["ic_valid_dates"] == 1
+    assert alpha_validation["transaction_cost_bps"] == pytest.approx(0.0)
+    assert alpha_validation["slippage_bps"] == pytest.approx(0.0)
+    assert alpha_validation["volume_aware_slippage_mode"] == "absent"
+    assert alpha_validation["zero_slippage_diagnostic"]
+    assert alpha_validation["caveats"] == (
+        "synthetic fixture only; not profitability evidence"
+    )
+
+    missing_test = summary[
+        (summary["case_id"] == "alpha_009") & (summary["split"] == "test")
+    ].iloc[0]
+    assert not missing_test["valid"]
+    assert missing_test["invalid_reason"] == "missing_split_result"
+
+    invalid_case = summary[
+        (summary["case_id"] == "stale_volume") & (summary["split"] == "train")
+    ].iloc[0]
+    assert not invalid_case["valid"]
+    assert invalid_case["invalid_reason"] == "stale_volume_policy_missing"
+    assert invalid_case["volume_aware_slippage_mode"] == "diagnostic_only"
+    assert invalid_case["caveats"] == "invalid row retained"
+
+
 def test_local_csv_fixture_workflow_is_deterministic() -> None:
     first = run_local_csv_fixture_workflow_demo(write_outputs=False)
     second = run_local_csv_fixture_workflow_demo(write_outputs=False)

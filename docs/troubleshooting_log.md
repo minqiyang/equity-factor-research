@@ -23,6 +23,66 @@ problems, include:
 
 ---
 
+## 2026-06-22 - New Mac Python Validation Environment Missing Pytest/Pandas
+
+Original mistake:
+
+- Assumed the migrated Mac environment had a `python` command with the project
+  test dependencies available.
+
+Consequence:
+
+- The focused pytest validation for `tests/test_local_csv_fixture_workflow_demo.py`
+  could not run through the normal project command.
+
+Evidence:
+
+```text
+zsh:1: command not found: python
+/usr/bin/python3: No module named pytest
+ModuleNotFoundError: No module named 'pandas'
+ModuleNotFoundError: No module named 'scipy'
+```
+
+Investigation:
+
+- Checked for a repo-local virtual environment; none was present.
+- Checked Codex bundled Python; it has `pandas` but not `pytest`.
+- Checked `/Users/rhapsoul/.local/bin/pytest`; it runs under Python 3.9 without
+  `pandas`.
+- Created an ignored `.venv` from the Codex bundled Python so the environment
+  could reuse bundled `pandas` and `numpy`.
+
+Correction attempts:
+
+- Ran a direct assertion check for the new helper with the Codex bundled Python.
+- Ran compile checks with the same bundled Python.
+- Installed `pytest` into the ignored `.venv`; focused pytest then reached the
+  local fixture workflow tests but failed because `scipy` was missing for
+  pandas Spearman correlation.
+- Installed the project-declared `scipy` dependency into the ignored `.venv`.
+
+Final fix:
+
+- Use `.venv/bin/python -m pytest ...` for focused validation on this migrated
+  Mac until a project environment is created deliberately.
+
+Verification:
+
+- `.venv/bin/python -m pytest tests/test_local_csv_fixture_workflow_demo.py -q`
+  passed with 15 tests.
+
+Remaining caveats:
+
+- Full pytest has not been run in this migrated Mac environment.
+
+Prevention:
+
+- On this Mac, create or activate a project virtual environment before relying
+  on `python -m pytest`.
+
+---
+
 ## 2026-06-11 - PowerShell PR Body Quoting Failure
 
 Original mistake:
