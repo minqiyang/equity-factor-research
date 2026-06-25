@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/local_csv_validation_dry_run_intake_checklist.md` as a concise
+  user-facing intake checklist for local CSV validation-only dry runs before
+  Codex inspects user-provided files.
 - Added `docs/local_csv_readiness_input_checkpoint.md` to make the required
   user-provided local CSV readiness package explicit before any real-data
   interpretation, while preserving the default pause at the readiness boundary.

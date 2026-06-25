@@ -12,6 +12,31 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-24 - Local CSV Validation-Only Dry Run Intake Checklist
+
+This documentation-only stage adds
+`docs/local_csv_validation_dry_run_intake_checklist.md` as a concise
+user-facing checklist for preparing a future user-provided local CSV
+validation-only dry run. It summarizes the required files, accepted schemas,
+minimum columns, metadata, GitHub exclusions, Codex inspection boundary, and
+ready prompt before any private files are read.
+
+The handoff is updated to route the next safe stage to metadata-first readiness
+intake only after the user supplies the declared bundle and metadata.
+
+Validation passed with full pytest, compileall for `src`, `tests`, and
+`research`, repo map refresh, `git diff --check`, and guardrail grep. The
+guardrail grep matches were documentation prohibitions, caveats, and stop
+conditions only.
+
+This stage does not modify source code, tests, research scripts, generated
+reports/logs, data files, CSV loaders, backtester behavior, metrics behavior,
+factor formulas, diagnostics helpers, LEAN code, real-data access, vendor APIs,
+credentials, live/paper trading, brokerage/order logic, or profitability
+language.
+
+---
+
 ## 2026-06-23 - Local CSV Readiness Input Checkpoint
 
 This documentation-only stage adds
