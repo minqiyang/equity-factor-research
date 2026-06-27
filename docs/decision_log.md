@@ -15,6 +15,55 @@ investment performance.
 
 ---
 
+## 2026-06-27 - Record Private EODHD Validation-Only Handoff
+
+Context:
+
+- A private EODHD local CSV bundle exists outside the repository at
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Private readiness and validation-only summaries reported loader/schema
+  validation success without copying raw CSV/JSON data into the repository.
+- The repository needs a reviewable handoff before any future loader-smoke-test
+  stage can be scoped.
+
+Decision:
+
+- Add `docs/eodhd_local_csv_validation_handoff.md` as a documentation-only
+  bridge from private validation evidence to a future reviewed loader smoke
+  test.
+- Record only aggregate evidence: provider/source, symbol coverage, date range,
+  row counts, schema result, benchmark alignment, invalid-value counts, and
+  credential-marker scan result.
+- Preserve explicit stop-before-strategy language and keep sample split,
+  cost/slippage, universe, benchmark, and EODHD adjustment-policy gaps visible.
+
+Rationale:
+
+- The private bundle passed validation-only checks, but that does not make it
+  research evidence.
+- A repo-reviewed handoff makes the next stage auditable without committing
+  private market data or changing loaders, tests, research scripts, reports, or
+  strategy logic.
+
+Consequences:
+
+- The next safe stage is a documentation/test-plan or validation-only loader
+  smoke test only.
+- Strategy runs, factor-performance calculations, backtests, performance
+  interpretation, profitability claims, and trading-readiness claims remain
+  out of scope.
+- Static-universe survivorship risk and raw OHLC versus `adjusted_close`
+  adjustment semantics remain unresolved caveats for any later interpretation.
+
+Follow-up:
+
+- Prepare a reviewed experiment-log handoff before any future output is
+  interpreted beyond loader/schema readiness.
+- Keep the private bundle outside the repository and do not commit raw
+  CSV/JSON files.
+
+---
+
 ## 2026-06-23 - Require An Explicit Local CSV Readiness Input Package
 
 Context:

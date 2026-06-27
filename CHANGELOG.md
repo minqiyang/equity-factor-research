@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/eodhd_local_csv_validation_handoff.md` to record the
+  documentation-only handoff for the completed private EODHD local CSV
+  validation-only dry run, including aggregate loader/schema evidence,
+  static-universe and adjustment-policy caveats, placeholders for sample
+  splits and costs/slippage, and the stop-before-strategy next-stage boundary.
 - Added `docs/local_csv_validation_dry_run_intake_checklist.md` as a concise
   user-facing intake checklist for local CSV validation-only dry runs before
   Codex inspects user-provided files.
