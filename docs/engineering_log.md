@@ -12,6 +12,53 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-27 - EODHD Local CSV Validation Handoff
+
+Stage: documentation-only handoff for the private EODHD local CSV
+validation-only dry run.
+
+Changed files:
+
+- `docs/eodhd_local_csv_validation_handoff.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private evidence reviewed:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
+
+Aggregate validation evidence recorded:
+
+- Provider/source: EODHD EOD Historical Data All World.
+- Coverage: 11/11 symbols including SPY.US benchmark.
+- Date range: 2018-01-02 to 2026-06-26.
+- Rows: 21320 universe rows and 2132 benchmark rows.
+- Checks: schema pass, benchmark alignment pass, 0 missing required values,
+  0 duplicate date-symbol rows, 0 bad date rows, 0 bad price rows,
+  0 bad volume rows, and 0 credential-marker scan hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API or credential was used.
+- No strategy, factor-performance calculation, backtest, performance
+  interpretation, profitability claim, or trading-readiness claim was made.
+
+Next safe stage:
+
+- Documentation/test-plan or validation-only loader smoke test only. Stop
+  before strategy or performance interpretation until a reviewed experiment-log
+  handoff records sample splits, cost/slippage assumptions, point-in-time
+  universe status, benchmark policy, and EODHD adjustment-policy decisions.
+
+---
+
 ## 2026-06-24 - Local CSV Validation-Only Dry Run Intake Checklist
 
 This documentation-only stage adds
