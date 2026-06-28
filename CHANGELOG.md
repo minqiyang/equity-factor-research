@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/eodhd_data_quality_diagnostics_checkpoint.md` to record the
+  completed private EODHD no-performance data-quality diagnostics dry run,
+  aggregate readiness counts, open caveats, and the next docs-only
+  factor-diagnostics planning boundary.
 - Added `docs/eodhd_loader_smoke_checkpoint_and_diagnostics_dry_run_plan.md`
   to record the completed private EODHD validation-only loader smoke test,
   aggregate loader/schema evidence, private-output boundary, and the next

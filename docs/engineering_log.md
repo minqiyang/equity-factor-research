@@ -12,6 +12,57 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Data-Quality Diagnostics Checkpoint
+
+Stage: documentation-only checkpoint for the completed private EODHD
+no-performance data-quality diagnostics dry run.
+
+Changed files:
+
+- `docs/eodhd_data_quality_diagnostics_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private evidence reviewed:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+
+Aggregate diagnostics evidence recorded:
+
+- Coverage: 11/11 symbols.
+- Rows: 21320 asset rows and 2132 benchmark rows.
+- Date range: 2018-01-02 to 2026-06-26 for assets and benchmark.
+- Calendar alignment: 0 partial asset-coverage dates, 0 missing benchmark
+  dates, and 0 extra benchmark dates.
+- Data-quality counts: 0 duplicate date-symbol rows, 0 missing required
+  values, 0 non-positive price rows, 0 negative volume rows, 0 zero-volume
+  rows, 0 invalid OHLC rows, 0 full-row stale indicators, and 52 unchanged
+  adjusted-close indicators.
+- Private summary sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No source, tests, research scripts, reports, loaders, backtester, metrics,
+  factor logic, or generated outputs were changed.
+- No factors, signals, IC, Rank IC, quantile spreads, strategy runs, backtests,
+  returns, portfolio metrics, profitability claims, alpha claims, or
+  trading-readiness claims were made.
+
+Next safe stage:
+
+- Prepare a docs-only factor-diagnostics plan before computing any real-data
+  factor diagnostics. Keep performance interpretation and all trading-readiness
+  language out of scope.
+
+---
+
 ## 2026-06-28 - EODHD Loader Smoke Checkpoint And Diagnostics Dry Run Plan
 
 Stage: documentation-only checkpoint for the completed private EODHD
