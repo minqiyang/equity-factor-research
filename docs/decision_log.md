@@ -15,6 +15,51 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Plan Private EODHD Loader Smoke Test Before Execution
+
+Context:
+
+- PR #119 recorded the completed private EODHD validation-only handoff.
+- The private bundle remains outside the repository at
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- The next safe boundary is a loader smoke test, but source, tests, research
+  scripts, generated reports, strategy logic, and performance interpretation
+  remain out of scope.
+
+Decision:
+
+- Add `docs/eodhd_local_csv_loader_smoke_test_plan.md` before executing the
+  loader smoke test.
+- Limit the future smoke test to existing strict loaders and metadata-level
+  evidence: schema, row counts, date ranges, symbol coverage, missing and
+  duplicate counts, invalid-value counts, OHLC consistency, and SPY benchmark
+  alignment.
+- Require any smoke-test summary to be written only under the private EODHD
+  bundle path, not under the repository.
+
+Rationale:
+
+- A short reviewed plan keeps the next private-data operation auditable without
+  adding code or committing private market data.
+- Loader success would only prove local ingestion readiness, not strategy,
+  factor, portfolio, or performance evidence.
+
+Consequences:
+
+- The next stage may run the validation-only loader smoke test using existing
+  loaders and private output only.
+- Static-universe survivorship risk, raw OHLC versus `adjusted_close`
+  adjustment semantics, sample splits, cost/slippage assumptions, execution
+  timing, and experiment-log interpretation remain unresolved for research
+  interpretation.
+
+Follow-up:
+
+- After this plan merges, execute the loader smoke test only if it can stay
+  inside the private-output and no-interpretation boundary.
+
+---
+
 ## 2026-06-27 - Record Private EODHD Validation-Only Handoff
 
 Context:
