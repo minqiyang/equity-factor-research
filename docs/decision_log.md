@@ -15,6 +15,48 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Checkpoint Private EODHD Loader Smoke Before Diagnostics
+
+Context:
+
+- PR #120 added the reviewed plan for a private validation-only EODHD loader
+  smoke test.
+- The private smoke test then passed outside the repository using existing
+  strict loaders and wrote
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`.
+- The repository needs an aggregate-only checkpoint before any diagnostics
+  dry-run work is scoped.
+
+Decision:
+
+- Add `docs/eodhd_loader_smoke_checkpoint_and_diagnostics_dry_run_plan.md`.
+- Record only aggregate loader/schema evidence from the private summary.
+- Scope the next diagnostics dry run to data-quality and readiness properties
+  only: coverage, calendars, missingness, duplicates, invalid values,
+  zero-volume, stale-row, adjustment-policy caveats, and survivorship caveats.
+
+Rationale:
+
+- Loader success is useful readiness evidence but is not research
+  interpretation.
+- A repo-reviewed checkpoint keeps the workflow auditable without committing
+  private market data or changing code.
+
+Consequences:
+
+- Diagnostics may proceed only inside the no-performance boundary.
+- Strategy runs, backtests, factor performance, IC, Rank IC, quantile spreads,
+  returns, profitability, alpha, robustness, and trading-readiness claims remain
+  out of scope.
+
+Follow-up:
+
+- Run or document a private-output-only diagnostics dry run if it can stay
+  within this boundary. If source or report changes are needed, stop for a
+  separate reviewed plan.
+
+---
+
 ## 2026-06-28 - Plan Private EODHD Loader Smoke Test Before Execution
 
 Context:

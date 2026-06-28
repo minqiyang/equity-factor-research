@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/eodhd_loader_smoke_checkpoint_and_diagnostics_dry_run_plan.md`
+  to record the completed private EODHD validation-only loader smoke test,
+  aggregate loader/schema evidence, private-output boundary, and the next
+  no-performance diagnostics dry-run stop conditions.
 - Added `docs/eodhd_local_csv_loader_smoke_test_plan.md` to scope the next
   validation-only loader smoke test for the private EODHD bundle, including
   allowed existing-loader checks, private-output location, stop conditions,
