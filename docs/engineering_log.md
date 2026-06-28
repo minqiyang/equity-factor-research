@@ -12,6 +12,63 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Factor Diagnostics Readiness Review
+
+Stage: private-output-only readiness review for the EODHD factor diagnostics
+workflow.
+
+Changed files:
+
+- `research/eodhd_factor_diagnostics_readiness_review.py`
+- `tests/test_eodhd_factor_diagnostics_readiness_review.py`
+- `docs/eodhd_factor_diagnostics_readiness_review_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private outputs:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json`
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md`
+
+Implementation:
+
+- Added a narrow research runner that reads the private factor diagnostics
+  experiment log and dry-run summary, then writes deterministic JSON plus a
+  concise Markdown readiness review.
+- The readiness field is deliberately named
+  `ready_for_limited_factor_diagnostics_review`; it does not use trading,
+  strategy, alpha, or live-use readiness language.
+- Added focused synthetic/temp-file tests only; no private data was committed.
+
+Private generation evidence:
+
+- `ready_for_limited_factor_diagnostics_review`: `True`.
+- Asset rows: 21320.
+- Benchmark rows: 2132.
+- Symbol coverage: 11.
+- Date range: 2018-01-02 to 2026-06-26.
+- Private readiness output sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No strategy, backtest, portfolio construction, PnL, Sharpe, drawdown,
+  trading metric, performance interpretation, profitability claim, alpha claim,
+  or trading-readiness claim was made.
+
+Next safe stage:
+
+- A future limited factor-diagnostics review may inspect diagnostics only
+  within the no-strategy/no-performance boundary.
+
+---
+
 ## 2026-06-28 - EODHD Factor Diagnostics Experiment Log
 
 Stage: private-output-only experiment-log/readiness handoff for the completed
