@@ -10,14 +10,14 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | --- | --- | --- |
 | `.agents/skills/` | Project-specific Codex Skills and workflow gates. | 2 mapped files |
 | `.github/` | Repository automation such as CI workflows. | 1 mapped file |
-| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 58 mapped files |
+| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 59 mapped files |
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 11 mapped files |
 | `src/backtest/` | Simulated long-only backtester and metrics helpers. | 4 mapped files |
 | `src/data/` | Strict local CSV loaders and metadata review helpers. | 3 mapped files |
 | `src/reporting/` | Experiment log, registry, and plotting helpers. | 4 mapped files |
-| `research/` | Synthetic and committed-fixture demo workflows. | 11 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 36 mapped files |
+| `research/` | Synthetic and committed-fixture demo workflows. | 12 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 37 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 4 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |

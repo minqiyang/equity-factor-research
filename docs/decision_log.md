@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Keep EODHD Readiness Review Narrow
+
+Context:
+
+- PR #124 added a private experiment-log/readiness handoff for the EODHD
+  factor diagnostics dry run.
+- The next checkpoint needs to decide only whether the metadata is ready for a
+  future limited factor-diagnostics review.
+- The review must not become strategy readiness, alpha readiness, trading
+  readiness, live-use readiness, or performance interpretation.
+
+Decision:
+
+- Add `research/eodhd_factor_diagnostics_readiness_review.py` as a
+  private-output-only readiness runner.
+- Name the readiness field `ready_for_limited_factor_diagnostics_review`.
+- Write the real-data readiness review only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Commit synthetic tests and aggregate-count docs only; do not commit private
+  logs, private market data, or private diagnostic values.
+
+Rationale:
+
+- A narrow metadata gate proves the required artifacts and guardrails exist
+  before any human or future script inspects factor diagnostics.
+- Avoiding broader readiness names prevents the checkpoint from being mistaken
+  for strategy, alpha, trading, or live-use approval.
+
+Consequences:
+
+- Future work may inspect factor diagnostics only inside the explicitly limited
+  no-strategy/no-performance boundary.
+- Strategy runs, backtests, portfolios, PnL, Sharpe, drawdown, trading metrics,
+  profitability claims, alpha claims, and trading-readiness language remain out
+  of scope.
+
+Follow-up:
+
+- If continuing, perform a limited factor-diagnostics review that preserves the
+  no-strategy/no-performance boundary.
+
+---
+
 ## 2026-06-28 - Keep EODHD Factor Diagnostics Experiment Logs Private
 
 Context:

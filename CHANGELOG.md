@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `research/eodhd_factor_diagnostics_readiness_review.py` with a
+  private-output-only EODHD factor diagnostics readiness review runner, plus
+  synthetic tests and a docs checkpoint that records readiness metadata without
+  strategy, backtest, portfolio, or performance interpretation.
 - Added `research/eodhd_factor_diagnostics_experiment_log.py` with a
   private-output-only EODHD factor diagnostics experiment-log handoff runner,
   plus synthetic tests and a docs checkpoint that records required readiness
