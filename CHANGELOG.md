@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `research/eodhd_factor_diagnostics_dry_run.py` with a private-output
+  EODHD factor diagnostics dry run, plus synthetic tests and a docs checkpoint
+  that keeps IC, Rank IC, and quantile-spread diagnostics separate from
+  strategy, backtest, portfolio, and performance interpretation.
 - Added `docs/eodhd_data_quality_diagnostics_checkpoint.md` to record the
   completed private EODHD no-performance data-quality diagnostics dry run,
   aggregate readiness counts, open caveats, and the next docs-only

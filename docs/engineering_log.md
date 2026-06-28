@@ -12,6 +12,70 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Factor Diagnostics Dry Run
+
+Stage: private-output-only EODHD local CSV factor diagnostics dry run.
+
+Changed files:
+
+- `research/eodhd_factor_diagnostics_dry_run.py`
+- `tests/test_eodhd_factor_diagnostics_dry_run.py`
+- `docs/eodhd_factor_diagnostics_dry_run_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private output:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+
+Implementation:
+
+- Reused existing strict loaders:
+  `load_ohlcv_csv(..., require_adjusted_close=True)` and
+  `load_benchmark_price_csv(..., value_column="adjusted_close")`.
+- Reused existing feature helpers: `alpha_009` and `alpha_012`.
+- Reused existing diagnostics: IC, Rank IC, quantile spread, and chronological
+  train/validation/test split helpers.
+- Added focused synthetic tests only; no private data was committed.
+
+Private dry-run evidence:
+
+- Asset rows: 21320.
+- Benchmark rows: 2132.
+- Symbol coverage: 11.
+- Alpha#009 coverage: 21270 valid observations and 50 missing observations.
+- Alpha#012 coverage: 21310 valid observations and 10 missing observations.
+- Split labels: train, validation, and test.
+- IC, Rank IC, and quantile-spread diagnostic dates were non-empty in each
+  split for both factors.
+- Private summary sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No strategy, backtest, portfolio construction, PnL, Sharpe, drawdown,
+  trading metric, performance interpretation, profitability claim, alpha claim,
+  or trading-readiness claim was made.
+
+Validation note:
+
+- The private dry run is executed with `PYTHONPATH=src .venv/bin/python -m
+  research.eodhd_factor_diagnostics_dry_run`, matching the repo's local script
+  import pattern in this environment.
+
+Next safe stage:
+
+- Prepare a real-data readiness review or experiment-log handoff before any
+  factor diagnostic values are interpreted.
+
+---
+
 ## 2026-06-28 - EODHD Data-Quality Diagnostics Checkpoint
 
 Stage: documentation-only checkpoint for the completed private EODHD

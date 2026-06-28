@@ -15,6 +15,48 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Keep EODHD Factor Diagnostics Private-Output Only
+
+Context:
+
+- PR #122 checkpointed the private EODHD data-quality diagnostics dry run.
+- The next functional checkpoint adds a dry run that computes Alpha#009,
+  Alpha#012, IC, Rank IC, and quantile-spread diagnostics from the private
+  EODHD bundle.
+- These diagnostics are allowed only as research diagnostics, not strategy or
+  performance evidence.
+
+Decision:
+
+- Add `research/eodhd_factor_diagnostics_dry_run.py` as a private-output-only
+  research script.
+- Write the real-data factor diagnostics summary only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Commit synthetic tests and aggregate-count docs only; do not commit private
+  data or private diagnostic values.
+
+Rationale:
+
+- Existing loaders, features, diagnostics, and split helpers are sufficient for
+  the checkpoint.
+- Keeping private values out of repo docs preserves the privacy and
+  no-interpretation boundary while still making the workflow auditable.
+
+Consequences:
+
+- Future work must complete a real-data readiness review or experiment-log
+  handoff before interpreting the factor diagnostic values.
+- Strategy runs, backtests, portfolios, PnL, Sharpe, drawdown, trading metrics,
+  profitability claims, alpha claims, and trading-readiness language remain out
+  of scope.
+
+Follow-up:
+
+- Prepare the readiness or experiment-log handoff if continuing toward
+  interpretation.
+
+---
+
 ## 2026-06-28 - Checkpoint Private EODHD Data-Quality Diagnostics
 
 Context:
