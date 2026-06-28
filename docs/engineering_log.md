@@ -12,6 +12,61 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Factor Diagnostics Experiment Log
+
+Stage: private-output-only experiment-log/readiness handoff for the completed
+EODHD factor diagnostics dry run.
+
+Changed files:
+
+- `research/eodhd_factor_diagnostics_experiment_log.py`
+- `tests/test_eodhd_factor_diagnostics_experiment_log.py`
+- `docs/eodhd_factor_diagnostics_experiment_log_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private outputs:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json`
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md`
+
+Implementation:
+
+- Added a narrow research runner that parses the private factor diagnostics
+  dry-run summary, validates private output paths under the private bundle, and
+  writes deterministic JSON plus a concise Markdown handoff.
+- Reads only the input CSV `date` columns to record the already-validated date
+  range; it does not recompute factor diagnostics or inspect raw CSV contents.
+- Added focused synthetic/temp-file tests only; no private data was committed.
+
+Private generation evidence:
+
+- Asset rows: 21320.
+- Benchmark rows: 2132.
+- Symbol coverage: 11.
+- Date range: 2018-01-02 to 2026-06-26.
+- Private experiment-log output sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No strategy, backtest, portfolio construction, PnL, Sharpe, drawdown,
+  trading metric, performance interpretation, profitability claim, alpha claim,
+  or trading-readiness claim was made.
+
+Next safe stage:
+
+- Complete a real-data readiness review before any factor diagnostic values are
+  interpreted.
+
+---
+
 ## 2026-06-28 - EODHD Factor Diagnostics Dry Run
 
 Stage: private-output-only EODHD local CSV factor diagnostics dry run.

@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `research/eodhd_factor_diagnostics_experiment_log.py` with a
+  private-output-only EODHD factor diagnostics experiment-log handoff runner,
+  plus synthetic tests and a docs checkpoint that records required readiness
+  fields without strategy, backtest, portfolio, or performance interpretation.
 - Added `research/eodhd_factor_diagnostics_dry_run.py` with a private-output
   EODHD factor diagnostics dry run, plus synthetic tests and a docs checkpoint
   that keeps IC, Rank IC, and quantile-spread diagnostics separate from

@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Keep EODHD Factor Diagnostics Experiment Logs Private
+
+Context:
+
+- PR #123 added a private-output-only EODHD factor diagnostics dry run and
+  wrote the real-data diagnostics summary under the private bundle.
+- The next checkpoint needs an experiment-log/readiness handoff before anyone
+  interprets the factor diagnostics.
+- The handoff must record private paths, row counts, date range, allowed
+  diagnostics, forbidden interpretations, `adjusted_close` policy, and
+  static-universe survivorship caveats without committing private market data.
+
+Decision:
+
+- Add `research/eodhd_factor_diagnostics_experiment_log.py` as a
+  private-output-only handoff runner.
+- Write the real-data experiment log and Markdown handoff only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Commit synthetic tests and aggregate-count docs only; do not commit private
+  logs, private market data, or private diagnostic values.
+
+Rationale:
+
+- A structured private handoff makes readiness fields auditable while
+  preserving the no-interpretation boundary.
+- Keeping the runner narrow avoids adding vendor API code, strategy code, or
+  new reporting abstractions.
+
+Consequences:
+
+- Future work can use the private experiment log as readiness input, but must
+  still complete a real-data readiness review before interpreting factor
+  diagnostics.
+- Strategy runs, backtests, portfolios, PnL, Sharpe, drawdown, trading metrics,
+  profitability claims, alpha claims, and trading-readiness language remain out
+  of scope.
+
+Follow-up:
+
+- Complete the real-data readiness review if continuing toward interpretation.
+
+---
+
 ## 2026-06-28 - Keep EODHD Factor Diagnostics Private-Output Only
 
 Context:
