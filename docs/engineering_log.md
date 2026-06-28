@@ -12,6 +12,58 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Loader Smoke Checkpoint And Diagnostics Dry Run Plan
+
+Stage: documentation-only checkpoint for the completed private EODHD
+validation-only loader smoke test plus the next diagnostics dry-run plan.
+
+Changed files:
+
+- `docs/eodhd_loader_smoke_checkpoint_and_diagnostics_dry_run_plan.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private evidence reviewed:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`
+
+Aggregate loader-smoke evidence recorded:
+
+- Existing strict loaders were used:
+  `load_ohlcv_csv(..., require_adjusted_close=True)` and
+  `load_benchmark_price_csv(..., value_column="adjusted_close")`.
+- Coverage: 11/11 symbols including SPY.US benchmark.
+- Date range: 2018-01-02 to 2026-06-26 for assets and benchmark.
+- Rows: 21320 asset rows and 2132 benchmark rows.
+- Counts: 0 duplicate date-symbol rows, 0 missing required values,
+  0 non-positive price values, 0 negative volume rows, 0 zero-volume rows,
+  0 invalid OHLC rows, 0 missing benchmark dates, and 0 extra benchmark dates.
+- Private summary sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No source, tests, research scripts, reports, loaders, backtester, metrics,
+  factor logic, or generated outputs were changed.
+- No strategy, factor-performance calculation, backtest, return
+  interpretation, profitability claim, alpha claim, or trading-readiness claim
+  was made.
+
+Next safe stage:
+
+- A no-performance diagnostics dry run may summarize data-quality, coverage,
+  calendar, missingness, stale-row, zero-volume, adjustment-policy, and
+  survivorship caveats only. Stop before factor, signal, return, IC, Rank IC,
+  quantile-spread, backtest, or performance interpretation.
+
+---
+
 ## 2026-06-28 - EODHD Local CSV Loader Smoke Test Plan
 
 Stage: documentation-only plan for the next private EODHD local CSV loader
