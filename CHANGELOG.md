@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `docs/eodhd_local_csv_loader_smoke_test_plan.md` to scope the next
+  validation-only loader smoke test for the private EODHD bundle, including
+  allowed existing-loader checks, private-output location, stop conditions,
+  and caveats before any source, test, report, strategy, or performance work.
 - Added `docs/eodhd_local_csv_validation_handoff.md` to record the
   documentation-only handoff for the completed private EODHD local CSV
   validation-only dry run, including aggregate loader/schema evidence,

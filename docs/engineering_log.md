@@ -12,6 +12,49 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Local CSV Loader Smoke Test Plan
+
+Stage: documentation-only plan for the next private EODHD local CSV loader
+smoke test.
+
+Changed files:
+
+- `docs/eodhd_local_csv_loader_smoke_test_plan.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Scope:
+
+- Use existing strict loaders only in the next stage.
+- Inspect only schema, row counts, date ranges, symbol coverage, missing and
+  duplicate counts, invalid-value counts, OHLC consistency, and SPY benchmark
+  alignment.
+- Write any loader-smoke-test summary only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API or credential was used.
+- No source, tests, research scripts, reports, loaders, backtester, metrics,
+  factor logic, or generated outputs were changed.
+- No strategy, factor-performance calculation, backtest, performance
+  interpretation, profitability claim, or trading-readiness claim was made.
+
+Next safe stage:
+
+- Run the validation-only loader smoke test against the private normalized
+  EODHD CSV files and write a private summary only. Stop before any
+  implementation change, experiment-log interpretation, strategy run, factor
+  output, or performance language.
+
+---
+
 ## 2026-06-27 - EODHD Local CSV Validation Handoff
 
 Stage: documentation-only handoff for the private EODHD local CSV
