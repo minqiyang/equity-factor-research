@@ -12,6 +12,62 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-28 - EODHD Limited Factor Diagnostics Review
+
+Stage: private-output-only limited factor diagnostics review.
+
+Changed files:
+
+- `research/eodhd_limited_factor_diagnostics_review.py`
+- `tests/test_eodhd_limited_factor_diagnostics_review.py`
+- `docs/eodhd_limited_factor_diagnostics_review_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private outputs:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json`
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md`
+
+Implementation:
+
+- Added a narrow research runner that reads the private dry-run summary,
+  experiment log, and readiness review, then writes deterministic JSON plus a
+  concise Markdown limited review.
+- The runner summarizes only factor coverage, factor missingness, IC, Rank IC,
+  quantile spread, and split labels.
+- Added focused synthetic/temp-file tests only; no private data was committed.
+
+Private generation evidence:
+
+- Factors reviewed: 2.
+- Split labels: test, train, and validation.
+- Asset rows: 21320.
+- Benchmark rows: 2132.
+- Symbol coverage: 11.
+- Date range: 2018-01-02 to 2026-06-26.
+- Private limited-review output sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No strategy, backtest, portfolio construction, PnL, Sharpe, drawdown,
+  trading metric, investment recommendation, performance interpretation,
+  profitability claim, alpha claim, or trading-readiness claim was made.
+
+Next safe stage:
+
+- Decide whether another metadata-only methodology/data-readiness checkpoint is
+  needed before any broader research interpretation.
+
+---
+
 ## 2026-06-28 - EODHD Factor Diagnostics Readiness Review
 
 Stage: private-output-only readiness review for the EODHD factor diagnostics

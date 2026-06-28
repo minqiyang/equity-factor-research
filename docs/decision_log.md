@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Keep Limited Factor Diagnostics Non-Interpretive
+
+Context:
+
+- PR #125 added a private readiness review with
+  `ready_for_limited_factor_diagnostics_review=True`.
+- The next checkpoint may inspect already-computed diagnostics, but only inside
+  the allowed diagnostics scope.
+- The review must not become strategy, portfolio, investment, alpha,
+  profitability, or trading-readiness interpretation.
+
+Decision:
+
+- Add `research/eodhd_limited_factor_diagnostics_review.py` as a
+  private-output-only limited diagnostics review runner.
+- Summarize only factor coverage, factor missingness, IC, Rank IC, quantile
+  spread, and split labels.
+- Write the real-data limited review only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Commit synthetic tests and aggregate-count docs only; do not commit private
+  logs, private market data, or private diagnostic values.
+
+Rationale:
+
+- The readiness review proves the metadata gate is ready for a limited review.
+- Keeping the review private and non-interpretive allows diagnostics to be
+  inspected without converting them into performance or investment claims.
+
+Consequences:
+
+- Future work must preserve the no-strategy/no-performance boundary unless a
+  separate reviewed checkpoint explicitly changes scope.
+- Strategy runs, backtests, portfolios, PnL, Sharpe, drawdown, trading metrics,
+  investment recommendations, profitability claims, alpha claims, and
+  trading-readiness language remain out of scope.
+
+Follow-up:
+
+- Decide whether another metadata-only methodology/data-readiness checkpoint is
+  needed before any broader research interpretation.
+
+---
+
 ## 2026-06-28 - Keep EODHD Readiness Review Narrow
 
 Context:

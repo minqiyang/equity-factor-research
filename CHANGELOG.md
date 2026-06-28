@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added `research/eodhd_limited_factor_diagnostics_review.py` with a
+  private-output-only limited factor diagnostics review runner, plus synthetic
+  tests and a docs checkpoint that summarizes allowed diagnostics only without
+  strategy, backtest, portfolio, investment, profitability, alpha, or
+  trading-readiness interpretation.
 - Added `research/eodhd_factor_diagnostics_readiness_review.py` with a
   private-output-only EODHD factor diagnostics readiness review runner, plus
   synthetic tests and a docs checkpoint that records readiness metadata without
