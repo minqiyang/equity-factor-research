@@ -15,6 +15,46 @@ investment performance.
 
 ---
 
+## 2026-06-28 - Checkpoint Private EODHD Data-Quality Diagnostics
+
+Context:
+
+- PR #121 documented the private-output-only diagnostics dry-run boundary.
+- The private EODHD no-performance data-quality diagnostics dry run passed and
+  wrote
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`.
+- The repository needs an aggregate-only checkpoint before any factor
+  diagnostics are planned.
+
+Decision:
+
+- Add `docs/eodhd_data_quality_diagnostics_checkpoint.md`.
+- Record only aggregate data-quality evidence from the private summary.
+- Route the next safe stage to a docs-only factor-diagnostics plan rather than
+  factor computation or performance work.
+
+Rationale:
+
+- Data-quality diagnostics are useful readiness evidence but are not factor or
+  performance evidence.
+- A repo-reviewed checkpoint preserves auditability without committing private
+  market data or changing source code.
+
+Consequences:
+
+- Future work may plan factor diagnostics, but it must stay separate from
+  returns, IC, Rank IC, quantile spreads, strategy runs, backtests, portfolio
+  metrics, profitability, alpha, and trading-readiness claims until reviewed.
+- Static-universe survivorship risk and EODHD adjustment-policy ambiguity
+  remain visible caveats.
+
+Follow-up:
+
+- Prepare a narrow docs-only factor-diagnostics plan if continuing toward
+  real-data factor readiness.
+
+---
+
 ## 2026-06-28 - Checkpoint Private EODHD Loader Smoke Before Diagnostics
 
 Context:
