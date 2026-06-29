@@ -12,6 +12,63 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-06-29 - EODHD Limited Factor Diagnostics Brief
+
+Stage: private-output-only neutral diagnostics brief.
+
+Changed files:
+
+- `research/eodhd_limited_factor_diagnostics_brief.py`
+- `tests/test_eodhd_limited_factor_diagnostics_brief.py`
+- `docs/eodhd_limited_factor_diagnostics_brief_checkpoint.md`
+- `docs/current_handoff.md`
+- `docs/engineering_log.md`
+- `docs/decision_log.md`
+- `CHANGELOG.md`
+- `docs/repo_map.md`
+
+Private outputs:
+
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json`
+- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md`
+
+Implementation:
+
+- Added a narrow research runner that reads the private limited review JSON,
+  readiness review JSON, and experiment log JSON, then writes deterministic
+  JSON plus a concise Markdown brief.
+- The brief reports only factor coverage, factor missingness, IC, Rank IC,
+  quantile spread, split labels, factor count, date range, and row counts.
+- Direction, magnitude, and split consistency are neutral diagnostic labels.
+- Added focused synthetic/temp-file tests only; no private data was committed.
+
+Private generation evidence:
+
+- Factors briefed: 2.
+- Split labels: test, train, and validation.
+- Asset rows: 21320.
+- Benchmark rows: 2132.
+- Symbol coverage: 11.
+- Date range: 2018-01-02 to 2026-06-26.
+- Private brief output sensitive-marker scan: 0 hits.
+
+Guardrails:
+
+- No raw CSV/JSON files were copied into the repository.
+- No private market data was committed.
+- No data was fetched or downloaded.
+- No vendor API, token, credential, or `.env` file was used.
+- No strategy, backtest, portfolio construction, PnL, Sharpe, drawdown,
+  trading metric, investment recommendation, performance interpretation,
+  profitability claim, alpha claim, or trading-readiness claim was made.
+
+Next safe stage:
+
+- Decide whether another metadata-only methodology/data-readiness checkpoint is
+  needed before any broader research interpretation.
+
+---
+
 ## 2026-06-28 - EODHD Limited Factor Diagnostics Review
 
 Stage: private-output-only limited factor diagnostics review.
