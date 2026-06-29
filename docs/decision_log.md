@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-06-29 - Keep EODHD Diagnostics Brief Neutral
+
+Context:
+
+- PR #126 added a private limited factor diagnostics review that may contain
+  diagnostic values.
+- The next checkpoint needs a brief that can describe diagnostic direction,
+  magnitude, and split consistency.
+- The brief must not become strategy, portfolio, investment, alpha,
+  profitability, or trading-readiness interpretation.
+
+Decision:
+
+- Add `research/eodhd_limited_factor_diagnostics_brief.py` as a
+  private-output-only neutral diagnostics brief runner.
+- Read the private limited review JSON and write the real-data brief only under
+  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Commit synthetic tests and aggregate-count docs only; do not commit private
+  logs, private market data, or private diagnostic values.
+
+Rationale:
+
+- Neutral direction, magnitude, and split-consistency labels make diagnostics
+  easier to inspect without converting them into performance or investment
+  claims.
+- Keeping the brief private preserves the local-data boundary while allowing
+  audited continuation.
+
+Consequences:
+
+- Future work must preserve the no-strategy/no-performance boundary unless a
+  separate reviewed checkpoint explicitly changes scope.
+- Strategy runs, backtests, portfolios, PnL, Sharpe, drawdown, trading metrics,
+  investment recommendations, profitability claims, alpha claims, and
+  trading-readiness language remain out of scope.
+
+Follow-up:
+
+- Decide whether another metadata-only methodology/data-readiness checkpoint is
+  needed before any broader research interpretation.
+
+---
+
 ## 2026-06-28 - Keep Limited Factor Diagnostics Non-Interpretive
 
 Context:
