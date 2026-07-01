@@ -35,6 +35,23 @@ This repository is a serious simulated quantitative research project. AI coding 
 - After meaningful code or research-process changes, check whether the work
   should be added to `docs/engineering_log.md` as a durable engineering note.
 
+## Review guidelines
+
+- Prioritize equity-factor-research validity risks over style-only comments.
+- Treat possible look-ahead bias, data leakage, survivorship bias, factor
+  normalization leakage, incorrect signal lag, rebalance/execution/return-window
+  mismatch, benchmark misalignment, and portfolio construction errors as P1.
+- Treat missing edge-case tests for missing data, sparse universes, empty
+  portfolios, invalid returns, transaction costs, turnover, benchmark alignment,
+  and calendar alignment as P2 unless they directly create a P1
+  research-validity risk.
+- Treat misleading documentation, overstated performance claims, hidden
+  assumptions, or missing non-goals as P1 or P2 depending on severity.
+- Do not spend review budget on typo-only comments unless they change technical
+  meaning.
+- Require every finding to include file path, evidence, why it matters, and a
+  suggested test or fix.
+
 ## Pull Request and Commit Discipline
 
 - Prefer small, reviewable pull requests.
