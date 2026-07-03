@@ -1,12 +1,13 @@
 # Current Handoff
 
-Last updated: 2026-07-03 after PR #135 merged.
+Last updated: 2026-07-03 for the docs freshness guard stage.
 
 ## Latest Verified State
 
-- Latest verified `origin/main`: PR #135, `Clarify risk gap and repo-map placeholder wording`, merged at `5c23e50`.
+- Cached baseline at last handoff edit: PR #136, `Refresh current handoff after risk gap clarification`, merged at `2da5120`.
+- Before acting on this handoff, verify live `origin/main` and open PR state with the freshness checklist below.
 - Current baseline audit report: `docs/roadmap_code_conformance_audit_2026-07-01.md`.
-- Recent relevant merges: #130 roadmap-code conformance audit, #131 current handoff refresh, #132 historical roadmap status notes, #133 EODHD readiness wording, #134 reporting placeholder clarification, #135 risk/evaluation gap clarification.
+- Recent baseline merges through the last handoff edit: #130 roadmap-code conformance audit, #131 current handoff refresh, #132 historical roadmap status notes, #133 EODHD readiness wording, #134 reporting placeholder clarification, #135 risk/evaluation gap clarification, #136 handoff review-gate refresh.
 - Current project objective: maintain an auditable, reproducible simulated equity factor research pipeline with explicit guardrails before any real-data interpretation.
 - Current remediation sequence: continue one small PR at a time from the PR #130 audit findings and `docs/current_roadmap_gap_refresh.md`. Do not merge a PR until GitHub `@codex review` has run on the current head and any P1/P2 feedback is resolved.
 - Local worktree note: a pre-existing unstaged `AGENTS.md` edit may be present and is unrelated to this handoff. Do not stage or rewrite it unless explicitly scoped.
@@ -49,6 +50,18 @@ That stage should make the required readiness inputs explicit before any real-da
 - interpretation policy and stop conditions
 
 Do not fetch data, interpret private diagnostics, add vendor APIs, change source code, generate reports, or make performance claims in that stage. If the user does supply accepted methodology inputs, run the real-data readiness audit flow before any interpretation.
+
+## Freshness Checklist
+
+Before changing this handoff, verify:
+
+- `origin/main` with `git fetch origin`;
+- current open PR gate with `gh pr list --state open --limit 10`;
+- recent merged history with `gh pr list --state merged --limit 10`;
+- `Latest Verified State`, `What Is Complete`, `Still Blocked`, and `Next Safe Stage` agree with `docs/current_roadmap_gap_refresh.md` and the latest merged PRs;
+- stale active-stage wording has been removed instead of treating already-merged work as pending;
+- private-data, no-performance-claim, no-live-trading, and no-brokerage boundaries remain visible;
+- any PR touching this handoff waits for GitHub `@codex review` on the current head and resolves P1/P2 feedback before merge.
 
 ## Do Not Touch Without Explicit Scope
 
