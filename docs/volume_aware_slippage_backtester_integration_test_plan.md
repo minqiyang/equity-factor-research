@@ -2,6 +2,19 @@
 
 Date: 2026-06-11
 
+## Status: Historical / Superseded In Part
+
+This test plan is retained as provenance for the reviewed precomputed-impact
+implementation. The required first-path accounting, validation, metadata, and
+guardrail checks have since been implemented in `src/backtest/portfolio.py` and
+covered by `tests/test_backtest_portfolio.py` and
+`tests/test_volume_aware_slippage.py`.
+
+The remaining live guidance applies only to future changes beyond the current
+precomputed-impact boundary, such as any internal OHLCV/rolling-volume model,
+generated-output refresh, or broader real-data interpretation. Those changes
+still need a separate scoped PR and explicit no-trading/no-performance caveats.
+
 This is a documentation-only test plan for any future implementation that
 would integrate the existing diagnostic-only volume-aware slippage helper into
 the simulated local backtester.

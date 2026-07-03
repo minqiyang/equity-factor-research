@@ -2,6 +2,20 @@
 
 Date: 2026-06-11
 
+## Status: Historical / Superseded In Part
+
+This design is retained as provenance for the reviewed precomputed-impact
+boundary. The first integration path has since been implemented and tested in
+`src/backtest/portfolio.py`, `tests/test_backtest_portfolio.py`, and
+`tests/test_volume_aware_slippage.py`, with
+`volume_aware_slippage_mode="diagnostic_only"` still the default and
+`apply_precomputed_impact` requiring an explicit aligned impact series plus
+audit metadata.
+
+The remaining live guidance is the boundary: the backtester still does not
+compute rolling dollar volume from raw volume data, fetch data, infer OHLCV
+semantics, connect to brokers, place orders, or claim execution realism.
+
 This is a documentation-only design for deciding whether and how the existing
 synthetic-only volume-aware slippage diagnostic helper could later be connected
 to the simulated local backtester.
