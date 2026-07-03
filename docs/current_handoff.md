@@ -1,15 +1,14 @@
 # Current Handoff
 
-Last updated: 2026-07-03 for the current handoff refresh PR.
+Last updated: 2026-07-03 after PR #135 merged.
 
 ## Latest Verified State
 
-- Baseline before this handoff refresh: PR #130, `Add roadmap-code conformance audit`, merged at `ce29e3e`.
-- This handoff refresh is PR #131; after it merges, use its merge commit as the latest handoff state.
+- Latest verified `origin/main`: PR #135, `Clarify risk gap and repo-map placeholder wording`, merged at `5c23e50`.
 - Current baseline audit report: `docs/roadmap_code_conformance_audit_2026-07-01.md`.
-- Recent relevant merges: #127 EODHD limited diagnostics brief, #128 review guidelines, #129 README refresh, #130 roadmap-code conformance audit.
+- Recent relevant merges: #130 roadmap-code conformance audit, #131 current handoff refresh, #132 historical roadmap status notes, #133 EODHD readiness wording, #134 reporting placeholder clarification, #135 risk/evaluation gap clarification.
 - Current project objective: maintain an auditable, reproducible simulated equity factor research pipeline with explicit guardrails before any real-data interpretation.
-- Current remediation sequence: work through the PR #130 audit findings one small PR at a time. Stop before each merge for human review.
+- Current remediation sequence: continue one small PR at a time from the PR #130 audit findings and `docs/current_roadmap_gap_refresh.md`. Do not merge a PR until GitHub `@codex review` has run on the current head and any P1/P2 feedback is resolved.
 - Local worktree note: a pre-existing unstaged `AGENTS.md` edit may be present and is unrelated to this handoff. Do not stage or rewrite it unless explicitly scoped.
 
 ## What Is Complete
@@ -18,38 +17,44 @@ Last updated: 2026-07-03 for the current handoff refresh PR.
 - Private EODHD validation-only loader/schema checks passed and remain outside the repository under `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
 - Private EODHD IC, Rank IC, and quantile-spread diagnostic calculations exist through the private diagnostics workflow and neutral review/brief checkpoints.
 - `EXPERIMENT_LOG.md` is now treated as a source-of-truth gate for provenance, alignment, benchmark, sample split, cost/slippage, and failure-mode records before local CSV or EODHD metrics are interpreted.
+- Older roadmap/design docs have historical or superseded-in-part status notes where the PR #130 audit found stale future-work wording.
+- Public docs and `docs/repo_map.md` now distinguish implemented experiment-log/registry helpers from placeholder-only plotting helpers.
+- The current roadmap gap refresh now distinguishes implemented simulated backtest metrics from missing portfolio-level risk constraints and additional evaluation metrics.
 
 ## Still Blocked
 
 - Broader real-data interpretation remains blocked until point-in-time universe policy, adjustment policy, benchmark methodology, sample split, cost/slippage assumptions, and interpretation policy are accepted.
 - Private diagnostics are not strategy, portfolio, PnL, Sharpe, drawdown, alpha, profitability, investment, robustness, or trading-readiness evidence.
-- `src/reporting/plots.py` is placeholder-only; public docs still need a later scoped clarification.
+- `src/reporting/plots.py` remains placeholder-only; do not implement plotting helpers unless a future stage explicitly scopes code and tests.
 - `src/risk/constraints.py` is placeholder-only; portfolio-level constraints, exposure concentration, tracking error or active risk, hit rate, and average-holdings coverage remain future work.
-- Older roadmap/design docs still need status or superseded notes where implementation has landed.
+- No documented robustness or parameter-sensitivity interpretation exists for a user-provided local CSV or EODHD research run because no such run has passed readiness gates.
 
 ## Next Safe Stage
 
-After this handoff refresh PR is reviewed and merged, start the next PR-sized stage:
+If the user has not supplied and accepted a local CSV/EODHD methodology package, the next safe stage is documentation-only:
 
 ```text
-Add status and superseded notes to older roadmap/design docs.
+Clarify real-data readiness methodology inputs and stop conditions.
 ```
 
-Scope that stage to stale roadmap/design documents such as:
+That stage should make the required readiness inputs explicit before any real-data interpretation:
 
-- `docs/factor_normalization_roadmap.md`
-- `docs/csv_data_interface_plan.md`
-- `docs/volume_aware_slippage_backtester_integration_design.md`
-- `docs/volume_aware_slippage_backtester_integration_test_plan.md`
-- `docs/post_precomputed_volume_aware_slippage_checkpoint.md` if a narrow successor pointer is needed
+- dataset scope and provenance
+- schema and adjustment policy
+- point-in-time universe or survivorship policy
+- benchmark methodology
+- train/validation/test or other sample split policy
+- transaction cost and slippage assumptions
+- experiment-log requirements
+- interpretation policy and stop conditions
 
-Do not change implementation, tests, CI, generated outputs, private data, README, or EODHD docs in that stage unless a narrow cross-reference is required and justified.
+Do not fetch data, interpret private diagnostics, add vendor APIs, change source code, generate reports, or make performance claims in that stage. If the user does supply accepted methodology inputs, run the real-data readiness audit flow before any interpretation.
 
 ## Do Not Touch Without Explicit Scope
 
 - `src/`, `research/`, `tests/`, `.github/`, `pyproject.toml`, generated reports/logs, private data, vendor APIs, credentials, broker/order logic, live trading, and strategy/performance interpretation.
 - Raw private EODHD CSV/JSON/Markdown files. Repo docs may reference aggregate counts and private paths only.
-- `docs/repo_map.md` until the planned repo-map refresh stage, unless the current PR explicitly regenerates it.
+- `docs/repo_map.md` unless the current PR explicitly regenerates it.
 
 ## Key Files
 
