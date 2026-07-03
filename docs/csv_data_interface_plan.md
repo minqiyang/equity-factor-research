@@ -2,6 +2,22 @@
 
 Date: 2026-06-02
 
+## Status: Historical / Superseded In Part
+
+This plan is retained as design history. Strict local CSV loaders for wide
+price, long price, benchmark price, and OHLCV files, plus metadata review
+helpers, have since been implemented and tested in `src/data/csv_loader.py`,
+`src/data/local_csv_inventory.py`, `tests/test_csv_loader.py`, and
+`tests/test_local_csv_inventory.py`. Universe-membership and precomputed
+factor-panel loaders remain future work unless a later source/test pointer
+states otherwise.
+
+The remaining live guidance is the boundary around user-provided data:
+validated local ingestion is not broader real-data interpretation. Provenance,
+adjustment policy, point-in-time universe status, benchmark methodology, sample
+splits, cost/slippage assumptions, and experiment-log records are still
+required before any local CSV or EODHD results are interpreted.
+
 This document is a design plan for a future local CSV research interface. It
 does not implement a loader, fetch data, define a data vendor, modify feature
 or backtest logic, connect to a broker, place orders, or make profitability

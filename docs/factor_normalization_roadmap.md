@@ -1,5 +1,20 @@
 # Factor Normalization And Combination Roadmap
 
+## Status: Historical / Superseded In Part
+
+This roadmap is retained as design history. Normalization, winsorization,
+factor combination, factor diagnostics, and Alpha#009 smoke coverage have since
+been implemented and tested in `src/features/normalize.py`,
+`src/features/combine.py`, `src/features/diagnostics.py`,
+`src/features/worldquant_alphas.py`, `tests/test_normalize.py`,
+`tests/test_combine.py`, `tests/test_diagnostics.py`, and
+`tests/test_worldquant_alphas.py`.
+
+The remaining live guidance is the research boundary: combined scores still
+are not strategies, and any future backtest use must keep signal lag,
+execution timing, costs, slippage, benchmark alignment, validation splits, and
+no-performance-claim caveats explicit.
+
 ## Purpose
 
 This document is a roadmap for factor normalization and factor-combination research infrastructure. It is documentation-only: it does not add helper code, connect factors to the backtester, fetch real market data, or claim profitability.
