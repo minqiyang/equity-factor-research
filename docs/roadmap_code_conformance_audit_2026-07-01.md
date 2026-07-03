@@ -14,7 +14,9 @@ The current codebase is aligned with the intended main line for a local, auditab
 
 The drift is concentrated in documentation chronology. The docs most likely to mislead a future Codex session are `docs/current_handoff.md`, `docs/current_roadmap_gap_refresh.md`, `docs/factor_normalization_roadmap.md`, `docs/csv_data_interface_plan.md`, and older volume-aware slippage design/test-plan docs. They can make completed work look future, make active work look incomplete, or hide the distinction between private diagnostics and broader research interpretation.
 
-Code areas ahead of older roadmap text include normalization, combination, factor diagnostics, CSV loaders, volume-aware precomputed slippage accounting, and private EODHD IC/Rank IC/quantile-spread diagnostics. Roadmap/spec claims ahead of code include portfolio-level risk constraints, exposure concentration metrics, fully accepted real-data methodology, point-in-time universe policy, accepted EODHD adjustment policy, and runnable LEAN implementation.
+Code areas ahead of older roadmap text include normalization, combination, factor diagnostics, CSV loaders, volume-aware precomputed slippage accounting, and private EODHD IC/Rank IC/quantile-spread diagnostics. Roadmap, spec, or public-doc claims ahead of code include portfolio-level risk constraints, exposure concentration metrics, fully accepted real-data methodology, point-in-time universe policy, accepted EODHD adjustment policy, plotting-helper capability, and runnable LEAN implementation.
+
+This revision also includes `EXPERIMENT_LOG.md` as an experiment-record source of truth. It confirms that synthetic JSON sidecar logs and the synthetic registry exist, while full local CSV or EODHD experiment interpretation still requires provenance, adjustment, benchmark, sample-split, cost/slippage, limitations, and failure-mode records before metrics are treated as evidence.
 
 ## 2. Current Repository State
 
@@ -31,6 +33,7 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 
 - `AGENTS.md` from `HEAD`, especially startup, review, PR, strict-prohibition, and date-alignment rules (`AGENTS.md:5-131`).
 - `README.md`, including current status, limitations, validation commands, research integrity, and roadmap (`README.md:25-158`).
+- `EXPERIMENT_LOG.md`, including synthetic-log caveats, local CSV experiment-record requirements, provenance, alignment, benchmark, sample split, cost/slippage, and failure-mode requirements (`EXPERIMENT_LOG.md:1-73`).
 - `PROJECT_SPEC.md`, including project objective, universe assumptions, factor ideas, leakage rules, evaluation metrics, transaction-cost/slippage assumptions, phases, and non-goals (`PROJECT_SPEC.md:3-98`).
 - `docs/current_handoff.md`, current EODHD handoff state (`docs/current_handoff.md:1-26`).
 - `docs/current_roadmap_gap_refresh.md`, current roadmap inventory and recommended next roadmap (`docs/current_roadmap_gap_refresh.md:39-132`).
@@ -48,6 +51,7 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 | --- | --- | --- |
 | `AGENTS.md` | Inspected from `HEAD`; local unstaged user edit was intentionally not used as committed source of truth. | Yes: governance, no-secrets, current handoff priority, review discipline. |
 | `README.md` | Inspected for public claims, status, limitations, validation, research integrity, and roadmap. | Yes: README capability claims, validation commands, public-data/private-data boundary. |
+| `EXPERIMENT_LOG.md` | Inspected for required experiment provenance, validation, adjustment, universe, timing, sample-split, benchmark, cost/slippage, limitation, and failure-mode records before local CSV or EODHD results are interpreted. | Yes: experiment-record gate, synthetic-registry boundary, EODHD/private-data interpretation boundary, reporting helper traceability. |
 | `PROJECT_SPEC.md` | Inspected from project objective through phases and non-goals. | Yes: main-line verdict, backtester alignment, risk/evaluation gap, LEAN future path. |
 | `docs/current_handoff.md` | Inspected as the latest active handoff file. | Yes: stale handoff finding. |
 | `docs/STAGE_PLAN.md` | Not present. Roadmap equivalents were inspected instead. | No direct row; absence recorded as no file. |
@@ -80,7 +84,8 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 | Liquidity universe | Lagged volume/dollar-volume eligibility, universe masks, and masked signals before backtest use. | `docs/current_roadmap_gap_refresh.md:55`, `src/features/liquidity.py:91-285`, `tests/test_liquidity.py:45-260` |
 | Fixed costs and fixed-bps slippage | Simulated target-weight turnover costs and separate slippage fields. | `docs/current_roadmap_gap_refresh.md:56`, `src/backtest/portfolio.py:93-113`, `tests/test_backtest_portfolio.py:83-158` |
 | Volume-aware slippage | Diagnostic-only by default; applied path must use explicit precomputed impact and metadata. | `docs/post_precomputed_volume_aware_slippage_checkpoint.md:25-49`, `src/backtest/portfolio.py:100-103`, `tests/test_backtest_portfolio.py:160-360` |
-| Synthetic reports and logs | Deterministic, caveated synthetic outputs and experiment registry. | `README.md:97-116`, `src/reporting/experiment_log.py:47-94`, `reports/experiment_registry.md` |
+| Experiment records | Every meaningful experiment, including failed or inconclusive runs, must be recorded; local CSV interpretation requires provenance, schema, adjustment, universe, signal timing, sample splits, benchmark, cost/slippage, limitations, and failure-mode entries. | `EXPERIMENT_LOG.md:3-73`, `reports/experiment_registry.md:1-24` |
+| Synthetic reports and logs | Deterministic, caveated synthetic outputs and experiment registry. | `README.md:97-116`, `src/reporting/experiment_log.py:47-94`, `src/reporting/experiment_registry.py:67-118`, `reports/experiment_registry.md` |
 | EODHD validation bundle | Private local bundle outside repo, aggregate-only repo docs, no strategy/performance interpretation. | `docs/eodhd_local_csv_validation_handoff.md:5-50`, `docs/eodhd_data_quality_diagnostics_checkpoint.md:5-76` |
 | EODHD factor diagnostics | Private-output factor diagnostics only, with readiness/review/brief stages and no performance claims. | `docs/eodhd_factor_diagnostics_dry_run_checkpoint.md:5-61`, `docs/eodhd_limited_factor_diagnostics_brief_checkpoint.md:5-77`, `research/eodhd_*`, `tests/test_eodhd_*` |
 | LEAN path | Planning/scaffold only, no runtime algorithm, no orders, no brokerage, no live or paper trading. | `docs/quantconnect_lean_plan.md:3-18`, `lean/README.md:4-81`, `tests/test_lean_smoke_test_scope.py:40-108`, `tests/test_lean_signal_only_draft_scope.py:60-153` |
@@ -89,7 +94,7 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 
 | Area | Actual implementation |
 | --- | --- |
-| Source modules | `src/features/` has operators, validation, normalization, combination, diagnostics, liquidity, momentum, reversal, volatility, and WorldQuant examples; `src/backtest/` has portfolio, metrics, and slippage; `src/data/` has CSV loaders and inventory; `src/reporting/` has experiment log/registry helpers; `src/risk/` currently has only a constraints placeholder, not implemented portfolio-level risk constraints. |
+| Source modules | `src/features/` has operators, validation, normalization, combination, diagnostics, liquidity, momentum, reversal, volatility, and WorldQuant examples; `src/backtest/` has portfolio, metrics, and slippage; `src/data/` has CSV loaders and inventory; `src/reporting/` has experiment log/registry helpers, while `src/reporting/plots.py` is placeholder-only and not implemented plotting functionality; `src/risk/` currently has only a constraints placeholder, not implemented portfolio-level risk constraints. |
 | Research scripts | `research/` contains synthetic demos, local CSV fixture workflow, EODHD dry-run/log/readiness/review/brief runners, and split robustness workflows. |
 | Tests | `tests/` includes deterministic unit, integration, fixture, private-runner, generated-output, and LEAN-scope tests. There is no portfolio-level `src/risk/constraints.py` behavior test beyond project-structure import/docstring coverage because the module is still placeholder-only. |
 | CI | `.github/workflows/ci.yml` installs `.[dev]`, runs `python -m pytest -q`, `python -m compileall src tests research`, and `python -m compileall lean`. |
@@ -103,6 +108,7 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 | Roadmap item | Intended behavior | Evidence in docs | Evidence in code | Evidence in tests | Status | Drift severity | Recommended action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Governance and no-secrets rules | Preserve audit trail, tests, caveats, no secrets. | `AGENTS.md:23-36`, `AGENTS.md:104-115` | No secret-reading code in inspected source; EODHD output paths are private-only. | Private-runner tests use `tmp_path` and reject repo output paths, for example `tests/test_eodhd_factor_diagnostics_experiment_log.py:122-126`. | Implemented and tested | None | Keep current rules. |
+| Experiment records and provenance gate | Record every meaningful experiment, including failed or inconclusive runs; require provenance, schema, validation, adjustment policy, universe rules, signal timing, sample splits, benchmark, costs/slippage, limitations, and failure modes before local CSV or EODHD metrics are interpreted. | `EXPERIMENT_LOG.md:3-73`, `reports/experiment_registry.md:1-24`, EODHD checkpoint docs keep private diagnostics non-interpretive. | `src/reporting/experiment_log.py:47-94` writes deterministic synthetic logs; `src/reporting/experiment_registry.py:67-118` loads and writes the synthetic registry; EODHD experiment-log runners write private bundle outputs. | `tests/test_experiment_log.py`, `tests/test_experiment_registry.py`, `tests/test_eodhd_factor_diagnostics_experiment_log.py:12-127`. | Partially aligned: synthetic and private-runner logging paths exist, but full local CSV/EODHD interpretation still requires explicit experiment records before use as evidence. | P2 interpretation-control gap | Keep `EXPERIMENT_LOG.md` in the source-of-truth set; future local CSV/EODHD interpretation PRs must verify required experiment-record fields before discussing metrics. |
 | Split helpers | Chronological train/validation/test split without filling. | `docs/current_roadmap_gap_refresh.md:49` | `src/features/validation.py:45-119` | `tests/test_validation.py:30-216` | Implemented and tested | None | None. |
 | Factor construction | Research features only, no strategy claim. | `docs/current_roadmap_gap_refresh.md:66` | `src/features/worldquant_alphas.py:16-136` plus momentum/reversal/volatility/liquidity modules | Feature tests plus static no-trading import checks | Implemented and tested | None | None. |
 | Normalization | Row-wise normalization, no hidden filling or future use. | `docs/factor_normalization_roadmap.md:24-48` | `src/features/normalize.py:20-153` | `tests/test_normalize.py:100-115` proves future-row edits do not change current row. | Implemented and tested | P2 stale docs | Mark original roadmap as implemented/superseded in a follow-up docs PR. |
@@ -116,7 +122,7 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 | EODHD IC/Rank IC/quantile-spread diagnostics drift | Roadmap text should distinguish still-blocked broad real-data interpretation from private diagnostic calculations that now exist. | `docs/current_roadmap_gap_refresh.md:81-86` says no real-data IC, Rank IC, quantile-spread, or train/validation/test interpretation has been completed; `docs/eodhd_factor_diagnostics_dry_run_checkpoint.md:33-40` records non-empty private diagnostic dates. | `research/eodhd_factor_diagnostics_dry_run.py:81` constructs forward returns, and `research/eodhd_factor_diagnostics_dry_run.py:175-220` computes private IC, Rank IC, and quantile-spread diagnostics. | EODHD private-runner tests cover aggregate output and guardrails. | Diagnostic calculations exist privately; broader research interpretation remains blocked | P2 stale docs | Add a docs-only status clarification or targeted grep/check preserving the distinction between private diagnostics and blocked research interpretation. |
 | Risk constraints and evaluation-risk metrics | Project spec expects simulated portfolio metrics such as tracking error/active risk, exposure concentration, and cost impact to be explicit when relevant. | `PROJECT_SPEC.md:57-62` lists tracking error or active risk, turnover, average holdings, exposure concentration, and cost impact; metrics must remain simulated research output. | `src/risk/constraints.py:1-4` is a placeholder saying constraints will eventually contain position limits, liquidity screens, volatility filters, and exposure caps. | Existing tests cover backtest costs/turnover, but no portfolio-level risk constraints or exposure-metric implementation is evidenced by the placeholder module. | Placeholder / remaining gap | P2 implementation inventory drift | Clarify docs-only status now; future PR should add a scoped risk/exposure/evaluation-risk test plan before implementation. |
 | Current handoff | Should identify latest active state and next safe stage. | `docs/current_handoff.md:8-15` still says PR #126 and active brief stage. | Brief runner exists in `research/eodhd_limited_factor_diagnostics_brief.py`; README and checkpoint reflect completed state. | `tests/test_eodhd_limited_factor_diagnostics_brief.py:124-152` | Implemented but docs differ from plan | P2 | Update handoff only in a dedicated docs PR. |
-| README capability claims | Public claims should match implemented code and caveats. | `README.md:25-52`, `README.md:118-158` | Directory and code inventory matches the README map. | Full test suite covers the named components. | Mostly aligned | None | No immediate README change needed. |
+| README and repo-map reporting claims | Public docs should distinguish implemented experiment-log/registry helpers from placeholder plotting helpers. | `README.md:32` correctly limits implemented status to experiment-log and registry helpers, but `README.md:61` and `docs/repo_map.md:18` describe `src/reporting/` as having plotting helpers. | `src/reporting/experiment_log.py:47-94` and `src/reporting/experiment_registry.py:67-118` are implemented; `src/reporting/plots.py:1-5` is placeholder-only. | `tests/test_experiment_log.py` and `tests/test_experiment_registry.py` cover logging and registry behavior; `tests/test_project_structure.py:45-55` only imports `reporting.plots` and checks a docstring. | Partially aligned: reporting logs/registry are implemented, plotting helpers are not. | P2 placeholder docs drift | Use a docs-only README/repo-map clarification PR, or defer actual plotting to a future scoped implementation/test-plan PR. |
 | LEAN path | Keep non-executing scaffold, no orders/brokerage/live trading. | `docs/quantconnect_lean_plan.md:3-18`, `lean/README.md:4-81` | `lean/smoke_test_algorithm.py`, `lean/signal_only_momentum_draft.py` are metadata/scaffold files. | `tests/test_lean_smoke_test_scope.py:40-108`, `tests/test_lean_signal_only_draft_scope.py:60-153` | Implemented as scaffold and tested | None | Keep LEAN non-execution boundary. |
 
 ## 7. Drift Findings
@@ -185,6 +191,22 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 - Why it matters: The roadmap/code audit should not let broad evaluation-language in the spec become an implied implementation claim.
 - Recommended remediation: Add a future evaluation-metrics gap note or test plan before implementing missing risk/exposure metrics.
 
+### P2-9: `EXPERIMENT_LOG.md` is a required interpretation gate for local CSV and EODHD metrics
+
+- Doc claim: `EXPERIMENT_LOG.md:28-73` requires a full local CSV experiment record before results are interpreted, including source paths, schemas, validation summaries, provenance, adjustment policy, universe rules, feature/signal timing, sample splits, benchmark, costs/slippage, limitations, failure modes, and next action.
+- Code/test evidence: `src/reporting/experiment_log.py:47-94` writes deterministic synthetic JSON sidecar logs, `src/reporting/experiment_registry.py:67-118` summarizes existing logs, and `tests/test_eodhd_factor_diagnostics_experiment_log.py:12-127` covers private EODHD experiment-log guardrails. `reports/experiment_registry.md:1-24` remains synthetic-only and explicitly says full experiment records are still required before real-data validation or parameter studies.
+- Mismatch: Synthetic and private-runner logging paths exist, but local CSV/EODHD metrics are still not interpretable as research evidence unless the root experiment-log requirements are satisfied or explicitly deferred.
+- Why it matters: A future docs remediation could overstate validation-only or private diagnostic status if it treats aggregate checkpoint docs as substitutes for full experiment provenance, sample-split, cost/slippage, benchmark, and failure-mode records.
+- Recommended remediation: Keep `EXPERIMENT_LOG.md` in the source-of-truth inventory; future EODHD readiness or real-data interpretation docs must either cite an experiment-log entry or state that interpretation remains blocked.
+
+### P2-10: README and repo map overstate reporting plotting-helper implementation
+
+- Doc claim: `README.md:61` and `docs/repo_map.md:18` describe `src/reporting/` as containing plotting helpers.
+- Code/test evidence: `src/reporting/experiment_log.py:47-94` and `src/reporting/experiment_registry.py:67-118` implement deterministic experiment-log and registry helpers, but `src/reporting/plots.py:1-5` is only a module docstring saying charts will eventually exist. `tests/test_project_structure.py:45-55` checks only that `reporting.plots` imports and has a docstring.
+- Mismatch: Public docs can be read as saying plotting helpers exist, while the code only contains a placeholder module.
+- Why it matters: This is a public capability claim, so future users or agents could rely on plotting functionality that is not implemented or tested.
+- Recommended remediation: Use a docs-only README/repo-map clarification PR to distinguish implemented experiment-log/registry helpers from placeholder plotting helpers, or defer real plotting to a separately scoped implementation/test-plan PR.
+
 ### P3-1: Repo map has not been refreshed after the README/audit sequence
 
 - Doc claim: `docs/repo_map.md:3-5` says it is generated by `python scripts/repo_map.py`.
@@ -205,6 +227,8 @@ Code areas ahead of older roadmap text include normalization, combination, facto
 
 README claims are mostly aligned with code. It says the project has factor construction, signal timing, backtesting scaffold, diagnostics, tests, strict local CSV loaders, private EODHD guardrails, and no live trading (`README.md:17-52`), which matches the implementation and tests inspected. It also correctly states that private EODHD outputs remain outside the repository (`README.md:37-43`) and that unresolved issues include static universe, adjustment semantics, sample split, cost/slippage, and real-data methodology (`README.md:45-52`).
 
+One public documentation drift remains: the current-status list correctly limits implemented `src/reporting/` work to experiment-log and registry helpers (`README.md:32`), but the repository map table in `README.md:61` and generated `docs/repo_map.md:18` also names plotting helpers. `src/reporting/plots.py:1-5` is placeholder-only, so plotting should be documented as future work until a scoped implementation and tests exist.
+
 The main documentation drift is inside internal roadmap/handoff docs. `docs/current_handoff.md` is the highest-priority stale file because `AGENTS.md:7-10` says staged continuations should read it first. Older roadmap/design documents remain valuable historical evidence, but several need status/superseded notes so they do not conflict with newer checkpoint docs.
 
 ## 10. Test Alignment
@@ -219,6 +243,7 @@ Covered roadmap claims:
 - Strict local CSV validation: `tests/test_csv_loader.py`.
 - Liquidity eligibility, universe masks, and masked signals: `tests/test_liquidity.py`.
 - Volume-aware slippage diagnostics and applied precomputed boundary: `tests/test_volume_aware_slippage.py`, `tests/test_backtest_portfolio.py`.
+- Synthetic experiment-log and registry helpers: `tests/test_experiment_log.py`, `tests/test_experiment_registry.py`.
 - EODHD private-runner guardrails and output-scope checks: `tests/test_eodhd_*`.
 - LEAN non-execution scope: `tests/test_lean_smoke_test_scope.py`, `tests/test_lean_signal_only_draft_scope.py`.
 
@@ -227,7 +252,9 @@ Gaps or weak spots:
 - Documentation freshness is not automatically tested; stale handoff/roadmap claims can persist after code merges.
 - Repo map freshness is manual, so new docs can be absent until `python scripts/repo_map.py` is intentionally run.
 - Real-data methodology choices remain intentionally unresolved: point-in-time universe, adjustment policy, benchmark methodology, sample split, cost/slippage assumptions, risk/exposure metrics, and interpretation policy.
+- Full local CSV/EODHD interpretation remains blocked without experiment records satisfying `EXPERIMENT_LOG.md` requirements; synthetic JSON sidecar logs and registry reports are not substitutes.
 - Evaluation-risk coverage is partial: backtest metrics exist for basic simulated accounting, but risk constraints, exposure concentration, tracking error/active risk, hit rate, and average-holdings metrics are not fully evidenced.
+- Plotting-helper coverage is placeholder-only; tests currently prove import/docstring presence, not plotting behavior.
 
 No tests appeared disconnected from the current roadmap. Some tests enforce behavior that older docs still describe as future, which is a documentation drift rather than a code/test drift.
 
@@ -248,26 +275,38 @@ No tests appeared disconnected from the current roadmap. Some tests enforce beha
 3. Reconcile EODHD readiness and private diagnostics wording.
    - Goal: distinguish completed private validation-only EODHD bundle checks and private IC/Rank IC/quantile-spread diagnostics from still-blocked broader research interpretation.
    - Files likely touched: `docs/current_roadmap_gap_refresh.md`, possibly `docs/eodhd_local_csv_validation_handoff.md`.
-   - Acceptance criteria: docs state validation-only and private-diagnostic status without implying accepted point-in-time universe, adjustment policy, strategy, backtest, or performance readiness.
+   - Acceptance criteria: docs state validation-only and private-diagnostic status without implying accepted point-in-time universe, adjustment policy, strategy, backtest, performance readiness, or fulfilled `EXPERIMENT_LOG.md` interpretation records.
    - Validation: `git diff --check`, targeted grep for forbidden performance/trading claims.
 
-4. Clarify risk/exposure/evaluation-risk gap.
+4. Clarify README/reporting plotting-helper placeholder status.
+   - Goal: make public-facing docs distinguish implemented experiment-log/registry helpers from placeholder plotting helpers.
+   - Files likely touched: `README.md`, and `docs/repo_map.md` only through the later generated-map refresh unless intentionally regenerated in that PR.
+   - Acceptance criteria: no public docs imply implemented plotting helpers unless `src/reporting/plots.py` receives a scoped implementation and deterministic tests.
+   - Validation: `git diff --check`, targeted grep for reporting/plotting wording.
+
+5. Clarify risk/exposure/evaluation-risk gap.
    - Goal: document that `src/risk/constraints.py` is placeholder-only and that portfolio-level risk constraints/exposure metrics remain future work.
    - Files likely touched: docs/status or roadmap files only unless a later implementation stage is explicitly scoped.
    - Acceptance criteria: no docs imply implemented portfolio-level constraints; future implementation starts from a deterministic test plan.
    - Validation: `git diff --check`.
 
-5. Add a lightweight documentation freshness check.
+6. Add a lightweight documentation freshness check.
    - Goal: prevent handoff docs from naming stale "current stage" evidence after future staged merges.
    - Files likely touched: a small test or docs checklist, depending on chosen policy.
    - Acceptance criteria: the check fails or checklist flags when `docs/current_handoff.md` references a completed active stage or stale latest PR after a staged merge.
    - Validation: `python -m pytest -q` if test-based; otherwise `git diff --check`.
 
-6. Refresh repo map after documentation-control changes.
+7. Refresh repo map after documentation-control changes.
    - Goal: make `docs/repo_map.md` include this audit and any follow-up docs.
    - Files likely touched: `docs/repo_map.md`.
    - Acceptance criteria: `python scripts/repo_map.py` produces no unexpected changes after commit.
    - Validation: `python scripts/repo_map.py`, `git diff --check`.
+
+8. Run a final post-remediation conformance check.
+   - Goal: verify that the P2 documentation-control findings above are closed or explicitly deferred after the staged PRs merge.
+   - Files likely touched: a short post-remediation report only.
+   - Acceptance criteria: closed/deferred findings have file evidence; hidden Unicode/control scans pass on changed Markdown; no broad source-code changes or performance claims are introduced.
+   - Validation: `git diff --check`, relevant test/compile commands if code or tests changed.
 
 ## Not Covered / Uncertainty
 
@@ -287,6 +326,7 @@ This audit did not fix code, refactor modules, update existing roadmap/handoff d
 - `AGENTS.md`
 - `README.md`
 - `CHANGELOG.md`
+- `EXPERIMENT_LOG.md`
 - `PROJECT_SPEC.md`
 - `docs/current_handoff.md`
 - `docs/current_roadmap_gap_refresh.md`
@@ -317,12 +357,12 @@ This audit did not fix code, refactor modules, update existing roadmap/handoff d
 | `gh pr list --state open --json number,title,headRefName,baseRefName,url --limit 20` | Passed; no open PRs. |
 | `git status --porcelain \| head -n 50` | Showed pre-existing unstaged `AGENTS.md` edit before branch creation. |
 | `rg --files ...` and targeted `find`/`rg`/`nl` reads | Passed; used for capped inventory and evidence collection. |
-| `.venv/bin/python -m pytest -q` | Passed: 512 tests passed in 3.19s. |
+| `.venv/bin/python -m pytest -q` | Passed: 512 tests passed in 3.50s. |
 | `.venv/bin/python -m compileall src tests research` | Passed. |
 | `.venv/bin/python -m compileall lean` | Passed. |
-| `git diff --check` | Passed. |
-| Hidden Unicode/control scan for `docs/roadmap_code_conformance_audit_2026-07-01.md` | Passed: no bidi controls, zero-width characters, non-breaking spaces, BOM, or unsafe control characters found. |
+| `git diff --check` | Full worktree check reported the pre-existing unstaged `AGENTS.md:153` blank-line-at-EOF issue; scoped audit-file check passed with `git diff --check -- docs/roadmap_code_conformance_audit_2026-07-01.md`. |
+| Hidden Unicode/control scan for `docs/roadmap_code_conformance_audit_2026-07-01.md` | Passed: ASCII-only final file; no U+202A-U+202E bidi controls, U+2066-U+2069 bidi isolates, U+200B-U+200F zero-width characters, U+FEFF BOM, U+00A0 non-breaking spaces, or unsafe ASCII controls found. If GitHub still shows a hidden/bidirectional Unicode warning on this file, the local evidence indicates a stale or UI-level warning rather than retained hidden characters in the final file. |
 
 ### Raw Validation Results Summary
 
-Validation passed. The hidden Unicode/control scan found 0 issues. No source code, tests, CI, notebooks, generated reports, private data, package configuration, README, handoff, roadmap, or existing docs were changed by this audit task.
+Scoped PR validation passed. The hidden Unicode/control scan found 0 issues and the final audit file is ASCII-only. The full-worktree `git diff --check` result is blocked only by the pre-existing unstaged `AGENTS.md` whitespace issue that remains outside this PR. No source code, tests, CI, notebooks, generated reports, private data, package configuration, README, handoff, roadmap, or existing docs were changed by this audit task.
