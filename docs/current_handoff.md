@@ -55,7 +55,9 @@ Do not fetch data, interpret private diagnostics, add vendor APIs, change source
 
 Before changing this handoff, verify:
 
-- latest merged PR, current open PR gate, and `origin/main` with `git fetch origin` and `gh pr list --state all --limit 10`;
+- `origin/main` with `git fetch origin`;
+- current open PR gate with `gh pr list --state open --limit 10`;
+- recent merged history with `gh pr list --state merged --limit 10`;
 - `Latest Verified State`, `What Is Complete`, `Still Blocked`, and `Next Safe Stage` agree with `docs/current_roadmap_gap_refresh.md` and the latest merged PRs;
 - stale active-stage wording has been removed instead of treating already-merged work as pending;
 - private-data, no-performance-claim, no-live-trading, and no-brokerage boundaries remain visible;
