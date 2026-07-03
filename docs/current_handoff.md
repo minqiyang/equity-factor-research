@@ -1,10 +1,11 @@
 # Current Handoff
 
-Last updated: 2026-07-03 after PR #130 merged.
+Last updated: 2026-07-03 for the current handoff refresh PR.
 
 ## Latest Verified State
 
-- Latest verified merged PR: #130, `Add roadmap-code conformance audit`, merged at `ce29e3e`.
+- Baseline before this handoff refresh: PR #130, `Add roadmap-code conformance audit`, merged at `ce29e3e`.
+- This handoff refresh is PR #131; after it merges, use its merge commit as the latest handoff state.
 - Current baseline audit report: `docs/roadmap_code_conformance_audit_2026-07-01.md`.
 - Recent relevant merges: #127 EODHD limited diagnostics brief, #128 review guidelines, #129 README refresh, #130 roadmap-code conformance audit.
 - Current project objective: maintain an auditable, reproducible simulated equity factor research pipeline with explicit guardrails before any real-data interpretation.
