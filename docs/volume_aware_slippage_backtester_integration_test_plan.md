@@ -5,10 +5,13 @@ Date: 2026-06-11
 ## Status: Historical / Superseded In Part
 
 This test plan is retained as provenance for the reviewed precomputed-impact
-implementation. The required first-path accounting, validation, metadata, and
-guardrail checks have since been implemented in `src/backtest/portfolio.py` and
-covered by `tests/test_backtest_portfolio.py` and
-`tests/test_volume_aware_slippage.py`.
+implementation. The first-path accounting boundary and core guardrails have
+since been implemented in `src/backtest/portfolio.py` and covered in part by
+`tests/test_backtest_portfolio.py` and `tests/test_volume_aware_slippage.py`.
+Some planned metadata and validation checks remain future work, including
+explicit `base_slippage_bps` / `participation_slope_bps` assumption fields and
+dedicated duplicate-index, unsorted-index, timezone, and non-finite impact
+series tests.
 
 The remaining live guidance applies only to future changes beyond the current
 precomputed-impact boundary, such as any internal OHLCV/rolling-volume model,

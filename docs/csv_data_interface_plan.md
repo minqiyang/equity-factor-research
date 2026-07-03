@@ -4,10 +4,13 @@ Date: 2026-06-02
 
 ## Status: Historical / Superseded In Part
 
-This plan is retained as design history. Strict local CSV loaders and metadata
-review helpers have since been implemented and tested in
-`src/data/csv_loader.py`, `src/data/local_csv_inventory.py`,
-`tests/test_csv_loader.py`, and `tests/test_local_csv_inventory.py`.
+This plan is retained as design history. Strict local CSV loaders for wide
+price, long price, benchmark price, and OHLCV files, plus metadata review
+helpers, have since been implemented and tested in `src/data/csv_loader.py`,
+`src/data/local_csv_inventory.py`, `tests/test_csv_loader.py`, and
+`tests/test_local_csv_inventory.py`. Universe-membership and precomputed
+factor-panel loaders remain future work unless a later source/test pointer
+states otherwise.
 
 The remaining live guidance is the boundary around user-provided data:
 validated local ingestion is not broader real-data interpretation. Provenance,
