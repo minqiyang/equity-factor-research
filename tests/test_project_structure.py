@@ -35,6 +35,31 @@ def test_required_governance_files_exist() -> None:
         assert (PROJECT_ROOT / file_name).is_file(), f"Missing file: {file_name}"
 
 
+def test_current_handoff_has_freshness_guardrails() -> None:
+    handoff = (PROJECT_ROOT / "docs/current_handoff.md").read_text(encoding="utf-8")
+
+    required_phrases = [
+        "## Freshness Checklist",
+        "Cached baseline at last handoff edit",
+        "Latest Verified State",
+        "Still Blocked",
+        "Next Safe Stage",
+        "@codex review",
+        "P1/P2 feedback before merge",
+    ]
+    stale_active_stage_phrases = [
+        "after this handoff refresh PR is reviewed and merged",
+        "after this PR merges",
+        "This handoff refresh is PR",
+        "after it merges",
+    ]
+
+    for phrase in required_phrases:
+        assert phrase in handoff
+    for phrase in stale_active_stage_phrases:
+        assert phrase not in handoff
+
+
 def test_placeholder_modules_are_importable() -> None:
     import backtest.metrics
     import backtest.portfolio
