@@ -1,26 +1,66 @@
 # Current Handoff
 
-Last updated: 2026-06-29 for EODHD limited factor diagnostics brief checkpoint.
+Last updated: 2026-07-03 for the current handoff refresh PR.
 
-## State
+## Latest Verified State
 
+- Baseline before this handoff refresh: PR #130, `Add roadmap-code conformance audit`, merged at `ce29e3e`.
+- This handoff refresh is PR #131; after it merges, use its merge commit as the latest handoff state.
+- Current baseline audit report: `docs/roadmap_code_conformance_audit_2026-07-01.md`.
+- Recent relevant merges: #127 EODHD limited diagnostics brief, #128 review guidelines, #129 README refresh, #130 roadmap-code conformance audit.
 - Current project objective: maintain an auditable, reproducible simulated equity factor research pipeline with explicit guardrails before any real-data interpretation.
-- Last merged PR: #126, `[codex] Add EODHD limited factor diagnostics review`, is present on local `main` at merge commit `4718f85`.
-- Current open PR gate: none in `equity-factor-research` at the start of this stage. If a previous-stage PR is not verified merged and is not eligible for GitHub-managed auto-merge or normal protected PR merge, report it once, enter a paused external PR gate state, and do not query GitHub again, repeat gate reports, print repeated pause notes, mark complete, or mark blocked merely because the same external PR remains pending unless the user explicitly says the PR merged, asks to resume, or asks to inspect the PR.
-- Current stage: add a private-output-only neutral limited factor diagnostics brief runner that reads the private limited review JSON and writes a JSON/Markdown brief.
-- Private validation evidence exists outside the repo at `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`; do not copy raw CSV/JSON data into the repository.
-- Next safe stage: after this checkpoint is reviewed and merged, decide whether another metadata-only methodology/data-readiness checkpoint is needed before any broader research interpretation. Stop before strategy runs, backtests, portfolio construction, PnL, Sharpe, drawdown, trading metrics, investment recommendations, profitability claims, alpha claims, or trading-readiness claims.
-- Known blockers: sample split policy, cost/slippage assumptions, point-in-time universe membership, and resolved EODHD adjustment-policy review are not complete. The static universe and raw OHLC versus `adjusted_close` adjustment caveats remain unresolved for interpretation.
-- Do-not-touch areas for the next continuation unless explicitly scoped: `src/`, `reports/`, data files, loaders, backtester, metrics, factor logic, generated committed reports/logs, real-data access, vendor APIs, broker/order logic, credentials, and `PROJECT_SPEC.md`.
-- Key files for the current stage: `research/eodhd_limited_factor_diagnostics_brief.py`, `tests/test_eodhd_limited_factor_diagnostics_brief.py`, `docs/eodhd_limited_factor_diagnostics_brief_checkpoint.md`, `docs/current_handoff.md`, `docs/engineering_log.md`, `docs/decision_log.md`, `CHANGELOG.md`, and `docs/repo_map.md`.
-- Latest private limited factor diagnostics brief: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json` and `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md` were generated with 2 factors, split labels `test`, `train`, and `validation`, 21320 asset rows, 2132 benchmark rows, 11 symbols, 2018-01-02 to 2026-06-26 date range, neutral direction/magnitude/split-consistency fields, and explicit no-strategy/no-performance statement.
-- Latest private limited factor diagnostics review: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json` and `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md` were generated with 2 factors, split labels `test`, `train`, and `validation`, 21320 asset rows, 2132 benchmark rows, 11 symbols, 2018-01-02 to 2026-06-26 date range, and explicit no-strategy/no-performance statement.
-- Latest private factor diagnostics readiness review: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json` and `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md` were generated with `ready_for_limited_factor_diagnostics_review=True`, 21320 asset rows, 2132 benchmark rows, 11 symbols, 2018-01-02 to 2026-06-26 date range, required artifact checks, data-source check, required field checks, and explicit no-interpretation statement.
-- Latest private factor diagnostics experiment log: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json` and `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md` were generated with 21320 asset rows, 2132 benchmark rows, 11 symbols, 2018-01-02 to 2026-06-26 date range, private input/output path metadata, allowed diagnostics list, forbidden interpretation list, `adjusted_close` policy, static-universe survivorship caveat, no-strategy/no-backtest/no-performance statement, and next-checkpoint handoff.
-- Latest private factor diagnostics summary: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md` passed with 21320 asset rows, 2132 benchmark rows, 11 symbols, Alpha#009 coverage of 21270 valid and 50 missing observations, Alpha#012 coverage of 21310 valid and 10 missing observations, train/validation/test split labels, non-empty IC, Rank IC, and quantile-spread diagnostic date counts, and 0 sensitive-marker hits.
-- Latest private diagnostics summary: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md` passed with 11/11 symbols, 21320 asset rows, 2132 benchmark rows, 2018-01-02 to 2026-06-26 asset and benchmark date ranges, 0 partial asset-coverage dates, 0 missing or extra benchmark dates, 0 duplicate date-symbol rows, 0 missing required values, 0 non-positive price rows, 0 negative volume rows, 0 zero-volume rows, 0 invalid OHLC rows, 0 full-row stale indicators, 52 unchanged adjusted-close indicators, and 0 sensitive-marker hits.
-- Latest private loader smoke summary: `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md` passed with existing strict loaders, 11/11 symbols, SPY.US benchmark, 2018-01-02 to 2026-06-26 date range, 21320 asset rows, 2132 benchmark rows, 0 duplicate date-symbol rows, 0 missing required values, 0 non-positive price values, 0 negative volume rows, 0 invalid OHLC rows, 0 missing or extra benchmark dates, and 0 sensitive-marker hits in the private summary.
-- Latest private validation summary: EODHD bundle validation-only dry run passed with schema pass, benchmark alignment pass, 11/11 symbols covered including SPY.US, 2018-01-02 to 2026-06-26 date range, 21320 universe rows, 2132 benchmark rows, 0 missing required values, 0 duplicate date-symbol rows, 0 bad date rows, 0 bad price rows, 0 bad volume rows, and 0 credential-marker hits.
-- Latest repo validation before this stage: full pytest passed with 503 tests; compileall passed for `src`, `tests`, and `research`; repo map refresh ran; `git diff --check` passed; guardrail grep matches were documentation prohibitions/caveats only.
+- Current remediation sequence: work through the PR #130 audit findings one small PR at a time. Stop before each merge for human review.
+- Local worktree note: a pre-existing unstaged `AGENTS.md` edit may be present and is unrelated to this handoff. Do not stage or rewrite it unless explicitly scoped.
+
+## What Is Complete
+
+- Strict local CSV loaders, factor helpers, diagnostics, synthetic/local-fixture workflows, simulated backtester accounting, private EODHD diagnostic guardrails, and LEAN non-execution scaffold are implemented where cited by the audit.
+- Private EODHD validation-only loader/schema checks passed and remain outside the repository under `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+- Private EODHD IC, Rank IC, and quantile-spread diagnostic calculations exist through the private diagnostics workflow and neutral review/brief checkpoints.
+- `EXPERIMENT_LOG.md` is now treated as a source-of-truth gate for provenance, alignment, benchmark, sample split, cost/slippage, and failure-mode records before local CSV or EODHD metrics are interpreted.
+
+## Still Blocked
+
+- Broader real-data interpretation remains blocked until point-in-time universe policy, adjustment policy, benchmark methodology, sample split, cost/slippage assumptions, and interpretation policy are accepted.
+- Private diagnostics are not strategy, portfolio, PnL, Sharpe, drawdown, alpha, profitability, investment, robustness, or trading-readiness evidence.
+- `src/reporting/plots.py` is placeholder-only; public docs still need a later scoped clarification.
+- `src/risk/constraints.py` is placeholder-only; portfolio-level constraints, exposure concentration, tracking error or active risk, hit rate, and average-holdings coverage remain future work.
+- Older roadmap/design docs still need status or superseded notes where implementation has landed.
+
+## Next Safe Stage
+
+After this handoff refresh PR is reviewed and merged, start the next PR-sized stage:
+
+```text
+Add status and superseded notes to older roadmap/design docs.
+```
+
+Scope that stage to stale roadmap/design documents such as:
+
+- `docs/factor_normalization_roadmap.md`
+- `docs/csv_data_interface_plan.md`
+- `docs/volume_aware_slippage_backtester_integration_design.md`
+- `docs/volume_aware_slippage_backtester_integration_test_plan.md`
+- `docs/post_precomputed_volume_aware_slippage_checkpoint.md` if a narrow successor pointer is needed
+
+Do not change implementation, tests, CI, generated outputs, private data, README, or EODHD docs in that stage unless a narrow cross-reference is required and justified.
+
+## Do Not Touch Without Explicit Scope
+
+- `src/`, `research/`, `tests/`, `.github/`, `pyproject.toml`, generated reports/logs, private data, vendor APIs, credentials, broker/order logic, live trading, and strategy/performance interpretation.
+- Raw private EODHD CSV/JSON/Markdown files. Repo docs may reference aggregate counts and private paths only.
+- `docs/repo_map.md` until the planned repo-map refresh stage, unless the current PR explicitly regenerates it.
+
+## Key Files
+
+- `docs/roadmap_code_conformance_audit_2026-07-01.md`
+- `docs/current_handoff.md`
+- `docs/current_roadmap_gap_refresh.md`
+- `EXPERIMENT_LOG.md`
+- `README.md`
+- `PROJECT_SPEC.md`
+- `docs/eodhd_*`
+- `docs/repo_map.md`
+- `CHANGELOG.md`
 
 Read deeper logs only when this handoff points to them, the active stage touches higher-risk areas, PR state is unclear, a check fails, or the stage involves data provenance, missing-data policy, slippage, costs, benchmark choice, execution timing, or other research assumptions.
