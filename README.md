@@ -58,7 +58,7 @@ Known limitations:
 | `src/features/` | Factor calculations, operators, validation, normalization, combination, and diagnostics. |
 | `src/backtest/` | Simulated long-only backtester, metrics, and slippage helpers. |
 | `src/data/` | Strict local CSV loading and local-file inventory helpers. |
-| `src/reporting/` | Experiment log, registry, and plotting helpers. |
+| `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. |
 | `research/` | Runnable synthetic demos, committed-fixture workflows, and private-output-only diagnostics runners. |
 | `tests/` | Deterministic tests for research logic, guardrails, loaders, reports, workflows, and private-runner behavior. |
 | `scripts/` | Repo tooling such as `scripts/repo_map.py`. Scripts must not fetch market data or trade. |
