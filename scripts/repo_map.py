@@ -41,7 +41,10 @@ MAJOR_DIRS = [
     ("src/features", "Factor calculations, validation, normalization, combination, and diagnostics."),
     ("src/backtest", "Simulated long-only backtester and metrics helpers."),
     ("src/data", "Strict local CSV loaders and metadata review helpers."),
-    ("src/reporting", "Experiment log, registry, and plotting helpers."),
+    (
+        "src/reporting",
+        "Experiment log and registry helpers; plotting helpers are placeholder-only future work.",
+    ),
     ("research", "Synthetic and committed-fixture demo workflows."),
     ("tests", "Deterministic tests for research logic and guardrails."),
     ("tests/fixtures", "Tiny committed synthetic fixtures only."),
