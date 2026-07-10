@@ -194,8 +194,8 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 | Date range | `{config.start_date}` plus `{config.periods}` business rows |
 | Factor names | `{", ".join(FACTOR_NAMES)}` |
 | Rebalance frequency | `{config.rebalance_frequency}` |
-| Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of target-weight turnover |
-| Slippage | `{config.slippage_bps:.2f}` bps per unit of target-weight turnover |
+| Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of drift-adjusted target-weight turnover |
+| Slippage | `{config.slippage_bps:.2f}` bps per unit of drift-adjusted target-weight turnover |
 | Zero cost or slippage diagnostic | `{config.transaction_cost_bps == 0.0 or config.slippage_bps == 0.0}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
@@ -274,18 +274,20 @@ def write_sweep_experiment_log(
             "benchmark": "synthetic equal-weight universe benchmark",
             "transaction_cost_model": (
                 f"fixed_bps_on_target_weight_turnover; "
-                f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.transaction_cost_bps:.2f} bps per unit of drift-adjusted target-weight turnover"
             ),
             "transaction_cost_bps": config.transaction_cost_bps,
             "slippage_model": (
                 f"fixed_bps_on_target_weight_turnover; "
-                f"{config.slippage_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.slippage_bps:.2f} bps per unit of drift-adjusted target-weight turnover"
             ),
             "slippage_bps": config.slippage_bps,
             "zero_cost_or_slippage_is_diagnostic": (
                 config.transaction_cost_bps == 0.0 or config.slippage_bps == 0.0
             ),
             "turnover_model": "target_weight_turnover",
+            "turnover_reference": "drifted_pretrade_weights",
+            "holdings_model": "drifted_between_rebalances",
             "long_only": True,
             "live_trading": False,
             "brokerage_integration": False,

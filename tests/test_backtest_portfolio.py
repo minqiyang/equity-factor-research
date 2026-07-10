@@ -105,6 +105,46 @@ def test_turnover_uses_target_weight_changes_on_rebalance_dates() -> None:
     assert result.turnover.loc[dates[3]] == pytest.approx(0.0)
 
 
+def test_holdings_drift_between_rebalances_and_turnover_uses_pretrade_weights() -> None:
+    dates = pd.date_range("2024-01-01", periods=12, freq="D")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100.0] * 5 + [200.0, 400.0] + [400.0] * 5,
+            "BBB": [100.0] * len(dates),
+        },
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {"AAA": [1.0] * len(dates), "BBB": [1.0] * len(dates)},
+        index=dates,
+    )
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="W-FRI",
+        top_n=2,
+    )
+
+    first_rebalance = pd.Timestamp("2024-01-05")
+    second_rebalance = pd.Timestamp("2024-01-12")
+
+    assert result.holdings.loc[first_rebalance, "AAA"] == pytest.approx(0.5)
+    assert result.holdings.loc[first_rebalance, "BBB"] == pytest.approx(0.5)
+    assert result.holdings.loc[pd.Timestamp("2024-01-06"), "AAA"] == pytest.approx(2.0 / 3.0)
+    assert result.holdings.loc[pd.Timestamp("2024-01-06"), "BBB"] == pytest.approx(1.0 / 3.0)
+    assert result.holdings.loc[pd.Timestamp("2024-01-07"), "AAA"] == pytest.approx(0.8)
+    assert result.holdings.loc[pd.Timestamp("2024-01-07"), "BBB"] == pytest.approx(0.2)
+    assert result.equity_curve.loc[pd.Timestamp("2024-01-07")] == pytest.approx(2.5)
+    assert result.turnover.loc[pd.Timestamp("2024-01-06")] == pytest.approx(0.0)
+    assert result.turnover.loc[pd.Timestamp("2024-01-07")] == pytest.approx(0.0)
+    assert result.turnover.loc[second_rebalance] == pytest.approx(0.6)
+    assert result.holdings.loc[second_rebalance, "AAA"] == pytest.approx(0.5)
+    assert result.holdings.loc[second_rebalance, "BBB"] == pytest.approx(0.5)
+    assert result.assumptions["holdings_model"] == "drifted_between_rebalances"
+    assert result.assumptions["turnover_reference"] == "drifted_pretrade_weights"
+
+
 def test_transaction_cost_is_deducted_from_equity_curve() -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
@@ -558,6 +598,7 @@ def test_missing_benchmark_zero_return_policy_is_explicit() -> None:
 
     assert result.benchmark_equity_curve is not None
     assert result.benchmark_equity_curve.loc[dates[1]] == pytest.approx(1.0)
+    assert result.benchmark_equity_curve.loc[dates[2]] == pytest.approx(1.02)
     assert result.assumptions["benchmark_missing_policy"] == "zero_return"
 
 

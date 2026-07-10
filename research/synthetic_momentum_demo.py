@@ -163,18 +163,20 @@ def write_demo_experiment_log(
             "benchmark": "synthetic equal-weight universe benchmark",
             "transaction_cost_model": (
                 f"{result.assumptions['cost_model']}; "
-                f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.transaction_cost_bps:.2f} bps per unit of drift-adjusted target-weight turnover"
             ),
             "transaction_cost_bps": config.transaction_cost_bps,
             "slippage_model": (
                 f"{result.assumptions['slippage_model']}; "
-                f"{config.slippage_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.slippage_bps:.2f} bps per unit of drift-adjusted target-weight turnover"
             ),
             "slippage_bps": config.slippage_bps,
             "zero_cost_or_slippage_is_diagnostic": result.assumptions[
                 "zero_cost_or_slippage_is_diagnostic"
             ],
             "turnover_model": result.assumptions["turnover_model"],
+            "turnover_reference": result.assumptions["turnover_reference"],
+            "holdings_model": result.assumptions["holdings_model"],
             "live_trading": False,
             "brokerage_integration": False,
         },
@@ -235,8 +237,8 @@ Demonstrate the local research workflow:
 - Momentum skipped recent periods: `{config.skip_periods}`
 - Rebalance frequency: `{config.rebalance_frequency}`
 - Selected assets per rebalance: `{config.top_n}`
-- Transaction cost: `{config.transaction_cost_bps:.2f}` bps per unit of target-weight turnover
-- Slippage: `{config.slippage_bps:.2f}` bps per unit of target-weight turnover
+- Transaction cost: `{config.transaction_cost_bps:.2f}` bps per unit of drift-adjusted target-weight turnover
+- Slippage: `{config.slippage_bps:.2f}` bps per unit of drift-adjusted target-weight turnover
 - Zero cost or slippage diagnostic: `{result.assumptions["zero_cost_or_slippage_is_diagnostic"]}`
 - Benchmark: synthetic equal-weight universe benchmark
 - Execution timing: {result.assumptions["execution_timing"]}
@@ -262,7 +264,7 @@ Demonstrate the local research workflow:
 
 - Synthetic prices are not calibrated to actual equities.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model.
-- The backtester uses simplified target-weight turnover, not drift-adjusted trade accounting.
+- Holdings drift with asset returns between scheduled rebalances; turnover is measured against drifted pre-trade weights. This is still weight-level accounting, not an order-fill model.
 - The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results depend on the synthetic random seed and are workflow diagnostics only.
 - No claim of strategy profitability is made.
