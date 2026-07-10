@@ -12,6 +12,63 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-07-10 - Drift-Aware Portfolio Accounting
+
+Stage: simulated backtester correctness repair.
+
+Observed defect:
+
+- The backtester forward-filled target weights between rebalance dates. When
+  assets earned different returns, this held weights constant without recording
+  trades, which was economically equivalent to free daily rebalancing.
+- The benchmark `zero_return` fallback filled both a missing date and the first
+  valid post-gap return with zero, so `[100, missing, 102]` ended at `1.00`
+  instead of `1.02`.
+- Review of the first repair found that close-time fixed costs were still
+  charged as a fraction of beginning-period value. After a positive held-asset
+  return, this understated both transaction-cost and fixed-slippage impacts.
+- The backtester allowed net period growth of zero after trading costs, leaving
+  a zero-valued equity curve with positive holdings instead of failing.
+
+Implementation:
+
+- Portfolio weights now drift through close-to-close asset returns. On a
+  scheduled rebalance, turnover is the sum of absolute changes between drifted
+  pre-trade weights and the new target; on other dates turnover is zero.
+- The existing turnover convention remains undivided, so a complete switch
+  between two assets has turnover `2.0`.
+- The benchmark diagnostic fallback forward-fills only from observations
+  already available, preserves a prior observation outside the strategy index,
+  then recognizes the cumulative move when data resumes.
+- Fixed-bps transaction costs and slippage are charged against post-return
+  portfolio value and converted to beginning-period return impacts before they
+  are deducted. Precomputed volume-aware impact remains an already-scaled
+  return-impact input and is not rescaled.
+- Net growth at or below zero after all trading-cost components now raises with
+  the first exhausted date before an equity curve is produced.
+- A two-asset divergent-return regression test distinguishes the corrected
+  `2.50` buy-and-hold path from the prior `2.25` constant-weight path and checks
+  the `0.60` rebalance turnover against drifted weights.
+- A benchmark regression test checks `[1.00, 1.00, 1.02]` across a one-date
+  gap, and a separate test preserves a `100` observation before the strategy
+  index so a later `102` observation ends at `1.02` without future filling.
+- A divergent-return/full-switch test checks transaction cost `0.04`, fixed
+  slippage `0.02`, and final equity `1.9109` after a 100% held-asset gain.
+  Separate fixed-cost and precomputed-impact tests require explicit failure
+  when a cost impact of `1.0` exhausts the portfolio.
+- Affected committed synthetic reports, logs, and registry values were
+  regenerated. Those values remain synthetic diagnostics, not market or
+  profitability evidence.
+
+Needs follow-up:
+
+- The standalone volume-aware slippage diagnostic still derives candidate
+  trade weights from target changes. A separate scoped contract change should
+  accept explicit per-asset trade weights from a drift-aware portfolio path
+  before that helper is treated as execution-accounting evidence.
+
+---
+
 ## 2026-06-29 - EODHD Limited Factor Diagnostics Brief
 
 Stage: private-output-only neutral diagnostics brief.

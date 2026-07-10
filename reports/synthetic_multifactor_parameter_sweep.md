@@ -24,8 +24,8 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 | Date range | `2024-01-02` plus `160` business rows |
 | Factor names | `synthetic_momentum, synthetic_quality, synthetic_reversal` |
 | Rebalance frequency | `ME` |
-| Transaction cost | `10.00` bps per unit of target-weight turnover |
-| Slippage | `0.00` bps per unit of target-weight turnover |
+| Transaction cost | `10.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value |
+| Slippage | `0.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value |
 | Zero cost or slippage diagnostic | `True` |
 | Signal lag periods | `1` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
@@ -47,14 +47,14 @@ These metrics are deterministic diagnostics from synthetic data. They are not ev
 
 | Case | Weight set | Top N | Total return | Annualized return | Annualized volatility | Sharpe ratio | Max drawdown | Average turnover | Transaction cost impact | Slippage impact | Total trading impact | Benchmark total return | Excess total return |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| balanced__top_3 | balanced | 3 | 16.65% | 27.65% | 10.26% | 2.4156 | -5.47% | 2.71% | 0.43% | 0.00% | 0.43% | 15.96% | 0.69% |
-| balanced__top_4 | balanced | 4 | 21.43% | 36.04% | 9.52% | 3.2638 | -4.27% | 1.56% | 0.25% | 0.00% | 0.25% | 15.96% | 5.47% |
-| momentum_tilt__top_3 | momentum_tilt | 3 | 11.37% | 18.62% | 11.95% | 1.4805 | -4.34% | 1.46% | 0.23% | 0.00% | 0.23% | 15.96% | -4.59% |
-| momentum_tilt__top_4 | momentum_tilt | 4 | 12.41% | 20.36% | 10.64% | 1.7843 | -4.25% | 2.50% | 0.40% | 0.00% | 0.40% | 15.96% | -3.56% |
-| quality_tilt__top_3 | quality_tilt | 3 | 20.42% | 34.24% | 10.07% | 2.9569 | -4.72% | 0.62% | 0.10% | 0.00% | 0.10% | 15.96% | 4.45% |
-| quality_tilt__top_4 | quality_tilt | 4 | 20.90% | 35.10% | 9.68% | 3.1376 | -4.27% | 1.25% | 0.20% | 0.00% | 0.20% | 15.96% | 4.94% |
-| reversal_tilt__top_3 | reversal_tilt | 3 | 15.81% | 26.19% | 10.21% | 2.3168 | -6.95% | 2.71% | 0.43% | 0.00% | 0.43% | 15.96% | -0.15% |
-| reversal_tilt__top_4 | reversal_tilt | 4 | 21.43% | 36.04% | 9.52% | 3.2638 | -4.27% | 1.56% | 0.25% | 0.00% | 0.25% | 15.96% | 5.47% |
+| balanced__top_3 | balanced | 3 | 16.59% | 27.53% | 10.26% | 2.4084 | -5.51% | 2.82% | 0.45% | 0.00% | 0.45% | 15.96% | 0.62% |
+| balanced__top_4 | balanced | 4 | 21.33% | 35.86% | 9.52% | 3.2501 | -4.31% | 1.68% | 0.27% | 0.00% | 0.27% | 15.96% | 5.37% |
+| momentum_tilt__top_3 | momentum_tilt | 3 | 11.26% | 18.43% | 11.95% | 1.4661 | -4.35% | 1.57% | 0.25% | 0.00% | 0.25% | 15.96% | -4.70% |
+| momentum_tilt__top_4 | momentum_tilt | 4 | 12.37% | 20.30% | 10.67% | 1.7743 | -4.32% | 2.58% | 0.41% | 0.00% | 0.41% | 15.96% | -3.60% |
+| quality_tilt__top_3 | quality_tilt | 3 | 20.30% | 34.03% | 10.06% | 2.9448 | -4.79% | 0.74% | 0.12% | 0.00% | 0.12% | 15.96% | 4.34% |
+| quality_tilt__top_4 | quality_tilt | 4 | 20.80% | 34.91% | 9.68% | 3.1252 | -4.31% | 1.38% | 0.22% | 0.00% | 0.22% | 15.96% | 4.84% |
+| reversal_tilt__top_3 | reversal_tilt | 3 | 15.67% | 25.95% | 10.20% | 2.2995 | -7.03% | 2.79% | 0.45% | 0.00% | 0.45% | 15.96% | -0.29% |
+| reversal_tilt__top_4 | reversal_tilt | 4 | 21.33% | 35.86% | 9.52% | 3.2501 | -4.31% | 1.68% | 0.27% | 0.00% | 0.27% | 15.96% | 5.37% |
 
 ## Limitations
 

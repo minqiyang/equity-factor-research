@@ -228,18 +228,28 @@ def write_demo_experiment_log(
             "benchmark": "synthetic equal-weight universe benchmark",
             "transaction_cost_model": (
                 f"{result.backtest_result.assumptions['cost_model']}; "
-                f"{config.transaction_cost_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.transaction_cost_bps:.2f} bps per unit of drift-adjusted "
+                "target-weight turnover on post-return portfolio value"
             ),
             "transaction_cost_bps": config.transaction_cost_bps,
             "slippage_model": (
                 f"{result.backtest_result.assumptions['slippage_model']}; "
-                f"{config.slippage_bps:.2f} bps per unit of target-weight turnover"
+                f"{config.slippage_bps:.2f} bps per unit of drift-adjusted "
+                "target-weight turnover on post-return portfolio value"
             ),
             "slippage_bps": config.slippage_bps,
             "zero_cost_or_slippage_is_diagnostic": result.backtest_result.assumptions[
                 "zero_cost_or_slippage_is_diagnostic"
             ],
             "turnover_model": result.backtest_result.assumptions["turnover_model"],
+            "turnover_reference": result.backtest_result.assumptions["turnover_reference"],
+            "holdings_model": result.backtest_result.assumptions["holdings_model"],
+            "fixed_cost_application_timing": result.backtest_result.assumptions[
+                "fixed_cost_application_timing"
+            ],
+            "fixed_cost_return_impact_basis": result.backtest_result.assumptions[
+                "fixed_cost_return_impact_basis"
+            ],
             "long_only": result.backtest_result.assumptions["long_only"],
             "live_trading": False,
             "brokerage_integration": False,
@@ -313,8 +323,8 @@ Exercise the integration path from existing factor research helpers into the exi
 | Combination weights | `{_format_weights(config.weights)}` |
 | Rebalance frequency | `{config.rebalance_frequency}` |
 | Selected assets per rebalance | `{config.top_n}` |
-| Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of target-weight turnover |
-| Slippage | `{config.slippage_bps:.2f}` bps per unit of target-weight turnover |
+| Transaction cost | `{config.transaction_cost_bps:.2f}` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value |
+| Slippage | `{config.slippage_bps:.2f}` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value |
 | Zero cost or slippage diagnostic | `{result.backtest_result.assumptions["zero_cost_or_slippage_is_diagnostic"]}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
@@ -350,7 +360,7 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 - The combined score is a synthetic research feature, not a production signal.
 - The backtest is a smoke test of workflow wiring only.
 - There is no real data source, universe construction, liquidity model, market-impact model, or validation split.
-- The existing backtester uses simplified target-weight turnover.
+- Holdings drift with asset returns between scheduled rebalances; turnover is measured against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This remains weight-level accounting, not an order-fill model.
 - The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results should not be used as investment evidence or a strategy-quality claim.
 """

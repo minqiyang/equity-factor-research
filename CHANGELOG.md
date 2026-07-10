@@ -7,6 +7,21 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Fixed
+
+- Corrected simulated portfolio accounting so holdings drift with asset
+  returns between scheduled rebalances and turnover is measured against
+  drifted pre-trade weights instead of prior targets. Refreshed affected
+  synthetic reports and experiment logs under the same research-only caveats.
+- Corrected close-time fixed transaction-cost and slippage impacts so
+  drift-adjusted turnover is charged against post-return portfolio value, and
+  fail explicitly when asset returns plus any trading-cost impact exhaust the
+  simulated portfolio.
+- Corrected the explicit benchmark `zero_return` fallback so missing benchmark
+  dates freeze at the last observed price, including an observation before the
+  first strategy date, without discarding the cumulative move when observations
+  resume.
+
 ### Added
 
 - Added `research/eodhd_limited_factor_diagnostics_brief.py` with a

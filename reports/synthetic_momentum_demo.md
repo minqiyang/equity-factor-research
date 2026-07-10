@@ -23,8 +23,8 @@ Demonstrate the local research workflow:
 - Momentum skipped recent periods: `21`
 - Rebalance frequency: `ME`
 - Selected assets per rebalance: `5`
-- Transaction cost: `10.00` bps per unit of target-weight turnover
-- Slippage: `0.00` bps per unit of target-weight turnover
+- Transaction cost: `10.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
+- Slippage: `0.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
 - Zero cost or slippage diagnostic: `True`
 - Benchmark: synthetic equal-weight universe benchmark
 - Execution timing: signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row
@@ -33,24 +33,24 @@ Demonstrate the local research workflow:
 
 | Metric | Value |
 | --- | ---: |
-| Total return | -7.95% |
-| Annualized return | -2.73% |
-| Annualized volatility | 10.32% |
-| Sharpe ratio | -0.2161 |
-| Max drawdown | -22.55% |
-| Average turnover | 1.67% |
-| Total turnover | 12.6000 |
-| Total transaction cost impact | 1.26% |
+| Total return | -7.91% |
+| Annualized return | -2.71% |
+| Annualized volatility | 10.31% |
+| Sharpe ratio | -0.2146 |
+| Max drawdown | -22.64% |
+| Average turnover | 1.75% |
+| Total turnover | 13.1962 |
+| Total transaction cost impact | 1.32% |
 | Total slippage cost impact | 0.00% |
-| Total trading cost impact | 1.26% |
+| Total trading cost impact | 1.32% |
 | Benchmark total return | 28.16% |
-| Excess total return vs synthetic benchmark | -36.11% |
+| Excess total return vs synthetic benchmark | -36.07% |
 
 ## Limitations
 
 - Synthetic prices are not calibrated to actual equities.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model.
-- The backtester uses simplified target-weight turnover, not drift-adjusted trade accounting.
+- Holdings drift with asset returns between scheduled rebalances; turnover is measured against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is still weight-level accounting, not an order-fill model.
 - The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results depend on the synthetic random seed and are workflow diagnostics only.
 - No claim of strategy profitability is made.

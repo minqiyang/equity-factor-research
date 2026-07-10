@@ -37,9 +37,9 @@ _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
 class BacktestResult:
     """Container for minimal long-only backtest outputs.
 
-    ``holdings`` are target weights at each date after any rebalance on that
-    date. Period returns use prior-date holdings, so a target set on date ``t``
-    affects returns starting on the next available price row.
+    ``holdings`` are post-trade weights on rebalance dates and drifted closing
+    weights on other dates. Period returns use prior-date holdings, so a target
+    set on date ``t`` affects returns starting on the next available price row.
     """
 
     equity_curve: pd.Series
@@ -90,10 +90,12 @@ def run_long_only_backtest(
     - Long-only only.
     - No leverage; selected assets receive equal weights summing to 1.0.
     - No shorting and no cash interest.
-    - Trades occur only on rebalance dates.
+    - Trades occur only on rebalance dates. Between rebalances, weights drift
+      with asset returns; the engine does not silently rebalance them each day.
     - Transaction costs are a fixed basis-point cost applied to target-weight
-      turnover on rebalance dates and deducted from that date's portfolio
-      return.
+      turnover on rebalance dates. Because trades occur after that date's asset
+      returns, the cost is charged against post-return portfolio value and then
+      expressed as an impact on beginning-period return.
     - Slippage is a separate fixed basis-point impact applied to the same
       target-weight turnover model. This is a deterministic research
       assumption, not an order-fill or market-impact model.
@@ -107,10 +109,10 @@ def run_long_only_backtest(
       ``benchmark_missing_policy="zero_return"`` freezes benchmark returns on
       missing dates and should be documented as a simplifying assumption.
 
-    The turnover model is target-weight turnover, not drift-adjusted turnover:
-    ``sum(abs(target_weights - previous_target_weights))``. This is a simple
-    first-pass research assumption that should be revisited before using the
-    engine for more realistic cost modeling.
+    Turnover is the sum of absolute changes from drifted pre-trade weights to
+    target weights on each rebalance date:
+    ``sum(abs(target_weights - drifted_pretrade_weights))``. The convention is
+    not divided by two, so a full switch between two assets has turnover 2.0.
     """
 
     _validate_backtest_inputs(
@@ -141,23 +143,18 @@ def run_long_only_backtest(
         top_pct=top_pct,
     )
 
-    holdings = target_weights.ffill().fillna(0.0)
-    previous_holdings = holdings.shift(1).fillna(0.0)
-
     asset_returns = price_data.pct_change(fill_method=None)
     asset_returns = asset_returns.replace([np.inf, -np.inf], np.nan)
-    asset_returns = _handle_missing_held_returns(
+    holdings, gross_returns, turnover = _calculate_drift_aware_portfolio_path(
         asset_returns=asset_returns,
-        previous_holdings=previous_holdings,
+        target_weights=target_weights,
         missing_price_policy=missing_price_policy,
     )
-
-    gross_returns = (previous_holdings * asset_returns).sum(axis=1)
-    turnover_weights = holdings.diff().abs()
-    turnover_weights.iloc[0] = holdings.iloc[0].abs()
-    turnover = turnover_weights.sum(axis=1)
-    transaction_costs = turnover * (transaction_cost_bps / 10_000.0)
-    slippage_costs = turnover * (slippage_bps / 10_000.0)
+    post_return_growth = 1.0 + gross_returns
+    transaction_costs = (
+        turnover * (transaction_cost_bps / 10_000.0) * post_return_growth
+    )
+    slippage_costs = turnover * (slippage_bps / 10_000.0) * post_return_growth
     volume_aware_slippage_costs = _prepare_volume_aware_slippage_costs(
         price_index=price_data.index,
         mode=volume_aware_slippage_mode,
@@ -169,6 +166,14 @@ def run_long_only_backtest(
         transaction_costs + slippage_costs + volume_aware_slippage_costs
     )
     net_returns = gross_returns - total_trading_costs
+    net_growth = 1.0 + net_returns
+    exhausted = net_growth.le(0.0)
+    if exhausted.any():
+        first_exhausted_date = exhausted[exhausted].index[0]
+        raise ValueError(
+            "Asset returns and trading costs exhausted the portfolio on "
+            f"{first_exhausted_date.date()}"
+        )
     equity_curve = initial_capital * (1.0 + net_returns).cumprod()
 
     benchmark_equity_curve = _calculate_benchmark_equity_curve(
@@ -228,8 +233,12 @@ def run_long_only_backtest(
             "aligned_signal_coverage": _calculate_signal_coverage(signal_data),
             "execution_timing": "signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row",
             "turnover_model": "target_weight_turnover",
+            "turnover_reference": "drifted_pretrade_weights",
+            "holdings_model": "drifted_between_rebalances",
             "cost_model": "fixed_bps_on_target_weight_turnover",
             "slippage_model": "fixed_bps_on_target_weight_turnover",
+            "fixed_cost_application_timing": "close_after_asset_returns",
+            "fixed_cost_return_impact_basis": "beginning_period_portfolio_value",
             "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
@@ -246,13 +255,10 @@ def _build_target_weights(
     top_n: int | None,
     top_pct: float | None,
 ) -> pd.DataFrame:
-    target_weights = pd.DataFrame(0.0, index=prices.index, columns=prices.columns)
-    rebalance_date_set = set(rebalance_dates)
+    target_weights = pd.DataFrame(np.nan, index=prices.index, columns=prices.columns)
 
-    for date in prices.index:
-        if date not in rebalance_date_set:
-            target_weights.loc[date] = np.nan
-            continue
+    for date in rebalance_dates:
+        target_weights.loc[date] = 0.0
 
         scores = lagged_signals.loc[date]
         tradable = prices.loc[date].notna() & prices.loc[date].gt(0.0)
@@ -266,6 +272,55 @@ def _build_target_weights(
         target_weights.loc[date, selected_assets] = equal_weight
 
     return target_weights
+
+
+def _calculate_drift_aware_portfolio_path(
+    *,
+    asset_returns: pd.DataFrame,
+    target_weights: pd.DataFrame,
+    missing_price_policy: str,
+) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+    """Propagate weights through returns and rebalance only on target rows."""
+
+    holdings = pd.DataFrame(0.0, index=asset_returns.index, columns=asset_returns.columns)
+    gross_returns = pd.Series(0.0, index=asset_returns.index, name="gross_return")
+    turnover = pd.Series(0.0, index=asset_returns.index, name="turnover")
+    post_trade_weights = pd.Series(0.0, index=asset_returns.columns, dtype=float)
+
+    for date in asset_returns.index:
+        period_returns = _resolve_period_asset_returns(
+            asset_returns=asset_returns.loc[date],
+            previous_holdings=post_trade_weights,
+            date=date,
+            missing_price_policy=missing_price_policy,
+        )
+        gross_return = float((post_trade_weights * period_returns).sum())
+        gross_returns.loc[date] = gross_return
+
+        portfolio_growth = 1.0 + gross_return
+        if portfolio_growth <= 0.0 and post_trade_weights.gt(0.0).any():
+            raise ValueError(
+                "Portfolio value was exhausted before weights could be propagated "
+                f"on {date.date()}"
+            )
+        if post_trade_weights.gt(0.0).any():
+            pretrade_weights = (
+                post_trade_weights * (1.0 + period_returns) / portfolio_growth
+            )
+        else:
+            pretrade_weights = post_trade_weights.copy()
+
+        target = target_weights.loc[date]
+        if target.notna().any():
+            target = target.fillna(0.0)
+            turnover.loc[date] = float((target - pretrade_weights).abs().sum())
+            post_trade_weights = target
+        else:
+            post_trade_weights = pretrade_weights
+
+        holdings.loc[date] = post_trade_weights
+
+    return holdings, gross_returns, turnover
 
 
 def _select_top_assets(scores: pd.Series, *, top_n: int | None, top_pct: float | None) -> list[str]:
@@ -289,20 +344,20 @@ def _get_rebalance_dates(index: pd.DatetimeIndex, rebalance_frequency: str) -> p
     return pd.DatetimeIndex(date_series.resample(rebalance_frequency).last().dropna().to_list())
 
 
-def _handle_missing_held_returns(
+def _resolve_period_asset_returns(
     *,
-    asset_returns: pd.DataFrame,
-    previous_holdings: pd.DataFrame,
+    asset_returns: pd.Series,
+    previous_holdings: pd.Series,
+    date: pd.Timestamp,
     missing_price_policy: str,
-) -> pd.DataFrame:
+) -> pd.Series:
     held_missing_returns = previous_holdings.gt(0.0) & asset_returns.isna()
 
-    if held_missing_returns.to_numpy().any() and missing_price_policy == "raise":
-        missing_by_date = held_missing_returns.stack()
-        first_date, first_asset = missing_by_date[missing_by_date].index[0]
+    if held_missing_returns.any() and missing_price_policy == "raise":
+        first_asset = held_missing_returns[held_missing_returns].index[0]
         raise ValueError(
             "Missing return for held asset "
-            f"{first_asset} on {first_date.date()}; set missing_price_policy='zero_return' "
+            f"{first_asset} on {date.date()}; set missing_price_policy='zero_return' "
             "only for an explicit diagnostic fallback."
         )
 
@@ -336,6 +391,14 @@ def _calculate_benchmark_equity_curve(
             "benchmark_prices are missing on strategy date "
             f"{first_missing_date.date()}; set benchmark_missing_policy='zero_return' "
             "only for an explicit diagnostic fallback."
+        )
+    if benchmark_missing_policy == "zero_return":
+        combined_index = benchmark_prices.index.union(price_index).sort_values()
+        aligned_prices = (
+            benchmark_prices.astype(float)
+            .reindex(combined_index)
+            .ffill()
+            .reindex(price_index)
         )
 
     benchmark_returns = aligned_prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).fillna(0.0)
