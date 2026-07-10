@@ -106,9 +106,9 @@ infer missing data.
 
 Required inputs:
 
-- target weights on the same rebalance dates and asset columns used by the
-  backtester.
-- previous target weights or an equivalent deterministic turnover convention.
+- `BacktestResult.trade_weights` on the same dates and asset columns used by
+  the backtester. These are absolute changes from drifted pre-trade weights to
+  targets, not differences between consecutive targets.
 - price panel used to compute dollar volume.
 - volume panel or local OHLCV-derived volume panel with reviewed adjustment
   policy.
@@ -130,21 +130,26 @@ inputs.
 
 ## 5. Recommended Integration Shape
 
-The recommended first integration, after a separate test-plan PR, is a
-precomputed-impact boundary rather than making `run_long_only_backtest()`
-calculate volume-aware slippage internally.
+The implemented integration remains a precomputed-impact boundary rather than
+making `run_long_only_backtest()` calculate volume-aware slippage internally.
 
-Recommended future flow:
+Recommended flow for a backtest-linked diagnostic:
 
-1. Build backtester target weights by the existing deterministic path.
-2. Call `calculate_volume_aware_slippage_diagnostics()` outside the backtester
-   with explicitly validated price, volume, notional, lag, window, and cap
+1. Run the deterministic portfolio path and obtain
+   `BacktestResult.trade_weights`.
+2. Pass those trades to
+   `calculate_volume_aware_slippage_from_trade_weights()` outside the
+   backtester with validated price, volume, notional, lag, window, and cap
    parameters.
-3. Pass only a reviewed, date-aligned `portfolio_slippage_impact` series plus
-   audit metadata into the backtester or a narrow wrapper.
-4. Deduct that impact from simulated net returns only when an explicit future
-   option says to apply it.
+3. Review the date-aligned `portfolio_slippage_impact` series and preserve the
+   diagnostic metadata, including `trade_weight_source`.
+4. Pass the reviewed impact and required metadata into the backtester only
+   through `volume_aware_slippage_mode="apply_precomputed_impact"`.
 5. Preserve the full diagnostic object for audit reporting.
+
+`calculate_volume_aware_slippage_diagnostics()` remains a compatibility path
+for standalone target-panel diagnostics. It must not be used to reconstruct
+trades from a drift-aware backtest.
 
 Rationale:
 

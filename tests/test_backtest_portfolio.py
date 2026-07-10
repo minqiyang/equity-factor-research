@@ -17,6 +17,7 @@ def _volume_aware_metadata(**overrides: object) -> dict[str, object]:
     metadata: dict[str, object] = {
         "name": "unit_test_volume_aware_slippage",
         "slippage_model": "candidate_linear_participation_slippage",
+        "trade_weight_source": "explicit_per_asset_trade_weights",
         "portfolio_notional": 100_000.0,
         "price_field": "adjusted_close",
         "volume_policy": "synthetic_share_volume",
@@ -327,6 +328,9 @@ def test_precomputed_volume_aware_slippage_is_deducted_separately() -> None:
     assert result.assumptions["volume_aware_slippage_applied_to_returns"] is True
     assert result.assumptions["volume_aware_slippage_model"] == "candidate_linear_participation_slippage"
     assert result.assumptions["volume_aware_slippage_source"] == "unit_test_volume_aware_slippage"
+    assert result.assumptions["volume_aware_trade_weight_source"] == (
+        "explicit_per_asset_trade_weights"
+    )
     assert result.assumptions["portfolio_notional"] == pytest.approx(100_000.0)
     assert result.assumptions["volume_aware_price_field"] == "adjusted_close"
     assert result.assumptions["volume_policy"] == "synthetic_share_volume"
@@ -390,6 +394,9 @@ def test_volume_aware_slippage_helper_output_can_feed_precomputed_boundary() -> 
     assert result.volume_aware_slippage_costs.loc[dates[1]] == pytest.approx(0.0001)
     assert result.returns.loc[dates[1]] == pytest.approx(-0.0001)
     assert result.assumptions["volume_aware_slippage_source"] == "helper_integration_test"
+    assert result.assumptions["volume_aware_trade_weight_source"] == (
+        "derived_from_target_weight_difference"
+    )
 
 
 @pytest.mark.parametrize(
@@ -446,15 +453,18 @@ def test_precomputed_volume_aware_slippage_requires_metadata() -> None:
         )
 
 
-def test_precomputed_volume_aware_slippage_rejects_missing_metadata_keys() -> None:
+@pytest.mark.parametrize("missing_key", ["portfolio_notional", "trade_weight_source"])
+def test_precomputed_volume_aware_slippage_rejects_missing_metadata_keys(
+    missing_key: str,
+) -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
     signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
     impact = pd.Series([0.0, 0.001, 0.0], index=dates)
     metadata = _volume_aware_metadata()
-    metadata.pop("portfolio_notional")
+    metadata.pop(missing_key)
 
-    with pytest.raises(ValueError, match="portfolio_notional"):
+    with pytest.raises(ValueError, match=missing_key):
         run_long_only_backtest(
             prices,
             signals,
@@ -463,6 +473,26 @@ def test_precomputed_volume_aware_slippage_rejects_missing_metadata_keys() -> No
             volume_aware_slippage_mode="apply_precomputed_impact",
             volume_aware_slippage_impact=impact,
             volume_aware_slippage_metadata=metadata,
+        )
+
+
+def test_precomputed_volume_aware_slippage_rejects_blank_trade_weight_source() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series([0.0, 0.001, 0.0], index=dates)
+
+    with pytest.raises(ValueError, match="trade_weight_source must be a non-empty"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=_volume_aware_metadata(
+                trade_weight_source=" ",
+            ),
         )
 
 

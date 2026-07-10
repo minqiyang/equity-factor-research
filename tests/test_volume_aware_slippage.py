@@ -1,5 +1,6 @@
 import ast
 import inspect
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,9 @@ from backtest.slippage import (
     calculate_volume_aware_slippage_diagnostics,
     calculate_volume_aware_slippage_from_trade_weights,
 )
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _panel(values: dict[str, list[object]], *, start: str = "2024-01-01") -> pd.DataFrame:
@@ -399,3 +403,15 @@ def test_volume_aware_slippage_module_has_no_data_trading_or_lean_imports() -> N
 
     for module_name in imported_modules:
         assert not any(term in module_name.lower() for term in forbidden_terms)
+
+
+def test_integration_design_routes_backtest_trades_through_explicit_helper() -> None:
+    design = (
+        PROJECT_ROOT / "docs" / "volume_aware_slippage_backtester_integration_design.md"
+    ).read_text(encoding="utf-8")
+    recommended_flow = design.split("## 5. Recommended Integration Shape", maxsplit=1)[1]
+    recommended_flow = recommended_flow.split("## 6. Accounting Semantics", maxsplit=1)[0]
+
+    assert "BacktestResult.trade_weights" in recommended_flow
+    assert "calculate_volume_aware_slippage_from_trade_weights()" in recommended_flow
+    assert "must not be used to reconstruct" in recommended_flow

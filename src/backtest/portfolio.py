@@ -27,6 +27,7 @@ _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "price_field",
     "slippage_model",
     "stale_volume_policy",
+    "trade_weight_source",
     "volume_lag",
     "volume_policy",
     "window",
@@ -585,6 +586,13 @@ def _validate_volume_aware_slippage_metadata(
             + ", ".join(missing_keys)
         )
 
+    trade_weight_source = metadata["trade_weight_source"]
+    if not isinstance(trade_weight_source, str) or not trade_weight_source.strip():
+        raise ValueError(
+            "volume_aware_slippage_metadata trade_weight_source must be a "
+            "non-empty string"
+        )
+
 
 def _build_volume_aware_slippage_assumptions(
     *,
@@ -598,6 +606,9 @@ def _build_volume_aware_slippage_assumptions(
         "volume_aware_slippage_applied_to_returns": mode == "apply_precomputed_impact",
         "volume_aware_slippage_model": metadata_values.get("slippage_model"),
         "volume_aware_slippage_source": metadata_values.get("name"),
+        "volume_aware_trade_weight_source": metadata_values.get(
+            "trade_weight_source"
+        ),
         "portfolio_notional": metadata_values.get("portfolio_notional"),
         "volume_aware_price_field": metadata_values.get("price_field"),
         "volume_policy": metadata_values.get("volume_policy"),
