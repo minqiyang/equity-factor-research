@@ -197,6 +197,41 @@ def test_fixed_bps_slippage_is_deducted_separately_from_transaction_cost() -> No
     assert result.assumptions["slippage_model"] == "fixed_bps_on_target_weight_turnover"
 
 
+def test_close_time_fixed_costs_scale_with_post_return_portfolio_value() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100.0, 100.0, 200.0],
+            "BBB": [100.0, 100.0, 100.0],
+        },
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {
+            "AAA": [1.0, 0.0, 0.0],
+            "BBB": [0.0, 1.0, 1.0],
+        },
+        index=dates,
+    )
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=100.0,
+        slippage_bps=50.0,
+    )
+
+    assert result.gross_returns.loc[dates[2]] == pytest.approx(1.0)
+    assert result.turnover.loc[dates[2]] == pytest.approx(2.0)
+    assert result.transaction_costs.loc[dates[2]] == pytest.approx(0.04)
+    assert result.slippage_costs.loc[dates[2]] == pytest.approx(0.02)
+    assert result.total_trading_costs.loc[dates[2]] == pytest.approx(0.06)
+    assert result.returns.loc[dates[2]] == pytest.approx(0.94)
+    assert result.equity_curve.loc[dates[2]] == pytest.approx(1.9109)
+
+
 def test_volume_aware_slippage_default_is_diagnostic_only() -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
@@ -539,6 +574,41 @@ def test_total_return_uses_initial_capital_base_when_first_row_has_cost() -> Non
     assert result.metrics["total_return"] == pytest.approx(-0.01)
 
 
+def test_fixed_cost_that_exhausts_portfolio_raises() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=dates)
+
+    with pytest.raises(ValueError, match="trading costs exhausted the portfolio"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            transaction_cost_bps=10_000.0,
+            signal_lag_periods=0,
+        )
+
+
+def test_precomputed_impact_that_exhausts_portfolio_raises() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=dates)
+    impact = pd.Series([1.0, 0.0], index=dates)
+
+    with pytest.raises(ValueError, match="trading costs exhausted the portfolio"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=_volume_aware_metadata(),
+            signal_lag_periods=0,
+        )
+
+
 def test_missing_held_asset_return_raises_by_default() -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAA": [100.0, 100.0, None]}, index=dates)
@@ -600,6 +670,29 @@ def test_missing_benchmark_zero_return_policy_is_explicit() -> None:
     assert result.benchmark_equity_curve.loc[dates[1]] == pytest.approx(1.0)
     assert result.benchmark_equity_curve.loc[dates[2]] == pytest.approx(1.02)
     assert result.assumptions["benchmark_missing_policy"] == "zero_return"
+
+
+def test_benchmark_zero_return_policy_preserves_prior_price_anchor() -> None:
+    strategy_dates = pd.date_range("2024-01-02", periods=2, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0]}, index=strategy_dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0]}, index=strategy_dates)
+    benchmark = pd.Series(
+        [100.0, 102.0],
+        index=pd.to_datetime(["2024-01-01", "2024-01-03"]),
+    )
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        benchmark_prices=benchmark,
+        benchmark_missing_policy="zero_return",
+    )
+
+    assert result.benchmark_equity_curve is not None
+    assert result.benchmark_equity_curve.loc[strategy_dates[0]] == pytest.approx(1.0)
+    assert result.benchmark_equity_curve.loc[strategy_dates[1]] == pytest.approx(1.02)
 
 
 def test_simple_synthetic_price_example() -> None:

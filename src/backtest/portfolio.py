@@ -93,8 +93,9 @@ def run_long_only_backtest(
     - Trades occur only on rebalance dates. Between rebalances, weights drift
       with asset returns; the engine does not silently rebalance them each day.
     - Transaction costs are a fixed basis-point cost applied to target-weight
-      turnover on rebalance dates and deducted from that date's portfolio
-      return.
+      turnover on rebalance dates. Because trades occur after that date's asset
+      returns, the cost is charged against post-return portfolio value and then
+      expressed as an impact on beginning-period return.
     - Slippage is a separate fixed basis-point impact applied to the same
       target-weight turnover model. This is a deterministic research
       assumption, not an order-fill or market-impact model.
@@ -149,8 +150,11 @@ def run_long_only_backtest(
         target_weights=target_weights,
         missing_price_policy=missing_price_policy,
     )
-    transaction_costs = turnover * (transaction_cost_bps / 10_000.0)
-    slippage_costs = turnover * (slippage_bps / 10_000.0)
+    post_return_growth = 1.0 + gross_returns
+    transaction_costs = (
+        turnover * (transaction_cost_bps / 10_000.0) * post_return_growth
+    )
+    slippage_costs = turnover * (slippage_bps / 10_000.0) * post_return_growth
     volume_aware_slippage_costs = _prepare_volume_aware_slippage_costs(
         price_index=price_data.index,
         mode=volume_aware_slippage_mode,
@@ -162,6 +166,14 @@ def run_long_only_backtest(
         transaction_costs + slippage_costs + volume_aware_slippage_costs
     )
     net_returns = gross_returns - total_trading_costs
+    net_growth = 1.0 + net_returns
+    exhausted = net_growth.le(0.0)
+    if exhausted.any():
+        first_exhausted_date = exhausted[exhausted].index[0]
+        raise ValueError(
+            "Asset returns and trading costs exhausted the portfolio on "
+            f"{first_exhausted_date.date()}"
+        )
     equity_curve = initial_capital * (1.0 + net_returns).cumprod()
 
     benchmark_equity_curve = _calculate_benchmark_equity_curve(
@@ -225,6 +237,8 @@ def run_long_only_backtest(
             "holdings_model": "drifted_between_rebalances",
             "cost_model": "fixed_bps_on_target_weight_turnover",
             "slippage_model": "fixed_bps_on_target_weight_turnover",
+            "fixed_cost_application_timing": "close_after_asset_returns",
+            "fixed_cost_return_impact_basis": "beginning_period_portfolio_value",
             "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
@@ -379,7 +393,13 @@ def _calculate_benchmark_equity_curve(
             "only for an explicit diagnostic fallback."
         )
     if benchmark_missing_policy == "zero_return":
-        aligned_prices = aligned_prices.ffill()
+        combined_index = benchmark_prices.index.union(price_index).sort_values()
+        aligned_prices = (
+            benchmark_prices.astype(float)
+            .reindex(combined_index)
+            .ffill()
+            .reindex(price_index)
+        )
 
     benchmark_returns = aligned_prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).fillna(0.0)
     return (initial_capital * (1.0 + benchmark_returns).cumprod()).rename("benchmark_equity")

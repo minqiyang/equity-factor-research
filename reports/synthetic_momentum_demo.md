@@ -23,8 +23,8 @@ Demonstrate the local research workflow:
 - Momentum skipped recent periods: `21`
 - Rebalance frequency: `ME`
 - Selected assets per rebalance: `5`
-- Transaction cost: `10.00` bps per unit of drift-adjusted target-weight turnover
-- Slippage: `0.00` bps per unit of drift-adjusted target-weight turnover
+- Transaction cost: `10.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
+- Slippage: `0.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
 - Zero cost or slippage diagnostic: `True`
 - Benchmark: synthetic equal-weight universe benchmark
 - Execution timing: signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row
@@ -33,7 +33,7 @@ Demonstrate the local research workflow:
 
 | Metric | Value |
 | --- | ---: |
-| Total return | -7.90% |
+| Total return | -7.91% |
 | Annualized return | -2.71% |
 | Annualized volatility | 10.31% |
 | Sharpe ratio | -0.2146 |
@@ -50,7 +50,7 @@ Demonstrate the local research workflow:
 
 - Synthetic prices are not calibrated to actual equities.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model.
-- Holdings drift with asset returns between scheduled rebalances; turnover is measured against drifted pre-trade weights. This is still weight-level accounting, not an order-fill model.
+- Holdings drift with asset returns between scheduled rebalances; turnover is measured against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is still weight-level accounting, not an order-fill model.
 - The zero-slippage setting is a diagnostic simplification, not an execution-realism claim.
 - Results depend on the synthetic random seed and are workflow diagnostics only.
 - No claim of strategy profitability is made.
