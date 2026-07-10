@@ -2,6 +2,17 @@
 
 Date: 2026-06-09
 
+## Status: Historical / Superseded In Part
+
+The original design remains useful for liquidity, lag, participation, and
+missing-volume policy. Current code now exposes drift-aware per-asset trade
+weights from `BacktestResult` and accepts them through
+`calculate_volume_aware_slippage_from_trade_weights()`. The older
+`calculate_volume_aware_slippage_diagnostics()` target-weight interface remains
+as a compatibility path and records that its trades were derived from
+consecutive targets. Volume-aware impact is still external and precomputed;
+the backtester default remains diagnostic-only.
+
 This is a documentation-only design gate for a possible future
 volume-aware slippage model in the local Python research pipeline.
 
@@ -68,8 +79,8 @@ volume-based assumption:
 | Observation date | Date attached to a local OHLCV row. |
 | Rebalance date | Date on which the local backtester sets target weights. |
 | Liquidity reference date | Last observation date whose volume may be used for a rebalance-date cost estimate. |
-| Target-weight turnover | Current local turnover convention: `sum(abs(target_weight - previous_target_weight))`. |
-| Trade weight | Per-asset absolute target-weight change on a rebalance date. |
+| Target-weight turnover | Current local turnover convention: `sum(abs(target_weight - drifted_pretrade_weight))`. |
+| Trade weight | Per-asset absolute change from drifted pre-trade weight to target weight on a rebalance date. |
 | Portfolio notional | Explicit assumed portfolio dollar value used only to scale trade weights into dollar notional for volume-aware diagnostics. |
 | Dollar volume | Price times share volume under an explicitly documented price and volume adjustment policy. |
 | Participation rate | Estimated trade notional divided by lagged dollar-volume capacity. |
@@ -83,7 +94,8 @@ synthetic panels. It must not fetch or infer missing market data.
 
 Required inputs:
 
-- target weights or per-asset target-weight changes.
+- explicit per-asset trade weights from the drift-aware portfolio path, or
+  target weights only for the compatibility diagnostic path.
 - price panel used by the backtester.
 - local OHLCV or volume panel validated by reviewed loaders.
 - explicit price field for dollar volume, such as `close` or
@@ -135,13 +147,13 @@ same-period target returns may be used.
 
 ## 7. Candidate Future Accounting Semantics
 
-This section is a candidate future implementation boundary, not an
-implementation in this PR.
+The candidate formula below is now implemented as a standalone diagnostic
+contract. It is still not an order-fill or calibrated market-impact model.
 
 For each rebalance date `t` and asset `i`:
 
 ```text
-trade_weight[i, t] = abs(target_weight[i, t] - previous_target_weight[i, t])
+trade_weight[i, t] = abs(target_weight[i, t] - drifted_pretrade_weight[i, t])
 trade_notional[i, t] = portfolio_notional[t] * trade_weight[i, t]
 participation[i, t] = trade_notional[i, t] / lagged_rolling_dollar_volume[i, t]
 ```

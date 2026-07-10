@@ -16,6 +16,13 @@ The remaining live guidance is the boundary: the backtester still does not
 compute rolling dollar volume from raw volume data, fetch data, infer OHLCV
 semantics, connect to brokers, place orders, or claim execution realism.
 
+Current code also exposes drift-aware per-asset trade weights on
+`BacktestResult`. The standalone slippage helper accepts those weights through
+`calculate_volume_aware_slippage_from_trade_weights()` and records their source.
+Candidate impact still enters net-return accounting only through the explicit
+precomputed-impact boundary; no rolling volume calculation was moved inside the
+backtester.
+
 This is a documentation-only design for deciding whether and how the existing
 synthetic-only volume-aware slippage diagnostic helper could later be connected
 to the simulated local backtester.
@@ -53,9 +60,9 @@ friction, the accounting and caveats must be explicit before behavior changes.
 
 | Artifact | Current role |
 | --- | --- |
-| `src/backtest/portfolio.py` | Applies target-weight turnover, transaction-cost impact, fixed-bps slippage impact, and net return accounting. |
+| `src/backtest/portfolio.py` | Exposes drift-aware per-asset trade weights and applies their summed turnover to transaction-cost, fixed-bps slippage, and net-return accounting. |
 | `src/backtest/metrics.py` | Reports total transaction-cost, slippage, and total trading-cost impact when supplied. |
-| `src/backtest/slippage.py` | Provides `calculate_volume_aware_slippage_diagnostics()` as a standalone diagnostic helper only. |
+| `src/backtest/slippage.py` | Provides a compatibility target-difference helper and an explicit drift-aware trade-weight diagnostic entrypoint. |
 | `tests/test_volume_aware_slippage.py` | Covers lagged capacity, explicit notional, missing/zero liquidity, participation caps, and forbidden imports for the helper. |
 | `research/local_csv_fixture_workflow_demo.py` | Calls the helper on committed synthetic fixture inputs and reports participation plus rejected/cap counts without applying candidate slippage to returns. |
 | `docs/volume_aware_slippage_design.md` | Defines the original design boundary for the helper and diagnostic smoke path. |

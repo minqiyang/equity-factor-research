@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Aligned candidate volume-aware slippage diagnostics with drift-aware
+  portfolio accounting by exposing per-asset trade weights from the backtester
+  and accepting those weights through an explicit diagnostic entrypoint. The
+  consecutive-target interface remains available as a labeled compatibility
+  path.
 - Hardened shared numeric panel validation to reject duplicate asset columns
   and positive or negative infinity while continuing to preserve real `NaN`
   missing values, and made strict long-price CSV loading reject sparse

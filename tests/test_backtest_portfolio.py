@@ -3,10 +3,14 @@ import inspect
 
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 import backtest.portfolio as portfolio
 from backtest.portfolio import run_long_only_backtest
-from backtest.slippage import calculate_volume_aware_slippage_diagnostics
+from backtest.slippage import (
+    calculate_volume_aware_slippage_diagnostics,
+    calculate_volume_aware_slippage_from_trade_weights,
+)
 
 
 def _volume_aware_metadata(**overrides: object) -> dict[str, object]:
@@ -139,6 +143,34 @@ def test_holdings_drift_between_rebalances_and_turnover_uses_pretrade_weights() 
     assert result.turnover.loc[pd.Timestamp("2024-01-06")] == pytest.approx(0.0)
     assert result.turnover.loc[pd.Timestamp("2024-01-07")] == pytest.approx(0.0)
     assert result.turnover.loc[second_rebalance] == pytest.approx(0.6)
+    assert result.trade_weights.loc[first_rebalance, "AAA"] == pytest.approx(0.5)
+    assert result.trade_weights.loc[first_rebalance, "BBB"] == pytest.approx(0.5)
+    assert result.trade_weights.loc[pd.Timestamp("2024-01-06")].eq(0.0).all()
+    assert result.trade_weights.loc[pd.Timestamp("2024-01-07")].eq(0.0).all()
+    assert result.trade_weights.loc[second_rebalance, "AAA"] == pytest.approx(0.3)
+    assert result.trade_weights.loc[second_rebalance, "BBB"] == pytest.approx(0.3)
+    assert_series_equal(
+        result.trade_weights.sum(axis=1).rename("turnover"),
+        result.turnover,
+    )
+
+    volume = pd.DataFrame(100_000.0, index=dates, columns=prices.columns)
+    diagnostics = calculate_volume_aware_slippage_from_trade_weights(
+        result.trade_weights,
+        prices,
+        volume,
+        window=1,
+        portfolio_notional=100.0,
+        max_participation=1.0,
+    )
+    assert_frame_equal(diagnostics.trade_weights, result.trade_weights)
+    assert diagnostics.summary.loc[second_rebalance, "total_trade_weight"] == pytest.approx(
+        0.6
+    )
+    assert diagnostics.parameters["trade_weight_source"] == (
+        "explicit_per_asset_trade_weights"
+    )
+
     assert result.holdings.loc[second_rebalance, "AAA"] == pytest.approx(0.5)
     assert result.holdings.loc[second_rebalance, "BBB"] == pytest.approx(0.5)
     assert result.assumptions["holdings_model"] == "drifted_between_rebalances"
