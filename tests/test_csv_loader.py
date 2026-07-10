@@ -149,6 +149,39 @@ def test_load_long_price_csv_pivots_to_wide_panel_and_preserves_symbol_order(
     assert result.summary.columns == ("MSFT", "AAPL")
 
 
+def test_load_long_price_csv_rejects_sparse_pivot_by_default(tmp_path: Path) -> None:
+    csv_path = _write_csv(
+        tmp_path / "sparse_long_prices.csv",
+        "date,symbol,adjusted_close\n"
+        "2024-01-02,AAPL,184.73\n"
+        "2024-01-02,MSFT,370.87\n"
+        "2024-01-03,AAPL,183.35\n",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"adjusted_close.*2024-01-03.*MSFT.*allow_missing=True",
+    ):
+        load_long_price_csv(csv_path)
+
+
+def test_load_long_price_csv_can_preserve_sparse_pivot_when_explicit(
+    tmp_path: Path,
+) -> None:
+    csv_path = _write_csv(
+        tmp_path / "sparse_long_prices_allowed.csv",
+        "date,symbol,adjusted_close\n"
+        "2024-01-02,AAPL,184.73\n"
+        "2024-01-02,MSFT,370.87\n"
+        "2024-01-03,AAPL,183.35\n",
+    )
+
+    result = load_long_price_csv(csv_path, allow_missing=True)
+
+    assert np.isnan(result.data.loc[pd.Timestamp("2024-01-03"), "MSFT"])
+    assert result.summary.missing_value_count == 1
+
+
 def test_load_long_price_csv_rejects_duplicate_pairs_and_missing_symbols(
     tmp_path: Path,
 ) -> None:

@@ -27,7 +27,8 @@ def validate_panel_data(data: pd.DataFrame, *, name: str = "data") -> pd.DataFra
     Raises:
         TypeError: If ``data`` is not a DataFrame, does not use a DatetimeIndex,
             or contains non-numeric or boolean columns.
-        ValueError: If the index is unsorted, duplicated, or the panel is empty.
+        ValueError: If the panel is empty, the index is unsorted or duplicated,
+            asset columns are duplicated, or a value is infinite.
 
     Notes:
         Missing values in numeric columns are allowed and preserved as ``NaN``.
@@ -50,6 +51,12 @@ def validate_panel_data(data: pd.DataFrame, *, name: str = "data") -> pd.DataFra
     if not data.index.is_monotonic_increasing:
         raise ValueError(f"{name} index must be sorted in increasing date order")
 
+    duplicate_columns = data.columns[data.columns.duplicated()].unique().tolist()
+    if duplicate_columns:
+        raise ValueError(
+            f"{name} must not contain duplicate asset columns: {duplicate_columns}"
+        )
+
     invalid_columns = [
         column for column in data.columns if is_bool_dtype(data[column].dtype) or not is_numeric_dtype(data[column].dtype)
     ]
@@ -59,7 +66,12 @@ def validate_panel_data(data: pd.DataFrame, *, name: str = "data") -> pd.DataFra
             f"invalid columns: {invalid_columns}"
         )
 
-    return data.astype(float)
+    panel = data.astype(float)
+    values = panel.to_numpy()
+    if np.isinf(values).any():
+        raise ValueError(f"{name} must contain finite numeric values or NaN")
+
+    return panel
 
 
 def delay(data: pd.DataFrame, periods: int = 1) -> pd.DataFrame:
