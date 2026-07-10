@@ -119,7 +119,12 @@ def load_long_price_csv(
     value_column: str = "adjusted_close",
     allow_missing: bool = False,
 ) -> ValidatedCSVPanel:
-    """Load long-form adjusted-close prices and pivot to a wide panel."""
+    """Load long-form adjusted-close prices and pivot to a wide panel.
+
+    By default, every observed date must contain every symbol present in the
+    input. Missing date-symbol pairs introduced by the pivot raise unless
+    ``allow_missing=True`` explicitly preserves the resulting ``NaN`` values.
+    """
 
     path = _validate_local_csv_path(csv_path)
     raw = _read_local_csv(path)
@@ -150,6 +155,8 @@ def load_long_price_csv(
     panel.columns.name = None
     panel.index.name = date_column
 
+    if not allow_missing:
+        _validate_complete_panel(panel, field_name=value_column)
     _validate_positive_values(panel, field_name=value_column)
     return ValidatedCSVPanel(
         data=panel,
@@ -438,6 +445,22 @@ def _validate_non_negative_values(values: pd.Series, *, field_name: str) -> None
     invalid = values.notna() & values.lt(0.0)
     if bool(invalid.any()):
         raise ValueError(f"{field_name} must contain only non-negative values when present")
+
+
+def _validate_complete_panel(panel: pd.DataFrame, *, field_name: str) -> None:
+    missing_mask = panel.isna().to_numpy()
+    if not missing_mask.any():
+        return
+
+    first_position = int(missing_mask.argmax())
+    row_position, column_position = divmod(first_position, panel.shape[1])
+    first_date = panel.index[row_position]
+    first_asset = panel.columns[column_position]
+    raise ValueError(
+        f"{field_name} contains a missing post-pivot value at date {first_date} "
+        f"for asset {first_asset}; pass allow_missing=True only if sparse panel "
+        "values should be preserved"
+    )
 
 
 def _validate_ohlc_relationships(

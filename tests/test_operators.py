@@ -60,6 +60,30 @@ def test_validate_panel_data_accepts_numeric_int_float_and_real_nan() -> None:
     assert np.isnan(result.loc[dates[1], "FLOATS"])
 
 
+def test_validate_panel_data_rejects_duplicate_asset_columns_clearly() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    data = pd.DataFrame(
+        [[1.0, 2.0], [3.0, 4.0]],
+        index=dates,
+        columns=["AAA", "AAA"],
+    )
+
+    with pytest.raises(ValueError, match="duplicate asset columns.*AAA"):
+        validate_panel_data(data, name="prices")
+
+
+@pytest.mark.parametrize("infinite_value", [np.inf, -np.inf])
+def test_validate_panel_data_rejects_infinite_values(infinite_value: float) -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    data = pd.DataFrame(
+        {"AAA": [1.0, infinite_value], "BBB": [np.nan, 2.0]},
+        index=dates,
+    )
+
+    with pytest.raises(ValueError, match="finite numeric values or NaN"):
+        validate_panel_data(data, name="prices")
+
+
 def test_validate_panel_data_rejects_invalid_inputs() -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
 

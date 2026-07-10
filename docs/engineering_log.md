@@ -12,6 +12,38 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-07-10 - Strict Input Contract Hardening
+
+Stage: shared panel and local CSV input validation.
+
+Observed defects:
+
+- Shared numeric panel validation reached column dtype inspection before
+  detecting duplicate asset labels, so selecting a duplicated label returned a
+  DataFrame and produced an unclear `AttributeError`.
+- The same validator accepted positive and negative infinity even though those
+  values are not meaningful finite research observations.
+- Strict long-price CSV loading checked explicit source-cell missingness before
+  pivoting, but a sparse date-symbol grid could introduce `NaN` during the
+  pivot and pass the default `allow_missing=False` contract.
+
+Implementation:
+
+- Duplicate asset labels are rejected explicitly before per-column dtype
+  validation. Numeric panels now require each cell to be finite or a real
+  `NaN`, preserving the existing missing-data behavior used by rolling factor
+  calculations.
+- Strict long-price loading now checks the completed pivoted panel and reports
+  the first missing date, value field, and asset. `allow_missing=True` remains
+  the explicit permissive path for intentionally sparse panels.
+- Focused regressions cover duplicate labels, both signs of infinity, preserved
+  `NaN`, strict sparse-pivot rejection, and explicit sparse-pivot preservation.
+
+No feature formulas, signal dates, execution timing, portfolio accounting,
+private-data boundaries, vendor access, or live-trading behavior changed.
+
+---
+
 ## 2026-07-10 - Drift-Aware Portfolio Accounting
 
 Stage: simulated backtester correctness repair.

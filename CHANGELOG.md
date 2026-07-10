@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Hardened shared numeric panel validation to reject duplicate asset columns
+  and positive or negative infinity while continuing to preserve real `NaN`
+  missing values, and made strict long-price CSV loading reject sparse
+  date-symbol grids created during pivot with the first missing cell identified.
 - Corrected simulated portfolio accounting so holdings drift with asset
   returns between scheduled rebalances and turnover is measured against
   drifted pre-trade weights instead of prior targets. Refreshed affected
