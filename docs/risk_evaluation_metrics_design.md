@@ -23,8 +23,15 @@ portfolio selection, target weights, trades, costs, or returns.
 Input: `BacktestResult.holdings` at each close.
 
 On rebalance dates, holdings are post-trade closing weights. On other dates,
-they are drifted closing weights. They describe the exposure carried into the
-next return period; they are not intraday or pre-trade exposure.
+they are drifted closing weights. These metrics describe closing portfolio
+state snapshots; they are not intraday, pre-trade, or return-attribution
+metrics.
+
+Every active closing row is included, including the terminal row. The final
+row may not earn a later observed return, but it is still a portfolio state
+constructed by the simulation. A terminal rebalance can therefore change the
+average holding count and concentration metrics. Return-exposure metrics, if
+added later, must use a separately aligned prior-holdings contract.
 
 For date `t` and asset `i`:
 
@@ -72,8 +79,12 @@ keys.
 ### Required Tests
 
 - Hand-calculated equal-weight and concentrated rows.
+- A partial-cash row such as `[0.25, 0.25, 0.0]` proves gross normalization:
+  normalized HHI is `0.5`, not raw squared-weight sum `0.125`.
 - Warm-up rows excluded from active-date averages.
 - Drifted non-rebalance holdings included.
+- A terminal rebalance row is included as a closing state snapshot even though
+  it has no subsequent observed return row.
 - All-zero holdings return `NaN` for the three metrics.
 - Missing, infinite, negative, duplicate, unsorted, non-numeric, and leveraged
   holdings fail explicitly.
