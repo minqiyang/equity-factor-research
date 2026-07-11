@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
-import numpy as np
 import pandas as pd
 
 from features.operators import validate_panel_data
@@ -54,25 +53,28 @@ def calculate_volume_aware_slippage_diagnostics(
     max_participation: float = 1.0,
     name: str = "volume_aware_slippage_diagnostics",
 ) -> VolumeAwareSlippageDiagnostics:
-    """Calculate lagged participation and candidate slippage diagnostics.
+    """Calculate diagnostics from absolute changes between target weights.
 
     Rolling dollar volume is calculated from ``price * volume`` using full
     trailing windows, then lagged by ``volume_lag`` rows before it is used for a
     rebalance-date trade. Missing, zero, or zero-volume-window liquidity raises
     by default when a non-zero trade weight needs that liquidity. Participation
     above ``max_participation`` also raises by default.
+
+    This compatibility path derives trades from consecutive target rows. Use
+    :func:`calculate_volume_aware_slippage_from_trade_weights` when a portfolio
+    path can provide drift-aware per-asset trade weights directly.
     """
 
-    _validate_non_empty_name(name)
-    _validate_positive_integer(window, "window")
-    _validate_positive_integer(volume_lag, "volume_lag")
-    _validate_positive_finite(portfolio_notional, "portfolio_notional")
-    _validate_non_negative_finite(base_slippage_bps, "base_slippage_bps")
-    _validate_non_negative_finite(
-        participation_slope_bps,
-        "participation_slope_bps",
+    _validate_slippage_parameters(
+        window=window,
+        portfolio_notional=portfolio_notional,
+        base_slippage_bps=base_slippage_bps,
+        participation_slope_bps=participation_slope_bps,
+        volume_lag=volume_lag,
+        max_participation=max_participation,
+        name=name,
     )
-    _validate_positive_finite(max_participation, "max_participation")
 
     target_panel = _validate_target_weights(target_weights)
     price_panel, volume_panel = _validate_price_volume_panels(price, volume)
@@ -80,6 +82,86 @@ def calculate_volume_aware_slippage_diagnostics(
 
     trade_weights = target_panel.diff().abs()
     trade_weights.iloc[0] = target_panel.iloc[0].abs()
+    return _calculate_volume_aware_slippage_from_validated_trade_weights(
+        trade_weights=trade_weights,
+        price_panel=price_panel,
+        volume_panel=volume_panel,
+        window=window,
+        portfolio_notional=portfolio_notional,
+        base_slippage_bps=base_slippage_bps,
+        participation_slope_bps=participation_slope_bps,
+        volume_lag=volume_lag,
+        max_participation=max_participation,
+        name=name,
+        trade_weight_source="derived_from_target_weight_difference",
+    )
+
+
+def calculate_volume_aware_slippage_from_trade_weights(
+    trade_weights: pd.DataFrame,
+    price: pd.DataFrame,
+    volume: pd.DataFrame,
+    *,
+    window: int,
+    portfolio_notional: float,
+    base_slippage_bps: float = 0.0,
+    participation_slope_bps: float = 0.0,
+    volume_lag: int = 1,
+    max_participation: float = 1.0,
+    name: str = "volume_aware_slippage_diagnostics",
+) -> VolumeAwareSlippageDiagnostics:
+    """Calculate diagnostics from explicit absolute per-asset trade weights.
+
+    ``trade_weights`` must use the same dates and assets as ``price`` and
+    ``volume``. Values represent absolute portfolio-weight changes, not target
+    holdings. For the long-only, unlevered contract, each asset change is at
+    most 1.0 and total trade weight is at most 2.0 on any date.
+    """
+
+    _validate_slippage_parameters(
+        window=window,
+        portfolio_notional=portfolio_notional,
+        base_slippage_bps=base_slippage_bps,
+        participation_slope_bps=participation_slope_bps,
+        volume_lag=volume_lag,
+        max_participation=max_participation,
+        name=name,
+    )
+
+    trade_panel = _validate_trade_weights(trade_weights)
+    price_panel, volume_panel = _validate_price_volume_panels(price, volume)
+    _validate_identical_axes(trade_panel, price_panel, "trade_weights", "price")
+    return _calculate_volume_aware_slippage_from_validated_trade_weights(
+        trade_weights=trade_panel,
+        price_panel=price_panel,
+        volume_panel=volume_panel,
+        window=window,
+        portfolio_notional=portfolio_notional,
+        base_slippage_bps=base_slippage_bps,
+        participation_slope_bps=participation_slope_bps,
+        volume_lag=volume_lag,
+        max_participation=max_participation,
+        name=name,
+        trade_weight_source="explicit_per_asset_trade_weights",
+    )
+
+
+def _calculate_volume_aware_slippage_from_validated_trade_weights(
+    *,
+    trade_weights: pd.DataFrame,
+    price_panel: pd.DataFrame,
+    volume_panel: pd.DataFrame,
+    window: int,
+    portfolio_notional: float,
+    base_slippage_bps: float,
+    participation_slope_bps: float,
+    volume_lag: int,
+    max_participation: float,
+    name: str,
+    trade_weight_source: str,
+) -> VolumeAwareSlippageDiagnostics:
+    """Calculate candidate impacts from already-validated aligned panels."""
+
     traded = trade_weights > 0.0
 
     rolling_dollar_volume = (price_panel * volume_panel).rolling(
@@ -148,7 +230,7 @@ def calculate_volume_aware_slippage_diagnostics(
             "zero_capacity_count": zero_capacity_count,
             "zero_volume_window_count": zero_volume_window_count,
         },
-        index=target_panel.index,
+        index=trade_weights.index,
     )
 
     parameters: dict[str, object] = {
@@ -159,6 +241,8 @@ def calculate_volume_aware_slippage_diagnostics(
         "base_slippage_bps": float(base_slippage_bps),
         "participation_slope_bps": float(participation_slope_bps),
         "max_participation": float(max_participation),
+        "trade_weight_source": trade_weight_source,
+        "return_impact_basis": "post_return_portfolio_value",
         "liquidity_reference": "rolling_dollar_volume_shifted_by_volume_lag",
         "missing_or_zero_liquidity_policy": "raise",
         "participation_above_cap_policy": "raise",
@@ -185,10 +269,32 @@ def calculate_volume_aware_slippage_diagnostics(
         summary=summary,
         parameters=parameters,
         caveats=caveats,
-        start_date=pd.Timestamp(target_panel.index[0]),
-        end_date=pd.Timestamp(target_panel.index[-1]),
-        asset_count=len(target_panel.columns),
+        start_date=pd.Timestamp(trade_weights.index[0]),
+        end_date=pd.Timestamp(trade_weights.index[-1]),
+        asset_count=len(trade_weights.columns),
     )
+
+
+def _validate_slippage_parameters(
+    *,
+    window: int,
+    portfolio_notional: float,
+    base_slippage_bps: float,
+    participation_slope_bps: float,
+    volume_lag: int,
+    max_participation: float,
+    name: str,
+) -> None:
+    _validate_non_empty_name(name)
+    _validate_positive_integer(window, "window")
+    _validate_positive_integer(volume_lag, "volume_lag")
+    _validate_positive_finite(portfolio_notional, "portfolio_notional")
+    _validate_non_negative_finite(base_slippage_bps, "base_slippage_bps")
+    _validate_non_negative_finite(
+        participation_slope_bps,
+        "participation_slope_bps",
+    )
+    _validate_positive_finite(max_participation, "max_participation")
 
 
 def _validate_target_weights(target_weights: pd.DataFrame) -> pd.DataFrame:
@@ -210,6 +316,40 @@ def _validate_target_weights(target_weights: pd.DataFrame) -> pd.DataFrame:
         )
 
     return target_panel
+
+
+def _validate_trade_weights(trade_weights: pd.DataFrame) -> pd.DataFrame:
+    trade_panel = validate_panel_data(trade_weights, name="trade_weights")
+
+    if trade_panel.isna().any().any():
+        raise ValueError("trade_weights must not contain missing values")
+
+    negative = trade_panel.lt(0.0)
+    if negative.to_numpy().any():
+        first_date, first_asset = _first_true_cell(negative)
+        raise ValueError(
+            "trade_weights must be non-negative; first negative value is for "
+            f"{first_asset} on {first_date.date()}"
+        )
+
+    oversized = trade_panel.gt(1.0 + 1e-12)
+    if oversized.to_numpy().any():
+        first_date, first_asset = _first_true_cell(oversized)
+        raise ValueError(
+            "Each per-asset trade weight must not exceed 1.0; first oversized "
+            f"value is for {first_asset} on {first_date.date()}"
+        )
+
+    row_sums = trade_panel.sum(axis=1)
+    if row_sums.gt(2.0 + 1e-12).any():
+        first_date = row_sums[row_sums.gt(2.0 + 1e-12)].index[0]
+        raise ValueError(
+            "trade_weights row sum exceeds 2.0 on "
+            f"{first_date.date()}; leveraged, short, or multi-turnover paths "
+            "are outside this diagnostic contract."
+        )
+
+    return trade_panel
 
 
 def _validate_price_volume_panels(
@@ -322,4 +462,5 @@ def _validate_non_empty_name(value: str) -> None:
 __all__ = [
     "VolumeAwareSlippageDiagnostics",
     "calculate_volume_aware_slippage_diagnostics",
+    "calculate_volume_aware_slippage_from_trade_weights",
 ]

@@ -13,6 +13,10 @@ explicit `base_slippage_bps` / `participation_slope_bps` assumption fields and
 dedicated duplicate-index, unsorted-index, timezone, and non-finite impact
 series tests.
 
+The current backtest-linked route uses `BacktestResult.trade_weights` with
+`calculate_volume_aware_slippage_from_trade_weights()`. The consecutive-target
+helper remains compatibility-only and is not the integration path.
+
 The remaining live guidance applies only to future changes beyond the current
 precomputed-impact boundary, such as any internal OHLCV/rolling-volume model,
 generated-output refresh, or broader real-data interpretation. Those changes
@@ -105,6 +109,8 @@ Required unit tests for assumptions and audit metadata:
 - Assumptions record `volume_aware_slippage_mode`.
 - Assumptions record whether volume-aware impact was applied to returns.
 - Assumptions record the volume-aware slippage model name and source.
+- Assumptions record `volume_aware_trade_weight_source`.
+- Assumptions record the input and applied return-impact bases.
 - Assumptions record `portfolio_notional`, `window`, `volume_lag`,
   `base_slippage_bps`, `participation_slope_bps`, `max_participation`, price
   field, volume policy, missing-liquidity policy, stale-volume policy, and cap
@@ -120,10 +126,15 @@ semantics.
 
 Required integration tests:
 
-- Build a tiny synthetic target-weight panel, price panel, and volume panel.
-- Call `calculate_volume_aware_slippage_diagnostics()` outside the backtester.
+- Build a tiny synthetic backtest, price panel, and volume panel.
+- Pass `BacktestResult.trade_weights` to
+  `calculate_volume_aware_slippage_from_trade_weights()` outside the
+  backtester.
 - Pass only the resulting aligned `portfolio_slippage_impact` series and audit
   metadata into the future backtester or wrapper.
+- Verify that a helper impact measured on post-return portfolio value is
+  multiplied by `1 + gross_return` before deduction from beginning-period
+  return, including a non-zero gross-return case.
 - Verify hand-calculated net returns after deducting fixed transaction costs,
   fixed-bps slippage when allowed, and applied volume-aware impact.
 - Verify the full `VolumeAwareSlippageDiagnostics` object remains available for
@@ -155,11 +166,10 @@ Required failures:
 - stale volume raises by default when liquidity reference age exceeds the
   configured maximum.
 - invalid or missing `portfolio_notional` raises.
-- target weights with missing values raise.
-- target weights with negative weights raise.
-- target weights with row sums above 1.0 raise unless a later design explicitly
-  supports leverage.
-- target weights, price, volume, and applied impact with mismatched indexes or
+- explicit trade weights with missing or negative values raise.
+- per-asset trade weights above 1.0 or row sums above 2.0 raise under the
+  long-only unlevered contract.
+- trade weights, price, volume, and applied impact with mismatched indexes or
   columns raise.
 - excessive participation above `max_participation` raises.
 - positive fixed-bps slippage plus positive applied volume-aware impact raises
@@ -178,7 +188,7 @@ Required failures:
 | Zero volume | Raise for traded cells when the required rolling window contains zero volume or lagged rolling dollar volume is non-positive. |
 | Stale volume | Raise by default when liquidity reference age exceeds an explicit `max_volume_age`; optional `mark_unestimated` must be separately designed and tested. |
 | Invalid notional | Raise when `portfolio_notional` is missing, non-numeric, non-finite, non-positive, or inferred from normalized `initial_capital=1.0`. |
-| Invalid target weights | Raise for missing values, negative weights, leverage above 1.0, unaligned axes, or incompatible rebalance dates. |
+| Invalid trade weights | Raise for missing, negative, oversized, leveraged, unaligned, or incompatible trade panels. |
 | Excessive participation | Raise when participation exceeds `max_participation`; silent clipping is not allowed. |
 | Incomplete rolling dollar-volume window | Raise when a non-zero trade needs warm-up capacity that is unavailable after lagging. |
 | Missing impact value | Raise on trade dates by default; no silent zero-slippage fallback. |

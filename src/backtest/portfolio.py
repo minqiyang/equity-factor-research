@@ -25,8 +25,10 @@ _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "participation_slope_bps",
     "portfolio_notional",
     "price_field",
+    "return_impact_basis",
     "slippage_model",
     "stale_volume_policy",
+    "trade_weight_source",
     "volume_lag",
     "volume_policy",
     "window",
@@ -40,12 +42,16 @@ class BacktestResult:
     ``holdings`` are post-trade weights on rebalance dates and drifted closing
     weights on other dates. Period returns use prior-date holdings, so a target
     set on date ``t`` affects returns starting on the next available price row.
+    ``trade_weights`` are absolute per-asset changes from drifted pre-trade
+    weights to targets on rebalance dates and zero on other dates; their row sum
+    equals ``turnover`` under the undivided convention.
     """
 
     equity_curve: pd.Series
     returns: pd.Series
     gross_returns: pd.Series
     holdings: pd.DataFrame
+    trade_weights: pd.DataFrame
     turnover: pd.Series
     transaction_costs: pd.Series
     slippage_costs: pd.Series
@@ -145,11 +151,12 @@ def run_long_only_backtest(
 
     asset_returns = price_data.pct_change(fill_method=None)
     asset_returns = asset_returns.replace([np.inf, -np.inf], np.nan)
-    holdings, gross_returns, turnover = _calculate_drift_aware_portfolio_path(
+    holdings, gross_returns, trade_weights = _calculate_drift_aware_portfolio_path(
         asset_returns=asset_returns,
         target_weights=target_weights,
         missing_price_policy=missing_price_policy,
     )
+    turnover = trade_weights.sum(axis=1).rename("turnover")
     post_return_growth = 1.0 + gross_returns
     transaction_costs = (
         turnover * (transaction_cost_bps / 10_000.0) * post_return_growth
@@ -161,6 +168,7 @@ def run_long_only_backtest(
         impact=volume_aware_slippage_impact,
         metadata=volume_aware_slippage_metadata,
         fixed_slippage_bps=slippage_bps,
+        post_return_growth=post_return_growth,
     )
     total_trading_costs = (
         transaction_costs + slippage_costs + volume_aware_slippage_costs
@@ -212,6 +220,7 @@ def run_long_only_backtest(
         returns=net_returns.rename("return"),
         gross_returns=gross_returns.rename("gross_return"),
         holdings=holdings,
+        trade_weights=trade_weights,
         turnover=turnover.rename("turnover"),
         transaction_costs=transaction_costs.rename("transaction_cost_impact"),
         slippage_costs=slippage_costs.rename("slippage_impact"),
@@ -234,6 +243,7 @@ def run_long_only_backtest(
             "execution_timing": "signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row",
             "turnover_model": "target_weight_turnover",
             "turnover_reference": "drifted_pretrade_weights",
+            "trade_weight_model": "absolute_target_minus_drifted_pretrade_by_asset",
             "holdings_model": "drifted_between_rebalances",
             "cost_model": "fixed_bps_on_target_weight_turnover",
             "slippage_model": "fixed_bps_on_target_weight_turnover",
@@ -279,12 +289,16 @@ def _calculate_drift_aware_portfolio_path(
     asset_returns: pd.DataFrame,
     target_weights: pd.DataFrame,
     missing_price_policy: str,
-) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
-    """Propagate weights through returns and rebalance only on target rows."""
+) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
+    """Propagate holdings and record per-asset trades only on target rows."""
 
     holdings = pd.DataFrame(0.0, index=asset_returns.index, columns=asset_returns.columns)
     gross_returns = pd.Series(0.0, index=asset_returns.index, name="gross_return")
-    turnover = pd.Series(0.0, index=asset_returns.index, name="turnover")
+    trade_weights = pd.DataFrame(
+        0.0,
+        index=asset_returns.index,
+        columns=asset_returns.columns,
+    )
     post_trade_weights = pd.Series(0.0, index=asset_returns.columns, dtype=float)
 
     for date in asset_returns.index:
@@ -313,14 +327,14 @@ def _calculate_drift_aware_portfolio_path(
         target = target_weights.loc[date]
         if target.notna().any():
             target = target.fillna(0.0)
-            turnover.loc[date] = float((target - pretrade_weights).abs().sum())
+            trade_weights.loc[date] = (target - pretrade_weights).abs()
             post_trade_weights = target
         else:
             post_trade_weights = pretrade_weights
 
         holdings.loc[date] = post_trade_weights
 
-    return holdings, gross_returns, turnover
+    return holdings, gross_returns, trade_weights
 
 
 def _select_top_assets(scores: pd.Series, *, top_n: int | None, top_pct: float | None) -> list[str]:
@@ -479,6 +493,7 @@ def _prepare_volume_aware_slippage_costs(
     impact: pd.Series | None,
     metadata: Mapping[str, Any] | None,
     fixed_slippage_bps: float,
+    post_return_growth: pd.Series,
 ) -> pd.Series:
     zero_costs = pd.Series(0.0, index=price_index, name="volume_aware_slippage_impact")
 
@@ -501,6 +516,10 @@ def _prepare_volume_aware_slippage_costs(
         impact=impact,
         price_index=price_index,
     )
+
+    return_impact_basis = metadata["return_impact_basis"]
+    if return_impact_basis == "post_return_portfolio_value":
+        costs = costs * post_return_growth
 
     if fixed_slippage_bps > 0.0 and costs.gt(0.0).any():
         raise ValueError(
@@ -574,6 +593,28 @@ def _validate_volume_aware_slippage_metadata(
             + ", ".join(missing_keys)
         )
 
+    trade_weight_source = metadata["trade_weight_source"]
+    if not isinstance(trade_weight_source, str) or not trade_weight_source.strip():
+        raise ValueError(
+            "volume_aware_slippage_metadata trade_weight_source must be a "
+            "non-empty string"
+        )
+
+    return_impact_basis = metadata["return_impact_basis"]
+    allowed_return_impact_bases = {
+        "beginning_period_portfolio_value",
+        "post_return_portfolio_value",
+    }
+    if (
+        not isinstance(return_impact_basis, str)
+        or return_impact_basis not in allowed_return_impact_bases
+    ):
+        raise ValueError(
+            "volume_aware_slippage_metadata return_impact_basis must be "
+            "'beginning_period_portfolio_value' or "
+            "'post_return_portfolio_value'"
+        )
+
 
 def _build_volume_aware_slippage_assumptions(
     *,
@@ -587,6 +628,17 @@ def _build_volume_aware_slippage_assumptions(
         "volume_aware_slippage_applied_to_returns": mode == "apply_precomputed_impact",
         "volume_aware_slippage_model": metadata_values.get("slippage_model"),
         "volume_aware_slippage_source": metadata_values.get("name"),
+        "volume_aware_trade_weight_source": metadata_values.get(
+            "trade_weight_source"
+        ),
+        "volume_aware_input_return_impact_basis": metadata_values.get(
+            "return_impact_basis"
+        ),
+        "volume_aware_applied_return_impact_basis": (
+            "beginning_period_portfolio_value"
+            if mode == "apply_precomputed_impact"
+            else None
+        ),
         "portfolio_notional": metadata_values.get("portfolio_notional"),
         "volume_aware_price_field": metadata_values.get("price_field"),
         "volume_policy": metadata_values.get("volume_policy"),

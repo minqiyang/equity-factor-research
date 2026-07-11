@@ -16,6 +16,13 @@ The remaining live guidance is the boundary: the backtester still does not
 compute rolling dollar volume from raw volume data, fetch data, infer OHLCV
 semantics, connect to brokers, place orders, or claim execution realism.
 
+Current code also exposes drift-aware per-asset trade weights on
+`BacktestResult`. The standalone slippage helper accepts those weights through
+`calculate_volume_aware_slippage_from_trade_weights()` and records their source.
+Candidate impact still enters net-return accounting only through the explicit
+precomputed-impact boundary; no rolling volume calculation was moved inside the
+backtester.
+
 This is a documentation-only design for deciding whether and how the existing
 synthetic-only volume-aware slippage diagnostic helper could later be connected
 to the simulated local backtester.
@@ -53,16 +60,16 @@ friction, the accounting and caveats must be explicit before behavior changes.
 
 | Artifact | Current role |
 | --- | --- |
-| `src/backtest/portfolio.py` | Applies target-weight turnover, transaction-cost impact, fixed-bps slippage impact, and net return accounting. |
+| `src/backtest/portfolio.py` | Exposes drift-aware per-asset trade weights and applies their summed turnover to transaction-cost, fixed-bps slippage, and net-return accounting. |
 | `src/backtest/metrics.py` | Reports total transaction-cost, slippage, and total trading-cost impact when supplied. |
-| `src/backtest/slippage.py` | Provides `calculate_volume_aware_slippage_diagnostics()` as a standalone diagnostic helper only. |
+| `src/backtest/slippage.py` | Provides a compatibility target-difference helper and an explicit drift-aware trade-weight diagnostic entrypoint. |
 | `tests/test_volume_aware_slippage.py` | Covers lagged capacity, explicit notional, missing/zero liquidity, participation caps, and forbidden imports for the helper. |
 | `research/local_csv_fixture_workflow_demo.py` | Calls the helper on committed synthetic fixture inputs and reports participation plus rejected/cap counts without applying candidate slippage to returns. |
 | `docs/volume_aware_slippage_design.md` | Defines the original design boundary for the helper and diagnostic smoke path. |
 
-The helper returns candidate `portfolio_slippage_impact`, but that series is
-not consumed by the backtester. Current generated local-fixture artifacts use
-the helper for diagnostics only.
+The backtester can consume a reviewed `portfolio_slippage_impact` through its
+explicit precomputed-impact mode. The default and all generated local-fixture
+artifacts remain diagnostic-only.
 
 ## 3. Why It Remains Diagnostic-Only
 
@@ -99,9 +106,9 @@ infer missing data.
 
 Required inputs:
 
-- target weights on the same rebalance dates and asset columns used by the
-  backtester.
-- previous target weights or an equivalent deterministic turnover convention.
+- `BacktestResult.trade_weights` on the same dates and asset columns used by
+  the backtester. These are absolute changes from drifted pre-trade weights to
+  targets, not differences between consecutive targets.
 - price panel used to compute dollar volume.
 - volume panel or local OHLCV-derived volume panel with reviewed adjustment
   policy.
@@ -123,21 +130,27 @@ inputs.
 
 ## 5. Recommended Integration Shape
 
-The recommended first integration, after a separate test-plan PR, is a
-precomputed-impact boundary rather than making `run_long_only_backtest()`
-calculate volume-aware slippage internally.
+The implemented integration remains a precomputed-impact boundary rather than
+making `run_long_only_backtest()` calculate volume-aware slippage internally.
 
-Recommended future flow:
+Recommended flow for a backtest-linked diagnostic:
 
-1. Build backtester target weights by the existing deterministic path.
-2. Call `calculate_volume_aware_slippage_diagnostics()` outside the backtester
-   with explicitly validated price, volume, notional, lag, window, and cap
+1. Run the deterministic portfolio path and obtain
+   `BacktestResult.trade_weights`.
+2. Pass those trades to
+   `calculate_volume_aware_slippage_from_trade_weights()` outside the
+   backtester with validated price, volume, notional, lag, window, and cap
    parameters.
-3. Pass only a reviewed, date-aligned `portfolio_slippage_impact` series plus
-   audit metadata into the backtester or a narrow wrapper.
-4. Deduct that impact from simulated net returns only when an explicit future
-   option says to apply it.
+3. Review the date-aligned `portfolio_slippage_impact` series and preserve the
+   diagnostic metadata, including `trade_weight_source` and
+   `return_impact_basis`.
+4. Pass the reviewed impact and required metadata into the backtester only
+   through `volume_aware_slippage_mode="apply_precomputed_impact"`.
 5. Preserve the full diagnostic object for audit reporting.
+
+`calculate_volume_aware_slippage_diagnostics()` remains a compatibility path
+for standalone target-panel diagnostics. It must not be used to reconstruct
+trades from a drift-aware backtest.
 
 Rationale:
 
@@ -158,22 +171,27 @@ Deferred alternative:
 
 ## 6. Accounting Semantics
 
-Current behavior:
+Accounting behavior:
 
 ```text
 gross_return[t] = return before transaction-cost and slippage deductions
-fixed_transaction_cost_impact[t] = turnover[t] * transaction_cost_bps / 10000
-fixed_bps_slippage_impact[t] = turnover[t] * slippage_bps / 10000
+post_return_growth[t] = 1 + gross_return[t]
+fixed_transaction_cost_impact[t] =
+    turnover[t] * transaction_cost_bps / 10000 * post_return_growth[t]
+fixed_bps_slippage_impact[t] =
+    turnover[t] * slippage_bps / 10000 * post_return_growth[t]
 net_return[t] = gross_return[t]
     - fixed_transaction_cost_impact[t]
     - fixed_bps_slippage_impact[t]
 ```
 
-Future precomputed-impact behavior, if implemented after review:
+Precomputed volume-impact behavior:
 
 ```text
-volume_aware_slippage_impact[t] =
+raw_volume_aware_slippage_impact[t] =
     diagnostics.portfolio_slippage_impact[t]
+volume_aware_slippage_impact[t] =
+    raw_volume_aware_slippage_impact[t] * post_return_growth[t]
 
 net_return[t] = gross_return[t]
     - fixed_transaction_cost_impact[t]
@@ -189,6 +207,9 @@ Required boundaries:
 - Transaction-cost impact remains separate from slippage impact.
 - Volume-aware slippage impact must be separately named and separately
   reportable.
+- Diagnostic helpers label raw impact as
+  `post_return_portfolio_value`; applied costs are converted and recorded as
+  `beginning_period_portfolio_value`.
 - The first implementation should reject applying both positive fixed-bps
   slippage and positive volume-aware slippage unless a later reviewed design
   explicitly permits combined models.

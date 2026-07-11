@@ -1,5 +1,6 @@
 import ast
 import inspect
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,13 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 import backtest.slippage as slippage
-from backtest.slippage import calculate_volume_aware_slippage_diagnostics
+from backtest.slippage import (
+    calculate_volume_aware_slippage_diagnostics,
+    calculate_volume_aware_slippage_from_trade_weights,
+)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _panel(values: dict[str, list[object]], *, start: str = "2024-01-01") -> pd.DataFrame:
@@ -89,6 +96,12 @@ def test_volume_aware_slippage_diagnostics_are_hand_calculated() -> None:
     assert result.end_date == target_weights.index[-1]
     assert result.asset_count == 2
     assert result.parameters["slippage_model"] == "candidate_linear_participation_slippage"
+    assert result.parameters["trade_weight_source"] == (
+        "derived_from_target_weight_difference"
+    )
+    assert result.parameters["return_impact_basis"] == (
+        "post_return_portfolio_value"
+    )
     assert result.parameters["missing_or_zero_liquidity_policy"] == "raise"
     assert "not_backtest_integration" in result.caveats
     assert "no_profitability_claim" in result.caveats
@@ -119,6 +132,80 @@ def test_volume_aware_slippage_uses_lagged_capacity_not_same_day_volume() -> Non
 
     assert result.lagged_rolling_dollar_volume.loc[target_weights.index[2], "AAA"] == pytest.approx(1000.0)
     assert result.participation.loc[target_weights.index[2], "AAA"] == pytest.approx(0.05)
+
+
+def test_volume_aware_slippage_accepts_explicit_drift_aware_trade_weights() -> None:
+    trade_weights = _panel(
+        {
+            "AAA": [0.0, 0.0, 0.5, 0.3],
+            "BBB": [0.0, 0.0, 0.5, 0.3],
+        },
+    )
+    price = _panel(
+        {
+            "AAA": [10.0, 10.0, 20.0, 20.0],
+            "BBB": [20.0, 20.0, 20.0, 20.0],
+        },
+    )
+    volume = _panel(
+        {
+            "AAA": [1000.0, 1000.0, 1000.0, 1000.0],
+            "BBB": [2000.0, 2000.0, 2000.0, 2000.0],
+        },
+    )
+
+    result = calculate_volume_aware_slippage_from_trade_weights(
+        trade_weights,
+        price,
+        volume,
+        window=2,
+        portfolio_notional=1000.0,
+        max_participation=1.0,
+    )
+
+    assert_frame_equal(result.trade_weights, trade_weights)
+    assert result.participation.loc[trade_weights.index[2], "AAA"] == pytest.approx(0.05)
+    assert result.participation.loc[trade_weights.index[3], "AAA"] == pytest.approx(0.02)
+    assert result.participation.loc[trade_weights.index[3], "BBB"] == pytest.approx(0.0075)
+    assert result.parameters["trade_weight_source"] == "explicit_per_asset_trade_weights"
+    assert result.parameters["return_impact_basis"] == (
+        "post_return_portfolio_value"
+    )
+
+
+@pytest.mark.parametrize(
+    ("trade_weights", "match"),
+    [
+        (_panel({"AAA": [0.0, np.nan, 0.5]}), "must not contain missing"),
+        (_panel({"AAA": [0.0, -0.1, 0.5]}), "must be non-negative"),
+        (_panel({"AAA": [0.0, 1.1, 0.5]}), "must not exceed 1.0"),
+        (
+            _panel(
+                {
+                    "AAA": [0.0, 0.8, 0.0],
+                    "BBB": [0.0, 0.8, 0.0],
+                    "CCC": [0.0, 0.8, 0.0],
+                },
+            ),
+            "row sum exceeds 2.0",
+        ),
+    ],
+)
+def test_explicit_trade_weights_reject_invalid_long_only_changes(
+    trade_weights: pd.DataFrame,
+    match: str,
+) -> None:
+    price = pd.DataFrame(10.0, index=trade_weights.index, columns=trade_weights.columns)
+    volume = pd.DataFrame(100.0, index=trade_weights.index, columns=trade_weights.columns)
+
+    with pytest.raises(ValueError, match=match):
+        calculate_volume_aware_slippage_from_trade_weights(
+            trade_weights,
+            price,
+            volume,
+            window=1,
+            portfolio_notional=100.0,
+        )
 
 
 def test_volume_aware_slippage_requires_explicit_positive_notional() -> None:
@@ -322,3 +409,15 @@ def test_volume_aware_slippage_module_has_no_data_trading_or_lean_imports() -> N
 
     for module_name in imported_modules:
         assert not any(term in module_name.lower() for term in forbidden_terms)
+
+
+def test_integration_design_routes_backtest_trades_through_explicit_helper() -> None:
+    design = (
+        PROJECT_ROOT / "docs" / "volume_aware_slippage_backtester_integration_design.md"
+    ).read_text(encoding="utf-8")
+    recommended_flow = design.split("## 5. Recommended Integration Shape", maxsplit=1)[1]
+    recommended_flow = recommended_flow.split("## 6. Accounting Semantics", maxsplit=1)[0]
+
+    assert "BacktestResult.trade_weights" in recommended_flow
+    assert "calculate_volume_aware_slippage_from_trade_weights()" in recommended_flow
+    assert "must not be used to reconstruct" in recommended_flow
