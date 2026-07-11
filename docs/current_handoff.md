@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-07-10 for the holdings-state metrics stage.
+Updated: 2026-07-11 for the holdings-state metrics stage.
 
 Baseline stage: holdings-state metrics.
 
@@ -10,7 +10,7 @@ Baseline stage: holdings-state metrics.
 - Latest implementation baseline: drift-aware volume-slippage accounting,
   vectorized liquidity-universe caps, canonical public docs, and package build
   QA.
-- Verified suite at the latest implementation stage: 536 tests.
+- Verified suite at the latest implementation stage: 553 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
 
