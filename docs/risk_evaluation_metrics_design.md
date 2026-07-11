@@ -1,6 +1,7 @@
 # Risk And Evaluation Metrics Design
 
-Status: Stages 1 through 3 implemented; episode-metric design is next.
+Status: Stages 1 through 3 implemented; Stage 4 episode metrics are designed
+for a separate implementation checkpoint.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,
@@ -281,8 +282,8 @@ partial resize, exit, and re-entry episodes.
 
 ### Average Holding-Period Return
 
-Deferred for the same reason. Partial rebalances and drift require an explicit
-lot or episode attribution policy and a reviewed allocation of costs.
+Implemented only after the Stage 4 contract below. Daily positive-return
+frequency is not a substitute.
 
 ## Stage 3: Long-Only Position-Cap Constraint
 
@@ -384,6 +385,154 @@ belongs in `src/risk/constraints.py` and integration in the backtester.
 - liquidity filtering remains upstream and benchmark/tracking-error accounting
   is unchanged except through the constrained strategy return path.
 
+## Stage 4: Holding-Episode Metrics
+
+The first episode implementation adds only `episode_hit_rate` and
+`average_holding_period_return`. It uses completed long-only asset episodes
+from the simulated backtest. It does not infer trades, fills, tax lots, or
+round trips from daily portfolio returns.
+
+### Required Attribution Inputs
+
+Episode attribution requires exact-date inputs. Matrix inputs have identical
+indexes and asset columns; series inputs share that index:
+
+| Input | Meaning |
+| --- | --- |
+| `holdings` | Post-trade closing weights. |
+| `asset_returns` | Close-to-close asset returns; row `t` is earned by holdings from the prior close. |
+| `signed_trade_weights` | Constrained target weight minus drifted pre-trade weight. Positive values deploy capital; negative values withdraw capital. |
+| `trade_weights` | Absolute signed trade weights, retained as an accounting cross-check. |
+| `turnover` | Row sum of absolute signed trade weights. |
+| `total_trading_costs` | Applied portfolio-return impact from transaction costs, fixed slippage, and applied volume-aware impact. |
+
+The implementation must expose `signed_trade_weights` from the existing
+drift-aware path rather than reconstructing trade direction from closing
+holdings. For every date and asset,
+`abs(signed_trade_weights) == trade_weights`; row sums of absolute signed trades
+must equal turnover. This is accounting evidence, not a new trading model.
+
+### Episode Boundaries
+
+An episode is one uninterrupted run of strictly positive post-trade closing
+weight for one asset:
+
+- entry: weight changes from zero at the prior close to positive after the
+  current close's trade;
+- continuation: post-trade weight remains positive, including drift and any
+  increase or partial reduction;
+- exit: prior-close weight is positive and post-trade closing weight is zero,
+  whether from a full sale or a total asset loss during the return window;
+- re-entry: a later zero-to-positive transition starts a new episode;
+- a same-close sell and buy cannot be observed separately in daily aggregate
+  targets and therefore remains one episode when closing weight stays positive.
+
+The entry row contributes its entry cost but no asset return because the new
+holding starts after that row's close-to-close window. The exit row contributes
+the final asset return earned by the prior-close holding and the exit cost.
+
+An episode still positive on the terminal row is open and excluded from both
+metrics. It is never forced closed at an invented price. The assumptions
+record closed and terminal-open episode counts so omitted observations remain
+visible. If there are no completed episodes, both metrics are `NaN`.
+
+### Return And Hit Definitions
+
+For each completed episode `e`:
+
+```text
+gross_contribution[e] = sum(prior_close_weight[i, t] * asset_return[i, t])
+deployed_weight[e] = sum(max(signed_trade_weight[i, t], 0))
+net_contribution[e] = gross_contribution[e] - allocated_trading_cost[e]
+episode_return[e] = net_contribution[e] / deployed_weight[e]
+```
+
+`deployed_weight` includes entry and later increases, but not drift or partial
+sales. It must be positive for every completed episode. This definition is a
+net simulated return on cumulatively deployed portfolio weight; it is not an
+asset buy-and-hold return, IRR, tax-lot return, or compounded portfolio return.
+
+Required aggregate metrics:
+
+```text
+episode_hit_rate = mean(episode_return > 0)
+average_holding_period_return = mean(episode_return)
+```
+
+Zero-return episodes are not hits. Every completed episode receives equal
+weight in both aggregates; there is no capital-weighting or duration-weighting.
+
+### Cost Attribution
+
+Applied cost on date `t` is allocated across assets in proportion to absolute
+signed trade weight:
+
+```text
+asset_cost[i, t] = total_trading_costs[t] * (
+    abs(signed_trade_weight[i, t]) / turnover[t]
+)
+```
+
+When turnover is zero, total applied cost must also be zero and every asset
+cost is zero. Entry, increase, reduction, and exit costs belong to the episode
+active immediately before or after that trade. The allocation exactly
+reconciles to `total_trading_costs` on every date. For nonlinear precomputed
+volume impact this is an explicit accounting allocation, not a claim that each
+asset caused a proportional amount of market impact.
+
+Diagnostic-only slippage is excluded because it is not in
+`total_trading_costs`. Benchmark costs are never attributed to strategy
+episodes. Results with zero transaction costs or slippage remain diagnostics
+under the existing project policy.
+
+### Validation, Output, And Audit Fields
+
+All inputs must be non-empty real numeric data with unique increasing
+`DatetimeIndex` values, finite values, and exact date alignment. Matrices also
+require unique, exactly aligned asset columns. Holdings and absolute trades are
+non-negative; holdings gross exposure cannot exceed one. Signed trades may be
+negative. Returns may be negative but must not be below `-1` for any
+prior-close held asset.
+
+The implementation rejects accounting mismatches before attribution, including
+absolute/signed trade disagreement, turnover disagreement, nonzero cost with
+zero turnover, or daily allocated costs that do not reconcile. It does not
+fill, intersect, reorder, threshold, or infer missing data.
+
+Metrics are optional: callers without the complete attribution inputs retain
+their existing metric dictionary. When active, assumptions record:
+
+```text
+holding_episode_contract = "continuous_positive_weight_v1"
+holding_episode_return_basis = "net_contribution_over_cumulative_deployed_weight"
+holding_episode_cost_allocation = "pro_rata_absolute_signed_trade_weight"
+holding_episode_resize_policy = "continue_episode"
+holding_episode_reentry_policy = "new_after_zero_close"
+holding_episode_terminal_policy = "exclude_open"
+holding_episode_zero_return_hit_policy = "not_a_hit"
+holding_episode_aggregation = "equal_weight_completed_episodes"
+holding_episode_closed_count = <integer>
+holding_episode_terminal_open_count = <integer>
+```
+
+### Required Stage 4 Implementation Tests
+
+- one hand-calculated entry, return, and exit episode with entry/exit costs;
+- multiple assets proving equal episode weighting and exact daily cost
+  reconciliation;
+- partial increase and reduction continue the episode while positive increases
+  add to deployed weight;
+- a zero close followed by re-entry creates two episodes;
+- a total asset loss closes an episode without inventing an exit trade;
+- zero-return completed episodes are not hits;
+- terminal-open episodes are counted but excluded from both metrics;
+- no completed episodes return `NaN` metrics;
+- position-cap cash does not create an episode and earns no return;
+- applied volume-aware cost is included while diagnostic-only impact is not;
+- malformed axes, values, return windows, and accounting identities fail;
+- optional-input compatibility preserves all existing metrics and backtest
+  paths when episode attribution is not requested.
+
 ## PR Sequence
 
 | PR | Scope | Stop condition |
@@ -393,7 +542,8 @@ belongs in `src/risk/constraints.py` and integration in the backtester.
 | C | Completed: implement tracking error under the approved daily close-to-close contract with benchmark-alignment tests. | Stop if benchmark returns cannot be reconstructed unambiguously. |
 | D | Completed: long-only position-cap constraint design. | Stop before code until the design PR is accepted. |
 | D2 | Completed: implement the approved optional position cap. | Stop on implicit renormalization, altered selection, or accounting drift. |
-| E | Next: episode model design, only if hit-rate or holding-period metrics are still needed. | Stop before presenting daily win rate as trade hit rate. |
+| E | Completed: holding-episode boundaries, return basis, cost allocation, terminal policy, audit fields, and tests. | Stop before presenting daily win rate as trade hit rate. |
+| E2 | Next: expose signed trades and implement only the approved episode metrics. | Stop on cost non-reconciliation or invented terminal exits. |
 
 Every code PR requires focused tests, full tests, Ruff, compilation, package
 build, current-head Codex review, and normal merge.

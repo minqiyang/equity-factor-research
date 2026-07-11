@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Approved continuous positive-weight holding episodes, signed-trade evidence,
+  net contribution over deployed weight, applied-cost allocation, and explicit
+  terminal-open handling for future episode metrics.
 - Implemented the optional long-only position cap with clip-without-
   renormalization behavior, residual cash, strict validation, backtester
   integration, and audit metadata.
