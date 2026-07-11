@@ -70,6 +70,11 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
     baseline_marker = "Baseline stage: holdings-state metrics."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
+    assert (
+        "Tracking error or active risk, hit rate, and average holding-period return"
+        in roadmap
+    )
+    assert "average holdings, and exposure concentration remain unimplemented" not in roadmap
     design = (
         PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md"
     ).read_text(encoding="utf-8")

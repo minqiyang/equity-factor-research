@@ -36,8 +36,8 @@ claims must be checked against source and tests before reuse.
    survivorship, adjustment, benchmark, split, cost, and interpretation policy.
 2. Portfolio risk constraints and exposure controls are not implemented;
    `src/risk/constraints.py` is a placeholder.
-3. Tracking error or active risk, hit rate, average holding-period return,
-   average holdings, and exposure concentration remain unimplemented.
+3. Tracking error or active risk, hit rate, and average holding-period return
+   remain unimplemented.
 4. Reporting plots are not implemented.
 5. Volume-aware impact is a deterministic research estimate, not a calibrated
    fill or market-impact model.
