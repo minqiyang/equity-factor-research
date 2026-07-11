@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the tracking-error implementation stage.
+Updated: 2026-07-11 for the position-cap constraint design stage.
 
-Baseline stage: tracking-error implementation.
+Baseline stage: position-cap constraint design.
 
 ## Canonical State
 
@@ -31,9 +31,10 @@ Baseline stage: tracking-error implementation.
 
 ## Active Stage
 
-Design portfolio constraints before adding code to `src/risk/constraints.py`.
-Do not combine constraint design with hit rate, holding-period return, plotting,
-or strategy-selection behavior.
+Implement only the approved optional long-only position cap in
+`src/risk/constraints.py` and integrate it after selection but before trade
+calculation. Do not combine it with hit rate, holding-period return, plotting,
+liquidity filtering, or strategy-selection behavior.
 
 ## Do Not Infer
 
@@ -45,8 +46,8 @@ or strategy-selection behavior.
 
 ## Next Safe Actions
 
-1. Design portfolio-constraint ordering, reject/clip/renormalize behavior,
-   cash treatment, infeasible-target handling, audit fields, and errors.
+1. Implement the approved clip-without-renormalization position-cap contract,
+   including residual non-interest-bearing cash and audit metadata.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in

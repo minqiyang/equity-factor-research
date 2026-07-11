@@ -7,6 +7,12 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Added
+
+- Approved the design contract for an optional long-only position cap applied
+  after selection and before trade calculation, with clipping, no
+  renormalization, and explicit residual cash.
+
 ### Fixed
 
 - Streamlined the public README and workflow diagram, removed the unused
