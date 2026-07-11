@@ -34,6 +34,15 @@ Exercise the integration path from existing factor research helpers into the exi
 | Zero cost or slippage diagnostic | `True` |
 | Signal lag periods | `1` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
+| Tracking-error contract | `daily_close_to_close_v1` |
+| Tracking-error return basis | `strategy_net_after_applied_costs_vs_cost_free_benchmark` |
+| Tracking-error frequency | `daily_close_to_close` |
+| Tracking-error periods/year | `252` |
+| Tracking-error ddof | `0` |
+| Tracking-error first-row policy | `exclude_synthetic_anchor` |
+| Tracking-error missing policy | `raise` |
+| Tracking-error terminal-row policy | `include_terminal_close_to_close_window` |
+| Benchmark cost basis | `cost_free_price_return` |
 
 ## Factor Correlation Diagnostics
 
@@ -54,6 +63,7 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Total return | `8.59%` |
 | Annualized return | `13.95%` |
 | Annualized volatility | `10.57%` |
+| Tracking error vs synthetic benchmark | `7.03%` |
 | Sharpe ratio | `1.2811` |
 | Max drawdown | `-5.19%` |
 | Average holding count | `4.0000` |

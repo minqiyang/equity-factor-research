@@ -61,7 +61,11 @@ def test_build_experiment_registry_is_structured_and_sorted(tmp_path: Path) -> N
         log_dir / "z_demo.json",
         experiment_id="z-demo",
         title="Z Demo",
-        metrics={"total_return": -0.01, "annualized_return": -0.02},
+        metrics={
+            "total_return": -0.01,
+            "annualized_return": -0.02,
+            "tracking_error": 0.03,
+        },
     )
     _write_log(
         log_dir / "a_demo.json",
@@ -76,6 +80,7 @@ def test_build_experiment_registry_is_structured_and_sorted(tmp_path: Path) -> N
     assert bool(registry.loc[0, "metrics_available"]) is False
     assert bool(registry.loc[1, "metrics_available"]) is True
     assert registry.loc[1, "total_return"] == -0.01
+    assert registry.loc[1, "tracking_error"] == 0.03
     assert registry.loc[1, "data_scope"] == "synthetic only"
     assert registry.loc[1, "slippage_model"].startswith("fixed_bps_on_target_weight_turnover")
 
@@ -87,7 +92,11 @@ def test_write_experiment_registry_report_contains_caveats_and_metrics(tmp_path:
         log_dir / "demo.json",
         experiment_id="demo",
         title="Demo",
-        metrics={"total_return": 0.12345678, "sharpe_ratio": -0.5},
+        metrics={
+            "total_return": 0.12345678,
+            "tracking_error": 0.07654321,
+            "sharpe_ratio": -0.5,
+        },
     )
 
     registry = write_experiment_registry_report(log_dir=log_dir, report_path=report_path)
@@ -100,6 +109,7 @@ def test_write_experiment_registry_report_contains_caveats_and_metrics(tmp_path:
     assert "not a profitability claim" in report_text
     assert "workflow diagnostics only" in report_text
     assert "0.123457" in report_text
+    assert "0.0765432" in report_text
     assert "Missing metric cells mean" in report_text
 
 

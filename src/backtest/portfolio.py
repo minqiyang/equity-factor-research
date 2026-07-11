@@ -12,12 +12,24 @@ from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 
 from backtest.metrics import calculate_basic_metrics
 
 
 _VOLUME_AWARE_SLIPPAGE_MODES = {"diagnostic_only", "apply_precomputed_impact"}
 _PORTFOLIO_GROWTH_STABILITY_THRESHOLD = 1e-8
+_TRACKING_ERROR_ASSUMPTIONS = {
+    "tracking_error_contract": "daily_close_to_close_v1",
+    "tracking_error_return_basis": "strategy_net_after_applied_costs_vs_cost_free_benchmark",
+    "tracking_error_frequency": "daily_close_to_close",
+    "tracking_error_periods_per_year": 252,
+    "tracking_error_ddof": 0,
+    "tracking_error_first_row_policy": "exclude_synthetic_anchor",
+    "tracking_error_missing_policy": "raise",
+    "tracking_error_terminal_row_policy": "include_terminal_close_to_close_window",
+    "benchmark_cost_basis": "cost_free_price_return",
+}
 _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "base_slippage_bps",
     "max_participation",
@@ -60,6 +72,7 @@ class BacktestResult:
     total_trading_costs: pd.Series
     metrics: dict[str, float]
     benchmark_equity_curve: pd.Series | None
+    benchmark_returns: pd.Series | None
     assumptions: dict[str, Any]
 
 
@@ -185,12 +198,17 @@ def run_long_only_backtest(
         )
     equity_curve = initial_capital * (1.0 + net_returns).cumprod()
 
-    benchmark_equity_curve = _calculate_benchmark_equity_curve(
+    benchmark_equity_curve, benchmark_returns = _calculate_benchmark_path(
         benchmark_prices=benchmark_prices,
         price_index=price_data.index,
         initial_capital=initial_capital,
         benchmark_missing_policy=benchmark_missing_policy,
     )
+    benchmark_returns_for_tracking_error = None
+    if benchmark_returns is not None and benchmark_missing_policy == "raise":
+        if periods_per_year != 252:
+            raise ValueError("tracking error supports daily_close_to_close only")
+        benchmark_returns_for_tracking_error = benchmark_returns
 
     metrics = calculate_basic_metrics(
         equity_curve,
@@ -201,6 +219,7 @@ def run_long_only_backtest(
         slippage_costs=slippage_costs,
         volume_aware_slippage_costs=volume_aware_slippage_costs,
         benchmark_equity_curve=benchmark_equity_curve,
+        benchmark_returns=benchmark_returns_for_tracking_error,
         initial_capital=initial_capital,
         periods_per_year=periods_per_year,
     )
@@ -232,6 +251,7 @@ def run_long_only_backtest(
         total_trading_costs=total_trading_costs.rename("total_trading_cost_impact"),
         metrics=metrics,
         benchmark_equity_curve=benchmark_equity_curve,
+        benchmark_returns=benchmark_returns,
         assumptions={
             "rebalance_frequency": rebalance_frequency,
             "top_n": top_n,
@@ -254,6 +274,11 @@ def run_long_only_backtest(
             "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
+            **(
+                _TRACKING_ERROR_ASSUMPTIONS
+                if benchmark_returns_for_tracking_error is not None
+                else {}
+            ),
             **volume_aware_assumptions,
         },
     )
@@ -385,25 +410,42 @@ def _resolve_period_asset_returns(
     return asset_returns.fillna(0.0)
 
 
-def _calculate_benchmark_equity_curve(
+def _calculate_benchmark_path(
     *,
     benchmark_prices: pd.Series | None,
     price_index: pd.DatetimeIndex,
     initial_capital: float,
     benchmark_missing_policy: str,
-) -> pd.Series | None:
+) -> tuple[pd.Series | None, pd.Series | None]:
     if benchmark_prices is None:
-        return None
+        return None, None
 
     if not isinstance(benchmark_prices, pd.Series):
         raise TypeError("benchmark_prices must be a pandas Series")
     if not isinstance(benchmark_prices.index, pd.DatetimeIndex):
         raise TypeError("benchmark_prices must be indexed by a pandas DatetimeIndex")
+    if benchmark_prices.index.tz != price_index.tz:
+        raise ValueError("benchmark_prices and strategy prices must have matching timezones")
 
     if benchmark_prices.index.has_duplicates:
         raise ValueError("benchmark_prices index must not contain duplicate dates")
     if not benchmark_prices.index.is_monotonic_increasing:
         raise ValueError("benchmark_prices index must be sorted in increasing date order")
+    if (
+        is_bool_dtype(benchmark_prices.dtype)
+        or is_complex_dtype(benchmark_prices.dtype)
+        or not is_numeric_dtype(benchmark_prices.dtype)
+    ):
+        raise TypeError(
+            "benchmark_prices must contain real numeric, non-boolean values"
+        )
+
+    observed_prices = benchmark_prices.dropna().astype(float)
+    if (
+        not np.isfinite(observed_prices.to_numpy()).all()
+        or observed_prices.le(0.0).any()
+    ):
+        raise ValueError("benchmark_prices must contain finite positive values")
 
     aligned_prices = benchmark_prices.reindex(price_index).astype(float)
     if aligned_prices.isna().any() and benchmark_missing_policy == "raise":
@@ -422,8 +464,24 @@ def _calculate_benchmark_equity_curve(
             .reindex(price_index)
         )
 
-    benchmark_returns = aligned_prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    return (initial_capital * (1.0 + benchmark_returns).cumprod()).rename("benchmark_equity")
+    benchmark_returns = aligned_prices.pct_change(fill_method=None)
+    if benchmark_missing_policy == "raise":
+        benchmark_returns.iloc[0] = 0.0
+        invalid_returns = benchmark_returns.isna() | ~np.isfinite(benchmark_returns)
+        if invalid_returns.any():
+            first_invalid_date = invalid_returns[invalid_returns].index[0]
+            raise ValueError(
+                "benchmark_prices produce missing or non-finite returns on "
+                f"{first_invalid_date.date()}"
+            )
+    else:
+        benchmark_returns = benchmark_returns.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
+    benchmark_returns = benchmark_returns.rename("benchmark_return")
+    benchmark_equity_curve = (
+        initial_capital * (1.0 + benchmark_returns).cumprod()
+    ).rename("benchmark_equity")
+    return benchmark_equity_curve, benchmark_returns
 
 
 def _calculate_signal_coverage(signal_data: pd.DataFrame) -> float:

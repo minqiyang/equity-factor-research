@@ -129,6 +129,7 @@ def run_synthetic_multifactor_parameter_sweep(
                     "total_return": metrics["total_return"],
                     "annualized_return": metrics["annualized_return"],
                     "annualized_volatility": metrics["annualized_volatility"],
+                    "tracking_error": metrics["tracking_error"],
                     "sharpe_ratio": metrics["sharpe_ratio"],
                     "max_drawdown": metrics["max_drawdown"],
                     "average_holding_count": metrics["average_holding_count"],
@@ -206,6 +207,15 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 | Zero cost or slippage diagnostic | `{config.transaction_cost_bps == 0.0 or config.slippage_bps == 0.0}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
+| Tracking-error contract | `daily_close_to_close_v1` |
+| Tracking-error return basis | `strategy_net_after_applied_costs_vs_cost_free_benchmark` |
+| Tracking-error frequency | `daily_close_to_close` |
+| Tracking-error periods/year | `252` |
+| Tracking-error ddof | `0` |
+| Tracking-error first-row policy | `exclude_synthetic_anchor` |
+| Tracking-error missing policy | `raise` |
+| Tracking-error terminal-row policy | `include_terminal_close_to_close_window` |
+| Benchmark cost basis | `cost_free_price_return` |
 
 ## Sweep Grid
 
@@ -299,6 +309,19 @@ def write_sweep_experiment_log(
             "holdings_model": "drifted_between_rebalances",
             "fixed_cost_application_timing": "close_after_asset_returns",
             "fixed_cost_return_impact_basis": "beginning_period_portfolio_value",
+            "tracking_error_contract": "daily_close_to_close_v1",
+            "tracking_error_return_basis": (
+                "strategy_net_after_applied_costs_vs_cost_free_benchmark"
+            ),
+            "tracking_error_frequency": "daily_close_to_close",
+            "tracking_error_periods_per_year": 252,
+            "tracking_error_ddof": 0,
+            "tracking_error_first_row_policy": "exclude_synthetic_anchor",
+            "tracking_error_missing_policy": "raise",
+            "tracking_error_terminal_row_policy": (
+                "include_terminal_close_to_close_window"
+            ),
+            "benchmark_cost_basis": "cost_free_price_return",
             "long_only": True,
             "live_trading": False,
             "brokerage_integration": False,
@@ -399,6 +422,7 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "total_return",
         "annualized_return",
         "annualized_volatility",
+        "tracking_error",
         "sharpe_ratio",
         "max_drawdown",
         "average_holding_count",
@@ -418,6 +442,7 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "Total return",
         "Annualized return",
         "Annualized volatility",
+        "Tracking error",
         "Sharpe ratio",
         "Max drawdown",
         "Average holdings",
@@ -446,6 +471,7 @@ def _format_results_table(results: pd.DataFrame) -> str:
                     _format_percent(row["total_return"]),
                     _format_percent(row["annualized_return"]),
                     _format_percent(row["annualized_volatility"]),
+                    _format_percent(row["tracking_error"]),
                     _format_float(row["sharpe_ratio"]),
                     _format_percent(row["max_drawdown"]),
                     _format_float(row["average_holding_count"]),

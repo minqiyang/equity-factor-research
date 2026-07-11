@@ -250,6 +250,33 @@ def write_demo_experiment_log(
             "fixed_cost_return_impact_basis": result.backtest_result.assumptions[
                 "fixed_cost_return_impact_basis"
             ],
+            "tracking_error_contract": result.backtest_result.assumptions[
+                "tracking_error_contract"
+            ],
+            "tracking_error_return_basis": result.backtest_result.assumptions[
+                "tracking_error_return_basis"
+            ],
+            "tracking_error_frequency": result.backtest_result.assumptions[
+                "tracking_error_frequency"
+            ],
+            "tracking_error_periods_per_year": result.backtest_result.assumptions[
+                "tracking_error_periods_per_year"
+            ],
+            "tracking_error_ddof": result.backtest_result.assumptions[
+                "tracking_error_ddof"
+            ],
+            "tracking_error_first_row_policy": result.backtest_result.assumptions[
+                "tracking_error_first_row_policy"
+            ],
+            "tracking_error_missing_policy": result.backtest_result.assumptions[
+                "tracking_error_missing_policy"
+            ],
+            "tracking_error_terminal_row_policy": result.backtest_result.assumptions[
+                "tracking_error_terminal_row_policy"
+            ],
+            "benchmark_cost_basis": result.backtest_result.assumptions[
+                "benchmark_cost_basis"
+            ],
             "long_only": result.backtest_result.assumptions["long_only"],
             "live_trading": False,
             "brokerage_integration": False,
@@ -328,6 +355,15 @@ Exercise the integration path from existing factor research helpers into the exi
 | Zero cost or slippage diagnostic | `{result.backtest_result.assumptions["zero_cost_or_slippage_is_diagnostic"]}` |
 | Signal lag periods | `{config.signal_lag_periods}` |
 | Benchmark | `synthetic equal-weight universe benchmark` |
+| Tracking-error contract | `{result.backtest_result.assumptions["tracking_error_contract"]}` |
+| Tracking-error return basis | `{result.backtest_result.assumptions["tracking_error_return_basis"]}` |
+| Tracking-error frequency | `{result.backtest_result.assumptions["tracking_error_frequency"]}` |
+| Tracking-error periods/year | `{result.backtest_result.assumptions["tracking_error_periods_per_year"]}` |
+| Tracking-error ddof | `{result.backtest_result.assumptions["tracking_error_ddof"]}` |
+| Tracking-error first-row policy | `{result.backtest_result.assumptions["tracking_error_first_row_policy"]}` |
+| Tracking-error missing policy | `{result.backtest_result.assumptions["tracking_error_missing_policy"]}` |
+| Tracking-error terminal-row policy | `{result.backtest_result.assumptions["tracking_error_terminal_row_policy"]}` |
+| Benchmark cost basis | `{result.backtest_result.assumptions["benchmark_cost_basis"]}` |
 
 ## Factor Correlation Diagnostics
 
@@ -344,6 +380,7 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Total return | `{_format_percent(metrics["total_return"])}` |
 | Annualized return | `{_format_percent(metrics["annualized_return"])}` |
 | Annualized volatility | `{_format_percent(metrics["annualized_volatility"])}` |
+| Tracking error vs synthetic benchmark | `{_format_percent(metrics["tracking_error"])}` |
 | Sharpe ratio | `{_format_number(metrics["sharpe_ratio"])}` |
 | Max drawdown | `{_format_percent(metrics["max_drawdown"])}` |
 | Average holding count | `{_format_number(metrics["average_holding_count"])}` |

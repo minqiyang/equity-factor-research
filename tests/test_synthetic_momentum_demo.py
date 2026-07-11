@@ -32,6 +32,9 @@ def test_synthetic_demo_writes_report_with_profitability_warning(tmp_path: Path)
     assert "synthetic data only" in report_text
     assert "not evidence of real-world strategy profitability" in report_text
     assert "| Total return |" in report_text
+    assert "| Tracking error vs synthetic benchmark |" in report_text
+    assert "exclude_synthetic_anchor" in report_text
+    assert "cost_free_price_return" in report_text
     assert result.holdings.shape[1] == 20
 
 
@@ -61,9 +64,16 @@ def test_synthetic_demo_writes_experiment_log(tmp_path: Path) -> None:
     )
     assert payload["assumptions"]["slippage_bps"] == 0.0
     assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
+    assert payload["assumptions"]["tracking_error_contract"] == (
+        "daily_close_to_close_v1"
+    )
+    assert payload["assumptions"]["benchmark_cost_basis"] == (
+        "cost_free_price_return"
+    )
     assert payload["assumptions"]["live_trading"] is False
     assert payload["assumptions"]["brokerage_integration"] is False
     assert payload["metrics"]["total_return"] == result.metrics["total_return"]
+    assert payload["metrics"]["tracking_error"] == result.metrics["tracking_error"]
     assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
     assert payload["metrics"]["total_trading_cost_impact"] == result.metrics[
         "total_trading_cost_impact"
