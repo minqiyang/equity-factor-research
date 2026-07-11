@@ -101,4 +101,8 @@ def test_public_metadata_and_readme_match_implemented_scope() -> None:
     assert "private_data" not in readme
     assert metadata["license"] == "Apache-2.0"
     assert metadata["urls"]["Repository"].endswith("equity-factor-research")
-    assert metadata["dependencies"] == ["numpy>=1.26", "pandas>=2.1"]
+    assert metadata["dependencies"] == [
+        "numpy>=1.26",
+        "pandas>=2.1",
+        "scipy>=1.11",
+    ]
