@@ -109,3 +109,21 @@ def test_public_metadata_and_readme_match_implemented_scope() -> None:
         "pandas>=2.1",
         "scipy>=1.11",
     ]
+
+
+def test_ci_and_generated_repo_map_share_core_validation_commands() -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(
+        encoding="utf-8"
+    )
+    repo_map = (PROJECT_ROOT / "docs/repo_map.md").read_text(encoding="utf-8")
+    commands = [
+        "python -m pytest -q",
+        "python -m ruff check .",
+        "python -m compileall src tests research",
+        "python -m compileall lean",
+        "python -m build",
+    ]
+
+    for command in commands:
+        assert command in workflow
+        assert command in repo_map
