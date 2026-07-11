@@ -15,6 +15,44 @@ investment performance.
 
 ---
 
+## 2026-07-11 - Attribute Episode Returns From Signed Trades
+
+Context:
+
+- Daily positive-return frequency cannot represent holding-episode hit rate.
+- Partial resizing and applied trading costs make price-only round trips
+  insufficient for average holding-period return.
+
+Decision:
+
+- Define one episode as an uninterrupted run of positive post-trade closing
+  weight for one asset; resizing continues it and re-entry after a zero close
+  starts another.
+- Require signed trade weights from the backtester. Define episode return as
+  net portfolio contribution divided by cumulative positive deployed weight.
+- Allocate applied daily costs pro rata by absolute signed trade weight. Exclude
+  terminal-open episodes rather than inventing an exit.
+
+Rationale:
+
+- Signed trades preserve direction and let episode costs and deployed capital
+  reconcile to existing turnover and cost accounting.
+- The contract handles resizing without adding tax lots, fill simulation, IRR,
+  or another accounting engine.
+
+Consequences:
+
+- Only completed episodes contribute to hit rate and average holding-period
+  return; open counts remain visible in assumptions.
+- Volume-impact allocation is an accounting convention, not causal impact
+  estimation.
+- Implementation is deferred to a separate PR.
+
+Follow-up:
+
+- Expose signed trades and implement the two approved metrics with exact
+  reconciliation tests.
+
 ## 2026-07-11 - Clip Position Caps Without Renormalization
 
 Context:

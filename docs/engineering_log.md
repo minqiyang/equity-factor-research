@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-07-11 - Holding-Episode Metric Design
+
+- Defined continuous positive post-trade weight as the episode boundary, with
+  resizing retained inside an episode and re-entry after zero starting another.
+- Required signed trade weights so deployed capital, turnover, and applied
+  costs can reconcile without reconstructing direction from closing holdings.
+- Defined net episode contribution over cumulative positive deployed weight,
+  equal weighting across completed episodes, and exclusion of terminal-open
+  episodes with explicit counts.
+- Kept this checkpoint design-only; no source, accounting, metric, or generated
+  report behavior changed.
+
 ## 2026-07-11 - Position-Cap Implementation
 
 - Added strict target-weight validation and clip-without-renormalization logic

@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the position-cap implementation stage.
+Updated: 2026-07-11 for the holding-episode metric design stage.
 
-Baseline stage: position-cap implementation.
+Baseline stage: holding-episode metric design.
 
 ## Canonical State
 
@@ -11,7 +11,7 @@ Baseline stage: position-cap implementation.
   vectorized liquidity-universe caps, canonical public docs, and package build
   QA, with holdings-state metrics and the approved Stage 2 tracking-error
   contract implemented.
-- Verified suite at the latest implementation stage: 562 tests.
+- Verified suite at the latest implementation stage: 582 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
 
@@ -33,22 +33,23 @@ Baseline stage: position-cap implementation.
 
 ## Active Stage
 
-Design complete position episodes and cost attribution before implementing hit
-rate or average holding-period return. Do not substitute daily positive-return
-frequency for episode hit rate.
+Implement only the approved continuous-positive-weight episode metrics and
+signed-trade accounting evidence. Do not invent terminal exits or substitute
+daily positive-return frequency for episode hit rate.
 
 ## Do Not Infer
 
 - Private diagnostics are not accepted real-data interpretation.
 - Synthetic backtests are not profitability or investment evidence.
 - Volume-aware slippage is not a calibrated execution model.
-- Placeholder plotting and risk modules are not implemented capabilities.
+- Plotting and broader portfolio-risk controls are not implemented
+  capabilities; the position cap is the only active constraint.
 - LEAN files do not support orders, brokerage, paper trading, or live trading.
 
 ## Next Safe Actions
 
-1. Design entry, resize, exit, re-entry, terminal-open-position, and cost
-   attribution semantics for episode metrics before adding code.
+1. Expose signed trade weights from the drift-aware path and implement the
+   approved episode hit rate and average holding-period return contract.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in

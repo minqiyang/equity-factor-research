@@ -67,7 +67,7 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: position-cap implementation."
+    baseline_marker = "Baseline stage: holding-episode metric design."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     assert (
@@ -154,6 +154,24 @@ def test_position_constraint_design_matches_implementation_scope() -> None:
     ]:
         assert phrase in design
     assert "apply_long_only_position_cap" in constraints
+
+
+def test_holding_episode_design_defines_attribution_without_implementation() -> None:
+    design = (PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md").read_text(
+        encoding="utf-8"
+    )
+
+    for phrase in [
+        "continuous_positive_weight_v1",
+        "net_contribution_over_cumulative_deployed_weight",
+        "pro_rata_absolute_signed_trade_weight",
+        "abs(signed_trade_weights) == trade_weights",
+        "terminal-open episode",
+        "Zero-return episodes are not hits",
+        "episode_hit_rate = mean(episode_return > 0)",
+        "average_holding_period_return = mean(episode_return)",
+    ]:
+        assert phrase in design
 
 
 def test_public_metadata_and_readme_match_implemented_scope() -> None:

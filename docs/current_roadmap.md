@@ -1,8 +1,8 @@
 # Current Roadmap
 
-Updated: 2026-07-11 for the position-cap implementation stage.
+Updated: 2026-07-11 for the holding-episode metric design stage.
 
-Baseline stage: position-cap implementation.
+Baseline stage: holding-episode metric design.
 
 This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
 documents are historical evidence, not active task queues.
@@ -55,7 +55,8 @@ claims must be checked against source and tests before reuse.
 | Tracking error implementation | Complete | Annualized population volatility of exact-date aligned daily net strategy returns versus cost-free benchmark returns is integrated with audit metadata and deterministic synthetic evidence. | Focused tests, full tests, generated-output review, CI, and current-head review. |
 | Constraint design | Complete | Define an optional long-only position cap after selection and before trade calculation, with clipping, no renormalization, residual cash, validation, audit fields, and accounting interactions. | Design contract accepted before implementation. |
 | Position-cap implementation | Complete | Optional long-only target weights are clipped after selection and before trade calculation without renormalization; residual exposure remains cash. | Focused tests, full tests, generated-output review if affected, CI, and current-head review. |
-| Episode metric design | Next | Define complete position episodes and cost attribution before hit rate or average holding-period return. | Design contract accepted before implementation. |
+| Episode metric design | Complete | Define continuous positive-weight episodes, signed-trade evidence, deployed-weight return basis, applied-cost allocation, terminal-open handling, audit fields, and tests. | Design contract accepted before implementation. |
+| Episode metric implementation | Next | Expose signed trades and implement only episode hit rate and average holding-period return under the approved contract. | Focused tests, full tests, generated-output review, CI, and current-head review. |
 | Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
 | LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 
