@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Replaced the accumulated checkpoint chain with a concise canonical roadmap
+  and current handoff aligned to the merged implementation baseline.
 - Vectorized capped liquidity-universe ranking while preserving per-date
   selection, missing-ranking counts, and input-column-order tie breaks.
 - Aligned candidate volume-aware slippage diagnostics with drift-aware

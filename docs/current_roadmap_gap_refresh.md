@@ -2,7 +2,10 @@
 
 Date: 2026-06-23
 
-## Status: Superseded In Part
+## Status: Historical
+
+The active roadmap is now `docs/current_roadmap.md`. This file remains as
+design and audit history and must not be used as the current task queue.
 
 This roadmap refresh predates the private EODHD validation-only and factor
 diagnostics checkpoints. It should no longer be read as saying that no local

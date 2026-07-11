@@ -1,5 +1,8 @@
 # Roadmap-Code Conformance Audit
 
+> Historical audit. For current status and sequencing, use
+> `docs/current_roadmap.md` and `docs/current_handoff.md`.
+
 Date: 2026-07-01
 
 ## 1. Executive Summary

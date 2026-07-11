@@ -35,47 +35,37 @@ def test_required_governance_files_exist() -> None:
         assert (PROJECT_ROOT / file_name).is_file(), f"Missing file: {file_name}"
 
 
-def test_current_handoff_has_freshness_guardrails() -> None:
+def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
+    roadmap = (PROJECT_ROOT / "docs/current_roadmap.md").read_text(
+        encoding="utf-8"
+    )
     handoff = (PROJECT_ROOT / "docs/current_handoff.md").read_text(encoding="utf-8")
+    historical_roadmap = (
+        PROJECT_ROOT / "docs/current_roadmap_gap_refresh.md"
+    ).read_text(encoding="utf-8")
 
-    required_phrases = [
-        "## Freshness Checklist",
-        "Cached baseline at last handoff edit",
-        "Latest Verified State",
-        "Still Blocked",
-        "Next Safe Stage",
-        "gh pr list --state open --limit 10",
-        "gh pr list --state merged --limit 10",
-        "dataset scope and provenance",
-        "schema and adjustment policy",
-        "point-in-time universe or survivorship policy",
-        "benchmark methodology",
-        "transaction cost and slippage assumptions",
-        "experiment-log requirements",
-        "interpretation policy and stop conditions",
-        "Do not fetch data",
-        "interpret private diagnostics",
-        "vendor APIs",
-        "performance claims",
-        "no-live-trading",
-        "no-brokerage",
-        "@codex review",
-        "P1/P2 feedback before merge",
-    ]
-    stale_active_stage_phrases = [
-        "after this handoff refresh PR is reviewed and merged",
-        "after this PR merges",
-        "when this PR merges",
-        "after the current PR merges",
-        "once this PR merges",
-        "This handoff refresh is PR",
-        "after it merges",
-    ]
+    for phrase in [
+        "This is the canonical roadmap",
+        "## Implemented Baseline",
+        "## Open Gaps",
+        "## Delivery Sequence",
+        "Require CI and current-head Codex review before merge",
+        "Reporting plots are not implemented",
+        "LEAN execution remains out of scope",
+    ]:
+        assert phrase in roadmap
 
-    for phrase in required_phrases:
+    for phrase in [
+        "Active roadmap: `docs/current_roadmap.md`",
+        "## Completed",
+        "## Active Stage",
+        "## Do Not Infer",
+        "## Next Safe Actions",
+    ]:
         assert phrase in handoff
-    for phrase in stale_active_stage_phrases:
-        assert phrase not in handoff
+
+    assert "## Status: Historical" in historical_roadmap
+    assert "must not be used as the current task queue" in historical_roadmap
 
 
 def test_placeholder_modules_are_importable() -> None:
