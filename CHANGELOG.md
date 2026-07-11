@@ -41,6 +41,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added the Stage 2 tracking-error design contract for daily close-to-close
+  active-return volatility, including net strategy cost basis, cost-free
+  benchmark returns, exact index/timezone alignment, first-row and terminal
+  window semantics, validation errors, metadata, and the implementation test
+  matrix. No tracking-error code or generated evidence was added.
 - Added active-date average holding count plus gross-normalized average and
   maximum position-concentration HHI to simulated backtest metrics, synthetic
   reports, experiment logs, and parameter sweeps.

@@ -1,8 +1,8 @@
 # Current Roadmap
 
-Updated: 2026-07-10 for the holdings-state metrics stage.
+Updated: 2026-07-11 for the tracking-error design stage.
 
-Baseline stage: holdings-state metrics.
+Baseline stage: tracking-error design.
 
 This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
 documents are historical evidence, not active task queues.
@@ -36,7 +36,7 @@ claims must be checked against source and tests before reuse.
    survivorship, adjustment, benchmark, split, cost, and interpretation policy.
 2. Portfolio risk constraints and exposure controls are not implemented;
    `src/risk/constraints.py` is a placeholder.
-3. Tracking error or active risk, hit rate, and average holding-period return
+3. Tracking-error implementation, hit rate, and average holding-period return
    remain unimplemented.
 4. Reporting plots are not implemented.
 5. Volume-aware impact is a deterministic research estimate, not a calibrated
@@ -51,7 +51,8 @@ claims must be checked against source and tests before reuse.
 | Public interface cleanup | Controlled follow-up | Remove duplicated presentation helpers only when output fixtures prove byte-stable; keep research logic unchanged. | Focused and full tests, generated-output stability, CI, and current-head review. |
 | Risk/evaluation design | Complete | Holdings-state formulas, timing, missing-data behavior, deferred metrics, and staged tests are defined in `docs/risk_evaluation_metrics_design.md`. | Design PR accepted before code. |
 | Holdings-state metrics | Complete | Average active-date holding count and normalized average/maximum HHI are integrated into simulated backtest metrics and generated synthetic evidence. | Focused and full tests, generated-output review, CI, and current-head review. |
-| Tracking error design | Next | Lock benchmark-return alignment, first-row treatment, missing-data behavior, and net-versus-gross return semantics. | Design contract accepted before implementation. |
+| Tracking error design | Complete | Daily close-to-close benchmark alignment, first-row treatment, missing-data behavior, net-versus-gross return semantics, annualization, errors, metadata, and focused test requirements are defined in `docs/risk_evaluation_metrics_design.md`. | Design contract accepted before implementation. |
+| Tracking error implementation | Next | Implement only the approved daily close-to-close contract with explicit benchmark returns and alignment tests; do not add unrelated metrics. | Focused tests, full tests, CI, and current-head review. |
 | Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
 | LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 

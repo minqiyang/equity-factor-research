@@ -67,11 +67,11 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: holdings-state metrics."
+    baseline_marker = "Baseline stage: tracking-error design."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     assert (
-        "Tracking error or active risk, hit rate, and average holding-period return"
+        "Tracking-error implementation, hit rate, and average holding-period return"
         in roadmap
     )
     assert "average holdings, and exposure concentration remain unimplemented" not in roadmap
@@ -88,6 +88,29 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
         "## PR Sequence",
     ]:
         assert phrase in design
+
+
+def test_tracking_error_design_freezes_stage_two_contract() -> None:
+    design = (
+        PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md"
+    ).read_text(encoding="utf-8")
+    stage_two = design.split("## Stage 2: Tracking Error", maxsplit=1)[1]
+    stage_two = stage_two.split("## Deferred Metrics", maxsplit=1)[0]
+
+    for phrase in [
+        "tracking_error = std(measured_active_return, ddof=0) * sqrt(252)",
+        "strategy_net_after_applied_costs_vs_cost_free_benchmark",
+        "cost-free close-to-close price return",
+        "daily_close_to_close",
+        "exclude_synthetic_anchor",
+        "tracking_error_missing_policy = \"raise\"",
+        "tracking error requires at least 2 measured return periods",
+        "It is never the difference between strategy and",
+        "benchmark annualized returns",
+        "does not refresh reports, JSON experiment logs, registries, or",
+        "hashes because no metric output exists yet",
+    ]:
+        assert phrase in stage_two
 
 
 def test_placeholder_modules_are_importable() -> None:

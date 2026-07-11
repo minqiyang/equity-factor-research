@@ -12,6 +12,27 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-07-11 - Tracking-Error Contract Design
+
+Stage: Stage 2 benchmark-relative evaluation design.
+
+Decision:
+
+- Define `tracking_error` as the annualized population volatility of aligned
+  active daily close-to-close returns, using `ddof=0` and `sqrt(252)`.
+- Use strategy returns net of every cost actually applied by the backtester and
+  a cost-free benchmark price-return series. Require exact daily index and
+  timezone alignment, reject missing or non-finite inputs, exclude the
+  synthetic first row, and include the terminal observed return window.
+- Keep this checkpoint documentation-only. The implementation PR must add the
+  metric, focused alignment tests, audit metadata, and generated evidence only
+  after this contract is accepted.
+
+No portfolio selection, accounting, cost, benchmark, data-access, execution,
+or generated-output behavior changed in this design checkpoint.
+
+---
+
 ## 2026-07-10 - Strict Input Contract Hardening
 
 Stage: shared panel and local CSV input validation.
