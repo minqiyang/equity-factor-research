@@ -1,6 +1,6 @@
 # Risk And Evaluation Metrics Design
 
-Status: approved for staged implementation.
+Status: Stage 1 implemented; Stage 2 is next.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,

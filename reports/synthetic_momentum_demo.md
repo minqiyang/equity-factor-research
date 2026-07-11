@@ -38,6 +38,9 @@ Demonstrate the local research workflow:
 | Annualized volatility | 10.31% |
 | Sharpe ratio | -0.2146 |
 | Max drawdown | -22.64% |
+| Average holding count | 5.0000 |
+| Average position concentration HHI | 0.2003 |
+| Max position concentration HHI | 0.2017 |
 | Average turnover | 1.75% |
 | Total turnover | 13.1962 |
 | Total transaction cost impact | 1.32% |

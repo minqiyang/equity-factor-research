@@ -131,6 +131,13 @@ def run_synthetic_multifactor_parameter_sweep(
                     "annualized_volatility": metrics["annualized_volatility"],
                     "sharpe_ratio": metrics["sharpe_ratio"],
                     "max_drawdown": metrics["max_drawdown"],
+                    "average_holding_count": metrics["average_holding_count"],
+                    "average_position_concentration_hhi": metrics[
+                        "average_position_concentration_hhi"
+                    ],
+                    "max_position_concentration_hhi": metrics[
+                        "max_position_concentration_hhi"
+                    ],
                     "average_turnover": metrics["average_turnover"],
                     "total_turnover": metrics["total_turnover"],
                     "total_transaction_cost_impact": metrics[
@@ -394,6 +401,9 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "annualized_volatility",
         "sharpe_ratio",
         "max_drawdown",
+        "average_holding_count",
+        "average_position_concentration_hhi",
+        "max_position_concentration_hhi",
         "average_turnover",
         "total_transaction_cost_impact",
         "total_slippage_cost_impact",
@@ -410,6 +420,9 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "Annualized volatility",
         "Sharpe ratio",
         "Max drawdown",
+        "Average holdings",
+        "Average HHI",
+        "Max HHI",
         "Average turnover",
         "Transaction cost impact",
         "Slippage impact",
@@ -435,6 +448,9 @@ def _format_results_table(results: pd.DataFrame) -> str:
                     _format_percent(row["annualized_volatility"]),
                     _format_float(row["sharpe_ratio"]),
                     _format_percent(row["max_drawdown"]),
+                    _format_float(row["average_holding_count"]),
+                    _format_float(row["average_position_concentration_hhi"]),
+                    _format_float(row["max_position_concentration_hhi"]),
                     _format_percent(row["average_turnover"]),
                     _format_percent(row["total_transaction_cost_impact"]),
                     _format_percent(row["total_slippage_cost_impact"]),

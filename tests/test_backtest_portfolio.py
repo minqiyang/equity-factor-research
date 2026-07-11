@@ -84,6 +84,9 @@ def test_equal_weighting_for_selected_assets() -> None:
     assert result.holdings.loc[dates[1], "CCC"] == pytest.approx(0.0)
     assert result.holdings.loc[dates[1]].sum() == pytest.approx(1.0)
     assert result.assumptions["aligned_signal_coverage"] == pytest.approx(1.0)
+    assert result.metrics["average_holding_count"] == pytest.approx(2.0)
+    assert result.metrics["average_position_concentration_hhi"] == pytest.approx(0.5)
+    assert result.metrics["max_position_concentration_hhi"] == pytest.approx(0.5)
 
 
 def test_turnover_uses_target_weight_changes_on_rebalance_dates() -> None:
@@ -177,6 +180,30 @@ def test_holdings_drift_between_rebalances_and_turnover_uses_pretrade_weights() 
     assert result.holdings.loc[second_rebalance, "BBB"] == pytest.approx(0.5)
     assert result.assumptions["holdings_model"] == "drifted_between_rebalances"
     assert result.assumptions["turnover_reference"] == "drifted_pretrade_weights"
+
+
+def test_drifted_holdings_survive_near_total_but_positive_loss() -> None:
+    dates = pd.date_range("2024-01-01", periods=7, freq="D")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100.0] * 5 + [1e-10, 1e-10],
+            "BBB": [100.0] * 5 + [2e-10, 2e-10],
+        },
+        index=dates,
+    )
+    signals = pd.DataFrame(1.0, index=dates, columns=prices.columns)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="W-FRI",
+        top_n=2,
+    )
+
+    crash_date = pd.Timestamp("2024-01-06")
+    assert result.equity_curve.loc[crash_date] > 0.0
+    assert result.equity_curve.loc[crash_date] == pytest.approx(1.5e-12)
+    assert result.holdings.loc[crash_date].sum() == pytest.approx(1.0)
 
 
 def test_transaction_cost_is_deducted_from_equity_curve() -> None:

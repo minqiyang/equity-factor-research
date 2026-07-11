@@ -41,6 +41,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added active-date average holding count plus gross-normalized average and
+  maximum position-concentration HHI to simulated backtest metrics, synthetic
+  reports, experiment logs, and parameter sweeps.
 - Added the canonical risk/evaluation metrics design, selecting active-date
   holdings count and normalized HHI for the first implementation while
   deferring tracking error, episode metrics, and constraints to separate
