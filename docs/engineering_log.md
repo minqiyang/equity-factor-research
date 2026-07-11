@@ -12,6 +12,30 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-07-11 - Tracking-Error Implementation
+
+Stage: Stage 2 benchmark-relative evaluation implementation.
+
+Implementation:
+
+- Added `calculate_tracking_error()` for exact-index daily active returns using
+  population `ddof=0`, annualization by `sqrt(252)`, synthetic-anchor exclusion,
+  and terminal-window inclusion.
+- Added explicit benchmark returns to `BacktestResult`; strategy returns remain
+  net of applied transaction costs and slippage, while benchmark returns remain
+  cost-free. The diagnostic benchmark `zero_return` fallback is ineligible for
+  tracking error and does not emit the metric or its metadata.
+- Added strict type, finite-value, date-order, duplicate-date, timezone,
+  frequency, benchmark-anchor, and minimum-window validation.
+- Refreshed deterministic synthetic reports, experiment logs, and the registry
+  with tracking error and its audit metadata. These remain synthetic
+  diagnostics, not profitability or investment evidence.
+
+No portfolio selection, holdings, turnover, cost calculation, real-data access,
+vendor integration, brokerage, or trading-execution behavior changed.
+
+---
+
 ## 2026-07-11 - Tracking-Error Contract Design
 
 Stage: Stage 2 benchmark-relative evaluation design.

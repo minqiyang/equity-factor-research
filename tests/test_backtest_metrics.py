@@ -7,6 +7,7 @@ import pytest
 from backtest.metrics import (
     calculate_basic_metrics,
     calculate_holdings_state_metrics,
+    calculate_tracking_error,
 )
 
 
@@ -135,3 +136,163 @@ def test_basic_metrics_require_holdings_to_match_return_dates() -> None:
 
     with pytest.raises(ValueError, match="holdings index must exactly match"):
         calculate_basic_metrics(equity, returns, holdings=holdings)
+
+
+def test_tracking_error_is_hand_calculated_and_excludes_only_anchor() -> None:
+    index = pd.date_range("2024-01-01", periods=4, freq="D")
+    strategy_returns = pd.Series([99.0, 0.01, 0.03, -0.02], index=index)
+    benchmark_returns = pd.Series([0.0, 0.0, 0.01, 0.0], index=index)
+
+    result = calculate_tracking_error(
+        strategy_returns,
+        benchmark_returns,
+        return_frequency="daily_close_to_close",
+    )
+
+    assert result == pytest.approx(np.std([0.01, 0.02, -0.02], ddof=0) * np.sqrt(252))
+    changed_terminal = strategy_returns.copy()
+    changed_terminal.iloc[-1] = 0.02
+    assert calculate_tracking_error(
+        changed_terminal,
+        benchmark_returns,
+        return_frequency="daily_close_to_close",
+    ) != pytest.approx(result)
+
+
+def test_tracking_error_rejects_invalid_return_values() -> None:
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+    valid = pd.Series([0.0, 0.01, 0.02], index=index)
+
+    for invalid in [
+        pd.Series([0.0, np.nan, 0.02], index=index),
+        pd.Series([0.0, np.inf, 0.02], index=index),
+        pd.Series([False, True, False], index=index),
+        pd.Series([0.0 + 0.0j, 0.01 + 1.0j, 0.02 + 0.0j], index=index),
+        pd.Series(["0.0", "0.01", "0.02"], index=index),
+    ]:
+        with pytest.raises((TypeError, ValueError)):
+            calculate_tracking_error(
+                invalid,
+                valid,
+                return_frequency="daily_close_to_close",
+            )
+
+
+def test_tracking_error_requires_exact_index_timezone_and_frequency() -> None:
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+    strategy_returns = pd.Series([0.0, 0.01, 0.02], index=index)
+    benchmark_returns = pd.Series([0.0, 0.00, 0.01], index=index)
+
+    with pytest.raises(ValueError, match="identical indexes"):
+        calculate_tracking_error(
+            strategy_returns,
+            benchmark_returns.shift(freq="D"),
+            return_frequency="daily_close_to_close",
+        )
+    with pytest.raises(ValueError, match="matching timezones"):
+        calculate_tracking_error(
+            strategy_returns,
+            benchmark_returns.tz_localize("UTC"),
+            return_frequency="daily_close_to_close",
+        )
+    with pytest.raises(ValueError, match="matching timezones"):
+        calculate_tracking_error(
+            strategy_returns.tz_localize("UTC"),
+            benchmark_returns.tz_localize("America/New_York"),
+            return_frequency="daily_close_to_close",
+        )
+    with pytest.raises(ValueError, match="daily_close_to_close only"):
+        calculate_tracking_error(
+            strategy_returns,
+            benchmark_returns,
+            return_frequency="weekly_close_to_close",
+        )
+
+
+def test_tracking_error_rejects_bad_axes_anchor_and_short_sample() -> None:
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+    valid = pd.Series([0.0, 0.01, 0.02], index=index)
+
+    duplicate = valid.copy()
+    duplicate.index = pd.DatetimeIndex([index[0], index[0], index[2]])
+    with pytest.raises(ValueError, match="duplicate dates"):
+        calculate_tracking_error(
+            duplicate,
+            valid,
+            return_frequency="daily_close_to_close",
+        )
+
+    with pytest.raises(ValueError, match="sorted"):
+        calculate_tracking_error(
+            valid.sort_index(ascending=False),
+            valid.sort_index(ascending=False),
+            return_frequency="daily_close_to_close",
+        )
+
+    nonzero_anchor = valid.copy()
+    nonzero_anchor.iloc[0] = 0.01
+    with pytest.raises(ValueError, match="synthetic zero-return anchor"):
+        calculate_tracking_error(
+            valid,
+            nonzero_anchor,
+            return_frequency="daily_close_to_close",
+        )
+
+    short_index = index[:2]
+    with pytest.raises(ValueError, match="at least 2 measured return periods"):
+        calculate_tracking_error(
+            pd.Series([0.0, 0.01], index=short_index),
+            pd.Series([0.0, 0.00], index=short_index),
+            return_frequency="daily_close_to_close",
+        )
+
+
+def test_tracking_error_rejects_wrong_types_empty_and_non_datetime_indexes() -> None:
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+    valid = pd.Series([0.0, 0.01, 0.02], index=index)
+
+    with pytest.raises(TypeError, match="strategy_returns must be a pandas Series"):
+        calculate_tracking_error(
+            [0.0, 0.01, 0.02],
+            valid,
+            return_frequency="daily_close_to_close",
+        )
+    with pytest.raises(TypeError, match="DatetimeIndex"):
+        calculate_tracking_error(
+            pd.Series([0.0, 0.01, 0.02]),
+            valid,
+            return_frequency="daily_close_to_close",
+        )
+    with pytest.raises(ValueError, match="must not be empty"):
+        calculate_tracking_error(
+            pd.Series(dtype=float, index=pd.DatetimeIndex([])),
+            pd.Series(dtype=float, index=pd.DatetimeIndex([])),
+            return_frequency="daily_close_to_close",
+        )
+
+
+def test_basic_metrics_add_tracking_error_only_with_explicit_benchmark_returns() -> None:
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+    returns = pd.Series([0.0, 0.01, 0.02], index=index)
+    benchmark_returns = pd.Series([0.0, 0.00, 0.01], index=index)
+    equity = (1.0 + returns).cumprod()
+
+    without_benchmark_returns = calculate_basic_metrics(equity, returns)
+    with_benchmark_returns = calculate_basic_metrics(
+        equity,
+        returns,
+        benchmark_returns=benchmark_returns,
+    )
+
+    assert "tracking_error" not in without_benchmark_returns
+    assert with_benchmark_returns["tracking_error"] == pytest.approx(
+        np.std([0.01, 0.01], ddof=0) * np.sqrt(252)
+    )
+
+    with pytest.raises(ValueError, match="daily_close_to_close only"):
+        calculate_basic_metrics(
+            equity,
+            returns,
+            benchmark_returns=benchmark_returns,
+            periods_per_year=12,
+        )

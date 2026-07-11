@@ -1,17 +1,17 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the tracking-error design stage.
+Updated: 2026-07-11 for the tracking-error implementation stage.
 
-Baseline stage: tracking-error design.
+Baseline stage: tracking-error implementation.
 
 ## Canonical State
 
 - Active roadmap: `docs/current_roadmap.md`.
 - Latest implementation baseline: drift-aware volume-slippage accounting,
   vectorized liquidity-universe caps, canonical public docs, and package build
-  QA, with holdings-state metrics implemented and the Stage 2 tracking-error
-  contract documented before code.
-- Verified suite at the latest implementation stage: 553 tests.
+  QA, with holdings-state metrics and the approved Stage 2 tracking-error
+  contract implemented.
+- Verified suite at the latest implementation stage: 562 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
 
@@ -26,12 +26,14 @@ Baseline stage: tracking-error design.
 - Private-output-only EODHD validation and neutral diagnostics guardrails.
 - Non-executing LEAN scaffold guardrails.
 - Liquidity-universe cap vectorization with stable tie semantics.
+- Daily close-to-close tracking error with exact benchmark alignment, net
+  strategy cost basis, cost-free benchmark returns, and audit metadata.
 
 ## Active Stage
 
-Implement the approved daily close-to-close tracking-error contract in a
-separate code PR. Do not add hit rate, holding-period return, portfolio
-constraints, or strategy-selection behavior to that PR.
+Design portfolio constraints before adding code to `src/risk/constraints.py`.
+Do not combine constraint design with hit rate, holding-period return, plotting,
+or strategy-selection behavior.
 
 ## Do Not Infer
 
@@ -43,8 +45,8 @@ constraints, or strategy-selection behavior to that PR.
 
 ## Next Safe Actions
 
-1. Implement and test tracking error under the approved benchmark-alignment
-   contract.
+1. Design portfolio-constraint ordering, reject/clip/renormalize behavior,
+   cash treatment, infeasible-target handling, audit fields, and errors.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in

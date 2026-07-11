@@ -1,7 +1,6 @@
 # Risk And Evaluation Metrics Design
 
-Status: Stage 1 implemented; Stage 2 design complete; Stage 2 implementation
-is next.
+Status: Stages 1 and 2 implemented; Stage 3 constraint design is next.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,
@@ -99,12 +98,11 @@ keys.
 ## Stage 2: Tracking Error
 
 Tracking error requires an exact benchmark-return contract. This section is the
-approved Stage 2 design; it does not add a metric implementation or generated
-evidence.
+implemented Stage 2 contract and remains the authority for future maintenance.
 
 ### Contract Decision
 
-The future implementation will expose the metric as `tracking_error` in the
+The implementation exposes the metric as `tracking_error` in the
 existing simulated-metrics dictionary only when an explicit benchmark-return
 series is supplied. It will not reconstruct tracking error from
 `benchmark_equity_curve` alone, because an equity curve does not preserve the
@@ -124,7 +122,7 @@ benchmark annualized returns.
 
 ### Return Series And Cost Basis
 
-The code PR must use two explicit `pandas.Series` inputs with the same return
+The implementation uses two explicit `pandas.Series` inputs with the same return
 index:
 
 | Input | Contract |
@@ -155,7 +153,7 @@ error.
 
 ### Index, Timezone, And Frequency Alignment
 
-The first implementation is limited to daily close-to-close observations:
+The implementation is limited to daily close-to-close observations:
 
 - both inputs are non-empty real numeric `Series` objects;
 - both use unique, increasing `DatetimeIndex` values;
@@ -202,7 +200,7 @@ missing values to zero. A backtest that used
 `benchmark_missing_policy="zero_return"` is not eligible for this metric
 unless a future design explicitly records and approves the imputation policy.
 
-The implementation must use these contextual error messages:
+The implementation uses these contextual error messages:
 
 | Invalid condition | Required message or message fragment |
 | --- | --- |
@@ -217,7 +215,7 @@ The implementation must use these contextual error messages:
 | Too few measured windows | ``tracking error requires at least 2 measured return periods`` |
 
 Boolean, complex, object, and otherwise non-real numeric return columns are
-invalid. The implementation must validate before subtracting the series or
+invalid. The implementation validates before subtracting the series or
 returning a metric.
 
 ### Output And Metadata Contract
@@ -227,7 +225,7 @@ decimal volatility. When no explicit benchmark-return series is supplied,
 existing callers retain their current metric dictionary and do not receive a
 placeholder value.
 
-The future integration must record these audit fields alongside the metric:
+The integration records these audit fields alongside the metric:
 
 ```text
 tracking_error_contract = "daily_close_to_close_v1"
@@ -241,16 +239,14 @@ tracking_error_terminal_row_policy = "include_terminal_close_to_close_window"
 benchmark_cost_basis = "cost_free_price_return"
 ```
 
-This design PR does not refresh reports, JSON experiment logs, registries, or
-hashes because no metric output exists yet. The later implementation PR must
-add deterministic synthetic tests first, refresh generated artifacts only if
-the serialized metric dictionaries change, and record the contract metadata in
-every affected output. Generated evidence must remain explicitly synthetic or
-committed-fixture diagnostic evidence.
+The implementation refreshes affected reports, JSON experiment logs, and the
+experiment registry because their serialized metric dictionaries change, and
+records the contract metadata in every affected output. Generated evidence
+remains explicitly synthetic or committed-fixture diagnostic evidence.
 
-### Required Stage 2 Tests Before Implementation
+### Implemented Stage 2 Tests
 
-The implementation PR must add focused deterministic tests for:
+Focused deterministic tests cover:
 
 - a hand-calculated active-return series proving population `ddof=0`, annual
   multiplication by `sqrt(252)`, and the exact `tracking_error` name;
@@ -272,8 +268,8 @@ The implementation PR must add focused deterministic tests for:
 - rejection of weekly, monthly, intraday, or mixed-frequency inputs;
 - a regression proving tracking error is not computed from the difference of
   two annualized returns;
-- no changes to holdings, gross returns, net returns, turnover, costs, or
-  generated artifacts in the design-only stage.
+- no changes to holdings, gross returns, net returns, turnover, or cost
+  calculations from adding the metric.
 
 ## Deferred Metrics
 
@@ -309,8 +305,8 @@ constraint placeholder.
 | --- | --- | --- |
 | A | Completed: risk/evaluation design, including the holdings-state and tracking-error contracts. | Stop if a metric remains semantically ambiguous. |
 | B | Completed: implement holdings-state helpers and backtester integration. | Stop on accounting changes or unstable generated outputs. |
-| C | Next: implement tracking error under the approved daily close-to-close contract with benchmark-alignment tests. | Stop if benchmark returns cannot be reconstructed unambiguously. |
-| D | Constraint design only. | Stop before code until reject/clip/renormalize policy is approved. |
+| C | Completed: implement tracking error under the approved daily close-to-close contract with benchmark-alignment tests. | Stop if benchmark returns cannot be reconstructed unambiguously. |
+| D | Next: constraint design only. | Stop before code until reject/clip/renormalize policy is approved. |
 | E | Episode model design, only if hit-rate or holding-period metrics are still needed. | Stop before presenting daily win rate as trade hit rate. |
 
 Every code PR requires focused tests, full tests, Ruff, compilation, package

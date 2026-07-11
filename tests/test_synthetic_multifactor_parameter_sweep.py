@@ -30,6 +30,7 @@ def test_parameter_sweep_runs_all_configured_cases(tmp_path: Path) -> None:
     assert set(result.results["weight_set"]) == set(config.weight_sets)
     assert set(result.results["top_n"]) == set(config.top_n_values)
     assert result.results["total_return"].notna().all()
+    assert result.results["tracking_error"].notna().all()
 
 
 def test_parameter_sweep_is_deterministic(tmp_path: Path) -> None:
@@ -77,6 +78,9 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert "not evidence of real-world performance or strategy validation" in report_text
     assert "does not identify a best parameter set" in report_text
     assert "Zero cost or slippage diagnostic" in report_text
+    assert "Tracking error" in report_text
+    assert "exclude_synthetic_anchor" in report_text
+    assert "cost_free_price_return" in report_text
     assert payload["experiment_id"] == "synthetic-multifactor-parameter-sweep"
     assert payload["experiment_type"] == "synthetic_parameter_sweep"
     assert payload["metrics"] == {}
@@ -84,6 +88,7 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert len(payload["diagnostics"]["cases"]) == len(result.results)
     assert "total_slippage_cost_impact" in payload["diagnostics"]["cases"][0]
     assert "total_trading_cost_impact" in payload["diagnostics"]["cases"][0]
+    assert "tracking_error" in payload["diagnostics"]["cases"][0]
     assert payload["assumptions"]["transaction_cost_model"].startswith(
         "fixed_bps_on_target_weight_turnover"
     )
@@ -93,6 +98,9 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     )
     assert payload["assumptions"]["slippage_bps"] == 0.0
     assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
+    assert payload["assumptions"]["tracking_error_contract"] == (
+        "daily_close_to_close_v1"
+    )
     assert "all parameter cases reported" in payload["caveats"]
     assert "not parameter optimization" in payload["caveats"]
     assert payload["assumptions"]["parameter_policy"] == "all configured cases are reported; no best-only filtering"

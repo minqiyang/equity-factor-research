@@ -23,6 +23,36 @@ problems, include:
 
 ---
 
+## 2026-07-11 - Generated Output Used A Stale Editable Install
+
+Original mistake:
+
+- Reused a shared temporary virtual environment whose editable package pointed
+  at the prior worktree, then ran the tracking-error report generators without
+  setting the current worktree's `src` path.
+
+Consequence and evidence:
+
+- The current research module imported the older `backtest` package and failed
+  while rendering the new metric with `KeyError: 'tracking_error'`.
+
+Investigation and final fix:
+
+- Confirmed focused pytest passed because pytest adds the current repository's
+  `src` directory, while direct module execution used the stale editable link.
+- Reran all affected generators with `PYTHONPATH=src` so imports resolved from
+  the active implementation worktree.
+
+Verification and prevention:
+
+- Momentum, combined-score, and parameter-sweep generators completed and
+  refreshed only their expected committed synthetic reports, JSON logs, and
+  registry.
+- Future cross-worktree generation commands must set `PYTHONPATH=src` or install
+  the active worktree before producing evidence.
+
+---
+
 ## 2026-06-23 - Continuation Command Output And Python Path Guardrails
 
 Original mistake:

@@ -41,6 +41,12 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added benchmark-relative `tracking_error` as annualized population volatility
+  of exact-date aligned daily net strategy returns versus cost-free benchmark
+  returns. The metric excludes the synthetic first row, includes the terminal
+  observed return window, rejects missing or imputed benchmark returns, records
+  its audit contract, and is included in deterministic synthetic reports,
+  experiment logs, and the experiment registry.
 - Added the Stage 2 tracking-error design contract for daily close-to-close
   active-return volatility, including net strategy cost basis, cost-free
   benchmark returns, exact index/timezone alignment, first-row and terminal

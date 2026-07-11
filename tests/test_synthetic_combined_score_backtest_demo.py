@@ -94,6 +94,7 @@ def test_backtest_result_exists_and_records_transaction_costs(tmp_path: Path) ->
     assert "total_transaction_cost_impact" in result.backtest_result.metrics
     assert "total_slippage_cost_impact" in result.backtest_result.metrics
     assert "total_trading_cost_impact" in result.backtest_result.metrics
+    assert "tracking_error" in result.backtest_result.metrics
     assert result.backtest_result.transaction_costs.ge(0.0).all()
     assert result.backtest_result.slippage_costs.eq(0.0).all()
 
@@ -125,6 +126,9 @@ def test_report_contains_metrics_as_caveated_smoke_diagnostics(tmp_path: Path) -
     report_text = report_path.read_text(encoding="utf-8")
     assert "## Smoke-Test Metrics" in report_text
     assert "| Total return |" in report_text
+    assert "| Tracking error vs synthetic benchmark |" in report_text
+    assert "exclude_synthetic_anchor" in report_text
+    assert "cost_free_price_return" in report_text
     assert "These values are deterministic diagnostics from synthetic data" in report_text
     assert "not evidence of real-world performance" in report_text
 
@@ -154,8 +158,17 @@ def test_combined_score_demo_writes_experiment_log(tmp_path: Path) -> None:
     )
     assert payload["assumptions"]["slippage_bps"] == 0.0
     assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
+    assert payload["assumptions"]["tracking_error_contract"] == (
+        "daily_close_to_close_v1"
+    )
+    assert payload["assumptions"]["benchmark_cost_basis"] == (
+        "cost_free_price_return"
+    )
     assert payload["assumptions"]["live_trading"] is False
     assert payload["metrics"]["total_return"] == result.backtest_result.metrics["total_return"]
+    assert payload["metrics"]["tracking_error"] == result.backtest_result.metrics[
+        "tracking_error"
+    ]
     assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
     assert payload["metrics"]["total_trading_cost_impact"] == result.backtest_result.metrics[
         "total_trading_cost_impact"

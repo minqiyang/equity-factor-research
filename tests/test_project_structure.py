@@ -67,11 +67,11 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: tracking-error design."
+    baseline_marker = "Baseline stage: tracking-error implementation."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     assert (
-        "Tracking-error implementation, hit rate, and average holding-period return"
+        "Hit rate and average holding-period return remain unimplemented"
         in roadmap
     )
     assert "average holdings, and exposure concentration remain unimplemented" not in roadmap
@@ -107,8 +107,10 @@ def test_tracking_error_design_freezes_stage_two_contract() -> None:
         "tracking error requires at least 2 measured return periods",
         "It is never the difference between strategy and",
         "benchmark annualized returns",
-        "does not refresh reports, JSON experiment logs, registries, or",
-        "hashes because no metric output exists yet",
+        "refreshes affected reports, JSON experiment logs, and the",
+        "experiment registry",
+        "Generated evidence",
+        "remains explicitly synthetic",
     ]:
         assert phrase in stage_two
 

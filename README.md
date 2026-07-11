@@ -23,7 +23,7 @@ separation between diagnostics and investment claims.
 | Data contracts | Strict wide-price, long-price, benchmark, and OHLCV CSV validation; local files only. |
 | Features | Momentum, reversal, volatility, liquidity, normalization, combination, Alpha #009/#012, and reusable panel operators. |
 | Diagnostics | Coverage, correlation, IC, Rank IC, quantile spread, and train/validation/test splits. |
-| Portfolio | Long-only equal-weight simulation with signal lag, drift-aware holdings and trades, turnover, benchmark, costs, holding count, and normalized HHI concentration. |
+| Portfolio | Long-only equal-weight simulation with signal lag, drift-aware holdings and trades, turnover, benchmark, costs, holding count, normalized HHI concentration, and benchmark-relative tracking error. |
 | Liquidity friction | Lagged dollar-volume diagnostics and opt-in precomputed impact with trade-source and return-basis metadata. |
 | Evidence | Deterministic Markdown reports, JSON experiment logs, registry generation, synthetic demos, and committed fixtures. |
 
@@ -86,6 +86,9 @@ strict validation -> features -> diagnostics -> portfolio simulation
   expressed on beginning-period return basis.
 - Volume-aware impact is diagnostic-only by default and requires reviewed,
   aligned metadata before application.
+- Tracking error is the annualized population volatility of exact-date aligned
+  daily net strategy returns versus cost-free benchmark returns; the synthetic
+  first row is excluded and the terminal observed return window is included.
 
 See [`docs/current_roadmap.md`](docs/current_roadmap.md) for the canonical
 implementation status and open gaps.

@@ -11,6 +11,8 @@ from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 
 _GROSS_EXPOSURE_TOLERANCE = 1e-12
 _HOLDINGS_METRIC_DECIMAL_PLACES = 15
+_TRACKING_ERROR_FREQUENCY = "daily_close_to_close"
+_TRACKING_ERROR_PERIODS_PER_YEAR = 252
 
 
 def calculate_max_drawdown(equity_curve: pd.Series) -> float:
@@ -32,6 +34,48 @@ def calculate_max_drawdown(equity_curve: pd.Series) -> float:
     return float(drawdowns.min())
 
 
+def calculate_tracking_error(
+    strategy_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    *,
+    return_frequency: str,
+) -> float:
+    """Calculate annualized volatility of aligned active daily returns."""
+
+    clean_strategy = _validate_tracking_error_returns(
+        strategy_returns,
+        "strategy_returns",
+    )
+    clean_benchmark = _validate_tracking_error_returns(
+        benchmark_returns,
+        "benchmark_returns",
+    )
+
+    if clean_strategy.index.tz != clean_benchmark.index.tz:
+        raise ValueError(
+            "strategy_returns and benchmark_returns must have matching timezones"
+        )
+    if not clean_strategy.index.equals(clean_benchmark.index):
+        raise ValueError(
+            "strategy_returns and benchmark_returns must have identical indexes"
+        )
+    if return_frequency != _TRACKING_ERROR_FREQUENCY:
+        raise ValueError("tracking error supports daily_close_to_close only")
+    if clean_benchmark.iloc[0] != 0.0:
+        raise ValueError(
+            "benchmark_returns first row must be the synthetic zero-return anchor"
+        )
+
+    measured_active_returns = (clean_strategy - clean_benchmark).iloc[1:]
+    if len(measured_active_returns) < 2:
+        raise ValueError("tracking error requires at least 2 measured return periods")
+
+    return float(
+        measured_active_returns.std(ddof=0)
+        * math.sqrt(_TRACKING_ERROR_PERIODS_PER_YEAR)
+    )
+
+
 def calculate_basic_metrics(
     equity_curve: pd.Series,
     returns: pd.Series,
@@ -42,6 +86,7 @@ def calculate_basic_metrics(
     slippage_costs: pd.Series | None = None,
     volume_aware_slippage_costs: pd.Series | None = None,
     benchmark_equity_curve: pd.Series | None = None,
+    benchmark_returns: pd.Series | None = None,
     initial_capital: float = 1.0,
     periods_per_year: int = 252,
 ) -> dict[str, float]:
@@ -61,6 +106,8 @@ def calculate_basic_metrics(
         raise ValueError("initial_capital must be positive")
     if periods_per_year <= 0:
         raise ValueError("periods_per_year must be positive")
+    if benchmark_returns is not None and periods_per_year != 252:
+        raise ValueError("tracking error supports daily_close_to_close only")
 
     total_return = float(equity_curve.iloc[-1] / initial_capital - 1.0)
     realized_periods = max(len(returns) - 1, 1)
@@ -120,7 +167,43 @@ def calculate_basic_metrics(
         metrics["benchmark_total_return"] = benchmark_total_return
         metrics["excess_total_return"] = total_return - benchmark_total_return
 
+    if benchmark_returns is not None:
+        metrics["tracking_error"] = calculate_tracking_error(
+            returns,
+            benchmark_returns,
+            return_frequency=_TRACKING_ERROR_FREQUENCY,
+        )
+
     return metrics
+
+
+def _validate_tracking_error_returns(
+    returns: pd.Series,
+    name: str,
+) -> pd.Series:
+    if not isinstance(returns, pd.Series):
+        raise TypeError(f"{name} must be a pandas Series")
+    if not isinstance(returns.index, pd.DatetimeIndex):
+        raise TypeError(f"{name} must be indexed by a pandas DatetimeIndex")
+    if returns.empty:
+        raise ValueError(f"{name} must not be empty")
+    if returns.index.has_duplicates:
+        raise ValueError(f"{name} index must not contain duplicate dates")
+    if not returns.index.is_monotonic_increasing:
+        raise ValueError(f"{name} index must be sorted in increasing date order")
+    if (
+        is_bool_dtype(returns.dtype)
+        or is_complex_dtype(returns.dtype)
+        or not is_numeric_dtype(returns.dtype)
+    ):
+        raise TypeError(f"{name} must contain real numeric, non-boolean values")
+
+    clean_returns = returns.astype(float)
+    if clean_returns.isna().any() or not np.isfinite(clean_returns.to_numpy()).all():
+        raise ValueError(
+            "tracking error does not support missing or non-finite returns"
+        )
+    return clean_returns
 
 
 def calculate_holdings_state_metrics(holdings: pd.DataFrame) -> dict[str, float]:

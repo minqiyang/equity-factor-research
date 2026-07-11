@@ -27,6 +27,13 @@ Demonstrate the local research workflow:
 - Slippage: `0.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
 - Zero cost or slippage diagnostic: `True`
 - Benchmark: synthetic equal-weight universe benchmark
+- Tracking-error contract: `daily_close_to_close_v1`
+- Tracking-error return basis: `strategy_net_after_applied_costs_vs_cost_free_benchmark`
+- Tracking-error frequency/annualization: `daily_close_to_close`, `252` periods/year, `ddof=0`
+- Tracking-error first-row policy: `exclude_synthetic_anchor`
+- Tracking-error missing policy: `raise`
+- Tracking-error terminal-row policy: `include_terminal_close_to_close_window`
+- Benchmark cost basis: `cost_free_price_return`
 - Execution timing: signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row
 
 ## Metrics
@@ -36,6 +43,7 @@ Demonstrate the local research workflow:
 | Total return | -7.91% |
 | Annualized return | -2.71% |
 | Annualized volatility | 10.31% |
+| Tracking error vs synthetic benchmark | 9.09% |
 | Sharpe ratio | -0.2146 |
 | Max drawdown | -22.64% |
 | Average holding count | 5.0000 |

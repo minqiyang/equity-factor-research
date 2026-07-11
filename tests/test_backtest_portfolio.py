@@ -1,6 +1,7 @@
 import ast
 import inspect
 
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -850,6 +851,8 @@ def test_missing_benchmark_zero_return_policy_is_explicit() -> None:
     assert result.benchmark_equity_curve.loc[dates[1]] == pytest.approx(1.0)
     assert result.benchmark_equity_curve.loc[dates[2]] == pytest.approx(1.02)
     assert result.assumptions["benchmark_missing_policy"] == "zero_return"
+    assert "tracking_error" not in result.metrics
+    assert "tracking_error_contract" not in result.assumptions
 
 
 def test_benchmark_zero_return_policy_preserves_prior_price_anchor() -> None:
@@ -873,6 +876,69 @@ def test_benchmark_zero_return_policy_preserves_prior_price_anchor() -> None:
     assert result.benchmark_equity_curve is not None
     assert result.benchmark_equity_curve.loc[strategy_dates[0]] == pytest.approx(1.0)
     assert result.benchmark_equity_curve.loc[strategy_dates[1]] == pytest.approx(1.02)
+
+
+def test_tracking_error_uses_net_returns_and_records_contract_metadata() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 110.0, 121.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0, 1.0]}, index=dates)
+    benchmark = pd.Series([100.0, 100.0, 102.0, 102.0], index=dates)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        transaction_cost_bps=100.0,
+        benchmark_prices=benchmark,
+    )
+
+    assert result.benchmark_returns is not None
+    expected_active_returns = (
+        result.returns.iloc[1:] - result.benchmark_returns.iloc[1:]
+    )
+    assert result.metrics["tracking_error"] == pytest.approx(
+        expected_active_returns.std(ddof=0) * np.sqrt(252)
+    )
+    assert result.assumptions["tracking_error_contract"] == (
+        "daily_close_to_close_v1"
+    )
+    assert result.assumptions["tracking_error_return_basis"] == (
+        "strategy_net_after_applied_costs_vs_cost_free_benchmark"
+    )
+    assert result.assumptions["tracking_error_first_row_policy"] == (
+        "exclude_synthetic_anchor"
+    )
+    assert result.assumptions["tracking_error_terminal_row_policy"] == (
+        "include_terminal_close_to_close_window"
+    )
+    assert result.assumptions["benchmark_cost_basis"] == "cost_free_price_return"
+
+
+def test_tracking_error_integration_rejects_timezone_and_frequency_mismatch() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 101.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    benchmark = pd.Series([100.0, 100.0, 101.0], index=dates)
+
+    with pytest.raises(ValueError, match="matching timezones"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            benchmark_prices=benchmark.tz_localize("UTC"),
+        )
+
+    with pytest.raises(ValueError, match="daily_close_to_close only"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            rebalance_frequency="D",
+            top_n=1,
+            benchmark_prices=benchmark,
+            periods_per_year=12,
+        )
 
 
 def test_simple_synthetic_price_example() -> None:
