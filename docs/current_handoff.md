@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the holding-episode metric implementation stage.
+Updated: 2026-07-11 after the full repository conformance audit.
 
-Baseline stage: holding-episode metric implementation.
+Baseline stage: full repository conformance audit.
 
 ## Canonical State
 
@@ -35,8 +35,9 @@ Baseline stage: holding-episode metric implementation.
 
 ## Active Stage
 
-Run a fresh read-only full repository conformance audit from the merged episode
-implementation baseline. Keep audit findings separate from remediation code.
+The public synthetic/local baseline is audited and has no actionable P1/P2
+findings. Preserve this state; do not infer that blocked or out-of-scope work
+is complete.
 
 ## Do Not Infer
 
@@ -49,9 +50,9 @@ implementation baseline. Keep audit findings separate from remediation code.
 
 ## Next Safe Actions
 
-1. Audit roadmap, handoff, README, code, tests, generated evidence, metadata,
-   private-output policy, CI, and LEAN boundaries against current main.
-2. Consider shared presentation helpers only with byte-stable generated-output
-   tests.
-3. Pause real-data interpretation until the methodology gates in
+1. Pause real-data interpretation until the methodology gates in
    `docs/current_roadmap.md` are accepted.
+2. Start plotting, broader constraints, or LEAN work only through a separate
+   design checkpoint and explicit scope decision.
+3. Re-run conformance review after any timing, accounting, privacy, generated
+   evidence, or execution-scope change.
