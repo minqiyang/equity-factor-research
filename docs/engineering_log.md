@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-07-11 - Position-Cap Constraint Design
+
+- Defined the first constraint as an optional long-only per-position cap after
+  ranking and selection but before drift-aware trade calculation.
+- Chose clipping without redistribution or renormalization; residual exposure
+  remains non-interest-bearing cash, including infeasible fully invested
+  targets.
+- Fixed validation, audit metadata, liquidity ordering, turnover/cost
+  interaction, and focused implementation-test requirements.
+- Kept `src/risk/constraints.py` unchanged and deferred every other constraint,
+  episode metric, plotting feature, and strategy-selection change.
+
 This is a living engineering log for review notes, correctness audits, bug fixes, and implementation decisions that are useful for future PR summaries, interviews, retrospectives, and performance-review material.
 
 ## How To Update This Log

@@ -15,6 +15,43 @@ investment performance.
 
 ---
 
+## 2026-07-11 - Clip Position Caps Without Renormalization
+
+Context:
+
+- Tracking error is implemented and the next roadmap checkpoint is portfolio
+  constraint design.
+- The current backtester selects equal-weight long-only targets and calculates
+  turnover and costs from target changes versus drifted holdings.
+
+Decision:
+
+- The first optional constraint is a per-position maximum applied after
+  selection and before trade calculation.
+- Breaching weights are clipped. Removed weight is not redistributed or
+  renormalized; it remains explicit non-interest-bearing cash.
+- Liquidity eligibility remains upstream, while turnover and costs use the
+  constrained targets.
+
+Rationale:
+
+- Holding cash preserves the cap without silently changing selection or
+  manufacturing exposure to other assets.
+- A single narrow constraint can be tested against the existing accounting
+  path without implying a general production risk engine.
+
+Consequences:
+
+- Infeasible fully invested targets are valid partial-cash portfolios.
+- Sector, factor, beta, volatility, liquidity, and tracking-error constraints
+  require separate designs.
+- `src/risk/constraints.py` remains placeholder-only until the implementation
+  checkpoint is accepted and started.
+
+Follow-up:
+
+- Implement the approved helper and backtester integration in a separate PR.
+
 ## 2026-06-29 - Keep EODHD Diagnostics Brief Neutral
 
 Context:

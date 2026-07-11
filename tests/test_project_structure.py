@@ -67,7 +67,7 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: tracking-error implementation."
+    baseline_marker = "Baseline stage: position-cap constraint design."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     assert (
@@ -133,6 +133,27 @@ def test_placeholder_modules_are_importable() -> None:
     assert data.csv_loader.__doc__
     assert risk.constraints.__doc__
     assert reporting.plots.__doc__
+
+
+def test_position_constraint_design_is_explicit_and_code_remains_placeholder() -> None:
+    design = (PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md").read_text(
+        encoding="utf-8"
+    )
+    constraints = (PROJECT_ROOT / "src/risk/constraints.py").read_text(
+        encoding="utf-8"
+    )
+
+    for phrase in [
+        "after signal lag, ranking, eligibility, and equal-weight target",
+        "constrained_weight[i, t] = min(target_weight[i, t], max_position_weight)",
+        "not redistributed or renormalized",
+        "non-interest-bearing cash",
+        "clip_and_hold_cash",
+        "after_selection_before_trade_calculation",
+        "calculated from constrained targets versus drifted pre-trade holdings",
+    ]:
+        assert phrase in design
+    assert "eventually contain portfolio-level constraints" in constraints
 
 
 def test_public_metadata_and_readme_match_implemented_scope() -> None:

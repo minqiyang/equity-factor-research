@@ -1,8 +1,8 @@
 # Current Roadmap
 
-Updated: 2026-07-11 for the tracking-error implementation stage.
+Updated: 2026-07-11 for the position-cap constraint design stage.
 
-Baseline stage: tracking-error implementation.
+Baseline stage: position-cap constraint design.
 
 This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
 documents are historical evidence, not active task queues.
@@ -53,7 +53,8 @@ claims must be checked against source and tests before reuse.
 | Holdings-state metrics | Complete | Average active-date holding count and normalized average/maximum HHI are integrated into simulated backtest metrics and generated synthetic evidence. | Focused and full tests, generated-output review, CI, and current-head review. |
 | Tracking error design | Complete | Daily close-to-close benchmark alignment, first-row treatment, missing-data behavior, net-versus-gross return semantics, annualization, errors, metadata, and focused test requirements are defined in `docs/risk_evaluation_metrics_design.md`. | Design contract accepted before implementation. |
 | Tracking error implementation | Complete | Annualized population volatility of exact-date aligned daily net strategy returns versus cost-free benchmark returns is integrated with audit metadata and deterministic synthetic evidence. | Focused tests, full tests, generated-output review, CI, and current-head review. |
-| Constraint design | Next | Define ordering, reject/clip/renormalize behavior, cash treatment, infeasible-target handling, audit fields, errors, and liquidity/turnover interaction before code. | Design contract accepted before implementation. |
+| Constraint design | Complete | Define an optional long-only position cap after selection and before trade calculation, with clipping, no renormalization, residual cash, validation, audit fields, and accounting interactions. | Design contract accepted before implementation. |
+| Position-cap implementation | Next | Implement only the approved optional long-only position cap and its backtester integration. | Focused tests, full tests, generated-output review if affected, CI, and current-head review. |
 | Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
 | LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 

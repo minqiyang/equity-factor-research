@@ -1,6 +1,7 @@
 # Risk And Evaluation Metrics Design
 
-Status: Stages 1 and 2 implemented; Stage 3 constraint design is next.
+Status: Stages 1 and 2 implemented; Stage 3 constraint design approved for a
+separate implementation checkpoint.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,
@@ -284,20 +285,105 @@ partial resize, exit, and re-entry episodes.
 Deferred for the same reason. Partial rebalances and drift require an explicit
 lot or episode attribution policy and a reviewed allocation of costs.
 
-### Portfolio Constraints
+## Stage 3: Long-Only Position-Cap Constraint
 
-Deferred to a design PR. `src/risk/constraints.py` must remain a placeholder
-until the project defines:
+The first constraint implementation is deliberately narrow: an optional
+per-position maximum applied to already-selected long-only target weights. It
+is a simulated portfolio-construction control, not a production risk system.
+Sector, factor, beta, volatility, liquidity, and tracking-error limits remain
+out of scope.
 
-- whether constraints apply before or after ranking;
-- reject, clip, or renormalize behavior;
-- cash treatment;
-- infeasible-target behavior;
-- audit fields and failure messages;
-- interaction with liquidity and turnover.
+### Ordering And Accounting
 
-Descriptive holdings metrics belong in `src/backtest/metrics.py`, not in the
-constraint placeholder.
+The cap applies after signal lag, ranking, eligibility, and equal-weight target
+construction, but before drift-aware trade and turnover calculation:
+
+```text
+lagged signals -> rank/select -> unconstrained targets -> position cap
+-> constrained targets -> trades -> turnover -> costs -> returns
+```
+
+Liquidity-universe filtering remains an upstream eligibility decision and is
+not repeated in the constraint helper. Turnover and every cost component must
+be calculated from constrained targets versus drifted pre-trade holdings. The
+constraint must not modify signals, asset returns, benchmark returns, or prior
+holdings.
+
+### Clip, Renormalization, Cash, And Infeasibility
+
+For each target row and asset:
+
+```text
+constrained_weight[i, t] = min(target_weight[i, t], max_position_weight)
+cash_weight[t] = 1 - sum(constrained_weight[:, t])
+```
+
+Valid targets are clipped, not rejected merely for exceeding the cap. Clipped
+weight is not redistributed or renormalized, because renormalization can
+silently breach the cap or change the selected portfolio. Residual weight is
+explicit non-interest-bearing cash under the existing backtest contract.
+
+An infeasible fully invested target is therefore valid and holds cash. For
+example, two 50% targets with a 30% cap become two 30% positions and 40% cash.
+The helper must not add unselected assets to manufacture full investment.
+
+Warm-up and no-selection rows remain all-zero targets and therefore 100% cash.
+A cap of `1.0` is a behavioral no-op. The cap must satisfy
+`0 < max_position_weight <= 1`; there is no disabled sentinel inside the
+helper. Backtester integration uses `None` to mean the optional constraint is
+not requested, preserving existing behavior and output keys.
+
+### Validation And Errors
+
+Target weights must be a non-empty numeric `DataFrame` with a unique,
+increasing `DatetimeIndex`, unique asset columns, finite non-missing
+non-negative values, and row sums no greater than `1` within the existing
+gross-exposure tolerance. Boolean, complex, and object values are invalid.
+
+Required message fragments:
+
+| Invalid condition | Required message fragment |
+| --- | --- |
+| Wrong target type | `target_weights must be a pandas DataFrame` |
+| Invalid axis | `target_weights must have unique assets and unique, increasing dates` |
+| Invalid values | `target_weights must contain finite non-negative real weights` |
+| Leveraged row | `target_weights gross exposure must not exceed 1` |
+| Invalid cap | `max_position_weight must be greater than 0 and no greater than 1` |
+
+Validation happens before clipping. The helper must return a new DataFrame and
+must not mutate caller-owned targets.
+
+### Audit Contract
+
+When the optional cap is active, `BacktestResult.assumptions` records:
+
+```text
+position_constraint_contract = "long_only_position_cap_v1"
+max_position_weight = <configured decimal>
+position_constraint_order = "after_selection_before_trade_calculation"
+position_constraint_breach_policy = "clip"
+position_constraint_renormalization = "none"
+position_constraint_residual_weight = "non_interest_bearing_cash"
+position_constraint_infeasible_target_policy = "clip_and_hold_cash"
+```
+
+No constraint audit fields are emitted when the option is `None`. Descriptive
+holdings metrics remain in `src/backtest/metrics.py`; implementation behavior
+belongs in `src/risk/constraints.py` and integration in the backtester.
+
+### Required Stage 3 Implementation Tests
+
+- hand-calculated clipping and residual cash;
+- no redistribution to uncapped or unselected assets;
+- all-zero warm-up and no-selection rows remain zero;
+- cap `1.0` is a no-op and input targets are not mutated;
+- invalid types, axes, values, leverage, and cap values fail explicitly;
+- constrained targets drive trades, turnover, costs, holdings, and returns;
+- a partial-cash portfolio drifts correctly without earning cash interest;
+- optional-input compatibility preserves exact existing behavior and metadata;
+- constraint metadata is emitted only when active;
+- liquidity filtering remains upstream and benchmark/tracking-error accounting
+  is unchanged except through the constrained strategy return path.
 
 ## PR Sequence
 
@@ -306,7 +392,8 @@ constraint placeholder.
 | A | Completed: risk/evaluation design, including the holdings-state and tracking-error contracts. | Stop if a metric remains semantically ambiguous. |
 | B | Completed: implement holdings-state helpers and backtester integration. | Stop on accounting changes or unstable generated outputs. |
 | C | Completed: implement tracking error under the approved daily close-to-close contract with benchmark-alignment tests. | Stop if benchmark returns cannot be reconstructed unambiguously. |
-| D | Next: constraint design only. | Stop before code until reject/clip/renormalize policy is approved. |
+| D | Completed: long-only position-cap constraint design. | Stop before code until the design PR is accepted. |
+| D2 | Next: implement the approved optional position cap. | Stop on implicit renormalization, altered selection, or accounting drift. |
 | E | Episode model design, only if hit-rate or holding-period metrics are still needed. | Stop before presenting daily win rate as trade hit rate. |
 
 Every code PR requires focused tests, full tests, Ruff, compilation, package
