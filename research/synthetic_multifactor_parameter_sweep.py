@@ -130,6 +130,16 @@ def run_synthetic_multifactor_parameter_sweep(
                     "annualized_return": metrics["annualized_return"],
                     "annualized_volatility": metrics["annualized_volatility"],
                     "tracking_error": metrics["tracking_error"],
+                    "episode_hit_rate": metrics["episode_hit_rate"],
+                    "average_holding_period_return": metrics[
+                        "average_holding_period_return"
+                    ],
+                    "closed_episode_count": case_result.backtest_result.assumptions[
+                        "holding_episode_closed_count"
+                    ],
+                    "terminal_open_episode_count": case_result.backtest_result.assumptions[
+                        "holding_episode_terminal_open_count"
+                    ],
                     "sharpe_ratio": metrics["sharpe_ratio"],
                     "max_drawdown": metrics["max_drawdown"],
                     "average_holding_count": metrics["average_holding_count"],
@@ -216,6 +226,10 @@ Run a small deterministic sensitivity check over synthetic combined-score config
 | Tracking-error missing policy | `raise` |
 | Tracking-error terminal-row policy | `include_terminal_close_to_close_window` |
 | Benchmark cost basis | `cost_free_price_return` |
+| Holding-episode contract | `continuous_positive_weight_v1` |
+| Holding-episode return basis | `net_contribution_over_cumulative_deployed_weight` |
+| Holding-episode cost allocation | `pro_rata_absolute_signed_trade_weight` |
+| Holding-episode terminal policy | `exclude_open` |
 
 ## Sweep Grid
 
@@ -322,6 +336,18 @@ def write_sweep_experiment_log(
                 "include_terminal_close_to_close_window"
             ),
             "benchmark_cost_basis": "cost_free_price_return",
+            "holding_episode_contract": "continuous_positive_weight_v1",
+            "holding_episode_return_basis": (
+                "net_contribution_over_cumulative_deployed_weight"
+            ),
+            "holding_episode_cost_allocation": (
+                "pro_rata_absolute_signed_trade_weight"
+            ),
+            "holding_episode_resize_policy": "continue_episode",
+            "holding_episode_reentry_policy": "new_after_zero_close",
+            "holding_episode_terminal_policy": "exclude_open",
+            "holding_episode_zero_return_hit_policy": "not_a_hit",
+            "holding_episode_aggregation": "equal_weight_completed_episodes",
             "long_only": True,
             "live_trading": False,
             "brokerage_integration": False,
@@ -423,6 +449,10 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "annualized_return",
         "annualized_volatility",
         "tracking_error",
+        "episode_hit_rate",
+        "average_holding_period_return",
+        "closed_episode_count",
+        "terminal_open_episode_count",
         "sharpe_ratio",
         "max_drawdown",
         "average_holding_count",
@@ -443,6 +473,10 @@ def _format_results_table(results: pd.DataFrame) -> str:
         "Annualized return",
         "Annualized volatility",
         "Tracking error",
+        "Episode hit rate",
+        "Average holding-period return",
+        "Closed episodes",
+        "Terminal-open episodes",
         "Sharpe ratio",
         "Max drawdown",
         "Average holdings",
@@ -472,6 +506,10 @@ def _format_results_table(results: pd.DataFrame) -> str:
                     _format_percent(row["annualized_return"]),
                     _format_percent(row["annualized_volatility"]),
                     _format_percent(row["tracking_error"]),
+                    _format_percent(row["episode_hit_rate"]),
+                    _format_percent(row["average_holding_period_return"]),
+                    str(int(row["closed_episode_count"])),
+                    str(int(row["terminal_open_episode_count"])),
                     _format_float(row["sharpe_ratio"]),
                     _format_percent(row["max_drawdown"]),
                     _format_float(row["average_holding_count"]),

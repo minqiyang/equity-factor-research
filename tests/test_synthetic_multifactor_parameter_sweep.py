@@ -31,6 +31,8 @@ def test_parameter_sweep_runs_all_configured_cases(tmp_path: Path) -> None:
     assert set(result.results["top_n"]) == set(config.top_n_values)
     assert result.results["total_return"].notna().all()
     assert result.results["tracking_error"].notna().all()
+    assert "episode_hit_rate" in result.results
+    assert "average_holding_period_return" in result.results
 
 
 def test_parameter_sweep_is_deterministic(tmp_path: Path) -> None:
@@ -81,6 +83,8 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert "Tracking error" in report_text
     assert "exclude_synthetic_anchor" in report_text
     assert "cost_free_price_return" in report_text
+    assert "Episode hit rate" in report_text
+    assert "continuous_positive_weight_v1" in report_text
     assert payload["experiment_id"] == "synthetic-multifactor-parameter-sweep"
     assert payload["experiment_type"] == "synthetic_parameter_sweep"
     assert payload["metrics"] == {}
@@ -89,6 +93,7 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert "total_slippage_cost_impact" in payload["diagnostics"]["cases"][0]
     assert "total_trading_cost_impact" in payload["diagnostics"]["cases"][0]
     assert "tracking_error" in payload["diagnostics"]["cases"][0]
+    assert "episode_hit_rate" in payload["diagnostics"]["cases"][0]
     assert payload["assumptions"]["transaction_cost_model"].startswith(
         "fixed_bps_on_target_weight_turnover"
     )
@@ -100,6 +105,9 @@ def test_parameter_sweep_report_and_log_are_caveated(tmp_path: Path) -> None:
     assert payload["assumptions"]["zero_cost_or_slippage_is_diagnostic"] is True
     assert payload["assumptions"]["tracking_error_contract"] == (
         "daily_close_to_close_v1"
+    )
+    assert payload["assumptions"]["holding_episode_contract"] == (
+        "continuous_positive_weight_v1"
     )
     assert "all parameter cases reported" in payload["caveats"]
     assert "not parameter optimization" in payload["caveats"]

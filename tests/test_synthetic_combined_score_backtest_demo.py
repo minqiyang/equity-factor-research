@@ -129,6 +129,8 @@ def test_report_contains_metrics_as_caveated_smoke_diagnostics(tmp_path: Path) -
     assert "| Tracking error vs synthetic benchmark |" in report_text
     assert "exclude_synthetic_anchor" in report_text
     assert "cost_free_price_return" in report_text
+    assert "Episode hit rate" in report_text
+    assert "continuous_positive_weight_v1" in report_text
     assert "These values are deterministic diagnostics from synthetic data" in report_text
     assert "not evidence of real-world performance" in report_text
 
@@ -169,6 +171,10 @@ def test_combined_score_demo_writes_experiment_log(tmp_path: Path) -> None:
     assert payload["metrics"]["tracking_error"] == result.backtest_result.metrics[
         "tracking_error"
     ]
+    assert payload["metrics"]["episode_hit_rate"] == result.backtest_result.metrics[
+        "episode_hit_rate"
+    ]
+    assert payload["assumptions"]["holding_episode_terminal_policy"] == "exclude_open"
     assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
     assert payload["metrics"]["total_trading_cost_impact"] == result.backtest_result.metrics[
         "total_trading_cost_impact"

@@ -65,6 +65,8 @@ def test_build_experiment_registry_is_structured_and_sorted(tmp_path: Path) -> N
             "total_return": -0.01,
             "annualized_return": -0.02,
             "tracking_error": 0.03,
+            "episode_hit_rate": 0.5,
+            "average_holding_period_return": 0.02,
         },
     )
     _write_log(
@@ -81,6 +83,8 @@ def test_build_experiment_registry_is_structured_and_sorted(tmp_path: Path) -> N
     assert bool(registry.loc[1, "metrics_available"]) is True
     assert registry.loc[1, "total_return"] == -0.01
     assert registry.loc[1, "tracking_error"] == 0.03
+    assert registry.loc[1, "episode_hit_rate"] == 0.5
+    assert registry.loc[1, "average_holding_period_return"] == 0.02
     assert registry.loc[1, "data_scope"] == "synthetic only"
     assert registry.loc[1, "slippage_model"].startswith("fixed_bps_on_target_weight_turnover")
 

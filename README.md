@@ -23,7 +23,7 @@ separation between diagnostics and investment claims.
 | Data contracts | Strict wide-price, long-price, benchmark, and OHLCV CSV validation; local files only. |
 | Features | Momentum, reversal, volatility, liquidity, normalization, combination, Alpha #009/#012, and reusable panel operators. |
 | Diagnostics | Coverage, correlation, IC, Rank IC, quantile spread, and train/validation/test splits. |
-| Portfolio | Long-only equal-weight simulation with signal lag, drift-aware holdings and trades, turnover, benchmark, costs, holding count, normalized HHI concentration, and benchmark-relative tracking error. |
+| Portfolio | Long-only equal-weight simulation with signal lag, drift-aware signed trades, turnover, costs, position caps, holding-state diagnostics, tracking error, and completed holding-episode metrics. |
 | Liquidity friction | Lagged dollar-volume diagnostics and opt-in precomputed impact with trade-source and return-basis metadata. |
 | Evidence | Deterministic Markdown reports, JSON experiment logs, registry generation, synthetic demos, and committed fixtures. |
 

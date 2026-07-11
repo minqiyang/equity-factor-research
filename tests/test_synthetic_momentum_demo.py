@@ -35,6 +35,8 @@ def test_synthetic_demo_writes_report_with_profitability_warning(tmp_path: Path)
     assert "| Tracking error vs synthetic benchmark |" in report_text
     assert "exclude_synthetic_anchor" in report_text
     assert "cost_free_price_return" in report_text
+    assert "Episode hit rate" in report_text
+    assert "continuous_positive_weight_v1" in report_text
     assert result.holdings.shape[1] == 20
 
 
@@ -74,6 +76,10 @@ def test_synthetic_demo_writes_experiment_log(tmp_path: Path) -> None:
     assert payload["assumptions"]["brokerage_integration"] is False
     assert payload["metrics"]["total_return"] == result.metrics["total_return"]
     assert payload["metrics"]["tracking_error"] == result.metrics["tracking_error"]
+    assert payload["metrics"]["episode_hit_rate"] == result.metrics["episode_hit_rate"]
+    assert payload["assumptions"]["holding_episode_contract"] == (
+        "continuous_positive_weight_v1"
+    )
     assert payload["metrics"]["total_slippage_cost_impact"] == 0.0
     assert payload["metrics"]["total_trading_cost_impact"] == result.metrics[
         "total_trading_cost_impact"

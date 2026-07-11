@@ -121,6 +121,7 @@ def test_position_cap_holds_residual_cash_and_drives_accounting() -> None:
     assert result.assumptions["position_constraint_infeasible_target_policy"] == (
         "clip_and_hold_cash"
     )
+    assert result.assumptions["holding_episode_terminal_open_count"] == 2
 
 
 def test_position_cap_is_optional_and_does_not_emit_metadata_when_absent() -> None:
@@ -131,6 +132,41 @@ def test_position_cap_is_optional_and_does_not_emit_metadata_when_absent() -> No
     result = run_long_only_backtest(prices, signals, rebalance_frequency="D", top_n=1)
 
     assert "position_constraint_contract" not in result.assumptions
+
+
+def test_holding_episode_metrics_include_only_applied_volume_impact() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame(
+        {"AAA": [100.0] * 3, "BBB": [100.0] * 3},
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {"AAA": [2.0, 0.0, 0.0], "BBB": [0.0, 2.0, 2.0]},
+        index=dates,
+    )
+    impact = pd.Series([0.01, 0.02, 0.0], index=dates)
+
+    diagnostic = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        signal_lag_periods=0,
+        volume_aware_slippage_impact=impact,
+    )
+    applied = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        signal_lag_periods=0,
+        volume_aware_slippage_mode="apply_precomputed_impact",
+        volume_aware_slippage_impact=impact,
+        volume_aware_slippage_metadata=_volume_aware_metadata(),
+    )
+
+    assert diagnostic.metrics["average_holding_period_return"] == pytest.approx(0.0)
+    assert applied.metrics["average_holding_period_return"] == pytest.approx(-0.02)
 
 
 def test_turnover_uses_target_weight_changes_on_rebalance_dates() -> None:
@@ -1008,6 +1044,13 @@ def test_simple_synthetic_price_example() -> None:
     assert result.returns.loc[dates[3]] == pytest.approx(0.10)
     assert result.equity_curve.loc[dates[3]] == pytest.approx(1.21)
     assert result.metrics["total_return"] == pytest.approx(0.21)
+    assert_frame_equal(result.signed_trade_weights.abs(), result.trade_weights)
+    assert result.assumptions["holding_episode_contract"] == (
+        "continuous_positive_weight_v1"
+    )
+    assert result.assumptions["holding_episode_terminal_open_count"] == 1
+    assert result.assumptions["holding_episode_closed_count"] == 0
+    assert np.isnan(result.metrics["episode_hit_rate"])
 
 
 def test_backtester_has_no_data_vendor_credential_or_execution_imports() -> None:

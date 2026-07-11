@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 
-from backtest.metrics import calculate_basic_metrics
+from backtest.metrics import calculate_basic_metrics, calculate_holding_episode_metrics
 from risk.constraints import apply_long_only_position_cap
 
 
@@ -38,6 +38,16 @@ _POSITION_CAP_ASSUMPTIONS = {
     "position_constraint_renormalization": "none",
     "position_constraint_residual_weight": "non_interest_bearing_cash",
     "position_constraint_infeasible_target_policy": "clip_and_hold_cash",
+}
+_HOLDING_EPISODE_ASSUMPTIONS = {
+    "holding_episode_contract": "continuous_positive_weight_v1",
+    "holding_episode_return_basis": "net_contribution_over_cumulative_deployed_weight",
+    "holding_episode_cost_allocation": "pro_rata_absolute_signed_trade_weight",
+    "holding_episode_resize_policy": "continue_episode",
+    "holding_episode_reentry_policy": "new_after_zero_close",
+    "holding_episode_terminal_policy": "exclude_open",
+    "holding_episode_zero_return_hit_policy": "not_a_hit",
+    "holding_episode_aggregation": "equal_weight_completed_episodes",
 }
 _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "base_slippage_bps",
@@ -67,12 +77,15 @@ class BacktestResult:
     ``trade_weights`` are absolute per-asset changes from drifted pre-trade
     weights to targets on rebalance dates and zero on other dates; their row sum
     equals ``turnover`` under the undivided convention.
+    ``signed_trade_weights`` preserve the corresponding buy-positive,
+    sell-negative direction for episode attribution.
     """
 
     equity_curve: pd.Series
     returns: pd.Series
     gross_returns: pd.Series
     holdings: pd.DataFrame
+    signed_trade_weights: pd.DataFrame
     trade_weights: pd.DataFrame
     turnover: pd.Series
     transaction_costs: pd.Series
@@ -180,7 +193,13 @@ def run_long_only_backtest(
 
     asset_returns = price_data.pct_change(fill_method=None)
     asset_returns = asset_returns.replace([np.inf, -np.inf], np.nan)
-    holdings, gross_returns, trade_weights = _calculate_drift_aware_portfolio_path(
+    (
+        holdings,
+        gross_returns,
+        signed_trade_weights,
+        trade_weights,
+        resolved_asset_returns,
+    ) = _calculate_drift_aware_portfolio_path(
         asset_returns=asset_returns,
         target_weights=target_weights,
         missing_price_policy=missing_price_policy,
@@ -238,6 +257,17 @@ def run_long_only_backtest(
         initial_capital=initial_capital,
         periods_per_year=periods_per_year,
     )
+    episode_metrics, closed_episode_count, open_episode_count = (
+        calculate_holding_episode_metrics(
+            holdings,
+            resolved_asset_returns,
+            signed_trade_weights,
+            trade_weights,
+            turnover,
+            total_trading_costs,
+        )
+    )
+    metrics.update(episode_metrics)
 
     volume_aware_assumptions = _build_volume_aware_slippage_assumptions(
         mode=volume_aware_slippage_mode,
@@ -256,6 +286,7 @@ def run_long_only_backtest(
         returns=net_returns.rename("return"),
         gross_returns=gross_returns.rename("gross_return"),
         holdings=holdings,
+        signed_trade_weights=signed_trade_weights,
         trade_weights=trade_weights,
         turnover=turnover.rename("turnover"),
         transaction_costs=transaction_costs.rename("transaction_cost_impact"),
@@ -281,6 +312,7 @@ def run_long_only_backtest(
             "turnover_model": "target_weight_turnover",
             "turnover_reference": "drifted_pretrade_weights",
             "trade_weight_model": "absolute_target_minus_drifted_pretrade_by_asset",
+            "signed_trade_weight_model": "target_minus_drifted_pretrade_by_asset",
             "holdings_model": "drifted_between_rebalances",
             "cost_model": "fixed_bps_on_target_weight_turnover",
             "slippage_model": "fixed_bps_on_target_weight_turnover",
@@ -289,6 +321,9 @@ def run_long_only_backtest(
             "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
+            **_HOLDING_EPISODE_ASSUMPTIONS,
+            "holding_episode_closed_count": closed_episode_count,
+            "holding_episode_terminal_open_count": open_episode_count,
             **(
                 {**_POSITION_CAP_ASSUMPTIONS, "max_position_weight": max_position_weight}
                 if max_position_weight is not None
@@ -336,7 +371,7 @@ def _calculate_drift_aware_portfolio_path(
     asset_returns: pd.DataFrame,
     target_weights: pd.DataFrame,
     missing_price_policy: str,
-) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Propagate holdings and record per-asset trades only on target rows."""
 
     holdings = pd.DataFrame(0.0, index=asset_returns.index, columns=asset_returns.columns)
@@ -346,6 +381,8 @@ def _calculate_drift_aware_portfolio_path(
         index=asset_returns.index,
         columns=asset_returns.columns,
     )
+    signed_trade_weights = trade_weights.copy()
+    resolved_asset_returns = trade_weights.copy()
     post_trade_weights = pd.Series(0.0, index=asset_returns.columns, dtype=float)
 
     for date in asset_returns.index:
@@ -355,6 +392,7 @@ def _calculate_drift_aware_portfolio_path(
             date=date,
             missing_price_policy=missing_price_policy,
         )
+        resolved_asset_returns.loc[date] = period_returns
         grown_weights = post_trade_weights * (1.0 + period_returns)
         gross_return = float((post_trade_weights * period_returns).sum())
         portfolio_growth = 1.0 + gross_return
@@ -379,14 +417,21 @@ def _calculate_drift_aware_portfolio_path(
         target = target_weights.loc[date]
         if target.notna().any():
             target = target.fillna(0.0)
-            trade_weights.loc[date] = (target - pretrade_weights).abs()
+            signed_trade_weights.loc[date] = target - pretrade_weights
+            trade_weights.loc[date] = signed_trade_weights.loc[date].abs()
             post_trade_weights = target
         else:
             post_trade_weights = pretrade_weights
 
         holdings.loc[date] = post_trade_weights
 
-    return holdings, gross_returns, trade_weights
+    return (
+        holdings,
+        gross_returns,
+        signed_trade_weights,
+        trade_weights,
+        resolved_asset_returns,
+    )
 
 
 def _select_top_assets(scores: pd.Series, *, top_n: int | None, top_pct: float | None) -> list[str]:

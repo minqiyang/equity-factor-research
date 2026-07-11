@@ -43,6 +43,10 @@ Exercise the integration path from existing factor research helpers into the exi
 | Tracking-error missing policy | `raise` |
 | Tracking-error terminal-row policy | `include_terminal_close_to_close_window` |
 | Benchmark cost basis | `cost_free_price_return` |
+| Holding-episode contract | `continuous_positive_weight_v1` |
+| Holding-episode return basis | `net_contribution_over_cumulative_deployed_weight` |
+| Holding-episode cost allocation | `pro_rata_absolute_signed_trade_weight` |
+| Closed / terminal-open episodes | `15` / `4` |
 
 ## Factor Correlation Diagnostics
 
@@ -64,6 +68,8 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Annualized return | `13.95%` |
 | Annualized volatility | `10.57%` |
 | Tracking error vs synthetic benchmark | `7.03%` |
+| Episode hit rate | `60.00%` |
+| Average holding-period return | `2.42%` |
 | Sharpe ratio | `1.2811` |
 | Max drawdown | `-5.19%` |
 | Average holding count | `4.0000` |

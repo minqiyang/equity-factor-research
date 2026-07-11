@@ -13,6 +13,7 @@ _GROSS_EXPOSURE_TOLERANCE = 1e-12
 _HOLDINGS_METRIC_DECIMAL_PLACES = 15
 _TRACKING_ERROR_FREQUENCY = "daily_close_to_close"
 _TRACKING_ERROR_PERIODS_PER_YEAR = 252
+_EPISODE_ACCOUNTING_TOLERANCE = 1e-12
 
 
 def calculate_max_drawdown(equity_curve: pd.Series) -> float:
@@ -74,6 +75,131 @@ def calculate_tracking_error(
         measured_active_returns.std(ddof=0)
         * math.sqrt(_TRACKING_ERROR_PERIODS_PER_YEAR)
     )
+
+
+def calculate_holding_episode_metrics(
+    holdings: pd.DataFrame,
+    asset_returns: pd.DataFrame,
+    signed_trade_weights: pd.DataFrame,
+    trade_weights: pd.DataFrame,
+    turnover: pd.Series,
+    total_trading_costs: pd.Series,
+) -> tuple[dict[str, float], int, int]:
+    """Calculate completed holding-episode diagnostics with applied costs."""
+
+    clean_holdings = _validate_holdings_for_metrics(holdings)
+    clean_returns = _validate_episode_matrix(asset_returns, "asset_returns")
+    clean_signed = _validate_episode_matrix(
+        signed_trade_weights,
+        "signed_trade_weights",
+    )
+    clean_trades = _validate_episode_matrix(trade_weights, "trade_weights")
+    clean_turnover = _validate_episode_series(turnover, "turnover")
+    clean_costs = _validate_episode_series(
+        total_trading_costs,
+        "total_trading_costs",
+    )
+
+    for name, frame in {
+        "asset_returns": clean_returns,
+        "signed_trade_weights": clean_signed,
+        "trade_weights": clean_trades,
+    }.items():
+        if not frame.index.equals(clean_holdings.index) or not frame.columns.equals(
+            clean_holdings.columns
+        ):
+            raise ValueError(f"{name} axes must exactly match holdings")
+    for name, series in {
+        "turnover": clean_turnover,
+        "total_trading_costs": clean_costs,
+    }.items():
+        if not series.index.equals(clean_holdings.index):
+            raise ValueError(f"{name} index must exactly match holdings")
+
+    if clean_trades.lt(0.0).any().any():
+        raise ValueError("trade_weights must be non-negative")
+    if clean_turnover.lt(0.0).any():
+        raise ValueError("turnover must be non-negative")
+    if clean_costs.lt(0.0).any():
+        raise ValueError("total_trading_costs must be non-negative")
+    if clean_returns.lt(-1.0).any().any():
+        raise ValueError("asset_returns must not be below -1")
+    if not np.allclose(
+        clean_signed.abs().to_numpy(),
+        clean_trades.to_numpy(),
+        atol=_EPISODE_ACCOUNTING_TOLERANCE,
+        rtol=0.0,
+    ):
+        raise ValueError("absolute signed trades must exactly match trade_weights")
+    calculated_turnover = clean_trades.sum(axis=1)
+    if not np.allclose(
+        calculated_turnover.to_numpy(),
+        clean_turnover.to_numpy(),
+        atol=_EPISODE_ACCOUNTING_TOLERANCE,
+        rtol=0.0,
+    ):
+        raise ValueError("trade_weights row sums must exactly match turnover")
+    zero_turnover_with_cost = clean_turnover.le(_EPISODE_ACCOUNTING_TOLERANCE) & clean_costs.gt(
+        _EPISODE_ACCOUNTING_TOLERANCE
+    )
+    if zero_turnover_with_cost.any():
+        raise ValueError("total_trading_costs must be zero when turnover is zero")
+
+    allocation_weights = clean_trades.div(
+        clean_turnover.replace(0.0, np.nan),
+        axis=0,
+    ).fillna(0.0)
+    asset_costs = allocation_weights.mul(clean_costs, axis=0)
+    if not np.allclose(
+        asset_costs.sum(axis=1).to_numpy(),
+        clean_costs.to_numpy(),
+        atol=_EPISODE_ACCOUNTING_TOLERANCE,
+        rtol=0.0,
+    ):
+        raise ValueError("allocated episode costs must reconcile to total_trading_costs")
+
+    previous_holdings = clean_holdings.shift(1, fill_value=0.0)
+    active: dict[object, list[float]] = {}
+    completed_returns: list[float] = []
+
+    for date in clean_holdings.index:
+        for asset in clean_holdings.columns:
+            held_before = previous_holdings.at[date, asset] > 0.0
+            held_after = clean_holdings.at[date, asset] > 0.0
+            if not held_before and held_after:
+                active[asset] = [0.0, 0.0, 0.0]
+
+            episode = active.get(asset)
+            if held_before and episode is None:
+                raise ValueError("holdings episode state is inconsistent across dates")
+            if episode is None:
+                if abs(clean_signed.at[date, asset]) > _EPISODE_ACCOUNTING_TOLERANCE:
+                    raise ValueError("signed trade has no active holding episode")
+                continue
+
+            episode[0] += previous_holdings.at[date, asset] * clean_returns.at[date, asset]
+            episode[1] += max(clean_signed.at[date, asset], 0.0)
+            episode[2] += asset_costs.at[date, asset]
+
+            if held_before and not held_after:
+                if episode[1] <= _EPISODE_ACCOUNTING_TOLERANCE:
+                    raise ValueError("completed episode must have positive deployed weight")
+                completed_returns.append((episode[0] - episode[2]) / episode[1])
+                del active[asset]
+
+    closed_count = len(completed_returns)
+    open_count = len(active)
+    if not completed_returns:
+        return {
+            "episode_hit_rate": math.nan,
+            "average_holding_period_return": math.nan,
+        }, closed_count, open_count
+
+    episode_returns = np.asarray(completed_returns, dtype=float)
+    return {
+        "episode_hit_rate": float(np.mean(episode_returns > 0.0)),
+        "average_holding_period_return": float(episode_returns.mean()),
+    }, closed_count, open_count
 
 
 def calculate_basic_metrics(
@@ -204,6 +330,39 @@ def _validate_tracking_error_returns(
             "tracking error does not support missing or non-finite returns"
         )
     return clean_returns
+
+
+def _validate_episode_matrix(frame: pd.DataFrame, name: str) -> pd.DataFrame:
+    if not isinstance(frame, pd.DataFrame):
+        raise TypeError(f"{name} must be a pandas DataFrame")
+    if not isinstance(frame.index, pd.DatetimeIndex):
+        raise TypeError(f"{name} must be indexed by a pandas DatetimeIndex")
+    if frame.empty:
+        raise ValueError(f"{name} must not be empty")
+    if (
+        frame.index.has_duplicates
+        or not frame.index.is_monotonic_increasing
+        or frame.columns.has_duplicates
+    ):
+        raise ValueError(f"{name} must have unique assets and increasing unique dates")
+    if any(
+        is_bool_dtype(dtype)
+        or is_complex_dtype(dtype)
+        or not is_numeric_dtype(dtype)
+        for dtype in frame.dtypes
+    ):
+        raise TypeError(f"{name} must contain real numeric, non-boolean values")
+    clean = frame.astype(float)
+    if not np.isfinite(clean.to_numpy()).all():
+        raise ValueError(f"{name} must contain finite values")
+    return clean
+
+
+def _validate_episode_series(series: pd.Series, name: str) -> pd.Series:
+    if not isinstance(series, pd.Series):
+        raise TypeError(f"{name} must be a pandas Series")
+    frame = _validate_episode_matrix(series.to_frame(), name)
+    return frame.iloc[:, 0]
 
 
 def calculate_holdings_state_metrics(holdings: pd.DataFrame) -> dict[str, float]:

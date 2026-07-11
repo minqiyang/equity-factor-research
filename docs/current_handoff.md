@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the holding-episode metric design stage.
+Updated: 2026-07-11 for the holding-episode metric implementation stage.
 
-Baseline stage: holding-episode metric design.
+Baseline stage: holding-episode metric implementation.
 
 ## Canonical State
 
@@ -11,7 +11,7 @@ Baseline stage: holding-episode metric design.
   vectorized liquidity-universe caps, canonical public docs, and package build
   QA, with holdings-state metrics and the approved Stage 2 tracking-error
   contract implemented.
-- Verified suite at the latest implementation stage: 582 tests.
+- Verified suite at the latest implementation stage: 591 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
 
@@ -30,12 +30,13 @@ Baseline stage: holding-episode metric design.
   strategy cost basis, cost-free benchmark returns, and audit metadata.
 - Optional long-only position caps applied after selection and before trade
   calculation, with no renormalization and residual non-interest-bearing cash.
+- Signed trade weights plus completed holding-episode hit rate and average
+  holding-period return with reconciled applied costs and terminal-open counts.
 
 ## Active Stage
 
-Implement only the approved continuous-positive-weight episode metrics and
-signed-trade accounting evidence. Do not invent terminal exits or substitute
-daily positive-return frequency for episode hit rate.
+Run a fresh read-only full repository conformance audit from the merged episode
+implementation baseline. Keep audit findings separate from remediation code.
 
 ## Do Not Infer
 
@@ -48,8 +49,8 @@ daily positive-return frequency for episode hit rate.
 
 ## Next Safe Actions
 
-1. Expose signed trade weights from the drift-aware path and implement the
-   approved episode hit rate and average holding-period return contract.
+1. Audit roadmap, handoff, README, code, tests, generated evidence, metadata,
+   private-output policy, CI, and LEAN boundaries against current main.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in

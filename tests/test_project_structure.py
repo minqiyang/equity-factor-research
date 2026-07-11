@@ -67,13 +67,10 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: holding-episode metric design."
+    baseline_marker = "Baseline stage: holding-episode metric implementation."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
-    assert (
-        "Hit rate and average holding-period return remain unimplemented"
-        in roadmap
-    )
+    assert "Episode metric implementation | Complete" in roadmap
     assert "average holdings, and exposure concentration remain unimplemented" not in roadmap
     design = (
         PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md"
@@ -156,7 +153,7 @@ def test_position_constraint_design_matches_implementation_scope() -> None:
     assert "apply_long_only_position_cap" in constraints
 
 
-def test_holding_episode_design_defines_attribution_without_implementation() -> None:
+def test_holding_episode_design_matches_implementation_contract() -> None:
     design = (PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md").read_text(
         encoding="utf-8"
     )
