@@ -276,6 +276,41 @@ def test_construct_liquidity_universe_uses_input_column_order_for_rank_ties() ->
     assert_frame_equal(result.universe_mask, expected_mask)
 
 
+def test_construct_liquidity_universe_caps_each_date_independently() -> None:
+    eligibility = _panel(
+        {
+            "AAA": [True, True, False],
+            "BBB": [True, True, True],
+            "CCC": [False, True, True],
+        }
+    )
+    ranking = _panel(
+        {
+            "AAA": [2.0, np.nan, 9.0],
+            "BBB": [1.0, 2.0, 1.0],
+            "CCC": [9.0, 3.0, 1.0],
+        }
+    )
+
+    result = construct_liquidity_universe(
+        eligibility,
+        ranking_metric=ranking,
+        max_assets_per_date=1,
+    )
+
+    expected_mask = pd.DataFrame(
+        {
+            "AAA": [True, False, False],
+            "BBB": [False, False, True],
+            "CCC": [False, True, False],
+        },
+        index=eligibility.index,
+    )
+    assert_frame_equal(result.universe_mask, expected_mask)
+    assert result.summary["missing_ranking_count"].tolist() == [0, 1, 0]
+    assert result.summary["capped_count"].tolist() == [1, 1, 1]
+
+
 def test_construct_liquidity_universe_requires_ranking_when_cap_is_set() -> None:
     eligibility = _panel({"AAA": [True], "BBB": [True]})
 

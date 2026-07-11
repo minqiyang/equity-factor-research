@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Vectorized capped liquidity-universe ranking while preserving per-date
+  selection, missing-ranking counts, and input-column-order tie breaks.
 - Aligned candidate volume-aware slippage diagnostics with drift-aware
   portfolio accounting by exposing per-asset trade weights from the backtester
   and accepting those weights through an explicit diagnostic entrypoint. The
