@@ -63,6 +63,21 @@ This repository is a serious simulated quantitative research project. AI coding 
 
 ## Pull Request and Commit Discipline
 
+### GitHub Codex Review Policy
+
+- Keep Codex Automatic reviews disabled for this repository. A GitHub Codex
+  review may start only from an explicit `@codex review` comment.
+- Do not request or run a Codex review while a pull request is in Draft.
+- Complete local validation and required CI first. Request exactly one Codex
+  review on the final stable head.
+- Do not request another review for an unchanged head. Request a second review
+  only when an actionable fix changes the reviewed head.
+- Codex review is optional for trivial documentation-only changes such as test
+  counts, dates, spelling, and equivalent metadata updates.
+- Codex review is required for changes to research semantics, returns, costs,
+  benchmarks, implementation, CI, or security.
+- Report an external pull-request gate once, enter the paused gate state, and
+  do not poll an unchanged gate repeatedly.
 - Prefer small, reviewable pull requests.
 - Each PR should represent one clear feature, bug fix, test improvement, documentation update, or refactor.
 - Prefer meaningful commits.
