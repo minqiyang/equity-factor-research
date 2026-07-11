@@ -67,9 +67,22 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: PR #144."
+    baseline_marker = "Baseline stage: risk/evaluation design."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
+    design = (
+        PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md"
+    ).read_text(encoding="utf-8")
+    for phrase in [
+        "## Stage 1: Holdings-State Metrics",
+        "average_holding_count",
+        "average_position_concentration_hhi",
+        "max_position_concentration_hhi",
+        "## Stage 2: Tracking Error",
+        "## Deferred Metrics",
+        "## PR Sequence",
+    ]:
+        assert phrase in design
 
 
 def test_placeholder_modules_are_importable() -> None:
