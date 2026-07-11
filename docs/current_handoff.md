@@ -1,15 +1,16 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the holdings-state metrics stage.
+Updated: 2026-07-11 for the tracking-error design stage.
 
-Baseline stage: holdings-state metrics.
+Baseline stage: tracking-error design.
 
 ## Canonical State
 
 - Active roadmap: `docs/current_roadmap.md`.
 - Latest implementation baseline: drift-aware volume-slippage accounting,
   vectorized liquidity-universe caps, canonical public docs, and package build
-  QA.
+  QA, with holdings-state metrics implemented and the Stage 2 tracking-error
+  contract documented before code.
 - Verified suite at the latest implementation stage: 553 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
@@ -28,8 +29,9 @@ Baseline stage: holdings-state metrics.
 
 ## Active Stage
 
-Design tracking error alignment as the next separate stage. Do not add hit
-rate, holding-period return, or portfolio constraints to that stage.
+Implement the approved daily close-to-close tracking-error contract in a
+separate code PR. Do not add hit rate, holding-period return, portfolio
+constraints, or strategy-selection behavior to that PR.
 
 ## Do Not Infer
 
@@ -41,7 +43,8 @@ rate, holding-period return, or portfolio constraints to that stage.
 
 ## Next Safe Actions
 
-1. Design tracking error as a separate benchmark-alignment stage.
+1. Implement and test tracking error under the approved benchmark-alignment
+   contract.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in
