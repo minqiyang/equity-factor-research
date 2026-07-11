@@ -1,6 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-10 after PR #142.
+Updated: 2026-07-10 for the PR #144 release baseline.
+
+Baseline stage: PR #144.
 
 ## Canonical State
 

@@ -67,6 +67,9 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
+    baseline_marker = "Baseline stage: PR #144."
+    assert baseline_marker in roadmap
+    assert baseline_marker in handoff
 
 
 def test_placeholder_modules_are_importable() -> None:
