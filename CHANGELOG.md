@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Implemented the optional long-only position cap with clip-without-
+  renormalization behavior, residual cash, strict validation, backtester
+  integration, and audit metadata.
 - Approved the design contract for an optional long-only position cap applied
   after selection and before trade calculation, with clipping, no
   renormalization, and explicit residual cash.

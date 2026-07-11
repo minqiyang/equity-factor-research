@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-07-11 - Position-Cap Implementation
+
+- Added strict target-weight validation and clip-without-renormalization logic
+  in `src/risk/constraints.py`.
+- Integrated the optional cap after selection and before drift-aware trade
+  calculation, so constrained targets drive turnover, costs, holdings, and net
+  returns while residual exposure remains non-interest-bearing cash.
+- Preserved default backtest behavior when no cap is supplied and emit the
+  approved audit metadata only when active.
+- Added focused helper and integration tests; default synthetic reports remain
+  byte-stable because they do not enable the optional constraint.
+
 ## 2026-07-11 - Position-Cap Constraint Design
 
 - Defined the first constraint as an optional long-only per-position cap after

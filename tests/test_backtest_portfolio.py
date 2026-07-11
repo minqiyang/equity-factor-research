@@ -90,6 +90,49 @@ def test_equal_weighting_for_selected_assets() -> None:
     assert result.metrics["max_position_concentration_hhi"] == pytest.approx(0.5)
 
 
+def test_position_cap_holds_residual_cash_and_drives_accounting() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame(
+        {"AAA": [100.0, 100.0, 110.0, 110.0], "BBB": [100.0] * 4},
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {"AAA": [2.0] * 4, "BBB": [1.0] * 4},
+        index=dates,
+    )
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=2,
+        max_position_weight=0.3,
+        transaction_cost_bps=100.0,
+    )
+
+    assert result.holdings.loc[dates[1]].tolist() == pytest.approx([0.3, 0.3])
+    assert result.turnover.loc[dates[1]] == pytest.approx(0.6)
+    assert result.transaction_costs.loc[dates[1]] == pytest.approx(0.006)
+    assert result.gross_returns.loc[dates[2]] == pytest.approx(0.03)
+    assert result.holdings.loc[dates[2]].tolist() == pytest.approx([0.3, 0.3])
+    assert result.assumptions["max_position_weight"] == pytest.approx(0.3)
+    assert result.assumptions["position_constraint_breach_policy"] == "clip"
+    assert result.assumptions["position_constraint_renormalization"] == "none"
+    assert result.assumptions["position_constraint_infeasible_target_policy"] == (
+        "clip_and_hold_cash"
+    )
+
+
+def test_position_cap_is_optional_and_does_not_emit_metadata_when_absent() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 101.0, 102.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+
+    result = run_long_only_backtest(prices, signals, rebalance_frequency="D", top_n=1)
+
+    assert "position_constraint_contract" not in result.assumptions
+
+
 def test_turnover_uses_target_weight_changes_on_rebalance_dates() -> None:
     dates = pd.date_range("2024-01-01", periods=4, freq="D")
     prices = pd.DataFrame(

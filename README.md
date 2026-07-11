@@ -113,8 +113,9 @@ to `main`. Changes are delivered as small PRs and reviewed on the current head.
 - No point-in-time real-market universe is supplied.
 - Private inputs and outputs remain outside the repository.
 - Volume-aware slippage is not a calibrated fill or market-impact model.
-- `src/risk/constraints.py` and `src/reporting/plots.py` are placeholders, not
-  implemented capabilities.
+- `src/risk/constraints.py` provides an optional simulated long-only position
+  cap; `src/reporting/plots.py` remains a placeholder. Neither is a production
+  trading or risk-management capability.
 
 Before interpreting any real-data study, define provenance, adjustment policy,
 point-in-time universe and survivorship policy, benchmark, sample splits,

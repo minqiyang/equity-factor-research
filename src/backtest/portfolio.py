@@ -15,6 +15,7 @@ import pandas as pd
 from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 
 from backtest.metrics import calculate_basic_metrics
+from risk.constraints import apply_long_only_position_cap
 
 
 _VOLUME_AWARE_SLIPPAGE_MODES = {"diagnostic_only", "apply_precomputed_impact"}
@@ -29,6 +30,14 @@ _TRACKING_ERROR_ASSUMPTIONS = {
     "tracking_error_missing_policy": "raise",
     "tracking_error_terminal_row_policy": "include_terminal_close_to_close_window",
     "benchmark_cost_basis": "cost_free_price_return",
+}
+_POSITION_CAP_ASSUMPTIONS = {
+    "position_constraint_contract": "long_only_position_cap_v1",
+    "position_constraint_order": "after_selection_before_trade_calculation",
+    "position_constraint_breach_policy": "clip",
+    "position_constraint_renormalization": "none",
+    "position_constraint_residual_weight": "non_interest_bearing_cash",
+    "position_constraint_infeasible_target_policy": "clip_and_hold_cash",
 }
 _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "base_slippage_bps",
@@ -94,6 +103,7 @@ def run_long_only_backtest(
     missing_price_policy: str = "raise",
     benchmark_missing_policy: str = "raise",
     periods_per_year: int = 252,
+    max_position_weight: float | None = None,
 ) -> BacktestResult:
     """Run a minimal long-only, equal-weight cross-sectional backtest.
 
@@ -162,6 +172,11 @@ def run_long_only_backtest(
         top_n=top_n,
         top_pct=top_pct,
     )
+    if max_position_weight is not None:
+        target_weights = apply_long_only_position_cap(
+            target_weights.fillna(0.0),
+            max_position_weight=max_position_weight,
+        ).where(target_weights.notna())
 
     asset_returns = price_data.pct_change(fill_method=None)
     asset_returns = asset_returns.replace([np.inf, -np.inf], np.nan)
@@ -274,6 +289,11 @@ def run_long_only_backtest(
             "zero_cost_or_slippage_is_diagnostic": zero_cost_or_slippage_is_diagnostic,
             "long_only": True,
             "leverage": "none",
+            **(
+                {**_POSITION_CAP_ASSUMPTIONS, "max_position_weight": max_position_weight}
+                if max_position_weight is not None
+                else {}
+            ),
             **(
                 _TRACKING_ERROR_ASSUMPTIONS
                 if benchmark_returns_for_tracking_error is not None
