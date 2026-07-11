@@ -346,6 +346,9 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Annualized volatility | `{_format_percent(metrics["annualized_volatility"])}` |
 | Sharpe ratio | `{_format_number(metrics["sharpe_ratio"])}` |
 | Max drawdown | `{_format_percent(metrics["max_drawdown"])}` |
+| Average holding count | `{_format_number(metrics["average_holding_count"])}` |
+| Average position concentration HHI | `{_format_number(metrics["average_position_concentration_hhi"])}` |
+| Max position concentration HHI | `{_format_number(metrics["max_position_concentration_hhi"])}` |
 | Average turnover | `{_format_percent(metrics["average_turnover"])}` |
 | Total turnover | `{_format_number(metrics["total_turnover"])}` |
 | Total transaction cost impact | `{_format_percent(metrics["total_transaction_cost_impact"])}` |

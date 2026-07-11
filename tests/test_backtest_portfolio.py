@@ -84,6 +84,9 @@ def test_equal_weighting_for_selected_assets() -> None:
     assert result.holdings.loc[dates[1], "CCC"] == pytest.approx(0.0)
     assert result.holdings.loc[dates[1]].sum() == pytest.approx(1.0)
     assert result.assumptions["aligned_signal_coverage"] == pytest.approx(1.0)
+    assert result.metrics["average_holding_count"] == pytest.approx(2.0)
+    assert result.metrics["average_position_concentration_hhi"] == pytest.approx(0.5)
+    assert result.metrics["max_position_concentration_hhi"] == pytest.approx(0.5)
 
 
 def test_turnover_uses_target_weight_changes_on_rebalance_dates() -> None:

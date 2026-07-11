@@ -194,6 +194,7 @@ def run_long_only_backtest(
     metrics = calculate_basic_metrics(
         equity_curve,
         net_returns,
+        holdings=holdings,
         turnover=turnover,
         transaction_costs=transaction_costs,
         slippage_costs=slippage_costs,

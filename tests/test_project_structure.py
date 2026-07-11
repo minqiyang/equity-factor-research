@@ -67,7 +67,7 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: risk/evaluation design."
+    baseline_marker = "Baseline stage: holdings-state metrics."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     design = (

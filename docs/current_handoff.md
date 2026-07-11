@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-10 for the risk/evaluation design stage.
+Updated: 2026-07-10 for the holdings-state metrics stage.
 
-Baseline stage: risk/evaluation design.
+Baseline stage: holdings-state metrics.
 
 ## Canonical State
 
@@ -28,9 +28,8 @@ Baseline stage: risk/evaluation design.
 
 ## Active Stage
 
-Implement the approved holdings-state metrics in
-`docs/risk_evaluation_metrics_design.md`. Do not add tracking error, hit rate,
-holding-period return, or portfolio constraints in the same PR.
+Design tracking error alignment as the next separate stage. Do not add hit
+rate, holding-period return, or portfolio constraints to that stage.
 
 ## Do Not Infer
 
@@ -42,10 +41,8 @@ holding-period return, or portfolio constraints in the same PR.
 
 ## Next Safe Actions
 
-1. Implement and test average holding count plus normalized average/maximum
-   concentration HHI.
-2. Design tracking error as a separate benchmark-alignment stage.
-3. Consider shared presentation helpers only with byte-stable generated-output
+1. Design tracking error as a separate benchmark-alignment stage.
+2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
-4. Pause real-data interpretation until the methodology gates in
+3. Pause real-data interpretation until the methodology gates in
    `docs/current_roadmap.md` are accepted.

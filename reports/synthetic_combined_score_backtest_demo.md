@@ -56,6 +56,9 @@ These values are deterministic diagnostics from synthetic data. They are not evi
 | Annualized volatility | `10.57%` |
 | Sharpe ratio | `1.2811` |
 | Max drawdown | `-5.19%` |
+| Average holding count | `4.0000` |
+| Average position concentration HHI | `0.2502` |
+| Max position concentration HHI | `0.2510` |
 | Average turnover | `5.34%` |
 | Total turnover | `8.5479` |
 | Total transaction cost impact | `0.86%` |
