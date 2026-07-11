@@ -84,6 +84,7 @@ def test_holdings_state_metrics_return_nan_without_active_dates() -> None:
         (_holdings({"AAA": [0.6], "BBB": [0.5]}), ValueError, "gross exposure"),
         (_holdings({"AAA": ["0.5"]}), TypeError, "numeric, non-boolean"),
         (_holdings({"AAA": [True]}), TypeError, "numeric, non-boolean"),
+        (_holdings({"AAA": [0.5 + 99j]}), TypeError, "numeric, non-boolean"),
     ],
 )
 def test_holdings_state_metrics_reject_invalid_values(

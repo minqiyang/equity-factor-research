@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_bool_dtype, is_numeric_dtype
+from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 
 
 _GROSS_EXPOSURE_TOLERANCE = 1e-12
@@ -180,11 +180,12 @@ def _validate_holdings_for_metrics(holdings: pd.DataFrame) -> pd.DataFrame:
         column
         for column in holdings.columns
         if is_bool_dtype(holdings[column].dtype)
+        or is_complex_dtype(holdings[column].dtype)
         or not is_numeric_dtype(holdings[column].dtype)
     ]
     if invalid_columns:
         raise TypeError(
-            "holdings must contain numeric, non-boolean columns; "
+            "holdings must contain real numeric, non-boolean columns; "
             f"invalid columns: {invalid_columns}"
         )
 
