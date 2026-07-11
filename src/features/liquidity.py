@@ -330,27 +330,21 @@ def _apply_universe_cap(
     if ranking_metric is None:
         raise ValueError("ranking_metric is required when max_assets_per_date is set")
 
-    selected = pd.DataFrame(
-        False,
-        index=eligible_mask.index,
-        columns=eligible_mask.columns,
+    eligible_ranking = ranking_metric.where(eligible_mask)
+    missing_ranking_count = (
+        eligible_mask & ranking_metric.isna()
+    ).sum(axis=1).astype(int)
+    ranks = eligible_ranking.rank(
+        axis=1,
+        method="first",
+        ascending=False,
+        na_option="keep",
     )
-
-    for date, eligible_row in eligible_mask.iterrows():
-        eligible_assets = eligible_row[eligible_row].index
-        ranking_row = ranking_metric.loc[date, eligible_assets]
-        missing_ranking_count.loc[date] = int(ranking_row.isna().sum())
-        valid_ranking = ranking_row.dropna()
-
-        ranked_assets = valid_ranking.sort_values(
-            ascending=False,
-            kind="mergesort",
-        ).head(max_assets_per_date).index
-        selected.loc[date, ranked_assets] = True
-        capped_count.loc[date] = max(
-            int(len(valid_ranking) - len(ranked_assets)),
-            0,
-        )
+    selected = eligible_mask & ranks.le(max_assets_per_date)
+    valid_ranking_count = eligible_ranking.notna().sum(axis=1)
+    capped_count = (valid_ranking_count - selected.sum(axis=1)).clip(
+        lower=0,
+    ).astype(int)
 
     return selected.astype(bool), missing_ranking_count, capped_count
 
