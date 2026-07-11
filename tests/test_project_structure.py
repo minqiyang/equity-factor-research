@@ -1,4 +1,5 @@
 from pathlib import Path
+import tomllib
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -66,6 +67,9 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
+    baseline_marker = "Baseline stage: PR #144."
+    assert baseline_marker in roadmap
+    assert baseline_marker in handoff
 
 
 def test_placeholder_modules_are_importable() -> None:
@@ -86,3 +90,40 @@ def test_placeholder_modules_are_importable() -> None:
     assert data.csv_loader.__doc__
     assert risk.constraints.__doc__
     assert reporting.plots.__doc__
+
+
+def test_public_metadata_and_readme_match_implemented_scope() -> None:
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    metadata = tomllib.loads(
+        (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    )["project"]
+
+    assert "docs/current_roadmap.md" in readme
+    assert "plotting remains unimplemented" in readme
+    assert "No market-data downloader" in readme
+    assert "private_data" not in readme
+    assert metadata["license"] == "Apache-2.0"
+    assert metadata["urls"]["Repository"].endswith("equity-factor-research")
+    assert metadata["dependencies"] == [
+        "numpy>=1.26",
+        "pandas>=2.1",
+        "scipy>=1.11",
+    ]
+
+
+def test_ci_and_generated_repo_map_share_core_validation_commands() -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(
+        encoding="utf-8"
+    )
+    repo_map = (PROJECT_ROOT / "docs/repo_map.md").read_text(encoding="utf-8")
+    commands = [
+        "python -m pytest -q",
+        "python -m ruff check .",
+        "python -m compileall src tests research",
+        "python -m compileall lean",
+        "python -m build",
+    ]
+
+    for command in commands:
+        assert command in workflow
+        assert command in repo_map

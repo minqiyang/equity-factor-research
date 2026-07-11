@@ -1,13 +1,16 @@
 # Current Handoff
 
-Updated: 2026-07-10 after PR #142.
+Updated: 2026-07-10 for the PR #144 release baseline.
+
+Baseline stage: PR #144.
 
 ## Canonical State
 
 - Active roadmap: `docs/current_roadmap.md`.
-- Latest merged work: drift-aware volume-slippage accounting and vectorized
-  liquidity-universe caps.
-- Verified suite at the latest implementation stage: 535 tests.
+- Latest implementation baseline: drift-aware volume-slippage accounting,
+  vectorized liquidity-universe caps, canonical public docs, and package build
+  QA.
+- Verified suite at the latest implementation stage: 536 tests.
 - Delivery model: one small PR, CI, current-head Codex review, then normal
   merge.
 
@@ -25,9 +28,9 @@ Updated: 2026-07-10 after PR #142.
 
 ## Active Stage
 
-Reset public documentation to the implemented baseline, then industrialize the
-README, workflow SVG, package metadata, and release checks without expanding
-research or trading scope.
+Design the missing risk and evaluation metrics before implementation. Keep the
+stage documentation-only until formulas, timing, missing-data behavior, and
+deterministic synthetic tests are reviewed.
 
 ## Do Not Infer
 
@@ -39,9 +42,8 @@ research or trading scope.
 
 ## Next Safe Actions
 
-1. Reconcile README capability claims and replace the workflow SVG with a
-   concise code-accurate diagram.
-2. Verify package metadata, generated artifacts, links, and release commands.
-3. Design risk/evaluation metrics before implementing them.
-4. Pause real-data interpretation until the methodology gates in
+1. Design risk/evaluation metrics before implementing them.
+2. Consider shared presentation helpers only with byte-stable generated-output
+   tests.
+3. Pause real-data interpretation until the methodology gates in
    `docs/current_roadmap.md` are accepted.

@@ -41,7 +41,10 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 ## Test And Validation Commands
 
 - Full tests: `python -m pytest -q`
-- Compile check: `python -m compileall src tests research`
+- Lint repository: `python -m ruff check .`
+- Compile source, tests, and research: `python -m compileall src tests research`
+- Compile LEAN scaffold: `python -m compileall lean`
+- Build distribution: `python -m build`
 - Repo map refresh: `python scripts/repo_map.py`
 - Branch whitespace check: `git diff --check origin/main..HEAD`
 - Skill audit for workflow/Skill changes: `.\scripts\audit-skills.ps1`
