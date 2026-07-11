@@ -17,6 +17,7 @@ from backtest.metrics import calculate_basic_metrics
 
 
 _VOLUME_AWARE_SLIPPAGE_MODES = {"diagnostic_only", "apply_precomputed_impact"}
+_PORTFOLIO_GROWTH_STABILITY_THRESHOLD = 1e-8
 _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "base_slippage_bps",
     "max_participation",
@@ -309,19 +310,24 @@ def _calculate_drift_aware_portfolio_path(
             date=date,
             missing_price_policy=missing_price_policy,
         )
+        grown_weights = post_trade_weights * (1.0 + period_returns)
         gross_return = float((post_trade_weights * period_returns).sum())
+        portfolio_growth = 1.0 + gross_return
+        if (
+            post_trade_weights.gt(0.0).any()
+            and portfolio_growth <= _PORTFOLIO_GROWTH_STABILITY_THRESHOLD
+        ):
+            portfolio_growth = float(grown_weights.sum())
+            gross_return = portfolio_growth - 1.0
         gross_returns.loc[date] = gross_return
 
-        portfolio_growth = 1.0 + gross_return
         if portfolio_growth <= 0.0 and post_trade_weights.gt(0.0).any():
             raise ValueError(
                 "Portfolio value was exhausted before weights could be propagated "
                 f"on {date.date()}"
             )
         if post_trade_weights.gt(0.0).any():
-            pretrade_weights = (
-                post_trade_weights * (1.0 + period_returns) / portfolio_growth
-            )
+            pretrade_weights = grown_weights / portfolio_growth
         else:
             pretrade_weights = post_trade_weights.copy()
 
