@@ -1,8 +1,8 @@
 # Current Handoff
 
-Updated: 2026-07-11 for the position-cap constraint design stage.
+Updated: 2026-07-11 for the position-cap implementation stage.
 
-Baseline stage: position-cap constraint design.
+Baseline stage: position-cap implementation.
 
 ## Canonical State
 
@@ -28,13 +28,14 @@ Baseline stage: position-cap constraint design.
 - Liquidity-universe cap vectorization with stable tie semantics.
 - Daily close-to-close tracking error with exact benchmark alignment, net
   strategy cost basis, cost-free benchmark returns, and audit metadata.
+- Optional long-only position caps applied after selection and before trade
+  calculation, with no renormalization and residual non-interest-bearing cash.
 
 ## Active Stage
 
-Implement only the approved optional long-only position cap in
-`src/risk/constraints.py` and integrate it after selection but before trade
-calculation. Do not combine it with hit rate, holding-period return, plotting,
-liquidity filtering, or strategy-selection behavior.
+Design complete position episodes and cost attribution before implementing hit
+rate or average holding-period return. Do not substitute daily positive-return
+frequency for episode hit rate.
 
 ## Do Not Infer
 
@@ -46,8 +47,8 @@ liquidity filtering, or strategy-selection behavior.
 
 ## Next Safe Actions
 
-1. Implement the approved clip-without-renormalization position-cap contract,
-   including residual non-interest-bearing cash and audit metadata.
+1. Design entry, resize, exit, re-entry, terminal-open-position, and cost
+   attribution semantics for episode metrics before adding code.
 2. Consider shared presentation helpers only with byte-stable generated-output
    tests.
 3. Pause real-data interpretation until the methodology gates in

@@ -67,7 +67,7 @@ def test_current_roadmap_and_handoff_define_one_active_status_source() -> None:
 
     assert "## Status: Historical" in historical_roadmap
     assert "must not be used as the current task queue" in historical_roadmap
-    baseline_marker = "Baseline stage: position-cap constraint design."
+    baseline_marker = "Baseline stage: position-cap implementation."
     assert baseline_marker in roadmap
     assert baseline_marker in handoff
     assert (
@@ -135,7 +135,7 @@ def test_placeholder_modules_are_importable() -> None:
     assert reporting.plots.__doc__
 
 
-def test_position_constraint_design_is_explicit_and_code_remains_placeholder() -> None:
+def test_position_constraint_design_matches_implementation_scope() -> None:
     design = (PROJECT_ROOT / "docs/risk_evaluation_metrics_design.md").read_text(
         encoding="utf-8"
     )
@@ -153,7 +153,7 @@ def test_position_constraint_design_is_explicit_and_code_remains_placeholder() -
         "calculated from constrained targets versus drifted pre-trade holdings",
     ]:
         assert phrase in design
-    assert "eventually contain portfolio-level constraints" in constraints
+    assert "apply_long_only_position_cap" in constraints
 
 
 def test_public_metadata_and_readme_match_implemented_scope() -> None:

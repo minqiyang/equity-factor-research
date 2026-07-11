@@ -1,5 +1,24 @@
 # Troubleshooting Log
 
+## 2026-07-11 - Experiment Registry Has No Standalone Research Module
+
+Failure:
+
+- The position-cap generated-output stability check attempted
+  `python -m research.build_experiment_registry`, but that module does not
+  exist.
+
+Recovery:
+
+- Confirmed with `rg` that `research.synthetic_multifactor_parameter_sweep`
+  already calls `write_experiment_registry_report()` and reran the existing
+  generator path instead.
+
+Prevention:
+
+- Use the generator entrypoints named in source and tests rather than assuming
+  every report helper has a same-named research module.
+
 This log records failures, missing prerequisites, confusing environment
 behavior, incorrect assumptions, failed checks, and recovery steps.
 

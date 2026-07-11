@@ -1,7 +1,6 @@
 # Risk And Evaluation Metrics Design
 
-Status: Stages 1 and 2 implemented; Stage 3 constraint design approved for a
-separate implementation checkpoint.
+Status: Stages 1 through 3 implemented; episode-metric design is next.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,
@@ -287,7 +286,7 @@ lot or episode attribution policy and a reviewed allocation of costs.
 
 ## Stage 3: Long-Only Position-Cap Constraint
 
-The first constraint implementation is deliberately narrow: an optional
+The implemented first constraint is deliberately narrow: an optional
 per-position maximum applied to already-selected long-only target weights. It
 is a simulated portfolio-construction control, not a production risk system.
 Sector, factor, beta, volatility, liquidity, and tracking-error limits remain
@@ -393,8 +392,8 @@ belongs in `src/risk/constraints.py` and integration in the backtester.
 | B | Completed: implement holdings-state helpers and backtester integration. | Stop on accounting changes or unstable generated outputs. |
 | C | Completed: implement tracking error under the approved daily close-to-close contract with benchmark-alignment tests. | Stop if benchmark returns cannot be reconstructed unambiguously. |
 | D | Completed: long-only position-cap constraint design. | Stop before code until the design PR is accepted. |
-| D2 | Next: implement the approved optional position cap. | Stop on implicit renormalization, altered selection, or accounting drift. |
-| E | Episode model design, only if hit-rate or holding-period metrics are still needed. | Stop before presenting daily win rate as trade hit rate. |
+| D2 | Completed: implement the approved optional position cap. | Stop on implicit renormalization, altered selection, or accounting drift. |
+| E | Next: episode model design, only if hit-rate or holding-period metrics are still needed. | Stop before presenting daily win rate as trade hit rate. |
 
 Every code PR requires focused tests, full tests, Ruff, compilation, package
 build, current-head Codex review, and normal merge.

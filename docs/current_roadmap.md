@@ -1,8 +1,8 @@
 # Current Roadmap
 
-Updated: 2026-07-11 for the position-cap constraint design stage.
+Updated: 2026-07-11 for the position-cap implementation stage.
 
-Baseline stage: position-cap constraint design.
+Baseline stage: position-cap implementation.
 
 This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
 documents are historical evidence, not active task queues.
@@ -34,8 +34,8 @@ claims must be checked against source and tests before reuse.
 
 1. Real-data interpretation is blocked by point-in-time universe,
    survivorship, adjustment, benchmark, split, cost, and interpretation policy.
-2. Portfolio risk constraints and exposure controls are not implemented;
-   `src/risk/constraints.py` is a placeholder.
+2. Broader portfolio risk constraints and exposure controls are not
+   implemented; only the optional long-only position cap is available.
 3. Hit rate and average holding-period return remain unimplemented pending an
    episode-attribution model.
 4. Reporting plots are not implemented.
@@ -54,7 +54,8 @@ claims must be checked against source and tests before reuse.
 | Tracking error design | Complete | Daily close-to-close benchmark alignment, first-row treatment, missing-data behavior, net-versus-gross return semantics, annualization, errors, metadata, and focused test requirements are defined in `docs/risk_evaluation_metrics_design.md`. | Design contract accepted before implementation. |
 | Tracking error implementation | Complete | Annualized population volatility of exact-date aligned daily net strategy returns versus cost-free benchmark returns is integrated with audit metadata and deterministic synthetic evidence. | Focused tests, full tests, generated-output review, CI, and current-head review. |
 | Constraint design | Complete | Define an optional long-only position cap after selection and before trade calculation, with clipping, no renormalization, residual cash, validation, audit fields, and accounting interactions. | Design contract accepted before implementation. |
-| Position-cap implementation | Next | Implement only the approved optional long-only position cap and its backtester integration. | Focused tests, full tests, generated-output review if affected, CI, and current-head review. |
+| Position-cap implementation | Complete | Optional long-only target weights are clipped after selection and before trade calculation without renormalization; residual exposure remains cash. | Focused tests, full tests, generated-output review if affected, CI, and current-head review. |
+| Episode metric design | Next | Define complete position episodes and cost attribution before hit rate or average holding-period return. | Design contract accepted before implementation. |
 | Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
 | LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 

@@ -17,7 +17,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `src/data/` | Strict local CSV loaders and metadata review helpers. | 3 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
 | `research/` | Synthetic and committed-fixture demo workflows. | 14 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 40 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 41 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 4 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |
