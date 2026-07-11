@@ -1,7 +1,6 @@
 # Risk And Evaluation Metrics Design
 
-Status: Stages 1 through 3 implemented; Stage 4 episode metrics are designed
-for a separate implementation checkpoint.
+Status: Stages 1 through 4 implemented.
 
 This document defines the next metric work after the PR #144 release baseline.
 It covers simulated research diagnostics only. It does not define investment,
@@ -387,7 +386,7 @@ belongs in `src/risk/constraints.py` and integration in the backtester.
 
 ## Stage 4: Holding-Episode Metrics
 
-The first episode implementation adds only `episode_hit_rate` and
+The episode implementation adds only `episode_hit_rate` and
 `average_holding_period_return`. It uses completed long-only asset episodes
 from the simulated backtest. It does not infer trades, fills, tax lots, or
 round trips from daily portfolio returns.
@@ -496,8 +495,10 @@ prior-close held asset.
 
 The implementation rejects accounting mismatches before attribution, including
 absolute/signed trade disagreement, turnover disagreement, nonzero cost with
-zero turnover, or daily allocated costs that do not reconcile. It does not
-fill, intersect, reorder, threshold, or infer missing data.
+zero turnover, or daily allocated costs that do not reconcile. Accounting
+identities use a fixed absolute numerical tolerance of `1e-12`; this is not a
+holding-activity threshold. The implementation does not fill, intersect,
+reorder, threshold holding activity, or infer missing data.
 
 Metrics are optional: callers without the complete attribution inputs retain
 their existing metric dictionary. When active, assumptions record:
@@ -543,7 +544,7 @@ holding_episode_terminal_open_count = <integer>
 | D | Completed: long-only position-cap constraint design. | Stop before code until the design PR is accepted. |
 | D2 | Completed: implement the approved optional position cap. | Stop on implicit renormalization, altered selection, or accounting drift. |
 | E | Completed: holding-episode boundaries, return basis, cost allocation, terminal policy, audit fields, and tests. | Stop before presenting daily win rate as trade hit rate. |
-| E2 | Next: expose signed trades and implement only the approved episode metrics. | Stop on cost non-reconciliation or invented terminal exits. |
+| E2 | Completed: expose signed trades and implement only the approved episode metrics. | Stop on cost non-reconciliation or invented terminal exits. |
 
 Every code PR requires focused tests, full tests, Ruff, compilation, package
 build, current-head Codex review, and normal merge.

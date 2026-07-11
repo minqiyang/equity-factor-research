@@ -34,6 +34,10 @@ Demonstrate the local research workflow:
 - Tracking-error missing policy: `raise`
 - Tracking-error terminal-row policy: `include_terminal_close_to_close_window`
 - Benchmark cost basis: `cost_free_price_return`
+- Holding-episode contract: `continuous_positive_weight_v1`
+- Holding-episode return/cost basis: `net_contribution_over_cumulative_deployed_weight`, `pro_rata_absolute_signed_trade_weight`
+- Holding-episode terminal policy: `exclude_open`
+- Closed/terminal-open episodes: `29` / `5`
 - Execution timing: signals known after close; trades on rebalance dates using lagged signals; holdings affect next price row
 
 ## Metrics
@@ -44,6 +48,8 @@ Demonstrate the local research workflow:
 | Annualized return | -2.71% |
 | Annualized volatility | 10.31% |
 | Tracking error vs synthetic benchmark | 9.09% |
+| Episode hit rate | 34.48% |
+| Average holding-period return | -2.14% |
 | Sharpe ratio | -0.2146 |
 | Max drawdown | -22.64% |
 | Average holding count | 5.0000 |

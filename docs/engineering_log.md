@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-07-11 - Holding-Episode Metric Implementation
+
+- Exposed signed target-minus-pretrade weights alongside existing absolute
+  trade weights and retained exact turnover reconciliation.
+- Added completed continuous-positive-weight episode attribution, including
+  prior-holding return timing, cumulative deployed weight, and applied trading
+  costs allocated pro rata by absolute signed trades.
+- Added episode hit rate, average holding-period return, terminal-open and
+  completed counts, audit metadata, and deterministic synthetic evidence.
+- Preserved terminal-open positions without invented exits and kept zero-cost
+  outputs labeled as diagnostics under existing policy.
+
 ## 2026-07-11 - Holding-Episode Metric Design
 
 - Defined continuous positive post-trade weight as the episode boundary, with

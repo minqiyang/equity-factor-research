@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- Implemented signed trade weights, completed-episode hit rate and average
+  holding-period return, exact applied-cost allocation, terminal-open counts,
+  audit metadata, and refreshed synthetic evidence.
 - Approved continuous positive-weight holding episodes, signed-trade evidence,
   net contribution over deployed weight, applied-cost allocation, and explicit
   terminal-open handling for future episode metrics.

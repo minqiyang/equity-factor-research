@@ -206,6 +206,11 @@ def write_demo_experiment_log(
                 "tracking_error_terminal_row_policy"
             ],
             "benchmark_cost_basis": result.assumptions["benchmark_cost_basis"],
+            **{
+                key: result.assumptions[key]
+                for key in result.assumptions
+                if key.startswith("holding_episode_")
+            },
             "live_trading": False,
             "brokerage_integration": False,
         },
@@ -277,6 +282,10 @@ Demonstrate the local research workflow:
 - Tracking-error missing policy: `{result.assumptions["tracking_error_missing_policy"]}`
 - Tracking-error terminal-row policy: `{result.assumptions["tracking_error_terminal_row_policy"]}`
 - Benchmark cost basis: `{result.assumptions["benchmark_cost_basis"]}`
+- Holding-episode contract: `{result.assumptions["holding_episode_contract"]}`
+- Holding-episode return/cost basis: `{result.assumptions["holding_episode_return_basis"]}`, `{result.assumptions["holding_episode_cost_allocation"]}`
+- Holding-episode terminal policy: `{result.assumptions["holding_episode_terminal_policy"]}`
+- Closed/terminal-open episodes: `{result.assumptions["holding_episode_closed_count"]}` / `{result.assumptions["holding_episode_terminal_open_count"]}`
 - Execution timing: {result.assumptions["execution_timing"]}
 
 ## Metrics
@@ -287,6 +296,8 @@ Demonstrate the local research workflow:
 | Annualized return | {_format_percent(metrics["annualized_return"])} |
 | Annualized volatility | {_format_percent(metrics["annualized_volatility"])} |
 | Tracking error vs synthetic benchmark | {_format_percent(metrics["tracking_error"])} |
+| Episode hit rate | {_format_percent(metrics["episode_hit_rate"])} |
+| Average holding-period return | {_format_percent(metrics["average_holding_period_return"])} |
 | Sharpe ratio | {_format_number(metrics["sharpe_ratio"])} |
 | Max drawdown | {_format_percent(metrics["max_drawdown"])} |
 | Average holding count | {_format_number(metrics["average_holding_count"])} |

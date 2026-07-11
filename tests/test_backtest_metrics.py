@@ -6,9 +6,190 @@ import pytest
 
 from backtest.metrics import (
     calculate_basic_metrics,
+    calculate_holding_episode_metrics,
     calculate_holdings_state_metrics,
     calculate_tracking_error,
 )
+
+
+def test_holding_episode_metrics_include_entry_exit_returns_and_costs() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.5, 0.5, 0.5, 0.0]}, index=dates)
+    asset_returns = pd.DataFrame({"AAA": [0.0, 0.1, -0.05, 0.2]}, index=dates)
+    signed_trades = pd.DataFrame({"AAA": [0.5, 0.0, 0.0, -0.5]}, index=dates)
+    trades = signed_trades.abs()
+    turnover = trades.sum(axis=1)
+    costs = pd.Series([0.005, 0.0, 0.0, 0.005], index=dates)
+
+    metrics, closed_count, open_count = calculate_holding_episode_metrics(
+        holdings,
+        asset_returns,
+        signed_trades,
+        trades,
+        turnover,
+        costs,
+    )
+
+    assert metrics["episode_hit_rate"] == pytest.approx(1.0)
+    assert metrics["average_holding_period_return"] == pytest.approx(0.23)
+    assert closed_count == 1
+    assert open_count == 0
+
+
+def test_holding_episode_metrics_keep_resizes_and_split_reentry() -> None:
+    dates = pd.date_range("2024-01-01", periods=6, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.4, 0.6, 0.2, 0.0, 0.5, 0.0]}, index=dates)
+    asset_returns = pd.DataFrame({"AAA": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}, index=dates)
+    signed_trades = pd.DataFrame(
+        {"AAA": [0.4, 0.2, -0.4, -0.2, 0.5, -0.5]},
+        index=dates,
+    )
+    trades = signed_trades.abs()
+    turnover = trades.sum(axis=1)
+    costs = pd.Series(0.0, index=dates)
+
+    metrics, closed_count, open_count = calculate_holding_episode_metrics(
+        holdings,
+        asset_returns,
+        signed_trades,
+        trades,
+        turnover,
+        costs,
+    )
+
+    assert metrics["episode_hit_rate"] == pytest.approx(0.0)
+    assert metrics["average_holding_period_return"] == pytest.approx(0.0)
+    assert closed_count == 2
+    assert open_count == 0
+
+
+def test_holding_episode_metrics_exclude_terminal_open_episode() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.5, 0.5]}, index=dates)
+    asset_returns = pd.DataFrame({"AAA": [0.0, 0.1]}, index=dates)
+    signed_trades = pd.DataFrame({"AAA": [0.5, 0.0]}, index=dates)
+    trades = signed_trades.abs()
+
+    metrics, closed_count, open_count = calculate_holding_episode_metrics(
+        holdings,
+        asset_returns,
+        signed_trades,
+        trades,
+        trades.sum(axis=1),
+        pd.Series(0.0, index=dates),
+    )
+
+    assert math.isnan(metrics["episode_hit_rate"])
+    assert math.isnan(metrics["average_holding_period_return"])
+    assert closed_count == 0
+    assert open_count == 1
+
+
+def test_holding_episode_metrics_reject_accounting_mismatch() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.5, 0.0]}, index=dates)
+    returns = pd.DataFrame({"AAA": [0.0, 0.0]}, index=dates)
+    signed = pd.DataFrame({"AAA": [0.5, -0.5]}, index=dates)
+    trades = signed.abs()
+
+    with pytest.raises(ValueError, match="absolute signed trades"):
+        calculate_holding_episode_metrics(
+            holdings,
+            returns,
+            signed,
+            trades * 0.5,
+            trades.sum(axis=1),
+            pd.Series(0.0, index=dates),
+        )
+
+    with pytest.raises(ValueError, match="zero when turnover is zero"):
+        calculate_holding_episode_metrics(
+            holdings * 0.0,
+            returns,
+            signed * 0.0,
+            trades * 0.0,
+            pd.Series(0.0, index=dates),
+            pd.Series([0.01, 0.0], index=dates),
+        )
+
+
+def test_holding_episode_metrics_equal_weight_completed_episodes_and_costs() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    holdings = pd.DataFrame(
+        {"AAA": [0.5, 0.0], "BBB": [0.5, 0.0]},
+        index=dates,
+    )
+    returns = pd.DataFrame(
+        {"AAA": [0.0, 0.1], "BBB": [0.0, -0.1]},
+        index=dates,
+    )
+    signed = pd.DataFrame(
+        {"AAA": [0.5, -0.5], "BBB": [0.5, -0.5]},
+        index=dates,
+    )
+    trades = signed.abs()
+
+    metrics, closed_count, _ = calculate_holding_episode_metrics(
+        holdings,
+        returns,
+        signed,
+        trades,
+        trades.sum(axis=1),
+        pd.Series([0.01, 0.01], index=dates),
+    )
+
+    assert metrics["episode_hit_rate"] == pytest.approx(0.5)
+    assert metrics["average_holding_period_return"] == pytest.approx(-0.02)
+    assert closed_count == 2
+
+
+def test_holding_episode_metrics_total_loss_closes_without_exit_trade() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.5, 0.0]}, index=dates)
+    returns = pd.DataFrame({"AAA": [0.0, -1.0]}, index=dates)
+    signed = pd.DataFrame({"AAA": [0.5, 0.0]}, index=dates)
+    trades = signed.abs()
+
+    metrics, closed_count, open_count = calculate_holding_episode_metrics(
+        holdings,
+        returns,
+        signed,
+        trades,
+        trades.sum(axis=1),
+        pd.Series(0.0, index=dates),
+    )
+
+    assert metrics["episode_hit_rate"] == pytest.approx(0.0)
+    assert metrics["average_holding_period_return"] == pytest.approx(-1.0)
+    assert closed_count == 1
+    assert open_count == 0
+
+
+def test_holding_episode_metrics_reject_axis_and_return_contract_violations() -> None:
+    dates = pd.date_range("2024-01-01", periods=2, freq="D")
+    holdings = pd.DataFrame({"AAA": [0.5, 0.0]}, index=dates)
+    signed = pd.DataFrame({"AAA": [0.5, -0.5]}, index=dates)
+    trades = signed.abs()
+
+    with pytest.raises(ValueError, match="axes must exactly match holdings"):
+        calculate_holding_episode_metrics(
+            holdings,
+            pd.DataFrame({"BBB": [0.0, 0.0]}, index=dates),
+            signed,
+            trades,
+            trades.sum(axis=1),
+            pd.Series(0.0, index=dates),
+        )
+
+    with pytest.raises(ValueError, match="must not be below -1"):
+        calculate_holding_episode_metrics(
+            holdings,
+            pd.DataFrame({"AAA": [0.0, -1.1]}, index=dates),
+            signed,
+            trades,
+            trades.sum(axis=1),
+            pd.Series(0.0, index=dates),
+        )
 
 
 def _holdings(values: dict[str, list[object]]) -> pd.DataFrame:

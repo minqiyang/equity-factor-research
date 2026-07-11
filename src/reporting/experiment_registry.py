@@ -57,6 +57,8 @@ REGISTRY_COLUMNS = (
     "total_return",
     "annualized_return",
     "tracking_error",
+    "episode_hit_rate",
+    "average_holding_period_return",
     "max_drawdown",
     "sharpe_ratio",
     "markdown_report",
@@ -182,6 +184,10 @@ def _registry_row(payload: Mapping[str, Any]) -> dict[str, Any]:
         "total_return": metrics.get("total_return"),
         "annualized_return": metrics.get("annualized_return"),
         "tracking_error": metrics.get("tracking_error"),
+        "episode_hit_rate": metrics.get("episode_hit_rate"),
+        "average_holding_period_return": metrics.get(
+            "average_holding_period_return"
+        ),
         "max_drawdown": metrics.get("max_drawdown"),
         "sharpe_ratio": metrics.get("sharpe_ratio"),
         "markdown_report": outputs.get("markdown_report", ""),

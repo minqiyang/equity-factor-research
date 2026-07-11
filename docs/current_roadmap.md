@@ -1,8 +1,8 @@
 # Current Roadmap
 
-Updated: 2026-07-11 for the holding-episode metric design stage.
+Updated: 2026-07-11 for the holding-episode metric implementation stage.
 
-Baseline stage: holding-episode metric design.
+Baseline stage: holding-episode metric implementation.
 
 This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
 documents are historical evidence, not active task queues.
@@ -21,7 +21,7 @@ evidence.
 | Features | Momentum, reversal, volatility, liquidity, Alpha #009/#012, normalization, combination, and reusable panel operators. |
 | Diagnostics | Correlation, IC, Rank IC, quantile spread, coverage, and train/validation/test splits. |
 | Data | Strict local wide, long, benchmark, and OHLCV CSV validation; no downloader. |
-| Portfolio | Drift-aware long-only simulation with explicit signal lag, turnover, fixed costs, fixed slippage, benchmark accounting, holdings-state metrics, and daily benchmark-relative tracking error. |
+| Portfolio | Drift-aware long-only simulation with explicit signal lag, signed trades, turnover, fixed costs, fixed slippage, optional position caps, benchmark accounting, holdings-state metrics, tracking error, and completed holding-episode metrics. |
 | Volume slippage | Explicit drift-aware trade weights, lagged liquidity diagnostics, and reviewed precomputed-impact application with return-basis metadata. |
 | Reporting | Deterministic experiment logs and registry. Plotting remains a placeholder. |
 | Private diagnostics | Local-only EODHD validation and neutral diagnostics runners; raw inputs and outputs stay outside the repository. |
@@ -36,12 +36,10 @@ claims must be checked against source and tests before reuse.
    survivorship, adjustment, benchmark, split, cost, and interpretation policy.
 2. Broader portfolio risk constraints and exposure controls are not
    implemented; only the optional long-only position cap is available.
-3. Hit rate and average holding-period return remain unimplemented pending an
-   episode-attribution model.
-4. Reporting plots are not implemented.
-5. Volume-aware impact is a deterministic research estimate, not a calibrated
+3. Reporting plots are not implemented.
+4. Volume-aware impact is a deterministic research estimate, not a calibrated
    fill or market-impact model.
-6. LEAN execution remains out of scope.
+5. LEAN execution remains out of scope.
 
 ## Delivery Sequence
 
@@ -56,7 +54,8 @@ claims must be checked against source and tests before reuse.
 | Constraint design | Complete | Define an optional long-only position cap after selection and before trade calculation, with clipping, no renormalization, residual cash, validation, audit fields, and accounting interactions. | Design contract accepted before implementation. |
 | Position-cap implementation | Complete | Optional long-only target weights are clipped after selection and before trade calculation without renormalization; residual exposure remains cash. | Focused tests, full tests, generated-output review if affected, CI, and current-head review. |
 | Episode metric design | Complete | Define continuous positive-weight episodes, signed-trade evidence, deployed-weight return basis, applied-cost allocation, terminal-open handling, audit fields, and tests. | Design contract accepted before implementation. |
-| Episode metric implementation | Next | Expose signed trades and implement only episode hit rate and average holding-period return under the approved contract. | Focused tests, full tests, generated-output review, CI, and current-head review. |
+| Episode metric implementation | Complete | Signed trades support completed-episode hit rate and average holding-period return with reconciled applied costs and explicit terminal-open counts. | Focused tests, full tests, generated-output review, CI, and current-head review. |
+| Full repository conformance audit | Next | Read-only audit of roadmap, handoff, README, code, tests, generated evidence, CI, privacy boundaries, and LEAN scope. | Publish findings separately; remediate every actionable P1/P2 before final verification. |
 | Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
 | LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 
