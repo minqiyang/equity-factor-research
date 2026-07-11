@@ -38,6 +38,19 @@ def test_holdings_state_metrics_are_hand_calculated_and_gross_normalized() -> No
     assert partial_cash["average_position_concentration_hhi"] != pytest.approx(0.125)
 
 
+def test_holdings_state_hhi_is_rounded_for_stable_serialization() -> None:
+    holdings = pd.DataFrame(
+        [[0.1, 0.2, 0.3]],
+        index=pd.date_range("2024-01-01", periods=1),
+        columns=["A", "B", "C"],
+    )
+
+    metrics = calculate_holdings_state_metrics(holdings)
+
+    assert metrics["average_position_concentration_hhi"] == 0.388888888888889
+    assert metrics["max_position_concentration_hhi"] == 0.388888888888889
+
+
 def test_holdings_state_metrics_include_terminal_closing_snapshot() -> None:
     holdings = _holdings(
         {

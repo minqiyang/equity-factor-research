@@ -10,6 +10,7 @@ from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
 
 _GROSS_EXPOSURE_TOLERANCE = 1e-12
+_HOLDINGS_METRIC_DECIMAL_PLACES = 15
 
 
 def calculate_max_drawdown(equity_curve: pd.Series) -> float:
@@ -150,8 +151,14 @@ def calculate_holdings_state_metrics(holdings: pd.DataFrame) -> dict[str, float]
 
     return {
         "average_holding_count": float(holding_count.mean()),
-        "average_position_concentration_hhi": float(concentration_hhi.mean()),
-        "max_position_concentration_hhi": float(concentration_hhi.max()),
+        "average_position_concentration_hhi": round(
+            float(concentration_hhi.mean()),
+            _HOLDINGS_METRIC_DECIMAL_PLACES,
+        ),
+        "max_position_concentration_hhi": round(
+            float(concentration_hhi.max()),
+            _HOLDINGS_METRIC_DECIMAL_PLACES,
+        ),
     }
 
 
