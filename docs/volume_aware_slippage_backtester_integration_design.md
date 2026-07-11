@@ -67,9 +67,9 @@ friction, the accounting and caveats must be explicit before behavior changes.
 | `research/local_csv_fixture_workflow_demo.py` | Calls the helper on committed synthetic fixture inputs and reports participation plus rejected/cap counts without applying candidate slippage to returns. |
 | `docs/volume_aware_slippage_design.md` | Defines the original design boundary for the helper and diagnostic smoke path. |
 
-The helper returns candidate `portfolio_slippage_impact`, but that series is
-not consumed by the backtester. Current generated local-fixture artifacts use
-the helper for diagnostics only.
+The backtester can consume a reviewed `portfolio_slippage_impact` through its
+explicit precomputed-impact mode. The default and all generated local-fixture
+artifacts remain diagnostic-only.
 
 ## 3. Why It Remains Diagnostic-Only
 
@@ -142,7 +142,8 @@ Recommended flow for a backtest-linked diagnostic:
    backtester with validated price, volume, notional, lag, window, and cap
    parameters.
 3. Review the date-aligned `portfolio_slippage_impact` series and preserve the
-   diagnostic metadata, including `trade_weight_source`.
+   diagnostic metadata, including `trade_weight_source` and
+   `return_impact_basis`.
 4. Pass the reviewed impact and required metadata into the backtester only
    through `volume_aware_slippage_mode="apply_precomputed_impact"`.
 5. Preserve the full diagnostic object for audit reporting.
@@ -170,22 +171,27 @@ Deferred alternative:
 
 ## 6. Accounting Semantics
 
-Current behavior:
+Accounting behavior:
 
 ```text
 gross_return[t] = return before transaction-cost and slippage deductions
-fixed_transaction_cost_impact[t] = turnover[t] * transaction_cost_bps / 10000
-fixed_bps_slippage_impact[t] = turnover[t] * slippage_bps / 10000
+post_return_growth[t] = 1 + gross_return[t]
+fixed_transaction_cost_impact[t] =
+    turnover[t] * transaction_cost_bps / 10000 * post_return_growth[t]
+fixed_bps_slippage_impact[t] =
+    turnover[t] * slippage_bps / 10000 * post_return_growth[t]
 net_return[t] = gross_return[t]
     - fixed_transaction_cost_impact[t]
     - fixed_bps_slippage_impact[t]
 ```
 
-Future precomputed-impact behavior, if implemented after review:
+Precomputed volume-impact behavior:
 
 ```text
-volume_aware_slippage_impact[t] =
+raw_volume_aware_slippage_impact[t] =
     diagnostics.portfolio_slippage_impact[t]
+volume_aware_slippage_impact[t] =
+    raw_volume_aware_slippage_impact[t] * post_return_growth[t]
 
 net_return[t] = gross_return[t]
     - fixed_transaction_cost_impact[t]
@@ -201,6 +207,9 @@ Required boundaries:
 - Transaction-cost impact remains separate from slippage impact.
 - Volume-aware slippage impact must be separately named and separately
   reportable.
+- Diagnostic helpers label raw impact as
+  `post_return_portfolio_value`; applied costs are converted and recorded as
+  `beginning_period_portfolio_value`.
 - The first implementation should reject applying both positive fixed-bps
   slippage and positive volume-aware slippage unless a later reviewed design
   explicitly permits combined models.

@@ -242,6 +242,7 @@ def _calculate_volume_aware_slippage_from_validated_trade_weights(
         "participation_slope_bps": float(participation_slope_bps),
         "max_participation": float(max_participation),
         "trade_weight_source": trade_weight_source,
+        "return_impact_basis": "post_return_portfolio_value",
         "liquidity_reference": "rolling_dollar_volume_shifted_by_volume_lag",
         "missing_or_zero_liquidity_policy": "raise",
         "participation_above_cap_policy": "raise",

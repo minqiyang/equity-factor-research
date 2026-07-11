@@ -172,9 +172,15 @@ portfolio_slippage_impact[t] =
     sum(asset_slippage_impact[i, t])
 ```
 
-If implemented later, the function name and parameter names should make clear
-that this is a simulated liquidity-friction estimate, not a calibrated
-market-impact model.
+The diagnostic impact is a fraction of post-return portfolio value because the
+trade weights are measured immediately before the close-time rebalance. Its
+metadata therefore records
+`return_impact_basis="post_return_portfolio_value"`. When applied to a period
+return, the backtester converts it to beginning-period basis by multiplying by
+`1 + gross_return[t]`.
+
+The function and parameter names make clear that this is a simulated
+liquidity-friction estimate, not a calibrated market-impact model.
 
 ## 8. Missing, Zero, And Stale Volume Policy
 

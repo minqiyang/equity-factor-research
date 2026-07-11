@@ -110,6 +110,7 @@ Required unit tests for assumptions and audit metadata:
 - Assumptions record whether volume-aware impact was applied to returns.
 - Assumptions record the volume-aware slippage model name and source.
 - Assumptions record `volume_aware_trade_weight_source`.
+- Assumptions record the input and applied return-impact bases.
 - Assumptions record `portfolio_notional`, `window`, `volume_lag`,
   `base_slippage_bps`, `participation_slope_bps`, `max_participation`, price
   field, volume policy, missing-liquidity policy, stale-volume policy, and cap
@@ -131,6 +132,9 @@ Required integration tests:
   backtester.
 - Pass only the resulting aligned `portfolio_slippage_impact` series and audit
   metadata into the future backtester or wrapper.
+- Verify that a helper impact measured on post-return portfolio value is
+  multiplied by `1 + gross_return` before deduction from beginning-period
+  return, including a non-zero gross-return case.
 - Verify hand-calculated net returns after deducting fixed transaction costs,
   fixed-bps slippage when allowed, and applied volume-aware impact.
 - Verify the full `VolumeAwareSlippageDiagnostics` object remains available for

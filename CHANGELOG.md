@@ -13,7 +13,8 @@ profitability, or trading readiness.
   portfolio accounting by exposing per-asset trade weights from the backtester
   and accepting those weights through an explicit diagnostic entrypoint. The
   consecutive-target interface remains available as a labeled compatibility
-  path.
+  path. Raw helper impact is labeled as post-return portfolio-value basis and
+  converted to beginning-period return basis when explicitly applied.
 - Hardened shared numeric panel validation to reject duplicate asset columns
   and positive or negative infinity while continuing to preserve real `NaN`
   missing values, and made strict long-price CSV loading reject sparse

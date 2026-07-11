@@ -18,6 +18,7 @@ def _volume_aware_metadata(**overrides: object) -> dict[str, object]:
         "name": "unit_test_volume_aware_slippage",
         "slippage_model": "candidate_linear_participation_slippage",
         "trade_weight_source": "explicit_per_asset_trade_weights",
+        "return_impact_basis": "beginning_period_portfolio_value",
         "portfolio_notional": 100_000.0,
         "price_field": "adjusted_close",
         "volume_policy": "synthetic_share_volume",
@@ -331,6 +332,12 @@ def test_precomputed_volume_aware_slippage_is_deducted_separately() -> None:
     assert result.assumptions["volume_aware_trade_weight_source"] == (
         "explicit_per_asset_trade_weights"
     )
+    assert result.assumptions["volume_aware_input_return_impact_basis"] == (
+        "beginning_period_portfolio_value"
+    )
+    assert result.assumptions["volume_aware_applied_return_impact_basis"] == (
+        "beginning_period_portfolio_value"
+    )
     assert result.assumptions["portfolio_notional"] == pytest.approx(100_000.0)
     assert result.assumptions["volume_aware_price_field"] == "adjusted_close"
     assert result.assumptions["volume_policy"] == "synthetic_share_volume"
@@ -399,6 +406,68 @@ def test_volume_aware_slippage_helper_output_can_feed_precomputed_boundary() -> 
     )
 
 
+def test_post_return_volume_impact_is_scaled_to_beginning_return_basis() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame(
+        {
+            "AAA": [100.0, 100.0, 200.0],
+            "BBB": [100.0, 100.0, 100.0],
+        },
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {
+            "AAA": [1.0, 0.0, 0.0],
+            "BBB": [0.0, 1.0, 1.0],
+        },
+        index=dates,
+    )
+    baseline = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+    )
+    volume = pd.DataFrame(1_000_000.0, index=dates, columns=prices.columns)
+    diagnostics = calculate_volume_aware_slippage_from_trade_weights(
+        baseline.trade_weights,
+        prices,
+        volume,
+        window=1,
+        portfolio_notional=100.0,
+        base_slippage_bps=100.0,
+        max_participation=1.0,
+    )
+    metadata = {
+        **diagnostics.parameters,
+        "price_field": "adjusted_close",
+        "volume_policy": "synthetic_share_volume",
+        "stale_volume_policy": "raise",
+    }
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        top_n=1,
+        volume_aware_slippage_mode="apply_precomputed_impact",
+        volume_aware_slippage_impact=diagnostics.portfolio_slippage_impact,
+        volume_aware_slippage_metadata=metadata,
+    )
+
+    assert diagnostics.portfolio_slippage_impact.loc[dates[2]] == pytest.approx(0.02)
+    assert result.gross_returns.loc[dates[2]] == pytest.approx(1.0)
+    assert result.volume_aware_slippage_costs.loc[dates[2]] == pytest.approx(0.04)
+    assert result.returns.loc[dates[2]] == pytest.approx(0.96)
+    assert result.equity_curve.loc[dates[2]] == pytest.approx(1.9404)
+    assert result.assumptions["volume_aware_input_return_impact_basis"] == (
+        "post_return_portfolio_value"
+    )
+    assert result.assumptions["volume_aware_applied_return_impact_basis"] == (
+        "beginning_period_portfolio_value"
+    )
+
+
 @pytest.mark.parametrize(
     ("impact", "match"),
     [
@@ -453,7 +522,10 @@ def test_precomputed_volume_aware_slippage_requires_metadata() -> None:
         )
 
 
-@pytest.mark.parametrize("missing_key", ["portfolio_notional", "trade_weight_source"])
+@pytest.mark.parametrize(
+    "missing_key",
+    ["portfolio_notional", "trade_weight_source", "return_impact_basis"],
+)
 def test_precomputed_volume_aware_slippage_rejects_missing_metadata_keys(
     missing_key: str,
 ) -> None:
@@ -492,6 +564,25 @@ def test_precomputed_volume_aware_slippage_rejects_blank_trade_weight_source() -
             volume_aware_slippage_impact=impact,
             volume_aware_slippage_metadata=_volume_aware_metadata(
                 trade_weight_source=" ",
+            ),
+        )
+
+
+def test_precomputed_volume_aware_slippage_rejects_unknown_return_basis() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 1.0, 1.0]}, index=dates)
+    impact = pd.Series(0.0, index=prices.index)
+
+    with pytest.raises(ValueError, match="return_impact_basis must be"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            top_n=1,
+            volume_aware_slippage_mode="apply_precomputed_impact",
+            volume_aware_slippage_impact=impact,
+            volume_aware_slippage_metadata=_volume_aware_metadata(
+                return_impact_basis="unknown_basis",
             ),
         )
 

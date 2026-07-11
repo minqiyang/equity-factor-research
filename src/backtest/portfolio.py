@@ -25,6 +25,7 @@ _REQUIRED_VOLUME_AWARE_METADATA_KEYS = {
     "participation_slope_bps",
     "portfolio_notional",
     "price_field",
+    "return_impact_basis",
     "slippage_model",
     "stale_volume_policy",
     "trade_weight_source",
@@ -167,6 +168,7 @@ def run_long_only_backtest(
         impact=volume_aware_slippage_impact,
         metadata=volume_aware_slippage_metadata,
         fixed_slippage_bps=slippage_bps,
+        post_return_growth=post_return_growth,
     )
     total_trading_costs = (
         transaction_costs + slippage_costs + volume_aware_slippage_costs
@@ -491,6 +493,7 @@ def _prepare_volume_aware_slippage_costs(
     impact: pd.Series | None,
     metadata: Mapping[str, Any] | None,
     fixed_slippage_bps: float,
+    post_return_growth: pd.Series,
 ) -> pd.Series:
     zero_costs = pd.Series(0.0, index=price_index, name="volume_aware_slippage_impact")
 
@@ -513,6 +516,10 @@ def _prepare_volume_aware_slippage_costs(
         impact=impact,
         price_index=price_index,
     )
+
+    return_impact_basis = metadata["return_impact_basis"]
+    if return_impact_basis == "post_return_portfolio_value":
+        costs = costs * post_return_growth
 
     if fixed_slippage_bps > 0.0 and costs.gt(0.0).any():
         raise ValueError(
@@ -593,6 +600,21 @@ def _validate_volume_aware_slippage_metadata(
             "non-empty string"
         )
 
+    return_impact_basis = metadata["return_impact_basis"]
+    allowed_return_impact_bases = {
+        "beginning_period_portfolio_value",
+        "post_return_portfolio_value",
+    }
+    if (
+        not isinstance(return_impact_basis, str)
+        or return_impact_basis not in allowed_return_impact_bases
+    ):
+        raise ValueError(
+            "volume_aware_slippage_metadata return_impact_basis must be "
+            "'beginning_period_portfolio_value' or "
+            "'post_return_portfolio_value'"
+        )
+
 
 def _build_volume_aware_slippage_assumptions(
     *,
@@ -608,6 +630,14 @@ def _build_volume_aware_slippage_assumptions(
         "volume_aware_slippage_source": metadata_values.get("name"),
         "volume_aware_trade_weight_source": metadata_values.get(
             "trade_weight_source"
+        ),
+        "volume_aware_input_return_impact_basis": metadata_values.get(
+            "return_impact_basis"
+        ),
+        "volume_aware_applied_return_impact_basis": (
+            "beginning_period_portfolio_value"
+            if mode == "apply_precomputed_impact"
+            else None
         ),
         "portfolio_notional": metadata_values.get("portfolio_notional"),
         "volume_aware_price_field": metadata_values.get("price_field"),

@@ -99,6 +99,9 @@ def test_volume_aware_slippage_diagnostics_are_hand_calculated() -> None:
     assert result.parameters["trade_weight_source"] == (
         "derived_from_target_weight_difference"
     )
+    assert result.parameters["return_impact_basis"] == (
+        "post_return_portfolio_value"
+    )
     assert result.parameters["missing_or_zero_liquidity_policy"] == "raise"
     assert "not_backtest_integration" in result.caveats
     assert "no_profitability_claim" in result.caveats
@@ -165,6 +168,9 @@ def test_volume_aware_slippage_accepts_explicit_drift_aware_trade_weights() -> N
     assert result.participation.loc[trade_weights.index[3], "AAA"] == pytest.approx(0.02)
     assert result.participation.loc[trade_weights.index[3], "BBB"] == pytest.approx(0.0075)
     assert result.parameters["trade_weight_source"] == "explicit_per_asset_trade_weights"
+    assert result.parameters["return_impact_basis"] == (
+        "post_return_portfolio_value"
+    )
 
 
 @pytest.mark.parametrize(
