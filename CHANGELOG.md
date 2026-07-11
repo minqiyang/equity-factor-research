@@ -41,6 +41,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- Added the canonical risk/evaluation metrics design, selecting active-date
+  holdings count and normalized HHI for the first implementation while
+  deferring tracking error, episode metrics, and constraints to separate
+  reviewed stages.
 - Added `research/eodhd_limited_factor_diagnostics_brief.py` with a
   private-output-only neutral diagnostics brief runner, plus synthetic tests
   and a docs checkpoint that reports allowed diagnostic direction, magnitude,
