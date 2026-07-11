@@ -129,6 +129,7 @@ costs, slippage, and interpretation stop conditions.
 - [Experiment record contract](EXPERIMENT_LOG.md)
 - [Decision log](docs/decision_log.md)
 - [Engineering log](docs/engineering_log.md)
+- [Latest conformance audit](docs/full_repository_conformance_audit_2026-07-11.md)
 - [Experiment registry](reports/experiment_registry.md)
 
 ## License

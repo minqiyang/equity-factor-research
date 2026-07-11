@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- Completed a full repository conformance audit with no actionable P1/P2
+  findings and linked the merged report from the current project records.
 - Implemented signed trade weights, completed-episode hit rate and average
   holding-period return, exact applied-cost allocation, terminal-open counts,
   audit metadata, and refreshed synthetic evidence.
