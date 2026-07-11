@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Streamlined the public README and workflow diagram, removed unused runtime
+  dependencies, completed package metadata, and added lint/build CI gates.
 - Replaced the accumulated checkpoint chain with a concise canonical roadmap
   and current handoff aligned to the merged implementation baseline.
 - Vectorized capped liquidity-universe ranking while preserving per-date

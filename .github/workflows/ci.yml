@@ -34,8 +34,14 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
+      - name: Lint repository
+        run: python -m ruff check .
+
       - name: Compile source, tests, and research scripts
         run: python -m compileall src tests research
 
       - name: Compile LEAN scaffold files
         run: python -m compileall lean
+
+      - name: Build distribution
+        run: python -m build

@@ -43,13 +43,13 @@ claims must be checked against source and tests before reuse.
 
 ## Delivery Sequence
 
-| Stage | Scope | Completion gate |
-| --- | --- | --- |
-| Documentation reset | Reconcile this roadmap, the current handoff, README claims, and workflow diagram with merged code. | Canonical docs have one active status source and no stale capability claims. |
-| Public interface cleanup | Remove duplicated presentation helpers only when output fixtures prove byte-stable; keep research logic unchanged. | Focused and full tests, generated-output stability, CI, and current-head review. |
-| Risk/evaluation design | Define formulas, timing, missing-data behavior, and synthetic tests before implementing risk or exposure metrics. | Design PR accepted before code. |
-| Real-data methodology | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
-| LEAN | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
+| Stage | Status | Scope | Completion gate |
+| --- | --- | --- | --- |
+| Documentation and release baseline | Complete | Canonical roadmap, current handoff, concise README, code-accurate workflow SVG, package metadata, and CI build gates. | Public claims match code; tests, lint, compilation, package build, and wheel smoke pass. |
+| Public interface cleanup | Controlled follow-up | Remove duplicated presentation helpers only when output fixtures prove byte-stable; keep research logic unchanged. | Focused and full tests, generated-output stability, CI, and current-head review. |
+| Risk/evaluation design | Next | Define formulas, timing, missing-data behavior, and synthetic tests before implementing risk or exposure metrics. | Design PR accepted before code. |
+| Real-data methodology | Blocked | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
+| LEAN | Blocked | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
 
 ## Change Policy
 
