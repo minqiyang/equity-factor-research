@@ -1,0 +1,61 @@
+# Current Roadmap
+
+Updated: 2026-07-10 after PR #142.
+
+This is the canonical roadmap. Older checkpoint, gap-refresh, and conformance
+documents are historical evidence, not active task queues.
+
+## Objective
+
+Maintain a deterministic, auditable equity-factor research toolkit. Preserve
+strict timing, data, accounting, and private-output boundaries. Do not present
+synthetic or private diagnostics as investment, profitability, or trading
+evidence.
+
+## Implemented Baseline
+
+| Area | Current contract |
+| --- | --- |
+| Features | Momentum, reversal, volatility, liquidity, Alpha #009/#012, normalization, combination, and reusable panel operators. |
+| Diagnostics | Correlation, IC, Rank IC, quantile spread, coverage, and train/validation/test splits. |
+| Data | Strict local wide, long, benchmark, and OHLCV CSV validation; no downloader. |
+| Portfolio | Drift-aware long-only simulation with explicit signal lag, turnover, fixed costs, fixed slippage, and benchmark accounting. |
+| Volume slippage | Explicit drift-aware trade weights, lagged liquidity diagnostics, and reviewed precomputed-impact application with return-basis metadata. |
+| Reporting | Deterministic experiment logs and registry. Plotting remains a placeholder. |
+| Private diagnostics | Local-only EODHD validation and neutral diagnostics runners; raw inputs and outputs stay outside the repository. |
+| LEAN | Non-executing metadata and signal scaffold only. No brokerage, orders, paper trading, or live trading. |
+
+The executable baseline is protected by the full test suite and CI. Historical
+claims must be checked against source and tests before reuse.
+
+## Open Gaps
+
+1. Real-data interpretation is blocked by point-in-time universe,
+   survivorship, adjustment, benchmark, split, cost, and interpretation policy.
+2. Portfolio risk constraints and exposure controls are not implemented;
+   `src/risk/constraints.py` is a placeholder.
+3. Tracking error or active risk, hit rate, average holding-period return,
+   average holdings, and exposure concentration remain unimplemented.
+4. Reporting plots are not implemented.
+5. Volume-aware impact is a deterministic research estimate, not a calibrated
+   fill or market-impact model.
+6. LEAN execution remains out of scope.
+
+## Delivery Sequence
+
+| Stage | Scope | Completion gate |
+| --- | --- | --- |
+| Documentation reset | Reconcile this roadmap, the current handoff, README claims, and workflow diagram with merged code. | Canonical docs have one active status source and no stale capability claims. |
+| Public interface cleanup | Remove duplicated presentation helpers only when output fixtures prove byte-stable; keep research logic unchanged. | Focused and full tests, generated-output stability, CI, and current-head review. |
+| Risk/evaluation design | Define formulas, timing, missing-data behavior, and synthetic tests before implementing risk or exposure metrics. | Design PR accepted before code. |
+| Real-data methodology | Proceed only after an explicit, complete local-data methodology package is accepted. | Provenance, point-in-time universe, adjustment, benchmark, split, cost, and interpretation gates all pass. |
+| LEAN | Remain at non-executing scaffold unless separately authorized and reviewed. | No implicit expansion into orders or brokerage behavior. |
+
+## Change Policy
+
+- Use one small PR at a time.
+- Treat source and deterministic tests as implementation evidence.
+- Update this file when a merge changes roadmap status.
+- Keep historical checkpoint documents immutable except for a short successor
+  pointer.
+- Require CI and current-head Codex review before merge.
