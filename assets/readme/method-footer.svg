@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="130" viewBox="0 0 1200 130" role="img" aria-labelledby="method-footer-title method-footer-desc">
+  <title id="method-footer-title">Every result keeps its assumptions</title>
+  <desc id="method-footer-desc">A closing dither strip connecting data, timing, accounting, and evidence.</desc>
+  <defs>
+    <pattern id="mf-blue" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#153A62"/><rect width="3" height="3" fill="#3A9BFF"/><rect x="4" y="4" width="2" height="2" fill="#3A9BFF"/></pattern>
+    <pattern id="mf-purple" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#30205B"/><rect width="3" height="3" fill="#936BFF"/><rect x="4" y="4" width="2" height="2" fill="#936BFF"/></pattern>
+    <pattern id="mf-orange" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#572F12"/><rect width="3" height="3" fill="#FF9838"/><rect x="4" y="4" width="2" height="2" fill="#FF9838"/></pattern>
+    <pattern id="mf-green" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#0D4338"/><rect width="3" height="3" fill="#31D5AE"/><rect x="4" y="4" width="2" height="2" fill="#31D5AE"/></pattern>
+  </defs>
+  <rect width="1200" height="130" rx="10" fill="#0A0B0D"/>
+  <rect x="1" y="1" width="1198" height="128" rx="9" fill="none" stroke="#262930"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="52" y="52" font-size="22" fill="#F4F4F5">every result keeps its assumptions</text>
+    <text x="52" y="82" font-size="11" letter-spacing="1.2" fill="#777982">DATA / TIMING / ACCOUNTING / EVIDENCE</text>
+    <g transform="translate(730 44)">
+      <rect width="100" height="40" rx="3" fill="url(#mf-blue)"/>
+      <rect x="112" width="100" height="40" rx="3" fill="url(#mf-purple)"/>
+      <rect x="224" width="100" height="40" rx="3" fill="url(#mf-orange)"/>
+      <rect x="336" width="100" height="40" rx="3" fill="url(#mf-green)"/>
+    </g>
+  </g>
+</svg>

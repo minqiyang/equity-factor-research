@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="evidence-title evidence-desc">
+  <title id="evidence-title">Evidence lifecycle</title>
+  <desc id="evidence-desc">A compact evidence lifecycle from hypothesis and configuration through deterministic execution, reports, JSON logs, registry review, and retained outcomes.</desc>
+  <defs>
+    <pattern id="el-blue" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#153A62"/><rect width="3" height="3" fill="#3A9BFF"/><rect x="4" y="4" width="2" height="2" fill="#3A9BFF"/></pattern>
+    <pattern id="el-purple" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#30205B"/><rect width="3" height="3" fill="#936BFF"/><rect x="4" y="4" width="2" height="2" fill="#936BFF"/></pattern>
+    <pattern id="el-green" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#0D4338"/><rect width="3" height="3" fill="#31D5AE"/><rect x="4" y="4" width="2" height="2" fill="#31D5AE"/></pattern>
+    <pattern id="el-orange" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#572F12"/><rect width="3" height="3" fill="#FF9838"/><rect x="4" y="4" width="2" height="2" fill="#FF9838"/></pattern>
+  </defs>
+  <rect width="1200" height="560" rx="10" fill="#0A0B0D"/>
+  <rect x="1" y="1" width="1198" height="558" rx="9" fill="none" stroke="#262930"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="52" y="54" font-size="28" fill="#F4F4F5">evidence lifecycle</text>
+    <text x="1148" y="54" text-anchor="end" font-size="11" letter-spacing="1.5" fill="#777982">HYPOTHESIS → REVIEW</text>
+    <path d="M52 78H1148" stroke="#262930"/>
+
+    <g transform="translate(52 98)" font-size="11">
+      <g><rect width="204" height="42" rx="4" fill="#13151A" stroke="#262930"/><rect x="12" y="13" width="16" height="16" fill="url(#el-blue)"/><text x="42" y="27" fill="#F4F4F5">PROVENANCE</text></g>
+      <g transform="translate(222 0)"><rect width="204" height="42" rx="4" fill="#13151A" stroke="#262930"/><rect x="12" y="13" width="16" height="16" fill="url(#el-purple)"/><text x="42" y="27" fill="#F4F4F5">UNIVERSE</text></g>
+      <g transform="translate(444 0)"><rect width="204" height="42" rx="4" fill="#13151A" stroke="#262930"/><rect x="12" y="13" width="16" height="16" fill="url(#el-purple)"/><text x="42" y="27" fill="#F4F4F5">TIMING</text></g>
+      <g transform="translate(666 0)"><rect width="204" height="42" rx="4" fill="#13151A" stroke="#262930"/><rect x="12" y="13" width="16" height="16" fill="url(#el-orange)"/><text x="42" y="27" fill="#F4F4F5">COSTS</text></g>
+      <g transform="translate(888 0)"><rect width="204" height="42" rx="4" fill="#13151A" stroke="#262930"/><rect x="12" y="13" width="16" height="16" fill="url(#el-green)"/><text x="42" y="27" fill="#F4F4F5">LIMITS</text></g>
+    </g>
+
+    <g transform="translate(52 166)">
+      <g>
+        <rect width="204" height="160" rx="5" fill="#13151A" stroke="#262930"/><rect width="204" height="14" rx="4" fill="url(#el-blue)"/>
+        <text x="16" y="46" font-size="10" fill="#3A9BFF">01</text><text x="16" y="82" font-size="18" fill="#F4F4F5">Hypothesis</text><text x="16" y="112" font-size="11" fill="#A9A9B0">question + rationale</text><text x="16" y="136" font-size="11" fill="#A9A9B0">before parameters</text>
+      </g>
+      <g transform="translate(222 0)">
+        <rect width="204" height="160" rx="5" fill="#13151A" stroke="#262930"/><rect width="204" height="14" rx="4" fill="url(#el-purple)"/>
+        <text x="16" y="46" font-size="10" fill="#936BFF">02</text><text x="16" y="82" font-size="18" fill="#F4F4F5">Configure</text><text x="16" y="112" font-size="11" fill="#A9A9B0">data + timing</text><text x="16" y="136" font-size="11" fill="#A9A9B0">splits + costs</text>
+      </g>
+      <g transform="translate(444 0)">
+        <rect width="204" height="160" rx="5" fill="#13151A" stroke="#262930"/><rect width="204" height="14" rx="4" fill="url(#el-orange)"/>
+        <text x="16" y="46" font-size="10" fill="#FF9838">03</text><text x="16" y="82" font-size="18" fill="#F4F4F5">Run</text><text x="16" y="112" font-size="11" fill="#A9A9B0">deterministic code</text><text x="16" y="136" font-size="11" fill="#A9A9B0">explicit inputs</text>
+      </g>
+      <g transform="translate(666 0)">
+        <rect width="204" height="160" rx="5" fill="#13151A" stroke="#262930"/><rect width="204" height="14" rx="4" fill="url(#el-green)"/>
+        <text x="16" y="46" font-size="10" fill="#31D5AE">04</text><text x="16" y="82" font-size="18" fill="#F4F4F5">Record</text><text x="16" y="112" font-size="11" fill="#A9A9B0">Markdown report</text><text x="16" y="136" font-size="11" fill="#A9A9B0">JSON sidecar</text>
+      </g>
+      <g transform="translate(888 0)">
+        <rect width="204" height="160" rx="5" fill="#13151A" stroke="#262930"/><rect width="204" height="14" rx="4" fill="url(#el-green)"/>
+        <text x="16" y="46" font-size="10" fill="#31D5AE">05</text><text x="16" y="82" font-size="18" fill="#F4F4F5">Review</text><text x="16" y="112" font-size="11" fill="#A9A9B0">registry view</text><text x="16" y="136" font-size="11" fill="#A9A9B0">retain outcome</text>
+      </g>
+      <path d="M204 80H216M212 76L216 80L212 84M426 80H438M434 76L438 80L434 84M648 80H660M656 76L660 80L656 84M870 80H882M878 76L882 80L878 84" fill="none" stroke="#777982"/>
+    </g>
+
+    <g transform="translate(52 380)">
+      <text y="-16" font-size="10" letter-spacing="1.4" fill="#777982">REVIEW STATES</text>
+      <g><rect width="250" height="92" rx="5" fill="#13151A" stroke="#262930"/><text x="18" y="42" font-size="15" fill="#F4F4F5">KEEP</text><rect y="78" width="250" height="14" fill="url(#el-green)"/></g>
+      <g transform="translate(274 0)"><rect width="250" height="92" rx="5" fill="#13151A" stroke="#262930"/><text x="18" y="42" font-size="15" fill="#F4F4F5">REVISE</text><rect y="78" width="250" height="14" fill="url(#el-blue)"/></g>
+      <g transform="translate(548 0)"><rect width="250" height="92" rx="5" fill="#13151A" stroke="#262930"/><text x="18" y="42" font-size="15" fill="#F4F4F5">REJECT</text><rect y="78" width="250" height="14" fill="url(#el-orange)"/></g>
+      <g transform="translate(822 0)"><rect width="250" height="92" rx="5" fill="#13151A" stroke="#262930"/><text x="18" y="42" font-size="15" fill="#F4F4F5">STOP</text><rect y="78" width="250" height="14" fill="#D85B61"/></g>
+    </g>
+    <path d="M52 516H1148" stroke="#262930"/>
+    <text x="52" y="540" font-size="11" fill="#777982">every outcome remains in the record</text>
+  </g>
+</svg>

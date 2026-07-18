@@ -1,0 +1,26 @@
+@startuml
+title Research workflow - semantic source
+left to right direction
+skinparam backgroundColor #0A0B0D
+skinparam defaultFontName Menlo
+skinparam defaultFontColor #F4F4F5
+skinparam ArrowColor #777982
+skinparam ActivityBorderColor #262930
+skinparam ActivityBackgroundColor #13151A
+skinparam ActivityFontColor #F4F4F5
+
+start
+:Define the claim;
+:Validate local data;
+:Build factor panels;
+:Run diagnostics;
+:Simulate accounting;
+:Record Markdown, JSON,\nand registry evidence;
+if (Review outcome?) then (continue)
+  :Keep or revise;
+else (close)
+  :Reject or stop;
+endif
+:Retain the outcome;
+stop
+@enduml

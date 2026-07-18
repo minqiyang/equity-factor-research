@@ -1,0 +1,47 @@
+@startuml
+title System architecture - semantic source
+left to right direction
+skinparam backgroundColor #0A0B0D
+skinparam defaultFontName Menlo
+skinparam defaultFontColor #F4F4F5
+skinparam ArrowColor #777982
+skinparam ComponentBorderColor #262930
+skinparam ComponentBackgroundColor #13151A
+skinparam PackageBorderColor #262930
+skinparam PackageBackgroundColor #0A0B0D
+
+package "Inputs" {
+  [src/data] as data
+  [local CSV + fixtures] as inputs
+}
+package "Transform" {
+  [src/features] as features
+  [src/strategies] as strategies
+}
+package "Account" {
+  [src/backtest] as backtest
+  [src/risk] as risk
+}
+package "Evidence" {
+  [src/reporting] as reporting
+  [research + reports] as records
+}
+package "Control plane" {
+  [tests] as tests
+  [GitHub Actions] as ci
+}
+
+inputs --> data
+data --> features
+features --> strategies
+strategies --> backtest
+strategies --> risk
+backtest --> reporting
+risk --> reporting
+reporting --> records
+ci --> tests
+tests ..> data
+tests ..> features
+tests ..> backtest
+tests ..> reporting
+@enduml
