@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="contract-title contract-desc">
+  <title id="contract-title">Research contract wheel</title>
+  <desc id="contract-desc">A non-quantitative four-part wheel for data, timing, accounting, and evidence. Equal arcs indicate peer contract layers rather than measured proportions.</desc>
+  <defs>
+    <pattern id="rc-blue" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#153A62"/><rect width="3" height="3" fill="#3A9BFF"/><rect x="4" y="4" width="2" height="2" fill="#3A9BFF"/></pattern>
+    <pattern id="rc-purple" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#30205B"/><rect width="3" height="3" fill="#936BFF"/><rect x="4" y="4" width="2" height="2" fill="#936BFF"/></pattern>
+    <pattern id="rc-green" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#0D4338"/><rect width="3" height="3" fill="#31D5AE"/><rect x="4" y="4" width="2" height="2" fill="#31D5AE"/></pattern>
+    <pattern id="rc-orange" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#572F12"/><rect width="3" height="3" fill="#FF9838"/><rect x="4" y="4" width="2" height="2" fill="#FF9838"/></pattern>
+  </defs>
+  <rect width="1200" height="430" rx="10" fill="#0A0B0D"/>
+  <rect x="1" y="1" width="1198" height="428" rx="9" fill="none" stroke="#262930"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="52" y="54" font-size="28" fill="#F4F4F5">research contract</text>
+    <text x="1148" y="54" text-anchor="end" font-size="11" letter-spacing="1.5" fill="#777982">QUALITATIVE MAP</text>
+    <path d="M52 78H1148" stroke="#262930"/>
+    <g transform="translate(276 250) rotate(-90)">
+      <circle r="126" fill="none" stroke="#17191E" stroke-width="62"/>
+      <circle r="126" fill="none" stroke="url(#rc-blue)" stroke-width="62" stroke-linecap="butt" stroke-dasharray="185 607"/>
+      <circle r="126" fill="none" stroke="url(#rc-purple)" stroke-width="62" stroke-linecap="butt" stroke-dasharray="185 607" transform="rotate(90)"/>
+      <circle r="126" fill="none" stroke="url(#rc-orange)" stroke-width="62" stroke-linecap="butt" stroke-dasharray="185 607" transform="rotate(180)"/>
+      <circle r="126" fill="none" stroke="url(#rc-green)" stroke-width="62" stroke-linecap="butt" stroke-dasharray="185 607" transform="rotate(270)"/>
+    </g>
+    <text x="276" y="242" text-anchor="middle" font-size="15" fill="#F4F4F5">CONTRACT</text>
+    <text x="276" y="267" text-anchor="middle" font-size="10" fill="#777982">4 PEER LAYERS</text>
+    <g transform="translate(528 116)">
+      <g>
+        <rect width="560" height="58" rx="4" fill="#13151A" stroke="#262930"/><rect x="16" y="20" width="18" height="18" fill="url(#rc-blue)"/>
+        <text x="52" y="28" font-size="13" fill="#F4F4F5">DATA</text><text x="200" y="28" font-size="12" fill="#A9A9B0">local inputs / strict validation</text>
+      </g>
+      <g transform="translate(0 70)">
+        <rect width="560" height="58" rx="4" fill="#13151A" stroke="#262930"/><rect x="16" y="20" width="18" height="18" fill="url(#rc-purple)"/>
+        <text x="52" y="28" font-size="13" fill="#F4F4F5">TIMING</text><text x="200" y="28" font-size="12" fill="#A9A9B0">feature → signal → return</text>
+      </g>
+      <g transform="translate(0 140)">
+        <rect width="560" height="58" rx="4" fill="#13151A" stroke="#262930"/><rect x="16" y="20" width="18" height="18" fill="url(#rc-orange)"/>
+        <text x="52" y="28" font-size="13" fill="#F4F4F5">ACCOUNTING</text><text x="200" y="28" font-size="12" fill="#A9A9B0">weights / turnover / costs</text>
+      </g>
+      <g transform="translate(0 210)">
+        <rect width="560" height="58" rx="4" fill="#13151A" stroke="#262930"/><rect x="16" y="20" width="18" height="18" fill="url(#rc-green)"/>
+        <text x="52" y="28" font-size="13" fill="#F4F4F5">EVIDENCE</text><text x="200" y="28" font-size="12" fill="#A9A9B0">report / JSON / registry</text>
+      </g>
+    </g>
+  </g>
+</svg>

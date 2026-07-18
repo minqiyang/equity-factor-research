@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="workflow-title workflow-desc">
+  <title id="workflow-title">Research workflow</title>
+  <desc id="workflow-desc">A concise six-stage workflow from a research question through validation, feature construction, diagnostics, simulation, and evidence review.</desc>
+  <defs>
+    <pattern id="rw-blue" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#153A62"/><rect width="3" height="3" fill="#3A9BFF"/><rect x="4" y="4" width="2" height="2" fill="#3A9BFF"/></pattern>
+    <pattern id="rw-purple" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#30205B"/><rect width="3" height="3" fill="#936BFF"/><rect x="4" y="4" width="2" height="2" fill="#936BFF"/></pattern>
+    <pattern id="rw-green" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#0D4338"/><rect width="3" height="3" fill="#31D5AE"/><rect x="4" y="4" width="2" height="2" fill="#31D5AE"/></pattern>
+    <pattern id="rw-orange" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#572F12"/><rect width="3" height="3" fill="#FF9838"/><rect x="4" y="4" width="2" height="2" fill="#FF9838"/></pattern>
+  </defs>
+  <rect width="1200" height="560" rx="10" fill="#0A0B0D"/>
+  <rect x="1" y="1" width="1198" height="558" rx="9" fill="none" stroke="#262930"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="52" y="54" font-size="28" fill="#F4F4F5">research workflow</text>
+    <text x="1148" y="54" text-anchor="end" font-size="11" letter-spacing="1.5" fill="#777982">QUESTION → EVIDENCE</text>
+    <path d="M52 78H1148" stroke="#262930"/>
+
+    <g transform="translate(52 108)">
+      <g>
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-blue)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#3A9BFF">01 / QUESTION</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">define the claim</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">hypothesis / scope / stop rule</text>
+      </g>
+      <g transform="translate(364 0)">
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-green)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#31D5AE">02 / VALIDATE</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">check local data</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">schema / dates / provenance</text>
+      </g>
+      <g transform="translate(728 0)">
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-purple)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#936BFF">03 / CONSTRUCT</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">build factor panels</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">trailing inputs / explicit lag</text>
+      </g>
+      <path d="M344 64H358M354 60L358 64L354 68M708 64H722M718 60L722 64L718 68" fill="none" stroke="#777982"/>
+    </g>
+
+    <g transform="translate(52 260)">
+      <g>
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-blue)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#3A9BFF">04 / DIAGNOSE</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">measure the panel</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">coverage / IC / sample splits</text>
+      </g>
+      <g transform="translate(364 0)">
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-orange)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#FF9838">05 / SIMULATE</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">account for weights</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">turnover / costs / benchmark</text>
+      </g>
+      <g transform="translate(728 0)">
+        <rect width="344" height="128" rx="5" fill="#13151A" stroke="#262930"/><rect width="344" height="14" rx="4" fill="url(#rw-green)"/>
+        <text x="18" y="45" font-size="10" letter-spacing="1.2" fill="#31D5AE">06 / RECORD</text>
+        <text x="18" y="78" font-size="20" fill="#F4F4F5">retain the evidence</text>
+        <text x="18" y="105" font-size="12" fill="#A9A9B0">Markdown / JSON / registry</text>
+      </g>
+      <path d="M344 64H358M354 60L358 64L354 68M708 64H722M718 60L722 64L718 68" fill="none" stroke="#777982"/>
+    </g>
+    <path d="M1124 172H1146V246H52V254M48 250L52 254L56 250" fill="none" stroke="#777982"/>
+
+    <g transform="translate(52 426)" font-size="13">
+      <text y="-14" font-size="10" letter-spacing="1.4" fill="#777982">REVIEW OUTCOME</text>
+      <g><rect width="250" height="70" rx="5" fill="#13151A" stroke="#262930"/><rect x="16" y="22" width="18" height="18" fill="url(#rw-green)"/><text x="52" y="36" fill="#F4F4F5">KEEP</text><rect y="62" width="250" height="8" fill="url(#rw-green)"/></g>
+      <g transform="translate(274 0)"><rect width="250" height="70" rx="5" fill="#13151A" stroke="#262930"/><rect x="16" y="22" width="18" height="18" fill="url(#rw-blue)"/><text x="52" y="36" fill="#F4F4F5">REVISE</text><rect y="62" width="250" height="8" fill="url(#rw-blue)"/></g>
+      <g transform="translate(548 0)"><rect width="250" height="70" rx="5" fill="#13151A" stroke="#262930"/><rect x="16" y="22" width="18" height="18" fill="url(#rw-orange)"/><text x="52" y="36" fill="#F4F4F5">REJECT</text><rect y="62" width="250" height="8" fill="url(#rw-orange)"/></g>
+      <g transform="translate(822 0)"><rect width="250" height="70" rx="5" fill="#13151A" stroke="#262930"/><rect x="16" y="22" width="18" height="18" fill="#D85B61"/><text x="52" y="36" fill="#F4F4F5">STOP</text><rect y="62" width="250" height="8" fill="#D85B61"/></g>
+    </g>
+  </g>
+</svg>
