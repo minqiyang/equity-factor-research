@@ -28,6 +28,7 @@ from campaign.diagnostics import (
     CommonCaseMonth,
     common_case_robustness,
     decile_return_curve,
+    descriptive_rank_ic,
     label_coverage,
     spearman_rank_ic,
     yearly_rank_ic_contributions,
@@ -1263,14 +1264,19 @@ def _diagnostic_payload_from_execution(
     frozen: Mapping[tuple[str, str], object],
     trace: _ExecutionTrace,
 ) -> dict[str, object]:
-    means: list[float] = []
+    all_valid_by_factor: dict[str, dict[str, float]] = {}
+    descriptive_means: list[float] = []
     for factor_id in FACTOR_ORDER:
-        values = [
-            month.value
+        valid_by_date = {
+            month.signal_date: float(month.value)
             for month in trace.monthly_ics.get(factor_id, ())
             if month.valid and month.value is not None
-        ]
-        means.append(sum(values) / len(values) if values else 0.0)
+        }
+        all_valid_by_factor[factor_id] = valid_by_date
+        descriptive = descriptive_rank_ic(tuple(valid_by_date.values()), 1)
+        descriptive_means.append(
+            0.0 if descriptive.mean is None else float(descriptive.mean)
+        )
     common_dates = _common_valid_months(trace.monthly_ics)
     eval_dates = _evaluation_signal_dates(trace.schedule)
     if eval_dates:
@@ -1278,6 +1284,13 @@ def _diagnostic_payload_from_execution(
             signal_date for signal_date in common_dates if signal_date in eval_dates
         )
     common_months = len(common_dates)
+    means: list[float] = []
+    for factor_id in FACTOR_ORDER:
+        values = [
+            all_valid_by_factor[factor_id][signal_date]
+            for signal_date in common_dates
+        ]
+        means.append(sum(values) / len(values) if values else 0.0)
     p_values, bootstrap_support = _bootstrap_from_months(
         config, trace.monthly_ics, common_dates, trace.schedule
     )
@@ -1313,6 +1326,7 @@ def _diagnostic_payload_from_execution(
         "primary_matched_benchmark_comparisons_valid": invalid_primary == 0,
         "secondary_spy_comparisons_valid": False,
         "mean_rank_ics": means,
+        "descriptive_mean_rank_ics_all_valid_factor_months": descriptive_means,
         "holm_rejections": rejections,
         "active_return_10bps": active_10,
         "active_return_25bps": active_25,

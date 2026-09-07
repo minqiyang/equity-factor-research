@@ -19,8 +19,8 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `src/ledger/` | Fail-closed Stage 4B schema-registry helpers and Path A/B sqlite3 runtime; caller-supplied DB path outside the repository. | 23 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
 | `research/` | Synthetic and committed-fixture demo workflows. | 14 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 196 mapped files |
-| `tests/fixtures/` | Tiny committed synthetic fixtures only. | 113 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 197 mapped files |
+| `tests/fixtures/` | Tiny committed synthetic fixtures only. | 114 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |
 

@@ -59,113 +59,30 @@ _PACKAGED_REGISTRY_RESOURCES = {
     ),
 }
 _REGISTRY_PROFILES = {
-    "0.1.0": {
+    version: {
         "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v1"
+            f"experiment_trial_ledger_payload_schema_registry_v{release}"
         ),
         "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.1.0",
-        "local_constraint_predicates": ["path_equals_path"],
-    },
-    "0.2.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v2"
+        "schema_language_version": "0.1.0" if release == 1 else "0.2.0",
+        "local_constraint_predicates": (
+            ["path_equals_path"]
+            if release == 1
+            else ["array_contains_path", "path_equals_path"]
         ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.3.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v3"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.4.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v4"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.5.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v5"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.6.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v6"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.7.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v7"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.8.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v8"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.9.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v9"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
-    "0.10.0": {
-        "registry_schema_id": (
-            "experiment_trial_ledger_payload_schema_registry_v10"
-        ),
-        "schema_language_id": "ledger_closed_schema_dsl_v1",
-        "schema_language_version": "0.2.0",
-        "local_constraint_predicates": [
-            "array_contains_path",
-            "path_equals_path",
-        ],
-    },
+    }
+    for version, release in (
+        ("0.1.0", 1),
+        ("0.2.0", 2),
+        ("0.3.0", 3),
+        ("0.4.0", 4),
+        ("0.5.0", 5),
+        ("0.6.0", 6),
+        ("0.7.0", 7),
+        ("0.8.0", 8),
+        ("0.9.0", 9),
+        ("0.10.0", 10),
+    )
 }
 _SAFE_INTEGER_MIN = -(2**53) + 1
 _SAFE_INTEGER_MAX = (2**53) - 1

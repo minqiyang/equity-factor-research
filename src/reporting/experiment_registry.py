@@ -14,6 +14,8 @@ from typing import Any
 
 import pandas as pd
 
+from reporting.experiment_log import SYNTHETIC_RESEARCH_CAVEATS
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EXPERIMENT_LOG_DIR = PROJECT_ROOT / "reports" / "experiment_logs"
@@ -34,13 +36,7 @@ REQUIRED_TOP_LEVEL_FIELDS = (
     "next_action",
 )
 
-REQUIRED_CAVEATS = (
-    "synthetic data only",
-    "not financial advice",
-    "not a profitability claim",
-    "no real data fetching",
-    "no live trading or brokerage integration",
-)
+REQUIRED_CAVEATS = SYNTHETIC_RESEARCH_CAVEATS
 
 REGISTRY_COLUMNS = (
     "experiment_id",

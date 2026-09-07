@@ -348,3 +348,18 @@ def test_rolling_pair_operators_do_not_use_future_rows() -> None:
         rolling_cov(left, right, 3).loc[signal_date],
         check_names=False,
     )
+
+
+@pytest.mark.parametrize(
+    ('method', 'ascending', 'expected'),
+    [('first', True, 1.0), ('first', False, 2 / 3),
+     ('dense', True, 1.0), ('dense', False, 0.5)],
+)
+def test_ts_rank_retains_first_and_dense_ties(method, ascending, expected):
+    data = pd.DataFrame({'A': [1., 2., 2.]}, index=pd.date_range('2024-01-01', periods=3))
+    before = data.copy()
+    result = ts_rank(data, 3, method=method, ascending=ascending)
+    assert result.iloc[:2].isna().all().all()
+    assert result.iloc[-1, 0] == pytest.approx(expected)
+    assert ts_rank(data, 10, method=method, ascending=ascending).isna().all().all()
+    assert_frame_equal(data, before, check_exact=True)

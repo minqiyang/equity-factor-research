@@ -4,6 +4,7 @@ import inspect
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 import features.worldquant_alphas as worldquant_alphas
 from features.worldquant_alphas import alpha_009, alpha_012
@@ -301,3 +302,36 @@ def test_alpha_012_rejects_invalid_volume_inputs() -> None:
     for invalid_volume in invalid_inputs:
         with pytest.raises((TypeError, ValueError)):
             alpha_012(close, invalid_volume)
+
+
+@pytest.mark.parametrize('window', [1, 20])
+def test_alpha_009_rejects_overflow_from_finite_delta_endpoints(window):
+    close = pd.DataFrame({'A': [-1e308, 1e308]}, index=pd.date_range('2024-01-01', periods=2))
+    before = close.copy()
+    with pytest.raises(ValueError, match='finite numeric values or NaN'):
+        alpha_009(close, window=window)
+    assert_frame_equal(close, before, check_exact=True)
+
+
+def test_alpha_012_zero_delta_does_not_hide_a_missing_other_delta():
+    dates = pd.date_range('2024-01-01', periods=2)
+    close = pd.DataFrame({'A': [10., np.nan], 'B': [10., 10.], 'C': [10., 11.]}, index=dates)
+    volume = pd.DataFrame({'A': [2., 2.], 'B': [2., np.nan], 'C': [2., 2.]}, index=dates)
+    before_close, before_volume = close.copy(), volume.copy()
+    result = alpha_012(close, volume)
+    assert result.iloc[0].isna().all()
+    assert result.iloc[1, :2].isna().all()
+    assert result.iloc[1, 2] == 0.0
+    assert np.signbit(result.iloc[1, 2])
+    assert_frame_equal(close, before_close, check_exact=True)
+    assert_frame_equal(volume, before_volume, check_exact=True)
+
+
+def test_alpha_012_preserves_existing_arithmetic_overflow_and_zero_sign_behavior():
+    dates = pd.date_range('2024-01-01', periods=2)
+    close = pd.DataFrame({'A': [-1e308, 1e308], 'B': [-1e308, 1e308]}, index=dates)
+    volume = pd.DataFrame({'A': [1., 2.], 'B': [1., 1.]}, index=dates)
+    result = alpha_012(close, volume)
+    assert result.iloc[0].isna().all()
+    assert np.isneginf(result.iloc[1, 0])
+    assert np.isnan(result.iloc[1, 1])
