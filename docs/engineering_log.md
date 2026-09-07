@@ -1,5 +1,44 @@
 # Engineering Log
 
+## 2026-09-07 - Common-sample fixture binary64 portability
+
+- Ubuntu Python 3.11 CI on `4d4a0f58f5d28063d0e97f10b9a38fe357fd16b1` failed four
+  exact `==` assertions: left-to-right `sum` of `0.01 + 0.0001 * i` over 60
+  months is `0.012949999999999998`, while JSON `0.01295` is a different binary64.
+  Local macOS Python 3.12 passed because builtin `sum` uses compensated addition.
+- Fixture inputs/expected means were replaced with finite binary64 dyadics so
+  naive and compensated sums match JSON. Opposite-sign common-positive versus
+  all-valid-negative classification coverage is preserved. Production mean and
+  classifier code were not changed.
+- A first full local suite failed the existing numeric-literal conformance
+  test on a `0.0` left-to-right sum seed. The helper now starts from the first
+  value. That conformance test was not weakened.
+- No 14-trial, D8, identity reopen, GitHub review, or real data.
+
+## 2026-09-07 - Isolated A1 empirical code ablations
+
+- The 439-file input snapshot was copied and hash-verified before seven
+  independent, single-hypothesis ablations. Source changes were selected after
+  executable comparisons using synthetic inputs and isolated HOME/TMPDIR paths.
+- Retained three local simplifications: compact the identical registry profile
+  initialization while retaining its explicit ten-version allowlist; return
+  Alpha#012 arithmetic directly because its final missing-value mask is redundant;
+  consume the existing immutable producer caveat tuple in the report registry.
+  These remove 89 production-source lines in total.
+- Per-ablation checks passed: 1427 ledger tests and 209 exact behavior observations;
+  47 alpha/fixture/alignment tests and 251 exact observations; 10 reporting tests
+  and 31 exact observations. Eight added boundary cases pass on the original
+  baseline and the retained alpha variant.
+- Rejected the rolling.rank substitution (first/dense and sparse-window behavior),
+  cache deepcopy removal (nested mutation pollution in all ten versions), and
+  Alpha#009 operator bypass (finite-input arithmetic overflow stopped raising).
+  Existing tests alone missed the ranking and overflow regressions; the added
+  tests kill both variants. The PIT CLI simplification remains unapplied because
+  its changed package digest conflicts with the published artifact binding.
+- The external EFR-ABLATION-A1 report retains all variant hashes, failed attempts,
+  commands, outputs, combined-candidate QA, and coverage limits. This entry records
+  local simplifications and the rejected hypotheses.
+
 ## 2026-09-06 - Public-safe Track B Path A/B first-checkpoint status
 
 - Protected main at authoring:

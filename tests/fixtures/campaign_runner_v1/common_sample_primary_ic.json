@@ -1,0 +1,59 @@
+{
+  "inputs": {
+    "common_start_year": 2018,
+    "common_end_year": 2022,
+    "day": 28,
+    "one": 1,
+    "first_month": 1,
+    "month_count": 12,
+    "common_base": 0.015625,
+    "common_step": 0.0009765625,
+    "extra_year": 2023,
+    "mom_extra_value": -1.0,
+    "eval_excluded_year": 2024,
+    "eval_excluded_value": 0.5,
+    "sample_std_ddof": 1,
+    "horizon_return_rows": 21,
+    "horizon_purge_signal_axis_rows": 22,
+    "embargo_rows": 0,
+    "control_active_return_10bps": [0.02, 0.02, 0.02],
+    "control_active_return_25bps": [0.01, 0.01, 0.01],
+    "control_invalid_primary_comparison_count": 0,
+    "missing_signal_date": "2018-01-28",
+    "missing_required_year": 2018,
+    "missing_present_value": 0.02,
+    "synthetic_identity": "abababababababababababababababababababababababababababababababab",
+    "entry_run_campaign": {
+      "start": "2017-06-01",
+      "session_count": 500,
+      "listing_count": 100,
+      "price_case": "monthly_ic",
+      "first_signal": "2018-01-31",
+      "second_signal": "2018-02-28"
+    }
+  },
+  "expected": {
+    "common_month_count": 60,
+    "common_mean": 0.04443359375,
+    "common_mean_hex": "0x1.6c00000000000p-5",
+    "mom_all_valid_mean": -0.129638671875,
+    "mom_all_valid_mean_hex": "-0x1.0980000000000p-3",
+    "mismatch_state_if_all_valid_means_used": "INVALID_DIAGNOSTIC",
+    "state_with_common_means": "POSITIVE_DIAGNOSTIC",
+    "all_consistent_state": "POSITIVE_DIAGNOSTIC",
+    "insufficient_common_months": 0,
+    "insufficient_means": [0.0, 0.0, 0.0],
+    "insufficient_bootstrap_support": false,
+    "insufficient_holm_rejections": [false, false, false],
+    "entry_run_campaign": {
+      "executed_status": "EXECUTED_DIAGNOSTIC_ONLY",
+      "unpinned_final_state": "INCONCLUSIVE_DIAGNOSTIC"
+    }
+  },
+  "notes": {
+    "common_mean_formula": "mean(0.015625 + 0.0009765625 * i for i in range(60)) = 91/2048 = 0.04443359375",
+    "mom_all_valid_formula": "(0.04443359375 * 60 + 12 * -1.0) / 72 = -531/4096 = -0.129638671875",
+    "classification_controls": "hard_valid, coverage, and active-return gates are pinned so this isolates sample wiring",
+    "entry_run_campaign": "real run_campaign path; unpinned final_state is not a claimed positive research conclusion; extra noncommon months are REV/LOW_VOL-valid before MOM lookback is met"
+  }
+}

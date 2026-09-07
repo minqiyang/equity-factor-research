@@ -4,16 +4,31 @@ from __future__ import annotations
 
 import dataclasses
 from datetime import date, timedelta
+from functools import partial
 import inspect
 import json
+import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
-import tempfile
+
+import pytest
+
+from collections.abc import Mapping
+from types import MappingProxyType
 
 from campaign.bundle import invalid_and_missing_bytes, required_bundle_children
+from campaign.classifier import classify_diagnostic
+from campaign.diagnostics import descriptive_rank_ic
+from campaign.inference import (
+    FACTOR_ORDER,
+    FactorVector,
+    bootstrap_mean_rank_ic,
+    holm_adjust,
+)
 from campaign.precondition import authorize, result_bearing_refusal_reason
+from campaign.reconciliation import assemble_diagnostic_inputs
+from campaign import runner as runner_module
 from campaign.runner import (
     CampaignRun,
     RunConfig,
@@ -22,6 +37,7 @@ from campaign.runner import (
     configuration_projection,
     run_campaign,
 )
+from campaign.schedule import CampaignSchedule, EvaluationFold, SignalRow
 from pit_manifest_validator_v1.canonical import sha256_hex
 from campaign_runner_v1_support import (
     encode_runner_listing_key,
@@ -226,15 +242,93 @@ def _copy_attempt_state(
     return str(target)
 
 
-def _seed_identity_ledger(identity: str) -> str:
+_ISOLATED_LEDGER_HOME = "isolated_home"
+
+
+def _isolated_ledger_home(tmp_path: Path) -> Path:
+    home = tmp_path / _ISOLATED_LEDGER_HOME
+    home.mkdir(parents=True, exist_ok=True)
+    return home
+
+
+def _redirect_attempt_ledger_path(identity: str, isolated_home: Path) -> Path:
+    produced = attempt_ledger_path(identity)
+    return isolated_home.joinpath(*produced.relative_to(Path.home()).parts)
+
+
+@pytest.fixture(autouse=True)
+def isolate_campaign_attempt_ledger(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Path:
+    isolated_home = _isolated_ledger_home(tmp_path)
+    monkeypatch.setattr(
+        runner_module,
+        "attempt_ledger_path",
+        partial(_redirect_attempt_ledger_path, isolated_home=isolated_home),
+    )
+    return isolated_home
+
+
+def _seed_identity_ledger(identity: str, tmp_path: Path) -> str:
     payload = json.loads(
         fixture_file("precondition/attempt_state.json").read_text(encoding="utf-8")
     )
     payload["campaign_identity_sha256"] = identity
-    target = attempt_ledger_path(identity)
+    target = runner_module.attempt_ledger_path(identity)
+    assert target.resolve().is_relative_to(tmp_path.resolve())
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
     return str(target)
+
+
+def test_seed_identity_ledger_targets_isolated_tmp_via_real_helper(
+    tmp_path: Path,
+) -> None:
+    identity = str(
+        load_runner_fixture("common_sample_primary_ic.json")["inputs"][
+            "synthetic_identity"
+        ]
+    )
+    seeded = Path(_seed_identity_ledger(identity, tmp_path))
+    isolated_home = _isolated_ledger_home(tmp_path)
+    production_default = attempt_ledger_path(identity)
+    assert seeded == runner_module.attempt_ledger_path(identity)
+    assert seeded.is_file()
+    assert seeded.resolve().is_relative_to(isolated_home.resolve())
+    assert production_default == Path.home().joinpath(
+        *seeded.relative_to(isolated_home).parts
+    )
+    assert seeded.resolve() != production_default.resolve()
+    redirected = runner_module.attempt_ledger_path(identity)
+    assert redirected.resolve().is_relative_to(isolated_home.resolve())
+    worker_home = _isolated_ledger_home(tmp_path)
+    repo = Path(__file__).resolve().parents[1]
+    worker_env = os.environ.copy()
+    worker_env["HOME"] = str(worker_home)
+    existing = worker_env.get("PYTHONPATH", "")
+    worker_env["PYTHONPATH"] = (
+        str(repo / "src") if not existing else str(repo / "src") + os.pathsep + existing
+    )
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path; "
+                "from campaign.runner import attempt_ledger_path; "
+                f"p = attempt_ledger_path({identity!r}); "
+                "print(p)"
+            ),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=worker_env,
+        cwd=repo,
+    )
+    subprocess_path = Path(probe.stdout.strip())
+    assert subprocess_path.resolve().is_relative_to(worker_home.resolve())
 
 
 def _run_config_payload(config: RunConfig) -> dict[str, object]:
@@ -274,7 +368,7 @@ def test_exact_grant_v2_lists_reach_diagnostic_execution(
         tmp_path, "authorized_binding.json", prepared_digest
     )
     identity = _binding_identity(binding_path)
-    _seed_identity_ledger(identity)
+    _seed_identity_ledger(identity, tmp_path)
     config = _config_with_grant(
         inputs["grant_file"],
         tmp_path,
@@ -504,7 +598,7 @@ def test_malformed_prepared_campaign_is_named_refusal(tmp_path: Path) -> None:
     nested_state = _copy_attempt_state(
         tmp_path, nested_identity, "attempt_nested.json"
     )
-    nested_ledger = _seed_identity_ledger(nested_identity)
+    nested_ledger = _seed_identity_ledger(nested_identity, tmp_path)
     nested_run = run_campaign(
         _config_with_grant(
             inputs["grant_file"],
@@ -528,7 +622,7 @@ def test_negative_ledger_execution_count_is_refused(tmp_path: Path) -> None:
     binding_path = str(fixture_file("precondition/binding_valid.json"))
     identity = _binding_identity(binding_path)
     state = _copy_attempt_state(tmp_path, identity, "attempt_negative.json")
-    ledger = _seed_identity_ledger(identity)
+    ledger = _seed_identity_ledger(identity, tmp_path)
     payload = json.loads(Path(ledger).read_text(encoding="utf-8"))
     payload["execution_count"] = inputs["negative_execution_count"]
     Path(ledger).write_text(json.dumps(payload), encoding="utf-8")
@@ -562,7 +656,7 @@ def test_two_process_replay_consumes_the_identity_ledger(
         tmp_path, "two_process_binding.json", prepared_digest
     )
     identity = _binding_identity(binding_path)
-    _seed_identity_ledger(identity)
+    _seed_identity_ledger(identity, tmp_path)
     first_config = _config_with_grant(
         inputs["grant_file"],
         tmp_path,
@@ -578,11 +672,14 @@ def test_two_process_replay_consumes_the_identity_ledger(
         json.dumps(_run_config_payload(first_config)), encoding="utf-8"
     )
     worker = Path(__file__).resolve().parent / expected["two_process_worker"]
+    worker_env = os.environ.copy()
+    worker_env["HOME"] = str(_isolated_ledger_home(tmp_path))
     first = subprocess.run(
         [sys.executable, str(worker), str(first_payload)],
         check=True,
         capture_output=True,
         text=True,
+        env=worker_env,
     )
     first_result = json.loads(first.stdout)
     assert first_result["status"] == expected["status"]
@@ -606,6 +703,7 @@ def test_two_process_replay_consumes_the_identity_ledger(
         check=True,
         capture_output=True,
         text=True,
+        env=worker_env,
     )
     second_result = json.loads(second.stdout)
     assert second_result["status"] == "REFUSED"
@@ -627,7 +725,7 @@ def test_result_bearing_prepared_campaign_is_refused(
         tmp_path, "result_bearing_binding.json", prepared_digest
     )
     identity = _binding_identity(binding_path)
-    ledger = _seed_identity_ledger(identity)
+    ledger = _seed_identity_ledger(identity, tmp_path)
     result = run_campaign(
         _config_with_grant(
             inputs["grant_file"],
@@ -660,7 +758,7 @@ def _reconcile_ready_config(
         tmp_path, f"{name}_binding.json", prepared_digest
     )
     identity = _binding_identity(binding_path)
-    ledger = _seed_identity_ledger(identity)
+    ledger = _seed_identity_ledger(identity, tmp_path)
     config = _config_with_grant(
         inputs["grant_file"],
         tmp_path,
@@ -687,21 +785,23 @@ def test_tmp_environment_wipe_cannot_replay(tmp_path: Path) -> None:
     identity = json.loads(Path(ledger).read_text(encoding="utf-8"))[
         "campaign_identity_sha256"
     ]
-    ephemeral = Path(tempfile.gettempdir()) / expected["tmp_ledger_dirname"]
-    if ephemeral.exists():
-        shutil.rmtree(ephemeral)
+    durable = Path(ledger)
+    assert durable.resolve().is_relative_to(tmp_path.resolve())
+    ephemeral = tmp_path / expected["tmp_ledger_dirname"]
     ephemeral.mkdir(parents=True)
     fake = json.loads(
         fixture_file("precondition/attempt_state.json").read_text(encoding="utf-8")
     )
     fake["campaign_identity_sha256"] = identity
-    (ephemeral / f"{identity}.json").write_text(
+    fake_ledger = ephemeral / f"{identity}.json"
+    fake_ledger.write_text(
         json.dumps(fake, sort_keys=True), encoding="utf-8"
     )
+    assert fake_ledger.resolve().is_relative_to(tmp_path.resolve())
     second = run_campaign(config)
     assert second.status == "REFUSED"
     assert second.reason == expected["attempt_consumed_reason"]
-    leftover = json.loads(Path(ledger).read_text(encoding="utf-8"))
+    leftover = json.loads(durable.read_text(encoding="utf-8"))
     assert leftover["consumed"] is True
 
 
@@ -887,6 +987,66 @@ def _synthetic_panel(
 def _run_prepared(tmp_path: Path, prepared: dict[str, object], name: str):
     config, _ledger = _reconcile_ready_config(tmp_path, prepared, name)
     return run_campaign(config)
+
+
+def _independent_common_means(
+    monthly_rank_ics: object,
+) -> FactorVector[float] | tuple[()]:
+    assert isinstance(monthly_rank_ics, list)
+    valid_by_factor: dict[str, dict[str, float]] = {
+        factor_id: {} for factor_id in FACTOR_ORDER
+    }
+    for row in monthly_rank_ics:
+        assert isinstance(row, dict)
+        if row.get("valid") is not True or row.get("value") is None:
+            continue
+        factor_id = row["factor_id"]
+        signal_date = row["signal_date"]
+        if not isinstance(factor_id, str) or not isinstance(signal_date, str):
+            continue
+        if factor_id in valid_by_factor:
+            valid_by_factor[factor_id][signal_date] = float(row["value"])
+    common = [
+        signal_date
+        for signal_date in valid_by_factor[FACTOR_ORDER[0]]
+        if all(
+            signal_date in valid_by_factor[factor_id] for factor_id in FACTOR_ORDER
+        )
+    ]
+    if not common:
+        return ()
+    return FactorVector(
+        *(
+            sum(valid_by_factor[factor_id][signal_date] for signal_date in common)
+            / len(common)
+            for factor_id in FACTOR_ORDER
+        )
+    )
+
+
+def _all_valid_descriptive_means(
+    monthly_rank_ics: object,
+    sample_std_ddof: int,
+    empty_mean: float,
+) -> FactorVector[float]:
+    assert isinstance(monthly_rank_ics, list)
+    values_by_factor: dict[str, list[float]] = {
+        factor_id: [] for factor_id in FACTOR_ORDER
+    }
+    for row in monthly_rank_ics:
+        assert isinstance(row, dict)
+        if row.get("valid") is not True or row.get("value") is None:
+            continue
+        factor_id = row["factor_id"]
+        if factor_id in values_by_factor:
+            values_by_factor[factor_id].append(float(row["value"]))
+    means: list[float] = []
+    for factor_id in FACTOR_ORDER:
+        descriptive = descriptive_rank_ic(
+            values_by_factor[factor_id], sample_std_ddof
+        )
+        means.append(empty_mean if descriptive.mean is None else descriptive.mean)
+    return FactorVector(*means)
 
 
 def _parse_child(result: CampaignRun, name: str) -> dict[str, object]:
@@ -1090,9 +1250,27 @@ def test_diagnostic_payload_is_derived_from_execution(tmp_path: Path) -> None:
     assert large.reconciliation is not None
     assert large.reconciliation.diagnostic_inputs is not None
     large_inputs = large.reconciliation.diagnostic_inputs
-    assert large_inputs.common_months != small_inputs.common_months or (
-        large_inputs.mean_rank_ics != small_inputs.mean_rank_ics
-    )
+    small_months = _parse_child(small, "factor_diagnostics.parquet")["monthly_rank_ics"]
+    large_months = _parse_child(large, "factor_diagnostics.parquet")["monthly_rank_ics"]
+    assert small_months != large_months
+    small_common = _independent_common_means(small_months)
+    large_common = _independent_common_means(large_months)
+    if small_common:
+        assert small_inputs.mean_rank_ics == small_common
+    else:
+        assert small_inputs.common_months == 0
+        assert all(
+            getattr(small_inputs.mean_rank_ics, factor_id) == 0.0
+            for factor_id in FACTOR_ORDER
+        )
+    if large_common:
+        assert large_inputs.mean_rank_ics == large_common
+    else:
+        assert large_inputs.common_months == 0
+        assert all(
+            getattr(large_inputs.mean_rank_ics, factor_id) == 0.0
+            for factor_id in FACTOR_ORDER
+        )
     assert large.reconciliation.final_state != cases["expected"]["invalid_state"]
 
 
@@ -1704,3 +1882,562 @@ def _turnover_on(
     )
     point = next(row for row in ten["points"] if row["session_date"] == session)
     return float(point["turnover"])
+
+
+def _month_end_dates(
+    start_year: int,
+    end_year: int,
+    day: int,
+    one: int,
+    first_month: int,
+    month_count: int,
+) -> tuple[str, ...]:
+    return tuple(
+        f"{year}-{month:02d}-{day:02d}"
+        for year in range(start_year, end_year + one)
+        for month in range(first_month, first_month + month_count)
+    )
+
+
+def _month_result(signal_date: str, value: float | None, valid: bool) -> object:
+    return runner_module._MonthResult(
+        signal_date,
+        None,
+        None,
+        value,
+        valid,
+        None,
+        (),
+    )
+
+
+def _trace_from_monthly(
+    monthly: dict[str, tuple[object, ...]],
+    dates: tuple[str, ...],
+    required_years: tuple[int, ...],
+    schedule: CampaignSchedule | None = None,
+) -> object:
+    return runner_module._ExecutionTrace(
+        schedule,
+        MappingProxyType(monthly),
+        MappingProxyType({}),
+        runner_module._PreparedPanel(
+            MappingProxyType({}),
+            MappingProxyType({}),
+            MappingProxyType({}),
+            dates,
+        ),
+        MappingProxyType({}),
+        required_years,
+    )
+
+
+def _payload_from_trace(trace: object) -> dict[str, object]:
+    return runner_module._diagnostic_payload_from_execution(
+        _authorized_config(),
+        (),
+        {},
+        {},
+        trace,
+    )
+
+
+def _classify_with_unrelated_gates_pinned(
+    payload: Mapping[str, object],
+    fixture: dict[str, object],
+) -> str:
+    controls = fixture["inputs"]
+    pinned = dict(payload)
+    pinned.update(
+        {
+            "hard_valid": True,
+            "prefrozen_coverage_met": True,
+            "primary_matched_benchmark_comparisons_valid": True,
+            "invalid_primary_comparison_count": controls[
+                "control_invalid_primary_comparison_count"
+            ],
+            "active_return_10bps": list(controls["control_active_return_10bps"]),
+            "active_return_25bps": list(controls["control_active_return_25bps"]),
+        }
+    )
+    return classify_diagnostic(assemble_diagnostic_inputs(pinned, True))
+
+
+def _independent_common_oracle(
+    common_values: list[float],
+    config: RunConfig,
+) -> tuple[list[float], bool, list[bool]]:
+    rows = [tuple(value for _factor_id in FACTOR_ORDER) for value in common_values]
+    boot = bootstrap_mean_rank_ic(
+        [rows],
+        bootstrap_seed=config.bootstrap_seed,
+        replicates=config.bootstrap_replicates,
+    )
+    holm = holm_adjust(boot.one_sided_p_values)
+    return (
+        [float(getattr(boot.observed_means, factor_id)) for factor_id in FACTOR_ORDER],
+        bool(boot.bootstrap_support_all_three_factors),
+        [bool(getattr(holm.rejections, factor_id)) for factor_id in FACTOR_ORDER],
+    )
+
+
+def _common_sample_fixture() -> dict[str, object]:
+    return load_runner_fixture("common_sample_primary_ic.json")
+
+
+def _left_to_right_mean(values: list[float]) -> float:
+    total = values[0]
+    for value in values[1:]:
+        total = total + value
+    return total / len(values)
+
+
+def test_common_sample_fixture_means_are_binary64_portable() -> None:
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    extra_dates = _fixture_month_dates(inputs, "extra_year", "extra_year")
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    all_valid_values = common_values + (
+        [float(inputs["mom_extra_value"])] * len(extra_dates)
+    )
+    assert len(common_values) == expected["common_month_count"]
+    assert _left_to_right_mean(common_values) == expected["common_mean"]
+    assert sum(common_values) / len(common_values) == expected["common_mean"]
+    assert _left_to_right_mean(all_valid_values) == expected["mom_all_valid_mean"]
+    assert sum(all_valid_values) / len(all_valid_values) == (
+        expected["mom_all_valid_mean"]
+    )
+    assert expected["common_mean"] > 0.0
+    assert expected["mom_all_valid_mean"] < 0.0
+    assert float(expected["common_mean"]).hex() == expected["common_mean_hex"]
+    assert float(expected["mom_all_valid_mean"]).hex() == (
+        expected["mom_all_valid_mean_hex"]
+    )
+    fixture_text = fixture_file("common_sample_primary_ic.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"common_base": 0.015625,' in fixture_text
+    assert '"common_step": 0.0009765625,' in fixture_text
+    assert '"mom_extra_value": -1.0,' in fixture_text
+    assert '"common_mean": 0.04443359375,' in fixture_text
+    assert '"mom_all_valid_mean": -0.129638671875,' in fixture_text
+
+
+def _fixture_month_dates(
+    inputs: Mapping[str, object],
+    start_key: str,
+    end_key: str,
+) -> tuple[str, ...]:
+    return _month_end_dates(
+        int(inputs[start_key]),
+        int(inputs[end_key]),
+        int(inputs["day"]),
+        int(inputs["one"]),
+        int(inputs["first_month"]),
+        int(inputs["month_count"]),
+    )
+
+
+def _inclusive_years(inputs: Mapping[str, object]) -> tuple[int, ...]:
+    return tuple(
+        range(
+            int(inputs["common_start_year"]),
+            int(inputs["common_end_year"]) + int(inputs["one"]),
+        )
+    )
+
+
+def test_extra_noncommon_months_change_descriptive_not_primary_inputs() -> None:
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    extra_dates = _fixture_month_dates(inputs, "extra_year", "extra_year")
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    expected_common = sum(common_values) / len(common_values)
+    mom_all_valid = descriptive_rank_ic(
+        common_values + [float(inputs["mom_extra_value"])] * len(extra_dates),
+        int(inputs["sample_std_ddof"]),
+    )
+    assert mom_all_valid.mean is not None
+    assert expected_common == expected["common_mean"]
+    assert mom_all_valid.mean == expected["mom_all_valid_mean"]
+
+    monthly_base = {
+        factor_id: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        )
+        for factor_id in FACTOR_ORDER
+    }
+    required_years = _inclusive_years(inputs)
+    base_payload = _payload_from_trace(
+        _trace_from_monthly(
+            monthly_base,
+            common_dates,
+            required_years,
+        )
+    )
+    extra_monthly = {
+        FACTOR_ORDER[0]: monthly_base[FACTOR_ORDER[0]]
+        + tuple(
+            _month_result(signal_date, float(inputs["mom_extra_value"]), True)
+            for signal_date in extra_dates
+        ),
+        FACTOR_ORDER[1]: monthly_base[FACTOR_ORDER[1]]
+        + tuple(_month_result(signal_date, None, False) for signal_date in extra_dates),
+        FACTOR_ORDER[2]: monthly_base[FACTOR_ORDER[2]]
+        + tuple(_month_result(signal_date, None, False) for signal_date in extra_dates),
+    }
+    extra_payload = _payload_from_trace(
+        _trace_from_monthly(
+            extra_monthly,
+            common_dates + extra_dates,
+            required_years,
+        )
+    )
+    config = _authorized_config()
+    independent_means, independent_support, independent_rejections = (
+        _independent_common_oracle(common_values, config)
+    )
+    assert extra_payload["common_months"] == expected["common_month_count"]
+    assert extra_payload["mean_rank_ics"] == independent_means
+    assert extra_payload["mean_rank_ics"] == base_payload["mean_rank_ics"]
+    assert extra_payload["holm_rejections"] == independent_rejections
+    assert extra_payload["holm_rejections"] == base_payload["holm_rejections"]
+    assert extra_payload["bootstrap_support_all_three_factors"] is independent_support
+    assert (
+        extra_payload["bootstrap_support_all_three_factors"]
+        == base_payload["bootstrap_support_all_three_factors"]
+    )
+    assert extra_payload["descriptive_mean_rank_ics_all_valid_factor_months"][0] == (
+        mom_all_valid.mean
+    )
+    assert extra_payload["descriptive_mean_rank_ics_all_valid_factor_months"][0] != (
+        extra_payload["mean_rank_ics"][0]
+    )
+    assert extra_payload["descriptive_mean_rank_ics_all_valid_factor_months"][1:] == (
+        base_payload["descriptive_mean_rank_ics_all_valid_factor_months"][1:]
+    )
+    assert extra_payload["common_case_positive_year_fractions"] == (
+        base_payload["common_case_positive_year_fractions"]
+    )
+    assert extra_payload["common_case_all_loyo_means_positive"] == (
+        base_payload["common_case_all_loyo_means_positive"]
+    )
+    assert _classify_with_unrelated_gates_pinned(extra_payload, fixture) == (
+        expected["state_with_common_means"]
+    )
+    assert _classify_with_unrelated_gates_pinned(base_payload, fixture) == (
+        expected["state_with_common_means"]
+    )
+
+
+def test_common_positive_all_valid_negative_is_not_invalid() -> None:
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    extra_dates = _fixture_month_dates(inputs, "extra_year", "extra_year")
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    monthly = {
+        FACTOR_ORDER[0]: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        )
+        + tuple(
+            _month_result(signal_date, float(inputs["mom_extra_value"]), True)
+            for signal_date in extra_dates
+        ),
+        FACTOR_ORDER[1]: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        ),
+        FACTOR_ORDER[2]: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        ),
+    }
+    payload = _payload_from_trace(
+        _trace_from_monthly(
+            monthly,
+            common_dates + extra_dates,
+            _inclusive_years(inputs),
+        )
+    )
+    mismatched = dict(payload)
+    mismatched["mean_rank_ics"] = list(
+        payload["descriptive_mean_rank_ics_all_valid_factor_months"]
+    )
+    assert payload["mean_rank_ics"][0] == expected["common_mean"]
+    assert payload["descriptive_mean_rank_ics_all_valid_factor_months"][0] == (
+        expected["mom_all_valid_mean"]
+    )
+    assert _classify_with_unrelated_gates_pinned(payload, fixture) == (
+        expected["state_with_common_means"]
+    )
+    assert _classify_with_unrelated_gates_pinned(mismatched, fixture) == (
+        expected["mismatch_state_if_all_valid_means_used"]
+    )
+
+
+def test_common_sample_all_consistent_matches_descriptive() -> None:
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    monthly = {
+        factor_id: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        )
+        for factor_id in FACTOR_ORDER
+    }
+    payload = _payload_from_trace(
+        _trace_from_monthly(
+            monthly,
+            common_dates,
+            _inclusive_years(inputs),
+        )
+    )
+    assert payload["mean_rank_ics"] == (
+        payload["descriptive_mean_rank_ics_all_valid_factor_months"]
+    )
+    assert payload["mean_rank_ics"] == [expected["common_mean"]] * len(FACTOR_ORDER)
+    assert _classify_with_unrelated_gates_pinned(payload, fixture) == (
+        expected["all_consistent_state"]
+    )
+
+
+def test_missing_and_insufficient_common_sample_boundaries() -> None:
+    fixture = _common_sample_fixture()
+    expected = fixture["expected"]
+    empty_payload = _payload_from_trace(
+        _trace_from_monthly({factor_id: () for factor_id in FACTOR_ORDER}, (), ())
+    )
+    assert empty_payload["common_months"] == expected["insufficient_common_months"]
+    assert empty_payload["mean_rank_ics"] == expected["insufficient_means"]
+    assert empty_payload["descriptive_mean_rank_ics_all_valid_factor_months"] == (
+        expected["insufficient_means"]
+    )
+    assert empty_payload["bootstrap_support_all_three_factors"] is (
+        expected["insufficient_bootstrap_support"]
+    )
+    assert empty_payload["holm_rejections"] == expected["insufficient_holm_rejections"]
+
+    inputs = fixture["inputs"]
+    missing_date = str(inputs["missing_signal_date"])
+    present = float(inputs["missing_present_value"])
+    one_missing = {
+        FACTOR_ORDER[0]: (_month_result(missing_date, present, True),),
+        FACTOR_ORDER[1]: (_month_result(missing_date, present, True),),
+        FACTOR_ORDER[2]: (),
+    }
+    missing_payload = _payload_from_trace(
+        _trace_from_monthly(
+            one_missing,
+            (missing_date,),
+            (int(inputs["missing_required_year"]),),
+        )
+    )
+    assert missing_payload["common_months"] == expected["insufficient_common_months"]
+    assert missing_payload["mean_rank_ics"] == expected["insufficient_means"]
+    assert missing_payload["descriptive_mean_rank_ics_all_valid_factor_months"] == [
+        present,
+        present,
+        expected["insufficient_means"][-1],
+    ]
+    assert missing_payload["bootstrap_support_all_three_factors"] is (
+        expected["insufficient_bootstrap_support"]
+    )
+
+
+def test_eval_date_restriction_keeps_non_eval_months_descriptive_only() -> None:
+    """Helper-only defensive intersection, not production monthly builder behavior.
+
+    This injects valid=True months outside EvaluationFold.signal_dates into
+    `_diagnostic_payload_from_execution`. Production `_monthly_rank_ics` marks
+    those dates invalid with EVALUATION_FOLD_LABEL_PURGED and never scores them,
+    so they do not enter run_campaign descriptive means.
+    """
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    excluded_dates = _fixture_month_dates(
+        inputs, "eval_excluded_year", "eval_excluded_year"
+    )
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    excluded_value = float(inputs["eval_excluded_value"])
+    monthly = {
+        factor_id: tuple(
+            _month_result(signal_date, value, True)
+            for signal_date, value in zip(common_dates, common_values, strict=True)
+        )
+        + tuple(
+            _month_result(signal_date, excluded_value, True)
+            for signal_date in excluded_dates
+        )
+        for factor_id in FACTOR_ORDER
+    }
+    signals = tuple(
+        SignalRow(
+            signal_date=signal_date,
+            execution_date=signal_date,
+            label_start_date=signal_date,
+            label_end_date=signal_date,
+            signal_index=index,
+            execution_index=index,
+            label_end_index=index,
+            factor_label_complete=True,
+            continuous_included=True,
+        )
+        for index, signal_date in enumerate(common_dates + excluded_dates)
+    )
+    folds = tuple(
+        EvaluationFold(
+            fold_year=year,
+            bound_end=f"{year}-12-{int(inputs['day']):02d}",
+            partial=False,
+            signal_dates=tuple(
+                signal_date
+                for signal_date in common_dates
+                if int(signal_date[:4]) == year
+            ),
+        )
+        for year in _inclusive_years(inputs)
+    )
+    schedule = CampaignSchedule(
+        session_dates=common_dates + excluded_dates,
+        accepted_cutoff=excluded_dates[-1],
+        horizon_return_rows=int(inputs["horizon_return_rows"]),
+        horizon_purge_signal_axis_rows=int(inputs["horizon_purge_signal_axis_rows"]),
+        embargo_rows=int(inputs["embargo_rows"]),
+        first_fold_year=int(inputs["common_start_year"]),
+        signals=signals,
+        folds=folds,
+        campaign_invalid=False,
+    )
+    payload = _payload_from_trace(
+        _trace_from_monthly(
+            monthly,
+            common_dates + excluded_dates,
+            _inclusive_years(inputs),
+            schedule,
+        )
+    )
+    descriptive = descriptive_rank_ic(
+        common_values + [excluded_value] * len(excluded_dates),
+        int(inputs["sample_std_ddof"]),
+    )
+    assert descriptive.mean is not None
+    assert payload["common_months"] == expected["common_month_count"]
+    assert payload["mean_rank_ics"] == [expected["common_mean"]] * len(FACTOR_ORDER)
+    assert payload["descriptive_mean_rank_ics_all_valid_factor_months"] == [
+        descriptive.mean
+    ] * len(FACTOR_ORDER)
+    assert payload["descriptive_mean_rank_ics_all_valid_factor_months"][0] != (
+        payload["mean_rank_ics"][0]
+    )
+
+
+def test_run_campaign_entry_uses_common_means_not_all_valid_descriptive(
+    tmp_path: Path,
+) -> None:
+    fixture = _common_sample_fixture()
+    entry = fixture["inputs"]["entry_run_campaign"]
+    expected = fixture["expected"]["entry_run_campaign"]
+    assert isinstance(entry, dict)
+    assert isinstance(expected, dict)
+    cases = _p1_cases()
+    monthly = cases["inputs"]["monthly_ic"]
+    assert isinstance(monthly, dict)
+    monthly["first_signal"] = entry["first_signal"]
+    monthly["second_signal"] = entry["second_signal"]
+    sessions = _session_range(
+        date.fromisoformat(str(entry["start"])),
+        int(entry["session_count"]),
+    )
+    result = _run_prepared(
+        tmp_path,
+        _synthetic_panel(
+            sessions,
+            int(entry["listing_count"]),
+            _month_end_flags(sessions, int(cases["inputs"]["one"])),
+            str(entry["price_case"]),
+            cases,
+        ),
+        "entry_common_mismatch",
+    )
+    assert result.status == expected["executed_status"]
+    assert result.reconciliation is not None
+    assert result.reconciliation.diagnostic_inputs is not None
+    diagnostic_inputs = result.reconciliation.diagnostic_inputs
+    months = _parse_child(result, "factor_diagnostics.parquet")["monthly_rank_ics"]
+    common_means = _independent_common_means(months)
+    descriptive_means = _all_valid_descriptive_means(
+        months,
+        int(fixture["inputs"]["sample_std_ddof"]),
+        float(fixture["expected"]["insufficient_means"][0]),
+    )
+    assert common_means
+    assert diagnostic_inputs.common_months > 0
+    assert diagnostic_inputs.mean_rank_ics == common_means
+    assert diagnostic_inputs.mean_rank_ics != descriptive_means
+    valid_by_factor: dict[str, dict[str, float]] = {
+        factor_id: {} for factor_id in FACTOR_ORDER
+    }
+    for row in months:
+        assert isinstance(row, dict)
+        if row.get("valid") is not True or row.get("value") is None:
+            continue
+        factor_id = row["factor_id"]
+        signal_date = row["signal_date"]
+        if factor_id in valid_by_factor and isinstance(signal_date, str):
+            valid_by_factor[factor_id][signal_date] = float(row["value"])
+    common_dates = set(valid_by_factor[FACTOR_ORDER[0]]).intersection(
+        *(valid_by_factor[factor_id] for factor_id in FACTOR_ORDER[1:])
+    )
+    extra_noncommon = False
+    for factor_id in FACTOR_ORDER:
+        extra_values = [
+            value
+            for signal_date, value in valid_by_factor[factor_id].items()
+            if signal_date not in common_dates
+        ]
+        if not extra_values:
+            continue
+        extra_noncommon = True
+        assert getattr(descriptive_means, factor_id) != getattr(
+            common_means, factor_id
+        )
+    assert extra_noncommon
+    assert result.reconciliation.final_state == expected["unpinned_final_state"]

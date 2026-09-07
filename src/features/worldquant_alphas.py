@@ -104,9 +104,7 @@ def alpha_012(close: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
     close_delta = delta(close_panel, periods=1)
     volume_delta = delta(volume_panel, periods=1)
 
-    alpha = np.sign(volume_delta) * (-1.0 * close_delta)
-    valid_inputs = close_delta.notna() & volume_delta.notna()
-    return alpha.where(valid_inputs)
+    return np.sign(volume_delta) * (-1.0 * close_delta)
 
 
 def _validate_window(window: int) -> None:
