@@ -1985,6 +1985,51 @@ def _common_sample_fixture() -> dict[str, object]:
     return load_runner_fixture("common_sample_primary_ic.json")
 
 
+def _left_to_right_mean(values: list[float]) -> float:
+    total = values[0]
+    for value in values[1:]:
+        total = total + value
+    return total / len(values)
+
+
+def test_common_sample_fixture_means_are_binary64_portable() -> None:
+    fixture = _common_sample_fixture()
+    inputs = fixture["inputs"]
+    expected = fixture["expected"]
+    common_dates = _fixture_month_dates(
+        inputs, "common_start_year", "common_end_year"
+    )
+    extra_dates = _fixture_month_dates(inputs, "extra_year", "extra_year")
+    common_values = [
+        float(inputs["common_base"]) + float(inputs["common_step"]) * index
+        for index, _date in enumerate(common_dates)
+    ]
+    all_valid_values = common_values + (
+        [float(inputs["mom_extra_value"])] * len(extra_dates)
+    )
+    assert len(common_values) == expected["common_month_count"]
+    assert _left_to_right_mean(common_values) == expected["common_mean"]
+    assert sum(common_values) / len(common_values) == expected["common_mean"]
+    assert _left_to_right_mean(all_valid_values) == expected["mom_all_valid_mean"]
+    assert sum(all_valid_values) / len(all_valid_values) == (
+        expected["mom_all_valid_mean"]
+    )
+    assert expected["common_mean"] > 0.0
+    assert expected["mom_all_valid_mean"] < 0.0
+    assert float(expected["common_mean"]).hex() == expected["common_mean_hex"]
+    assert float(expected["mom_all_valid_mean"]).hex() == (
+        expected["mom_all_valid_mean_hex"]
+    )
+    fixture_text = fixture_file("common_sample_primary_ic.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"common_base": 0.015625,' in fixture_text
+    assert '"common_step": 0.0009765625,' in fixture_text
+    assert '"mom_extra_value": -1.0,' in fixture_text
+    assert '"common_mean": 0.04443359375,' in fixture_text
+    assert '"mom_all_valid_mean": -0.129638671875,' in fixture_text
+
+
 def _fixture_month_dates(
     inputs: Mapping[str, object],
     start_key: str,

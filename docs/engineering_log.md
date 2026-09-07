@@ -1,5 +1,20 @@
 # Engineering Log
 
+## 2026-09-07 - Common-sample fixture binary64 portability
+
+- Ubuntu Python 3.11 CI on `4d4a0f58f5d28063d0e97f10b9a38fe357fd16b1` failed four
+  exact `==` assertions: left-to-right `sum` of `0.01 + 0.0001 * i` over 60
+  months is `0.012949999999999998`, while JSON `0.01295` is a different binary64.
+  Local macOS Python 3.12 passed because builtin `sum` uses compensated addition.
+- Fixture inputs/expected means were replaced with finite binary64 dyadics so
+  naive and compensated sums match JSON. Opposite-sign common-positive versus
+  all-valid-negative classification coverage is preserved. Production mean and
+  classifier code were not changed.
+- A first full local suite failed the existing numeric-literal conformance
+  test on a `0.0` left-to-right sum seed. The helper now starts from the first
+  value. That conformance test was not weakened.
+- No 14-trial, D8, identity reopen, GitHub review, or real data.
+
 ## 2026-09-07 - Isolated A1 empirical code ablations
 
 - The 439-file input snapshot was copied and hash-verified before seven
