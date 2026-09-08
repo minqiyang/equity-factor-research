@@ -1,0 +1,45 @@
+--- a/src/campaign/inference.py
++++ b/src/campaign/inference.py
+@@ -198,28 +198,21 @@
+     rng = np.random.Generator(np.random.PCG64DXSM(seed))
+     total_count = len(retained_rows)
+ 
++    retained_array = np.asarray(retained_rows, dtype=float)
++    centered_array = np.asarray(centered, dtype=float)
+     for replicate_index in range(replicate_count):
+-        uncentered_sums = [0.0, 0.0, 0.0]
+-        centered_sums = [0.0, 0.0, 0.0]
+-        for segment, segment_offset in zip(
+-            prepared,
+-            segment_offsets,
+-            strict=True,
+-        ):
+-            local_indices = draw_segment_indices(len(segment), rng=rng)
+-            for local_index in local_indices:
+-                row = segment[local_index]
+-                centered_row = centered[segment_offset + local_index]
+-                for factor_index in range(3):
+-                    uncentered_sums[factor_index] += row[factor_index]
+-                    centered_sums[factor_index] += centered_row[factor_index]
+-        for factor_index in range(3):
+-            uncentered_means[replicate_index, factor_index] = (
+-                uncentered_sums[factor_index] / total_count
+-            )
+-            null_centered_means[replicate_index, factor_index] = (
+-                centered_sums[factor_index] / total_count
+-            )
++        indices = [
++            segment_offset + local_index
++            for segment, segment_offset in zip(prepared, segment_offsets, strict=True)
++            for local_index in draw_segment_indices(len(segment), rng=rng)
++        ]
++        # accumulate preserves left-to-right addition, unlike pairwise reduce.
++        uncentered_means[replicate_index] = (
++            np.add.accumulate(np.vstack((np.zeros((1, 3)), retained_array[indices])), axis=0)[-1] / total_count
++        )
++        null_centered_means[replicate_index] = (
++            np.add.accumulate(np.vstack((np.zeros((1, 3)), centered_array[indices])), axis=0)[-1] / total_count
++        )
+ 
+     interval = np.quantile(
+         uncentered_means,

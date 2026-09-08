@@ -1586,12 +1586,14 @@ def _source_dtype_family(dtype: object) -> str:
 def _snapshot_source_cells(
     source: pd.DataFrame,
 ) -> tuple[tuple[SourceCellSnapshot, ...], ...]:
+    if len(source.columns) == 0:
+        return tuple(() for _ in range(len(source.index)))
     return tuple(
-        tuple(
-            _snapshot_source_cell(source.iat[row_position, column_position])
-            for column_position in range(len(source.columns))
+        tuple(_snapshot_source_cell(value) for value in row)
+        for row in zip(
+            *(source.iloc[:, column].array for column in range(len(source.columns))),
+            strict=True,
         )
-        for row_position in range(len(source.index))
     )
 
 

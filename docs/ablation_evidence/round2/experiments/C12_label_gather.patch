@@ -1,0 +1,17 @@
+--- a/src/features/validation.py
++++ b/src/features/validation.py
+@@ -591,10 +591,10 @@
+     eligible_rows = split.label_ledger.loc[
+         split.label_ledger["is_eligible"]
+     ]
+-    for row in eligible_rows.itertuples(index=False):
+-        labels.loc[row.signal_date] = (
+-            validated.loc[row.label_end] / validated.loc[row.label_start] - 1.0
+-        )
++    if not eligible_rows.empty:
++        start_values = validated.loc[eligible_rows["label_start"]].to_numpy()
++        end_values = validated.loc[eligible_rows["label_end"]].to_numpy()
++        labels.loc[eligible_rows["signal_date"]] = end_values / start_values - 1.0
+     return labels
+ 
+ 

@@ -1142,14 +1142,15 @@ def _packaged_registry_digest(registry_version: str) -> str:
     return digest_text
 
 
-def _require_packaged_registry_authority(registry: object) -> None:
+def _require_packaged_registry_authority(registry: object) -> dict[str, object]:
     validated = validate_registry(registry)
     registry_version = validated["registry_version"]
-    if registry_digest(validated) != _packaged_registry_digest(registry_version):
+    if hashlib.sha256(_canonical_ascii_json_bytes(validated)).hexdigest() != _packaged_registry_digest(registry_version):
         _fail(
             "REGISTRY_DIGEST_MISMATCH",
             "registry is not the packaged digest-bound release authority",
         )
+    return validated
 
 
 def load_registry_bytes(
@@ -1159,7 +1160,7 @@ def load_registry_bytes(
 ) -> dict[str, object]:
     """Parse and validate registry bytes against an explicit external digest."""
     registry = validate_registry(parse_json_bytes(raw))
-    actual_digest = registry_digest(registry)
+    actual_digest = hashlib.sha256(_canonical_ascii_json_bytes(registry)).hexdigest()
     if _LOWER_SHA256_PATTERN.fullmatch(expected_digest) is None:
         _fail("INVALID_REGISTRY", "expected registry digest is invalid")
     if actual_digest != expected_digest:
@@ -1369,8 +1370,7 @@ def validate_event(
     if registry is None:
         active_registry = load_default_registry()
     else:
-        active_registry = validate_registry(registry)
-        _require_packaged_registry_authority(active_registry)
+        active_registry = _require_packaged_registry_authority(registry)
     if not isinstance(value, dict):
         _fail("INVALID_EVENT", "ledger event must be an object")
     event_type = value.get("event_type")
@@ -1435,8 +1435,7 @@ def validate_raw_event_bytes(
 
 def run_conformance_vectors(registry: object) -> dict[str, str]:
     """Execute one registry release's bound synthetic vectors."""
-    validated = validate_registry(registry)
-    _require_packaged_registry_authority(validated)
+    validated = _require_packaged_registry_authority(registry)
     outcomes: dict[str, str] = {}
     for vector in validated["conformance_vectors"]:
         try:

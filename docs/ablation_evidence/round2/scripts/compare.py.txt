@@ -1,0 +1,67 @@
+"""Exact output comparison; only the accepted Spearman vector receives tolerance."""
+
+import argparse
+import base64
+import gzip
+import hashlib
+import json
+import os
+from pathlib import Path
+
+
+B2 = Path(__file__).resolve().parents[1]
+
+
+def read_result(attempt, output_index=-1):
+    run = B2 / "runs" / attempt
+    summary = json.loads((run / "summary.json").read_text())
+    output = summary["outputs"][output_index]
+    raw = gzip.decompress((run / output["directory"] / "normalized_result.json.gz").read_bytes())
+    return summary, output, raw
+
+
+def compare_attempts(baseline, candidate, output_index=-1):
+    base_summary, base_output, base_raw = read_result(baseline, output_index)
+    cand_summary, cand_output, cand_raw = read_result(candidate, output_index)
+    workload = base_summary["arguments"]["workload"]
+    assert cand_summary["arguments"] == base_summary["arguments"]
+    result = {"baseline": baseline, "candidate": candidate, "workload": workload,
+              "baseline_output_sha256": hashlib.sha256(base_raw).hexdigest(),
+              "candidate_output_sha256": hashlib.sha256(cand_raw).hexdigest(),
+              "result_bytes_equal": base_raw == cand_raw, "numeric_exception": None}
+    equal = base_raw == cand_raw
+    if not equal and workload == "diagnostics":
+        import numpy as np
+        before = json.loads(base_raw)
+        after = json.loads(cand_raw)
+        assert before["pearson"] == after["pearson"], "Pearson changed"
+        left = before["spearman"].pop("values")
+        right = after["spearman"].pop("values")
+        assert before == after, "IC axes/dtypes/names changed"
+        assert {key: value for key, value in left.items() if key != "data"} == {key: value for key, value in right.items() if key != "data"}
+        left_values = np.frombuffer(base64.b64decode(left["data"]), dtype=np.dtype(left["dtype"]))
+        right_values = np.frombuffer(base64.b64decode(right["data"]), dtype=np.dtype(right["dtype"]))
+        assert np.array_equal(np.isnan(left_values), np.isnan(right_values))
+        finite = np.isfinite(left_values) & np.isfinite(right_values)
+        assert np.array_equal(np.isfinite(left_values), np.isfinite(right_values))
+        error = float(np.max(np.abs(left_values[finite] - right_values[finite]))) if finite.any() else 0.0
+        equal = bool(np.allclose(left_values, right_values, rtol=0, atol=1e-12, equal_nan=True))
+        result["numeric_exception"] = {"path": "$.spearman.values", "maximum_absolute_error": error,
+                                       "absolute_bound": 1e-12, "pearson_and_metadata_exact": True, "nan_masks_exact": True}
+    files_before = {name: value["normalized_sha256"] for name, value in base_output["hashes"]["files"].items()}
+    files_after = {name: value["normalized_sha256"] for name, value in cand_output["hashes"]["files"].items()}
+    result["report_log_files_equal"] = files_before == files_after
+    result["files"] = {"baseline": files_before, "candidate": files_after}
+    result["pass"] = equal and result["report_log_files_equal"]
+    return result
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("baseline")
+    parser.add_argument("candidate")
+    args = parser.parse_args()
+    result = compare_attempts(args.baseline, args.candidate)
+    (Path(os.environ["EFR_PHASE_B2_RUN"]) / "comparison.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result, indent=2), flush=True)
+    assert result["pass"], result

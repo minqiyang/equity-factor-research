@@ -1,0 +1,145 @@
+"""Lossless synthetic result evidence and declared filesystem/timestamp normalization."""
+
+import base64
+from collections.abc import Mapping
+from copy import deepcopy
+import dataclasses
+from datetime import date, datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def encode(value, *, run, candidate, normalize_paths, exclusions, trail="$"):
+    import numpy as np
+    import pandas as pd
+
+    if isinstance(value, Path):
+        return {"type": "Path", "value": encode(str(value), run=run, candidate=candidate, normalize_paths=normalize_paths, exclusions=exclusions, trail=trail)}
+    if isinstance(value, str):
+        normalized = value
+        if normalize_paths:
+            for root, replacement in ((run, "<run>"), (candidate, "<candidate>")):
+                normalized = normalized.replace(str(root), replacement)
+            if normalized != value:
+                exclusions.append({"path": trail, "before": value, "after": normalized})
+        return normalized
+    recurse = lambda item, suffix: encode(item, run=run, candidate=candidate, normalize_paths=normalize_paths, exclusions=exclusions, trail=trail + suffix)
+    if isinstance(value, pd.DataFrame):
+        return {"type": "DataFrame", "index": recurse(value.index, ".index"), "columns": recurse(value.columns, ".columns"),
+                "dtypes": list(map(str, value.dtypes)), "values": recurse(value.to_numpy(), ".values"), "attrs": recurse(value.attrs, ".attrs")}
+    if isinstance(value, pd.Series):
+        return {"type": "Series", "name": recurse(value.name, ".name"), "index": recurse(value.index, ".index"),
+                "dtype": str(value.dtype), "values": recurse(value.to_numpy(), ".values"), "attrs": recurse(value.attrs, ".attrs")}
+    if isinstance(value, pd.Index):
+        return {"type": type(value).__name__, "names": recurse(value.names, ".names"), "dtype": str(value.dtype),
+                "values": recurse(value.tolist(), ".labels"), "freq": str(getattr(value, "freqstr", None))}
+    if isinstance(value, np.ndarray):
+        if value.dtype.hasobject:
+            data = recurse(value.tolist(), ".objects")
+        else:
+            data = base64.b64encode(value.tobytes()).decode("ascii")
+        return {"type": "ndarray", "dtype": value.dtype.str, "shape": list(value.shape), "data": data}
+    if isinstance(value, np.generic):
+        return recurse(value.item(), ".scalar")
+    if isinstance(value, bytes):
+        return {"type": "bytes", "base64": base64.b64encode(value).decode("ascii")}
+    if isinstance(value, (date, datetime)):
+        return {"type": type(value).__name__, "iso": value.isoformat()}
+    if dataclasses.is_dataclass(value):
+        return {"type": type(value).__name__, "fields": {field.name: recurse(getattr(value, field.name), "." + field.name) for field in dataclasses.fields(value)}}
+    if isinstance(value, Mapping):
+        if all(isinstance(key, str) for key in value):
+            return {key: recurse(item, "." + key) for key, item in value.items()}
+        return {"type": "mapping", "items": [[recurse(key, ".key"), recurse(item, ".item")] for key, item in value.items()]}
+    if isinstance(value, (tuple, list)):
+        return {"type": type(value).__name__, "items": [recurse(item, f"[{index}]") for index, item in enumerate(value)]}
+    if isinstance(value, (set, frozenset)):
+        return {"type": type(value).__name__, "items": sorted((recurse(item, ".set") for item in value), key=repr)}
+    if isinstance(value, float):
+        return {"type": "float", "hex": value.hex()}
+    if value is None or isinstance(value, (int, bool)):
+        return value
+    raise TypeError(f"Unrecorded result type at {trail}: {type(value)}")
+
+
+def bytes_json(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
+
+
+def gzip_write(path, data):
+    path.write_bytes(gzip.compress(data, compresslevel=1, mtime=0))
+
+
+def campaign_normalized(payload, exclusions):
+    payload = dict(payload)
+    artifacts = dict(payload["artifacts"])
+    payload["artifacts"] = artifacts
+    manifest = json.loads(payload["bundle_manifest"])
+    detached = deepcopy(payload["detached_root"])
+    record = deepcopy(payload["run_record"])
+    payload["detached_root"] = detached
+    payload["run_record"] = record
+    state = json.loads(payload["attempt_state"])
+    assert set(artifacts) == set(manifest["children"])
+    assert all(digest(artifacts[name]) == expected for name, expected in manifest["children"].items())
+    assert digest(payload["bundle_manifest"]) == detached["bundle_manifest_digest"]
+    assert json.loads(artifacts["run_manifest.json"]) == record
+    assert state["consumed"] is True and state["execution_count"] == 1
+    for key in ("started_at_utc", "finished_at_utc"):
+        exclusions.append({"path": "$.run_record." + key, "before": record[key], "after": "<timestamp>"})
+        record[key] = "<timestamp>"
+    # Preserve every key/content; replace only verified timestamp-derived digests.
+    artifacts["run_manifest.json"] = bytes_json(record)
+    manifest["children"]["run_manifest.json"] = "<timestamp-derived-child-digest>"
+    detached["bundle_manifest_digest"] = "<timestamp-derived-manifest-digest>"
+    payload["bundle_manifest"] = bytes_json(manifest)
+    payload["attempt_state"] = bytes_json(state)
+    return payload
+
+
+def capture_result(result, *, workload, directory, run, candidate):
+    exclusions = []
+    raw = bytes_json(encode(result, run=run, candidate=candidate, normalize_paths=False, exclusions=[]))
+    gzip_write(directory / "raw_result.json.gz", raw)
+    if workload == "campaign":
+        artifacts = directory / "raw_campaign_artifacts"
+        artifacts.mkdir()
+        for name, data in result["artifacts"].items():
+            assert Path(name).name == name
+            (artifacts / name).write_bytes(data)
+        (directory / "bundle_manifest.json").write_bytes(result["bundle_manifest"])
+        (directory / "detached_root.json").write_bytes(bytes_json(result["detached_root"]))
+        (directory / "run_record.json").write_bytes(bytes_json(result["run_record"]))
+        (directory / "attempt_state.json").write_bytes(result["attempt_state"])
+        result = campaign_normalized(result, exclusions)
+    normalized = bytes_json(encode(result, run=run, candidate=candidate, normalize_paths=True, exclusions=exclusions))
+    gzip_write(directory / "normalized_result.json.gz", normalized)
+    files = {}
+    for filename in ("report.md", "log.json"):
+        path = directory / filename
+        if not path.exists():
+            continue
+        raw_file = path.read_bytes()
+        if filename.endswith(".json"):
+            normalized_file = bytes_json(encode(json.loads(raw_file), run=run, candidate=candidate, normalize_paths=True, exclusions=exclusions, trail="$.file." + filename))
+        else:
+            normalized_file = encode(raw_file.decode(), run=run, candidate=candidate, normalize_paths=True, exclusions=exclusions, trail="$.file." + filename).encode()
+        gzip_write(directory / (filename + ".normalized.gz"), normalized_file)
+        files[filename] = {"raw_sha256": digest(raw_file), "normalized_sha256": digest(normalized_file)}
+    (directory / "normalization_exclusions.json").write_text(json.dumps(exclusions, indent=2) + "\n")
+    return {"normalized_result_sha256": digest(normalized), "raw_result_sha256": digest(raw), "files": files}
+
+
+def snapshot_store(store):
+    tables = {}
+    for (name,) in store._conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"):
+        assert name.replace("_", "").isalnum()
+        rows = store._conn.execute(f'SELECT * FROM "{name}"').fetchall()
+        tables[name] = sorted([tuple(row) for row in rows], key=repr)
+    return tables

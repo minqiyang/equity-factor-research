@@ -1,0 +1,5732 @@
+{
+  "date_time_extension": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'naive'",
+            "builtins.str:'aware'",
+            "builtins.str:'delta'",
+            "builtins.str:'period'",
+            "builtins.str:'interval'"
+          ]
+        ],
+        "current_state_digest": "05a583cf2d6c5ca87bc71800a27f2593c32977363299dabd4efdf01f48154dc8",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timestamp",
+                "Timestamp('2020-01-01 00:00:00')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timestamp",
+                "Timestamp('2020-01-01 00:00:00+0000', tz='UTC')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timedelta",
+                "Timedelta('1 days 00:00:00')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Period",
+                "Period('2020-01', 'M')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Interval",
+                "Interval(0, 1, closed='right')"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Period",
+                "Period('2020-02', 'M')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Interval",
+                "Interval(1, 2, closed='right')"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other",
+          "other",
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "datetime64[us]",
+          "datetime64[us, UTC]",
+          "timedelta64[s]",
+          "period[M]",
+          "interval[int64, right]"
+        ],
+        "original_state_digest": "05a583cf2d6c5ca87bc71800a27f2593c32977363299dabd4efdf01f48154dc8",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'naive'",
+            "builtins.str:'aware'",
+            "builtins.str:'delta'",
+            "builtins.str:'period'",
+            "builtins.str:'interval'"
+          ]
+        ],
+        "current_state_digest": "47b3ffe6cda9426a259ebe907a8fbf9f749f38261ee7d781321af6278d18934f",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timestamp",
+                "Timestamp('2020-01-01 00:00:00')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timestamp",
+                "Timestamp('2020-01-01 00:00:00+0000', tz='UTC')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Timedelta",
+                "Timedelta('1 days 00:00:00')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Period",
+                "Period('2020-01', 'M')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Interval",
+                "Interval(0, 1, closed='right')"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NaTType"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Period",
+                "Period('2020-02', 'M')"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "pandas.Interval",
+                "Interval(1, 2, closed='right')"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other",
+          "other",
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "datetime64[us]",
+          "datetime64[us, UTC]",
+          "timedelta64[s]",
+          "period[M]",
+          "interval[int64, right]"
+        ],
+        "original_state_digest": "47b3ffe6cda9426a259ebe907a8fbf9f749f38261ee7d781321af6278d18934f",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      5
+    ],
+    "status": "accepted"
+  },
+  "duplicate_index_zero_columns": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.Index",
+          [
+            "builtins.str:'observation'"
+          ],
+          [
+            "builtins.str:'same'",
+            "builtins.str:'same'"
+          ],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          []
+        ],
+        "current_state_digest": "f5e0490cff71a7ebc3cd7b353bdf7b4115fa588102c8be3f1e64eb2d8256d143",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "f5e0490cff71a7ebc3cd7b353bdf7b4115fa588102c8be3f1e64eb2d8256d143",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.Index",
+          [
+            "builtins.str:'observation'"
+          ],
+          [
+            "builtins.str:'same'",
+            "builtins.str:'same'"
+          ],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          []
+        ],
+        "current_state_digest": "9976aa3d70039aca7fc33645d83ea847869e8645bb83af137eaf488ac8a0c6e4",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "9976aa3d70039aca7fc33645d83ea847869e8645bb83af137eaf488ac8a0c6e4",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      0
+    ],
+    "status": "accepted"
+  },
+  "empty_extension_columns": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.RangeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'int'",
+            "builtins.str:'float'",
+            "builtins.str:'bool'",
+            "builtins.str:'string'"
+          ]
+        ],
+        "current_state_digest": "550b6c706849789f3be09e0020a7b3776140e37c026b5224b9ed0736237e2ffc",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "boolean",
+          "other"
+        ],
+        "original_dtype_names": [
+          "Int64",
+          "Float64",
+          "boolean",
+          "string"
+        ],
+        "original_state_digest": "550b6c706849789f3be09e0020a7b3776140e37c026b5224b9ed0736237e2ffc",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.RangeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'int'",
+            "builtins.str:'float'",
+            "builtins.str:'bool'",
+            "builtins.str:'string'"
+          ]
+        ],
+        "current_state_digest": "670b8819938b4faa78edcfa12fae2730c9750eb845d9e9466f50d7701b49367c",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "boolean",
+          "other"
+        ],
+        "original_dtype_names": [
+          "Int64",
+          "Float64",
+          "boolean",
+          "string"
+        ],
+        "original_state_digest": "670b8819938b4faa78edcfa12fae2730c9750eb845d9e9466f50d7701b49367c",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      4
+    ],
+    "status": "accepted"
+  },
+  "float_widths_nonfinite": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'float16'",
+            "builtins.str:'float32'",
+            "builtins.str:'float64'"
+          ]
+        ],
+        "current_state_digest": "95aafef92ed7b37cdce5184efba84a6d49ebbdf267eddf7f2a92d00362520417",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x0.0000000000001p-1022"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "inf"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-inf"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.fffffffffffffp+1023"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float16",
+          "float32",
+          "float64"
+        ],
+        "original_state_digest": "95aafef92ed7b37cdce5184efba84a6d49ebbdf267eddf7f2a92d00362520417",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'float16'",
+            "builtins.str:'float32'",
+            "builtins.str:'float64'"
+          ]
+        ],
+        "current_state_digest": "ecb276d514bb0ebb2731f250090adcd86bbdc55d6a0496b93669e0b2955e50b9",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x0.0000000000001p-1022"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "inf"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-inf"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.fffffffffffffp+1023"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float16",
+          "float32",
+          "float64"
+        ],
+        "original_state_digest": "ecb276d514bb0ebb2731f250090adcd86bbdc55d6a0496b93669e0b2955e50b9",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      3
+    ],
+    "status": "accepted"
+  },
+  "heterogeneous_object": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'fraction'",
+            "builtins.str:'missing'",
+            "builtins.str:'boolean'",
+            "builtins.str:'numeric'"
+          ]
+        ],
+        "current_state_digest": "3fde50e930e53dddb67a607ef9ab8449f833c82f6ad23282edeb4201805c38b0",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1267650600228229401496703205376"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "builtins.NoneType"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "0x1.0000000000000p+0",
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "decimal.Decimal",
+                "Decimal('1.20')"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "object",
+          "object",
+          "object",
+          "object",
+          "object"
+        ],
+        "original_dtype_names": [
+          "object",
+          "object",
+          "object",
+          "object",
+          "object"
+        ],
+        "original_state_digest": "3fde50e930e53dddb67a607ef9ab8449f833c82f6ad23282edeb4201805c38b0",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'fraction'",
+            "builtins.str:'missing'",
+            "builtins.str:'boolean'",
+            "builtins.str:'numeric'"
+          ]
+        ],
+        "current_state_digest": "babc4a645cb4db59b9b755e3e34a017e952e11a934540c5398d654b4c6a3b17a",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1267650600228229401496703205376"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "builtins.NoneType"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "0x1.0000000000000p+0",
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "decimal.Decimal",
+                "Decimal('1.20')"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "object",
+          "object",
+          "object",
+          "object",
+          "object"
+        ],
+        "original_dtype_names": [
+          "object",
+          "object",
+          "object",
+          "object",
+          "object"
+        ],
+        "original_state_digest": "babc4a645cb4db59b9b755e3e34a017e952e11a934540c5398d654b4c6a3b17a",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      5
+    ],
+    "status": "accepted"
+  },
+  "invalid_prices_NoneType": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "invalid_prices_int": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "invalid_prices_list": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "invalid_signals_NoneType": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "invalid_signals_int": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "invalid_signals_list": {
+    "asset": null,
+    "date": null,
+    "message": "source_axes_invalid: source provenance requires pandas DataFrame price and signal sources",
+    "reason": "source_axes_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "mixed_real_complex": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'real'",
+            "builtins.str:'complex'"
+          ]
+        ],
+        "current_state_digest": "e95e5cb58b34ec975742bf76999d3906e2c56a7160e0ac87c12cf055d2a285f0",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "0x1.0000000000000p+0",
+                "0x1.0000000000000p+1"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "-0x0.0p+0",
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "complex"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "complex128"
+        ],
+        "original_state_digest": "e95e5cb58b34ec975742bf76999d3906e2c56a7160e0ac87c12cf055d2a285f0",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'real'",
+            "builtins.str:'complex'"
+          ]
+        ],
+        "current_state_digest": "161219e160388db548591658545c9387781e62651bcc6b1272f5461c062b006e",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "0x1.0000000000000p+0",
+                "0x1.0000000000000p+1"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "complex",
+              "payload": [
+                "-0x0.0p+0",
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "complex"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "complex128"
+        ],
+        "original_state_digest": "161219e160388db548591658545c9387781e62651bcc6b1272f5461c062b006e",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "mixed_uint64_float": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'large'",
+            "builtins.str:'real'"
+          ]
+        ],
+        "current_state_digest": "ec88af07ee0199245d8c2ae81cf6b5c752b4fe5ef0ed2d9fdcd032b767f4d574",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.8000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775811"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "uint64",
+          "float64"
+        ],
+        "original_state_digest": "ec88af07ee0199245d8c2ae81cf6b5c752b4fe5ef0ed2d9fdcd032b767f4d574",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'large'",
+            "builtins.str:'real'"
+          ]
+        ],
+        "current_state_digest": "b3f2860c90769e1abc80d9f4eb26de497c8200aedbb8aee05195b065f4f3cfa7",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.8000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775811"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "uint64",
+          "float64"
+        ],
+        "original_state_digest": "b3f2860c90769e1abc80d9f4eb26de497c8200aedbb8aee05195b065f4f3cfa7",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "multiindex_axes": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'row'"
+          ],
+          [
+            "builtins.tuple:('a', 1)",
+            "builtins.tuple:('a', 1)"
+          ],
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'col'"
+          ],
+          [
+            "builtins.tuple:('x', 1)",
+            "builtins.tuple:('x', 1)"
+          ]
+        ],
+        "current_state_digest": "7486b8242cce39885ca8731cd0cdcf95dbb94de9a13b4dd130b2f785904fc28f",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "2"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "3"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "4"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "int64",
+          "int64"
+        ],
+        "original_state_digest": "7486b8242cce39885ca8731cd0cdcf95dbb94de9a13b4dd130b2f785904fc28f",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'row'"
+          ],
+          [
+            "builtins.tuple:('a', 1)",
+            "builtins.tuple:('a', 1)"
+          ],
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'col'"
+          ],
+          [
+            "builtins.tuple:('x', 1)",
+            "builtins.tuple:('x', 1)"
+          ]
+        ],
+        "current_state_digest": "b28cd019f6a885a7d2fd45e65155f0d4d1177a6a26a8c16c080c710f8313fc3e",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "2"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "3"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "4"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "int64",
+          "int64"
+        ],
+        "original_state_digest": "b28cd019f6a885a7d2fd45e65155f0d4d1177a6a26a8c16c080c710f8313fc3e",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "multiindex_zero_columns": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'row'"
+          ],
+          [
+            "builtins.tuple:('a', 1)",
+            "builtins.tuple:('a', 1)"
+          ],
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'col'"
+          ],
+          []
+        ],
+        "current_state_digest": "2168e2021c74a2cfbf149812afb191c7315bd6a574b223c72fee1333be8e0dae",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "2168e2021c74a2cfbf149812afb191c7315bd6a574b223c72fee1333be8e0dae",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'row'"
+          ],
+          [
+            "builtins.tuple:('a', 1)",
+            "builtins.tuple:('a', 1)"
+          ],
+          "pandas.MultiIndex",
+          [
+            "builtins.str:'group'",
+            "builtins.str:'col'"
+          ],
+          []
+        ],
+        "current_state_digest": "8c3c68a83655f00ce60195b4a260dea4aaff48c87e8725bebafd5165ff9aced1",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "8c3c68a83655f00ce60195b4a260dea4aaff48c87e8725bebafd5165ff9aced1",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      0
+    ],
+    "status": "accepted"
+  },
+  "named_duplicate_axes": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          [
+            "builtins.str:'asset'",
+            "builtins.str:'asset'"
+          ]
+        ],
+        "current_state_digest": "11238e1040a7e5749133ad060ef46dbcbaa460c316f123ac2c975ca5780ec993",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+1"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "11238e1040a7e5749133ad060ef46dbcbaa460c316f123ac2c975ca5780ec993",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          [
+            "builtins.str:'asset'",
+            "builtins.str:'asset'"
+          ]
+        ],
+        "current_state_digest": "0f35a3e01716e235ce4a51de1613eb598d2051d04926a23a8f341c277f363448",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+1"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "0f35a3e01716e235ce4a51de1613eb598d2051d04926a23a8f341c277f363448",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "named_zero_axes": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.Index",
+          [
+            "builtins.str:'observed'"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          []
+        ],
+        "current_state_digest": "0ab34e0661f0777408f174bdc895882c9f8856d1d19eabaf78b0572d3864729f",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "0ab34e0661f0777408f174bdc895882c9f8856d1d19eabaf78b0572d3864729f",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.Index",
+          [
+            "builtins.str:'observed'"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          []
+        ],
+        "current_state_digest": "60c6c42e44e723959fc336d6398ef1855951509bcf48ba92d5225674f27bc9a0",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "60c6c42e44e723959fc336d6398ef1855951509bcf48ba92d5225674f27bc9a0",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      0
+    ],
+    "status": "accepted"
+  },
+  "native_integer_widths": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'int8'",
+            "builtins.str:'int64'",
+            "builtins.str:'uint64'",
+            "builtins.str:'bool'"
+          ]
+        ],
+        "current_state_digest": "97812af542fdbbbef2ba5b82a2025ca45b2c798de44295e3c5d4c98fd2813e95",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "-128"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-9223372036854775808"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "0"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "127"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775807"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "18446744073709551615"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "boolean"
+        ],
+        "original_dtype_names": [
+          "int8",
+          "int64",
+          "uint64",
+          "bool"
+        ],
+        "original_state_digest": "97812af542fdbbbef2ba5b82a2025ca45b2c798de44295e3c5d4c98fd2813e95",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'int8'",
+            "builtins.str:'int64'",
+            "builtins.str:'uint64'",
+            "builtins.str:'bool'"
+          ]
+        ],
+        "current_state_digest": "d84d14b32196cd57477c001a14281214a45a09a46b281c6b4c5e84a1208db3ad",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "-128"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-9223372036854775808"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "0"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "127"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775807"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "18446744073709551615"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "boolean"
+        ],
+        "original_dtype_names": [
+          "int8",
+          "int64",
+          "uint64",
+          "bool"
+        ],
+        "original_state_digest": "d84d14b32196cd57477c001a14281214a45a09a46b281c6b4c5e84a1208db3ad",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      4
+    ],
+    "status": "accepted"
+  },
+  "noncontiguous_selection": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'bool'",
+            "builtins.str:'uint64'",
+            "builtins.str:'int64'",
+            "builtins.str:'int8'"
+          ]
+        ],
+        "current_state_digest": "1ea4e6344f93b70719288aba9a861db865fcd27fdfef569c78578c707b74d4ff",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "18446744073709551615"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775807"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "127"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "0"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-9223372036854775808"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-128"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "boolean",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "bool",
+          "uint64",
+          "int64",
+          "int8"
+        ],
+        "original_state_digest": "1ea4e6344f93b70719288aba9a861db865fcd27fdfef569c78578c707b74d4ff",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'bool'",
+            "builtins.str:'uint64'",
+            "builtins.str:'int64'",
+            "builtins.str:'int8'"
+          ]
+        ],
+        "current_state_digest": "32f8e82a353e6bf65605361e9e1fb97d046895b82860c1e6904714dd1f676c0e",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "boolean",
+              "payload": [
+                "false"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "18446744073709551615"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775807"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "127"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "0"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-9223372036854775808"
+              ]
+            },
+            {
+              "kind": "integer",
+              "payload": [
+                "-128"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "boolean",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "bool",
+          "uint64",
+          "int64",
+          "int8"
+        ],
+        "original_state_digest": "32f8e82a353e6bf65605361e9e1fb97d046895b82860c1e6904714dd1f676c0e",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      4
+    ],
+    "status": "accepted"
+  },
+  "nullable_fraction": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'fraction'"
+          ]
+        ],
+        "current_state_digest": "0ccc3538249a2c33adb796f397c48dced8edbf1cc6924bf010d2c346a6853beb",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "builtins.NoneType"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "object"
+        ],
+        "original_dtype_names": [
+          "Int64",
+          "object"
+        ],
+        "original_state_digest": "0ccc3538249a2c33adb796f397c48dced8edbf1cc6924bf010d2c346a6853beb",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'fraction'"
+          ]
+        ],
+        "current_state_digest": "1d7f58580b023898cb88e52a77122b0cd2b9a872af36a5863cd5ac388978637f",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "builtins.NoneType"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "object"
+        ],
+        "original_dtype_names": [
+          "Int64",
+          "object"
+        ],
+        "original_state_digest": "1d7f58580b023898cb88e52a77122b0cd2b9a872af36a5863cd5ac388978637f",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "nullable_unsigned_boolean_float": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'unsigned'",
+            "builtins.str:'boolean'",
+            "builtins.str:'float'"
+          ]
+        ],
+        "current_state_digest": "1ab3081d39e3ff531fd4939e48a2b696b9507b00ed369d5cef9cacc6aeaaa8a4",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "boolean",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "UInt64",
+          "boolean",
+          "Float64"
+        ],
+        "original_state_digest": "1ab3081d39e3ff531fd4939e48a2b696b9507b00ed369d5cef9cacc6aeaaa8a4",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'unsigned'",
+            "builtins.str:'boolean'",
+            "builtins.str:'float'"
+          ]
+        ],
+        "current_state_digest": "219578b78a2fdc4fbf7fa0855bd15cb81346c03f684039122fa773cccb7761b6",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "9223372036854775809"
+              ]
+            },
+            {
+              "kind": "boolean",
+              "payload": [
+                "true"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "boolean",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "UInt64",
+          "boolean",
+          "Float64"
+        ],
+        "original_state_digest": "219578b78a2fdc4fbf7fa0855bd15cb81346c03f684039122fa773cccb7761b6",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      3
+    ],
+    "status": "accepted"
+  },
+  "numeric_categorical": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'mixed'"
+          ]
+        ],
+        "current_state_digest": "61cd6e6f90d4753cc09141e3db5f2b1052f5135105080e19a1947fde3bfedaf2",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "2"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "category",
+          "category"
+        ],
+        "original_state_digest": "61cd6e6f90d4753cc09141e3db5f2b1052f5135105080e19a1947fde3bfedaf2",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'integer'",
+            "builtins.str:'mixed'"
+          ]
+        ],
+        "current_state_digest": "d6610a00668a81e128b37db27e27aa2fecc88af3224f587bfe5fefc02dffe73f",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "1"
+              ]
+            },
+            {
+              "kind": "fraction",
+              "payload": [
+                "1",
+                "3"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "integer",
+              "payload": [
+                "2"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "category",
+          "category"
+        ],
+        "original_state_digest": "d6610a00668a81e128b37db27e27aa2fecc88af3224f587bfe5fefc02dffe73f",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "shape_0x0": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "35ddcde2ad1884b832905190f020129b6bafb6022d4e5d31bccdac9a7379dc0b",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "35ddcde2ad1884b832905190f020129b6bafb6022d4e5d31bccdac9a7379dc0b",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "9ce0e2d5590650afcf72ed3850b4f53d6ab4eb04428a0cf59d13d12074eb23fe",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "9ce0e2d5590650afcf72ed3850b4f53d6ab4eb04428a0cf59d13d12074eb23fe",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      0
+    ],
+    "status": "accepted"
+  },
+  "shape_0x1": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0"
+          ]
+        ],
+        "current_state_digest": "6bb1f8073b0bd5a8fcb104820ca94d19bd5b4ffe53a5101300de815111f8eb6b",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "6bb1f8073b0bd5a8fcb104820ca94d19bd5b4ffe53a5101300de815111f8eb6b",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0"
+          ]
+        ],
+        "current_state_digest": "44c064a9fe8c8db0fa8a71d851aa351122538d694ccae9f6bba54a9098b597df",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "44c064a9fe8c8db0fa8a71d851aa351122538d694ccae9f6bba54a9098b597df",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      1
+    ],
+    "status": "accepted"
+  },
+  "shape_0x2": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1"
+          ]
+        ],
+        "current_state_digest": "eb9f1bbe7cb30b01c331db384ea30fb0360fcb95569a3f5a5a820896e1d9661b",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "eb9f1bbe7cb30b01c331db384ea30fb0360fcb95569a3f5a5a820896e1d9661b",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1"
+          ]
+        ],
+        "current_state_digest": "9c7be18c1932cece6d58d76dee12dd4904cc8b1bb512147912f9ec437d0bbd15",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "9c7be18c1932cece6d58d76dee12dd4904cc8b1bb512147912f9ec437d0bbd15",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      2
+    ],
+    "status": "accepted"
+  },
+  "shape_0x5": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1",
+            "builtins.int:2",
+            "builtins.int:3",
+            "builtins.int:4"
+          ]
+        ],
+        "current_state_digest": "c4bc43f8bf215a4fac44a6b9cef32599f32fb8a68ef13e560fd51cb46b1af50b",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64",
+          "float64",
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "c4bc43f8bf215a4fac44a6b9cef32599f32fb8a68ef13e560fd51cb46b1af50b",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1",
+            "builtins.int:2",
+            "builtins.int:3",
+            "builtins.int:4"
+          ]
+        ],
+        "current_state_digest": "3c0ec763c317cb1dac8e5082298fdf9d5bcf3c30c6874edbdba9f898d8993581",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64",
+          "float64",
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "3c0ec763c317cb1dac8e5082298fdf9d5bcf3c30c6874edbdba9f898d8993581",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      5
+    ],
+    "status": "accepted"
+  },
+  "shape_1x0": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "9cda81038d7e737071b9920917a8bede1b64459f8b23bc870694dd14e6e26773",
+        "mutations": [],
+        "original_cells": [
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "9cda81038d7e737071b9920917a8bede1b64459f8b23bc870694dd14e6e26773",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "cf09ad1ef0e9d1435eece4d0411e81a8ddf5c981b0cca645e60f310bce96a881",
+        "mutations": [],
+        "original_cells": [
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "cf09ad1ef0e9d1435eece4d0411e81a8ddf5c981b0cca645e60f310bce96a881",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      1,
+      0
+    ],
+    "status": "accepted"
+  },
+  "shape_1x1": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0"
+          ]
+        ],
+        "current_state_digest": "592dd825183213a1062e5883afebfd16335e07defc73cc5f79fb8816df0321ed",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "592dd825183213a1062e5883afebfd16335e07defc73cc5f79fb8816df0321ed",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0"
+          ]
+        ],
+        "current_state_digest": "ac8157e5e31dfd3a55719525cf61eb4be26e8a2a3d271fc0a5161ecd53116821",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "ac8157e5e31dfd3a55719525cf61eb4be26e8a2a3d271fc0a5161ecd53116821",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      1,
+      1
+    ],
+    "status": "accepted"
+  },
+  "shape_2x0": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "eae69de8f97556d7a3022e1d56f4258d7c13b675a879bbc81f4219ed8efecf4b",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "eae69de8f97556d7a3022e1d56f4258d7c13b675a879bbc81f4219ed8efecf4b",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "1c1961a9c634b0a20fc3459f9a1526cea35f8868272496fba8229722caa84298",
+        "mutations": [],
+        "original_cells": [
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "1c1961a9c634b0a20fc3459f9a1526cea35f8868272496fba8229722caa84298",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      0
+    ],
+    "status": "accepted"
+  },
+  "shape_2x2": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1"
+          ]
+        ],
+        "current_state_digest": "4587389b64941883cd07bab7ce351806165cc438ba94a5872d2c8ca3d6ee4589",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "4587389b64941883cd07bab7ce351806165cc438ba94a5872d2c8ca3d6ee4589",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1"
+          ]
+        ],
+        "current_state_digest": "b52fd176d4d50681ba8d60c677cf7877a6ccaebac98db9d8048d9fe5d823974a",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "b52fd176d4d50681ba8d60c677cf7877a6ccaebac98db9d8048d9fe5d823974a",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "shape_5x0": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-04 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-05 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "1a2ef17cae2b42c3de1889ebfd77d0fd5791f87efe17d2ce2af689dcabb08e7a",
+        "mutations": [],
+        "original_cells": [
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "1a2ef17cae2b42c3de1889ebfd77d0fd5791f87efe17d2ce2af689dcabb08e7a",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-04 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-05 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          []
+        ],
+        "current_state_digest": "0ad1715bd66cc0f34bce0f10d463e40f37c6e90af4f308b9114c466256ecf34a",
+        "mutations": [],
+        "original_cells": [
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "original_dtype_families": [],
+        "original_dtype_names": [],
+        "original_state_digest": "0ad1715bd66cc0f34bce0f10d463e40f37c6e90af4f308b9114c466256ecf34a",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      5,
+      0
+    ],
+    "status": "accepted"
+  },
+  "shape_5x3": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-04 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-05 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1",
+            "builtins.int:2"
+          ]
+        ],
+        "current_state_digest": "cf1e30071d490ecab95688a3f68d464d33d8487ca364ab595cba94881c69fbaa",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "cf1e30071d490ecab95688a3f68d464d33d8487ca364ab595cba94881c69fbaa",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-04 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-05 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.int:0",
+            "builtins.int:1",
+            "builtins.int:2"
+          ]
+        ],
+        "current_state_digest": "a49a1723e0d6c774f71887b4fd1ef36944528b02b8722b4b1acb3232fa10e893",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "a49a1723e0d6c774f71887b4fd1ef36944528b02b8722b4b1acb3232fa10e893",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      5,
+      3
+    ],
+    "status": "accepted"
+  },
+  "sparse_numeric": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'sparse'",
+            "builtins.str:'real'"
+          ]
+        ],
+        "current_state_digest": "a4c32e37c0a64b0b25e864190db5146eabdc75da27c90d394593b4e84299c4be",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "Sparse[float64, 0.0]",
+          "float64"
+        ],
+        "original_state_digest": "a4c32e37c0a64b0b25e864190db5146eabdc75da27c90d394593b4e84299c4be",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'sparse'",
+            "builtins.str:'real'"
+          ]
+        ],
+        "current_state_digest": "1acc7226806c86ae77151bb7bd8cedba7c63f5206b2517aa2f145630d3652a74",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x0.0p+0"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            },
+            {
+              "kind": "real_float",
+              "payload": [
+                "-0x0.0p+0"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "Sparse[float64, 0.0]",
+          "float64"
+        ],
+        "original_state_digest": "1acc7226806c86ae77151bb7bd8cedba7c63f5206b2517aa2f145630d3652a74",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "string_and_categorical": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'string'",
+            "builtins.str:'category'"
+          ]
+        ],
+        "current_state_digest": "bdd6a4770b7a34d11a0c6e5df9728ff652e488ac58acc14c9c43d8023f2a2c7f",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "other",
+              "payload": [
+                "builtins.str",
+                "'text'"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "builtins.str",
+                "'x'"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "string",
+          "category"
+        ],
+        "original_state_digest": "bdd6a4770b7a34d11a0c6e5df9728ff652e488ac58acc14c9c43d8023f2a2c7f",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'string'",
+            "builtins.str:'category'"
+          ]
+        ],
+        "current_state_digest": "33b6d93bf48a517917f362a2bb3cd471471e241b8ea4fe018e83bb60f5241772",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "other",
+              "payload": [
+                "builtins.str",
+                "'text'"
+              ]
+            },
+            {
+              "kind": "other",
+              "payload": [
+                "builtins.str",
+                "'x'"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "missing_other",
+              "payload": [
+                "pandas.api.typing.NAType"
+              ]
+            },
+            {
+              "kind": "ieee_nan",
+              "payload": []
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "other",
+          "other"
+        ],
+        "original_dtype_names": [
+          "string",
+          "category"
+        ],
+        "original_state_digest": "33b6d93bf48a517917f362a2bb3cd471471e241b8ea4fe018e83bb60f5241772",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      2
+    ],
+    "status": "accepted"
+  },
+  "tracked_chain_prices": [
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      }
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+          "mutations": [
+            {
+              "after_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+              "column_position": 0,
+              "record_digest": "4c5b8d5ffa2087ee7bd012397e4b9c7cd0b9412b2656fde62bb3fcfa5d1a4c8c",
+              "row_position": 0,
+              "sequence": 0
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+          "mutations": [
+            {
+              "after_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+              "column_position": 0,
+              "record_digest": "4c5b8d5ffa2087ee7bd012397e4b9c7cd0b9412b2656fde62bb3fcfa5d1a4c8c",
+              "row_position": 0,
+              "sequence": 0
+            },
+            {
+              "after_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+              "assigned_value": {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+              "column_position": 0,
+              "record_digest": "8d3e33d6752144b3c4f66af1fd5cd1b6c8488a99f29237ad176a71b9b1a88117",
+              "row_position": 1,
+              "sequence": 1
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "-0x0.0p+0",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.9800000000000p+6",
+                  "0x0.0p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "complex"
+          ],
+          "original_dtype_names": [
+            "complex128"
+          ],
+          "original_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "245aa85afa55ba39b9da2fba3e3210b8526492f41da6ddb5a990279ae8fd0c61",
+          "mutations": [
+            {
+              "after_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+              "column_position": 0,
+              "record_digest": "4c5b8d5ffa2087ee7bd012397e4b9c7cd0b9412b2656fde62bb3fcfa5d1a4c8c",
+              "row_position": 0,
+              "sequence": 0
+            },
+            {
+              "after_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+              "assigned_value": {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "b70116a86a668ac1105a53b242718a23f41fd259726e6552f39c9a2e9bf69ad4",
+              "column_position": 0,
+              "record_digest": "8d3e33d6752144b3c4f66af1fd5cd1b6c8488a99f29237ad176a71b9b1a88117",
+              "row_position": 1,
+              "sequence": 1
+            },
+            {
+              "after_state_digest": "245aa85afa55ba39b9da2fba3e3210b8526492f41da6ddb5a990279ae8fd0c61",
+              "assigned_value": {
+                "kind": "ieee_nan",
+                "payload": []
+              },
+              "before_state_digest": "076d709d79ea733fe651131d5adaeaf0d78bfcd71eaa075ecb600f05559d5865",
+              "column_position": 0,
+              "record_digest": "ac1b944fbfc80f8752e4a87d07a28efc1e5872e72b7cdb5fd73a6b5f6e58ccdb",
+              "row_position": 2,
+              "sequence": 2
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "245aa85afa55ba39b9da2fba3e3210b8526492f41da6ddb5a990279ae8fd0c61",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "-0x0.0p+0",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "nan",
+                  "0x0.0p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "complex"
+          ],
+          "original_dtype_names": [
+            "complex128"
+          ],
+          "original_state_digest": "245aa85afa55ba39b9da2fba3e3210b8526492f41da6ddb5a990279ae8fd0c61",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    }
+  ],
+  "tracked_chain_signals": [
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      }
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+          "mutations": [
+            {
+              "after_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+              "column_position": 0,
+              "record_digest": "7b5aaedfdf4c85d3522eb07da097d4993a19f468e45a16d99f1a9a9077f47557",
+              "row_position": 0,
+              "sequence": 0
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+          "mutations": [
+            {
+              "after_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+              "column_position": 0,
+              "record_digest": "7b5aaedfdf4c85d3522eb07da097d4993a19f468e45a16d99f1a9a9077f47557",
+              "row_position": 0,
+              "sequence": 0
+            },
+            {
+              "after_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+              "assigned_value": {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+              "column_position": 0,
+              "record_digest": "09f27e746e677312eb41cd47b04ac47f8253b66253a36fe0ade894e52f349f65",
+              "row_position": 1,
+              "sequence": 1
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "-0x0.0p+0",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.051eb851eb852p+0",
+                  "0x0.0p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "complex"
+          ],
+          "original_dtype_names": [
+            "complex128"
+          ],
+          "original_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    },
+    {
+      "capture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "a5bd40ddba23886da1a4fa390cee06f901fde582baa60319851e2988acd9412d",
+          "mutations": [
+            {
+              "after_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+              "assigned_value": {
+                "kind": "real_float",
+                "payload": [
+                  "-0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+              "column_position": 0,
+              "record_digest": "7b5aaedfdf4c85d3522eb07da097d4993a19f468e45a16d99f1a9a9077f47557",
+              "row_position": 0,
+              "sequence": 0
+            },
+            {
+              "after_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+              "assigned_value": {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              },
+              "before_state_digest": "519d37a913b4a33eb6bff29a83bdcb8d77baff791c2958b6015cca167d48abb9",
+              "column_position": 0,
+              "record_digest": "09f27e746e677312eb41cd47b04ac47f8253b66253a36fe0ade894e52f349f65",
+              "row_position": 1,
+              "sequence": 1
+            },
+            {
+              "after_state_digest": "a5bd40ddba23886da1a4fa390cee06f901fde582baa60319851e2988acd9412d",
+              "assigned_value": {
+                "kind": "ieee_nan",
+                "payload": []
+              },
+              "before_state_digest": "e4e8fdcd4d0b53cfee926c5b65af5fcfcf71052c88e7201ec50ba900e3f8c286",
+              "column_position": 0,
+              "record_digest": "da80c0574d5f58560b70e4e9a05eb9545e5a0acfb8b4f4afe20fcb1bc98db39e",
+              "row_position": 2,
+              "sequence": 2
+            }
+          ],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.0000000000000p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.028f5c28f5c29p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.051eb851eb852p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7875cd52f8726057e5d1c0b7fd435ee61752aab767b61602496d3dad599cea2e",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "recapture": {
+        "prices": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9000000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9400000000000p+6"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "real_float",
+                "payload": [
+                  "0x1.9800000000000p+6"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "real_numeric"
+          ],
+          "original_dtype_names": [
+            "float64"
+          ],
+          "original_state_digest": "7068e09822f947458c1900438acdf0e0cfa3b5dd805975512da3a0115914b953",
+          "role": "prices",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        },
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+        "signals": {
+          "axis_fingerprint": [
+            "source_axis_v1",
+            "pandas.DatetimeIndex",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "pandas.Timestamp:Timestamp('2020-01-01 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-02 00:00:00')",
+              "pandas.Timestamp:Timestamp('2020-01-03 00:00:00')"
+            ],
+            "pandas.Index",
+            [
+              "builtins.NoneType:None"
+            ],
+            [
+              "builtins.str:'asset'"
+            ]
+          ],
+          "current_state_digest": "a5bd40ddba23886da1a4fa390cee06f901fde582baa60319851e2988acd9412d",
+          "mutations": [],
+          "original_cells": [
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "-0x0.0p+0",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "0x1.0000000000000p+1",
+                  "0x0.0p+0"
+                ]
+              }
+            ],
+            [
+              {
+                "kind": "complex",
+                "payload": [
+                  "nan",
+                  "0x0.0p+0"
+                ]
+              }
+            ]
+          ],
+          "original_dtype_families": [
+            "complex"
+          ],
+          "original_dtype_names": [
+            "complex128"
+          ],
+          "original_state_digest": "a5bd40ddba23886da1a4fa390cee06f901fde582baa60319851e2988acd9412d",
+          "role": "signals",
+          "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+        }
+      },
+      "status": "accepted"
+    }
+  ],
+  "unsorted_timezone_dates": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00+0000', tz='UTC')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00+0000', tz='UTC')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'asset'"
+          ]
+        ],
+        "current_state_digest": "45757ba48248df4ec4edf708b1f48e5dad6689d9561fc8e9e2d3da8c81220ed1",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+1"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "45757ba48248df4ec4edf708b1f48e5dad6689d9561fc8e9e2d3da8c81220ed1",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [
+            "pandas.Timestamp:Timestamp('2020-01-02 00:00:00+0000', tz='UTC')",
+            "pandas.Timestamp:Timestamp('2020-01-01 00:00:00+0000', tz='UTC')"
+          ],
+          "pandas.Index",
+          [
+            "builtins.NoneType:None"
+          ],
+          [
+            "builtins.str:'asset'"
+          ]
+        ],
+        "current_state_digest": "a1e82db571a554538b3a271274fdf02c268cac4197d36ec51c0fb6e6ee3478c0",
+        "mutations": [],
+        "original_cells": [
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+0"
+              ]
+            }
+          ],
+          [
+            {
+              "kind": "real_float",
+              "payload": [
+                "0x1.0000000000000p+1"
+              ]
+            }
+          ]
+        ],
+        "original_dtype_families": [
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64"
+        ],
+        "original_state_digest": "a1e82db571a554538b3a271274fdf02c268cac4197d36ec51c0fb6e6ee3478c0",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      2,
+      1
+    ],
+    "status": "accepted"
+  },
+  "unsupported_custom_real": {
+    "asset": null,
+    "date": null,
+    "message": "source_provenance_invalid: custom numeric source cells are not supported",
+    "reason": "source_provenance_invalid",
+    "status": "rejected",
+    "type": "backtest.portfolio.BacktestValidationError"
+  },
+  "zero_rows_duplicate_columns": {
+    "capture": {
+      "prices": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          [
+            "builtins.str:'same'",
+            "builtins.str:'same'"
+          ]
+        ],
+        "current_state_digest": "0a9d64066a945491a68c2814d8d779eeaf4b78fb9edc6660b6513085d04a5070",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "0a9d64066a945491a68c2814d8d779eeaf4b78fb9edc6660b6513085d04a5070",
+        "role": "prices",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      },
+      "schema_version": "tracked_pre_mutation_source_snapshot_v1",
+      "signals": {
+        "axis_fingerprint": [
+          "source_axis_v1",
+          "pandas.DatetimeIndex",
+          [
+            "builtins.str:'observed'"
+          ],
+          [],
+          "pandas.Index",
+          [
+            "builtins.str:'listing'"
+          ],
+          [
+            "builtins.str:'same'",
+            "builtins.str:'same'"
+          ]
+        ],
+        "current_state_digest": "b29a1a8b641bd495b4fc8d1b1ce1a6df008808831b213c0ab95665c327939401",
+        "mutations": [],
+        "original_cells": [],
+        "original_dtype_families": [
+          "real_numeric",
+          "real_numeric"
+        ],
+        "original_dtype_names": [
+          "float64",
+          "float64"
+        ],
+        "original_state_digest": "b29a1a8b641bd495b4fc8d1b1ce1a6df008808831b213c0ab95665c327939401",
+        "role": "signals",
+        "schema_version": "tracked_pre_mutation_source_snapshot_v1"
+      }
+    },
+    "shape": [
+      0,
+      2
+    ],
+    "status": "accepted"
+  }
+}

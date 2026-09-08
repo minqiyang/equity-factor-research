@@ -1,0 +1,52 @@
+{
+  "protocol": "Seven sequential interleaved baseline/B1/B2 triples per case. Reverse the triple on even repetitions and rotate the starting variant. One warmup then one measured unprofiled call per fresh process. No overlapping batches. B1-to-B2 comparison is required in addition to baseline comparisons.",
+  "variants": {
+    "baseline": "baseline",
+    "b1": "evidence/phase_b1/checkpoints/candidate_002",
+    "b2": "repair_b2/work"
+  },
+  "constructors": "Preserved A1/B1 synthetic/public-fixture constructors in cloned scripts/workload.py. Shapes are not reduced.",
+  "focused_cases": [
+    {"id": "fixture_all_configured", "workload": "fixture", "rows": 160, "assets": 12},
+    {"id": "diagnostics_504x100_sparse", "workload": "diagnostics", "rows": 504, "assets": 100}
+  ],
+  "cases": [
+    {"id": "campaign_504x100", "workload": "campaign", "rows": 504, "assets": 100},
+    {"id": "campaign_84x10_below_floor", "workload": "campaign", "rows": 84, "assets": 10},
+    {"id": "backtest_160x12", "workload": "backtest", "rows": 160, "assets": 12},
+    {"id": "backtest_504x100", "workload": "backtest", "rows": 504, "assets": 100},
+    {"id": "features_160x12", "workload": "features", "rows": 160, "assets": 12},
+    {"id": "features_504x100", "workload": "features", "rows": 504, "assets": 100},
+    {"id": "features_1260x500", "workload": "features", "rows": 1260, "assets": 500},
+    {"id": "labels_1260x100", "workload": "labels", "rows": 1260, "assets": 100},
+    {"id": "diagnostics_504x100_sparse", "workload": "diagnostics", "rows": 504, "assets": 100},
+    {"id": "sweep_160x12_eight_cases", "workload": "sweep", "rows": 160, "assets": 12},
+    {"id": "fixture_all_configured", "workload": "fixture", "rows": 160, "assets": 12},
+    {"id": "ledger_a", "workload": "ledger_a", "rows": 160, "assets": 12, "catalog_extra": 0},
+    {"id": "ledger_a_1000", "workload": "ledger_a", "rows": 160, "assets": 12, "catalog_extra": 1000},
+    {"id": "ledger_b", "workload": "ledger_b", "rows": 160, "assets": 12, "catalog_extra": 0},
+    {"id": "ledger_b_1000", "workload": "ledger_b", "rows": 160, "assets": 12, "catalog_extra": 1000},
+    {"id": "registry_30", "workload": "registry", "rows": 30, "assets": 12},
+    {"id": "manifest_20", "workload": "manifest", "rows": 20, "assets": 12},
+    {"id": "inference_120_20000_retained", "workload": "inference", "rows": 120, "assets": 12, "replicates": 20000}
+  ],
+  "major_benefit_scopes": [
+    "campaign_504x100",
+    "backtest_160x12",
+    "backtest_504x100",
+    "labels_1260x100",
+    "diagnostics_504x100_sparse",
+    "sweep_160x12_eight_cases",
+    "ledger_a",
+    "ledger_a_1000",
+    "ledger_b",
+    "ledger_b_1000",
+    "registry_30"
+  ],
+  "additional_import_scope": "Seven interleaved triples of fresh-process first-party import probes after a separate retained warmup triple. No in-process import-cache throughput claim.",
+  "numeric_acceptance": "Exact all outputs/errors/state except only the diagnostics Spearman vector within absolute 1e-12; exact Pearson, axes, dtype and NaN masks. No existing test tolerance weakened.",
+  "normalization": "Every raw result retained. Normalize explicit filesystem locators plus verified campaign timestamps and their derived hashes. Preserve all manifest content and state.",
+  "measurement_boundary": "Imports/setup outside workload timing, identical to A1/B1 constructors. Generated backtest/features inputs and report/log writes included in execute; generated label/IC source panels outside execute on all sides. Ledger setup/commit/reopen and table snapshots included on all sides. Campaign authorization helper/run/raw-state read included on all sides.",
+  "resources": "Separate baseline/B1/B2 cProfile and tracemalloc runs for campaign_504x100, backtest_504x100, features_1260x500, labels_1260x100, diagnostics_504x100_sparse, ledger_b_1000 and registry_30; never used as throughput samples. All ordinary child RSS/CPU data retained.",
+  "limits": "Single-host synthetic/public-fixture feasibility. Small adverse samples remain visible; no sum of single-direction speedups, private-data claim or release/Linux readiness. Mode measure executes exactly one warmup and one sample, asserted by the triple driver."
+}

@@ -1,0 +1,69 @@
+{
+  "archive_sources": {
+    "compare.py": "e27018c134073386cac6300a84c1e7a45bb518f9f410c6d65008f97e4021fe67",
+    "fresh_imports.py": "4255c4e8db503044fcccd3a0325d012d2b9ca94f46a168b34ff715cdd1c72913",
+    "wire.py": "f6bc77fd8b95e90337bea6295249a7c73c686ff992b446e1d2a84f99de85c31d",
+    "workload.py": "5c0e69c1bef2a83d1605f22850ae4fa4a8bf6f551cc1b805cc212f6ab4ad0c85"
+  },
+  "b1_source_manifest": "2f55b0d24ff21d52b3d34b83c4bfeb0f4eac359228e73e93542d8887243e85ca",
+  "b2_source_manifest": "fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac",
+  "baseline_commit": "6ee193c9bb43f8290b3e09396fd241fec32df695",
+  "environment": {
+    "dependencies": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "pytest": "9.1.1",
+      "ruff": "0.16.6",
+      "scipy": "1.18.1"
+    },
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "python": "3.12.14 (main, Aug 12 2026, 13:57:54) [Clang 21.0.0 (clang-2100.1.1.101)]",
+    "thread_limits": {
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    }
+  },
+  "limits": [
+    "Public projection of recorded synthetic/committed-fixture evidence; not a new benchmark or acceptance decision.",
+    "Full raw results and environments are retained locally, not included in this compact package. Trusted archived scripts can regenerate outputs.",
+    "Runtime reconstruction of B1 is not the sealed447-file B1 checkpoint.",
+    "RSS values use bytes on recorded macOS; archived ru_maxrss needs KiB conversion on Linux.",
+    "Finite samples, helper reuse, and macOS/Python3.12 coverage do not establish universal equivalence or cross-platform runtime readiness."
+  ],
+  "recorded_inputs": {
+    "qa/independent_b2/result.json": "5a79ed66191a0aaf155891c7d8805f182c9652398a62b31619d6ca5775251202",
+    "qa/recorded_b2_audit/result.json": "8ad8204a72bcae77378aac291c88d8a696158ea9c1920354e9a6f05be031f119",
+    "repair_b2/report_003.md": "2a35ced4aa0ace635f06c0b71209aa70648195ec56b1729289e255f2256ff022",
+    "repair_b2/runs/matrix_002/performance.json": "71700e1ddc49f83ad9f1914541c7d66f63bf3a260e299c7c931c519d8204f8d2"
+  },
+  "review_candidate": "3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392",
+  "runtime_sources": {
+    "b1": {
+      "src/backtest/metrics.py": "e2029fcdfff1129296d846a27b4db538dc3fb1bb277e0b72faeffc0e257d4435",
+      "src/backtest/portfolio.py": "f2feced809ec4607c95b8d0f9a8ea5ad663e0d7de57f484536ffe3907e815912",
+      "src/campaign/runner.py": "7cbf97260b027bf50db914065096c871c161a7221cd8787942dd43c94674197f",
+      "src/features/diagnostics.py": "21450364d03f2e7c6a6b62df4d9d6fd8b272aefe62b37aba49125713c19a77a3",
+      "src/features/validation.py": "a24f0254b5248408506770844e737a8de748a182e5ea69f4cbe52e9e907b04a9",
+      "src/ledger/schema_registry.py": "9c20b9a5f97905f3a82d0bd4f432f8e65dc2dccd9bd02ad4d08837b0f2e91330"
+    },
+    "b2": {
+      "src/backtest/metrics.py": "e2029fcdfff1129296d846a27b4db538dc3fb1bb277e0b72faeffc0e257d4435",
+      "src/backtest/portfolio.py": "f2feced809ec4607c95b8d0f9a8ea5ad663e0d7de57f484536ffe3907e815912",
+      "src/campaign/runner.py": "7cbf97260b027bf50db914065096c871c161a7221cd8787942dd43c94674197f",
+      "src/features/diagnostics.py": "b554c0017c1785df694974dee7ca041fbb97190ab988a4603b6b0dcce840761a",
+      "src/features/validation.py": "a24f0254b5248408506770844e737a8de748a182e5ea69f4cbe52e9e907b04a9",
+      "src/ledger/schema_registry.py": "9c20b9a5f97905f3a82d0bd4f432f8e65dc2dccd9bd02ad4d08837b0f2e91330"
+    },
+    "baseline": {
+      "src/backtest/metrics.py": "8dc77e5181fee4210d88b1740f5d1b0680e7cfa74949980b30089b58966b3ab9",
+      "src/backtest/portfolio.py": "35ac0fb74b878c93d6ce38d0cd010c1f908292fd51d6000afa8fd0a38efead04",
+      "src/campaign/runner.py": "b6ce3b8ca2c4220375a50ec939d7362a313b578c9eb2ff657c859c9faf830b01",
+      "src/features/diagnostics.py": "cb2d321b63efdc0bbdb854c4eb493bff954920249f81a72edab47592b24f9788",
+      "src/features/validation.py": "e83abb869c8a03f6c46c6704cbbbcca44b766685fb72f73b46f41060986fd113",
+      "src/ledger/schema_registry.py": "aae1b2fb77a93ae056d2a9e8f2d1e7afce12d388dbf24de3a081284e735cea4b"
+    }
+  }
+}

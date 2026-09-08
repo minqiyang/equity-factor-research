@@ -1,0 +1,92 @@
+--- a/src/campaign/runner.py
++++ b/src/campaign/runner.py
+@@ -4,6 +4,7 @@
+ 
+ from collections.abc import Mapping, Sequence
+ from dataclasses import dataclass
++from bisect import bisect_left, bisect_right
+ from datetime import date, datetime, timezone
+ import fcntl
+ import hashlib
+@@ -325,6 +326,11 @@
+ 
+ 
+ @dataclass(frozen=True)
++class _IndexedPreparedPanel(_PreparedPanel):
++    anchors_by_date: Mapping[bytes, Mapping[str, Mapping[str, object]]]
++
++
++@dataclass(frozen=True)
+ class _MonthResult:
+     signal_date: str
+     execution_date: str | None
+@@ -556,6 +562,17 @@
+     panel: _PreparedPanel,
+ ) -> tuple[tuple[object, ...], ReconciliationResult, _ExecutionTrace] | str:
+     try:
++        by_listing = MappingProxyType({
++            key: MappingProxyType({
++                str(record.get("session_date")): record
++                for record in records
++                if isinstance(record.get("session_date"), str)
++            })
++            for key, records in panel.anchors.items()
++        })
++        panel = _IndexedPreparedPanel(
++            panel.prices, panel.anchors, panel.listings, panel.session_dates, by_listing
++        )
+         inventory = parse_trial_inventory(inventory_raw)
+         schedule = _campaign_schedule(config, panel)
+         frozen = _freeze_panel(config, panel, schedule)
+@@ -758,6 +775,16 @@
+     )
+ 
+ 
++def _anchor_index(panel: _PreparedPanel, listing_key: bytes):
++    if isinstance(panel, _IndexedPreparedPanel):
++        return panel.anchors_by_date.get(listing_key, {})
++    return {
++        str(record.get("session_date")): record
++        for record in panel.anchors.get(listing_key, ())
++        if isinstance(record.get("session_date"), str)
++    }
++
++
+ def _select_factor_anchors(
+     panel: _PreparedPanel,
+     listing_key: bytes,
+@@ -783,11 +810,7 @@
+     records = panel.anchors.get(listing_key)
+     if series is None or records is None:
+         return None
+-    by_date = {
+-        str(record.get("session_date")): record
+-        for record in records
+-        if isinstance(record.get("session_date"), str)
+-    }
++    by_date = _anchor_index(panel, listing_key)
+     scalars: list[float] = []
+     lineage: list[MappingProxyType[str, object]] = []
+     for session in dates:
+@@ -1095,16 +1118,15 @@
+     start_date: str,
+     end_date: str,
+ ) -> SimpleReturn:
+-    by_date = {
+-        str(record.get("session_date")): record
+-        for record in panel.anchors.get(row.listing_key, ())
+-        if isinstance(record.get("session_date"), str)
+-    }
++    by_date = _anchor_index(panel, row.listing_key)
+     if start_date not in by_date or end_date not in by_date:
+         return SimpleReturn(None, False, _REASON_HELD_MISSING)
++    sessions = panel.session_dates
++    if isinstance(panel, _IndexedPreparedPanel):
++        sessions = sessions[bisect_left(sessions, start_date):bisect_right(sessions, end_date)]
+     ordered = tuple(
+         by_date[session]
+-        for session in panel.session_dates
++        for session in sessions
+         if start_date <= session <= end_date and session in by_date
+     )
+     start = by_date[start_date]

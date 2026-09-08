@@ -1,0 +1,25 @@
+"""One fresh-process import cohort, outside any in-process warm import cache."""
+
+import importlib
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+
+names = ("features.operators", "features.validation", "features.diagnostics", "backtest.portfolio", "backtest.metrics",
+         "campaign.runner", "ledger.runtime", "ledger.schema_registry", "pit_manifest_validator_v1.validator",
+         "research.synthetic_combined_score_backtest_demo", "research.local_csv_fixture_workflow_demo")
+candidate = Path.cwd()
+assert "numpy" not in sys.modules and "pandas" not in sys.modules
+wall = time.perf_counter()
+cpu = time.process_time()
+modules = {name: importlib.import_module(name) for name in names}
+sample = {"wall_seconds": time.perf_counter() - wall, "cpu_seconds": time.process_time() - cpu}
+origins = {name: str(Path(module.__file__).relative_to(candidate)) for name, module in modules.items()}
+result = {"sample": sample, "origins": origins, "candidate": str(candidate), "python": sys.version,
+          "executable": sys.executable, "fresh_process": True,
+          "limits": "Single fresh process per sample, OS caches ordinary; does not claim cold physical disk or cached-import throughput."}
+(Path(os.environ["EFR_PHASE_B2_RUN"]) / "imports.json").write_text(json.dumps(result, indent=2) + "\n")
+print(json.dumps(result, indent=2), flush=True)

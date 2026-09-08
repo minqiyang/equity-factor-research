@@ -1,0 +1,8 @@
+{
+  "baseline_commit": "6ee193c9bb43f8290b3e09396fd241fec32df695",
+  "public_capture_oracle_sha256": "0810581574ceb16a9726e579ebeaa6a81bdeeb90fa3555e9624ab7da034f4d11",
+  "baseline_portfolio_sha256": "35ac0fb74b878c93d6ce38d0cd010c1f908292fd51d6000afa8fd0a38efead04",
+  "executed_A2_probe_sha256": "4ea8e345bb3c200f269b2a48edf901fab5285ae78d7b97bb79a083428c20398a",
+  "A2_seal_sha256": "10e12ef7b206a6781ab9ef70450aff2cb1210cdcdf7ae050508316feda2ce858",
+  "origin": "Fresh A2 baseline public capture; immutable synthetic golden promoted during accepted B1. No runtime dependency on external attempt paths."
+}

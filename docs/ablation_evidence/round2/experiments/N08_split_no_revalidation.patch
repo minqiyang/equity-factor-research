@@ -1,0 +1,88 @@
+--- a/src/features/validation.py
++++ b/src/features/validation.py
+@@ -947,85 +947,6 @@
+     if not isinstance(split, TrainValidationTestSplit):
+         raise TypeError("split must be a TrainValidationTestSplit")
+ 
+-    try:
+-        canonical = make_train_validation_test_split(
+-            split.source_dates,
+-            train_start=split.train_start,
+-            train_end=split.train_end,
+-            validation_start=split.validation_start,
+-            validation_end=split.validation_end,
+-            test_start=split.test_start,
+-            test_end=split.test_end,
+-            label_kind=split.label_kind,
+-            label_derivation=split.label_derivation,
+-            label_horizon_rows=split.label_horizon_rows,
+-            embargo_rows=split.embargo_rows,
+-            feature_warm_up_rows=split.feature_warm_up_rows,
+-        )
+-    except (TypeError, ValueError) as exc:
+-        raise ValueError("split contract fields are invalid") from exc
+-
+-    index_fields = (
+-        "source_dates",
+-        "train",
+-        "validation",
+-        "test",
+-        "ignored_pre_sample_dates",
+-        "ignored_post_test_dates",
+-    )
+-    for field in index_fields:
+-        actual_index = getattr(split, field)
+-        expected_index = getattr(canonical, field)
+-        if not isinstance(actual_index, pd.DatetimeIndex) or not actual_index.equals(
+-            expected_index
+-        ):
+-            raise ValueError(
+-                f"split {field} does not match the canonical contract"
+-            )
+-
+-    try:
+-        pd.testing.assert_frame_equal(
+-            split.label_ledger,
+-            canonical.label_ledger,
+-            check_dtype=True,
+-            check_exact=True,
+-            check_like=False,
+-        )
+-    except (AssertionError, TypeError) as exc:
+-        raise ValueError(
+-            "split label_ledger does not match the canonical contract"
+-        ) from exc
+-
+-    if tuple(split.window_metadata) != tuple(canonical.window_metadata):
+-        raise ValueError(
+-            "split window_metadata keys do not match the canonical contract"
+-        )
+-    for name in SPLIT_NAMES:
+-        actual = split.window_metadata.get(name)
+-        if (
+-            not isinstance(actual, SplitWindowMetadata)
+-            or actual.as_dict() != canonical.window_metadata[name].as_dict()
+-        ):
+-            raise ValueError(
+-                "split window_metadata does not match the canonical contract"
+-            )
+-
+-    if tuple(split.transition_metadata) != tuple(
+-        canonical.transition_metadata
+-    ):
+-        raise ValueError(
+-            "split transition_metadata keys do not match the canonical contract"
+-        )
+-    for name, expected in canonical.transition_metadata.items():
+-        actual = split.transition_metadata.get(name)
+-        if (
+-            not isinstance(actual, SplitTransitionMetadata)
+-            or actual.as_dict() != expected.as_dict()
+-        ):
+-            raise ValueError(
+-                "split transition_metadata does not match the canonical contract"
+-            )
+-
+ 
+ def _validate_date_index(
+     index: pd.DatetimeIndex,

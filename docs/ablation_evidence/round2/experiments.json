@@ -1,0 +1,286 @@
+{
+  "initial_variants": [
+    {
+      "changes": [
+        {
+          "baseline_lines": 1990,
+          "baseline_sha256": "b6ce3b8ca2c4220375a50ec939d7362a313b578c9eb2ff657c859c9faf830b01",
+          "candidate_lines": 1998,
+          "candidate_sha256": "67d7a79fc8e7b72b6ccbc00d03e041abb1b3143189953becc415c09046ef5859",
+          "path": "src/campaign/runner.py"
+        }
+      ],
+      "decision": "Rejected/superseded: stale cached date index for mutable directly constructed private panel, despite 61 tests and exact measured end-to-end output.",
+      "disposition": "not_selected",
+      "name": "C01_campaign_index",
+      "patch": "experiments/C01_campaign_index.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1990,
+          "baseline_sha256": "b6ce3b8ca2c4220375a50ec939d7362a313b578c9eb2ff657c859c9faf830b01",
+          "candidate_lines": 2005,
+          "candidate_sha256": "23caa415a3e581c1e58c04362a32e80129e0c84470747750a92bc517c07b4d5e",
+          "path": "src/campaign/runner.py"
+        }
+      ],
+      "decision": "Rejected/superseded: dataclasses.replace on returned indexed panel retained stale index; execution-local C01c restores original parsed-panel behavior.",
+      "disposition": "not_selected",
+      "name": "C01b_parser_owned_index",
+      "patch": "experiments/C01b_parser_owned_index.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1990,
+          "baseline_sha256": "b6ce3b8ca2c4220375a50ec939d7362a313b578c9eb2ff657c859c9faf830b01",
+          "candidate_lines": 2012,
+          "candidate_sha256": "909438f8a2b7f133b39c6e462806fb014cc5d3b9e984070150bca16bacd14e5a",
+          "path": "src/campaign/runner.py"
+        }
+      ],
+      "decision": "Selected for plan: index lifetime is one execution; parsed/base panel/direct mutation behavior retained. 61 tests and boundary probe pass.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C01c_execution_owned_index",
+      "patch": "experiments/C01c_execution_owned_index.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1461,
+          "baseline_sha256": "aae1b2fb77a93ae056d2a9e8f2d1e7afce12d388dbf24de3a081284e735cea4b",
+          "candidate_lines": 1460,
+          "candidate_sha256": "9c20b9a5f97905f3a82d0bd4f432f8e65dc2dccd9bd02ad4d08837b0f2e91330",
+          "path": "src/ledger/schema_registry.py"
+        }
+      ],
+      "decision": "Selected for plan: repeated same-call validation removed, package authority and raw event checks retained; 1413 tests and adversarial mutation/alias checks pass.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C02_registry_once",
+      "patch": "experiments/C02_registry_once.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 470,
+          "baseline_sha256": "be2e743c659c87791c99d0e27684cb48c730486719860773721423e08650a130",
+          "candidate_lines": 463,
+          "candidate_sha256": "f4ed583e29eae0560bad3c2222aa322993e0bf2a6e9583d4536c58fc75d9eb72",
+          "path": "src/campaign/inference.py"
+        }
+      ],
+      "decision": "Rejected/superseded: negative-zero output changes; T-8 source-byte freeze also fails.",
+      "disposition": "not_selected",
+      "name": "C03_bootstrap_arrays",
+      "patch": "experiments/C03_bootstrap_arrays.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 470,
+          "baseline_sha256": "be2e743c659c87791c99d0e27684cb48c730486719860773721423e08650a130",
+          "candidate_lines": 463,
+          "candidate_sha256": "faa16ee753fd6bb25581e39f43dbc26d33756e05f5dafcabdc2d7cba7facdabe",
+          "path": "src/campaign/inference.py"
+        }
+      ],
+      "decision": "Not selected: zero-seed correction passes numerical corpus, but only 8.4% subpath speedup and T-8 source-byte gate remains. No statistical or frozen-contract changes authorized by this plan.",
+      "disposition": "not_selected",
+      "name": "C03b_bootstrap_zero_seed",
+      "patch": "experiments/C03b_bootstrap_zero_seed.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 2083,
+          "baseline_sha256": "35ac0fb74b878c93d6ce38d0cd010c1f908292fd51d6000afa8fd0a38efead04",
+          "candidate_lines": 2078,
+          "candidate_sha256": "232ca4dd8a559cded0d294142d8b408eba6cd1e4b53f4c94d7395e13eb4c06e0",
+          "path": "src/backtest/portfolio.py"
+        }
+      ],
+      "decision": "Selected for plan: column scalar identity preserved, including uint64/complex/nullable/Fraction cases; arbitrary mixed NumPy coercion rejected.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C04_snapshot_columns",
+      "patch": "experiments/C04_snapshot_columns.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 836,
+          "baseline_sha256": "8dc77e5181fee4210d88b1740f5d1b0680e7cfa74949980b30089b58966b3ab9",
+          "candidate_lines": 842,
+          "candidate_sha256": "e2029fcdfff1129296d846a27b4db538dc3fb1bb277e0b72faeffc0e257d4435",
+          "path": "src/backtest/metrics.py"
+        }
+      ],
+      "decision": "Selected for plan: reads only validated numeric arrays, preserves chronological episode state/cost/deployment identities; 130 tests pass.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C05_episode_arrays",
+      "patch": "experiments/C05_episode_arrays.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 544,
+          "baseline_sha256": "524bb80e76b1161773a403b5ad05b24247f97ce4fd3ffc405993e6afff714011",
+          "candidate_lines": 552,
+          "candidate_sha256": "05bbdf8cf2226a22d552b8bd7844f3c7235cd6fdabf8775329d25a9c7c85cbc4",
+          "path": "research/synthetic_combined_score_backtest_demo.py"
+        },
+        {
+          "baseline_lines": 620,
+          "baseline_sha256": "99eec7628e1f7ae45dcead21c8240cfc9fd040cbe4b4afa858e3f41764c423c4",
+          "candidate_lines": 624,
+          "candidate_sha256": "33d0139ae74f9534534ea48f7a6bc881d0a60dc801283e0d0930b5e2494769cb",
+          "path": "research/synthetic_multifactor_parameter_sweep.py"
+        }
+      ],
+      "decision": "Rejected prototype; retain existing workflow in selected waves: 24 tests/exact ordinary output, but unchecked _prepared permits declared 9 versus actual 4 assets. Measured 5.7% gain does not justify that interface.",
+      "disposition": "not_selected",
+      "name": "C06_sweep_preparation",
+      "patch": "experiments/C06_sweep_preparation.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 350,
+          "baseline_sha256": "cb2d321b63efdc0bbdb854c4eb493bff954920249f81a72edab47592b24f9788",
+          "candidate_lines": 341,
+          "candidate_sha256": "7f63a285ad2c0b13cedf8403a330aec35a586930f5450e064b6b700e745bf29b",
+          "path": "src/features/diagnostics.py"
+        }
+      ],
+      "decision": "Rejected/superseded: 100 tests pass but high-offset Pearson differs by 1.4686e-8. Retain original Pearson in C10b.",
+      "disposition": "not_selected",
+      "name": "C10_diagnostics_batch",
+      "patch": "experiments/C10_diagnostics_batch.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 350,
+          "baseline_sha256": "cb2d321b63efdc0bbdb854c4eb493bff954920249f81a72edab47592b24f9788",
+          "candidate_lines": 361,
+          "candidate_sha256": "21450364d03f2e7c6a6b62df4d9d6fd8b272aefe62b37aba49125713c19a77a3",
+          "path": "src/features/diagnostics.py"
+        }
+      ],
+      "decision": "Selected for plan with numeric acceptance gate: Pearson exact; Spearman normal max error 5.55e-17, all 48 stress-corpus cases within absolute 1e-12, axis/NaN policy preserved; 122 tests pass.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C10b_rank_ic_batch",
+      "patch": "experiments/C10b_rank_ic_batch.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1142,
+          "baseline_sha256": "e83abb869c8a03f6c46c6704cbbbcca44b766685fb72f73b46f41060986fd113",
+          "candidate_lines": 1142,
+          "candidate_sha256": "a24f0254b5248408506770844e737a8de748a182e5ea69f4cbe52e9e907b04a9",
+          "path": "src/features/validation.py"
+        }
+      ],
+      "decision": "Selected for plan: gather only canonically eligible endpoints, preserve full label ledger/mask; 80 tests and adversarial checks pass; complete measured output exact.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C12_label_gather",
+      "patch": "experiments/C12_label_gather.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1990,
+          "baseline_sha256": "b6ce3b8ca2c4220375a50ec939d7362a313b578c9eb2ff657c859c9faf830b01",
+          "candidate_lines": 1999,
+          "candidate_sha256": "6e24341b7025772e0ae2b5be1407ea1d8bce2c11b36a04d1457196754dec85e4",
+          "path": "src/campaign/runner.py"
+        }
+      ],
+      "decision": "Selected for plan: per-execution memo of cost-independent interval maps; 61 tests and exact complete campaign output. No sharing of mutable/cost-specific holding state.",
+      "disposition": "selected_for_binding_plan",
+      "name": "C13_campaign_shared_returns",
+      "patch": "experiments/C13_campaign_shared_returns.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 2083,
+          "baseline_sha256": "35ac0fb74b878c93d6ce38d0cd010c1f908292fd51d6000afa8fd0a38efead04",
+          "candidate_lines": 2078,
+          "candidate_sha256": "d3f9c9d923611d12afe93014388f6af68a3933b6a1f42f37d30eeb71ff896d09",
+          "path": "src/backtest/portfolio.py"
+        }
+      ],
+      "decision": "Rejected: 168 ordinary tests passed but mixed uint64/float and real/complex identity probes fail.",
+      "disposition": "not_selected",
+      "name": "N04_snapshot_numpy",
+      "patch": "experiments/N04_snapshot_numpy.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 3087,
+          "baseline_sha256": "bdb01158a701ec98a0af08af1091a57974c59b91de990f6d0b0de1fd65207e88",
+          "candidate_lines": 3080,
+          "candidate_sha256": "9541b698d4764d9f6e4eec002c6b01c848621c5e9ce476b81be258d458bd51ea",
+          "path": "src/ledger/runtime.py"
+        }
+      ],
+      "decision": "Rejected: 91 ordinary tests pass; source-body mutation during commit changes accepted snapshot behavior to RECORD_CONTENT_MISMATCH. Stable transactional copy remains necessary.",
+      "disposition": "not_selected",
+      "name": "N07_catalog_no_snapshot",
+      "patch": "experiments/N07_catalog_no_snapshot.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 1142,
+          "baseline_sha256": "e83abb869c8a03f6c46c6704cbbbcca44b766685fb72f73b46f41060986fd113",
+          "candidate_lines": 1063,
+          "candidate_sha256": "65a5d9436196a23f063acf3df4aefcb59e12e2e4dbd39689c91c622ed852f29a",
+          "path": "src/features/validation.py"
+        }
+      ],
+      "decision": "Rejected: four existing tests and a forged-eligibility probe fail. Frozen dataclass does not freeze nested DataFrame/mappings.",
+      "disposition": "not_selected",
+      "name": "N08_split_no_revalidation",
+      "patch": "experiments/N08_split_no_revalidation.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 657,
+          "baseline_sha256": "a5f5588c25049b47265840497c21d323a17c0a32fe3ee5cee05cc57892a6321c",
+          "candidate_lines": 652,
+          "candidate_sha256": "ebaa5e874f40044965d4af77ed283b40fdb2c0e1ed2b5627319786c7d9388cae",
+          "path": "src/pit_manifest_validator_v1/canonical.py"
+        }
+      ],
+      "decision": "Rejected: UTF-16 order changes; direct floats/oversized ints accepted and surrogate error changes; package-tree freeze additionally fails.",
+      "disposition": "not_selected",
+      "name": "N09_stdlib_canonical",
+      "patch": "experiments/N09_stdlib_canonical.patch"
+    },
+    {
+      "changes": [
+        {
+          "baseline_lines": 2083,
+          "baseline_sha256": "35ac0fb74b878c93d6ce38d0cd010c1f908292fd51d6000afa8fd0a38efead04",
+          "candidate_lines": 2081,
+          "candidate_sha256": "0c9c68f5e66280d72eef11eaa298d96dac993c2107ba8dcf8c80e6ae5b135cf9",
+          "path": "src/backtest/portfolio.py"
+        }
+      ],
+      "decision": "Rejected: untracked source edit changes required source_provenance_invalid precedence; cannot drop state digest verification.",
+      "disposition": "not_selected",
+      "name": "N11_provenance_no_state_check",
+      "patch": "experiments/N11_provenance_no_state_check.patch"
+    }
+  ],
+  "later_overrides": {
+    "C04_snapshot_columns": "Withdrawn after the public Nx0 counterexample; final source contains corrected C04b.",
+    "C10b_rank_ic_batch": "Refined by the eligibility-local B2 repair."
+  },
+  "limits": "Historical rejected patches are experiments, not approved runtime changes. Their outcomes are not retimed by this public projection."
+}

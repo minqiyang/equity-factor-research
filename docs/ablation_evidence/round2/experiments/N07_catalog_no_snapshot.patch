@@ -1,0 +1,18 @@
+--- a/src/ledger/runtime.py
++++ b/src/ledger/runtime.py
+@@ -284,14 +284,7 @@
+             return record
+ 
+     def snapshot(self) -> SyntheticCatalog:
+-        """Return a stable copy of catalog bytes for one append transaction."""
+-        frozen = SyntheticCatalog()
+-        frozen.records = deepcopy(self.records)
+-        frozen.evidence_refs = set(self.evidence_refs)
+-        frozen.proven_digests = set(self.proven_digests)
+-        frozen.capability_activation = self.capability_activation
+-        frozen.capability_expiry = self.capability_expiry
+-        return frozen
++        return self
+ 
+     def get(
+         self,

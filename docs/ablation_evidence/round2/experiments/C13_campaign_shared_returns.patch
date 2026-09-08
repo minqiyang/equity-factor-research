@@ -1,0 +1,71 @@
+--- a/src/campaign/runner.py
++++ b/src/campaign/runner.py
+@@ -563,6 +563,7 @@
+             factor_id: _monthly_rank_ics(config, factor_id, panel, frozen, schedule)
+             for factor_id in FACTOR_ORDER
+         }
++        held_cache: dict[tuple[str, str], dict[bytes, object]] = {}
+         trial_outputs: dict[str, dict[str, dict[str, object]]] = {}
+         holdings: dict[str, MappingProxyType[str, ContinuousHoldings | None]] = {}
+         for trial in inventory:
+@@ -576,6 +577,7 @@
+                 frozen,
+                 schedule,
+                 monthly_ics,
++                held_cache,
+             )
+             trial_outputs[trial_id] = outputs
+             holdings[trial_id] = MappingProxyType(paths)
+@@ -805,6 +807,7 @@
+     frozen: Mapping[tuple[str, str], object],
+     schedule: CampaignSchedule | None,
+     monthly_ics: Mapping[str, tuple[_MonthResult, ...]],
++    held_cache: dict[tuple[str, str], dict[bytes, object]],
+ ) -> tuple[dict[str, dict[str, object]], dict[str, ContinuousHoldings | None]]:
+     outputs: dict[str, dict[str, object]] = {}
+     paths: dict[str, ContinuousHoldings | None] = {}
+@@ -817,6 +820,7 @@
+             frozen,
+             schedule,
+             monthly_ics,
++            held_cache,
+         )
+         outputs[name] = record
+         factor_id, _, series = name.partition(":")
+@@ -834,6 +838,7 @@
+     frozen: Mapping[tuple[str, str], object],
+     schedule: CampaignSchedule | None,
+     monthly_ics: Mapping[str, tuple[_MonthResult, ...]],
++    held_cache: dict[tuple[str, str], dict[bytes, object]],
+ ) -> tuple[dict[str, object], ContinuousHoldings | None]:
+     factor_id, _, series = name.partition(":")
+     if not factor_id or not series:
+@@ -850,7 +855,7 @@
+             )
+         if series == _CONTINUOUS:
+             return _continuous_output(
+-                config, trial, factor_id, panel, frozen, schedule
++                config, trial, factor_id, panel, frozen, schedule, held_cache
+             )
+     except (TypeError, ValueError, KeyError):
+         return _invalid_output(_REASON_OUTPUT_INVALID), None
+@@ -994,6 +999,7 @@
+     panel: _PreparedPanel,
+     frozen: Mapping[tuple[str, str], object],
+     schedule: CampaignSchedule | None,
++    held_cache: dict[tuple[str, str], dict[bytes, object]],
+ ) -> tuple[dict[str, object], ContinuousHoldings | None]:
+     cost = trial.get("cost_bps", 0)
+     if isinstance(cost, bool) or not isinstance(cost, int):
+@@ -1028,7 +1034,10 @@
+     for index in range(start, len(panel.session_dates) - 1):
+         begin = panel.session_dates[index]
+         end = panel.session_dates[index + 1]
+-        held = _held_map(panel, begin, end, schedule)
++        key = (begin, end)
++        if key not in held_cache:
++            held_cache[key] = _held_map(panel, begin, end, schedule)
++        held = held_cache[key]
+         reset = resets.get(end)
+         intervals.append(holding_interval(end, held, reset))
+     holdings = advance_holdings(
