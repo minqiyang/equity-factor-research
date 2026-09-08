@@ -1,8 +1,8 @@
 # Round 2 Whole-Codebase Ablation: Quantified Evidence and Architecture Summary
 
 > [!NOTE]
-> **Document Status: Frozen B2 Checkpoint Accepted for Integration (Binding Plan A2)**  
-> This document is a durable, detailed publication report prepared following formal acceptance of frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2. Three eligible mutually blind static reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) completed with zero MATERIAL findings and three OPEN advisories. Controlled integration creates a fresh candidate; final integration QA (including repeated campaign cohort and independent smoke execution of reproduction commands), fresh final-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 continuous integration gates remain pending. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized. No integration, repeat, final-head review, commit, push, or publication has occurred at this checkpoint.
+> **Document Status: Historical B2 Acceptance & Initial C1 Evidence Checkpoints**  
+> This document is a durable publication and evidence report recording the formal acceptance of frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) under binding plan A2, along with subsequent verification on initial integration checkpoint commit `713bba95e393514720973ca2fcb58b70cba23d8d` (tree `359090fbca29034648307ab7740b776f0122eff6`, 483 files, initial churn 53 files / +89,521 / -55, not final PR churn; runtime/test bytes identical to B2). Three eligible mutually blind static reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) completed on B2 with zero MATERIAL findings and three OPEN advisories. Initial C1 execution QA passed 124 executions (36 triples across 18 scopes), recorded in supplemental public evidence, including a repeated 7-triple campaign cohort and independent reproduction smoke check. Initial C1 whole-commit QA does not imply acceptance of changed final bytes. Fresh exact-candidate QA, fresh exact-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 continuous integration gates apply to a later final assembled candidate (with live publication head and checks recorded in the eventual PR gate record). The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
 
 ---
 
@@ -197,7 +197,7 @@ The table below presents producer matrix results across all 18 workloads, record
    - B1 runtime: wall **1.407054 s** (CPU 1.405663 s)
    - B2 candidate: wall **1.558791 s** (CPU 1.557491 s)
    - Difference: B2 was **+0.151737 s** (about **+10.8%**) slower than B1 in wall time, and **+0.151828 s** in CPU time.  
-   This measurement is one single triple, not a repeated distribution, and must qualify B1-preservation statements. Equal runner source bytes between B1 and B2 do not prove host-noise causation. Recurrence and underlying cause remain unresolved; repeated independent campaign measurements are planned for final integration QA but **have not run**. No findings, acceptance, results, or aggregate counts are assumed for that future QA.
+   This measurement is one single triple, not a repeated distribution, and must qualify B1-preservation statements. Equal runner source bytes between B1 and B2 do not prove host-noise causation. Recurrence and underlying cause remain unresolved. Subsequent initial C1 integration QA evaluated a 7-triple campaign cohort (see Section 5.4), but this initial adverse observation is retained without dismissal.
 
 ---
 
@@ -230,11 +230,48 @@ Producer focused (14 triples), producer full matrix (126 triples), and resource 
 In the independent population:
 - **Independent Fixture Medians:** Baseline **43.368958 ms**, B1 **48.363959 ms**, B2 **42.282500 ms**. B2 is faster than B1 in **7/7 pairs**.
 - **Independent Sparse IC Medians:** Baseline **178.135042 ms**, B1 **74.979042 ms**, B2 **75.295666 ms**. B2 is slower than B1 in **4/7 pairs** (pairs 2, 4, 6, 7).
-- **Independent Campaign Repetition 1 (Single Triple):** Baseline **18.091250 s**, B1 **1.407054 s**, B2 **1.558791 s** (+0.151737 s, ~+10.8% B2 vs B1; CPU 1.557491 s vs 1.405663 s). This single observation qualifies B1 preservation; recurrence and cause remain unresolved pending final integration QA.
+- **Independent Campaign Repetition 1 (Single Triple):** Baseline wall **18.091250 s**, B1 **1.407054 s**, B2 **1.558791 s** (+0.151737 s, ~+10.8% B2 vs B1; CPU 1.557491 s vs 1.405663 s). This single observation qualifies B1 preservation; recurrence and cause remain unresolved pending final integration QA.
 
 > [!IMPORTANT]
 > **Interpretation of Finite Samples:**  
 > Finite sample ranges are empirical observations, not asymptotic confidence intervals. Small percentage differences (e.g. B2 sparse IC ~0.4% slower than B1) are neither automatically noise nor proof of degradation. The report preserves all individual sample values and does not prescribe owner risk acceptance.
+
+### 5.4 Initial C1 Integration QA & Repeated Campaign Cohort (36 Triples)
+
+Following formal B2 implementation acceptance under binding plan A2, controlled integration was initialized under local checkpoint commit `713bba95e393514720973ca2fcb58b70cba23d8d` (tree `359090fbca29034648307ab7740b776f0122eff6`, parent `6ee193c9bb43f8290b3e09396fd241fec32df695`). Runtime and test code bytes are identical to B2; documentation and evidence composition differ. C1 tracks 483 files with initial churn of 53 files (+89,521 / -55 lines), which is not final PR churn.
+
+Independent C1 execution QA, recorded in the supplemental public evidence (from local execution archive `qa/independent_c1_001`), evaluated **124 separate executions**:
+- **Full Test Suites:** Baseline passed 2,573 tests, B1 passed 2,722 tests, and C1 passed 2,758 tests (each with 2 macOS platform skips).
+- **Nine Rejected Negative Controls:** All 9 preserved mutation controls reproduced their prior deterministic failure node sets.
+- **Restored Mechanism Assertions:** Baseline failed 1 / passed 35; B1 failed 6 / passed 30; C1 passed all 36.
+- **36 Fresh Triples Across 18 Scopes:**
+  - 7 fresh triples on `fixture_all_configured`
+  - 7 fresh triples on `diagnostics_504x100_sparse`
+  - 7 fresh triples on `campaign_504x100` (these 7 are a subset of the 36 triples, not extra executions, and remain separate from the original B2 independent 106/30 and producer 126 populations)
+  - 1 fresh triple on each of the remaining 15 scopes
+
+#### Repeated Campaign 504 Cohort (Seven Paired Triples)
+The repeated 7-triple campaign cohort produced the following measured distributions:
+
+| Workload Metric | Baseline Measured | Sealed B1 source | C1 Integration Candidate | Delta (C1 vs B1) |
+|---|---:|---:|---:|---:|
+| **Median Wall Clock** | 17.828260 s | 1.411179 s | **1.414200 s** | +0.214059% |
+| Wall Range [Min, Max] | [17.709474 s, 18.701407 s] | [1.406276 s, 1.419707 s] | [1.403823 s, 1.470304 s] | Slower in 5 / 7 pairs |
+| Wall Std Dev | 0.341296 s | 0.005330 s | 0.022838 s | Max paired increase: +3.858665% (rep 5) |
+| **Median CPU Time** | 17.810254 s | 1.409800 s | **1.412997 s** | +0.226770% |
+| CPU Range [Min, Max] | [17.694582 s, 18.685292 s] | [1.404893 s, 1.418609 s] | [1.402636 s, 1.468878 s] | Slower in 6 / 7 pairs |
+| CPU Std Dev | 0.341264 s | 0.004916 s | 0.022833 s | Max paired increase: +3.844106% (rep 5) |
+
+#### Paired Differences and Disclosure Boundaries
+In paired analysis across the 7 repetitions:
+- C1 was slower than B1 in **5 of 7 wall pairs** and **6 of 7 CPU pairs**. The largest observed paired wall increase was **+3.858665%** (repetition 5; 1.470304s vs 1.415677s).
+- All 7 individual sample records are published in supplemental public evidence (`docs/ablation_evidence/round2_integration/summary.json`).
+- **Disclosure Principle:** These results do not claim host jitter, statistical equivalence, or that performance differences are eliminated; nor do they disprove the original B2 single-triple adverse observation (+10.8%). The original B2 adverse observation remains prominently disclosed.
+
+#### Separate Source Binding & Hygiene Checks on C1
+- **Fresh Import Binding:** 3 fresh import processes (one process for each: baseline, sealed B1, and C1) confirmed module `__file__` and function `__code__.co_filename` match expected respective source locations across 11 modules each.
+- **Isolated Package Build:** Build from trusted C1 export verified wheel (55 Python members) and sdist (137 Python members) containing all 20 schema/checksum resources.
+- **Git Diff Check:** `git diff --check` returned 2 with 78 diagnostics bound to archived patch context, Markdown hard breaks, and test EOF blank (not called a clean check; no evidence patch/test normalized or removed).
 
 ---
 
@@ -421,6 +458,13 @@ docs/ablation_evidence/round2/
 > **Compact Publication Package vs Full Raw Runs:**  
 > The publication evidence package contains all declarative matrices, summary statistics, environment provenance, counterfactual patches, and harness archives (2,542,126 payload bytes). It does not contain full raw multi-megabyte process execution directories; full raw run archives remain preserved locally. The `.txt` files in `scripts/` are byte-preserved documentation archives of the repair scripts (`repair_b2/scripts/`), not installed runtime packages within `src/`.
 
+### 10.1.1 Supplemental Integration Evidence Package
+A supplemental public package containing integration QA results is organized at `docs/ablation_evidence/round2_integration/`:
+- `summary.json`: 547,700 bytes, SHA-256 `97377d678c5948f684e66360402ca8977cb3908531855e1f05335903e9a2796c`
+- `manifest.sha256`: SHA-256 `32548d03cebe32610862e8921d3f79f08deba32d5341da42d85be1fbce94b867`
+
+The original 33-payload package under `round2/` remains byte-exact; the original manifest does not inventory the supplement, and full raw execution logs remain preserved locally.
+
 ### 10.2 B1 Runtime Reconstruction Protocol
 B1 can be reconstructed for benchmark runtime comparison by:
 1. Copying a trusted checkout of the candidate tree into an isolated scratch directory.
@@ -524,6 +568,10 @@ A reader wishing to independently execute a bounded smoke or replay check across
    - *Pickle Security Policy:* The harness uses `pickle` strictly to serialize and compare locally generated synthetic execution outputs. **Never load external or untrusted pickle files.**
    - *Platform RSS Units:* Peak RSS is captured via Python's `resource.getrusage(resource.RUSAGE_SELF).ru_maxrss`. On macOS, this value is reported in **bytes**; on Linux, it is reported in **kibibytes (KiB)**. Replicators on Linux must multiply by 1,024 to compare with macOS byte values.
 
+> [!NOTE]
+> **Independent Reproduction Smoke-Execution on C1:**  
+> The documented reproduction protocol was independently smoke-executed on C1 using trusted git archive baseline and HEAD, runtime-only B1 reverse patch with 6 verified source hashes, concrete path substitution with `-B`, and existing isolated interpreter/dependencies (no environment installation executed). Tested on `diagnostics_504x100`, all three CLI pair comparisons and the displayed Python alternative PASSED. This verified reproduction mechanics on diagnostics; it does not constitute execution of the full 18/126 matrix or reader dependency installation.
+
 ---
 
 ## 11. Review Status & Final Gate Clearances
@@ -534,23 +582,18 @@ In accordance with governance controls, three mutually blind, distinct-model ses
 - **Grok-4.6** (xhigh effort): Coverage complete; 0 Material findings, 2 Advisories.
 - **Gemini-3.8-Flash** (high effort): Coverage complete; 0 Material findings, 0 Advisories.
 
-A prior Gemini session was excluded for an explicit prohibited native self-transcript read-boundary violation (metadata-only return, no peer-text exposure); it is preserved in `coord/agy_b2_exclusion.json` as history and does not count toward the gate.
+A prior Gemini session was excluded for an explicit prohibited native self-transcript read-boundary violation (metadata-only return, no peer-text exposure); it is preserved in local coordinator archive `coord/agy_b2_exclusion.json` as internal audit history (not a published repository artifact) and does not count toward the gate.
 
 ### 11.2 Open Advisories Preserved
 Three advisories remain formally **OPEN** and are preserved without dismissal:
-1. `B2-GPT-ADD-001`: Original independent campaign single triple recorded B2 wall 1.558791s vs B1 1.407054s (about +10.8% slower), with corresponding CPU increase (1.557491s vs 1.405663s; baseline 18.091250s). Recurrence and underlying cause remain unresolved. A separate repeated independent campaign cohort is required during final integration QA before any unqualified preservation claim. It has not run.
+1. `B2-GPT-ADD-001`: Original independent campaign single triple recorded B2 wall 1.558791s vs B1 1.407054s (about +10.8% slower), with corresponding CPU increase (1.557491s vs 1.405663s; baseline wall 18.091250s). Recurrence and underlying cause remain unresolved. Follow-up 7-triple cohort on C1 evaluated with wall median +0.214059% and CPU +0.226770% vs B1 (5/7 wall pairs slower, max increase +3.858665% in rep 5), while this advisory remains OPEN and the original +10.8% single triple remains visible and preserved.
 2. `ADVISORY-B2-GROK-001`: Preserves fixture matrix002 pair 4, where B2 is 0.897ms slower than baseline; 7/7 B1 improvement and favorable medians do not erase this pair. The historical conditional tiny-fixture fallback was not exercised and does not authorize new regressions.
 3. `ADVISORY-B2-GROK-002`: Preserves all B1-to-B2 slower-pair counts, medians, and allocation/RSS tradeoffs. Overlapping sample ranges and large baseline gains do not prove no B1 regression.
 
-### 11.3 Explicit Implementation Acceptance & Pending Integration Gates
-- **Implementation Acceptance:** **ACCEPTED_FOR_INTEGRATION.** The coordinator formally accepted exact review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (`coord/decision_implementation_b2.md`). Baseline remains `6ee193c9bb43f8290b3e09396fd241fec32df695`.
-- **Next Authorized Integration Gate:** Integration will be executed by a fresh GENERAL_EXEC integrator in a separate clean worktree/branch, consuming accepted B2 source and checked documentation/evidence inputs. Integration creates a fresh candidate requiring:
-  1. Final integration QA including the separate repeated campaign cohort;
-  2. Independent smoke execution of documented reproduction commands;
-  3. Fresh static reviews of the final exact integration candidate;
-  4. Local latest/high normal Codex PR review;
-  5. Cross-platform Linux / Python 3.11 runtime continuous integration.
-- **Current State:** No integration, repeated cohort, final-head review, commit, push, or publication has occurred at this checkpoint. Later final integration facts will receive a separate update.
+### 11.3 Explicit Implementation Acceptance & Historical Evidence Checkpoint Status
+- **Implementation Acceptance:** **ACCEPTED_FOR_INTEGRATION.** The coordinator formally accepted exact review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (recorded in local coordinator decision archive `coord/decision_implementation_b2.md`). Baseline remains `6ee193c9bb43f8290b3e09396fd241fec32df695`.
+- **Checkpoint Scope & Gates for Later Final Candidate:** Initial clean worktree integration checkpoint (commit `713bba95...`) and initial C1 integration QA are complete. Initial C1 whole-commit QA does not imply acceptance of changed final bytes. Any later assembled final candidate (incorporating documentation updates) requires fresh exact-candidate QA before fresh reviews, followed by fresh exact-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 runtime CI. Live publication head and check verification belong in the eventual PR gate record rather than this historical checkpoint snapshot.
+- **Current State:** No integration PR acceptance, Codex PR review, Linux CI, or publication has occurred at this checkpoint. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
 - **Owner Authorization Status:** The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
 
 ---
