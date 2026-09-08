@@ -1,5 +1,20 @@
 # Engineering Log
 
+## 2026-09-08 - Pearson IC golden binary64 portability
+
+- Linux Python 3.11 CI run 34259791376 failed nine `check_exact=True` Pearson
+  cells in `tests/test_ablation_ic_golden.py` against macOS-captured
+  `tests/fixtures/ablation/ic_baseline.json` (ULP-only, e.g.
+  `0.5582304349117684` vs `0.5582304349117682`). Spearman and
+  `src/features/diagnostics.py` were not implicated.
+- Pearson fixture inputs and expecteds were replaced with finite binary64
+  dyadics so Linux 3.11 and macOS 3.12 produce identical Pearson bits. Case
+  count, NaN-mask coverage, min_periods, method split, and Spearman
+  `atol=1e-12` are unchanged. Production IC arithmetic was not changed.
+  Pearson tolerance was not added.
+- Local macOS Python 3.12 cannot prove Linux 3.11 identity; the dyadic
+  construction is the portability argument.
+
 ## 2026-09-08 - Restore eligible-row C10b batch-path guard
 
 - Checkpoint 001 removed `assert rank_indexes and corr_indexes` from
