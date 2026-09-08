@@ -1,0 +1,16 @@
+--- a/src/pit_manifest_validator_v1/canonical.py
++++ b/src/pit_manifest_validator_v1/canonical.py
+@@ -645,12 +645,7 @@
+ 
+ 
+ def canonical_utf8(value: object) -> bytes:
+-    """Serialize a preprocessed I-JSON value under RFC 8785 JCS."""
+-    try:
+-        return _jcs_dump(value).encode("utf-8")
+-    except RecursionError:
+-        fail("INVALID_JSON", "document")
+-        raise AssertionError("unreachable")
++    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+ 
+ 
+ def canonical_sha256(value: object) -> str:

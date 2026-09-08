@@ -1,5 +1,138 @@
 # Engineering Log
 
+## 2026-09-08 - Restore eligible-row C10b batch-path guard
+
+- Checkpoint 001 removed `assert rank_indexes and corr_indexes` from
+  `test_mixed_rows_rank_only_eligible_dates`. That was not formatting: it
+  let a wholesale row-loop rollback pass the remaining subset check. The
+  assertion is restored unchanged from
+  `runs/red_b1_eligible_rank/input_source_1.py`
+  (`065354ffa35382045b597ae4deea0d1195c60610b7420a30adcb4191cad02046`).
+  Baseline is expected to fail this mechanism control while still passing
+  numerical/public-contract checks. No runtime algorithm change. Prior
+  checkpoint source/report/manifest remain frozen.
+
+## 2026-09-08 - B2 eligibility-local Rank IC repair of C10b tiny-fixture overhead
+
+- Bounded FIX-B2 repair keeps C10b pair-mask then average-rank Spearman
+  batching. After public validation, Spearman now ranks and correlates only
+  rows that already meet the existing `min_periods` pair-count gate. All-ineligible
+  panels return a NaN series without `DataFrame.rank` or `corrwith`. Pearson,
+  public error ordering, axes/dtypes/names and NaN masks are unchanged. No
+  public switch, size threshold, dependency or Pearson rewrite is introduced.
+- New deterministic tests in `tests/test_ablation_c10b_eligible_rank.py` cover
+  all-ineligible and empty-valid-pair rows, mixed eligibility, min_periods
+  boundaries, tied/constant/missing data, reused Spearman goldens, and invalid
+  inputs before batch work. Intended RED on frozen B1 is 6 failed / 30 passed
+  (`red_b1_pythonpath`). Repair GREEN is 36 passed. Original diagnostics,
+  IC golden and defensive checks remain passing.
+- Isolated pytest root `repair_b2/isolated_qa` now proves
+  `features.diagnostics.__file__` and loaded SHA-256 at session start, after
+  collection, and in the session fixture. Earlier absolute-path runs against
+  `work/tests` are retained as source-binding failures. Bound RED is frozen B1
+  6 failed / 30 passed; bound GREEN is this repair 36 passed; bound baseline
+  36 passed without `DataFrame.rank` on ineligible rows.
+- Focused seven-triple samples and the interrupted 18-case matrix are retained
+  as recorded, not quiet-window acceptance. A live host sample showed unrelated
+  GUI load; fixture wall variance does not establish that the tiny regression
+  is fixed. New benchmark/resource batches are held for a renewed coordinator
+  QA_WINDOW_CLEAR. Conditional acceptance of any residual fixture cost belongs
+  to the coordinator under owner instruction, not this producer.
+
+## 2026-09-07 - Seven accepted ablation components applied as one B1 candidate
+
+- The accepted ordered implementation changes six runtime files: registry
+  traversal in `ledger/schema_registry.py`; public-preserving empty-axis/column
+  snapshots in `backtest/portfolio.py`; validated episode-array access in
+  `backtest/metrics.py`; per-execution return preparation and owned anchor
+  indexes in `campaign/runner.py`; eligible-only label gathering in
+  `features/validation.py`; and batched Rank IC with the original Pearson path
+  in `features/diagnostics.py`. No authority, calendar, cost, missingness,
+  provenance, canonicalization or frozen-byte policy is changed.
+- The producer retained baseline, single-direction and composed checkpoints in
+  the separate task's `evidence/phase_b1`. Stage checks pass: 1437 for C02;
+  416 plus two unchanged platform skips for separate/composed backtest changes;
+  233 for separate/composed campaign changes; and 486 for separate/composed
+  feature changes. The original fresh baseline has 2573 passes and two skips.
+- The added 149 deterministic regressions use committed synthetic baseline
+  oracles and cover public empty axes/digests, mixed scalars, source/catalog
+  mutation, canonical split and JSON checks, direct-constructor cache ownership,
+  per-execution preparation and exact Pearson/numerically bounded Rank IC.
+  All nine rejected controls are detected in isolated copies. Historical A1/A2
+  artifacts and every original test/fixture remain unchanged.
+- Full raw campaign artifacts/attempt state, reopened ledger tables, backtest
+  outputs and labels match baseline in the stage comparisons. Sparse Rank IC
+  differs by at most 5.551115123125783e-17 in the stage replay; the accepted
+  absolute bound remains 1e-12 only for Rank IC, with exact Pearson and masks.
+  In the feature stage's checked scope, C10b changes 25 constant-input warnings
+  to none; this warning-frequency difference is recorded explicitly.
+- Whole-candidate verification and resource distributions are recorded in the
+  separate ablation task's `reports/implementation_b1.md` and
+  `evidence/phase_b1`, with an exact candidate identity. This entry records the
+  applied components and stage evidence; independent implementation verification,
+  three fresh structural reviews and acceptance remain separate gates. No
+  release readiness, publication or whole-round completion is asserted.
+
+## 2026-09-07 - Accepted whole-project ablation B1 implementation start
+
+- Coordinator decision accepts plan SHA-256
+  15730920f183af8669f760cd606266626a2469bc6cbf60129da16fa41b99c663
+  with the bound authority-attribution clarification. The coordinator, not the
+  owner, issued A2's measurement-window clearance; that operational clearance
+  was not an owner policy waiver. Historical reports remain unchanged.
+- The accepted P1 completion-calibration and P2 public-boundary patches are now
+  applied in this clean baseline-derived implementation candidate. Public C04
+  remains withdrawn; independent feasibility resolved the counterexample for
+  C04b only. Implementation acceptance remains a separate gate.
+- Review-process lesson: report actual completed inspection and implementation
+  scope. Native metadata queries, source-plan assertions, file names and partial
+  reads do not establish full-source review, independent verification or scope
+  completion. Record completed commands, read depth, preserved failures and
+  remaining limits separately from intended work. Do not rewrite the deferred
+  unrelated mainline advisory A2-GPT-001 or historical review records.
+- B1 executes the accepted ordered components as one candidate, retaining
+  baseline, single-direction and composed evidence under the separate ablation
+  task's evidence/phase_b1. This start entry records governance/test preparation;
+  subsequent implemented facts and measurements are recorded when completed.
+
+
+## 2026-09-07 - P2 public provenance empty-axis ablation counterexample
+
+- Independent QA-A-C04-EMPTY showed that the proposed C04 column iterator
+  discarded empty row tuples for accepted Nx0 public provenance capture,
+  changing original cells and state digest. The ordinary regression and
+  mixed-scalar corpus missed the boundary; no financial corruption was shown.
+- The sealed A1 artifacts and all passing/negative results remain immutable.
+  C04 is withdrawn. A fresh baseline-derived C04b preserves the empty row
+  tuples, with new public-boundary regression and paired feasibility evidence
+  saved under evidence/phase_a2 in the separate ablation task root.
+- The new regression passes baseline and C04b and fails C04. The public shape,
+  scalar and mutation corpus compares original/current digests for both roles.
+  The durable rule now requires testing upstream accepted shapes independently
+  of downstream validation. A2 producer evidence is not independent acceptance
+  or completion of implementation; correction replay and structural plan gates
+  still apply. This entry is prepared externally for accepted implementation.
+
+
+## 2026-09-07 - P1 whole-project ablation scope and completion correction
+
+- The owner identified a P1 process failure: the prior pass inventoried the
+  whole project but experimentally tested only five local hypotheses and
+  retained seven net source-line removals. That local result did not fulfill
+  the requested comprehensive code/design/efficiency/defensive-implementation
+  ablation. Local QA or review success did not establish scope completion.
+- The corrective second round investigates every runtime/subsystem boundary,
+  ranks major alternatives, profiles synthetic end-to-end paths, and preserves
+  isolated single-variable experiments, baseline results and negative evidence.
+  A durable completion-claim calibration rule is recorded in AGENTS.md.
+- Phase A records investigation and the binding implementation plan. Its
+  PHASE_A_READY checkpoint pauses producer writes for independent plan QA and
+  three-model acceptance. It does not record completion of the requested
+  round; accepted implementation/ablation waves remain to follow.
+- This entry and the rule were prepared as an external candidate patch during
+  Phase A. Applying this patch belongs to the accepted implementation wave;
+  no unrelated governance edits or original-checkout files were overwritten.
+
 ## 2026-09-07 - Common-sample fixture binary64 portability
 
 - Ubuntu Python 3.11 CI on `4d4a0f58f5d28063d0e97f10b9a38fe357fd16b1` failed four
@@ -8376,3 +8509,56 @@ This milestone added a synthetic-only smoke test that passes a deterministic com
 The workflow generates synthetic prices and synthetic factor panels, applies existing factor preprocessing and normalization helpers, combines z-scored factors with explicit weights, and runs the existing backtester with transaction costs and signal lag.
 
 The output is a workflow diagnostic only. It does not modify backtester or feature helper behavior, fetch real market data, add broker or live trading logic, introduce order execution, or make profitability claims.
+
+---
+
+## 2026-09-08: Round 2 Whole-Codebase Ablation (Final Candidate Checkpoint & Verification)
+
+- **Status:** B2 Implementation Accepted for Integration (Binding Plan A2); Three Eligible Static Reviews Complete (0 Material Findings, 3 Open Advisories); Fresh Integration, Repeated Campaign Cohort, Final Reviews, Codex PR Review, and Linux/Python 3.11 CI Pending; The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
+- **Baseline Commit:** `6ee193c9bb43f8290b3e09396fd241fec32df695` (439 files, manifest `70237d678616cd309632117cac062dba9d24d63f29d9fd97361b29a4b2146dc4`).
+- **Review Candidate Checkpoint:** `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (448 files, candidate source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`).
+- **Executed Environment:** macOS 27 arm64, existing isolated Python 3.12.14 virtual environment, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, pytest 9.1.1, Ruff 0.16.6. Numerical library threads locked to 1.
+
+### Scope & Architectural Changes
+This ablation round completes the implementation and machine verification of seven accepted architectural simplifications across six runtime files:
+1. `src/campaign/runner.py` (C13 + C01c): Per-execution memo of cost-independent interval return maps (`_held_map` / `_held_return` lookups, `C13`) and execution-owned anchor date indexing (`C01c`). Per-trial costs, holdings, and validation state remain strictly isolated.
+2. `src/ledger/schema_registry.py` (C02): Consolidated redundant structural schema traversals within single validation calls while preserving packaged schema authority, release isolation, and transactional event validation.
+3. `src/backtest/portfolio.py` (C04b): Empty-axis preserving column iteration in source provenance capture, guaranteeing exact Nx0, 0xM, and 0x0 shape invariants (`((), ())` on 2x0 input), original/current digests, and wide/nullable scalar typing.
+4. `src/backtest/metrics.py` (C05): Direct array access for validated numeric episode accounting, preserving chronological episode state transitions, fees, slippage, and terminal-open exclusions. C05 retains episode loops while replacing DataFrame scalar lookups.
+5. `src/features/validation.py` (C12): Canonical eligible-only label endpoint gathering after split reconstruction, batching endpoint gathering and vectorized division to eliminate repeated scalar indexing (baseline already restricted computation to eligible rows).
+6. `src/features/diagnostics.py` (C10b): Vectorized Spearman Rank IC batching with eligibility-local gating (B2 repair, checking valid asset-pair counts within each date row) while keeping baseline Pearson correlation byte-exact; ONLY Spearman receives the 1e-12 gate; Pearson, public axes, dtypes, names, NaN masks, and error order stay exact in tested contracts.
+
+### Code Churn Summary (Pre-Publication Checkpoint)
+- **Production Python (`src/`):** 109 added / 52 deleted across 6 files (+57 net lines).
+- **Test Python (`tests/`):** 838 added / 0 deleted across 6 files (+838 net lines).
+- **Golden Fixtures (`tests/fixtures/`):** 30,325 added / 0 deleted across 3 files (+30,325 net lines).
+- **Documentation & Controls:** 148 added / 2 deleted across 3 files (`AGENTS.md`, `docs/engineering_log.md`, `docs/repo_map.md`; +146 net lines) before publication material.
+- **Repository Membership:** 439 baseline files → 448 candidate files (+9 added files).
+
+### Measured Performance & Tradeoffs (Producer Matrix: 18 Cases, 126 Triples)
+- **Core Speedups (Median Wall Clock):**
+  - Campaign 504×100: **13.052×** speedup (18.812s → 1.441s; -17.371s, -92.34%; cProfile calls 622.5M → 34.6M).
+  - Generic Backtest 504×100: **2.425×** speedup (2.217s → 0.914s; -1.303s, -58.77%); 160×12: **1.572×** (151.9ms → 96.7ms; -55.3ms, -36.37%).
+  - Feature Labels 1260×100: **2.883×** speedup (99.7ms → 34.6ms; -65.1ms, -65.32%).
+  - Sparse Diagnostics 504×100: **2.353×** speedup (183.3ms → 77.9ms; -105.4ms, -57.50%).
+  - Research Sweep 160×12 (8 cases): **1.586×** speedup (1.243s → 0.783s; -459.1ms, -36.95%).
+  - Ledger Transactions (Paths A & B): **2.237× – 2.239×** (197ms → 88ms; -109ms, -55.3%); with +1,000 extra records: **1.667× – 1.684×** (271ms → 161ms; -109ms, -40.0% to -40.6%).
+  - Schema Registry (30 Validations): **2.457×** speedup (596.9ms → 242.9ms; -354.0ms, -59.30%).
+- **Adverse Observations & Memory Tradeoffs Disclosed:**
+  - Independent campaign repetition 1: In the single initial independent triple, B2 was +0.151737s (~+10.8%) slower than B1 in wall time (1.558791s vs 1.407054s; CPU 1.557491s vs 1.405663s; baseline wall 18.091250s). This single observation qualifies B1-preservation statements; equal runner bytes do not prove host noise; recurrence/cause remain unresolved pending final integration QA.
+  - Minor B1-to-B2 shifts observed on large cases: `labels_1260x100` B2 median is +0.353ms (+1.03%) slower than B1; `sweep_160x12_eight_cases` B2 median is +8.145ms (+1.05%) slower than B1; `campaign_504x100` B2 is +9.4ms (+0.66%) slower than B1. Matched serial order mitigates confounding within pairs, but host activity varies over time; observed values are reported directly without causal speculation.
+  - Vectorized allocation costs: `labels_1260x100` tracemalloc peak increased +57.9% (+1,714,822 bytes) to 4.68 MB; `diagnostics_504x100_sparse` tracemalloc peak increased to peak 14.6× baseline (+3,713,984 bytes) while process peak RSS dropped 40.2% (-65.2 MB). Mechanisms provide plausible context, not isolated causal proofs.
+  - Unprofiled campaign peak RSS: In `campaign_504x100` measured executions, median process peak RSS rose slightly: baseline 309,526,528 bytes, B1 310,706,176 bytes, B2 311,394,304 bytes (+0.60% vs baseline, +0.22% vs B1), preserving the adverse finding across unprofiled and instrumented runs.
+  - Fixture resolution: Committed 4×3 fixture median is 44.47 ms in B2 vs 46.24 ms in baseline and 50.92 ms in B1 (7/7 pairs faster than B1, a 1.145× speedup; 6/7 faster than baseline).
+
+### Test Discipline, Source-Binding & Verification Lessons
+1. **Source-Binding Verification:** To prevent test harness path hijacking from repository root `pyproject.toml` `pythonpath`, the producer ran under `repair_b2/isolated_qa/` using isolated `pytest.ini` and conftest hooks, while independent QA under `qa/independent_b2/` used `-p independent_binding -o pythonpath=` with postcollection hooks asserting both module `__file__` and function `__code__.co_filename` matched expected candidate paths.
+2. **Restored Mechanism Assertions:** Checkpoint 001 omitted `assert rank_indexes and corr_indexes`. Checkpoint 002 restored the assertion byte-for-byte: baseline fails as an expected mechanism control (1 failed, 35 passed), B1 fails ineligible ranking (6 failed, 30 passed), and B2 passes completely (36 passed, exit 0). No assertions or tolerances in the current candidate were weakened.
+3. **Independent Population Structure:** Independent execution series under `qa/independent_b2/` comprises 106 separate executions (full suites 2,573 / 2,722 / 2,758 passes with 2 platform skips; 9 rejected controls; 30 fresh triples across 18 scopes). A separate 24-process cohort (`independent_b2_imports`) verified 7 fresh import triples plus 3 warmups across 11 first-party modules (medians: baseline 0.205355s, B1 0.206648s, B2 0.205939s).
+
+### Current Limitations & Pending Gates
+- Current runtime verification is strictly limited to macOS 27 arm64 / Python 3.12.14.
+- Isolated distribution build (`platform_build_002`) verified syntax compilation and Python 3.11 AST grammar parsing across 161 files, with valid wheel (55 Python members) and sdist (137 Python members) containing all 20 package resources in `src/ledger/schemas/` (JSON schemas and checksum sidecars); however, Linux / Python 3.11 **runtime CI remains pending** (prior PR202 Linux fixture failures were corrected prior to baseline, but current B2 candidate execution on Linux/3.11 is unverified).
+- **Implementation & Review Status:** The coordinator has formally accepted exact frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (`coord/decision_implementation_b2.md`). Three eligible mutually blind reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) reported zero MATERIAL findings. (A prior Gemini attempt was excluded for a prohibited native self-transcript read-boundary violation; metadata-only observed return, no peer-text exposure; preserved in `coord/agy_b2_exclusion.json` as history, does not count toward the gate).
+- **Open Advisories Preserved:** Three advisories remain OPEN: `B2-GPT-ADD-001` (original independent campaign single triple +10.8% wall time slower than B1; recurrence/cause unresolved; separate repeated campaign cohort required during final integration QA); `ADVISORY-B2-GROK-001` (fixture matrix002 pair 4 slower 0.897ms than baseline); and `ADVISORY-B2-GROK-002` (named B1-to-B2 slower-pair counts, medians, and allocation/RSS tradeoffs preserved).
+- **Next Authorized Gate:** Controlled integration by a fresh GENERAL_EXEC integrator in a clean worktree creates a fresh candidate requiring final QA (including repeated campaign cohort and independent smoke execution of reproduction commands), fresh static reviews of the final exact integration candidate, local latest/high normal Codex PR review, and Linux/Python 3.11 runtime CI. No integration, repeat, final-head review, commit, push, or publication has occurred at this checkpoint. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.

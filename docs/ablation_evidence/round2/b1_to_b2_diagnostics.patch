@@ -1,0 +1,31 @@
+--- a/src/features/diagnostics.py
++++ b/src/features/diagnostics.py
+@@ -163,14 +163,22 @@
+         return pd.Series(values, index=factor_panel.index, name="information_coefficient")
+ 
+     valid = factor_panel.notna() & returns_panel.notna()
+-    left = factor_panel.where(valid)
+-    right = returns_panel.where(valid)
+-    if method == "spearman":
+-        left = left.rank(axis=1, method="average")
+-        right = right.rank(axis=1, method="average")
++    eligible = valid.sum(axis=1) >= min_periods
++    if not bool(eligible.any()):
++        return pd.Series(
++            np.nan,
++            index=factor_panel.index,
++            dtype="float64",
++            name="information_coefficient",
++        )
++
++    left = factor_panel.loc[eligible].where(valid.loc[eligible])
++    right = returns_panel.loc[eligible].where(valid.loc[eligible])
++    left = left.rank(axis=1, method="average")
++    right = right.rank(axis=1, method="average")
+     with np.errstate(divide="ignore", invalid="ignore"):
+         result = left.corrwith(right, axis=1)
+-    return result.where(valid.sum(axis=1) >= min_periods).rename("information_coefficient")
++    return result.reindex(factor_panel.index).rename("information_coefficient")
+ 
+ 
+ def factor_rank_information_coefficient(

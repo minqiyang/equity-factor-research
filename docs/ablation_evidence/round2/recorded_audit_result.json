@@ -1,0 +1,29 @@
+{
+  "limits": [
+    "Recomputed producer measurements and raw bindings; not independently timed triples.",
+    "Artifact content checks are not Linux or Python3.11 runtime coverage.",
+    "No universal equivalence, profiling-as-throughput, or acceptance claim."
+  ],
+  "maximum_rank_ic_error": 5.551115123125783e-17,
+  "normalization_paths": [
+    "$.benchmark_summary.source_path",
+    "$.experiment_log_path",
+    "$.file.log.json.outputs.experiment_log",
+    "$.file.log.json.outputs.markdown_report",
+    "$.ohlcv_summary.source_path",
+    "$.price_summary.source_path",
+    "$.report_path",
+    "$.run_record.finished_at_utc",
+    "$.run_record.started_at_utc"
+  ],
+  "recorded_triples": {
+    "focused_002": 14,
+    "matrix_002": 126
+  },
+  "registry_resources": 20,
+  "resource_triples": 14,
+  "sdist_python": 137,
+  "status": "PASS",
+  "verified_run_summaries": 462,
+  "wheel_python": 55
+}

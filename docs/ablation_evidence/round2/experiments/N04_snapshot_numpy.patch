@@ -1,0 +1,21 @@
+--- a/src/backtest/portfolio.py
++++ b/src/backtest/portfolio.py
+@@ -1583,15 +1583,10 @@
+     return "other"
+ 
+ 
+-def _snapshot_source_cells(
+-    source: pd.DataFrame,
+-) -> tuple[tuple[SourceCellSnapshot, ...], ...]:
++def _snapshot_source_cells(source: pd.DataFrame) -> tuple[tuple[SourceCellSnapshot, ...], ...]:
+     return tuple(
+-        tuple(
+-            _snapshot_source_cell(source.iat[row_position, column_position])
+-            for column_position in range(len(source.columns))
+-        )
+-        for row_position in range(len(source.index))
++        tuple(_snapshot_source_cell(value) for value in row)
++        for row in source.to_numpy()
+     )
+ 
+ 

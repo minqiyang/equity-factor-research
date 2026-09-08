@@ -1,0 +1,11 @@
+--- a/src/backtest/portfolio.py
++++ b/src/backtest/portfolio.py
+@@ -1541,8 +1541,6 @@
+         previous_digest = record.after_state_digest
+     if (
+         previous_digest != provenance.current_state_digest
+-        or _source_state_digest(source, role=expected_role)
+-        != provenance.current_state_digest
+     ):
+         raise BacktestValidationError(
+             "source_provenance_invalid",

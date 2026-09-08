@@ -142,24 +142,43 @@ def factor_information_coefficient(
         forward_returns,
     )
 
-    values: list[float] = []
-    for date in factor_panel.index:
-        factor_row = factor_panel.loc[date]
-        returns_row = returns_panel.loc[date]
-        valid_pair = factor_row.notna() & returns_row.notna()
+    if method == "pearson":
+        values: list[float] = []
+        for date in factor_panel.index:
+            factor_row = factor_panel.loc[date]
+            returns_row = returns_panel.loc[date]
+            valid_pair = factor_row.notna() & returns_row.notna()
 
-        if int(valid_pair.sum()) < min_periods:
-            values.append(np.nan)
-            continue
+            if int(valid_pair.sum()) < min_periods:
+                values.append(np.nan)
+                continue
 
-        with np.errstate(divide="ignore", invalid="ignore"):
-            correlation = factor_row[valid_pair].corr(
-                returns_row[valid_pair],
-                method=method,
-            )
-            values.append(float(correlation))
+            with np.errstate(divide="ignore", invalid="ignore"):
+                correlation = factor_row[valid_pair].corr(
+                    returns_row[valid_pair],
+                    method=method,
+                )
+                values.append(float(correlation))
 
-    return pd.Series(values, index=factor_panel.index, name="information_coefficient")
+        return pd.Series(values, index=factor_panel.index, name="information_coefficient")
+
+    valid = factor_panel.notna() & returns_panel.notna()
+    eligible = valid.sum(axis=1) >= min_periods
+    if not bool(eligible.any()):
+        return pd.Series(
+            np.nan,
+            index=factor_panel.index,
+            dtype="float64",
+            name="information_coefficient",
+        )
+
+    left = factor_panel.loc[eligible].where(valid.loc[eligible])
+    right = returns_panel.loc[eligible].where(valid.loc[eligible])
+    left = left.rank(axis=1, method="average")
+    right = right.rank(axis=1, method="average")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = left.corrwith(right, axis=1)
+    return result.reindex(factor_panel.index).rename("information_coefficient")
 
 
 def factor_rank_information_coefficient(

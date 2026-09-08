@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from bisect import bisect_left, bisect_right
 from datetime import date, datetime, timezone
 import fcntl
 import hashlib
@@ -325,6 +326,11 @@ class _PreparedPanel:
 
 
 @dataclass(frozen=True)
+class _IndexedPreparedPanel(_PreparedPanel):
+    anchors_by_date: Mapping[bytes, Mapping[str, Mapping[str, object]]]
+
+
+@dataclass(frozen=True)
 class _MonthResult:
     signal_date: str
     execution_date: str | None
@@ -556,6 +562,17 @@ def _execute_prepared(
     panel: _PreparedPanel,
 ) -> tuple[tuple[object, ...], ReconciliationResult, _ExecutionTrace] | str:
     try:
+        by_listing = MappingProxyType({
+            key: MappingProxyType({
+                str(record.get("session_date")): record
+                for record in records
+                if isinstance(record.get("session_date"), str)
+            })
+            for key, records in panel.anchors.items()
+        })
+        panel = _IndexedPreparedPanel(
+            panel.prices, panel.anchors, panel.listings, panel.session_dates, by_listing
+        )
         inventory = parse_trial_inventory(inventory_raw)
         schedule = _campaign_schedule(config, panel)
         frozen = _freeze_panel(config, panel, schedule)
@@ -563,6 +580,7 @@ def _execute_prepared(
             factor_id: _monthly_rank_ics(config, factor_id, panel, frozen, schedule)
             for factor_id in FACTOR_ORDER
         }
+        held_cache: dict[tuple[str, str], dict[bytes, object]] = {}
         trial_outputs: dict[str, dict[str, dict[str, object]]] = {}
         holdings: dict[str, MappingProxyType[str, ContinuousHoldings | None]] = {}
         for trial in inventory:
@@ -576,6 +594,7 @@ def _execute_prepared(
                 frozen,
                 schedule,
                 monthly_ics,
+                held_cache,
             )
             trial_outputs[trial_id] = outputs
             holdings[trial_id] = MappingProxyType(paths)
@@ -758,6 +777,16 @@ def _decision_listing(
     )
 
 
+def _anchor_index(panel: _PreparedPanel, listing_key: bytes):
+    if isinstance(panel, _IndexedPreparedPanel):
+        return panel.anchors_by_date.get(listing_key, {})
+    return {
+        str(record.get("session_date")): record
+        for record in panel.anchors.get(listing_key, ())
+        if isinstance(record.get("session_date"), str)
+    }
+
+
 def _select_factor_anchors(
     panel: _PreparedPanel,
     listing_key: bytes,
@@ -783,11 +812,7 @@ def _select_factor_anchors(
     records = panel.anchors.get(listing_key)
     if series is None or records is None:
         return None
-    by_date = {
-        str(record.get("session_date")): record
-        for record in records
-        if isinstance(record.get("session_date"), str)
-    }
+    by_date = _anchor_index(panel, listing_key)
     scalars: list[float] = []
     lineage: list[MappingProxyType[str, object]] = []
     for session in dates:
@@ -805,6 +830,7 @@ def _execute_trial(
     frozen: Mapping[tuple[str, str], object],
     schedule: CampaignSchedule | None,
     monthly_ics: Mapping[str, tuple[_MonthResult, ...]],
+    held_cache: dict[tuple[str, str], dict[bytes, object]],
 ) -> tuple[dict[str, dict[str, object]], dict[str, ContinuousHoldings | None]]:
     outputs: dict[str, dict[str, object]] = {}
     paths: dict[str, ContinuousHoldings | None] = {}
@@ -817,6 +843,7 @@ def _execute_trial(
             frozen,
             schedule,
             monthly_ics,
+            held_cache,
         )
         outputs[name] = record
         factor_id, _, series = name.partition(":")
@@ -834,6 +861,7 @@ def _execute_named_output(
     frozen: Mapping[tuple[str, str], object],
     schedule: CampaignSchedule | None,
     monthly_ics: Mapping[str, tuple[_MonthResult, ...]],
+    held_cache: dict[tuple[str, str], dict[bytes, object]],
 ) -> tuple[dict[str, object], ContinuousHoldings | None]:
     factor_id, _, series = name.partition(":")
     if not factor_id or not series:
@@ -850,7 +878,7 @@ def _execute_named_output(
             )
         if series == _CONTINUOUS:
             return _continuous_output(
-                config, trial, factor_id, panel, frozen, schedule
+                config, trial, factor_id, panel, frozen, schedule, held_cache
             )
     except (TypeError, ValueError, KeyError):
         return _invalid_output(_REASON_OUTPUT_INVALID), None
@@ -994,6 +1022,7 @@ def _continuous_output(
     panel: _PreparedPanel,
     frozen: Mapping[tuple[str, str], object],
     schedule: CampaignSchedule | None,
+    held_cache: dict[tuple[str, str], dict[bytes, object]],
 ) -> tuple[dict[str, object], ContinuousHoldings | None]:
     cost = trial.get("cost_bps", 0)
     if isinstance(cost, bool) or not isinstance(cost, int):
@@ -1028,7 +1057,10 @@ def _continuous_output(
     for index in range(start, len(panel.session_dates) - 1):
         begin = panel.session_dates[index]
         end = panel.session_dates[index + 1]
-        held = _held_map(panel, begin, end, schedule)
+        key = (begin, end)
+        if key not in held_cache:
+            held_cache[key] = _held_map(panel, begin, end, schedule)
+        held = held_cache[key]
         reset = resets.get(end)
         intervals.append(holding_interval(end, held, reset))
     holdings = advance_holdings(
@@ -1095,16 +1127,15 @@ def _held_return(
     start_date: str,
     end_date: str,
 ) -> SimpleReturn:
-    by_date = {
-        str(record.get("session_date")): record
-        for record in panel.anchors.get(row.listing_key, ())
-        if isinstance(record.get("session_date"), str)
-    }
+    by_date = _anchor_index(panel, row.listing_key)
     if start_date not in by_date or end_date not in by_date:
         return SimpleReturn(None, False, _REASON_HELD_MISSING)
+    sessions = panel.session_dates
+    if isinstance(panel, _IndexedPreparedPanel):
+        sessions = sessions[bisect_left(sessions, start_date):bisect_right(sessions, end_date)]
     ordered = tuple(
         by_date[session]
-        for session in panel.session_dates
+        for session in sessions
         if start_date <= session <= end_date and session in by_date
     )
     start = by_date[start_date]

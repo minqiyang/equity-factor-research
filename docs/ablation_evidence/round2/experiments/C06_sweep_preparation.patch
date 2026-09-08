@@ -1,0 +1,81 @@
+--- a/research/synthetic_combined_score_backtest_demo.py
++++ b/research/synthetic_combined_score_backtest_demo.py
+@@ -124,21 +124,9 @@
+     )
+ 
+ 
+-def run_synthetic_combined_score_backtest_demo(
+-    *,
+-    config: SyntheticCombinedScoreBacktestConfig = SyntheticCombinedScoreBacktestConfig(),
+-    report_path: Path = DEFAULT_REPORT_PATH,
+-    experiment_log_path: Path | None = None,
+-    write_outputs: bool = True,
+-) -> SyntheticCombinedScoreBacktestResult:
+-    """Run the synthetic combined-score backtest smoke test and write a report."""
+-
+-    experiment_log_path = resolve_experiment_log_path(
+-        report_path,
+-        default_report_path=DEFAULT_REPORT_PATH,
+-        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+-    ) if experiment_log_path is None else experiment_log_path
+-
++
++
++def _prepare_synthetic_inputs(config):
+     prices = generate_synthetic_prices(config)
+     raw_factors = generate_synthetic_factor_panels(_factor_config(config))
+     winsorized_factors = {
+@@ -158,6 +146,26 @@
+         for name, factor in winsorized_factors.items()
+     }
+     correlation_matrix = factor_correlation_matrix(zscore_factors)
++    return (prices, raw_factors, winsorized_factors, zscore_factors, rank_factors, correlation_matrix)
++
++
++def run_synthetic_combined_score_backtest_demo(
++    *,
++    config: SyntheticCombinedScoreBacktestConfig = SyntheticCombinedScoreBacktestConfig(),
++    report_path: Path = DEFAULT_REPORT_PATH,
++    experiment_log_path: Path | None = None,
++    write_outputs: bool = True,
++    _prepared=None,
++) -> SyntheticCombinedScoreBacktestResult:
++    """Run the synthetic combined-score backtest smoke test and write a report."""
++
++    experiment_log_path = resolve_experiment_log_path(
++        report_path,
++        default_report_path=DEFAULT_REPORT_PATH,
++        default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
++    ) if experiment_log_path is None else experiment_log_path
++
++    (prices, raw_factors, winsorized_factors, zscore_factors, rank_factors, correlation_matrix) = _prepare_synthetic_inputs(config) if _prepared is None else _prepared
+     combined_score = combine_factors(zscore_factors, config.weights)
+     source_provenance = capture_backtest_source_provenance(
+         prices,
+--- a/research/synthetic_multifactor_parameter_sweep.py
++++ b/research/synthetic_multifactor_parameter_sweep.py
+@@ -15,6 +15,7 @@
+ 
+ from research.synthetic_combined_score_backtest_demo import (
+     SyntheticCombinedScoreBacktestConfig,
++    _prepare_synthetic_inputs,
+     run_synthetic_combined_score_backtest_demo,
+ )
+ from research.synthetic_multifactor_workflow_demo import FACTOR_NAMES
+@@ -105,6 +106,8 @@
+         default_log_path=DEFAULT_EXPERIMENT_LOG_PATH,
+     ) if experiment_log_path is None else experiment_log_path
+ 
++    first_weights = config.weight_sets[sorted(config.weight_sets)[0]]
++    prepared = _prepare_synthetic_inputs(_combined_config(config, weights=first_weights, top_n=sorted(config.top_n_values)[0]))
+     rows = []
+     timing_evidence: dict[str, dict[str, object]] = {}
+     for weight_set_name in sorted(config.weight_sets):
+@@ -118,6 +121,7 @@
+                     f"{experiment_log_path.stem}__{case_id}.json"
+                 ),
+                 write_outputs=False,
++                _prepared=prepared,
+             )
+             metrics = case_result.backtest_result.metrics
+             timing_evidence[case_id] = {

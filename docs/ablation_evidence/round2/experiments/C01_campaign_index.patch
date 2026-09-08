@@ -1,0 +1,66 @@
+--- a/src/campaign/runner.py
++++ b/src/campaign/runner.py
+@@ -4,6 +4,8 @@
+ 
+ from collections.abc import Mapping, Sequence
+ from dataclasses import dataclass
++from functools import cached_property
++from bisect import bisect_left, bisect_right
+ from datetime import date, datetime, timezone
+ import fcntl
+ import hashlib
+@@ -323,6 +325,17 @@
+     listings: MappingProxyType[str, tuple[_ListingRow, ...]]
+     session_dates: tuple[str, ...]
+ 
++    @cached_property
++    def anchors_by_date(self):
++        return MappingProxyType({
++            key: MappingProxyType({
++                str(record.get("session_date")): record
++                for record in records
++                if isinstance(record.get("session_date"), str)
++            })
++            for key, records in self.anchors.items()
++        })
++
+ 
+ @dataclass(frozen=True)
+ class _MonthResult:
+@@ -783,11 +796,7 @@
+     records = panel.anchors.get(listing_key)
+     if series is None or records is None:
+         return None
+-    by_date = {
+-        str(record.get("session_date")): record
+-        for record in records
+-        if isinstance(record.get("session_date"), str)
+-    }
++    by_date = panel.anchors_by_date.get(listing_key, {})
+     scalars: list[float] = []
+     lineage: list[MappingProxyType[str, object]] = []
+     for session in dates:
+@@ -1095,17 +1104,16 @@
+     start_date: str,
+     end_date: str,
+ ) -> SimpleReturn:
+-    by_date = {
+-        str(record.get("session_date")): record
+-        for record in panel.anchors.get(row.listing_key, ())
+-        if isinstance(record.get("session_date"), str)
+-    }
++    by_date = panel.anchors_by_date.get(row.listing_key, {})
+     if start_date not in by_date or end_date not in by_date:
+         return SimpleReturn(None, False, _REASON_HELD_MISSING)
+     ordered = tuple(
+         by_date[session]
+-        for session in panel.session_dates
+-        if start_date <= session <= end_date and session in by_date
++        for session in panel.session_dates[
++            bisect_left(panel.session_dates, start_date):
++            bisect_right(panel.session_dates, end_date)
++        ]
++        if session in by_date
+     )
+     start = by_date[start_date]
+     end = by_date[end_date]

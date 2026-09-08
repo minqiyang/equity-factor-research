@@ -189,10 +189,16 @@ def calculate_holding_episode_metrics(
     active: dict[object, list[float]] = {}
     completed_returns: list[float] = []
 
-    for date in clean_holdings.index:
-        for asset in clean_holdings.columns:
-            held_before = previous_holdings.at[date, asset] > 0.0
-            held_after = clean_holdings.at[date, asset] > 0.0
+    previous_holdings_values = previous_holdings.to_numpy()
+    clean_holdings_values = clean_holdings.to_numpy()
+    clean_signed_values = clean_signed.to_numpy()
+    clean_returns_values = clean_returns.to_numpy()
+    asset_costs_values = asset_costs.to_numpy()
+
+    for row_position, date in enumerate(clean_holdings.index):
+        for column_position, asset in enumerate(clean_holdings.columns):
+            held_before = previous_holdings_values[row_position, column_position] > 0.0
+            held_after = clean_holdings_values[row_position, column_position] > 0.0
             if not held_before and held_after:
                 active[asset] = [0.0, 0.0, 0.0]
 
@@ -200,13 +206,13 @@ def calculate_holding_episode_metrics(
             if held_before and episode is None:
                 raise ValueError("holdings episode state is inconsistent across dates")
             if episode is None:
-                if abs(clean_signed.at[date, asset]) > _EPISODE_ACCOUNTING_TOLERANCE:
+                if abs(clean_signed_values[row_position, column_position]) > _EPISODE_ACCOUNTING_TOLERANCE:
                     raise ValueError("signed trade has no active holding episode")
                 continue
 
-            episode[0] += previous_holdings.at[date, asset] * clean_returns.at[date, asset]
-            episode[1] += max(clean_signed.at[date, asset], 0.0)
-            episode[2] += asset_costs.at[date, asset]
+            episode[0] += previous_holdings_values[row_position, column_position] * clean_returns_values[row_position, column_position]
+            episode[1] += max(clean_signed_values[row_position, column_position], 0.0)
+            episode[2] += asset_costs_values[row_position, column_position]
 
             if held_before and not held_after:
                 if episode[1] <= _EPISODE_ACCOUNTING_TOLERANCE:

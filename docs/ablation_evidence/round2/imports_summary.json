@@ -1,0 +1,536 @@
+{
+  "measured_triples": 7,
+  "population": "independent_b2_imports",
+  "samples": [
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 0,
+      "sample": {
+        "cpu_seconds": 0.206618,
+        "wall_seconds": 0.20680083399929572
+      },
+      "side": "b2",
+      "warmup": true
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 0,
+      "sample": {
+        "cpu_seconds": 0.204485,
+        "wall_seconds": 0.20465904100274201
+      },
+      "side": "b1",
+      "warmup": true
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 0,
+      "sample": {
+        "cpu_seconds": 0.20623,
+        "wall_seconds": 0.20639516699884553
+      },
+      "side": "baseline",
+      "warmup": true
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 1,
+      "sample": {
+        "cpu_seconds": 0.20647000000000001,
+        "wall_seconds": 0.20664750000287313
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 1,
+      "sample": {
+        "cpu_seconds": 0.20651,
+        "wall_seconds": 0.20668120800110046
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 1,
+      "sample": {
+        "cpu_seconds": 0.205484,
+        "wall_seconds": 0.20566191599937156
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 2,
+      "sample": {
+        "cpu_seconds": 0.210325,
+        "wall_seconds": 0.21049800000037067
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 2,
+      "sample": {
+        "cpu_seconds": 0.205179,
+        "wall_seconds": 0.20535458299855236
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 2,
+      "sample": {
+        "cpu_seconds": 0.20639,
+        "wall_seconds": 0.20657429200946353
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 3,
+      "sample": {
+        "cpu_seconds": 0.20391399999999998,
+        "wall_seconds": 0.20410241700301412
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 3,
+      "sample": {
+        "cpu_seconds": 0.206972,
+        "wall_seconds": 0.20713166700443253
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 3,
+      "sample": {
+        "cpu_seconds": 0.206958,
+        "wall_seconds": 0.20713924999290612
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 4,
+      "sample": {
+        "cpu_seconds": 0.207268,
+        "wall_seconds": 0.207452208007453
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 4,
+      "sample": {
+        "cpu_seconds": 0.204439,
+        "wall_seconds": 0.20461983399582095
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 4,
+      "sample": {
+        "cpu_seconds": 0.20321,
+        "wall_seconds": 0.2033780839992687
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 5,
+      "sample": {
+        "cpu_seconds": 0.20291299999999998,
+        "wall_seconds": 0.20309562499460299
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 5,
+      "sample": {
+        "cpu_seconds": 0.205955,
+        "wall_seconds": 0.20612595800776035
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 5,
+      "sample": {
+        "cpu_seconds": 0.205233,
+        "wall_seconds": 0.20542045899492223
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 6,
+      "sample": {
+        "cpu_seconds": 0.205759,
+        "wall_seconds": 0.2059387090121163
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 6,
+      "sample": {
+        "cpu_seconds": 0.203617,
+        "wall_seconds": 0.20377624999673571
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 6,
+      "sample": {
+        "cpu_seconds": 0.20512999999999998,
+        "wall_seconds": 0.20530950000102166
+      },
+      "side": "baseline",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 7,
+      "sample": {
+        "cpu_seconds": 0.208036,
+        "wall_seconds": 0.20821129198884591
+      },
+      "side": "b1",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 7,
+      "sample": {
+        "cpu_seconds": 0.204925,
+        "wall_seconds": 0.20510449999710545
+      },
+      "side": "b2",
+      "warmup": false
+    },
+    {
+      "origins": {
+        "backtest.metrics": "src/backtest/metrics.py",
+        "backtest.portfolio": "src/backtest/portfolio.py",
+        "campaign.runner": "src/campaign/runner.py",
+        "features.diagnostics": "src/features/diagnostics.py",
+        "features.operators": "src/features/operators.py",
+        "features.validation": "src/features/validation.py",
+        "ledger.runtime": "src/ledger/runtime.py",
+        "ledger.schema_registry": "src/ledger/schema_registry.py",
+        "pit_manifest_validator_v1.validator": "src/pit_manifest_validator_v1/validator.py",
+        "research.local_csv_fixture_workflow_demo": "research/local_csv_fixture_workflow_demo.py",
+        "research.synthetic_combined_score_backtest_demo": "research/synthetic_combined_score_backtest_demo.py"
+      },
+      "repetition": 7,
+      "sample": {
+        "cpu_seconds": 0.204484,
+        "wall_seconds": 0.20468733400048222
+      },
+      "side": "baseline",
+      "warmup": false
+    }
+  ],
+  "separate_from_106_executions": true,
+  "warmup_processes": 3
+}

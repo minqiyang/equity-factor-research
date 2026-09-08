@@ -79,6 +79,19 @@ itself is a hold or unblock condition.
 - Rank severity. Skipping a required live availability check is P1 process
   failure.
 
+- A whole-project ablation completion claim requires an explicit runtime and
+  subsystem coverage matrix, tested high-impact hypotheses, preserved baseline
+  and negative evidence, and an explicit limitations/gap assessment. Local QA,
+  review success, a file inventory, or a handful of local optimizations cannot
+  substitute for fulfillment of the owner's requested scope. Plan readiness
+  records a planning checkpoint, not completion of the implementation round.
+
+- For ablations that replace array traversal, test every accepted public
+  boundary's empty-axis shapes (Nx0, 0xM and 0x0), duplicate/named axes and mixed
+  scalar identity. A downstream function's stricter inputs do not narrow an
+  upstream public API. Compare public cells, state digests and refusal reasons;
+  ordinary test success cannot dispose of a demonstrated counterexample.
+
 ## Review Priorities
 
 - Prioritize research-validity risk over style. A P1 requires concrete evidence

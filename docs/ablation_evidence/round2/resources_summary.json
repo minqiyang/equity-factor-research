@@ -1,0 +1,380 @@
+[
+  {
+    "case": "campaign_504x100",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 622526103,
+          "primitive_calls": 622525929,
+          "seconds": 68.806835685
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 316620800
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 34626624,
+          "primitive_calls": 34626450,
+          "seconds": 4.555752459000002
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 317603840
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 34626584,
+          "primitive_calls": 34626410,
+          "seconds": 4.543049124999999
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 319291392
+      }
+    }
+  },
+  {
+    "case": "campaign_504x100",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 103348539,
+        "process_peak_rss_bytes": 417792000
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 103868362,
+        "process_peak_rss_bytes": 419217408
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 103868016,
+        "process_peak_rss_bytes": 419512320
+      }
+    }
+  },
+  {
+    "case": "backtest_504x100",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 31682116,
+          "primitive_calls": 31635198,
+          "seconds": 6.075443853000003
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 235552768
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 12478269,
+          "primitive_calls": 12432557,
+          "seconds": 2.314861138999998
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 233865216
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 12478177,
+          "primitive_calls": 12432473,
+          "seconds": 2.30899673
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 232669184
+      }
+    }
+  },
+  {
+    "case": "backtest_504x100",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 39863469,
+        "process_peak_rss_bytes": 252739584
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 39853700,
+        "process_peak_rss_bytes": 250331136
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 39851483,
+        "process_peak_rss_bytes": 250462208
+      }
+    }
+  },
+  {
+    "case": "features_1260x500",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 1327864,
+          "primitive_calls": 1325741,
+          "seconds": 0.4172160419999996
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 1249247232
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 1328002,
+          "primitive_calls": 1325867,
+          "seconds": 0.417461959
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 1249263616
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 1327910,
+          "primitive_calls": 1325783,
+          "seconds": 0.4126643329999998
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 1249148928
+      }
+    }
+  },
+  {
+    "case": "features_1260x500",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 121298216,
+        "process_peak_rss_bytes": 1248411648
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 121298406,
+        "process_peak_rss_bytes": 1248296960
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 121298259,
+        "process_peak_rss_bytes": 1248329728
+      }
+    }
+  },
+  {
+    "case": "labels_1260x100",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 1395314,
+          "primitive_calls": 1371390,
+          "seconds": 0.2803650410000001
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 113803264
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 298527,
+          "primitive_calls": 293119,
+          "seconds": 0.07114958699999997
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 113655808
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 298527,
+          "primitive_calls": 293119,
+          "seconds": 0.07216929200000005
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 113967104
+      }
+    }
+  },
+  {
+    "case": "labels_1260x100",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 2961986,
+        "process_peak_rss_bytes": 113901568
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 4678517,
+        "process_peak_rss_bytes": 113917952
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 4676808,
+        "process_peak_rss_bytes": 113836032
+      }
+    }
+  },
+  {
+    "case": "diagnostics_504x100_sparse",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 2045460,
+          "primitive_calls": 2010664,
+          "seconds": 0.4759964170000001
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 161677312
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 940804,
+          "primitive_calls": 923411,
+          "seconds": 0.20560087500000013
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 97058816
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 941275,
+          "primitive_calls": 923861,
+          "seconds": 0.20327608400000002
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 97107968
+      }
+    }
+  },
+  {
+    "case": "diagnostics_504x100_sparse",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 272308,
+        "process_peak_rss_bytes": 162185216
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 3981408,
+        "process_peak_rss_bytes": 97058816
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 3986292,
+        "process_peak_rss_bytes": 96976896
+      }
+    }
+  },
+  {
+    "case": "ledger_b_1000",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 7632928,
+          "primitive_calls": 6608198,
+          "seconds": 0.8816246409999996
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 102072320
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 5088268,
+          "primitive_calls": 4298654,
+          "seconds": 0.5843846770000006
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 103104512
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 5088232,
+          "primitive_calls": 4298618,
+          "seconds": 0.5872755710000002
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 103071744
+      }
+    }
+  },
+  {
+    "case": "ledger_b_1000",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 3045880,
+        "process_peak_rss_bytes": 103432192
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 3046246,
+        "process_peak_rss_bytes": 103890944
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 3045912,
+        "process_peak_rss_bytes": 103596032
+      }
+    }
+  },
+  {
+    "case": "registry_30",
+    "mode": "profile",
+    "values": {
+      "baseline": {
+        "profile": {
+          "total_calls": 14591912,
+          "primitive_calls": 13066442,
+          "seconds": 1.6681168329999998
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 94191616
+      },
+      "b1": {
+        "profile": {
+          "total_calls": 6109712,
+          "primitive_calls": 5367962,
+          "seconds": 0.6807080839999999
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 93782016
+      },
+      "b2": {
+        "profile": {
+          "total_calls": 6109592,
+          "primitive_calls": 5367842,
+          "seconds": 0.679681417
+        },
+        "tracemalloc_peak_bytes": null,
+        "process_peak_rss_bytes": 93159424
+      }
+    }
+  },
+  {
+    "case": "registry_30",
+    "mode": "memory",
+    "values": {
+      "baseline": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 370007,
+        "process_peak_rss_bytes": 94879744
+      },
+      "b1": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 369994,
+        "process_peak_rss_bytes": 94175232
+      },
+      "b2": {
+        "profile": null,
+        "tracemalloc_peak_bytes": 369959,
+        "process_peak_rss_bytes": 93503488
+      }
+    }
+  }
+]
