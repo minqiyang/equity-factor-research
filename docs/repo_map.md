@@ -10,7 +10,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | --- | --- | --- |
 | `.agents/skills/` | Project-specific Codex Skills and workflow gates. | 2 mapped files |
 | `.github/` | Repository automation such as CI workflows. | 1 mapped file |
-| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 146 mapped files |
+| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 147 mapped files |
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/campaign/` | Frozen dataset-independent computations for bounded research campaigns. | 21 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 11 mapped files |
@@ -28,7 +28,8 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 
 - `AGENTS.md` (present): Canonical external-action authority boundary and repository invariants.
 - `docs/current_handoff.md` (present): Concise operational handoff with a timestamped checkpoint, blockers, and next safe action. Authority remains in AGENTS.md.
-- `docs/research_program_charter.md` (present): Canonical long-term research intent and evidence policy; not an external-action authority source.
+- `docs/north_star.md` (present): Active North Star product aspiration and demo-first delivery principles; not an external-action authority source.
+- `docs/research_program_charter.md` (present): Preserved historical formal research evidence policy; not an external-action authority source or product delivery blocker.
 - `docs/purged_bounded_split_contract.md` (present): Accepted Stage 1a timing and sample-isolation design.
 - `docs/signal_execution_timing_contract.md` (present): Accepted Stage 2a signal, execution, and metric timing design.
 - `docs/point_in_time_data_methodology_contract.md` (present): Accepted Stage 3 point-in-time data and holdout-evidence methodology.
@@ -42,7 +43,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 - `docs/experiment_trial_ledger_campaign_inventory_seal_schema_contract.md` (present): Accepted Stage 4B-R1G-A initial campaign-inventory-seal authority.
 - `docs/experiment_trial_ledger_attempt_allocation_schema_contract.md` (present): Accepted Stage 4B-R1H-A attempt-allocation authority.
 - `docs/experiment_trial_ledger_attempt_start_schema_contract.md` (present): Accepted Stage 4B-R1I-A attempt-start authority.
-- `docs/eodhd_sp500_diagnostic_campaign_contract.md` (present): Active Track A/Track B diagnostic campaign scope authority.
+- `docs/eodhd_sp500_diagnostic_campaign_contract.md` (present): Historical Track A/Track B diagnostic campaign scope authority.
 - `docs/campaign_bounded_diagnostic_runner_v1.md` (present): Public-safe Track A PR 3 bounded diagnostic runner design note; not an authority source.
 - `docs/preregistrations/eodhd_sp500_three_factor_diagnostic_v1.yaml` (present): Frozen public Track A machine-readable protocol.
 - `docs/preregistrations/eodhd_sp500_three_factor_trial_inventory_v1.json` (present): Exact frozen 14-semantic-trial inventory.

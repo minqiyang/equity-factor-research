@@ -70,8 +70,12 @@ IMPORTANT_FILES = [
         "Concise operational handoff with a timestamped checkpoint, blockers, and next safe action. Authority remains in AGENTS.md.",
     ),
     (
+        "docs/north_star.md",
+        "Active North Star product aspiration and demo-first delivery principles; not an external-action authority source.",
+    ),
+    (
         "docs/research_program_charter.md",
-        "Canonical long-term research intent and evidence policy; not an external-action authority source.",
+        "Preserved historical formal research evidence policy; not an external-action authority source or product delivery blocker.",
     ),
     (
         "docs/purged_bounded_split_contract.md",
@@ -127,7 +131,7 @@ IMPORTANT_FILES = [
     ),
     (
         "docs/eodhd_sp500_diagnostic_campaign_contract.md",
-        "Active Track A/Track B diagnostic campaign scope authority.",
+        "Historical Track A/Track B diagnostic campaign scope authority.",
     ),
     (
         "docs/campaign_bounded_diagnostic_runner_v1.md",

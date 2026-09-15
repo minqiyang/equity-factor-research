@@ -11,14 +11,31 @@ Passing this checklist does not make a strategy or dataset validated. It only
 records that the local-data intake has enough documented context for the next
 scope-limited review.
 
-This checklist is subordinate to `docs/research_program_charter.md` and the
-active gates in `docs/current_roadmap.md`.
+This checklist is subordinate to `docs/research_program_charter.md` (preserved
+formal research evidence policy) and the active delivery requirements in
+`docs/current_roadmap.md#primary-milestones` (Demo v0 for active simulation, with
+formal research promotion gates owned separately in Milestone 4).
 `docs/point_in_time_data_methodology_contract.md` is the normative Stage 3
 authority for any dataset-specific provenance, universe, corporate-action,
 field, privacy, and holdout review. A passing diagnostic audit cannot authorize
 formal historical interpretation while a dataset manifest or any timing,
 all-trial ledger, statistical, cost, privacy, or holdout-classification gate
 remains blocked.
+
+Under the demo-first engineering discipline, local CSV `diagnostic_ready` is a
+separately authorized exploratory path strictly outside mandatory Demo v0 acceptance
+(which is demonstrable on synthetic fixtures without private data). An exploratory
+local-data diagnostic run may qualify under the existing diagnostic-scope readiness path
+without requiring full formal experiment/trial-ledger infrastructure (charter Stage 4 / Milestone 4) or complete SEC lineage proofs.
+However, skipping the formal experiment/trial ledger (charter Stage 4) or universal SEC proof is never a waiver for
+scope-relevant schema, date alignment, adjustment consistency, identifier continuity,
+or economic correctness. Unknown adjustments, unresolved identifier continuity, or
+unresolved high/medium data defects continue to block interpretation under stop
+conditions below; simply documenting an unresolved correctness issue in the backlog
+does not award readiness. Any such mode-local readiness decision (`diagnostic_ready`)
+remains strictly bounded to its declared diagnostic scope, does not establish mandatory
+Demo v0 acceptance, and must not be confused with the historical hash-bound Track A
+campaign state (`DIAGNOSTIC_READY`).
 
 ## Readiness Classification
 
@@ -35,7 +52,7 @@ Every decision must state one of these scope-qualified outcomes:
 The Stage 1 split and Stage 2 timing gates are implemented. Stage 3 contract
 acceptance establishes only `methodology_contract_accepted`; it does not
 establish `dataset_manifest_reviewed` or `formal_interpretation_eligible`.
-Until a specific manifest and the Stage 4 immutable all-trial/access ledger,
+Until a specific manifest and the charter Stage 4 immutable all-trial/access ledger,
 Stage 5 statistical package, and other applicable gates pass, the highest
 possible outcome remains diagnostic readiness.
 
@@ -291,7 +308,8 @@ Before committing any real-data experiment output, add or prepare an
 
 Synthetic demo JSON logs are not substitutes for this real-data experiment
 record. The current `EXPERIMENT_LOG.md` template remains a diagnostic/legacy
-record, not the immutable all-trial ledger required by Stage 4. A formal run
+record, not the immutable all-trial ledger required by charter Stage 4 of
+`docs/research_program_charter.md` and `docs/experiment_trial_ledger_contract.md`. A formal run
 must allocate experiment, campaign, trial-family, and trial identifiers before
 execution and retain every attempted, failed, invalid, aborted, and excluded
 trial plus configuration, code/data lineage, output hashes, review outcome, and
@@ -351,6 +369,6 @@ interpretation.
 `formal_ready` additionally requires every applicable charter and active
 roadmap gate to have accepted implementation evidence. Contract acceptance
 does not verify a dataset. The first use of local CSV data remains a smoke test
-unless a dataset-specific manifest, Stage 4 trial/access ledger, Stage 5
+unless a dataset-specific manifest, charter Stage 4 trial/access ledger, Stage 5
 validation protocol, and every other applicable interpretation gate have
 passed.

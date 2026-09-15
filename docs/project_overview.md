@@ -1,5 +1,7 @@
 # Project Overview
 
+> **Active Direction Note**: Active product aspiration and demo-first delivery principles are defined exclusively in [docs/north_star.md](north_star.md). Program milestones and the authoritative backlog are owned by [docs/current_roadmap.md](current_roadmap.md). The ultimate aspiration is automated stock selection and trading; this repository is strictly the foundational simulation phase.
+
 This repository is an AI-assisted, simulated, auditable equity factor research
 pipeline. It is a learning and research project for studying stock-selection
 ideas with clear assumptions, tests, and logs.
@@ -7,9 +9,9 @@ ideas with clear assumptions, tests, and logs.
 It is not live trading, not paper trading, not financial advice, and not a
 profitability claim.
 
-## Final Objective
+## Current Research-Platform Workflow
 
-The final objective is to build a reproducible research platform that can take
+The current research-platform workflow builds a reproducible research platform that can take
 factor ideas through a disciplined workflow:
 
 1. Define a stock factor idea.
@@ -59,8 +61,8 @@ what failed, what remains uncertain, and what should happen next.
 
 The repository currently includes:
 
-- governance documents: `README.md`, `PROJECT_SPEC.md`, `AGENTS.md`, and
-  `EXPERIMENT_LOG.md`.
+- governance documents: `README.md`, `PROJECT_SPEC.md`, `AGENTS.md`,
+  `docs/north_star.md`, `docs/current_roadmap.md`, and `EXPERIMENT_LOG.md`.
 - reusable factor operators in `src/features/operators.py`.
 - `alpha_009` as a close-only WorldQuant-style research feature in
   `src/features/worldquant_alphas.py`.
@@ -150,16 +152,19 @@ Current limitations are intentional and should remain visible:
 
 ## Recommended Next Direction
 
-Continue in small PR-sized stages. Finish active bugfixes first, keep each
-stage narrowly scoped, and preserve the project guardrails.
-
-Future local data work should use user-provided local CSV files only. Avoid
-automatic downloads, vendor APIs, credentials, broker logic, and order
+Stage progression and next actions defer strictly to the recorded next safe
+action, holds, and explicit STOP boundary in
+[docs/current_handoff.md](current_handoff.md), with the active delivery target
+defined by Milestone 2 (Demo v0) in
+[docs/current_roadmap.md](current_roadmap.md). The current documentation and
+consistency task stops before any Demo v0 implementation or market-data
 execution.
 
-Eventually, factors should be evaluated with IC, Rank IC, quantile spread,
-cost-adjusted simulated backtests, sample-out checks, parameter robustness,
-factor correlation diagnostics, risk exposure review, and complete experiment
-logging.
+When authorized, future development focuses on delivering the minimal,
+reproducible Demo v0 vertical slice on synthetic fixtures under the canonical
+Definition of Done. Separately authorized local CSV work remains an exploratory
+diagnostic governed by explicit owner authorization and the real-data readiness
+audit. Avoid automatic downloads, vendor APIs, credentials, broker logic, and
+live or paper order execution.
 
 The correct direction is disciplined research evidence, not faster claims.

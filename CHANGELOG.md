@@ -7,7 +7,74 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Added
+
+- Demo-first delivery alignment and North Star specification: added
+  `docs/north_star.md`, updated project specifications, roadmap, and handoffs
+  around five primary milestones (while preserving the hash-pinned research
+  program charter byte-identical as historical formal evidence policy),
+  establishing Milestone 2 Demo v0 (minimal reproducible end-to-end slice)
+  as the active delivery target.
+- Lightweight imperfection backlog table distinguishing safe deferrals
+  from non-deferrable demo-blocking correctness and safety invariants.
+
 ### Fixed
+
+- Public and private consumer consistency corrections under PROSE-007: updated
+  roadmap date-gap Status cell to state that calendar infrastructure can wait
+  for synthetic Demo v0 while unresolved scope-relevant local-data gaps block
+  affected interpretation; scoped campaign-contract gates in `PROJECT_SPEC.md`
+  to vendor acquisitions governed by that campaign, routing local CSV use to
+  explicit authorization and the readiness audit; deduplicated Demo v0
+  acceptance criteria to point exclusively at the roadmap Definition of Done
+  anchor; clarified prospective Demo v0 All-Attempt Case Logging in
+  `docs/north_star.md` while retaining universal trial retention; aligned
+  `docs/project_overview.md` Recommended Next Direction with handoff STOP and
+  Milestone 2; and synchronized the private exploration goal interpretation
+  via an append-only clarification section preserving historical bytes.
+
+- Contract-term and gate-namespace corrections under PROSE-006: replaced the
+  backlog date-gap "next observed trade" restatement with "next observed source
+  row"; disambiguated charter experiment/trial-ledger Stage 4, historical Track A
+  Stage 4, and Milestone 4 in active Demo/logging prose; removed the timeless
+  controller documentation-task ablation exemption; aligned cost wording with
+  existing fixed-bps charges on undivided turnover; made Demo v0 All-Attempt
+  logging prospective; pointed detailed Demo v0 definitions at the Definition of
+  Done section; and aligned the September 13 diagnostic public wording with
+  qualitative planning context only.
+
+- Residual-copy and routing convergence under PROSE-005: replaced residual short floor
+  summaries in `PROJECT_SPEC.md` and `docs/current_roadmap.md` with pointers to canonical `AGENTS.md`
+  Research Safety Invariants and the blocking backlog table (F-001); clarified that local CSV
+  `diagnostic_ready` is a separately authorized exploratory path strictly outside mandatory Demo v0
+  acceptance, and public September 13 references are qualitative planning context only (F-002);
+  reframed `Final Objective` in `docs/project_overview.md` as `Current Research-Platform Workflow`
+  and added active governance documents (A-001); marked remaining Track A operational sections as
+  historical protocol context and routed readiness active gates to Primary Milestones Demo v0 (A-002);
+  and clarified PIT-006 backlog handling as failing closed with an affected-window block when terminal
+  evidence is absent (A-003).
+
+- Post-adjudication remediation under PROSE-004: replaced absolute sample-property
+  phrase "no survivorship bias" and bare shorthand with the operational selection
+  rule in `docs/north_star.md`, `PROJECT_SPEC.md`, `docs/current_roadmap.md`,
+  and private addendum; clarified Demo v0 status in `README.md` as a target deliverable
+  (not yet implemented) and quickstarts as legacy diagnostics; adopted `All-Attempt Case Logging`
+  for Demo v0 run recording, distinguishing it from Stage 4 complete immutable ledger accounting;
+  added historical protocol context to Track A handoff and roadmap headings; corrected
+  the earlier log claim to reflect the actual 17-row backlog count; and aligned private
+  addendum Item 5 title to synthetic-first demonstration.
+
+- Remediation under PROSE-003: expanded `AGENTS.md` Research Safety Invariants
+  with explicit non-deferrable boundaries (fail-closed ticker reuse/identity
+  stitching, no default last-price or zero disappearance payoff, no dividend
+  double counting, no incompatible price/volume dollar turnover); separated
+  governance and goal-routing roles into unambiguous sentences in
+  `docs/codex_long_running_controller.md` and `docs/research_method.md` with
+  `docs/north_star.md` as the sole active goal owner; added provider date gaps
+  row and removed false PIT-005 tag on survivorship in the canonical backlog;
+  deduplicated milestone and backlog ownership to `docs/current_roadmap.md`;
+  labeled Demo v0 as an unimplemented target and scoped the performance
+  calculation statement in `PROJECT_SPEC.md`.
 
 - Path B plan producer IDs no longer coerce missing/null to `[]`; plan
   validity timestamps parse as canonical UTC instants; the plan binds

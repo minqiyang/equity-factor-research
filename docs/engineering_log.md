@@ -1,5 +1,249 @@
 # Engineering Log
 
+## 2026-09-15 - PROSE-007 Public and Private Consumer Consistency
+
+- Executed PROSE-007 public and private consumer consistency corrections under
+  `coord/prose_remediation_007.md` and independent static review `reviews/docs_006/report.md`:
+  1. Private Addendum Clarification (F-001, F-002, A-001, A-006): Preserved the
+     entire immutable byte prefix of the private goal addendum outside Git and
+     appended an explicit dated current-interpretation clarification section.
+     Clarified that Demo cost convention uses the existing engine convention
+     (fixed basis points on undivided absolute-trade turnover plus explicit
+     slippage assumptions; no second spread-plus-commission product and no
+     duplicate add-ons to Track A proxies); withdrew the "without blocking
+     algorithmic closure" date-gap clause in favor of the active fail-closed
+     rule that scope-relevant unresolved gaps block affected interpretation
+     (lag counts source rows, not calendar days; provider omission is not a
+     verified non-session; no silent repairs); aligned feasibility with
+     qualitative planning context outside Demo acceptance; and affirmed that
+     absent accepted terminal evidence, the affected window blocks under PIT-006.
+     Pointed at public North Star and roadmap for active goals, backlog, and Demo DoD.
+  2. F-002 (MATERIAL): In `docs/current_roadmap.md`, updated the date-gap Status
+     cell to state that calendar-alignment infrastructure can wait for synthetic
+     Demo v0, while unresolved scope-relevant local-data gaps block affected
+     interpretation (removing shorthand that suggested a caveat alone is the control).
+  3. A-002 (ADVISORY): In `PROJECT_SPEC.md`, scoped vendor acquisition gates
+     specifically to acquisition governed by the historical campaign contract,
+     and pointed separately authorized local CSV use at explicit owner authorization
+     and the real-data readiness audit.
+  4. A-003 (ADVISORY): In `PROJECT_SPEC.md`, replaced the duplicated five-item
+     Demo v0 acceptance list with the exact pointer to the single authoritative
+     roadmap Definition of Done anchor; in `docs/codex_long_running_controller.md`,
+     reiterated that detailed research specs live in PROJECT_SPEC while active
+     Demo v0 DoD is owned exclusively by the roadmap anchor.
+  5. A-004 (ADVISORY): In `docs/north_star.md`, clarified prospective Demo v0
+     application of All-Attempt Case Logging while affirming that every actual
+     attempted run retains its outcomes and negative evidence, without stating
+     a present-tense requirement that implies existing sidecars are accepted Demo v0 runs.
+  6. A-005 (ADVISORY): In `docs/project_overview.md`, aligned Recommended Next
+     Direction to defer to `docs/current_handoff.md` next safe action/holds/STOP
+     and roadmap Milestone 2 Demo v0, removing the independent bugfix-then-local-CSV queue.
+
+## 2026-09-15 - PROSE-006 Contract Terms And Gate Namespaces
+
+- Completed the interrupted PROSE-006 contract-term and namespace pass after
+  the original Gemini writer assignment ended on individual quota. Preserved the
+  in-scope partial working tree on `EXPERIMENT_LOG.md`, `PROJECT_SPEC.md`,
+  `docs/codex_long_running_controller.md`, `docs/current_roadmap.md`, and
+  `docs/north_star.md` (byte-identical to `coord/prose_006_partial.patch`) and
+  finished the remaining active-text corrections from
+  `coord/prose_remediation_006.md` and `reviews/docs_005/report.md`:
+  1. F-001 (MATERIAL): Replaced the backlog date-gap restatement "next observed
+     trade" with the accepted timing-contract term "next observed source row";
+     lag counts source rows; missing provider rows are not treated as verified
+     non-sessions; existing zero-volume or stale rows are not skipped.
+  2. F-002 (MATERIAL): Disambiguated charter experiment/trial-ledger Stage 4,
+     historical Track A Stage 4 G-2/PR 4, and Milestone 4 formal research in
+     active Demo/logging prose; pointed `EXPERIMENT_LOG.md` at the ledger
+     contract and charter, not `Stage 4 of docs/current_roadmap.md`; qualified
+     Program Position G-2/incomplete/refusal bullets as historical Track A.
+  3. A-001 (ADVISORY): Removed the timeless controller "current task is
+     documentation enactment" ablation exemption; replaced the PROJECT_SPEC
+     "this documentation task" parenthetical with a durable statement that the
+     specification records no strategy-performance result and that synthetic
+     fixture diagnostics remain permitted. Owner STOP remains in the handoff.
+  4. A-002 (ADVISORY): Aligned North Star and the blocking cost row with existing
+     fixed-bps cost on undivided absolute-trade turnover plus explicit slippage
+     assumptions; no new spread-plus-commission product.
+  5. A-003 (ADVISORY): Made the EXPERIMENT_LOG Demo logging instruction
+     prospective for when Demo v0 runs exist; existing synthetic sidecars remain
+     legacy diagnostics, not accepted Demo v0 evidence.
+  6. A-004 (ADVISORY): Added All-Attempt Case Logging to the Milestone 2 table
+     cell and pointed North Star detailed Demo v0 definitions at the actual
+     Definition of Done section rather than exclusively at the coarse table.
+  7. A-005 (ADVISORY): Aligned the handoff gate summary with the longer
+     qualitative planning-only September 13 bullet; added a dated decision-log
+     clarification without rewriting the original as-of body.
+
+## 2026-09-15 - PROSE-005 Residual-Copy and Routing Convergence
+
+- Applied residual-copy and routing convergence under `coord/prose_remediation_005.md`
+  and independent static review `reviews/docs_004/report.md`:
+  1. F-001 (MATERIAL): In `PROJECT_SPEC.md` and `docs/current_roadmap.md`, replaced the
+     residual short floor summary with explicit canonical pointers to
+     `AGENTS.md#research-safety-invariants` and the blocking backlog table
+     in `docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog`, explicitly
+     clarifying that Demo v0 maintains All-Attempt Case Logging rather than Stage 4 complete
+     ledger accounting.
+  2. F-002 (MATERIAL): In `.agents/skills/real-data-readiness-audit/SKILL.md` and
+     `docs/real_data_readiness_audit.md`, clarified that local CSV `diagnostic_ready` is a
+     separately authorized exploratory path strictly outside mandatory Demo v0 acceptance
+     (which is demonstrable on synthetic fixtures without private data). Updated public
+     September 13 diagnostic descriptions in `README.md`, `docs/current_handoff.md`, and
+     `docs/current_roadmap.md` to state that it provided qualitative feasibility and planning
+     context only, outside Demo v0 acceptance, producing no strategy or profitability claims
+     and no tradability, universe completeness, or pristine holdout proof.
+  3. A-001 (ADVISORY): In `docs/project_overview.md`, reframed `## Final Objective` heading and
+     body as `## Current Research-Platform Workflow` (building a reproducible simulation pipeline)
+     and added `docs/north_star.md` and `docs/current_roadmap.md` to the governance documents list.
+  4. A-002 (ADVISORY): In `docs/current_roadmap.md`, labeled remaining Track A operational sections
+     (Parallel Dataset-Independent Protocol-Core Lane, Gate Completion Criteria, and Program Position
+     `DIAGNOSTIC_READY` bullet) as historical protocol context; past-tensed the adjacent 37/37
+     sentence in `PROJECT_SPEC.md`; and routed active gates in readiness documents to Primary Milestones
+     Demo v0, with formal research promotion gates separate in Milestone 4.
+  5. A-003 (ADVISORY): In `docs/current_roadmap.md` and `docs/north_star.md`, clarified that PIT-006
+     handling enforces the accepted fail-closed outcome: no default last-price exit or zero payoff
+     at asset disappearance, and if accepted terminal evidence is absent, the affected window blocks.
+
+## 2026-09-15 - PROSE-004 Post-Adjudication Corrections: F-001 and Supported Advisories
+
+- Post-adjudication documentation remediation following `adjudication/001/report.md`
+  and `coord/prose_remediation_004.md`:
+  1. F-001 (MATERIAL): Replaced the absolute sample-property wording "no survivorship bias"
+     and bare shorthand with the operational selection rule from `docs/current_roadmap.md:135`:
+     no historical eligibility selected by future listing continuity, future index membership,
+     or survivor-cohort filters; unverified exploratory diagnostics remain explicitly labeled
+     survivorship-biased; no claim of a survivorship-free universe until Milestone 4 formal
+     lineage controls exist. Updated in `docs/north_star.md`, `PROJECT_SPEC.md`,
+     `docs/current_roadmap.md`, and the private goal addendum.
+  2. A-001 (ADVISORY): In `README.md`, explicitly marked Demo v0 as a target deliverable
+     (not yet implemented), clarified that existing quickstart commands are legacy synthetic/fixture
+     diagnostics (not acceptance of Demo v0), and noted that multi-factor examples remain available
+     for workflow testing but outside the single-factor Demo v0 scope.
+  3. A-002 (ADVISORY): Adopted `All-Attempt Case Logging` in `docs/north_star.md`, `PROJECT_SPEC.md`,
+     `docs/current_roadmap.md`, and `EXPERIMENT_LOG.md`. Explicitly distinguished lightweight
+     diagnostic run logging from Stage 4 complete immutable ledger accounting, while maintaining
+     the mandatory recording of all attempted, failed, and negative cases without cherry-picking.
+  4. A-003 (ADVISORY): Added "(historical protocol context)" to the Track A routing bullet in
+     `docs/current_handoff.md`; converted the diagnostic exception in `PROJECT_SPEC.md` to past tense;
+     scoped the closed result/performance gate in `docs/current_roadmap.md` to the historical Track A
+     14-trial private bundle without restricting synthetic Demo v0 comparison reports; and added a
+     historical-protocol banner to the test-pinned Track A PR 3 acceptance criteria section.
+  5. A-005 (ADVISORY): Corrected the earlier narrative log claim of "19-row" imperfection backlog
+     table to reflect the actual count of 17 data rows (8 Safe to Defer + 8 Blocking + 1 Prohibited
+     in Current Repo) in `docs/current_roadmap.md`. Prior log entries remain intact as historical records.
+  6. A-006 (ADVISORY): In the private goal addendum, aligned Section 2.3 sample honesty with F-001,
+     removed "initial prototype validation" from Section 3, and titled Item 5 "Demonstrable on
+     Synthetic Fixtures", with local private data noted as separately authorized exploratory diagnostics
+     outside mandatory Demo v0 acceptance.
+  7. A-007 (ADVISORY): In `AGENTS.md`, routed milestone definitions directly to `docs/current_roadmap.md`;
+     in `docs/codex_long_running_controller.md`, qualified the research charter as preserved formal
+     research evidence policy; and in `docs/project_overview.md`, added a concise banner pointing to
+     `docs/north_star.md` for active direction while distinguishing research simulation from the
+     ultimate automated trading aspiration.
+
+## 2026-09-15 - [SUPERSEDED] Owner workflow alignment: mandatory ablation, automatic continuation, and review standards
+
+- Status: Superseded by the live V7.23 coordinator entry below. Preserved as same-day record of earlier owner instructions prior to v7.23-draft reconciliation.
+- The owner established explicit workflow and review requirements:
+  1. Mandatory post-design and post-implementation ablation: after every completed
+     design or staged implementation, conduct ablation experiments to remove
+     unnecessary abstractions/design and aim for the simplest code sufficient
+     for current requirements. Preserve baseline; test removals in isolation,
+     compare behavior/correctness and relevant costs, keep justified
+     simplifications and restore regressions. Do not drop necessary tests/guards
+     or conceal failures just to reduce line count. Record removals, retained
+     necessities and known limitations. A supported no-change outcome is valid.
+     Ablation revalidation itself is not an infinite recursive ablation loop.
+  2. Automatic continuation: after the current task is complete, automatically
+     execute the next clear, already-authorized step in the same turn without
+     stopping to request repeat permission. Continue through ordinary
+     QA/review/remediation waits; stop only for a genuine blocker, a necessary
+     owner decision, or additional authority. A plan does not authorize
+     push/PR/merge, private data, new paid services, credentials or trading. Do
+     not end a turn merely on dispatch acknowledgment while delegated work is
+     outstanding.
+  3. Review policy reconciliation with live V7.22: required permanent review
+     lanes are STANDARD (1 fresh independent reviewer: fresh Grok latest XHigh)
+     and CRITICAL (2 fresh independent reviewers: fresh Grok latest XHigh plus
+     GPT Astra latest High). Independent exact-candidate read-only review, QA
+     first, material findings block. GitHub Code Review remains retired. The
+     current owner no-GPT / lsgz:1 exception is session-scoped, not permanent
+     policy.
+  4. Quota and cleanup safeguards: designated ChatGPT CLI account rotation
+     before Fable/Grok; pre-round Herdr tab inspection (skipping is P1);
+     session-only Antigravity `--dangerously-skip-permissions` without mutating
+     global settings.
+- Historical note: older engineering log entries below from 2026-09-05 and
+  2026-09-06 record past operational incidents and instructions during PR #197-#200
+  (e.g., legacy `@codex review` hosted connectors, 3-strike rounds). They are
+  preserved as immutable dated history; current active policy is governed by
+  AGENTS.md and docs/codex_long_running_controller.md under live V7.23 standards.
+
+## 2026-09-15 - PROSE-003 Remediation: Invariants, Goal Routing, and Backlog Deduplication
+
+- Addressed the two MATERIAL (F-001, F-002) and four ADVISORY (A-001 through A-004)
+  findings from REVIEW-002:
+  1. F-001 (MATERIAL): Expanded the Research Safety Invariants in `AGENTS.md` to
+     explicitly distinguish deferrable comprehensive SEC entity lineage from
+     never-deferrable boundaries: fail-closed ticker reuse / identity
+     mis-stitching prevention (PIT-005), no default last-price exits or zero payoff
+     at asset disappearance (PIT-006), no dividend double counting (PIT-007), and no
+     incompatible price/volume dollar turnover calculations.
+  2. F-002 (MATERIAL): Separated governance and goal-routing roles into unambiguous
+     sentences in `docs/codex_long_running_controller.md` (Select And Bound The Stage)
+     and `docs/research_method.md`. Active product goals are owned strictly and
+     exclusively by `docs/north_star.md`; `PROJECT_SPEC.md` provides detailed
+     research specifications; `docs/current_roadmap.md` owns stage sequence, status,
+     and the authoritative imperfection backlog; `docs/research_program_charter.md`
+     remains preserved historical formal evidence policy; and
+     `docs/eodhd_sp500_diagnostic_campaign_contract.md` is preserved historical
+     protocol context, neither serving as a source of current goals nor a Demo v0
+     delivery blocker.
+  3. A-001 (ADVISORY): Added the internal and provider date gaps row to the
+     canonical imperfection backlog in `docs/current_roadmap.md` with explicit
+     impact, current handling (no silent bar insertion; next-observed-close skips
+     gaps without validating unknown provider omissions; scope-relevant unresolved
+     gaps block affected interpretation), and revisit trigger (Milestone 3).
+  4. A-002 (ADVISORY): Removed the false `(PIT-005)` citation from the
+     future-membership selection & survivorship backlog row in `docs/current_roadmap.md`,
+     preserving PIT-005 exclusively for ticker reuse and listing-episode stitching.
+  5. A-003 (ADVISORY): Deduplicated milestone and backlog ownership.
+     `docs/current_roadmap.md` is established as the sole canonical owner of the
+     five-milestone sequence and the complete 19-row imperfection backlog table.
+     `PROJECT_SPEC.md` and `docs/north_star.md` replaced duplicate full tables/lists
+     with precise pointers, retaining Demo v0 acceptance criteria and mandatory
+     all-attempt accounting. Stale dual-ownership wording was updated.
+  6. A-004 (ADVISORY): In `PROJECT_SPEC.md`, labeled Demo v0 under Operational Modes
+     as an unimplemented target for Milestone 2, removing present-tense capability
+     claims. Scoped the "no performance calculation" statement to unauthorized
+     real-data and result-bearing calculations without restricting synthetic
+     fixture diagnostic accounting.
+- Preserved all immutable historical files, charter bytes, and private addendum
+  hash (`e327e5b5885e9da5eee1880a50eab3941061b47905940d4ffbf7b07aa46db946`).
+
+## 2026-09-15 - Live V7.23 coordinator policy, North Star routing, English standard, and explicit STOP boundary
+
+- Re-read live policy files under coordinator standard V7.23-draft: NORMAL lane
+  has no mandatory formal review seat (coordinator verification); STANDARD and
+  CRITICAL reviewer routing remains table-owned in routing_table.json. Preserved
+  task lane and session no-GPT waiver.
+- Preserved `docs/research_program_charter.md` byte-identical to baseline as
+  formal research evidence policy, honoring the hash-pinning in
+  `tests/test_ledger_track_b_v7_design.py`.
+- Created `docs/north_star.md` as the single active product-goal source,
+  defining automated stock selection and trading as the ultimate aspiration,
+  demo-first delivery (Demo v0 vertical slice), five primary milestones, and the
+  lightweight backlog of deferred imperfections.
+- Enacted the durable English-only documentation standard across all newly
+  authored or edited equity-factor-research documentation (public docs, AGENTS,
+  skills, logs, private addenda, handoffs, and reports). User-facing chat may
+  remain in the user's preferred language.
+- Enacted explicit owner STOP directive: development stops after completing this
+  documentation/log task, verification checks, and GitHub version management.
+  Demo v0 implementation and market data execution are deferred to separate
+  authorized tasks.
+
 ## 2026-09-08 - Pearson IC golden binary64 portability
 
 - Linux Python 3.11 CI run 34259791376 failed nine `check_exact=True` Pearson
@@ -202,6 +446,35 @@
   37-event completion and factor-zoo stay off the critical path.
 - No private paths, tickers, prices, or performance values.
 
+## 2026-09-06 - Extra GPT review after 2-strike fix
+
+- Owner instruction: local GPT review-loop trigger is two completed reviews with
+  remaining P1/P2, not three. After Grok+Gemini analysis and an in-scope fix,
+  one additional local GPT latest review is allowed. Remaining P1/P2 go to Grok
+  and Antigravity to judge whether to change code; if yes, Grok Extra High
+  implements.
+- Applies now to PR 200 extra GPT review on `bf14982`.
+
+## 2026-09-06 - Retire GitHub Code Review; use local GPT latest
+
+- Owner instruction: stop GitHub Code Review (`@codex review`, Auto, Exhaustive,
+  credits-for-review). Required PR review is local Codex CLI GPT latest at
+  medium, high, or xhigh. Default medium; CRITICAL/schema/runtime use high; do
+  not default to xhigh. Read-only clean root, exact head.
+- Two local GPT reviews with remaining P1/P2 still escalate to Grok+Gemini
+  analysis then coordinator decision. CLI account rotation remains the quota
+  path for this review login.
+
+## 2026-09-06 - Cap GitHub Codex review at three finding rounds
+
+- Owner instruction: after the same PR has more than three GitHub code reviews
+  that still report P1/P2, stop `@codex review`. Dispatch fresh Grok latest and
+  Gemini latest to analyze the whole PR and current state. Coordinator then
+  decides: EXPERT, continue fixes, or ignore remaining reported P1/P2.
+- Usage-limit bodies do not count. GitHub review quota is currently available
+  again; do not treat it as a stop.
+- Incident: PRs #198 and #199 ran unbounded review-and-fix loops.
+
 ## 2026-09-06 - Track B v7 Path B PR 200 extra MATERIAL remediations
 
 - PR #200 head `bf149827e8ff5d85f4de18883212ac7dcc1b6ef4` still admitted
@@ -279,6 +552,27 @@
   currentness, executor mismatch, and EXECUTE consumer mismatch.
 - No 14-trial run, D8, identity reopen, real/private market data, brokerage,
   or vendor API.
+
+## 2026-09-06 - Rotate GitHub Codex Cloud on review usage-limit
+
+- Owner correction: when one designated ChatGPT account is out of GitHub
+  `@codex review` quota, switch immediately to the other designated account's
+  Codex Cloud GitHub connector. Do not wait, and do not treat the limit as a
+  stop. CLI login is a different bucket.
+- Incident: PR #199 exact-head review returned a usage-limit body. Work stopped
+  instead of rotating the hosted-review account.
+- Continuation: rotate the exhausted hosted-review account, then one
+  `@codex review` on the unchanged head. Addresses stay in private control.
+
+## 2026-09-05 - Do not stop after naming the next step
+
+- Owner correction: once the next authorized step is determined, execute it.
+  Answering a clarifying question does not pause that loop.
+- Incident: after exact-head Codex had no new P1 and P2 was identified as
+  non-blocking, work stopped at a status report instead of merging PR #198
+  and starting the accepted Path A runtime PR.
+- Continuation: merge #198 on that evidence, then dispatch GENERAL_EXEC for
+  the runtime PR. Same-turn continue rule remains in `AGENTS.md`.
 
 ## 2026-09-05 - Track B v7 Path A exact-head P1-FIX2 remediations
 
@@ -392,6 +686,64 @@
   design Markdown/JSON hashes are committed in
   `docs/experiment_trial_ledger_track_b_v7_design.artifacts.sha256`.
 - No SQLite runtime, 14-trial run, D8, identity, or result access.
+
+## 2026-09-05 - Rotate ChatGPT CLI accounts before Grok
+
+- Owner correction: after one ChatGPT/Codex CLI account is exhausted, switch to
+  the other designated CLI account. Do not skip that rotation and dispatch Grok
+  to save a probe.
+- Incident: DESIGN quota used Grok because Astra on the first CLI account had
+  hit a limit, without attempting the remaining designated ChatGPT CLI login.
+- Continuation: rotate all designated CLI accounts before Fable/Grok. Addresses
+  stay in private control. This live Grok writer on the design worktree is not
+  killed mid-run; the next DESIGN dispatch follows the rotation rule.
+
+## 2026-09-05 - Alternate ChatGPT login on CLI quota exhaustion
+
+- Owner instruction: when ChatGPT/Codex CLI quota is insufficient, log in with
+  the designated alternate ChatGPT account. The address is private-control only.
+- Observed CLI login is ChatGPT auth_mode, not the GitHub review connector.
+- PR #198 hosted code-review limit remains a separate bucket until the owner
+  resets that quota or accepts merge without Codex review.
+
+## 2026-09-05 - Keep session alive for exact-head Codex review
+
+- Owner correction: if the next wait is Codex review, do not end the process.
+  Re-check until the exact-head body exists. Stopping loses the ability to read
+  P1/P2 or a clean pass.
+- Incident: after requesting `@codex review` on PR #197, the coordinator was
+  about to stop at the external gate instead of remaining live to read the
+  result.
+- Continuation invariant is in `AGENTS.md`. Polling and review-comments API
+  rules are in `docs/codex_long_running_controller.md`.
+
+## 2026-09-05 - Continue authorized next steps; Antigravity session all-allow
+
+- Owner correction: if the next step is already determined, execute it; stop only
+  for owner decisions or when capable models cannot determine the next legal
+  step. Antigravity child sessions are to allow all operations.
+- Incident: after owner accepted Astra R1-R5, work paused on Antigravity
+  per-command prompts and a status report instead of restarting those sessions
+  under an all-allow flag and continuing v7 QA/review.
+- Continuation: session-only `--dangerously-skip-permissions` for authorized
+  Antigravity tabs; do not persist to global settings.json. Same-turn continue
+  rule is in `AGENTS.md` and this controller.
+
+## 2026-09-05 - Pre-round Herdr tab cleanup
+
+- Owner correction: after a round finishes, inspect live Herdr tabs and close
+  completed inactive execution tabs that will not be resumed. Do not stop at
+  the apology.
+- Incident: Track B plan/review tabs `efr-grk-tb1`, `efr-grk-tbg5`, and
+  `efr-sol-tbg5`, plus later `efr-ast-gap` and `efr-ast-plan`, remained open
+  after their outputs were on disk. The next round started without the
+  required cleanup. This skipped the existing private cleanup instruction and
+  V7 close-after-release rule.
+- Closed verified-complete tabs `w3:t73`, `w3:t7C`, `w3:t7D`, `w3:t7E`,
+  `w3:t7F`, and quota-dead `w3:t7K`. Kept coordinator, working v6 review
+  seats, and tabs whose required outputs were still missing.
+- Continuation invariant is in `AGENTS.md`. The pre-round inspection steps
+  are in `docs/codex_long_running_controller.md`.
 
 ## 2026-09-04 - Live hosted-review check before merge
 

@@ -1,19 +1,33 @@
 # Project Specification
 
-## Objective
+## Objective And North Star
 
-Build a rigorous, reproducible, falsifiable, and auditable historical equity
-research platform. The platform should faithfully reproduce published factors,
-WorldQuant formulas, institutional rules, strategies, and portfolio methods,
-then determine whether they have stable out-of-sample stock-selection or
-portfolio value under point-in-time data, frozen rules, realistic costs, and
-multiple-testing controls.
+The ultimate aspiration of the project is automated stock selection and trading,
+pursuing sustainable risk-controlled long-term net returns. Stable profit is an
+explicit objective, not a guarantee.
+
+The research and simulation platform built in this repository is the foundational
+first phase—not the final execution product. The repository remains strictly
+simulated and non-order-capable; live trading, broker integrations, and order
+routing belong to a future, separately authorized private execution system.
+
+The engineering approach is **demo-first**: ship a basic, presentable, and
+reproducible end-to-end version first, record non-blocking imperfections in a
+lightweight backlog, and improve in layers. We avoid blocking a working
+demonstration on an ideal pipeline, complete SEC identity proof for every
+security, optional ledger/schema coverage, or a broad factor zoo. Canonical
+minimum correctness and non-negotiable boundaries are defined exclusively in
+[AGENTS.md Research Safety Invariants](AGENTS.md#research-safety-invariants) and the
+[blocking backlog table](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog),
+enforced at every layer (with Demo v0 maintaining All-Attempt Case Logging rather
+than formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 
 Optimize the research process for evidence quality rather than the highest
 historical Sharpe ratio. Retain negative, failed, invalid, and inconclusive
 results.
 
-`docs/research_program_charter.md` is the canonical long-term evidence policy.
+`docs/north_star.md` is the active product aspiration and demo-first delivery policy.
+`docs/research_program_charter.md` is the preserved historical formal evidence policy.
 `docs/current_roadmap.md` is the active staged delivery plan.
 `docs/signal_execution_timing_contract.md` is the accepted Stage 2 timing
 authority. Stage 2b implements it with required, role-bound, immutable source
@@ -35,8 +49,8 @@ the exact epoch schema, rejects the other 36 known events as
 `SCHEMA_INCOMPLETE_DIAGNOSTIC_ONLY`, and does not claim a complete payload
 registry or Stage 4b runtime enforcement.
 The owner-approved diagnostic exception in
-`docs/eodhd_sp500_diagnostic_campaign_contract.md` supersedes the registry-first
-delivery dependency only for Track A. It does not change the immutable ledger
+`docs/eodhd_sp500_diagnostic_campaign_contract.md` superseded the registry-first
+delivery dependency only for historical Track A. It did not change the immutable ledger
 contracts or make a diagnostic result formally eligible.
 `docs/experiment_trial_ledger_allocation_registration_schema_contract.md`
 defines the owner-selected Stage 4B-R1A architecture-A decision. It preserves
@@ -147,16 +161,19 @@ durable append, execution, artifact, access, and research behavior remain
 fail-closed stateful requirements.
 R1I is complete on protected main through PR #176 at `6386c59`. The accepted
 37-event vocabulary and immutable releases are preserved as optional
-`full_ledger_profile_v1`; completing 37/37 is not required before the bounded
-Track A campaign or the later minimal Track B runtime.
+`full_ledger_profile_v1`; completing 37/37 was not required before the historical
+bounded Track A campaign or the later minimal Track B runtime.
 
-`docs/eodhd_sp500_diagnostic_campaign_contract.md` defines the active
-owner-approved two-track program. Track A freezes exactly three price-only
-factors and 14 semantic trials, uses purged bounded historical evaluation,
-dependence-aware inference, fixed cost cases, complete result retention, and a
-repository-external content-addressed evidence bundle. Track B is a later
-8-12-event-family stateful runtime required before prospective performance
-access or formal promotion. Track B does not block Track A.
+`docs/eodhd_sp500_diagnostic_campaign_contract.md` defines the preserved
+historical Track A/Track B diagnostic campaign protocol. Track A froze exactly
+three price-only factors and 14 semantic trials, using purged bounded historical
+evaluation, dependence-aware inference, fixed cost cases, complete result retention,
+and a repository-external content-addressed evidence bundle (whose 14-trial
+empirical run received a terminal REFUSED outcome on data provenance/lineage).
+Track B was defined as a later 8-12-event-family stateful runtime required before
+prospective performance access or formal promotion. This campaign contract remains
+preserved historical protocol context, not the active delivery queue (which is
+Milestone 2 Demo v0 in `docs/north_star.md` and `docs/current_roadmap.md`).
 
 ## Current Phase and Boundary
 
@@ -164,10 +181,15 @@ The current phase is research-only.
 
 - No brokerage connection, orders, paper deployment, live deployment, or
   real-money execution.
-- This scope-reset PR performs no vendor download, credential use, remote data
-  access, or performance calculation. A later private entitlement/capability
-  probe and acquisition may proceed only through the campaign contract's
-  explicit license, privacy, purchase, and blinded dataset-acceptance gates.
+- Current research work performs no vendor download, credential use, remote data
+  access, or unauthorized real-data/result-bearing performance calculation. This
+  specification records no empirical strategy-performance results; synthetic fixture
+  diagnostics and unit-test cost accounting remain permitted. Any future vendor data
+  entitlement/capability probe and acquisition governed by the historical campaign
+  proceeds only through the campaign contract's explicit license, privacy, purchase,
+  and blinded dataset-acceptance gates; separately authorized local CSV use follows
+  explicit owner authorization and the real-data readiness audit, with no new data
+  entitlement or acquisition authority granted.
 - The public repository may use synthetic data, committed fixtures, and local
   data only under explicit privacy and methodology gates.
 - `lean/` remains a non-executing scaffold until a future `PORTFOLIO_PASS`
@@ -291,8 +313,9 @@ protected-sample access, not metadata-only intake.
 The private diagnostics covering 2025-05-01 through 2026-05-31 are confirmed
 historical access and are classified `historical_evaluation`; that interval
 cannot be upgraded to a pristine holdout. Stage 3 defines the exposure schema
-and downgrade rules. Stage 4 must implement append-only, pre-access allocation
-and completeness enforcement.
+and downgrade rules. Formal experiment/trial ledger infrastructure (charter
+Stage 4 / Milestone 4) must implement append-only, pre-access allocation and
+completeness enforcement.
 
 ## Backtesting Principles
 
@@ -365,27 +388,36 @@ Track A uses only `INVALID_DIAGNOSTIC`, `INCONCLUSIVE_DIAGNOSTIC`,
 those states is `RESEARCH_PASS` or evidence of alpha, profitability, broader
 market validity, paper readiness, or live readiness.
 
-## Development Sequence
+## Operational Modes
 
-The canonical sequence is maintained in `docs/current_roadmap.md`:
+The project operates under two clearly bounded modes to prevent conflating exploratory demo development with formal empirical promotion:
 
-1. complete the current scope reset and detached protocol freeze;
-2. resolve the private EODHD entitlement, retention, and publication gate;
-3. add dataset-manifest validation and complete a blinded dataset review;
-4. implement the exact Stage 5-MVP/6-MVP three-factor diagnostic runner;
-5. bind the protected runner code, exact configuration, environment, protocol,
-   inventory, and accepted dataset hashes before any result-bearing job;
-6. run and reconcile all 14 trials, freeze the private evidence bundle, obtain
-   independent review, and publish only a licensed safe projection;
-7. implement the minimal Track B formal-evidence runtime before prospective
-   performance access; and
-8. separately scope later formal statistics, broad factors, strategies,
-   portfolio/risk promotion, cross-provider reproduction, LEAN parity, or
-   paper candidacy.
+1. **Exploratory Demo Mode (Demo-First Delivery)**:
+   - Target deliverable for active Milestone 2 (not yet implemented): will deliver a basic, presentable, and reproducible end-to-end slice (Demo v0) showing simulated stock selection, portfolio holdings, benchmark comparison, explicit frictional costs, and diagnostic reporting.
+   - Planned to run locally on committed synthetic fixtures without private data. Any separately authorized local CSV runs remain explicitly exploratory and diagnostic.
+   - Non-blocking imperfections and data caveats are recorded in the canonical lightweight backlog in [docs/current_roadmap.md](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog) and improved in layers.
+   - Results are diagnostic only; no claims of market alpha, general predictability, or trading profitability.
 
-Track A does not require the formal ledger runtime, but it remains permanently
-`DIAGNOSTIC_ONLY`. No later stage may imply an earlier methodology, dataset,
-license, evidence, or authorization gate is complete.
+2. **Formal Research Promotion Mode**:
+   - Applies strict point-in-time corporate-action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference.
+   - A mandatory prerequisite before promoting a factor, strategy, or portfolio to `RESEARCH_PASS` or claims of empirical robustness.
+   - Not a blocker for demonstrating an initial, visibly caveated exploratory demo slice.
+
+## Imperfection Policy And Backlog
+
+To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
+- **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains valid without fabricating economics).
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, default last-price or zero-payoff disappearance (PIT-006; if accepted terminal evidence is absent, the affected window blocks), dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
+
+The complete, single authoritative imperfection backlog table is maintained exclusively in
+[docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog).
+See that document for active row-level caveats, handling rules, revisit triggers, and blocking boundaries.
+
+## Primary Milestones
+
+The program follows a five-milestone sequence from foundational research to simulated demo delivery and future execution. Program stage sequence, status, gate and completion criteria are owned exclusively by [docs/current_roadmap.md#primary-milestones](docs/current_roadmap.md#primary-milestones).
+
+Detailed Demo v0 deliverable definitions and acceptance criteria are owned exclusively by the roadmap Definition of Done at [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
 
 ## Explicit Non-Goals
 

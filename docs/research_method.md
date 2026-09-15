@@ -67,7 +67,7 @@ signal-contract scaffold.
 - Optional long-only position caps applied before drift-aware trade calculation.
 - Interpretation gates tied to provenance, universe, timing, benchmark, splits, costs, and limitations.
 
-Current methodology work is governed by the [research program charter](research_program_charter.md), [handoff](current_handoff.md), [canonical roadmap](current_roadmap.md), and [project specification](../PROJECT_SPEC.md).
+Active product aspiration and demo-first delivery principles are governed strictly by [North Star](north_star.md). Detailed research specifications and acceptance criteria live in [project specification](../PROJECT_SPEC.md). Program stage sequence, status, and the authoritative imperfection backlog are owned by the [canonical roadmap](current_roadmap.md). The [research program charter](research_program_charter.md) is preserved formal evidence policy (not an active product delivery blocker), and the [handoff](current_handoff.md) owns the latest recorded operational checkpoint.
 
 ## Evidence
 

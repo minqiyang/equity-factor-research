@@ -7,8 +7,8 @@ inconclusive runs. Do not delete weak results to make the project look better.
 
 This file is the repository's diagnostic/legacy experiment record. It preserves
 the current synthetic and local-CSV documentation workflow, but it is not the
-immutable all-trial ledger required by Stage 4 of
-`docs/research_program_charter.md` and `docs/current_roadmap.md`.
+immutable all-trial ledger required by Stage 4 of `docs/research_program_charter.md`
+and `docs/experiment_trial_ledger_contract.md`.
 
 `docs/point_in_time_data_methodology_contract.md` defines the Stage 3
 provider-agnostic data and holdout-evidence requirements. Accepting that
@@ -22,6 +22,18 @@ outcome, and protected-sample access, entries here may support only
 appropriately caveated diagnostics. They must not support formal historical
 interpretation, factor promotion, a `RESEARCH_PASS`, or a holdout-independence
 claim. "Every configured case" is not evidence of complete trial accounting.
+
+Under the demo-first engineering discipline, All-Attempt Case Logging applies
+when Demo v0 runs exist: those runs must record all attempted cases, synthetic
+configurations, and diagnostic comparison reports here or in sidecar logs. This
+lightweight diagnostic run logging is explicitly distinguished from the formal
+experiment/trial-ledger accounting required by charter Stage 4 /
+`docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
+Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy
+diagnostics and are not accepted Demo v0 evidence. When Demo v0 runs exist,
+their All-Attempt records support reproducible demo evidence and track
+non-blocking imperfections in the lightweight backlog; formal factor promotion
+remains reserved for Milestone 4.
 
 ## Automated Synthetic Demo Logs
 

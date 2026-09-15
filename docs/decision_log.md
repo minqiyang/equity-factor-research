@@ -15,6 +15,75 @@ investment performance.
 
 ---
 
+## 2026-09-15 - North Star Alignment And Demo-First Delivery Strategy
+
+Context:
+
+- Owner established explicit project guidance: correct the whole project's relevant docs/logs, roadmap, and North Star.
+- The ultimate project aspiration is automated stock selection and trading, pursuing sustainable risk-controlled long-term net returns. Stable profit is a goal, not a guarantee. The research platform is the first simulation phase, strictly separated from any future execution repository.
+- Avoid unbounded perfectionism: do not block early demonstration on an ideal pipeline, complete SEC identity proof for every security, optional ledger/schema coverage, or a factor zoo.
+- Historical Track A 14-trial refusal remains preserved historical evidence, but is no longer the sole universal entry point of the project.
+- A local 2026-09-13 diagnostic confirmed sufficient local data history for exploration, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling.
+
+Decision:
+
+- Create `docs/north_star.md` as the single active product-goal document, while preserving `docs/research_program_charter.md` byte-identical to baseline as hash-pinned formal research evidence policy.
+- Align project specification, roadmap, handoff, and skills around a 5-milestone progression with Demo v0 (working vertical slice) as the active delivery target.
+- Establish an explicit Imperfection Policy and lightweight backlog distinguishing safe deferrals (presentation polish, extra factors, optional schemas, advanced statistics) from non-deferrable correctness/safety bugs (lookahead, cost/return errors, secrets, unsafe execution).
+- Keep the current repository simulated and non-order-capable; record future execution as separately authorized scope.
+- Enforce the demo-first discipline: ship a basic, presentable end-to-end version first; record imperfections and improve in working layers.
+- Align active workflow and review references with live coordinator V7.23 standards (NORMAL has no mandatory formal seat; reviewer routing is table-owned in routing_table.json).
+- Enforce a durable English-only documentation standard across all newly authored or edited project documentation, private addenda, handoffs, and reports.
+- Enact the owner's explicit STOP boundary: stop after completing this documentation task, verification checks, and GitHub version management, leaving Demo v0 implementation and market data runs for separate future authorization.
+
+Rationale:
+
+- A demo-first approach enables tangible, auditable, and visible software progress without sacrificing research validity or safety invariants.
+- Clear mode boundaries separate exploratory demo development from formal empirical promotion.
+- Creating `docs/north_star.md` satisfies active product direction without breaking the hash-pinned charter fixture.
+- Bounding this task strictly to documentation alignment prevents premature unauthorized execution.
+
+Consequences:
+
+- Active roadmap, handoff, and spec route to `docs/north_star.md` for active goals, while `docs/research_program_charter.md` remains preserved formal policy.
+- Active roadmap and handoff target Milestone 2 Demo v0 vertical slice.
+- Historical Track A refusal remains immutable evidence and does not block Demo v0.
+- All non-blocking caveats are tracked in the lightweight backlog table.
+- All newly authored or edited documentation is written in English.
+- Development halts at the documentation boundary awaiting separate task dispatch.
+
+---
+
+## 2026-09-15 - Clarification Of September 13 Diagnostic Sufficiency Wording
+
+Context:
+
+- The earlier 2026-09-15 North Star alignment entry recorded, as of that date,
+  that a local 2026-09-13 diagnostic "confirmed sufficient local data history for
+  exploration, with documented caveats (zero-volume segments, date gaps,
+  unverified adjustment events) deferred for layered handling." That as-of body
+  is preserved unchanged below as historical text.
+
+Decision:
+
+- Interpret that "confirmed sufficient" wording as qualitative quantity/history
+  planning context only. It is not a validation result, authorization gate,
+  tradability proof, universe-completeness claim, profitability claim, or
+  pristine-holdout proof. The diagnostic remains outside Demo v0 acceptance.
+
+Rationale:
+
+- Later public routing must not upgrade an as-of planning note into a completed
+  data-sufficiency or Demo-authorization result.
+
+Consequences:
+
+- Active handoff, roadmap, and README September 13 statements use the qualitative
+  planning-only scope with the same negative constraints. The original 2026-09-15
+  decision body remains historical as-of text.
+
+---
+
 ## 2026-09-06 - Record Merged Track B Path A And Path B First Checkpoints
 
 Context:

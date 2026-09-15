@@ -10,9 +10,11 @@
 
 An auditable Python toolkit for equity-factor research with strict data contracts, deterministic diagnostics, drift-aware portfolio accounting, and reproducible experiment records.
 
+The ultimate aspiration of the project is automated stock selection and trading, pursuing sustainable risk-controlled long-term net returns (stable profit is an objective, not a guarantee). See [North Star](docs/north_star.md) for the active product aspiration and demo-first delivery principles. The historical [research charter](docs/research_program_charter.md) remains preserved as formal evidence policy. This repository builds the simulated research and backtesting foundation—the essential first part, not the final execution product. Live execution, broker connectivity, pre-trade risk limits, reconciliation, and emergency kill switches belong strictly to a future, separately authorized private execution repository.
+
 `LAGGED FEATURE CONTRACTS` · `EXPLICIT SIGNAL LAG` · `DRIFT-AWARE ACCOUNTING` · `JSON EVIDENCE`
 
-[Quickstart](#quickstart) · [Research charter](docs/research_program_charter.md) · [Data methodology](docs/point_in_time_data_methodology_contract.md) · [Research method](docs/research_method.md) · [Project specification](PROJECT_SPEC.md) · [Experiment registry](reports/experiment_registry.md) · [Current roadmap](docs/current_roadmap.md)
+[Quickstart](#quickstart) · [North Star](docs/north_star.md) · [Research charter](docs/research_program_charter.md) · [Data methodology](docs/point_in_time_data_methodology_contract.md) · [Research method](docs/research_method.md) · [Project specification](PROJECT_SPEC.md) · [Experiment registry](reports/experiment_registry.md) · [Current roadmap](docs/current_roadmap.md)
 
 ## Quickstart
 
@@ -37,7 +39,19 @@ python -m research.synthetic_combined_score_backtest_demo
 python -m research.local_csv_fixture_workflow_demo
 ```
 
-These commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics.
+These commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are legacy reproducibility and engineering diagnostics, not acceptance of Demo v0. Multi-factor examples remain available for workflow testing but are outside the single-factor Demo v0 scope.
+
+## Demo-First Delivery Target (Demo v0)
+
+The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, complete ledger schema coverage, or a broad factor zoo.
+
+The active delivery target is **Demo v0** (target deliverable, not yet implemented):
+- One reproducible local command/workflow using an existing price-only factor and a fixed strategy configuration;
+- Simulated stock selection and drift-aware portfolio holdings;
+- Human-readable comparison report with benchmark, explicit transaction cost and timing models (accepted `after_close_signal_next_observed_close_v1`), risk metrics, and limitations;
+- All-Attempt Case Logging recording all attempted cases (distinguishing lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
+
+Synthetic fixture workflows are demonstrable without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic.
 
 ## Method
 
@@ -58,11 +72,10 @@ methodology-process evidence.
 
 ## Current program status
 
-Track A is a frozen three-factor, 14-trial diagnostic design. The evidence ceiling remains `DIAGNOSTIC_ONLY`, and dataset acceptance is not granted.
-
-- Stage 1 (entitlement, retention, publication) is accepted. Public-safe hashes and capability conclusions: [stage1_accepted_public_record_v1.json](docs/stage1_accepted_public_record_v1.json) and [identity_evidence_public_aggregate_v1.json](docs/identity_evidence_public_aggregate_v1.json).
-- Track A PR 2 (manifest validation and blinded review) public status: [track_a_pr2_public_status.md](docs/track_a_pr2_public_status.md) ([machine-readable JSON](docs/track_a_pr2_public_status_v1.json)). Includes the `src/pit_manifest_validator_v1/` package and blinded review decision `diagnostic_only` in [dataset_review_public_projection_v1.json](docs/dataset_review_public_projection_v1.json).
-- Track A PR 3 (diagnostic campaign runner) landed through PR #187 as shippable `src/campaign/` code (registry, eligibility, paths, benchmarks, precondition, runner, bundle, and synthetic fixtures). The 14-trial diagnostic run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`). Evidence ceiling remains `DIAGNOSTIC_ONLY`. D8, A2, and identity reopen stay closed.
+- **North Star & Roadmap Alignment**: Five primary milestones define the path from core research foundation to simulated demo slice, exploratory multi-factor expansion, formal research promotion, and eventual separately authorized execution. See the [current roadmap](docs/current_roadmap.md).
+- **Historical Track A Disposition**: Track A (14-trial EODHD diagnostic design) remains frozen and REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`) under evidence ceiling `DIAGNOSTIC_ONLY`. This historical refusal is preserved as immutable evidence and is not a universal blocker for the demo-first program.
+- **Track B First Checkpoints**: SQLite ledger runtime first checkpoints (Path A PR #199, Path B PR #200) are merged on main as software progress; optional 37-event schema completion is safely deferred.
+- **Exploration Diagnostic Context**: A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility and planning context on local data history, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling. It is outside Demo v0 acceptance, produces no strategy or profitability claims, and does not prove tradability, universe completeness, or a pristine holdout.
 - See the [current roadmap](docs/current_roadmap.md) for execution gates and milestone tracking.
 
 ## Quality gates
