@@ -9,9 +9,9 @@ ideas with clear assumptions, tests, and logs.
 It is not live trading, not paper trading, not financial advice, and not a
 profitability claim.
 
-## Final Objective
+## Current Research-Platform Workflow
 
-The final objective is to build a reproducible research platform that can take
+The current research-platform workflow builds a reproducible research platform that can take
 factor ideas through a disciplined workflow:
 
 1. Define a stock factor idea.
@@ -61,8 +61,8 @@ what failed, what remains uncertain, and what should happen next.
 
 The repository currently includes:
 
-- governance documents: `README.md`, `PROJECT_SPEC.md`, `AGENTS.md`, and
-  `EXPERIMENT_LOG.md`.
+- governance documents: `README.md`, `PROJECT_SPEC.md`, `AGENTS.md`,
+  `docs/north_star.md`, `docs/current_roadmap.md`, and `EXPERIMENT_LOG.md`.
 - reusable factor operators in `src/features/operators.py`.
 - `alpha_009` as a close-only WorldQuant-style research feature in
   `src/features/worldquant_alphas.py`.

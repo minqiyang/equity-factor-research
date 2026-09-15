@@ -20,6 +20,17 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Residual-copy and routing convergence under PROSE-005: replaced residual short floor
+  summaries in `PROJECT_SPEC.md` and `docs/current_roadmap.md` with pointers to canonical `AGENTS.md`
+  Research Safety Invariants and the blocking backlog table (F-001); clarified that local CSV
+  `diagnostic_ready` is a separately authorized exploratory path strictly outside mandatory Demo v0
+  acceptance, and public September 13 references are qualitative planning context only (F-002);
+  reframed `Final Objective` in `docs/project_overview.md` as `Current Research-Platform Workflow`
+  and added active governance documents (A-001); marked remaining Track A operational sections as
+  historical protocol context and routed readiness active gates to Primary Milestones Demo v0 (A-002);
+  and clarified PIT-006 backlog handling as failing closed with an affected-window block when terminal
+  evidence is absent (A-003).
+
 - Post-adjudication remediation under PROSE-004: replaced absolute sample-property
   phrase "no survivorship bias" and bare shorthand with the operational selection
   rule in `docs/north_star.md`, `PROJECT_SPEC.md`, `docs/current_roadmap.md`,

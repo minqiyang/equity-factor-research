@@ -49,10 +49,11 @@ requirements.
   (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`).
   This refusal is preserved as immutable historical evidence and is not an active
   blocker for demo-first development.
-- A local 2026-09-13 metadata and numerical diagnostic confirmed sufficient local
-  data history for exploration, with documented caveats (zero-volume segments,
-  date gaps, unverified adjustment events) deferred for layered handling. No
-  profitability is claimed.
+- A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility
+  and planning context on local data history, with documented caveats (zero-volume segments,
+  date gaps, unverified adjustment events) deferred for layered handling. It is outside
+  Demo v0 acceptance, produces no strategy or profitability claims, and does not prove
+  tradability, universe completeness, or a pristine holdout.
 - Milestone 2 (Demo v0 Working Vertical Slice) is the active delivery target.
 - Raw private data, ticker lists, provider responses, and performance values
   remain outside the public repository.

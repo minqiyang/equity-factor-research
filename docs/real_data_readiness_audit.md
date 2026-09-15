@@ -11,8 +11,10 @@ Passing this checklist does not make a strategy or dataset validated. It only
 records that the local-data intake has enough documented context for the next
 scope-limited review.
 
-This checklist is subordinate to `docs/research_program_charter.md` and the
-active gates in `docs/current_roadmap.md`.
+This checklist is subordinate to `docs/research_program_charter.md` (preserved
+formal research evidence policy) and the active delivery requirements in
+`docs/current_roadmap.md#primary-milestones` (Demo v0 for active simulation, with
+formal research promotion gates owned separately in Milestone 4).
 `docs/point_in_time_data_methodology_contract.md` is the normative Stage 3
 authority for any dataset-specific provenance, universe, corporate-action,
 field, privacy, and holdout review. A passing diagnostic audit cannot authorize
@@ -20,19 +22,20 @@ formal historical interpretation while a dataset manifest or any timing,
 all-trial ledger, statistical, cost, privacy, or holdout-classification gate
 remains blocked.
 
-Under the demo-first engineering discipline, an exploratory local-data diagnostic
-run for an initial working slice (Demo v0) may qualify under the existing
-diagnostic-scope readiness path without requiring full formal Stage 4 ledger
-infrastructure or complete SEC lineage proofs. However, skipping formal Stage 4
-or universal SEC proof is never a waiver for scope-relevant schema, date
-alignment, adjustment consistency, identifier continuity, or economic
-correctness. Unknown adjustments, unresolved identifier continuity, or
+Under the demo-first engineering discipline, local CSV `diagnostic_ready` is a
+separately authorized exploratory path strictly outside mandatory Demo v0 acceptance
+(which is demonstrable on synthetic fixtures without private data). An exploratory
+local-data diagnostic run may qualify under the existing diagnostic-scope readiness path
+without requiring full formal Stage 4 ledger infrastructure or complete SEC lineage proofs.
+However, skipping formal Stage 4 or universal SEC proof is never a waiver for
+scope-relevant schema, date alignment, adjustment consistency, identifier continuity,
+or economic correctness. Unknown adjustments, unresolved identifier continuity, or
 unresolved high/medium data defects continue to block interpretation under stop
-conditions below; simply documenting an unresolved correctness issue in the
-backlog does not award readiness. Any such mode-local readiness decision
-(`diagnostic_ready`) remains strictly bounded to its declared diagnostic scope
-and must not be confused with the historical hash-bound Track A campaign state
-(`DIAGNOSTIC_READY`).
+conditions below; simply documenting an unresolved correctness issue in the backlog
+does not award readiness. Any such mode-local readiness decision (`diagnostic_ready`)
+remains strictly bounded to its declared diagnostic scope, does not establish mandatory
+Demo v0 acceptance, and must not be confused with the historical hash-bound Track A
+campaign state (`DIAGNOSTIC_READY`).
 
 ## Readiness Classification
 

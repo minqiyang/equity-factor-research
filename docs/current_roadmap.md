@@ -29,9 +29,12 @@ The engineering approach is **demo-first**: ship a small, presentable, and
 reproducible end-to-end version first, record non-blocking imperfections in a
 lightweight backlog, and improve in layers. We avoid blocking a working
 demonstration on an ideal pipeline, complete SEC identity proof for every
-security, optional ledger/schema coverage, or a broad factor zoo. Minimum
-correctness (no-lookahead, explicit transaction costs, sample honesty, full trial
-accounting, privacy, and non-execution) is preserved at every layer.
+security, optional ledger/schema coverage, or a broad factor zoo. Canonical
+minimum correctness and non-negotiable boundaries are defined exclusively in
+[AGENTS.md Research Safety Invariants](../AGENTS.md#research-safety-invariants) and the
+[blocking backlog table](#imperfection-policy-and-lightweight-backlog), enforced
+at every layer (with Demo v0 maintaining All-Attempt Case Logging rather than
+formal Stage 4 complete ledger accounting).
 
 ## Primary Milestones
 
@@ -39,7 +42,7 @@ The program follows five primary milestones:
 
 | Milestone | Scope | Status | Deliverable & Evidence Criteria |
 | --- | --- | --- | --- |
-| **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic confirmed exploration feasibility with documented caveats. |
+| **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic provided qualitative feasibility/planning context with documented caveats (outside Demo v0 acceptance; no tradability, universe-completeness, or holdout claim). |
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Active Delivery Target** | One reproducible local command using an existing price-only factor and fixed strategy configuration -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations. Demonstrable on synthetic fixtures without private data; separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections logged in backlog. |
 | **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Planned Follow-up** | Layered additions on the working vertical slice: multi-factor combination (e.g., three-factor combination), broader historical windows, and handling data caveats (date gaps, zero-volume segments, adjustment checks). All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
@@ -67,9 +70,9 @@ The program follows five primary milestones:
   runtime, private data, or empirical conclusion.
 - Stage 1 (private entitlement, retention, and publication) is accepted.
   The public-safe record is `docs/stage1_accepted_public_record_v1.json`.
-- The evidence ceiling remains `DIAGNOSTIC_ONLY`. A blinded dataset-review
-  decision of `diagnostic_only` exists and campaign acceptance is
-  `DIAGNOSTIC_READY`, bound by hash. Formal interpretation is not accepted.
+- The evidence ceiling remains `DIAGNOSTIC_ONLY`. Under historical Track A,
+  a blinded dataset-review decision of `diagnostic_only` exists and campaign
+  acceptance is `DIAGNOSTIC_READY`, bound by hash. Formal interpretation is not accepted.
 - Track A PR 2 public validator and status are on protected main through
   PR #186. Track A PR 3 runner code is on protected main through PR #187.
 - Stage 4 G-2 binding is accepted by hash. Stage 4 is not fully complete.
@@ -79,10 +82,11 @@ The program follows five primary milestones:
 - Path A first checkpoint merged as PR #199; Path B first checkpoint merged
   as PR #200. These are first checkpoints only; optional 37-event schema
   completion stays off the critical path.
-- A local 2026-09-13 metadata and numerical diagnostic is complete and indicates
-  sufficient local data history for exploration, with documented caveats
-  (zero-volume segments, date gaps, unverified adjustment events) deferred for
-  layered handling. No new strategy run or profitability evidence was produced.
+- A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility
+  and planning context on local data history, with documented caveats (zero-volume segments,
+  date gaps, unverified adjustment events) deferred for layered handling. It is outside
+  Demo v0 acceptance, produces no strategy or profitability claims, and does not prove
+  tradability, universe completeness, or a pristine holdout.
 - D8, A2, identity reopen, and historical Track A 14-trial private result/performance access stay closed; this historical gate does not restrict synthetic Demo v0 diagnostic comparison reports.
 - No private paths, tickers, prices, or performance values in public docs.
 - The 2025-05-01 through 2026-05-31 interval remains permanently
@@ -134,7 +138,7 @@ research validity:
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Future-membership selection & survivor-cohort filtering | Sample Honesty | Severe upward performance bias from hindsight selection | Must not select universe on future listing continuity, future index membership, or survivor cohorts; unverified exploratory diagnostics remain explicitly labeled survivorship-biased; no claim of a survivorship-free universe until Milestone 4 formal lineage controls exist | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; terminal payoffs must have accepted evidence | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; if accepted terminal evidence is absent, the affected window blocks | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Incompatible price/volume dollar turnover | Accounting Correctness | Distorted liquidity, sizing, or capacity | Must not multiply raw price with split-adjusted volume or vice-versa; must use compatible price and volume bases | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Lookahead leakage or timing mismatch | Timing Correctness | Invalidates all backtest validity | Must enforce accepted `after_close_signal_next_observed_close_v1` timing contract (signals computed strictly after close, earliest target reset at next observed close; no same-bar or open execution without separate typed contract); no lookahead | Never deferrable | **BLOCKING (Cannot Defer)** |
@@ -182,6 +186,8 @@ Working Vertical Slice) as the active delivery target.
 
 ## Parallel Dataset-Independent Protocol-Core Lane
 
+> **Historical Protocol Context**: This section records preserved historical Track A execution lanes from prior stages, not active prerequisites for Demo v0.
+
 Frozen protocol-core modules may be implemented in parallel with the owner-side
 EODHD gate only when all three conditions hold:
 
@@ -223,6 +229,8 @@ Track A PR 3 must satisfy all of the following:
   retained and routed under the frozen contract.
 
 ## Gate Completion Criteria
+
+> **Historical Protocol Context**: This section records preserved historical Track A gate completion criteria from prior stages, not active prerequisites for Demo v0.
 
 Stage 1 is accepted. Track A PR 2 public surfaces and campaign
 `DIAGNOSTIC_READY` hashes are recorded under `DIAGNOSTIC_ONLY`. Track A PR 3

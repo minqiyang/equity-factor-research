@@ -44,7 +44,7 @@ zoo. At every layer, minimum research correctness is non-negotiable:
   Milestone 4 formal lineage controls exist; and visible retention of all trials and negative results;
 - Data honesty: no silent fill, clip, drop, or repair of missing or zero-volume bars;
 - Economic correctness: no identity mis-stitching (fail closed on ticker reuse), no default
-  last-price or zero-payoff disappearance (PIT-006), no dividend double counting (PIT-007), and
+  last-price or zero-payoff disappearance (PIT-006; if accepted terminal evidence is absent, the affected window blocks), no dividend double counting (PIT-007), and
   no incompatible price/volume dollar turnover calculations;
 - Strict data privacy: no raw private data, ticker lists, or secret paths in public docs;
 - Pure simulation with zero live/paper trading runtime or broker connectivity.
@@ -80,7 +80,7 @@ It classifies items with explicit impact, current handling, and revisit triggers
   future-membership selection and survivor-cohort filtering (no historical eligibility selected by
   future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased;
   no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair (PIT-009), default
-  last-price or zero-payoff disappearance (PIT-006), dividend double counting (PIT-007),
+  last-price or zero-payoff disappearance (PIT-006; if accepted terminal evidence is absent, the affected window blocks), dividend double counting (PIT-007),
   incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect
   cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live
   execution or brokerage integration. A known defect is not made safe merely by adding a caveat.

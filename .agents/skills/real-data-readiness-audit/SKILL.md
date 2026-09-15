@@ -38,16 +38,18 @@ Produce a scope-qualified readiness decision before result interpretation:
   program gate listed below is implemented and evidenced.
 - `blocked` when any required evidence is missing or unresolved.
 
-Under demo-first delivery, exploratory local-data runs for an initial working slice
-(Demo v0) may qualify under the existing diagnostic-scope readiness path without
-requiring complete formal Stage 4 ledger infrastructure or full SEC lineage proofs.
-However, skipping formal Stage 4 or universal SEC proof is never a waiver for
-scope-relevant schema, date alignment, adjustment consistency, identifier continuity,
-or economic correctness. Unknown adjustments, unresolved identifier continuity, or
-unresolved high/medium data defects continue to block interpretation under stop
-conditions below; simply documenting an unresolved correctness issue in the backlog
-does not award readiness. Any such mode-local readiness decision (`diagnostic_ready`)
-remains strictly bounded to its declared diagnostic scope and must not be confused with
+Under demo-first delivery, local CSV `diagnostic_ready` is a separately authorized
+exploratory path strictly outside mandatory Demo v0 acceptance (which is demonstrable
+on synthetic fixtures without private data). An exploratory local-data diagnostic run
+may qualify under the existing diagnostic-scope readiness path without requiring complete
+formal Stage 4 ledger infrastructure or full SEC lineage proofs. However, skipping
+formal Stage 4 or universal SEC proof is never a waiver for scope-relevant schema, date
+alignment, adjustment consistency, identifier continuity, or economic correctness.
+Unknown adjustments, unresolved identifier continuity, or unresolved high/medium data
+defects continue to block interpretation under stop conditions below; simply documenting
+an unresolved correctness issue in the backlog does not award readiness. Any such mode-local
+readiness decision (`diagnostic_ready`) remains strictly bounded to its declared diagnostic
+scope, does not establish mandatory Demo v0 acceptance, and must not be confused with
 the historical hash-bound Track A campaign state (`DIAGNOSTIC_READY`).
 
 The audit should make assumptions, caveats, and stop conditions visible before
@@ -80,7 +82,9 @@ tokens, private keys, account files, or credential-like paths.
 This audit can approve metadata inspection, loader checks, and explicitly
 caveated fixed-cohort diagnostics. It cannot supersede
 `docs/research_program_charter.md` or promote a run to formal historical
-evidence while a prerequisite remains blocked in `docs/current_roadmap.md`.
+evidence while a prerequisite remains blocked in `docs/current_roadmap.md`
+(where active delivery is governed by Primary Milestones Demo v0, and formal
+research promotion gates remain separate in Milestone 4).
 
 Stage 3 keeps three decisions separate:
 

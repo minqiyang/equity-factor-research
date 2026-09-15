@@ -1,5 +1,35 @@
 # Engineering Log
 
+## 2026-09-15 - PROSE-005 Residual-Copy and Routing Convergence
+
+- Applied residual-copy and routing convergence under `coord/prose_remediation_005.md`
+  and independent static review `reviews/docs_004/report.md`:
+  1. F-001 (MATERIAL): In `PROJECT_SPEC.md` and `docs/current_roadmap.md`, replaced the
+     residual short floor summary with explicit canonical pointers to
+     `AGENTS.md#research-safety-invariants` and the blocking backlog table
+     in `docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog`, explicitly
+     clarifying that Demo v0 maintains All-Attempt Case Logging rather than Stage 4 complete
+     ledger accounting.
+  2. F-002 (MATERIAL): In `.agents/skills/real-data-readiness-audit/SKILL.md` and
+     `docs/real_data_readiness_audit.md`, clarified that local CSV `diagnostic_ready` is a
+     separately authorized exploratory path strictly outside mandatory Demo v0 acceptance
+     (which is demonstrable on synthetic fixtures without private data). Updated public
+     September 13 diagnostic descriptions in `README.md`, `docs/current_handoff.md`, and
+     `docs/current_roadmap.md` to state that it provided qualitative feasibility and planning
+     context only, outside Demo v0 acceptance, producing no strategy or profitability claims
+     and no tradability, universe completeness, or pristine holdout proof.
+  3. A-001 (ADVISORY): In `docs/project_overview.md`, reframed `## Final Objective` heading and
+     body as `## Current Research-Platform Workflow` (building a reproducible simulation pipeline)
+     and added `docs/north_star.md` and `docs/current_roadmap.md` to the governance documents list.
+  4. A-002 (ADVISORY): In `docs/current_roadmap.md`, labeled remaining Track A operational sections
+     (Parallel Dataset-Independent Protocol-Core Lane, Gate Completion Criteria, and Program Position
+     `DIAGNOSTIC_READY` bullet) as historical protocol context; past-tensed the adjacent 37/37
+     sentence in `PROJECT_SPEC.md`; and routed active gates in readiness documents to Primary Milestones
+     Demo v0, with formal research promotion gates separate in Milestone 4.
+  5. A-003 (ADVISORY): In `docs/current_roadmap.md` and `docs/north_star.md`, clarified that PIT-006
+     handling enforces the accepted fail-closed outcome: no default last-price exit or zero payoff
+     at asset disappearance, and if accepted terminal evidence is absent, the affected window blocks.
+
 ## 2026-09-15 - PROSE-004 Post-Adjudication Corrections: F-001 and Supported Advisories
 
 - Post-adjudication documentation remediation following `adjudication/001/report.md`

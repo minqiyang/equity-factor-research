@@ -75,7 +75,7 @@ methodology-process evidence.
 - **North Star & Roadmap Alignment**: Five primary milestones define the path from core research foundation to simulated demo slice, exploratory multi-factor expansion, formal research promotion, and eventual separately authorized execution. See the [current roadmap](docs/current_roadmap.md).
 - **Historical Track A Disposition**: Track A (14-trial EODHD diagnostic design) remains frozen and REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`) under evidence ceiling `DIAGNOSTIC_ONLY`. This historical refusal is preserved as immutable evidence and is not a universal blocker for the demo-first program.
 - **Track B First Checkpoints**: SQLite ledger runtime first checkpoints (Path A PR #199, Path B PR #200) are merged on main as software progress; optional 37-event schema completion is safely deferred.
-- **Exploration Feasibility**: A local 2026-09-13 metadata and numerical diagnostic confirmed sufficient local data history for exploration, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling. No profitability is claimed.
+- **Exploration Diagnostic Context**: A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility and planning context on local data history, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling. It is outside Demo v0 acceptance, produces no strategy or profitability claims, and does not prove tradability, universe completeness, or a pristine holdout.
 - See the [current roadmap](docs/current_roadmap.md) for execution gates and milestone tracking.
 
 ## Quality gates

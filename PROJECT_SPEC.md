@@ -15,9 +15,12 @@ The engineering approach is **demo-first**: ship a basic, presentable, and
 reproducible end-to-end version first, record non-blocking imperfections in a
 lightweight backlog, and improve in layers. We avoid blocking a working
 demonstration on an ideal pipeline, complete SEC identity proof for every
-security, optional ledger/schema coverage, or a broad factor zoo. Minimum
-correctness (no-lookahead, explicit transaction costs, sample honesty, full trial
-accounting, privacy, and non-execution) is preserved at every layer.
+security, optional ledger/schema coverage, or a broad factor zoo. Canonical
+minimum correctness and non-negotiable boundaries are defined exclusively in
+[AGENTS.md Research Safety Invariants](AGENTS.md#research-safety-invariants) and the
+[blocking backlog table](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog),
+enforced at every layer (with Demo v0 maintaining All-Attempt Case Logging rather
+than formal Stage 4 complete ledger accounting).
 
 Optimize the research process for evidence quality rather than the highest
 historical Sharpe ratio. Retain negative, failed, invalid, and inconclusive
@@ -158,8 +161,8 @@ durable append, execution, artifact, access, and research behavior remain
 fail-closed stateful requirements.
 R1I is complete on protected main through PR #176 at `6386c59`. The accepted
 37-event vocabulary and immutable releases are preserved as optional
-`full_ledger_profile_v1`; completing 37/37 is not required before the bounded
-Track A campaign or the later minimal Track B runtime.
+`full_ledger_profile_v1`; completing 37/37 was not required before the historical
+bounded Track A campaign or the later minimal Track B runtime.
 
 `docs/eodhd_sp500_diagnostic_campaign_contract.md` defines the preserved
 historical Track A/Track B diagnostic campaign protocol. Track A froze exactly
@@ -400,7 +403,7 @@ The project operates under two clearly bounded modes to prevent conflating explo
 
 To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
 - **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains valid without fabricating economics).
-- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, default last-price or zero-payoff disappearance, dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, default last-price or zero-payoff disappearance (PIT-006; if accepted terminal evidence is absent, the affected window blocks), dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
 
 The complete, single authoritative imperfection backlog table is maintained exclusively in
 [docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog).
