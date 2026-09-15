@@ -15,7 +15,10 @@ operational checkpoint is in the [current handoff](current_handoff.md).
 
 The ultimate aspiration of the project is automated stock selection and trading,
 pursuing sustainable risk-controlled long-term net returns. Stable profit is an
-explicit objective, not a guarantee.
+explicit objective, not a guarantee. Active product aspiration and demo-first
+delivery principles are defined in [docs/north_star.md](north_star.md).
+The preserved historical [research program charter](research_program_charter.md)
+remains formal evidence policy, not an active product delivery blocker.
 
 The research and simulation platform built in this repository is the foundational
 first phase—not the final execution product. The repository remains strictly
@@ -120,8 +123,10 @@ delivery while maintaining research validity:
 
 ## Canonical Research Sources
 
-- [Research program charter](research_program_charter.md): long-term evidence
-  policy and evidence-state boundaries.
+- [North Star and demo-first delivery](north_star.md): active product aspiration
+  and demo-first delivery principles.
+- [Research program charter](research_program_charter.md): preserved historical
+  formal evidence policy and evidence-state boundaries.
 - [Track A/Track B campaign contract](eodhd_sp500_diagnostic_campaign_contract.md):
   scope, private-data gate, freeze sequence, and historical stop conditions.
 - [Canonical preregistration](preregistrations/eodhd_sp500_three_factor_diagnostic_v1.yaml)

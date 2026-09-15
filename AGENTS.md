@@ -34,12 +34,14 @@ research-safety review standards.
   jumping to Grok is a P1 process failure.
 - Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
   review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
-  disabled. Required PR review follows the live coordinator V7.22 standard:
-  STANDARD lane requires 1 fresh independent reviewer (fresh Grok latest XHigh);
-  CRITICAL lane requires 2 fresh independent reviewers (fresh Grok latest XHigh
-  plus GPT Astra latest High). Review is read-only on a clean root at the exact
-  current head, never the producer worktree. The current owner no-GPT / lsgz:1
-  exception is session-scoped, not the permanent default.
+  disabled. Required PR review follows the live coordinator V7.23 standard:
+  NORMAL lane has no mandatory formal review seat (coordinator verification);
+  STANDARD and CRITICAL reviewer routing remains table-owned in routing_table.json
+  (STANDARD lane requires 1 fresh independent reviewer, fresh Grok latest XHigh;
+  CRITICAL lane requires 2 fresh independent reviewers, fresh Grok latest XHigh
+  plus GPT Astra latest High / AUDIT). Review is read-only on a clean root at the
+  exact current head, never the producer worktree. The current owner no-GPT /
+  lsgz:1 exception is session-scoped, not the permanent default.
 - After two completed formal reviews on the same PR still report P1 or P2,
   stop the review-and-fix loop. Dispatch a fresh Grok latest session and a fresh
   Gemini latest / Antigravity session to analyze the whole PR and current tree,
@@ -56,6 +58,8 @@ research-safety review standards.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
+- Read `docs/north_star.md` for active product vision, demo-first delivery principles,
+  and coarse milestone definitions.
 - Use `docs/repo_map.md` for targeted orientation; verify cached handoff facts live.
 - Read long logs or contracts only for active-stage or failed/sensitive checks.
 - Cap unknown output and prefer targeted searches or short views. Regenerate
@@ -68,6 +72,7 @@ research-safety review standards.
   returns. Stable profit is an objective, not a guarantee. This research
   repository is the first simulation phase; execution and live order capabilities
   belong strictly to a future, separately authorized private execution repository.
+  Active product aspiration and demo-first delivery principles are in `docs/north_star.md`.
 - Keep this project simulated, auditable, reproducible, and explainable; never
   add brokerage connections, orders, paper/live trading, or live-account behavior.
 - Demo-first delivery: deliver a working, presentable end-to-end vertical slice
@@ -125,10 +130,13 @@ itself is a hold or unblock condition.
   or repository rules, automatically execute the next clear, already-authorized
   step in the same turn without stopping to request repeat permission. Continue
   through ordinary QA, review, and remediation waits; stop only for a genuine
-  blocker, a necessary owner decision, or additional authority. A plan does not
-  authorize push, PR creation or merge, private data access, new paid services,
-  credentials, or trading. Do not end a turn merely on dispatch acknowledgment
-  while delegated work is outstanding.
+  blocker, a necessary owner decision, or additional authority. When the owner
+  explicitly directs a STOP boundary after an authorized task, checks, and
+  version management, that explicit stop directive governs; do not continue into
+  unauthorized implementation or data tasks. A plan does not authorize push, PR
+  creation or merge, private data access, new paid services, credentials, or
+  trading. Do not end a turn merely on dispatch acknowledgment while delegated
+  work is outstanding.
 - Do not end the coordinator process while an authorized PR is waiting for its
   exact-head review body. Keep the session alive and re-check until that body
   exists (pass, findings, or an explicit current limit). Timeout is not a review
@@ -201,3 +209,10 @@ itself is a hold or unblock condition.
   needed capability is missing.
 - Do not add an unjustified heavyweight dependency. The controller owns workflow
   and review lifecycle.
+- Documentation Language Standard: Every newly authored or edited
+  equity-factor-research-related documentation must be written in English. This
+  includes public docs, AGENTS, skills, logs, private addenda, task handoffs, and
+  reports. Do not rewrite immutable historical evidence just to translate it;
+  report any retained historical exception explicitly. No newly authored
+  non-English prose anywhere in this project's documentation. User-facing chat
+  interactions may remain in the user's preferred language.

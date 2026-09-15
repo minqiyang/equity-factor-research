@@ -16,6 +16,8 @@ destructive operation must satisfy that boundary.
 1. After `AGENTS.md`, read `docs/current_handoff.md`,
    `docs/codex_long_running_controller.md`, and `docs/current_roadmap.md` for the
    recorded checkpoint, execution gates, and program status, respectively.
+   Read `docs/north_star.md` for active product aspiration and demo-first delivery
+   principles.
 2. Use `docs/repo_map.md` for targeted orientation and read only active-stage
    contracts. Research or code stages also require `PROJECT_SPEC.md`.
 3. With capped output, check branch/tree state, local and remote `main`, recent
@@ -53,6 +55,12 @@ destructive operation must satisfy that boundary.
 - Use `docs/engineering_log.md` for implementation/process evidence,
   `docs/decision_log.md` for durable choices, `docs/troubleshooting_log.md` for
   failures, and `EXPERIMENT_LOG.md` only for research experiments.
+- All newly authored or edited equity-factor-research-related documentation must
+  be written in English. This includes public docs, AGENTS, skills, logs, private
+  addenda, task handoffs, and reports. Do not rewrite immutable historical
+  evidence just to translate it; report any retained historical exception
+  explicitly. No newly authored non-English prose anywhere in this project's
+  documentation. User-facing chat interactions may remain in the user's preferred language.
 
 ## External Authorization Gate
 
@@ -81,13 +89,15 @@ re-enter this gate before acting on a different PR or changed scope.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI
   stabilize on the final stable current head, conduct formal review under live
-  coordinator V7.22 standards: STANDARD lane requires 1 fresh independent
-  reviewer (fresh Grok latest XHigh); CRITICAL lane requires 2 fresh
-  independent reviewers (fresh Grok latest XHigh plus GPT Astra latest High).
-  Local Codex CLI review with GPT Astra latest High is used when GPT review is
-  called. The reviewer is read-only on a clean root at that exact head, never the
-  producer worktree. The current owner no-GPT / lsgz:1 exception is
-  session-scoped, not permanent policy.
+  coordinator V7.23 standards: NORMAL lane has no mandatory formal review seat
+  (coordinator verification); STANDARD and CRITICAL reviewer routing remains
+  table-owned in routing_table.json (STANDARD lane requires 1 fresh independent
+  reviewer, fresh Grok latest XHigh; CRITICAL lane requires 2 fresh independent
+  reviewers, fresh Grok latest XHigh plus GPT Astra latest High / AUDIT). Local
+  Codex CLI review with GPT Astra latest High is used when GPT review is called.
+  The reviewer is read-only on a clean root at that exact head, never the producer
+  worktree. The current owner no-GPT / lsgz:1 exception is session-scoped, not
+  permanent policy.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -154,7 +164,10 @@ regressions. Never drop necessary tests, guards, or validation just to reduce li
 count. Record all experiments, retained simplifications, and known limitations.
 A supported no-change outcome is valid. Revalidation of the ablated candidate
 follows the lane's ordinary QA and review gates; ablation revalidation itself
-does not trigger a recursive ablation loop.
+does not trigger a recursive ablation loop. The current task is documentation
+enactment, not a formal design or implementation milestone; do not invent an
+ablation experiment or expand into strategy work. The ablation rule remains
+durable for qualifying future major candidates.
 
 ## Herdr Tab Cleanup Before Next Round
 
@@ -174,9 +187,12 @@ proof that a tab is closeable.
 When the next authorized step is already determined, dispatch it in the same
 turn. Stop only for a genuine blocker, an owner decision, or when no capable model
 can determine the next legal step. Do not pause to request permission to continue
-that step. A plan does not authorize push/PR/merge, private data, new paid
-services, credentials, or trading. Do not end a turn merely on dispatch
-acknowledgment while delegated work is outstanding.
+that step. When the owner explicitly directs a STOP boundary after an authorized
+task, checks, and version management, that explicit stop directive governs; do
+not continue into unauthorized implementation or data tasks. A plan does not
+authorize push/PR/merge, private data, new paid services, credentials, or trading.
+Do not end a turn merely on dispatch acknowledgment while delegated work is
+outstanding.
 
 Owner-authorized Antigravity child sessions start with
 `--dangerously-skip-permissions` for that session only. Do not write that mode

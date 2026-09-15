@@ -72,26 +72,28 @@ formal claims, not universal blockers for the initial visibly limited Demo v0.
 
 ## Immediate Blockers Or Owner Decisions
 
-- None blocking Milestone 2 Demo v0 synthetic vertical slice delivery.
+- Current task authorization is strictly for documentation, roadmap, and log
+  alignment; the owner explicitly directs STOP after this documentation task
+  and its version/QA checks.
 - Running or interpreting local CSV market data requires separate explicit
   authorization and real-data readiness audit.
 - No push, PR creation, merge, or external action without explicit authorization.
 
 ## Next Safe Action
 
-- Execute Milestone 2 Demo v0: produce a reproducible local command using an
-  existing price-only factor and fixed strategy configuration, generating
-  simulated selection/holdings, explicit frictional costs and timing, and a
-  human-readable comparison report with benchmark, recording all attempted cases.
-- Verify that the synthetic fixture workflow demonstrates the slice end-to-end
-  without private data.
-- Keep non-blocking data caveats and enhancements in the lightweight backlog.
+- STOP after completing this documentation/log task, checks, and GitHub version
+  management, per explicit owner directive.
+- Do not implement Demo v0 or run market data in this task. The coordinator
+  handles GitHub publication and eligible tab cleanup.
+- Future authorized work will execute Milestone 2 Demo v0 vertical slice under
+  single-writer rules.
 
 ## Source Routing
 
 - Authority, research-safety invariants, and continuation: `AGENTS.md`.
 - Workflow, review, waiting, and stop behavior:
   `docs/codex_long_running_controller.md`.
+- Active North Star and demo-first delivery: `docs/north_star.md`.
 - Program milestones, Demo v0 criteria, and imperfection backlog:
   `docs/current_roadmap.md`.
 - Long-term evidence policy: `docs/research_program_charter.md`.

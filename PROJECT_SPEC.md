@@ -23,7 +23,8 @@ Optimize the research process for evidence quality rather than the highest
 historical Sharpe ratio. Retain negative, failed, invalid, and inconclusive
 results.
 
-`docs/research_program_charter.md` is the canonical long-term evidence policy.
+`docs/north_star.md` is the active product aspiration and demo-first delivery policy.
+`docs/research_program_charter.md` is the preserved historical formal evidence policy.
 `docs/current_roadmap.md` is the active staged delivery plan.
 `docs/signal_execution_timing_contract.md` is the accepted Stage 2 timing
 authority. Stage 2b implements it with required, role-bound, immutable source

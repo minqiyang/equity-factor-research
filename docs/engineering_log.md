@@ -35,7 +35,29 @@
   2026-09-06 record past operational incidents and instructions during PR #197-#200
   (e.g., legacy `@codex review` hosted connectors, 3-strike rounds). They are
   preserved as immutable dated history; current active policy is governed by
-  AGENTS.md and docs/codex_long_running_controller.md under V7.22.
+  AGENTS.md and docs/codex_long_running_controller.md under live V7.23 standards.
+
+## 2026-09-15 - Live V7.23 coordinator policy, North Star routing, English standard, and explicit STOP boundary
+
+- Re-read live policy files under coordinator standard V7.23-draft: NORMAL lane
+  has no mandatory formal review seat (coordinator verification); STANDARD and
+  CRITICAL reviewer routing remains table-owned in routing_table.json. Preserved
+  task lane and session no-GPT waiver.
+- Preserved `docs/research_program_charter.md` byte-identical to baseline as
+  formal research evidence policy, honoring the hash-pinning in
+  `tests/test_ledger_track_b_v7_design.py`.
+- Created `docs/north_star.md` as the single active product-goal source,
+  defining automated stock selection and trading as the ultimate aspiration,
+  demo-first delivery (Demo v0 vertical slice), five primary milestones, and the
+  lightweight backlog of deferred imperfections.
+- Enacted the durable English-only documentation standard across all newly
+  authored or edited equity-factor-research documentation (public docs, AGENTS,
+  skills, logs, private addenda, handoffs, and reports). User-facing chat may
+  remain in the user's preferred language.
+- Enacted explicit owner STOP directive: development stops after completing this
+  documentation/log task, verification checks, and GitHub version management.
+  Demo v0 implementation and market data execution are deferred to separate
+  authorized tasks.
 
 ## 2026-09-08 - Pearson IC golden binary64 portability
 

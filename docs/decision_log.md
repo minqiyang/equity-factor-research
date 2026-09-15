@@ -27,21 +27,30 @@ Context:
 
 Decision:
 
-- Align project specification, roadmap, handoff, charter, and skills around a 5-milestone progression with Demo v0 (working vertical slice) as the active delivery target.
+- Create `docs/north_star.md` as the single active product-goal document, while preserving `docs/research_program_charter.md` byte-identical to baseline as hash-pinned formal research evidence policy.
+- Align project specification, roadmap, handoff, and skills around a 5-milestone progression with Demo v0 (working vertical slice) as the active delivery target.
 - Establish an explicit Imperfection Policy and lightweight backlog distinguishing safe deferrals (presentation polish, extra factors, optional schemas, advanced statistics) from non-deferrable correctness/safety bugs (lookahead, cost/return errors, secrets, unsafe execution).
 - Keep the current repository simulated and non-order-capable; record future execution as separately authorized scope.
 - Enforce the demo-first discipline: ship a basic, presentable end-to-end version first; record imperfections and improve in working layers.
+- Align active workflow and review references with live coordinator V7.23 standards (NORMAL has no mandatory formal seat; reviewer routing is table-owned in routing_table.json).
+- Enforce a durable English-only documentation standard across all newly authored or edited project documentation, private addenda, handoffs, and reports.
+- Enact the owner's explicit STOP boundary: stop after completing this documentation task, verification checks, and GitHub version management, leaving Demo v0 implementation and market data runs for separate future authorization.
 
 Rationale:
 
 - A demo-first approach enables tangible, auditable, and visible software progress without sacrificing research validity or safety invariants.
 - Clear mode boundaries separate exploratory demo development from formal empirical promotion.
+- Creating `docs/north_star.md` satisfies active product direction without breaking the hash-pinned charter fixture.
+- Bounding this task strictly to documentation alignment prevents premature unauthorized execution.
 
 Consequences:
 
+- Active roadmap, handoff, and spec route to `docs/north_star.md` for active goals, while `docs/research_program_charter.md` remains preserved formal policy.
 - Active roadmap and handoff target Milestone 2 Demo v0 vertical slice.
 - Historical Track A refusal remains immutable evidence and does not block Demo v0.
 - All non-blocking caveats are tracked in the lightweight backlog table.
+- All newly authored or edited documentation is written in English.
+- Development halts at the documentation boundary awaiting separate task dispatch.
 
 ---
 
