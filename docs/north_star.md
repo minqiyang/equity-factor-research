@@ -3,7 +3,7 @@
 Updated: 2026-09-15
 
 Canonical responsibility: active product aspiration, delivery methodology,
-coarse program milestones, and research versus execution boundaries.
+and research versus execution boundaries.
 
 Repository authority is [AGENTS.md](../AGENTS.md), workflow behavior is owned
 by the [controller](codex_long_running_controller.md), operational status is
@@ -60,16 +60,9 @@ prevent shipping the initial, visibly limited Demo v0 vertical slice.
 
 ## Primary Milestones
 
-The program follows a five-milestone sequence from foundational engine to working demo and future execution. The canonical stage sequence, status, and gate criteria are owned exclusively by [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones).
+The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, coarse status, and detailed deliverable definitions are owned exclusively by the canonical roadmap in [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones).
 
-In summary, the progression covers:
-1. **Milestone 1: Core Research & Synthetic Engine** (Completed Baseline)
-2. **Milestone 2: Demo v0 Working Vertical Slice** (Active Delivery Target: minimal reproducible end-to-end command on synthetic fixtures, simulated selection/holdings, benchmark comparison report, explicit cost/timing models, and mandatory complete trial accounting of all attempted cases)
-3. **Milestone 3: Exploratory Multi-Factor & Diagnostics** (Planned Follow-up)
-4. **Milestone 4: Formal Research & Strict Lineage Controls** (Future Evidence Gate)
-5. **Milestone 5: Automated Execution & Trading Platform** (Future Separately Authorized Scope)
-
-Detailed milestone definitions, deliverables, and status tracking live in [current_roadmap.md](current_roadmap.md).
+Under demo-first delivery, complete trial accounting across all attempted cases is mandatory for every trial (including active Milestone 2 Demo v0); cherry-picking or omitting failed trials is strictly forbidden.
 
 ## Authoritative Backlog and Imperfection Policy
 
