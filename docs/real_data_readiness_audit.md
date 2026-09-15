@@ -21,14 +21,18 @@ all-trial ledger, statistical, cost, privacy, or holdout-classification gate
 remains blocked.
 
 Under the demo-first engineering discipline, an exploratory local-data diagnostic
-run for an initial working slice (Demo v0) may achieve `diagnostic_ready` or
-`diagnostic_ready_with_low_caveats` without requiring full formal Stage 4 ledger
-infrastructure or complete SEC lineage proofs, provided that minimum correctness
-(no lookahead, explicit frictional costs, sample honesty) is strictly enforced,
-non-blocking data caveats are documented in the backlog, and results remain
-strictly diagnostic without profitability or formal promotion claims. Formal
-research promotion controls remain prerequisites for formal claims, not universal
-blockers for the initial visibly limited demo.
+run for an initial working slice (Demo v0) may qualify under the existing
+diagnostic-scope readiness path without requiring full formal Stage 4 ledger
+infrastructure or complete SEC lineage proofs. However, skipping formal Stage 4
+or universal SEC proof is never a waiver for scope-relevant schema, date
+alignment, adjustment consistency, identifier continuity, or economic
+correctness. Unknown adjustments, unresolved identifier continuity, or
+unresolved high/medium data defects continue to block interpretation under stop
+conditions below; simply documenting an unresolved correctness issue in the
+backlog does not award readiness. Any such mode-local readiness decision
+(`diagnostic_ready`) remains strictly bounded to its declared diagnostic scope
+and must not be confused with the historical hash-bound Track A campaign state
+(`DIAGNOSTIC_READY`).
 
 ## Readiness Classification
 

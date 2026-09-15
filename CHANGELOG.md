@@ -9,10 +9,12 @@ profitability, or trading readiness.
 
 ### Added
 
-- Demo-first delivery alignment and North Star specification: updated
-  project specifications, roadmap, handoffs, and research charter around
-  five primary milestones, establishing Milestone 2 Demo v0 (minimal
-  reproducible end-to-end slice) as the active delivery target.
+- Demo-first delivery alignment and North Star specification: added
+  `docs/north_star.md`, updated project specifications, roadmap, and handoffs
+  around five primary milestones (while preserving the hash-pinned research
+  program charter byte-identical as historical formal evidence policy),
+  establishing Milestone 2 Demo v0 (minimal reproducible end-to-end slice)
+  as the active delivery target.
 - Lightweight imperfection backlog table distinguishing safe deferrals
   from non-deferrable demo-blocking correctness and safety invariants.
 

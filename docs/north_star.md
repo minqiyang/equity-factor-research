@@ -19,8 +19,9 @@ explicit objective, not a guarantee.
 The research and simulation platform developed in this repository is the foundational
 first phase—not the final execution product. The current repository remains strictly
 simulated, reproducible, auditable, and non-order-capable. Live trading, broker
-integrations, credentials, and order routing belong strictly to a future,
-separately authorized private execution system.
+integrations, credentials, order routing, pre-trade risk limits, position and cash
+reconciliation, real-time health monitoring, and emergency kill switches belong strictly
+to a future, separately authorized private execution system.
 
 ## Demo-First Delivery Philosophy
 
@@ -32,11 +33,19 @@ in working layers.
 We avoid blocking an initial working demonstration on an ideal pipeline, complete
 SEC identity proof for every security, optional ledger/schema coverage, or a factor
 zoo. At every layer, minimum research correctness is non-negotiable:
-- Strictly no lookahead or future information leakage (T-1 signal lag, execution at T);
-- Realistic transaction costs and turnover accounting (bid-ask spread and commission bps);
-- Sample honesty and visible retention of all trials and negative results;
-- Strict data privacy (no raw private data, ticker lists, or secret paths in public docs);
-- Pure simulation with no live/paper trading runtime or broker connectivity.
+- Strictly no lookahead or timing mismatch: enforce accepted `after_close_signal_next_observed_close_v1`
+  timing contract (signals computed strictly after close, earliest target reset at next observed close;
+  no same-bar or open execution without separate typed contract);
+- Realistic transaction costs and turnover accounting under existing turnover conventions
+  (sum of absolute signed trades under undivided convention, explicit spread and commission bps);
+- Sample honesty: no future-membership selection, no survivorship bias, and visible retention of all
+  trials and negative results;
+- Data honesty: no silent fill, clip, drop, or repair of missing or zero-volume bars;
+- Economic correctness: no identity mis-stitching (fail closed on ticker reuse), no default
+  last-price or zero-payoff disappearance (PIT-006), no dividend double counting (PIT-007), and
+  no incompatible price/volume dollar turnover calculations;
+- Strict data privacy: no raw private data, ticker lists, or secret paths in public docs;
+- Pure simulation with zero live/paper trading runtime or broker connectivity.
 
 ## Relationship to the Historical Research Charter
 
@@ -74,13 +83,28 @@ prevent shipping the initial, visibly limited Demo v0 vertical slice.
    and multiple-testing inference packages. Prerequisite for formal factor promotion.
 
 5. **Milestone 5: Automated Execution & Trading Platform (Future Separately Authorized Scope)**
-   Translating validated models into execution algorithms, simulated order generation, broker
-   connectivity, paper trading, and eventual risk-controlled live execution in a separate execution repository.
+   Distinct future progression: candidate comparison and freezing -> independent reproduction ->
+   forward observation -> separately authorized paper trading -> separately authorized small-capital
+   evaluation -> separately authorized live evaluation. Maintained in a separate execution repository
+   owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring,
+   emergency kill switches, broker connectivity, credentials, and live order placement. Strictly
+   outside the authority of the current research repository. No milestone grants authority and no
+   candidate or strategy model has been validated by this documentation task.
 
-## Lightweight Backlog of Deferred Imperfections
+## Authoritative Backlog and Imperfection Policy
 
-- **Safe to Defer for Demo v0**: Incomplete SEC entity lineage, zero-volume/flat-price segments,
-  dividend/split event-level reconciliation, factor zoo expansion, 37-event ledger schema breadth,
-  advanced multiple-testing statistics (deflated Sharpe/FWER), and plotting/dashboard polish.
-- **Non-Deferrable (Demo-Blocking Defects)**: Lookahead leakage, transaction fee omissions,
-  falsified/cherry-picked results, leaked private data, and live broker execution.
+The project maintains a single authoritative imperfection backlog table in
+[PROJECT_SPEC.md](../PROJECT_SPEC.md#imperfection-policy-and-backlog) and
+[current_roadmap.md](current_roadmap.md), classifying items with explicit impact, current handling,
+and revisit triggers:
+
+- **Safe to Defer for Demo v0**: Presentation polish, additional factor families beyond demo scope,
+  full 37-event ledger schema breadth, advanced multiple-testing statistics (deflated Sharpe/FWER),
+  and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains
+  valid without fabricating economics).
+- **Non-Deferrable (Demo-Blocking Defects)**: Identity mis-stitching and ticker reuse,
+  future-membership selection and survivorship, silent fill/clip/drop/repair, default last-price
+  or zero-payoff disappearance, dividend double counting, incompatible price/volume dollar turnover,
+  lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked
+  results, unhedged/leaked private data, and live execution or brokerage integration. A known defect
+  is not made safe merely by adding a caveat.

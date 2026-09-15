@@ -39,13 +39,16 @@ Produce a scope-qualified readiness decision before result interpretation:
 - `blocked` when any required evidence is missing or unresolved.
 
 Under demo-first delivery, exploratory local-data runs for an initial working slice
-(Demo v0) may achieve `diagnostic_ready` or `diagnostic_ready_with_low_caveats`
-without requiring complete formal Stage 4 ledger infrastructure or full SEC lineage
-proofs, provided that minimum correctness (no lookahead, explicit frictional costs,
-sample honesty) is strictly enforced, non-blocking data caveats are documented in
-the backlog, and results remain strictly diagnostic without profitability or
-formal promotion claims. Formal research promotion controls remain prerequisites
-for formal claims, not universal blockers for the initial visibly limited demo.
+(Demo v0) may qualify under the existing diagnostic-scope readiness path without
+requiring complete formal Stage 4 ledger infrastructure or full SEC lineage proofs.
+However, skipping formal Stage 4 or universal SEC proof is never a waiver for
+scope-relevant schema, date alignment, adjustment consistency, identifier continuity,
+or economic correctness. Unknown adjustments, unresolved identifier continuity, or
+unresolved high/medium data defects continue to block interpretation under stop
+conditions below; simply documenting an unresolved correctness issue in the backlog
+does not award readiness. Any such mode-local readiness decision (`diagnostic_ready`)
+remains strictly bounded to its declared diagnostic scope and must not be confused with
+the historical hash-bound Track A campaign state (`DIAGNOSTIC_READY`).
 
 The audit should make assumptions, caveats, and stop conditions visible before
 any local CSV output is treated as research evidence.
@@ -57,6 +60,7 @@ Inspect the current project rules and readiness references:
 - `AGENTS.md`
 - `PROJECT_SPEC.md`
 - `README.md`
+- `docs/north_star.md`
 - `docs/research_program_charter.md`
 - `docs/current_roadmap.md`
 - `docs/point_in_time_data_methodology_contract.md`

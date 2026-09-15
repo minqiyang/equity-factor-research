@@ -1,7 +1,8 @@
 # Engineering Log
 
-## 2026-09-15 - Owner workflow alignment: mandatory ablation, automatic continuation, and review standards
+## 2026-09-15 - [SUPERSEDED] Owner workflow alignment: mandatory ablation, automatic continuation, and review standards
 
+- Status: Superseded by the live V7.23 coordinator entry below. Preserved as same-day record of earlier owner instructions prior to v7.23-draft reconciliation.
 - The owner established explicit workflow and review requirements:
   1. Mandatory post-design and post-implementation ablation: after every completed
      design or staged implementation, conduct ablation experiments to remove

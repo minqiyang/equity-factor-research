@@ -161,13 +161,16 @@ R1I is complete on protected main through PR #176 at `6386c59`. The accepted
 `full_ledger_profile_v1`; completing 37/37 is not required before the bounded
 Track A campaign or the later minimal Track B runtime.
 
-`docs/eodhd_sp500_diagnostic_campaign_contract.md` defines the active
-owner-approved two-track program. Track A freezes exactly three price-only
-factors and 14 semantic trials, uses purged bounded historical evaluation,
-dependence-aware inference, fixed cost cases, complete result retention, and a
-repository-external content-addressed evidence bundle. Track B is a later
-8-12-event-family stateful runtime required before prospective performance
-access or formal promotion. Track B does not block Track A.
+`docs/eodhd_sp500_diagnostic_campaign_contract.md` defines the preserved
+historical Track A/Track B diagnostic campaign protocol. Track A froze exactly
+three price-only factors and 14 semantic trials, using purged bounded historical
+evaluation, dependence-aware inference, fixed cost cases, complete result retention,
+and a repository-external content-addressed evidence bundle (whose 14-trial
+empirical run received a terminal REFUSED outcome on data provenance/lineage).
+Track B was defined as a later 8-12-event-family stateful runtime required before
+prospective performance access or formal promotion. This campaign contract remains
+preserved historical protocol context, not the active delivery queue (which is
+Milestone 2 Demo v0 in `docs/north_star.md` and `docs/current_roadmap.md`).
 
 ## Current Phase and Boundary
 
@@ -175,8 +178,8 @@ The current phase is research-only.
 
 - No brokerage connection, orders, paper deployment, live deployment, or
   real-money execution.
-- This scope-reset PR performs no vendor download, credential use, remote data
-  access, or performance calculation. A later private entitlement/capability
+- Current research work performs no vendor download, credential use, remote data
+  access, or performance calculation. Any future private entitlement/capability
   probe and acquisition may proceed only through the campaign contract's
   explicit license, privacy, purchase, and blinded dataset-acceptance gates.
 - The public repository may use synthetic data, committed fixtures, and local
@@ -394,20 +397,26 @@ The project operates under two clearly bounded modes to prevent conflating explo
 ## Imperfection Policy And Backlog
 
 To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
-- **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs.
-- **Non-deferrable (Demo-blocking)**: Lookahead leakage, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration.
+- **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains valid without fabricating economics).
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivorship, silent fill/clip/drop/repair, default last-price or zero-payoff disappearance, dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
 
-| Deferred Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Deferral Status |
+| Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Status |
 | --- | --- | --- | --- | --- | --- |
-| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Acknowledge symbol alias risk; restrict to stable large-cap symbols | Transition to formal research promotion (Milestone 4) | Safe to defer for Demo v0 |
-| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; apply simple volume filters | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting |
-| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
+| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Disclose symbol alias risk and lack of full historical CIK/FIGI mapping; do not silently join across permanent securities; do not select on future continuity or survivor cohorts | Milestone 4 formal lineage promotion | Safe to defer for Demo v0 (provided no identity mis-stitching occurs) |
+| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; do not silently drop, interpolate, or clip missing or zero-volume bars; adhere to explicit dollar-volume conventions if filtering | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting (no silent repair) |
+| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty; strictly forbid adding cash dividends on top of total-return series | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Single price-only factor used in initial slice | Focus on end-to-end vertical flow with one existing factor (e.g., momentum) | Milestone 3 after Demo v0 vertical slice stabilizes | Safe to defer; demo-first requires 1 working factor first |
 | Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
 | Advanced multiple-testing statistics | Statistics | Deflated Sharpe / Family-Wise Error Rate not computed | Rely on basic Sharpe, turnover, max drawdown, benchmark relative return | Milestone 4 formal research promotion | Safe to defer; metrics must state descriptive limitations |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
-| Lookahead leakage or timing mismatch | Correctness | Invalidates all backtest validity | Must enforce explicit signal lag (T-1) and execution at T open/close; no lookahead allowed | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Frictional cost and turnover accounting | Correctness | Phantom profitability from ignored trading fees | Must compute signed turnover and apply explicit bid-ask/commission bps | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Future-membership selection & survivorship (PIT-005) | Sample Honesty | Severe upward performance bias from hindsight selection | Must not select universe on future listing continuity, future index membership, or survivor cohorts | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; terminal payoffs must have accepted evidence | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Incompatible price/volume dollar turnover | Accounting Correctness | Distorted liquidity, sizing, or capacity | Must not multiply raw price with split-adjusted volume or vice-versa; must use compatible price and volume bases | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Lookahead leakage or timing mismatch | Timing Correctness | Invalidates all backtest validity | Must enforce accepted `after_close_signal_next_observed_close_v1` timing contract (signals computed strictly after close, earliest target reset at next observed close; no same-bar or open execution without separate typed contract); no lookahead | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Frictional cost and turnover accounting | Accounting Correctness | Phantom profitability from ignored trading fees | Must apply explicit transaction costs (bid-ask spread and commission bps) to turnover computed from portfolio trades under existing turnover conventions (sum of absolute signed trades under undivided convention) | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
 
 ## Primary Milestones
@@ -434,8 +443,9 @@ The program follows five primary milestones from foundational research to simula
    - Prerequisite for formal factor promotion or general empirical claims; not a blocker for early exploratory demos.
 
 5. **Milestone 5: Automated Execution & Trading Platform (Future Separately Authorized Scope)**:
-   - Translating validated models into execution algorithms, simulated order generation, broker connectivity, paper trading, and eventual risk-controlled live execution;
-   - Maintained in a separate execution repository; strictly outside the authority of the current research repository (no broker connections, orders, or credentials here).
+   - Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation;
+   - Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live order placement;
+   - Strictly outside the authority of the current research repository (no broker connections, orders, or credentials here). No milestone grants authority and no candidate or strategy model has been validated by this documentation task.
 
 ## Explicit Non-Goals
 

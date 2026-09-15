@@ -67,7 +67,7 @@ signal-contract scaffold.
 - Optional long-only position caps applied before drift-aware trade calculation.
 - Interpretation gates tied to provenance, universe, timing, benchmark, splits, costs, and limitations.
 
-Current methodology work is governed by the [research program charter](research_program_charter.md), [handoff](current_handoff.md), [canonical roadmap](current_roadmap.md), and [project specification](../PROJECT_SPEC.md).
+Current methodology work is governed by the [North Star and demo-first principles](north_star.md), [research program charter](research_program_charter.md), [handoff](current_handoff.md), [canonical roadmap](current_roadmap.md), and [project specification](../PROJECT_SPEC.md).
 
 ## Evidence
 

@@ -35,8 +35,10 @@ destructive operation must satisfy that boundary.
 - `docs/current_roadmap.md` owns program stage sequence, dependencies, gate and
   completion criteria, and coarse stage status.
 - Choose one coherent stage; keep unrelated fixes in separate branches and PRs.
-- Research methodology comes from `PROJECT_SPEC.md`, the charter, roadmap, and
-  `docs/eodhd_sp500_diagnostic_campaign_contract.md`, not this controller.
+- Research methodology and active product goals come from `PROJECT_SPEC.md`,
+  `docs/north_star.md`, `docs/research_program_charter.md`, `docs/current_roadmap.md`,
+  and the preserved historical protocol in `docs/eodhd_sp500_diagnostic_campaign_contract.md`,
+  not this controller.
 - Do not infer permission for vendor access, protected samples, private results,
   deployment, brokerage behavior, or a broader research interpretation from a
   stage description.
@@ -128,12 +130,16 @@ re-enter this gate before acting on a different PR or changed scope.
 - No PR is technically merge-eligible while its current head has any unresolved
   actionable finding from any review channel, including PR-level comments or
   independent audits that do not create a resolvable thread.
-- A review-required PR is additionally technically merge-eligible only when the
-  requested Codex review has completed on the exact current head with no
-  actionable findings, no review thread remains unresolved, and all required
-  checks and formal reviews pass. Pending, missing, or head-mismatched Codex
-  review evidence is ineligible. GitHub `@codex review` is retired and not a
-  valid review channel.
+- For review-required PRs, active review gates are satisfied by table-owned live
+  independent review reports (V7.23). The legacy requirement where a requested
+  Codex review has completed on the exact current head via GitHub Code Review is
+  retired, as GitHub `@codex review` is retired and not a valid review channel.
+  (Retained historical compatibility note for unchanged test pins: "Pending,
+  missing, or head-mismatched Codex review evidence is ineligible"; active merge
+  gating is governed by live independent reviews). A review-required PR is
+  technically merge-eligible only when required exact-head independent reviews
+  report no actionable findings, no review thread remains unresolved, and all
+  required checks and formal reviews pass.
 - Before claiming Codex, another provider, a model, or a quota is unavailable,
   probe it live in that same turn. Do not reuse an older pull request's limit
   message.
@@ -203,11 +209,11 @@ into global Antigravity `settings.json`.
 - Report an unchanged external gate once and pause; define no polling schedule,
   except as below.
 - When an authorized PR has a requested exact-head review outstanding, keep the
-  coordinator session alive and re-check until the exact-head review body
+  coordinator session alive and re-check until the exact-head independent review body
   exists: pass, findings, or an explicit current limit. Do not end the process
-  and do not treat timeout as a review result. Read both the reviews API and
-  `/pulls/{n}/reviews/{id}/comments`, not only issue comments. Never duplicate
-  review requests for an unchanged head.
+  and do not treat timeout as a review result. For human PR review feedback, check
+  PR review threads when present. Never duplicate review requests for an
+  unchanged head.
 - Use a product monitor or recurring wait only when the user explicitly requests
   monitoring. Reuse one matching monitor, perform read-only checks, and never
   duplicate review requests.

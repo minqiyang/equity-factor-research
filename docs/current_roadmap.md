@@ -43,16 +43,23 @@ The program follows five primary milestones:
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Active Delivery Target** | One reproducible local command using an existing price-only factor and fixed strategy configuration -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations. Demonstrable on synthetic fixtures without private data; separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections logged in backlog. |
 | **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Planned Follow-up** | Layered additions on the working vertical slice: multi-factor combination (e.g., three-factor combination), broader historical windows, and handling data caveats (date gaps, zero-volume segments, adjustment checks). All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
-| **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Translating validated models into execution algorithms, simulated order generation, broker connectivity, paper trading, and eventual risk-controlled live execution. Maintained in a separate execution repository; strictly outside the authority of this research repository. |
+| **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
 
 ## Program Position
 
-- Historical CCA1 start baseline:
-  `c178d16d84a455774bcde73f21a9e3ff39ea7b2c`.
+- Last externally verified protected baseline:
+  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (remote `main` following PR #203 merge; post-merge CI verified).
+- Historical start and intermediate baselines:
+  `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (historical CCA1 start baseline);
+  `425b7c88a6e049b63aa2ddeae8560fea08fda23e` (historical PR #200 merge).
 - Working clone baseline:
   `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d`.
 - PR #180 and PR #181 are merged. No pull request was open at the verified
   start of this work.
+- Remote `main` at `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` incorporates the
+  Pearson IC golden fixture fix (`26785bf`) and post-merge CI as historical
+  software evidence, without erasing the unre-reviewed golden-fix gap or B2
+  advisories.
 - Track A PR 1 is complete through PR #177: the EODHD diagnostic scope,
   three-factor protocol, and exact 14-semantic-trial inventory are frozen.
 - Governance source convergence and the subsequent handoff and lifecycle work
@@ -103,22 +110,33 @@ slice is working and presentable.
 Imperfections are handled under an explicit classification to avoid blocking
 delivery while maintaining research validity:
 - **Safe to defer**: Presentation polish, extra factors/markets, optional schema
-  breadth, advanced statistics beyond demo claims, and full SEC identity proof.
-- **Non-deferrable (Demo-blocking)**: Lookahead leakage, incorrect cost/return
-  math, falsified or cherry-picked results, unhedged/leaked private data, and
-  unsafe live execution or brokerage integration.
+  breadth, advanced statistics beyond demo claims, and full SEC identity proof
+  (provided the actual claimed calculation remains valid without fabricating economics).
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse,
+  future-membership selection and survivorship, silent fill/clip/drop/repair,
+  default last-price or zero-payoff disappearance, dividend double counting,
+  incompatible price/volume dollar turnover, lookahead leakage or timing mismatch,
+  incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked
+  private data, and live execution or brokerage integration. A known defect is not
+  made safe merely by adding a caveat.
 
-| Deferred Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Deferral Status |
+| Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Status |
 | --- | --- | --- | --- | --- | --- |
-| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Acknowledge symbol alias risk; restrict to stable large-cap symbols | Transition to formal research promotion (Milestone 4) | Safe to defer for Demo v0 |
-| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; apply simple volume filters | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting |
-| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
+| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Disclose symbol alias risk and lack of full historical CIK/FIGI mapping; do not silently join across permanent securities; do not select on future continuity or survivor cohorts | Milestone 4 formal lineage promotion | Safe to defer for Demo v0 (provided no identity mis-stitching occurs) |
+| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; do not silently drop, interpolate, or clip missing or zero-volume bars; adhere to explicit dollar-volume conventions if filtering | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting (no silent repair) |
+| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty; strictly forbid adding cash dividends on top of total-return series | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Single price-only factor used in initial slice | Focus on end-to-end vertical flow with one existing factor (e.g., momentum) | Milestone 3 after Demo v0 vertical slice stabilizes | Safe to defer; demo-first requires 1 working factor first |
 | Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
 | Advanced multiple-testing statistics | Statistics | Deflated Sharpe / Family-Wise Error Rate not computed | Rely on basic Sharpe, turnover, max drawdown, benchmark relative return | Milestone 4 formal research promotion | Safe to defer; metrics must state descriptive limitations |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
-| Lookahead leakage or timing mismatch | Correctness | Invalidates all backtest validity | Must enforce explicit signal lag (T-1) and execution at T open/close; no lookahead allowed | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Frictional cost and turnover accounting | Correctness | Phantom profitability from ignored trading fees | Must compute signed turnover and apply explicit bid-ask/commission bps | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Future-membership selection & survivorship (PIT-005) | Sample Honesty | Severe upward performance bias from hindsight selection | Must not select universe on future listing continuity, future index membership, or survivor cohorts | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; terminal payoffs must have accepted evidence | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Incompatible price/volume dollar turnover | Accounting Correctness | Distorted liquidity, sizing, or capacity | Must not multiply raw price with split-adjusted volume or vice-versa; must use compatible price and volume bases | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Lookahead leakage or timing mismatch | Timing Correctness | Invalidates all backtest validity | Must enforce accepted `after_close_signal_next_observed_close_v1` timing contract (signals computed strictly after close, earliest target reset at next observed close; no same-bar or open execution without separate typed contract); no lookahead | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Frictional cost and turnover accounting | Accounting Correctness | Phantom profitability from ignored trading fees | Must apply explicit transaction costs (bid-ask spread and commission bps) to turnover computed from portfolio trades under existing turnover conventions (sum of absolute signed trades under undivided convention) | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
 
 ## Canonical Research Sources
@@ -144,6 +162,12 @@ delivery while maintaining research validity:
   hashes and counts only.
 
 ## Active Dependency Chain
+
+This section records the preserved protocol sequence of the historical Track A/Track B
+diagnostic campaign (PR 2/3/4 refusal, Track B first checkpoints PR #199/PR #200). It
+provides historical protocol context, not prerequisites for Demo v0. The active product
+delivery queue is governed by the Primary Milestones above, with Milestone 2 (Demo v0
+Working Vertical Slice) as the active delivery target.
 
 | Order | Stage | Status | Dependency or completion criterion |
 | --- | --- | --- | --- |
@@ -214,8 +238,11 @@ the linked canonical sources.
 Optional 37-event completion and factor-zoo stay off the critical path.
 Broad factor-zoo expansion, formal statistics, strategy promotion, independent
 cross-provider replication, LEAN parity, and completion of the remaining 26
-optional ledger event schemas are outside the active queue. First future
-empirical slice is later/planning; do not authorize data access here. Real-money
+optional ledger event schemas are outside the active queue. Broad empirical
+expansion and formal factor promotion belong to Milestones 3 and 4, whereas the
+active delivery target is Demo v0 (synthetic-first, with separately authorized
+exploratory local-data diagnostics under the existing audit protocol); no
+unauthorized data access or live execution is authorized here. Real-money
 trading, brokerage connectivity, live orders, and paper trading belong strictly
 to a future, separately authorized private execution repository and are permanently
 out of scope for this repository.

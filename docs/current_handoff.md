@@ -24,16 +24,21 @@ requirements.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `425b7c88a6e049b63aa2ddeae8560fea08fda23e`.
-- Historical CCA1 start baseline:
-  `c178d16d84a455774bcde73f21a9e3ff39ea7b2c`.
+  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (PR #203 merge; post-merge CI verified).
+- Historical start and intermediate baselines:
+  `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start baseline);
+  `425b7c88a6e049b63aa2ddeae8560fea08fda23e` (PR #200 merge).
 - Working clone baseline:
   `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d`.
 - PR #180 is merged. It records the long-term factor-to-portfolio direction
   and leaves the frozen Track A campaign in place.
 - PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
-- PR #199 Path A first checkpoint and PR #200 Path B first checkpoint are
-  merged. PR #200 landed at that protected baseline.
+- PR #199 Path A first checkpoint, PR #200 Path B first checkpoint, and PR #203
+  whole-codebase ablation r2 are merged.
+- Remote `main` at `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` incorporates the
+  Pearson IC golden fixture fix (`26785bf`) and post-merge CI as historical
+  software evidence, without erasing the unre-reviewed golden-fix gap or B2
+  advisories.
 - No pull request was open at the verified start of this work.
 - This publication began from a clean `main` checkout at the baseline above.
   Its live PR and merge state must be checked separately after publication.

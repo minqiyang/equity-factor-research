@@ -70,19 +70,23 @@ research-safety review standards.
 - North Star and Project Scope: The ultimate aspiration is automated stock
   selection and trading pursuing sustainable risk-controlled long-term net
   returns. Stable profit is an objective, not a guarantee. This research
-  repository is the first simulation phase; execution and live order capabilities
-  belong strictly to a future, separately authorized private execution repository.
-  Active product aspiration and demo-first delivery principles are in `docs/north_star.md`.
+  repository is the first simulation phase; execution, live order capabilities,
+  pre-trade risk limits, position/cash reconciliation, health monitoring, and
+  emergency kill switches belong strictly to a future, separately authorized private
+  execution repository. Active product aspiration and demo-first delivery
+  principles are in `docs/north_star.md`.
 - Keep this project simulated, auditable, reproducible, and explainable; never
   add brokerage connections, orders, paper/live trading, or live-account behavior.
 - Demo-first delivery: deliver a working, presentable end-to-end vertical slice
   (Demo v0) first; record non-blocking imperfections, data caveats, and missing
   coverage in a lightweight backlog and improve in layers. Do not block early
   demos on an ideal pipeline, full SEC entity lineage, complete ledger schema
-  coverage, or a factor zoo. Preserved minimum correctness (no lookahead,
-  realistic costs, sample honesty, trial retention, privacy, and non-execution)
-  is non-negotiable. Formal promotion controls remain prerequisites for formal
-  claims, not universal blockers for limited exploratory demos.
+  coverage, or a factor zoo. Preserved minimum correctness (accepted timing
+  contract without lookahead, realistic costs under existing turnover conventions,
+  no future-membership selection, no silent repairs, sample honesty, trial retention,
+  privacy, and non-execution) is non-negotiable. Formal promotion controls remain
+  prerequisites for formal claims, not universal blockers for limited exploratory
+  demos.
 - Never invent results or claim profitability without reproducible evidence.
   Zero-cost or no-slippage results are diagnostics only.
 - Keep failed, weak, invalid, abandoned, and contrary results visible; never
@@ -140,7 +144,7 @@ itself is a hold or unblock condition.
 - Do not end the coordinator process while an authorized PR is waiting for its
   exact-head review body. Keep the session alive and re-check until that body
   exists (pass, findings, or an explicit current limit). Timeout is not a review
-  result. Check the review-comments API, not only issue comments.
+  result.
 - Owner-authorized Antigravity child sessions start with session-only
   `--dangerously-skip-permissions`. Do not persist that setting into global
   `settings.json`.
