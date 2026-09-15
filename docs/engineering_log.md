@@ -38,6 +38,48 @@
   preserved as immutable dated history; current active policy is governed by
   AGENTS.md and docs/codex_long_running_controller.md under live V7.23 standards.
 
+## 2026-09-15 - PROSE-003 Remediation: Invariants, Goal Routing, and Backlog Deduplication
+
+- Addressed the two MATERIAL (F-001, F-002) and four ADVISORY (A-001 through A-004)
+  findings from REVIEW-002:
+  1. F-001 (MATERIAL): Expanded the Research Safety Invariants in `AGENTS.md` to
+     explicitly distinguish deferrable comprehensive SEC entity lineage from
+     never-deferrable boundaries: fail-closed ticker reuse / identity
+     mis-stitching prevention (PIT-005), no default last-price exits or zero payoff
+     at asset disappearance (PIT-006), no dividend double counting (PIT-007), and no
+     incompatible price/volume dollar turnover calculations.
+  2. F-002 (MATERIAL): Separated governance and goal-routing roles into unambiguous
+     sentences in `docs/codex_long_running_controller.md` (Select And Bound The Stage)
+     and `docs/research_method.md`. Active product goals are owned strictly and
+     exclusively by `docs/north_star.md`; `PROJECT_SPEC.md` provides detailed
+     research specifications; `docs/current_roadmap.md` owns stage sequence, status,
+     and the authoritative imperfection backlog; `docs/research_program_charter.md`
+     remains preserved historical formal evidence policy; and
+     `docs/eodhd_sp500_diagnostic_campaign_contract.md` is preserved historical
+     protocol context, neither serving as a source of current goals nor a Demo v0
+     delivery blocker.
+  3. A-001 (ADVISORY): Added the internal and provider date gaps row to the
+     canonical imperfection backlog in `docs/current_roadmap.md` with explicit
+     impact, current handling (no silent bar insertion; next-observed-close skips
+     gaps without validating unknown provider omissions; scope-relevant unresolved
+     gaps block affected interpretation), and revisit trigger (Milestone 3).
+  4. A-002 (ADVISORY): Removed the false `(PIT-005)` citation from the
+     future-membership selection & survivorship backlog row in `docs/current_roadmap.md`,
+     preserving PIT-005 exclusively for ticker reuse and listing-episode stitching.
+  5. A-003 (ADVISORY): Deduplicated milestone and backlog ownership.
+     `docs/current_roadmap.md` is established as the sole canonical owner of the
+     five-milestone sequence and the complete 19-row imperfection backlog table.
+     `PROJECT_SPEC.md` and `docs/north_star.md` replaced duplicate full tables/lists
+     with precise pointers, retaining Demo v0 acceptance criteria and mandatory
+     all-attempt accounting. Stale dual-ownership wording was updated.
+  6. A-004 (ADVISORY): In `PROJECT_SPEC.md`, labeled Demo v0 under Operational Modes
+     as an unimplemented target for Milestone 2, removing present-tense capability
+     claims. Scoped the "no performance calculation" statement to unauthorized
+     real-data and result-bearing calculations without restricting synthetic
+     fixture diagnostic accounting.
+- Preserved all immutable historical files, charter bytes, and private addendum
+  hash (`e327e5b5885e9da5eee1880a50eab3941061b47905940d4ffbf7b07aa46db946`).
+
 ## 2026-09-15 - Live V7.23 coordinator policy, North Star routing, English standard, and explicit STOP boundary
 
 - Re-read live policy files under coordinator standard V7.23-draft: NORMAL lane

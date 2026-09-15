@@ -80,13 +80,20 @@ research-safety review standards.
 - Demo-first delivery: deliver a working, presentable end-to-end vertical slice
   (Demo v0) first; record non-blocking imperfections, data caveats, and missing
   coverage in a lightweight backlog and improve in layers. Do not block early
-  demos on an ideal pipeline, full SEC entity lineage, complete ledger schema
-  coverage, or a factor zoo. Preserved minimum correctness (accepted timing
-  contract without lookahead, realistic costs under existing turnover conventions,
-  no future-membership selection, no silent repairs, sample honesty, trial retention,
-  privacy, and non-execution) is non-negotiable. Formal promotion controls remain
-  prerequisites for formal claims, not universal blockers for limited exploratory
-  demos.
+  demos on an ideal pipeline, comprehensive SEC entity lineage, complete ledger
+  schema coverage, or a factor zoo. While comprehensive SEC lineage may be
+  deferred, basic identity and accounting integrity are NEVER deferrable:
+  fail-closed ticker reuse / identity mis-stitching prevention (PIT-005);
+  no default last-price exits or zero payoff at asset disappearance (PIT-006);
+  no dividend double counting (PIT-007); no incompatible price/volume dollar
+  turnover calculations (such as raw price multiplied by split-adjusted volume
+  or vice-versa; price and volume bases must match); accepted timing contract
+  without lookahead, realistic costs under existing turnover conventions, no
+  future-membership selection, no silent repairs (PIT-009 typed missingness),
+  sample honesty, trial retention, privacy, and non-execution. Preserved minimum
+  correctness across these non-negotiable boundaries is mandatory. Formal promotion
+  controls remain prerequisites for formal claims, not universal blockers for
+  limited exploratory demos.
 - Never invent results or claim profitability without reproducible evidence.
   Zero-cost or no-slippage results are diagnostics only.
 - Keep failed, weak, invalid, abandoned, and contrary results visible; never

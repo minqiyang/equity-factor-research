@@ -33,12 +33,17 @@ destructive operation must satisfy that boundary.
 - `docs/current_handoff.md` owns the latest recorded operational checkpoint and
   next-safe-action routing. Its remote facts are cached evidence, not live state.
 - `docs/current_roadmap.md` owns program stage sequence, dependencies, gate and
-  completion criteria, and coarse stage status.
+  completion criteria, coarse stage status, and the authoritative imperfection backlog.
+- Active product goals and delivery principles are owned strictly and exclusively
+  by `docs/north_star.md`.
+- Detailed research specifications and acceptance criteria are specified in
+  `PROJECT_SPEC.md`.
+- `docs/research_program_charter.md` is preserved historical formal evidence policy.
+- `docs/eodhd_sp500_diagnostic_campaign_contract.md` is preserved historical protocol
+  context (recording the frozen Track A/B campaign scope and 14-trial diagnostic refusal).
+  Neither the charter nor the campaign contract is a source of active product goals
+  or a prerequisite delivery queue for Demo v0.
 - Choose one coherent stage; keep unrelated fixes in separate branches and PRs.
-- Research methodology and active product goals come from `PROJECT_SPEC.md`,
-  `docs/north_star.md`, `docs/research_program_charter.md`, `docs/current_roadmap.md`,
-  and the preserved historical protocol in `docs/eodhd_sp500_diagnostic_campaign_contract.md`,
-  not this controller.
 - Do not infer permission for vendor access, protected samples, private results,
   deployment, brokerage behavior, or a broader research interpretation from a
   stage description.

@@ -20,6 +20,18 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Remediation under PROSE-003: expanded `AGENTS.md` Research Safety Invariants
+  with explicit non-deferrable boundaries (fail-closed ticker reuse/identity
+  stitching, no default last-price or zero disappearance payoff, no dividend
+  double counting, no incompatible price/volume dollar turnover); separated
+  governance and goal-routing roles into unambiguous sentences in
+  `docs/codex_long_running_controller.md` and `docs/research_method.md` with
+  `docs/north_star.md` as the sole active goal owner; added provider date gaps
+  row and removed false PIT-005 tag on survivorship in the canonical backlog;
+  deduplicated milestone and backlog ownership to `docs/current_roadmap.md`;
+  labeled Demo v0 as an unimplemented target and scoped the performance
+  calculation statement in `PROJECT_SPEC.md`.
+
 - Path B plan producer IDs no longer coerce missing/null to `[]`; plan
   validity timestamps parse as canonical UTC instants; the plan binds
   retained trial/seal tuples and relation; allocation authority compares
