@@ -42,8 +42,8 @@ Under demo-first delivery, local CSV `diagnostic_ready` is a separately authoriz
 exploratory path strictly outside mandatory Demo v0 acceptance (which is demonstrable
 on synthetic fixtures without private data). An exploratory local-data diagnostic run
 may qualify under the existing diagnostic-scope readiness path without requiring complete
-formal Stage 4 ledger infrastructure or full SEC lineage proofs. However, skipping
-formal Stage 4 or universal SEC proof is never a waiver for scope-relevant schema, date
+formal experiment/trial-ledger infrastructure (charter Stage 4 / Milestone 4) or full SEC lineage proofs. However, skipping
+the formal experiment/trial ledger (charter Stage 4) or universal SEC proof is never a waiver for scope-relevant schema, date
 alignment, adjustment consistency, identifier continuity, or economic correctness.
 Unknown adjustments, unresolved identifier continuity, or unresolved high/medium data
 defects continue to block interpretation under stop conditions below; simply documenting
@@ -333,7 +333,8 @@ entry or approved research note with:
 
 Synthetic JSON sidecar logs are not substitutes for the real-data experiment
 record. The current `EXPERIMENT_LOG.md` template is a diagnostic/legacy record,
-not the immutable all-trial ledger required by Stage 4. It cannot satisfy
+not the immutable all-trial ledger required by charter Stage 4 of
+`docs/research_program_charter.md` and `docs/experiment_trial_ledger_contract.md`. It cannot satisfy
 `formal_ready` until the ledger allocates identifiers before execution and
 retains every attempted, failed, invalid, aborted, and excluded trial plus
 lineage, hashes, review outcomes, and protected-sample access.

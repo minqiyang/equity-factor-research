@@ -72,9 +72,12 @@ requirements.
 
 Milestone 1 completed; see `docs/current_roadmap.md`. Historical Track A 14-trial run
 remains REFUSED. Track B Path A and Path B first checkpoints are merged on main.
-The local 2026-09-13 data diagnostic established exploration feasibility under
-documented caveats. Formal research promotion controls remain prerequisites for
-formal claims, not universal blockers for the initial visibly limited Demo v0.
+The local 2026-09-13 data diagnostic provided qualitative feasibility and planning
+context under documented caveats; it is outside Demo v0 acceptance, produces no
+strategy or profitability claims, and does not prove tradability, universe
+completeness, or a pristine holdout. Formal research promotion controls remain
+prerequisites for formal claims, not universal blockers for the initial visibly
+limited Demo v0.
 
 ## Immediate Blockers Or Owner Decisions
 

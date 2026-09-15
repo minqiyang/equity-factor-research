@@ -37,7 +37,7 @@ zoo. At every layer, minimum research correctness is non-negotiable:
   timing contract (signals computed strictly after close, earliest target reset at next observed close;
   no same-bar or open execution without separate typed contract);
 - Realistic transaction costs and turnover accounting under existing turnover conventions
-  (sum of absolute signed trades under undivided convention, explicit spread and commission bps);
+  (undivided sum of absolute signed trades with explicit fixed basis points cost and slippage assumptions);
 - Sample honesty: no historical eligibility selected by future listing continuity, future
   index membership, or survivor-cohort filters; unverified exploratory diagnostics remain
   explicitly labeled survivorship-biased; no claim of a survivorship-free universe until
@@ -62,9 +62,9 @@ prevent shipping the initial, visibly limited Demo v0 vertical slice.
 
 ## Primary Milestones
 
-The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, coarse status, and detailed deliverable definitions are owned exclusively by the canonical roadmap in [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones).
+The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, and coarse status are owned by [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones); detailed Demo v0 deliverable definitions and criteria are owned exclusively by [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
 
-Under demo-first delivery, All-Attempt Case Logging across all attempted cases is mandatory for every trial (including active Milestone 2 Demo v0); cherry-picking or omitting failed trials is strictly forbidden. This lightweight diagnostic run logging is explicitly distinguished from Stage 4 complete immutable ledger accounting.
+Under demo-first delivery, All-Attempt Case Logging across all attempted cases is mandatory for every trial (including active Milestone 2 Demo v0); cherry-picking or omitting failed trials is strictly forbidden. This lightweight diagnostic run logging is explicitly distinguished from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4.
 
 ## Authoritative Backlog and Imperfection Policy
 

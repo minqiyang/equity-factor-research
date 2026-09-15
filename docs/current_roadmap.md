@@ -34,7 +34,7 @@ minimum correctness and non-negotiable boundaries are defined exclusively in
 [AGENTS.md Research Safety Invariants](../AGENTS.md#research-safety-invariants) and the
 [blocking backlog table](#imperfection-policy-and-lightweight-backlog), enforced
 at every layer (with Demo v0 maintaining All-Attempt Case Logging rather than
-formal Stage 4 complete ledger accounting).
+formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 
 ## Primary Milestones
 
@@ -43,7 +43,7 @@ The program follows five primary milestones:
 | Milestone | Scope | Status | Deliverable & Evidence Criteria |
 | --- | --- | --- | --- |
 | **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic provided qualitative feasibility/planning context with documented caveats (outside Demo v0 acceptance; no tradability, universe-completeness, or holdout claim). |
-| **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Active Delivery Target** | One reproducible local command using an existing price-only factor and fixed strategy configuration -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations. Demonstrable on synthetic fixtures without private data; separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections logged in backlog. |
+| **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Active Delivery Target** | One reproducible local command using an existing price-only factor and fixed strategy configuration -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations; All-Attempt Case Logging recording all attempted cases without cherry-picking. Demonstrable on synthetic fixtures without private data; separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections logged in backlog. |
 | **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Planned Follow-up** | Layered additions on the working vertical slice: multi-factor combination (e.g., three-factor combination), broader historical windows, and handling data caveats (date gaps, zero-volume segments, adjustment checks). All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
 | **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
@@ -75,10 +75,11 @@ The program follows five primary milestones:
   acceptance is `DIAGNOSTIC_READY`, bound by hash. Formal interpretation is not accepted.
 - Track A PR 2 public validator and status are on protected main through
   PR #186. Track A PR 3 runner code is on protected main through PR #187.
-- Stage 4 G-2 binding is accepted by hash. Stage 4 is not fully complete.
-  14-trial remains REFUSED, reason ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL.
-  Terminal refusal is disposition, not Stage 4 / PR 4 completion;
-  Stage 4 incomplete; DIAGNOSTIC_ONLY.
+- Under historical Track A, Stage 4 G-2 binding is accepted by hash;
+  historical Track A Stage 4 is not fully complete.
+- Historical Track A 14-trial execution remains REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`).
+  Terminal refusal is disposition, not Track A Stage 4 / PR 4 completion;
+  Track A Stage 4 incomplete; DIAGNOSTIC_ONLY.
 - Path A first checkpoint merged as PR #199; Path B first checkpoint merged
   as PR #200. These are first checkpoints only; optional 37-event schema
   completion stays off the critical path.
@@ -102,7 +103,7 @@ The first delivery target is deliberately narrow:
 3. **Transparent Reporting**: Produces a human-readable comparison report with
    benchmark comparisons, explicit frictional cost and timing models, risk
    metrics, and stated limitations.
-4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
+4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data.
    Any separately authorized local-data run remains explicitly exploratory.
 
@@ -129,7 +130,7 @@ research validity:
 | --- | --- | --- | --- | --- | --- |
 | Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Disclose symbol alias risk and lack of full historical CIK/FIGI mapping; do not silently join across permanent securities; do not select on future continuity or survivor cohorts | Milestone 4 formal lineage promotion | Safe to defer for Demo v0 (provided no identity mis-stitching occurs) |
 | Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; do not silently drop, interpolate, or clip missing or zero-volume bars; adhere to explicit dollar-volume conventions if filtering | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting (no silent repair) |
-| Internal & provider date gaps | Data Quality | Discontinuous trading history or missing calendar sessions across assets | Transparently disclose in diagnostic reports; do not silently insert, fill, or drop bars; accepted next-observed-close contract skips calendar gaps to the next observed trade without validating unknown provider omissions; scope-relevant unresolved gaps block affected interpretation | Milestone 3 data cleaning & calendar alignment | Safe to defer for synthetic Demo v0 (caveat required for local data; no silent bar insertion) |
+| Internal & provider date gaps | Data Quality | Discontinuous trading history or missing calendar sessions across assets | Transparently disclose in diagnostic reports; do not silently insert, fill, or drop bars; accepted next-observed-close contract advances strictly to the next observed source row (lag counts source rows, not calendar days; absence of a source row does not imply a verified calendar non-session, and existing zero-volume or stale rows are never skipped or dropped); scope-relevant unresolved gaps block affected interpretation | Milestone 3 data cleaning & calendar alignment | Safe to defer for synthetic Demo v0 (caveat required for local data; no silent bar insertion) |
 | Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty; strictly forbid adding cash dividends on top of total-return series | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Single price-only factor used in initial slice | Focus on end-to-end vertical flow with one existing factor (e.g., momentum) | Milestone 3 after Demo v0 vertical slice stabilizes | Safe to defer; demo-first requires 1 working factor first |
 | Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
@@ -142,7 +143,7 @@ research validity:
 | Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Incompatible price/volume dollar turnover | Accounting Correctness | Distorted liquidity, sizing, or capacity | Must not multiply raw price with split-adjusted volume or vice-versa; must use compatible price and volume bases | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Lookahead leakage or timing mismatch | Timing Correctness | Invalidates all backtest validity | Must enforce accepted `after_close_signal_next_observed_close_v1` timing contract (signals computed strictly after close, earliest target reset at next observed close; no same-bar or open execution without separate typed contract); no lookahead | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Frictional cost and turnover accounting | Accounting Correctness | Phantom profitability from ignored trading fees | Must apply explicit transaction costs (bid-ask spread and commission bps) to turnover computed from portfolio trades under existing turnover conventions (sum of absolute signed trades under undivided convention) | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Frictional cost and turnover accounting | Accounting Correctness | Phantom profitability from ignored trading fees | Must apply explicit transaction costs (fixed basis points on turnover under existing undivided turnover conventions; sum of absolute signed trades) and explicit slippage assumptions; no zero-cost or frictionless trading claims | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
 
 ## Canonical Research Sources

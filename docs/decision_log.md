@@ -54,6 +54,36 @@ Consequences:
 
 ---
 
+## 2026-09-15 - Clarification Of September 13 Diagnostic Sufficiency Wording
+
+Context:
+
+- The earlier 2026-09-15 North Star alignment entry recorded, as of that date,
+  that a local 2026-09-13 diagnostic "confirmed sufficient local data history for
+  exploration, with documented caveats (zero-volume segments, date gaps,
+  unverified adjustment events) deferred for layered handling." That as-of body
+  is preserved unchanged below as historical text.
+
+Decision:
+
+- Interpret that "confirmed sufficient" wording as qualitative quantity/history
+  planning context only. It is not a validation result, authorization gate,
+  tradability proof, universe-completeness claim, profitability claim, or
+  pristine-holdout proof. The diagnostic remains outside Demo v0 acceptance.
+
+Rationale:
+
+- Later public routing must not upgrade an as-of planning note into a completed
+  data-sufficiency or Demo-authorization result.
+
+Consequences:
+
+- Active handoff, roadmap, and README September 13 statements use the qualitative
+  planning-only scope with the same negative constraints. The original 2026-09-15
+  decision body remains historical as-of text.
+
+---
+
 ## 2026-09-06 - Record Merged Track B Path A And Path B First Checkpoints
 
 Context:

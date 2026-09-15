@@ -20,7 +20,7 @@ minimum correctness and non-negotiable boundaries are defined exclusively in
 [AGENTS.md Research Safety Invariants](AGENTS.md#research-safety-invariants) and the
 [blocking backlog table](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog),
 enforced at every layer (with Demo v0 maintaining All-Attempt Case Logging rather
-than formal Stage 4 complete ledger accounting).
+than formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 
 Optimize the research process for evidence quality rather than the highest
 historical Sharpe ratio. Retain negative, failed, invalid, and inconclusive
@@ -182,10 +182,10 @@ The current phase is research-only.
 - No brokerage connection, orders, paper deployment, live deployment, or
   real-money execution.
 - Current research work performs no vendor download, credential use, remote data
-  access, or unauthorized real-data/result-bearing performance calculation. (This
-  documentation task produced no new empirical strategy-performance results; existing
-  synthetic fixture diagnostics and unit-test cost accounting remain permitted). Any future
-  private entitlement/capability probe and acquisition may proceed only through the
+  access, or unauthorized real-data/result-bearing performance calculation. This
+  specification records no empirical strategy-performance results; synthetic fixture
+  diagnostics and unit-test cost accounting remain permitted. Any future private
+  entitlement/capability probe and acquisition may proceed only through the
   campaign contract's explicit license, privacy, purchase, and blinded dataset-acceptance gates.
 - The public repository may use synthetic data, committed fixtures, and local
   data only under explicit privacy and methodology gates.
@@ -310,8 +310,9 @@ protected-sample access, not metadata-only intake.
 The private diagnostics covering 2025-05-01 through 2026-05-31 are confirmed
 historical access and are classified `historical_evaluation`; that interval
 cannot be upgraded to a pristine holdout. Stage 3 defines the exposure schema
-and downgrade rules. Stage 4 must implement append-only, pre-access allocation
-and completeness enforcement.
+and downgrade rules. Formal experiment/trial ledger infrastructure (charter
+Stage 4 / Milestone 4) must implement append-only, pre-access allocation and
+completeness enforcement.
 
 ## Backtesting Principles
 
@@ -417,7 +418,7 @@ Detailed Demo v0 acceptance requirements for active Milestone 2:
 1. **Single Command/Workflow**: One reproducible local command or workflow using an existing price-only factor and one fixed strategy configuration.
 2. **End-to-End Simulation**: Generates simulated selection and holdings with drift-aware portfolio accounting.
 3. **Transparent Reporting**: Produces a human-readable comparison report with benchmark comparisons, explicit frictional cost and timing models, risk metrics, and stated limitations.
-4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt case logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
+4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt case logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data. Any separately authorized local-data run remains explicitly exploratory.
 
 ## Explicit Non-Goals

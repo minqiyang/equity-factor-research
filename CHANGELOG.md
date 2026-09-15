@@ -20,6 +20,16 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Contract-term and gate-namespace corrections under PROSE-006: replaced the
+  backlog date-gap "next observed trade" restatement with "next observed source
+  row"; disambiguated charter experiment/trial-ledger Stage 4, historical Track A
+  Stage 4, and Milestone 4 in active Demo/logging prose; removed the timeless
+  controller documentation-task ablation exemption; aligned cost wording with
+  existing fixed-bps charges on undivided turnover; made Demo v0 All-Attempt
+  logging prospective; pointed detailed Demo v0 definitions at the Definition of
+  Done section; and aligned the September 13 diagnostic public wording with
+  qualitative planning context only.
+
 - Residual-copy and routing convergence under PROSE-005: replaced residual short floor
   summaries in `PROJECT_SPEC.md` and `docs/current_roadmap.md` with pointers to canonical `AGENTS.md`
   Research Safety Invariants and the blocking backlog table (F-001); clarified that local CSV

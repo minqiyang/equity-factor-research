@@ -49,7 +49,7 @@ The active delivery target is **Demo v0** (target deliverable, not yet implement
 - One reproducible local command/workflow using an existing price-only factor and a fixed strategy configuration;
 - Simulated stock selection and drift-aware portfolio holdings;
 - Human-readable comparison report with benchmark, explicit transaction cost and timing models (accepted `after_close_signal_next_observed_close_v1`), risk metrics, and limitations;
-- All-Attempt Case Logging recording all attempted cases (distinguishing lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
+- All-Attempt Case Logging recording all attempted cases (distinguishing lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 
 Synthetic fixture workflows are demonstrable without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic.
 

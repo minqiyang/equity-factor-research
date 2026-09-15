@@ -1,5 +1,41 @@
 # Engineering Log
 
+## 2026-09-15 - PROSE-006 Contract Terms And Gate Namespaces
+
+- Completed the interrupted PROSE-006 contract-term and namespace pass after
+  the original Gemini writer assignment ended on individual quota. Preserved the
+  in-scope partial working tree on `EXPERIMENT_LOG.md`, `PROJECT_SPEC.md`,
+  `docs/codex_long_running_controller.md`, `docs/current_roadmap.md`, and
+  `docs/north_star.md` (byte-identical to `coord/prose_006_partial.patch`) and
+  finished the remaining active-text corrections from
+  `coord/prose_remediation_006.md` and `reviews/docs_005/report.md`:
+  1. F-001 (MATERIAL): Replaced the backlog date-gap restatement "next observed
+     trade" with the accepted timing-contract term "next observed source row";
+     lag counts source rows; missing provider rows are not treated as verified
+     non-sessions; existing zero-volume or stale rows are not skipped.
+  2. F-002 (MATERIAL): Disambiguated charter experiment/trial-ledger Stage 4,
+     historical Track A Stage 4 G-2/PR 4, and Milestone 4 formal research in
+     active Demo/logging prose; pointed `EXPERIMENT_LOG.md` at the ledger
+     contract and charter, not `Stage 4 of docs/current_roadmap.md`; qualified
+     Program Position G-2/incomplete/refusal bullets as historical Track A.
+  3. A-001 (ADVISORY): Removed the timeless controller "current task is
+     documentation enactment" ablation exemption; replaced the PROJECT_SPEC
+     "this documentation task" parenthetical with a durable statement that the
+     specification records no strategy-performance result and that synthetic
+     fixture diagnostics remain permitted. Owner STOP remains in the handoff.
+  4. A-002 (ADVISORY): Aligned North Star and the blocking cost row with existing
+     fixed-bps cost on undivided absolute-trade turnover plus explicit slippage
+     assumptions; no new spread-plus-commission product.
+  5. A-003 (ADVISORY): Made the EXPERIMENT_LOG Demo logging instruction
+     prospective for when Demo v0 runs exist; existing synthetic sidecars remain
+     legacy diagnostics, not accepted Demo v0 evidence.
+  6. A-004 (ADVISORY): Added All-Attempt Case Logging to the Milestone 2 table
+     cell and pointed North Star detailed Demo v0 definitions at the actual
+     Definition of Done section rather than exclusively at the coarse table.
+  7. A-005 (ADVISORY): Aligned the handoff gate summary with the longer
+     qualitative planning-only September 13 bullet; added a dated decision-log
+     clarification without rewriting the original as-of body.
+
 ## 2026-09-15 - PROSE-005 Residual-Copy and Routing Convergence
 
 - Applied residual-copy and routing convergence under `coord/prose_remediation_005.md`

@@ -176,9 +176,7 @@ regressions. Never drop necessary tests, guards, or validation just to reduce li
 count. Record all experiments, retained simplifications, and known limitations.
 A supported no-change outcome is valid. Revalidation of the ablated candidate
 follows the lane's ordinary QA and review gates; ablation revalidation itself
-does not trigger a recursive ablation loop. The current task is documentation
-enactment, not a formal design or implementation milestone; do not invent an
-ablation experiment or expand into strategy work. The ablation rule remains
+does not trigger a recursive ablation loop. The ablation rule remains
 durable for qualifying future major candidates.
 
 ## Herdr Tab Cleanup Before Next Round
