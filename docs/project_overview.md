@@ -152,16 +152,19 @@ Current limitations are intentional and should remain visible:
 
 ## Recommended Next Direction
 
-Continue in small PR-sized stages. Finish active bugfixes first, keep each
-stage narrowly scoped, and preserve the project guardrails.
-
-Future local data work should use user-provided local CSV files only. Avoid
-automatic downloads, vendor APIs, credentials, broker logic, and order
+Stage progression and next actions defer strictly to the recorded next safe
+action, holds, and explicit STOP boundary in
+[docs/current_handoff.md](current_handoff.md), with the active delivery target
+defined by Milestone 2 (Demo v0) in
+[docs/current_roadmap.md](current_roadmap.md). The current documentation and
+consistency task stops before any Demo v0 implementation or market-data
 execution.
 
-Eventually, factors should be evaluated with IC, Rank IC, quantile spread,
-cost-adjusted simulated backtests, sample-out checks, parameter robustness,
-factor correlation diagnostics, risk exposure review, and complete experiment
-logging.
+When authorized, future development focuses on delivering the minimal,
+reproducible Demo v0 vertical slice on synthetic fixtures under the canonical
+Definition of Done. Separately authorized local CSV work remains an exploratory
+diagnostic governed by explicit owner authorization and the real-data readiness
+audit. Avoid automatic downloads, vendor APIs, credentials, broker logic, and
+live or paper order execution.
 
 The correct direction is disciplined research evidence, not faster claims.

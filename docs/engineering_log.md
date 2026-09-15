@@ -1,5 +1,44 @@
 # Engineering Log
 
+## 2026-09-15 - PROSE-007 Public and Private Consumer Consistency
+
+- Executed PROSE-007 public and private consumer consistency corrections under
+  `coord/prose_remediation_007.md` and independent static review `reviews/docs_006/report.md`:
+  1. Private Addendum Clarification (F-001, F-002, A-001, A-006): Preserved the
+     entire immutable byte prefix of the private goal addendum outside Git and
+     appended an explicit dated current-interpretation clarification section.
+     Clarified that Demo cost convention uses the existing engine convention
+     (fixed basis points on undivided absolute-trade turnover plus explicit
+     slippage assumptions; no second spread-plus-commission product and no
+     duplicate add-ons to Track A proxies); withdrew the "without blocking
+     algorithmic closure" date-gap clause in favor of the active fail-closed
+     rule that scope-relevant unresolved gaps block affected interpretation
+     (lag counts source rows, not calendar days; provider omission is not a
+     verified non-session; no silent repairs); aligned feasibility with
+     qualitative planning context outside Demo acceptance; and affirmed that
+     absent accepted terminal evidence, the affected window blocks under PIT-006.
+     Pointed at public North Star and roadmap for active goals, backlog, and Demo DoD.
+  2. F-002 (MATERIAL): In `docs/current_roadmap.md`, updated the date-gap Status
+     cell to state that calendar-alignment infrastructure can wait for synthetic
+     Demo v0, while unresolved scope-relevant local-data gaps block affected
+     interpretation (removing shorthand that suggested a caveat alone is the control).
+  3. A-002 (ADVISORY): In `PROJECT_SPEC.md`, scoped vendor acquisition gates
+     specifically to acquisition governed by the historical campaign contract,
+     and pointed separately authorized local CSV use at explicit owner authorization
+     and the real-data readiness audit.
+  4. A-003 (ADVISORY): In `PROJECT_SPEC.md`, replaced the duplicated five-item
+     Demo v0 acceptance list with the exact pointer to the single authoritative
+     roadmap Definition of Done anchor; in `docs/codex_long_running_controller.md`,
+     reiterated that detailed research specs live in PROJECT_SPEC while active
+     Demo v0 DoD is owned exclusively by the roadmap anchor.
+  5. A-004 (ADVISORY): In `docs/north_star.md`, clarified prospective Demo v0
+     application of All-Attempt Case Logging while affirming that every actual
+     attempted run retains its outcomes and negative evidence, without stating
+     a present-tense requirement that implies existing sidecars are accepted Demo v0 runs.
+  6. A-005 (ADVISORY): In `docs/project_overview.md`, aligned Recommended Next
+     Direction to defer to `docs/current_handoff.md` next safe action/holds/STOP
+     and roadmap Milestone 2 Demo v0, removing the independent bugfix-then-local-CSV queue.
+
 ## 2026-09-15 - PROSE-006 Contract Terms And Gate Namespaces
 
 - Completed the interrupted PROSE-006 contract-term and namespace pass after

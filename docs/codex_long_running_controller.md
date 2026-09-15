@@ -37,8 +37,9 @@ destructive operation must satisfy that boundary.
   completion criteria, coarse stage status, and the authoritative imperfection backlog.
 - Active product goals and delivery principles are owned strictly and exclusively
   by `docs/north_star.md`.
-- Detailed research specifications and acceptance criteria are specified in
-  `PROJECT_SPEC.md`.
+- Detailed research specifications live in `PROJECT_SPEC.md`; active Milestone 2 Demo v0
+  Definition of Done is owned exclusively by the roadmap anchor
+  `docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done`.
 - `docs/research_program_charter.md` is preserved historical formal evidence policy.
 - `docs/eodhd_sp500_diagnostic_campaign_contract.md` is preserved historical protocol
   context (recording the frozen Track A/B campaign scope and 14-trial diagnostic refusal).

@@ -20,6 +20,19 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Public and private consumer consistency corrections under PROSE-007: updated
+  roadmap date-gap Status cell to state that calendar infrastructure can wait
+  for synthetic Demo v0 while unresolved scope-relevant local-data gaps block
+  affected interpretation; scoped campaign-contract gates in `PROJECT_SPEC.md`
+  to vendor acquisitions governed by that campaign, routing local CSV use to
+  explicit authorization and the readiness audit; deduplicated Demo v0
+  acceptance criteria to point exclusively at the roadmap Definition of Done
+  anchor; clarified prospective Demo v0 All-Attempt Case Logging in
+  `docs/north_star.md` while retaining universal trial retention; aligned
+  `docs/project_overview.md` Recommended Next Direction with handoff STOP and
+  Milestone 2; and synchronized the private exploration goal interpretation
+  via an append-only clarification section preserving historical bytes.
+
 - Contract-term and gate-namespace corrections under PROSE-006: replaced the
   backlog date-gap "next observed trade" restatement with "next observed source
   row"; disambiguated charter experiment/trial-ledger Stage 4, historical Track A

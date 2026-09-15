@@ -184,9 +184,12 @@ The current phase is research-only.
 - Current research work performs no vendor download, credential use, remote data
   access, or unauthorized real-data/result-bearing performance calculation. This
   specification records no empirical strategy-performance results; synthetic fixture
-  diagnostics and unit-test cost accounting remain permitted. Any future private
-  entitlement/capability probe and acquisition may proceed only through the
-  campaign contract's explicit license, privacy, purchase, and blinded dataset-acceptance gates.
+  diagnostics and unit-test cost accounting remain permitted. Any future vendor data
+  entitlement/capability probe and acquisition governed by the historical campaign
+  proceeds only through the campaign contract's explicit license, privacy, purchase,
+  and blinded dataset-acceptance gates; separately authorized local CSV use follows
+  explicit owner authorization and the real-data readiness audit, with no new data
+  entitlement or acquisition authority granted.
 - The public repository may use synthetic data, committed fixtures, and local
   data only under explicit privacy and methodology gates.
 - `lean/` remains a non-executing scaffold until a future `PORTFOLIO_PASS`
@@ -414,12 +417,7 @@ See that document for active row-level caveats, handling rules, revisit triggers
 
 The program follows a five-milestone sequence from foundational research to simulated demo delivery and future execution. Program stage sequence, status, gate and completion criteria are owned exclusively by [docs/current_roadmap.md#primary-milestones](docs/current_roadmap.md#primary-milestones).
 
-Detailed Demo v0 acceptance requirements for active Milestone 2:
-1. **Single Command/Workflow**: One reproducible local command or workflow using an existing price-only factor and one fixed strategy configuration.
-2. **End-to-End Simulation**: Generates simulated selection and holdings with drift-aware portfolio accounting.
-3. **Transparent Reporting**: Produces a human-readable comparison report with benchmark comparisons, explicit frictional cost and timing models, risk metrics, and stated limitations.
-4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt case logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
-5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data. Any separately authorized local-data run remains explicitly exploratory.
+Detailed Demo v0 deliverable definitions and acceptance criteria are owned exclusively by the roadmap Definition of Done at [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
 
 ## Explicit Non-Goals
 
