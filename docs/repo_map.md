@@ -42,7 +42,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 - `docs/experiment_trial_ledger_campaign_inventory_seal_schema_contract.md` (present): Accepted Stage 4B-R1G-A initial campaign-inventory-seal authority.
 - `docs/experiment_trial_ledger_attempt_allocation_schema_contract.md` (present): Accepted Stage 4B-R1H-A attempt-allocation authority.
 - `docs/experiment_trial_ledger_attempt_start_schema_contract.md` (present): Accepted Stage 4B-R1I-A attempt-start authority.
-- `docs/eodhd_sp500_diagnostic_campaign_contract.md` (present): Active Track A/Track B diagnostic campaign scope authority.
+- `docs/eodhd_sp500_diagnostic_campaign_contract.md` (present): Historical Track A/Track B diagnostic campaign scope authority.
 - `docs/campaign_bounded_diagnostic_runner_v1.md` (present): Public-safe Track A PR 3 bounded diagnostic runner design note; not an authority source.
 - `docs/preregistrations/eodhd_sp500_three_factor_diagnostic_v1.yaml` (present): Frozen public Track A machine-readable protocol.
 - `docs/preregistrations/eodhd_sp500_three_factor_trial_inventory_v1.json` (present): Exact frozen 14-semantic-trial inventory.

@@ -63,8 +63,21 @@ research-safety review standards.
 
 ## Research Safety Invariants
 
+- North Star and Project Scope: The ultimate aspiration is automated stock
+  selection and trading pursuing sustainable risk-controlled long-term net
+  returns. Stable profit is an objective, not a guarantee. This research
+  repository is the first simulation phase; execution and live order capabilities
+  belong strictly to a future, separately authorized private execution repository.
 - Keep this project simulated, auditable, reproducible, and explainable; never
   add brokerage connections, orders, paper/live trading, or live-account behavior.
+- Demo-first delivery: deliver a working, presentable end-to-end vertical slice
+  (Demo v0) first; record non-blocking imperfections, data caveats, and missing
+  coverage in a lightweight backlog and improve in layers. Do not block early
+  demos on an ideal pipeline, full SEC entity lineage, complete ledger schema
+  coverage, or a factor zoo. Preserved minimum correctness (no lookahead,
+  realistic costs, sample honesty, trial retention, privacy, and non-execution)
+  is non-negotiable. Formal promotion controls remain prerequisites for formal
+  claims, not universal blockers for limited exploratory demos.
 - Never invent results or claim profitability without reproducible evidence.
   Zero-cost or no-slippage results are diagnostics only.
 - Keep failed, weak, invalid, abandoned, and contrary results visible; never
@@ -123,6 +136,13 @@ itself is a hold or unblock condition.
 - Owner-authorized Antigravity child sessions start with session-only
   `--dangerously-skip-permissions`. Do not persist that setting into global
   `settings.json`.
+- Delivery methodology correction: avoid unbounded perfectionism. Prioritize
+  shipping a small, demonstrable, presentable end-to-end version (Demo v0);
+  record non-blocking imperfections and caveats in a lightweight backlog and
+  improve in working layers. Do not block early demos on an ideal pipeline or
+  100% formal infrastructure. Historical Track A 14-trial refusal remains
+  preserved historical evidence, but is no longer the sole entry point of the
+  project.
 
 - A whole-project ablation completion claim requires an explicit runtime and
   subsystem coverage matrix, tested high-impact hypotheses, preserved baseline

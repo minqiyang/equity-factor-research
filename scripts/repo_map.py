@@ -127,7 +127,7 @@ IMPORTANT_FILES = [
     ),
     (
         "docs/eodhd_sp500_diagnostic_campaign_contract.md",
-        "Active Track A/Track B diagnostic campaign scope authority.",
+        "Historical Track A/Track B diagnostic campaign scope authority.",
     ),
     (
         "docs/campaign_bounded_diagnostic_runner_v1.md",

@@ -23,6 +23,12 @@ appropriately caveated diagnostics. They must not support formal historical
 interpretation, factor promotion, a `RESEARCH_PASS`, or a holdout-independence
 claim. "Every configured case" is not evidence of complete trial accounting.
 
+Under the demo-first engineering discipline, exploratory Demo v0 experiments
+record all attempted cases, synthetic configurations, and diagnostic comparison
+reports here or in sidecar logs. These records establish reproducible demo evidence
+and track non-blocking imperfections in the lightweight backlog, while formal
+factor promotion remains reserved for Milestone 4.
+
 ## Automated Synthetic Demo Logs
 
 Synthetic demo scripts also write deterministic JSON sidecar logs under

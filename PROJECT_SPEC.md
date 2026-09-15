@@ -1,13 +1,23 @@
 # Project Specification
 
-## Objective
+## Objective And North Star
 
-Build a rigorous, reproducible, falsifiable, and auditable historical equity
-research platform. The platform should faithfully reproduce published factors,
-WorldQuant formulas, institutional rules, strategies, and portfolio methods,
-then determine whether they have stable out-of-sample stock-selection or
-portfolio value under point-in-time data, frozen rules, realistic costs, and
-multiple-testing controls.
+The ultimate aspiration of the project is automated stock selection and trading,
+pursuing sustainable risk-controlled long-term net returns. Stable profit is an
+explicit objective, not a guarantee.
+
+The research and simulation platform built in this repository is the foundational
+first phase—not the final execution product. The repository remains strictly
+simulated and non-order-capable; live trading, broker integrations, and order
+routing belong to a future, separately authorized private execution system.
+
+The engineering approach is **demo-first**: ship a basic, presentable, and
+reproducible end-to-end version first, record non-blocking imperfections in a
+lightweight backlog, and improve in layers. We avoid blocking a working
+demonstration on an ideal pipeline, complete SEC identity proof for every
+security, optional ledger/schema coverage, or a broad factor zoo. Minimum
+correctness (no-lookahead, explicit transaction costs, sample honesty, full trial
+accounting, privacy, and non-execution) is preserved at every layer.
 
 Optimize the research process for evidence quality rather than the highest
 historical Sharpe ratio. Retain negative, failed, invalid, and inconclusive
@@ -365,27 +375,66 @@ Track A uses only `INVALID_DIAGNOSTIC`, `INCONCLUSIVE_DIAGNOSTIC`,
 those states is `RESEARCH_PASS` or evidence of alpha, profitability, broader
 market validity, paper readiness, or live readiness.
 
-## Development Sequence
+## Operational Modes
 
-The canonical sequence is maintained in `docs/current_roadmap.md`:
+The project operates under two clearly bounded modes to prevent conflating exploratory demo development with formal empirical promotion:
 
-1. complete the current scope reset and detached protocol freeze;
-2. resolve the private EODHD entitlement, retention, and publication gate;
-3. add dataset-manifest validation and complete a blinded dataset review;
-4. implement the exact Stage 5-MVP/6-MVP three-factor diagnostic runner;
-5. bind the protected runner code, exact configuration, environment, protocol,
-   inventory, and accepted dataset hashes before any result-bearing job;
-6. run and reconcile all 14 trials, freeze the private evidence bundle, obtain
-   independent review, and publish only a licensed safe projection;
-7. implement the minimal Track B formal-evidence runtime before prospective
-   performance access; and
-8. separately scope later formal statistics, broad factors, strategies,
-   portfolio/risk promotion, cross-provider reproduction, LEAN parity, or
-   paper candidacy.
+1. **Exploratory Demo Mode (Demo-First Delivery)**:
+   - Delivers a basic, presentable, and reproducible end-to-end slice (Demo v0) showing simulated stock selection, portfolio holdings, benchmark comparison, explicit frictional costs, and diagnostic reporting.
+   - Runnable locally on committed synthetic fixtures without private data. Separately authorized local CSV runs remain explicitly exploratory and diagnostic.
+   - Non-blocking imperfections and data caveats are recorded in a lightweight backlog and improved in layers.
+   - Results are diagnostic only; no claims of market alpha, general predictability, or trading profitability.
 
-Track A does not require the formal ledger runtime, but it remains permanently
-`DIAGNOSTIC_ONLY`. No later stage may imply an earlier methodology, dataset,
-license, evidence, or authorization gate is complete.
+2. **Formal Research Promotion Mode**:
+   - Applies strict point-in-time corporate-action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference.
+   - A mandatory prerequisite before promoting a factor, strategy, or portfolio to `RESEARCH_PASS` or claims of empirical robustness.
+   - Not a blocker for demonstrating an initial, visibly caveated exploratory demo slice.
+
+## Imperfection Policy And Backlog
+
+To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
+- **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs.
+- **Non-deferrable (Demo-blocking)**: Lookahead leakage, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration.
+
+| Deferred Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Deferral Status |
+| --- | --- | --- | --- | --- | --- |
+| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Acknowledge symbol alias risk; restrict to stable large-cap symbols | Transition to formal research promotion (Milestone 4) | Safe to defer for Demo v0 |
+| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; apply simple volume filters | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting |
+| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
+| Factor zoo expansion (10+ factors, multi-factor models) | Features | Single price-only factor used in initial slice | Focus on end-to-end vertical flow with one existing factor (e.g., momentum) | Milestone 3 after Demo v0 vertical slice stabilizes | Safe to defer; demo-first requires 1 working factor first |
+| Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
+| Advanced multiple-testing statistics | Statistics | Deflated Sharpe / Family-Wise Error Rate not computed | Rely on basic Sharpe, turnover, max drawdown, benchmark relative return | Milestone 4 formal research promotion | Safe to defer; metrics must state descriptive limitations |
+| Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
+| Lookahead leakage or timing mismatch | Correctness | Invalidates all backtest validity | Must enforce explicit signal lag (T-1) and execution at T open/close; no lookahead allowed | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Frictional cost and turnover accounting | Correctness | Phantom profitability from ignored trading fees | Must compute signed turnover and apply explicit bid-ask/commission bps | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
+
+## Primary Milestones
+
+The program follows five primary milestones from foundational research to simulated demo delivery and future execution:
+
+1. **Milestone 1: Core Research & Synthetic Demo Engine (Completed Baseline)**:
+   - Implemented core loaders, lagged feature contracts, signal timing, drift-aware portfolio accounting, synthetic demos, and Track B first checkpoints (Path A/B SQLite ledger).
+   - Historical Track A 14-trial diagnostic run remains REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`) under evidence ceiling `DIAGNOSTIC_ONLY`; preserved as immutable evidence.
+   - Local 2026-09-13 diagnostic confirmed exploration feasibility of local data with documented caveats.
+
+2. **Milestone 2: Demo v0 Working Vertical Slice (Active First Delivery Target)**:
+   - One reproducible local command/workflow using an existing price-only factor and a fixed strategy configuration;
+   - Simulated selection and holdings producing human-readable comparison report with benchmark, explicit costs, timing, and risk metrics;
+   - Complete trial accounting recording all attempted cases;
+   - Synthetic fixture workflow demonstrable without private data; local-data run explicitly exploratory.
+
+3. **Milestone 3: Exploratory Multi-Factor & Diagnostic Expansion (Near-Term Follow-up)**:
+   - Layered improvements on the working vertical slice: multi-factor combination (e.g., three-factor combination), broader historical windows, and handling data caveats (date gaps, zero-volume segments, adjustment checks);
+   - All empirical runs remain explicitly caveated exploratory diagnostics.
+
+4. **Milestone 4: Formal Research & Strict Lineage Controls (Future Evidence Gate)**:
+   - Full point-in-time corporate action reconciliation, survivorship-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages;
+   - Prerequisite for formal factor promotion or general empirical claims; not a blocker for early exploratory demos.
+
+5. **Milestone 5: Automated Execution & Trading Platform (Future Separately Authorized Scope)**:
+   - Translating validated models into execution algorithms, simulated order generation, broker connectivity, paper trading, and eventual risk-controlled live execution;
+   - Maintained in a separate execution repository; strictly outside the authority of the current research repository (no broker connections, orders, or credentials here).
 
 ## Explicit Non-Goals
 

@@ -15,6 +15,36 @@ investment performance.
 
 ---
 
+## 2026-09-15 - North Star Alignment And Demo-First Delivery Strategy
+
+Context:
+
+- Owner established explicit project guidance: correct the whole project's relevant docs/logs, roadmap, and North Star.
+- The ultimate project aspiration is automated stock selection and trading, pursuing sustainable risk-controlled long-term net returns. Stable profit is a goal, not a guarantee. The research platform is the first simulation phase, strictly separated from any future execution repository.
+- Avoid unbounded perfectionism: do not block early demonstration on an ideal pipeline, complete SEC identity proof for every security, optional ledger/schema coverage, or a factor zoo.
+- Historical Track A 14-trial refusal remains preserved historical evidence, but is no longer the sole universal entry point of the project.
+- A local 2026-09-13 diagnostic confirmed sufficient local data history for exploration, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling.
+
+Decision:
+
+- Align project specification, roadmap, handoff, charter, and skills around a 5-milestone progression with Demo v0 (working vertical slice) as the active delivery target.
+- Establish an explicit Imperfection Policy and lightweight backlog distinguishing safe deferrals (presentation polish, extra factors, optional schemas, advanced statistics) from non-deferrable correctness/safety bugs (lookahead, cost/return errors, secrets, unsafe execution).
+- Keep the current repository simulated and non-order-capable; record future execution as separately authorized scope.
+- Enforce the demo-first discipline: ship a basic, presentable end-to-end version first; record imperfections and improve in working layers.
+
+Rationale:
+
+- A demo-first approach enables tangible, auditable, and visible software progress without sacrificing research validity or safety invariants.
+- Clear mode boundaries separate exploratory demo development from formal empirical promotion.
+
+Consequences:
+
+- Active roadmap and handoff target Milestone 2 Demo v0 vertical slice.
+- Historical Track A refusal remains immutable evidence and does not block Demo v0.
+- All non-blocking caveats are tracked in the lightweight backlog table.
+
+---
+
 ## 2026-09-06 - Record Merged Track B Path A And Path B First Checkpoints
 
 Context:

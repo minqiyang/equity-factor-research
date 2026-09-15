@@ -20,6 +20,16 @@ formal historical interpretation while a dataset manifest or any timing,
 all-trial ledger, statistical, cost, privacy, or holdout-classification gate
 remains blocked.
 
+Under the demo-first engineering discipline, an exploratory local-data diagnostic
+run for an initial working slice (Demo v0) may achieve `diagnostic_ready` or
+`diagnostic_ready_with_low_caveats` without requiring full formal Stage 4 ledger
+infrastructure or complete SEC lineage proofs, provided that minimum correctness
+(no lookahead, explicit frictional costs, sample honesty) is strictly enforced,
+non-blocking data caveats are documented in the backlog, and results remain
+strictly diagnostic without profitability or formal promotion claims. Formal
+research promotion controls remain prerequisites for formal claims, not universal
+blockers for the initial visibly limited demo.
+
 ## Readiness Classification
 
 Every decision must state one of these scope-qualified outcomes:

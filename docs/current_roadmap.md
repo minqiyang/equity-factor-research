@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-06 after merged Track B Path A and Path B first checkpoints.
+Updated: 2026-09-15 after owner alignment on North Star and demo-first delivery.
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -11,12 +11,43 @@ Repository authority is [AGENTS.md](../AGENTS.md), workflow behavior is owned by
 the [controller](codex_long_running_controller.md), and the timestamped
 operational checkpoint is in the [current handoff](current_handoff.md).
 
+## North Star And Program Scope
+
+The ultimate aspiration of the project is automated stock selection and trading,
+pursuing sustainable risk-controlled long-term net returns. Stable profit is an
+explicit objective, not a guarantee.
+
+The research and simulation platform built in this repository is the foundational
+first phase—not the final execution product. The repository remains strictly
+simulated and non-order-capable; live trading, broker integrations, and order
+routing belong to a future, separately authorized private execution system.
+
+The engineering approach is **demo-first**: ship a small, presentable, and
+reproducible end-to-end version first, record non-blocking imperfections in a
+lightweight backlog, and improve in layers. We avoid blocking a working
+demonstration on an ideal pipeline, complete SEC identity proof for every
+security, optional ledger/schema coverage, or a broad factor zoo. Minimum
+correctness (no-lookahead, explicit transaction costs, sample honesty, full trial
+accounting, privacy, and non-execution) is preserved at every layer.
+
+## Primary Milestones
+
+The program follows five primary milestones:
+
+| Milestone | Scope | Status | Deliverable & Evidence Criteria |
+| --- | --- | --- | --- |
+| **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic confirmed exploration feasibility with documented caveats. |
+| **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Active Delivery Target** | One reproducible local command using an existing price-only factor and fixed strategy configuration -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations. Demonstrable on synthetic fixtures without private data; separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections logged in backlog. |
+| **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Planned Follow-up** | Layered additions on the working vertical slice: multi-factor combination (e.g., three-factor combination), broader historical windows, and handling data caveats (date gaps, zero-volume segments, adjustment checks). All empirical runs remain explicitly caveated exploratory diagnostics. |
+| **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
+| **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Translating validated models into execution algorithms, simulated order generation, broker connectivity, paper trading, and eventual risk-controlled live execution. Maintained in a separate execution repository; strictly outside the authority of this research repository. |
+
 ## Program Position
 
 - Historical CCA1 start baseline:
   `c178d16d84a455774bcde73f21a9e3ff39ea7b2c`.
-- Last live-verified protected main when this roadmap was authored:
-  `425b7c88a6e049b63aa2ddeae8560fea08fda23e`.
+- Working clone baseline:
+  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d`.
 - PR #180 and PR #181 are merged. No pull request was open at the verified
   start of this work.
 - Track A PR 1 is complete through PR #177: the EODHD diagnostic scope,
@@ -36,23 +67,66 @@ operational checkpoint is in the [current handoff](current_handoff.md).
   Terminal refusal is disposition, not Stage 4 / PR 4 completion;
   Stage 4 incomplete; DIAGNOSTIC_ONLY.
 - Path A first checkpoint merged as PR #199; Path B first checkpoint merged
-  as PR #200. These are first checkpoints only.
+  as PR #200. These are first checkpoints only; optional 37-event schema
+  completion stays off the critical path.
+- A local 2026-09-13 metadata and numerical diagnostic is complete and indicates
+  sufficient local data history for exploration, with documented caveats
+  (zero-volume segments, date gaps, unverified adjustment events) deferred for
+  layered handling. No new strategy run or profitability evidence was produced.
 - D8, A2, identity reopen, result/performance access stay closed.
-- No private paths, tickers, prices, or performance values.
-- Optional 37-event completion and factor-zoo stay off the critical path.
-- First future empirical slice is later/planning; do not authorize data access here.
+- No private paths, tickers, prices, or performance values in public docs.
 - The 2025-05-01 through 2026-05-31 interval remains permanently
   `historical_evaluation`, never a pristine holdout.
+
+## Active Delivery Target: Demo v0 Definition of Done
+
+The first delivery target is deliberately narrow:
+1. **Single Command/Workflow**: One reproducible local command/workflow using an
+   existing price-only factor and one fixed strategy configuration.
+2. **End-to-End Simulation**: Generates simulated selection and holdings with
+   drift-aware portfolio accounting.
+3. **Transparent Reporting**: Produces a human-readable comparison report with
+   benchmark comparisons, explicit frictional cost and timing models, risk
+   metrics, and stated limitations.
+4. **Complete Trial Accounting**: Records all attempted cases in a reproducible log.
+5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data.
+   Any separately authorized local-data run remains explicitly exploratory.
+
+Additional factors or multi-factor combinations are deferred until this vertical
+slice is working and presentable.
+
+## Imperfection Policy And Lightweight Backlog
+
+Imperfections are handled under an explicit classification to avoid blocking
+delivery while maintaining research validity:
+- **Safe to defer**: Presentation polish, extra factors/markets, optional schema
+  breadth, advanced statistics beyond demo claims, and full SEC identity proof.
+- **Non-deferrable (Demo-blocking)**: Lookahead leakage, incorrect cost/return
+  math, falsified or cherry-picked results, unhedged/leaked private data, and
+  unsafe live execution or brokerage integration.
+
+| Deferred Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Deferral Status |
+| --- | --- | --- | --- | --- | --- |
+| Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Acknowledge symbol alias risk; restrict to stable large-cap symbols | Transition to formal research promotion (Milestone 4) | Safe to defer for Demo v0 |
+| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; apply simple volume filters | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting |
+| Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
+| Factor zoo expansion (10+ factors, multi-factor models) | Features | Single price-only factor used in initial slice | Focus on end-to-end vertical flow with one existing factor (e.g., momentum) | Milestone 3 after Demo v0 vertical slice stabilizes | Safe to defer; demo-first requires 1 working factor first |
+| Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
+| Advanced multiple-testing statistics | Statistics | Deflated Sharpe / Family-Wise Error Rate not computed | Rely on basic Sharpe, turnover, max drawdown, benchmark relative return | Milestone 4 formal research promotion | Safe to defer; metrics must state descriptive limitations |
+| Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
+| Lookahead leakage or timing mismatch | Correctness | Invalidates all backtest validity | Must enforce explicit signal lag (T-1) and execution at T open/close; no lookahead allowed | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Frictional cost and turnover accounting | Correctness | Phantom profitability from ignored trading fees | Must compute signed turnover and apply explicit bid-ask/commission bps | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
 
 ## Canonical Research Sources
 
 - [Research program charter](research_program_charter.md): long-term evidence
   policy and evidence-state boundaries.
 - [Track A/Track B campaign contract](eodhd_sp500_diagnostic_campaign_contract.md):
-  scope, private-data gate, freeze sequence, and stop conditions.
+  scope, private-data gate, freeze sequence, and historical stop conditions.
 - [Canonical preregistration](preregistrations/eodhd_sp500_three_factor_diagnostic_v1.yaml)
   and [trial inventory](preregistrations/eodhd_sp500_three_factor_trial_inventory_v1.json):
-  frozen protocol and exactly 14 semantic trials.
+  frozen historical protocol and exactly 14 semantic trials.
 - [Point-in-time methodology contract](point_in_time_data_methodology_contract.md):
   dataset review and formal-interpretation requirements.
 - [Repository map](repo_map.md): accepted timing, split, ledger, and schema
@@ -136,7 +210,10 @@ Optional 37-event completion and factor-zoo stay off the critical path.
 Broad factor-zoo expansion, formal statistics, strategy promotion, independent
 cross-provider replication, LEAN parity, and completion of the remaining 26
 optional ledger event schemas are outside the active queue. First future
-empirical slice is later/planning; do not authorize data access here.
+empirical slice is later/planning; do not authorize data access here. Real-money
+trading, brokerage connectivity, live orders, and paper trading belong strictly
+to a future, separately authorized private execution repository and are permanently
+out of scope for this repository.
 
 Authority and execution remain in [AGENTS.md](../AGENTS.md) and the
 [controller](codex_long_running_controller.md). The latest checkpoint is in

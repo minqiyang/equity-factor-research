@@ -7,6 +7,15 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Added
+
+- Demo-first delivery alignment and North Star specification: updated
+  project specifications, roadmap, handoffs, and research charter around
+  five primary milestones, establishing Milestone 2 Demo v0 (minimal
+  reproducible end-to-end slice) as the active delivery target.
+- Lightweight imperfection backlog table distinguishing safe deferrals
+  from non-deferrable demo-blocking correctness and safety invariants.
+
 ### Fixed
 
 - Path B plan producer IDs no longer coerce missing/null to `[]`; plan

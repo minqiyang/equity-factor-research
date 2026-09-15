@@ -38,6 +38,15 @@ Produce a scope-qualified readiness decision before result interpretation:
   program gate listed below is implemented and evidenced.
 - `blocked` when any required evidence is missing or unresolved.
 
+Under demo-first delivery, exploratory local-data runs for an initial working slice
+(Demo v0) may achieve `diagnostic_ready` or `diagnostic_ready_with_low_caveats`
+without requiring complete formal Stage 4 ledger infrastructure or full SEC lineage
+proofs, provided that minimum correctness (no lookahead, explicit frictional costs,
+sample honesty) is strictly enforced, non-blocking data caveats are documented in
+the backlog, and results remain strictly diagnostic without profitability or
+formal promotion claims. Formal research promotion controls remain prerequisites
+for formal claims, not universal blockers for the initial visibly limited demo.
+
 The audit should make assumptions, caveats, and stop conditions visible before
 any local CSV output is treated as research evidence.
 

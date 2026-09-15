@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-06 after merged Track B Path A and Path B first checkpoints.
+Updated: 2026-09-15 after owner alignment on North Star and demo-first delivery.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -12,10 +12,10 @@ stage dependency, or historical review narrative.
 
 ## Resume Order
 
-1. Read `AGENTS.md` for repository authority and research-safety boundaries.
+1. Read `AGENTS.md` for repository authority, research-safety boundaries, and continuation rules.
 2. Read `docs/current_handoff.md` for the latest recorded operational checkpoint.
-3. Read `docs/codex_long_running_controller.md` for execution and external gates.
-4. Read `docs/current_roadmap.md` for research-stage status and dependencies.
+3. Read `docs/codex_long_running_controller.md` for execution and review gates.
+4. Read `docs/current_roadmap.md` for program milestones and demo delivery criteria.
 
 Use `docs/repo_map.md` only for targeted file orientation. Before acting, follow
 the controller's live-remote, clean-tree, authorization, validation, and review
@@ -27,6 +27,8 @@ requirements.
   `425b7c88a6e049b63aa2ddeae8560fea08fda23e`.
 - Historical CCA1 start baseline:
   `c178d16d84a455774bcde73f21a9e3ff39ea7b2c`.
+- Working clone baseline:
+  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d`.
 - PR #180 is merged. It records the long-term factor-to-portfolio direction
   and leaves the frozen Track A campaign in place.
 - PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
@@ -35,60 +37,62 @@ requirements.
 - No pull request was open at the verified start of this work.
 - This publication began from a clean `main` checkout at the baseline above.
   Its live PR and merge state must be checked separately after publication.
-- The 14-trial run is REFUSED. Named reason:
-  `ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`.
-- Terminal refusal is disposition, not Stage 4 / PR 4 completion; Stage 4
-  incomplete; evidence ceiling remains `DIAGNOSTIC_ONLY`.
-- Track B Path A first checkpoint is merged as PR #199. Path B first
-  checkpoint is merged as PR #200. These are first checkpoints only.
+- Milestone 1 (Core Research & Synthetic Engine) is completed baseline:
+  data contracts, signal timing, drift-aware portfolio accounting, synthetic demos,
+  and Track B first checkpoints (Path A PR #199, Path B PR #200).
+- Historical Track A 14-trial diagnostic run remains REFUSED
+  (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`).
+  This refusal is preserved as immutable historical evidence and is not an active
+  blocker for demo-first development.
+- A local 2026-09-13 metadata and numerical diagnostic confirmed sufficient local
+  data history for exploration, with documented caveats (zero-volume segments,
+  date gaps, unverified adjustment events) deferred for layered handling. No
+  profitability is claimed.
+- Milestone 2 (Demo v0 Working Vertical Slice) is the active delivery target.
 - Raw private data, ticker lists, provider responses, and performance values
   remain outside the public repository.
 
 ## Recorded Delivery Scope
 
-- Public-safe operational checkpoint after merged Path A and Path B first
-  checkpoints.
-- Keep 14-trial REFUSED, reason ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL.
-- Terminal refusal is disposition, not Stage 4 / PR 4 completion; Stage 4 incomplete; DIAGNOSTIC_ONLY.
-- Path A first checkpoint merged as PR #199; Path B first checkpoint merged as
-  PR #200 at `425b7c88a6e049b63aa2ddeae8560fea08fda23e`.
-- D8, A2, identity reopen, result/performance access stay closed.
-- No private paths, tickers, prices, or performance values.
-- Optional 37-event completion and factor-zoo stay off the critical path.
-- First future empirical slice is later/planning; do not authorize data access here.
+- Demo-first delivery alignment: Milestone 2 Demo v0 vertical slice.
+- Maintain immutable historical record of Track A refusal without letting it
+  block the new demo program.
+- Defer non-blocking imperfections (presentation polish, extra factors,
+  optional ledger schemas, advanced statistics) to the lightweight backlog.
+- Strictly preserve research safety invariants: simulated portfolio only,
+  no broker integrations, orders, paper/live trading, or lookahead.
 
 ## Current Research Gate Summary
 
-Stage 1 is accepted. See `docs/current_roadmap.md`. PR 2 public surfaces and
-campaign DIAGNOSTIC_READY hashes are recorded. Formal interpretation is not
-granted. PR 3 runner code is on protected main. Stage 4 G-2 binding is accepted
-by hash. 14-trial remains REFUSED, reason
-`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`. Terminal refusal is
-disposition, not Stage 4 / PR 4 completion; Stage 4 incomplete; DIAGNOSTIC_ONLY.
-Path A first checkpoint is merged as PR #199. Path B first checkpoint is merged
-as PR #200. D8, A2, identity reopen, result/performance access stay closed.
+Milestone 1 completed; see `docs/current_roadmap.md`. Historical Track A 14-trial run
+remains REFUSED. Track B Path A and Path B first checkpoints are merged on main.
+The local 2026-09-13 data diagnostic established exploration feasibility under
+documented caveats. Formal research promotion controls remain prerequisites for
+formal claims, not universal blockers for the initial visibly limited Demo v0.
 
 ## Immediate Blockers Or Owner Decisions
 
-- 14-trial remains REFUSED, reason ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL.
-- Terminal refusal is disposition, not Stage 4 / PR 4 completion; Stage 4 incomplete; DIAGNOSTIC_ONLY.
-- D8, A2, identity reopen, result/performance access stay closed.
-- Private control-tree bodies remain off GitHub and need a private channel.
+- None blocking Milestone 2 Demo v0 synthetic vertical slice delivery.
+- Running or interpreting local CSV market data requires separate explicit
+  authorization and real-data readiness audit.
+- No push, PR creation, merge, or external action without explicit authorization.
 
 ## Next Safe Action
 
-- Remain at the merged Path A and Path B first-checkpoint baseline.
-- Keep D8, A2, identity reopen, result/performance access closed.
-- Optional 37-event completion and factor-zoo stay off the critical path.
-- First future empirical slice is later/planning; do not authorize data access here.
-- No private paths, tickers, prices, or performance values.
+- Execute Milestone 2 Demo v0: produce a reproducible local command using an
+  existing price-only factor and fixed strategy configuration, generating
+  simulated selection/holdings, explicit frictional costs and timing, and a
+  human-readable comparison report with benchmark, recording all attempted cases.
+- Verify that the synthetic fixture workflow demonstrates the slice end-to-end
+  without private data.
+- Keep non-blocking data caveats and enhancements in the lightweight backlog.
 
 ## Source Routing
 
-- Authority and research-safety invariants: `AGENTS.md`.
+- Authority, research-safety invariants, and continuation: `AGENTS.md`.
 - Workflow, review, waiting, and stop behavior:
   `docs/codex_long_running_controller.md`.
-- Program stages, dependencies, gate criteria, and completion evidence:
+- Program milestones, Demo v0 criteria, and imperfection backlog:
   `docs/current_roadmap.md`.
 - Long-term evidence policy: `docs/research_program_charter.md`.
 - Track A protocol and gate semantics:

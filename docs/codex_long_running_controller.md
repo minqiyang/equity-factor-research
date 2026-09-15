@@ -75,18 +75,19 @@ re-enter this gate before acting on a different PR or changed scope.
 - Continue only from the newly verified remote baseline after the predecessor
   merges. A clean status check must precede any branch switch or update.
 
-## Review Lifecycle
+## GitHub Review Lifecycle
 
 - Do not use GitHub Code Review. Keep GitHub Codex Automatic Review disabled.
   Never post `@codex review` and never enable Auto, Exhaustive, or
-  credits-for-review. After validation and required CI stabilize on the final
-  stable current head, conduct formal review under live coordinator V7.22 standards:
-  STANDARD lane requires 1 fresh independent reviewer (fresh Grok latest XHigh);
-  CRITICAL lane requires 2 fresh independent reviewers (fresh Grok latest XHigh
-  plus GPT Astra latest High). Local Codex CLI review with GPT Astra latest High
-  is used when GPT review is called. The reviewer is read-only on a clean root
-  at that exact head, never the producer worktree. The current owner no-GPT /
-  lsgz:1 exception is session-scoped, not permanent policy.
+  credits-for-review. Drafts get no request. After validation and required CI
+  stabilize on the final stable current head, conduct formal review under live
+  coordinator V7.22 standards: STANDARD lane requires 1 fresh independent
+  reviewer (fresh Grok latest XHigh); CRITICAL lane requires 2 fresh
+  independent reviewers (fresh Grok latest XHigh plus GPT Astra latest High).
+  Local Codex CLI review with GPT Astra latest High is used when GPT review is
+  called. The reviewer is read-only on a clean root at that exact head, never the
+  producer worktree. The current owner no-GPT / lsgz:1 exception is
+  session-scoped, not permanent policy.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -118,10 +119,11 @@ re-enter this gate before acting on a different PR or changed scope.
   actionable finding from any review channel, including PR-level comments or
   independent audits that do not create a resolvable thread.
 - A review-required PR is additionally technically merge-eligible only when the
-  required formal review has completed on the exact current head with no
-  actionable findings, and all required checks and formal reviews pass. Pending,
-  missing, or head-mismatched formal review evidence is ineligible. GitHub
-  `@codex review` is not a review channel.
+  requested Codex review has completed on the exact current head with no
+  actionable findings, no review thread remains unresolved, and all required
+  checks and formal reviews pass. Pending, missing, or head-mismatched Codex
+  review evidence is ineligible. GitHub `@codex review` is retired and not a
+  valid review channel.
 - Before claiming Codex, another provider, a model, or a quota is unavailable,
   probe it live in that same turn. Do not reuse an older pull request's limit
   message.
