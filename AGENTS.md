@@ -27,6 +27,29 @@ research-safety review standards.
   use a separate clean branch or worktree when the current tree is dirty.
 - Treat credentials, private data, licenses, account identifiers, and production
   systems as sensitive. Never store secrets or raw private data in the repo.
+- When ChatGPT/Codex CLI quota is exhausted, rotate to the next owner-designated
+  ChatGPT CLI account in private control before Fable or Grok. Do not skip the
+  remaining designated CLI account. Do not publish those addresses. Do not
+  logout until the replacement login can complete. Skipping that rotation and
+  jumping to Grok is a P1 process failure.
+- Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
+  review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
+  disabled. Required PR review follows the live coordinator V7.22 standard:
+  STANDARD lane requires 1 fresh independent reviewer (fresh Grok latest XHigh);
+  CRITICAL lane requires 2 fresh independent reviewers (fresh Grok latest XHigh
+  plus GPT Astra latest High). Review is read-only on a clean root at the exact
+  current head, never the producer worktree. The current owner no-GPT / lsgz:1
+  exception is session-scoped, not the permanent default.
+- After two completed formal reviews on the same PR still report P1 or P2,
+  stop the review-and-fix loop. Dispatch a fresh Grok latest session and a fresh
+  Gemini latest / Antigravity session to analyze the whole PR and current tree,
+  then the coordinator decides: escalate that task to EXPERT, keep fixing, or
+  accept/ignore the remaining reported P1/P2 when within authorized bounds.
+- If the coordinator chose keep-fixing and an in-scope fix lands, one additional
+  review of that new exact head is allowed. If that review still reports P1/P2,
+  Grok latest and Antigravity/Gemini latest judge whether those findings should
+  be fixed. If yes, Grok Extra High implements; if no, the coordinator records
+  ignore/accept. Do not resume an unbounded review loop.
 
 ## Startup And Sources
 
@@ -74,10 +97,32 @@ not recur, then continue the still-authorized task unless the correction
 itself is a hold or unblock condition.
 
 - Record authority and research-safety invariants here. Record the incident
-  in `docs/engineering_log.md`. Operational GitHub review, quota, and merge-
-  wait steps live in `docs/codex_long_running_controller.md`.
+  in `docs/engineering_log.md`. Operational review, quota, merge-wait, and Herdr
+  tab-cleanup steps live in `docs/codex_long_running_controller.md`.
 - Rank severity. Skipping a required live availability check is P1 process
+  failure. Skipping the required pre-round Herdr tab inspection is P1 process
   failure.
+- Before starting the next round of Herdr work, inspect live tabs. Close only
+  execution tabs whose process is inactive, required outputs are saved and
+  hash-verified, write responsibility is released, and the tab will not be
+  resumed. Keep the coordinator tab, working or blocked tabs, tabs whose disk
+  and live state disagree, and any tab still needed for the current or next
+  authorized card.
+- When the next step is already determined by an accepted plan, owner decision,
+  or repository rules, automatically execute the next clear, already-authorized
+  step in the same turn without stopping to request repeat permission. Continue
+  through ordinary QA, review, and remediation waits; stop only for a genuine
+  blocker, a necessary owner decision, or additional authority. A plan does not
+  authorize push, PR creation or merge, private data access, new paid services,
+  credentials, or trading. Do not end a turn merely on dispatch acknowledgment
+  while delegated work is outstanding.
+- Do not end the coordinator process while an authorized PR is waiting for its
+  exact-head review body. Keep the session alive and re-check until that body
+  exists (pass, findings, or an explicit current limit). Timeout is not a review
+  result. Check the review-comments API, not only issue comments.
+- Owner-authorized Antigravity child sessions start with session-only
+  `--dangerously-skip-permissions`. Do not persist that setting into global
+  `settings.json`.
 
 - A whole-project ablation completion claim requires an explicit runtime and
   subsystem coverage matrix, tested high-impact hypotheses, preserved baseline
@@ -118,6 +163,15 @@ itself is a hold or unblock condition.
 - Grow the system in working layers: start with the smallest end-to-end
   version, then add capabilities without trading a working product for
   unfinished complexity.
+- After every completed design or staged implementation, conduct ablation
+  experiments to remove unnecessary abstractions, speculative design, and
+  superfluous code, aiming for the simplest implementation sufficient for current
+  requirements. Preserve baseline; test removals in isolation, compare behavior,
+  correctness, and relevant costs, keep justified simplifications, and restore
+  regressions. Never drop necessary tests, validation, or guards, and never conceal
+  failures just to reduce line count. Record removals, retained necessities, and
+  known limitations. A supported no-change outcome is valid. Ablation revalidation
+  itself is not an infinite recursive ablation loop.
 - Keep components modular and concerns clearly separated; prefer narrow modules,
   clear pandas, and deterministic tests.
 - Prefer established, well-maintained libraries when they reduce complexity or

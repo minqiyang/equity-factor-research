@@ -1,5 +1,42 @@
 # Engineering Log
 
+## 2026-09-15 - Owner workflow alignment: mandatory ablation, automatic continuation, and review standards
+
+- The owner established explicit workflow and review requirements:
+  1. Mandatory post-design and post-implementation ablation: after every completed
+     design or staged implementation, conduct ablation experiments to remove
+     unnecessary abstractions/design and aim for the simplest code sufficient
+     for current requirements. Preserve baseline; test removals in isolation,
+     compare behavior/correctness and relevant costs, keep justified
+     simplifications and restore regressions. Do not drop necessary tests/guards
+     or conceal failures just to reduce line count. Record removals, retained
+     necessities and known limitations. A supported no-change outcome is valid.
+     Ablation revalidation itself is not an infinite recursive ablation loop.
+  2. Automatic continuation: after the current task is complete, automatically
+     execute the next clear, already-authorized step in the same turn without
+     stopping to request repeat permission. Continue through ordinary
+     QA/review/remediation waits; stop only for a genuine blocker, a necessary
+     owner decision, or additional authority. A plan does not authorize
+     push/PR/merge, private data, new paid services, credentials or trading. Do
+     not end a turn merely on dispatch acknowledgment while delegated work is
+     outstanding.
+  3. Review policy reconciliation with live V7.22: required permanent review
+     lanes are STANDARD (1 fresh independent reviewer: fresh Grok latest XHigh)
+     and CRITICAL (2 fresh independent reviewers: fresh Grok latest XHigh plus
+     GPT Astra latest High). Independent exact-candidate read-only review, QA
+     first, material findings block. GitHub Code Review remains retired. The
+     current owner no-GPT / lsgz:1 exception is session-scoped, not permanent
+     policy.
+  4. Quota and cleanup safeguards: designated ChatGPT CLI account rotation
+     before Fable/Grok; pre-round Herdr tab inspection (skipping is P1);
+     session-only Antigravity `--dangerously-skip-permissions` without mutating
+     global settings.
+- Historical note: older engineering log entries below from 2026-09-05 and
+  2026-09-06 record past operational incidents and instructions during PR #197-#200
+  (e.g., legacy `@codex review` hosted connectors, 3-strike rounds). They are
+  preserved as immutable dated history; current active policy is governed by
+  AGENTS.md and docs/codex_long_running_controller.md under V7.22.
+
 ## 2026-09-08 - Pearson IC golden binary64 portability
 
 - Linux Python 3.11 CI run 34259791376 failed nine `check_exact=True` Pearson
@@ -202,6 +239,35 @@
   37-event completion and factor-zoo stay off the critical path.
 - No private paths, tickers, prices, or performance values.
 
+## 2026-09-06 - Extra GPT review after 2-strike fix
+
+- Owner instruction: local GPT review-loop trigger is two completed reviews with
+  remaining P1/P2, not three. After Grok+Gemini analysis and an in-scope fix,
+  one additional local GPT latest review is allowed. Remaining P1/P2 go to Grok
+  and Antigravity to judge whether to change code; if yes, Grok Extra High
+  implements.
+- Applies now to PR 200 extra GPT review on `bf14982`.
+
+## 2026-09-06 - Retire GitHub Code Review; use local GPT latest
+
+- Owner instruction: stop GitHub Code Review (`@codex review`, Auto, Exhaustive,
+  credits-for-review). Required PR review is local Codex CLI GPT latest at
+  medium, high, or xhigh. Default medium; CRITICAL/schema/runtime use high; do
+  not default to xhigh. Read-only clean root, exact head.
+- Two local GPT reviews with remaining P1/P2 still escalate to Grok+Gemini
+  analysis then coordinator decision. CLI account rotation remains the quota
+  path for this review login.
+
+## 2026-09-06 - Cap GitHub Codex review at three finding rounds
+
+- Owner instruction: after the same PR has more than three GitHub code reviews
+  that still report P1/P2, stop `@codex review`. Dispatch fresh Grok latest and
+  Gemini latest to analyze the whole PR and current state. Coordinator then
+  decides: EXPERT, continue fixes, or ignore remaining reported P1/P2.
+- Usage-limit bodies do not count. GitHub review quota is currently available
+  again; do not treat it as a stop.
+- Incident: PRs #198 and #199 ran unbounded review-and-fix loops.
+
 ## 2026-09-06 - Track B v7 Path B PR 200 extra MATERIAL remediations
 
 - PR #200 head `bf149827e8ff5d85f4de18883212ac7dcc1b6ef4` still admitted
@@ -279,6 +345,27 @@
   currentness, executor mismatch, and EXECUTE consumer mismatch.
 - No 14-trial run, D8, identity reopen, real/private market data, brokerage,
   or vendor API.
+
+## 2026-09-06 - Rotate GitHub Codex Cloud on review usage-limit
+
+- Owner correction: when one designated ChatGPT account is out of GitHub
+  `@codex review` quota, switch immediately to the other designated account's
+  Codex Cloud GitHub connector. Do not wait, and do not treat the limit as a
+  stop. CLI login is a different bucket.
+- Incident: PR #199 exact-head review returned a usage-limit body. Work stopped
+  instead of rotating the hosted-review account.
+- Continuation: rotate the exhausted hosted-review account, then one
+  `@codex review` on the unchanged head. Addresses stay in private control.
+
+## 2026-09-05 - Do not stop after naming the next step
+
+- Owner correction: once the next authorized step is determined, execute it.
+  Answering a clarifying question does not pause that loop.
+- Incident: after exact-head Codex had no new P1 and P2 was identified as
+  non-blocking, work stopped at a status report instead of merging PR #198
+  and starting the accepted Path A runtime PR.
+- Continuation: merge #198 on that evidence, then dispatch GENERAL_EXEC for
+  the runtime PR. Same-turn continue rule remains in `AGENTS.md`.
 
 ## 2026-09-05 - Track B v7 Path A exact-head P1-FIX2 remediations
 
@@ -392,6 +479,64 @@
   design Markdown/JSON hashes are committed in
   `docs/experiment_trial_ledger_track_b_v7_design.artifacts.sha256`.
 - No SQLite runtime, 14-trial run, D8, identity, or result access.
+
+## 2026-09-05 - Rotate ChatGPT CLI accounts before Grok
+
+- Owner correction: after one ChatGPT/Codex CLI account is exhausted, switch to
+  the other designated CLI account. Do not skip that rotation and dispatch Grok
+  to save a probe.
+- Incident: DESIGN quota used Grok because Astra on the first CLI account had
+  hit a limit, without attempting the remaining designated ChatGPT CLI login.
+- Continuation: rotate all designated CLI accounts before Fable/Grok. Addresses
+  stay in private control. This live Grok writer on the design worktree is not
+  killed mid-run; the next DESIGN dispatch follows the rotation rule.
+
+## 2026-09-05 - Alternate ChatGPT login on CLI quota exhaustion
+
+- Owner instruction: when ChatGPT/Codex CLI quota is insufficient, log in with
+  the designated alternate ChatGPT account. The address is private-control only.
+- Observed CLI login is ChatGPT auth_mode, not the GitHub review connector.
+- PR #198 hosted code-review limit remains a separate bucket until the owner
+  resets that quota or accepts merge without Codex review.
+
+## 2026-09-05 - Keep session alive for exact-head Codex review
+
+- Owner correction: if the next wait is Codex review, do not end the process.
+  Re-check until the exact-head body exists. Stopping loses the ability to read
+  P1/P2 or a clean pass.
+- Incident: after requesting `@codex review` on PR #197, the coordinator was
+  about to stop at the external gate instead of remaining live to read the
+  result.
+- Continuation invariant is in `AGENTS.md`. Polling and review-comments API
+  rules are in `docs/codex_long_running_controller.md`.
+
+## 2026-09-05 - Continue authorized next steps; Antigravity session all-allow
+
+- Owner correction: if the next step is already determined, execute it; stop only
+  for owner decisions or when capable models cannot determine the next legal
+  step. Antigravity child sessions are to allow all operations.
+- Incident: after owner accepted Astra R1-R5, work paused on Antigravity
+  per-command prompts and a status report instead of restarting those sessions
+  under an all-allow flag and continuing v7 QA/review.
+- Continuation: session-only `--dangerously-skip-permissions` for authorized
+  Antigravity tabs; do not persist to global settings.json. Same-turn continue
+  rule is in `AGENTS.md` and this controller.
+
+## 2026-09-05 - Pre-round Herdr tab cleanup
+
+- Owner correction: after a round finishes, inspect live Herdr tabs and close
+  completed inactive execution tabs that will not be resumed. Do not stop at
+  the apology.
+- Incident: Track B plan/review tabs `efr-grk-tb1`, `efr-grk-tbg5`, and
+  `efr-sol-tbg5`, plus later `efr-ast-gap` and `efr-ast-plan`, remained open
+  after their outputs were on disk. The next round started without the
+  required cleanup. This skipped the existing private cleanup instruction and
+  V7 close-after-release rule.
+- Closed verified-complete tabs `w3:t73`, `w3:t7C`, `w3:t7D`, `w3:t7E`,
+  `w3:t7F`, and quota-dead `w3:t7K`. Kept coordinator, working v6 review
+  seats, and tabs whose required outputs were still missing.
+- Continuation invariant is in `AGENTS.md`. The pre-round inspection steps
+  are in `docs/codex_long_running_controller.md`.
 
 ## 2026-09-04 - Live hosted-review check before merge
 
