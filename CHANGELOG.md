@@ -20,6 +20,16 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Post-adjudication remediation under PROSE-004: replaced absolute sample-property
+  phrase "no survivorship bias" and bare shorthand with the operational selection
+  rule in `docs/north_star.md`, `PROJECT_SPEC.md`, `docs/current_roadmap.md`,
+  and private addendum; clarified Demo v0 status in `README.md` as a target deliverable
+  (not yet implemented) and quickstarts as legacy diagnostics; adopted `All-Attempt Case Logging`
+  for Demo v0 run recording, distinguishing it from Stage 4 complete immutable ledger accounting;
+  added historical protocol context to Track A handoff and roadmap headings; corrected
+  the earlier log claim to reflect the actual 17-row backlog count; and aligned private
+  addendum Item 5 title to synthetic-first demonstration.
+
 - Remediation under PROSE-003: expanded `AGENTS.md` Research Safety Invariants
   with explicit non-deferrable boundaries (fail-closed ticker reuse/identity
   stitching, no default last-price or zero disappearance payoff, no dividend

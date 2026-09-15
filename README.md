@@ -39,17 +39,17 @@ python -m research.synthetic_combined_score_backtest_demo
 python -m research.local_csv_fixture_workflow_demo
 ```
 
-These commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics.
+These commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are legacy reproducibility and engineering diagnostics, not acceptance of Demo v0. Multi-factor examples remain available for workflow testing but are outside the single-factor Demo v0 scope.
 
 ## Demo-First Delivery Target (Demo v0)
 
 The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, complete ledger schema coverage, or a broad factor zoo.
 
-The active delivery target is **Demo v0**:
+The active delivery target is **Demo v0** (target deliverable, not yet implemented):
 - One reproducible local command/workflow using an existing price-only factor and a fixed strategy configuration;
 - Simulated stock selection and drift-aware portfolio holdings;
 - Human-readable comparison report with benchmark, explicit transaction cost and timing models (accepted `after_close_signal_next_observed_close_v1`), risk metrics, and limitations;
-- Complete trial accounting recording all attempted cases.
+- All-Attempt Case Logging recording all attempted cases (distinguishing lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
 
 Synthetic fixture workflows are demonstrable without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic.
 

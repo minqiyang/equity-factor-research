@@ -1,5 +1,7 @@
 # Project Overview
 
+> **Active Direction Note**: Active product aspiration and demo-first delivery principles are defined exclusively in [docs/north_star.md](north_star.md). Program milestones and the authoritative backlog are owned by [docs/current_roadmap.md](current_roadmap.md). The ultimate aspiration is automated stock selection and trading; this repository is strictly the foundational simulation phase.
+
 This repository is an AI-assisted, simulated, auditable equity factor research
 pipeline. It is a learning and research project for studying stock-selection
 ideas with clear assumptions, tests, and logs.

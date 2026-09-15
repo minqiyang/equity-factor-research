@@ -6,8 +6,9 @@ GitHub review lifecycle, waiting, stop conditions, and completion reporting.
 ## Scope And Authority
 
 This process is subordinate to the
-[repository authority boundary](../AGENTS.md#authority-and-scope), research
-charter, and current higher-level instructions. Authority remains in
+[repository authority boundary](../AGENTS.md#authority-and-scope), the
+[research program charter](research_program_charter.md) (preserved formal research
+evidence policy), and current higher-level instructions. Authority remains in
 `AGENTS.md`. Eligibility is not authorization; every external, sensitive, or
 destructive operation must satisfy that boundary.
 

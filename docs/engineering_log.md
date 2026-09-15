@@ -1,5 +1,42 @@
 # Engineering Log
 
+## 2026-09-15 - PROSE-004 Post-Adjudication Corrections: F-001 and Supported Advisories
+
+- Post-adjudication documentation remediation following `adjudication/001/report.md`
+  and `coord/prose_remediation_004.md`:
+  1. F-001 (MATERIAL): Replaced the absolute sample-property wording "no survivorship bias"
+     and bare shorthand with the operational selection rule from `docs/current_roadmap.md:135`:
+     no historical eligibility selected by future listing continuity, future index membership,
+     or survivor-cohort filters; unverified exploratory diagnostics remain explicitly labeled
+     survivorship-biased; no claim of a survivorship-free universe until Milestone 4 formal
+     lineage controls exist. Updated in `docs/north_star.md`, `PROJECT_SPEC.md`,
+     `docs/current_roadmap.md`, and the private goal addendum.
+  2. A-001 (ADVISORY): In `README.md`, explicitly marked Demo v0 as a target deliverable
+     (not yet implemented), clarified that existing quickstart commands are legacy synthetic/fixture
+     diagnostics (not acceptance of Demo v0), and noted that multi-factor examples remain available
+     for workflow testing but outside the single-factor Demo v0 scope.
+  3. A-002 (ADVISORY): Adopted `All-Attempt Case Logging` in `docs/north_star.md`, `PROJECT_SPEC.md`,
+     `docs/current_roadmap.md`, and `EXPERIMENT_LOG.md`. Explicitly distinguished lightweight
+     diagnostic run logging from Stage 4 complete immutable ledger accounting, while maintaining
+     the mandatory recording of all attempted, failed, and negative cases without cherry-picking.
+  4. A-003 (ADVISORY): Added "(historical protocol context)" to the Track A routing bullet in
+     `docs/current_handoff.md`; converted the diagnostic exception in `PROJECT_SPEC.md` to past tense;
+     scoped the closed result/performance gate in `docs/current_roadmap.md` to the historical Track A
+     14-trial private bundle without restricting synthetic Demo v0 comparison reports; and added a
+     historical-protocol banner to the test-pinned Track A PR 3 acceptance criteria section.
+  5. A-005 (ADVISORY): Corrected the earlier narrative log claim of "19-row" imperfection backlog
+     table to reflect the actual count of 17 data rows (8 Safe to Defer + 8 Blocking + 1 Prohibited
+     in Current Repo) in `docs/current_roadmap.md`. Prior log entries remain intact as historical records.
+  6. A-006 (ADVISORY): In the private goal addendum, aligned Section 2.3 sample honesty with F-001,
+     removed "initial prototype validation" from Section 3, and titled Item 5 "Demonstrable on
+     Synthetic Fixtures", with local private data noted as separately authorized exploratory diagnostics
+     outside mandatory Demo v0 acceptance.
+  7. A-007 (ADVISORY): In `AGENTS.md`, routed milestone definitions directly to `docs/current_roadmap.md`;
+     in `docs/codex_long_running_controller.md`, qualified the research charter as preserved formal
+     research evidence policy; and in `docs/project_overview.md`, added a concise banner pointing to
+     `docs/north_star.md` for active direction while distinguishing research simulation from the
+     ultimate automated trading aspiration.
+
 ## 2026-09-15 - [SUPERSEDED] Owner workflow alignment: mandatory ablation, automatic continuation, and review standards
 
 - Status: Superseded by the live V7.23 coordinator entry below. Preserved as same-day record of earlier owner instructions prior to v7.23-draft reconciliation.

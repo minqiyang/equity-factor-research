@@ -46,8 +46,8 @@ the exact epoch schema, rejects the other 36 known events as
 `SCHEMA_INCOMPLETE_DIAGNOSTIC_ONLY`, and does not claim a complete payload
 registry or Stage 4b runtime enforcement.
 The owner-approved diagnostic exception in
-`docs/eodhd_sp500_diagnostic_campaign_contract.md` supersedes the registry-first
-delivery dependency only for Track A. It does not change the immutable ledger
+`docs/eodhd_sp500_diagnostic_campaign_contract.md` superseded the registry-first
+delivery dependency only for historical Track A. It did not change the immutable ledger
 contracts or make a diagnostic result formally eligible.
 `docs/experiment_trial_ledger_allocation_registration_schema_contract.md`
 defines the owner-selected Stage 4B-R1A architecture-A decision. It preserves
@@ -400,7 +400,7 @@ The project operates under two clearly bounded modes to prevent conflating explo
 
 To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
 - **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains valid without fabricating economics).
-- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivorship, silent fill/clip/drop/repair, default last-price or zero-payoff disappearance, dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, default last-price or zero-payoff disappearance, dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
 
 The complete, single authoritative imperfection backlog table is maintained exclusively in
 [docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog).
@@ -414,7 +414,7 @@ Detailed Demo v0 acceptance requirements for active Milestone 2:
 1. **Single Command/Workflow**: One reproducible local command or workflow using an existing price-only factor and one fixed strategy configuration.
 2. **End-to-End Simulation**: Generates simulated selection and holdings with drift-aware portfolio accounting.
 3. **Transparent Reporting**: Produces a human-readable comparison report with benchmark comparisons, explicit frictional cost and timing models, risk metrics, and stated limitations.
-4. **Complete Trial Accounting**: Records all attempted cases in a reproducible log (all-attempt accounting is mandatory; cherry-picking or omitting failed trials is strictly forbidden).
+4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt case logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
 5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data. Any separately authorized local-data run remains explicitly exploratory.
 
 ## Explicit Non-Goals

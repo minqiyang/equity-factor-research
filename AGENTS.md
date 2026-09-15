@@ -58,8 +58,9 @@ research-safety review standards.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
-- Read `docs/north_star.md` for active product vision, demo-first delivery principles,
-  and coarse milestone definitions.
+- Read `docs/north_star.md` for active product vision and demo-first delivery
+  principles; read `docs/current_roadmap.md` for program milestones, execution
+  gates, and the authoritative imperfection backlog.
 - Use `docs/repo_map.md` for targeted orientation; verify cached handoff facts live.
 - Read long logs or contracts only for active-stage or failed/sensitive checks.
 - Cap unknown output and prefer targeted searches or short views. Regenerate

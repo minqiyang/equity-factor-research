@@ -38,8 +38,10 @@ zoo. At every layer, minimum research correctness is non-negotiable:
   no same-bar or open execution without separate typed contract);
 - Realistic transaction costs and turnover accounting under existing turnover conventions
   (sum of absolute signed trades under undivided convention, explicit spread and commission bps);
-- Sample honesty: no future-membership selection, no survivorship bias, and visible retention of all
-  trials and negative results;
+- Sample honesty: no historical eligibility selected by future listing continuity, future
+  index membership, or survivor-cohort filters; unverified exploratory diagnostics remain
+  explicitly labeled survivorship-biased; no claim of a survivorship-free universe until
+  Milestone 4 formal lineage controls exist; and visible retention of all trials and negative results;
 - Data honesty: no silent fill, clip, drop, or repair of missing or zero-volume bars;
 - Economic correctness: no identity mis-stitching (fail closed on ticker reuse), no default
   last-price or zero-payoff disappearance (PIT-006), no dividend double counting (PIT-007), and
@@ -62,7 +64,7 @@ prevent shipping the initial, visibly limited Demo v0 vertical slice.
 
 The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, coarse status, and detailed deliverable definitions are owned exclusively by the canonical roadmap in [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones).
 
-Under demo-first delivery, complete trial accounting across all attempted cases is mandatory for every trial (including active Milestone 2 Demo v0); cherry-picking or omitting failed trials is strictly forbidden.
+Under demo-first delivery, All-Attempt Case Logging across all attempted cases is mandatory for every trial (including active Milestone 2 Demo v0); cherry-picking or omitting failed trials is strictly forbidden. This lightweight diagnostic run logging is explicitly distinguished from Stage 4 complete immutable ledger accounting.
 
 ## Authoritative Backlog and Imperfection Policy
 
@@ -75,7 +77,9 @@ It classifies items with explicit impact, current handling, and revisit triggers
   and comprehensive historical SEC entity lineage proofs (provided the actual claimed calculation
   remains valid without fabricating economics).
 - **Non-Deferrable (Demo-Blocking Defects)**: Identity mis-stitching and ticker reuse (PIT-005),
-  future-membership selection and survivorship, silent fill/clip/drop/repair (PIT-009), default
+  future-membership selection and survivor-cohort filtering (no historical eligibility selected by
+  future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased;
+  no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair (PIT-009), default
   last-price or zero-payoff disappearance (PIT-006), dividend double counting (PIT-007),
   incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect
   cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live

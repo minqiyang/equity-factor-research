@@ -102,7 +102,7 @@ formal claims, not universal blockers for the initial visibly limited Demo v0.
 - Program milestones, Demo v0 criteria, and imperfection backlog:
   `docs/current_roadmap.md`.
 - Long-term evidence policy: `docs/research_program_charter.md`.
-- Track A protocol and gate semantics:
+- Track A protocol and gate semantics (historical protocol context):
   `docs/eodhd_sp500_diagnostic_campaign_contract.md` and its preregistrations.
 - Historical decisions, validation, and failures: `docs/decision_log.md`,
   `docs/engineering_log.md`, and `docs/troubleshooting_log.md`.

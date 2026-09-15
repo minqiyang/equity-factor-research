@@ -83,7 +83,7 @@ The program follows five primary milestones:
   sufficient local data history for exploration, with documented caveats
   (zero-volume segments, date gaps, unverified adjustment events) deferred for
   layered handling. No new strategy run or profitability evidence was produced.
-- D8, A2, identity reopen, result/performance access stay closed.
+- D8, A2, identity reopen, and historical Track A 14-trial private result/performance access stay closed; this historical gate does not restrict synthetic Demo v0 diagnostic comparison reports.
 - No private paths, tickers, prices, or performance values in public docs.
 - The 2025-05-01 through 2026-05-31 interval remains permanently
   `historical_evaluation`, never a pristine holdout.
@@ -98,7 +98,7 @@ The first delivery target is deliberately narrow:
 3. **Transparent Reporting**: Produces a human-readable comparison report with
    benchmark comparisons, explicit frictional cost and timing models, risk
    metrics, and stated limitations.
-4. **Complete Trial Accounting**: Records all attempted cases in a reproducible log.
+4. **All-Attempt Case Logging**: Records all attempted cases in a reproducible log (all-attempt logging is mandatory; cherry-picking or omitting failed trials is strictly forbidden; distinguishes lightweight diagnostic run logging from Stage 4 complete immutable ledger accounting).
 5. **Demonstrable on Synthetic Fixtures**: Runnable without requiring private data.
    Any separately authorized local-data run remains explicitly exploratory.
 
@@ -114,7 +114,7 @@ research validity:
   breadth, advanced statistics beyond demo claims, and full SEC identity proof
   (provided the actual claimed calculation remains valid without fabricating economics).
 - **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse,
-  future-membership selection and survivorship, silent fill/clip/drop/repair,
+  future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair,
   default last-price or zero-payoff disappearance, dividend double counting,
   incompatible price/volume dollar turnover, lookahead leakage or timing mismatch,
   incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked
@@ -132,7 +132,7 @@ research validity:
 | Advanced multiple-testing statistics | Statistics | Deflated Sharpe / Family-Wise Error Rate not computed | Rely on basic Sharpe, turnover, max drawdown, benchmark relative return | Milestone 4 formal research promotion | Safe to defer; metrics must state descriptive limitations |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Future-membership selection & survivorship | Sample Honesty | Severe upward performance bias from hindsight selection | Must not select universe on future listing continuity, future index membership, or survivor cohorts | Never deferrable | **BLOCKING (Cannot Defer)** |
+| Future-membership selection & survivor-cohort filtering | Sample Honesty | Severe upward performance bias from hindsight selection | Must not select universe on future listing continuity, future index membership, or survivor cohorts; unverified exploratory diagnostics remain explicitly labeled survivorship-biased; no claim of a survivorship-free universe until Milestone 4 formal lineage controls exist | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; terminal payoffs must have accepted evidence | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent | Never deferrable | **BLOCKING (Cannot Defer)** |
@@ -208,6 +208,8 @@ have committed fixtures. Later stages own:
 - result-bearing execution.
 
 ## Binding Track A PR 3 Acceptance Criteria
+
+> **Historical Protocol Context**: This section records preserved historical Track A acceptance criteria from prior stages, not prerequisites for Demo v0.
 
 Track A PR 3 must satisfy all of the following:
 
