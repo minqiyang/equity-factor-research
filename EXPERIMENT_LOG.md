@@ -35,8 +35,9 @@ A start record is written before computation so incomplete attempts remain
 visible. M3-02 requires complete finite strictly positive price bars in those
 two demos and refuses a supplied missing or zero-volume panel without silent
 fill, clip, drop, or repair. M3-03 proves signal lag on those commands counts
-observed source rows; a missing source row remains an omitted observation, and
-silent bar insertion is refused. This lightweight diagnostic run logging is explicitly distinguished
+observed source rows; a missing source row remains an omitted observation.
+Those demos keep the supplied observed index. Detecting invented sessions
+remains later calendar-alignment work. This lightweight diagnostic run logging is explicitly distinguished
 from the formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy

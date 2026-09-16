@@ -95,7 +95,8 @@ def test_demo_v0_writes_comparison_report_claims(tmp_path: Path) -> None:
     assert "zero volume is refused" in report_text
     assert "observed source rows" in report_text
     assert "omitted observation" in report_text
-    assert "Silent bar insertion is refused" in report_text
+    assert "supplied observed index" in report_text
+    assert "calendar-alignment" in report_text
     assert result.holdings.shape[1] == 8
     assert result.assumptions["execution_timing"] == TIMING_CONTRACT
     assert result.assumptions["signal_lag_periods"] == DEMO_SIGNAL_LAG_PERIODS
@@ -395,22 +396,22 @@ def test_demo_v0_lag_uses_previous_observed_source_row(
     assert result.assumptions["signal_lag_periods"] == DEMO_SIGNAL_LAG_PERIODS
 
 
-def test_demo_v0_refuses_silent_source_row_insertion(
+def test_demo_v0_refuses_extra_price_rows_versus_configured_periods(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     config = _short_config()
     prices = generate_synthetic_prices(config)
-    hole = prices.index[8]
-    gapped = prices.drop(index=hole)
-    inserted = gapped.reindex(prices.index).ffill()
-    run_config = replace(config, periods=len(gapped))
+    extra = prices.reindex(
+        prices.index.append(pd.DatetimeIndex([prices.index[-1] + pd.Timedelta(days=1)]))
+    )
+    run_config = replace(config, periods=len(prices))
 
-    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: inserted)
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: extra)
     report_path = tmp_path / "demo_v0.md"
     attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
 
-    with pytest.raises(ValueError, match="source rows"):
+    with pytest.raises(ValueError, match="must keep .* source rows"):
         run_demo_v0(
             config=run_config,
             report_path=report_path,
@@ -420,6 +421,7 @@ def test_demo_v0_refuses_silent_source_row_insertion(
     assert not report_path.exists()
     records = load_attempt_records(attempt_log_path)
     assert [record["status"] for record in records] == ["started", "failure"]
+    assert "must keep" in records[1]["error_message"]
     assert "source rows" in records[1]["error_message"]
 
 

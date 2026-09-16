@@ -1,20 +1,38 @@
 # Engineering Log
 
+## 2026-09-16 - Execute determined owner resolution without a second prompt
+
+- Owner selected resolution 2 for PR #210 finding `M3-03-R1`: narrow the
+  M3-03 completed claim. The first review turn recorded a fixer checklist
+  and stopped. That stop is a P1 process failure under `AGENTS.md` Owner
+  Corrections And Continuation: a determined next step is executed in the
+  same turn.
+- Continuation: this tree now applies that claim narrowing.
+
+## 2026-09-16 - M3-03 claim narrowing after review
+
+- Owner resolution 2 for `M3-03-R1`: keep the source-row lag proof and
+  withdraw "silent bar insertion is refused" as an M3-03 completed fact.
+- Demo v0 and the M3-01 demo keep the supplied observed index. Detecting
+  invented sessions remains later calendar-alignment work. Frozen
+  `DEMO_V0_CONFIG` is unchanged.
+- Demo tests named as silent-insertion refusal now assert extra price rows
+  versus configured periods through the existing source-row count check.
+
 ## 2026-09-16 - M3-03 source-row lag tests
 
 - Added `research/source_row_lag.py` with observed-source-index checks and
   positional source-row lag used by `python -m research.demo_v0` and
   `python -m research.synthetic_multifactor_backtest_demo`.
 - Signal lag counts observed source rows in the bounded accounting slice.
-  A missing source row remains an omitted observation. Silent bar insertion
-  is refused. Frozen `DEMO_V0_CONFIG` is unchanged.
-- Killing tests cover a Monday/Wednesday/Friday gap, Demo v0 and M3-01
-  gapped panels, and ffill insertion of a dropped weekday. Calendar-day
-  lag of one day points at the omitted weekday; source-row lag uses the
-  previous observed row.
-- Broader historical windows, calendar-alignment infrastructure, and
-  adjustment-event checks remain later Milestone 3 layers. No private
-  data, calendars, or new cost engines.
+  A missing source row remains an omitted observation. Those demos keep
+  the supplied observed index. Frozen `DEMO_V0_CONFIG` is unchanged.
+- Killing tests cover a Monday/Wednesday/Friday gap and Demo v0 and M3-01
+  gapped panels. Calendar-day lag of one day points at the omitted weekday;
+  source-row lag uses the previous observed row.
+- Broader historical windows, calendar-alignment infrastructure, invented-
+  session detection, and adjustment-event checks remain later Milestone 3
+  layers. No private data, calendars, or new cost engines.
 
 ## 2026-09-16 - M3-02 zero-volume and missing-bar refusal
 

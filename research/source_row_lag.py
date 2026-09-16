@@ -1,8 +1,8 @@
 """Observed source-row lag helpers for Demo v0 and the M3-01 demo.
 
 Lag counts observed source rows in the supplied index. The demos keep that
-index and refuse silent bar insertion. A missing source row remains an
-omitted observation.
+index. A missing source row remains an omitted observation. Detecting
+invented sessions remains later calendar-alignment work.
 """
 
 from __future__ import annotations

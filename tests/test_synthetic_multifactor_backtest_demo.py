@@ -212,7 +212,8 @@ def test_report_records_timing_cost_and_required_claims(tmp_path: Path) -> None:
     assert "zero volume is refused" in report_text
     assert "observed source rows" in report_text
     assert "omitted observation" in report_text
-    assert "Silent bar insertion is refused" in report_text
+    assert "supplied observed index" in report_text
+    assert "calendar-alignment" in report_text
     assert result.backtest_result.assumptions["execution_timing"] == TIMING_CONTRACT
     assert result.backtest_result.assumptions["transaction_cost_bps"] == 10.0
     assert result.backtest_result.assumptions["slippage_bps"] == 0.0
@@ -620,22 +621,22 @@ def test_multifactor_demo_lag_uses_previous_observed_source_row(
     )
 
 
-def test_multifactor_demo_refuses_silent_source_row_insertion(
+def test_multifactor_demo_refuses_extra_price_rows_versus_configured_periods(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     config = _short_config()
     prices = generate_synthetic_prices(demo._price_config(config))
-    hole = prices.index[6]
-    gapped = prices.drop(index=hole)
-    inserted = gapped.reindex(prices.index).ffill()
-    run_config = replace(config, periods=len(gapped))
+    extra = prices.reindex(
+        prices.index.append(pd.DatetimeIndex([prices.index[-1] + pd.Timedelta(days=1)]))
+    )
+    run_config = replace(config, periods=len(prices))
 
-    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: inserted)
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: extra)
     report_path = tmp_path / "report.md"
     attempt_log_path = tmp_path / "attempts.jsonl"
 
-    with pytest.raises(ValueError, match="source rows"):
+    with pytest.raises(ValueError, match="must keep .* source rows"):
         run_synthetic_multifactor_backtest_demo(
             config=run_config,
             report_path=report_path,
@@ -645,4 +646,5 @@ def test_multifactor_demo_refuses_silent_source_row_insertion(
     assert not report_path.exists()
     records = load_attempt_records(attempt_log_path)
     assert [record["status"] for record in records] == ["started", "failure"]
+    assert "must keep" in records[1]["error_message"]
     assert "source rows" in records[1]["error_message"]
