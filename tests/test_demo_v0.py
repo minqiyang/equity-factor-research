@@ -93,6 +93,8 @@ def test_demo_v0_writes_comparison_report_claims(tmp_path: Path) -> None:
     assert "All-Attempt Case Logging" in report_text
     assert "legacy diagnostic" in report_text
     assert "zero volume is refused" in report_text
+    assert "supplied price series only" in report_text
+    assert "cash-dividend overlay" in report_text
     assert "observed source rows" in report_text
     assert "omitted observation" in report_text
     assert "supplied observed index" in report_text
@@ -114,6 +116,7 @@ def test_demo_v0_source_stays_synthetic_only() -> None:
     assert "require_complete_price_bars" in source
     assert "require_positive_volume_bars" in source
     assert "require_observed_source_index" in source
+    assert "refuse_cash_dividend_overlay" in source
     assert "DEMO_SIGNAL_LAG_PERIODS" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
@@ -423,6 +426,28 @@ def test_demo_v0_refuses_extra_price_rows_versus_configured_periods(
     assert [record["status"] for record in records] == ["started", "failure"]
     assert "must keep" in records[1]["error_message"]
     assert "source rows" in records[1]["error_message"]
+
+
+def test_demo_v0_refuses_cash_dividend_overlay(tmp_path: Path) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(config)
+    cash_dividends = pd.DataFrame(2.0, index=prices.index, columns=prices.columns)
+    report_path = tmp_path / "demo_v0.md"
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+
+    with pytest.raises(ValueError, match="cash_dividends overlay"):
+        run_demo_v0(
+            config=config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+            cash_dividends=cash_dividends,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "cash_dividends overlay" in records[1]["error_message"]
+    assert "PIT-007" in records[1]["error_message"]
 
 
 def test_demo_v0_accepts_strictly_positive_volume(tmp_path: Path) -> None:

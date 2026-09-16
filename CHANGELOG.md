@@ -17,6 +17,12 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-04 PIT-007 tests for Demo v0 and the M3-01 three-factor backtest
+  demo: held returns use the supplied price series only
+  (`current / previous - 1`), and a separate cash-dividend overlay on that
+  series is refused. Frozen Demo v0 config is unchanged. No corporate-action
+  engine was added. Event-level dividend and split reconciliation remains
+  later Milestone 3/4 work.
 - M3-03 source-row lag tests for Demo v0 and the M3-01 three-factor
   backtest demo: signal lag counts observed source rows in the bounded
   accounting slice, and a missing source row remains an omitted

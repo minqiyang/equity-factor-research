@@ -41,6 +41,7 @@ from research.bar_integrity import (
     require_complete_price_bars,
     require_positive_volume_bars,
 )
+from research.dividend_policy import refuse_cash_dividend_overlay
 from research.source_row_lag import (
     DEMO_SIGNAL_LAG_PERIODS,
     require_observed_source_index,
@@ -197,6 +198,7 @@ def run_synthetic_multifactor_backtest_demo(
     report_path: Path = DEFAULT_REPORT_PATH,
     attempt_log_path: Path = DEFAULT_ATTEMPT_LOG_PATH,
     volume: pd.DataFrame | None = None,
+    cash_dividends: object = None,
 ) -> SyntheticMultifactorBacktestDemoResult:
     """Run the synthetic three-factor backtest demo and record the attempt."""
 
@@ -207,7 +209,11 @@ def run_synthetic_multifactor_backtest_demo(
     )
     attempt_id = start_record["attempt_id"]
     try:
-        pipeline = _run_pipeline(config=config, volume=volume)
+        pipeline = _run_pipeline(
+            config=config,
+            volume=volume,
+            cash_dividends=cash_dividends,
+        )
         result = SyntheticMultifactorBacktestDemoResult(
             **pipeline,
             report_path=Path(report_path),
@@ -339,6 +345,7 @@ This report was generated from synthetic data only. It does not use private data
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
+- Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. Event-level dividend and split reconciliation remains later Milestone 3/4 work.
 - Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work.
 - All-Attempt Case Logging records every invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seeds and remain workflow diagnostics only.
@@ -361,6 +368,7 @@ def _run_pipeline(
     *,
     config: SyntheticMultifactorBacktestConfig,
     volume: pd.DataFrame | None = None,
+    cash_dividends: object = None,
 ) -> dict[str, Any]:
     _validate_config(config)
 
@@ -371,6 +379,7 @@ def _run_pipeline(
         expected_assets=config.asset_count,
     )
     prices = require_observed_source_index(prices)
+    refuse_cash_dividend_overlay(cash_dividends)
     if volume is not None:
         require_positive_volume_bars(volume, prices=prices)
     raw_factors = generate_synthetic_factor_panels(_factor_config(config))

@@ -210,6 +210,8 @@ def test_report_records_timing_cost_and_required_claims(tmp_path: Path) -> None:
     assert "undivided" in report_text
     assert "All-Attempt Case Logging" in report_text
     assert "zero volume is refused" in report_text
+    assert "supplied price series only" in report_text
+    assert "cash-dividend overlay" in report_text
     assert "observed source rows" in report_text
     assert "omitted observation" in report_text
     assert "supplied observed index" in report_text
@@ -232,6 +234,7 @@ def test_source_stays_synthetic_only() -> None:
     assert "require_complete_price_bars" in source
     assert "require_positive_volume_bars" in source
     assert "require_observed_source_index" in source
+    assert "refuse_cash_dividend_overlay" in source
     assert "DEMO_SIGNAL_LAG_PERIODS" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
@@ -619,6 +622,28 @@ def test_multifactor_demo_lag_uses_previous_observed_source_row(
         result.backtest_result.assumptions["signal_lag_periods"]
         == DEMO_SIGNAL_LAG_PERIODS
     )
+
+
+def test_multifactor_demo_refuses_cash_dividend_overlay(tmp_path: Path) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(demo._price_config(config))
+    cash_dividends = pd.DataFrame(2.0, index=prices.index, columns=prices.columns)
+    report_path = tmp_path / "report.md"
+    attempt_log_path = tmp_path / "attempts.jsonl"
+
+    with pytest.raises(ValueError, match="cash_dividends overlay"):
+        run_synthetic_multifactor_backtest_demo(
+            config=config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+            cash_dividends=cash_dividends,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "cash_dividends overlay" in records[1]["error_message"]
+    assert "PIT-007" in records[1]["error_message"]
 
 
 def test_multifactor_demo_refuses_extra_price_rows_versus_configured_periods(

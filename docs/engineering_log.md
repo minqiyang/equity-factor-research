@@ -1,5 +1,19 @@
 # Engineering Log
 
+## 2026-09-16 - M3-04 PIT-007 no dividend double count
+
+- Added `research/dividend_policy.py` used by `python -m research.demo_v0`
+  and `python -m research.synthetic_multifactor_backtest_demo`.
+- Held returns use the supplied price series only (`current / previous - 1`).
+  A separate cash-dividend overlay on that series is refused. Frozen
+  `DEMO_V0_CONFIG` is unchanged. No corporate-action engine was added.
+- Killing tests cover a total-return / already-adjusted flat series: the
+  held gross return matches the price ratio and stays below the
+  price-ratio-plus-cash-dividend figure. Demo v0 and M3-01 refuse a
+  supplied cash-dividend overlay and keep the comparison report unwritten.
+- Event-level dividend and split reconciliation remains later Milestone 3/4
+  work. No private data, calendars, or new cost engines.
+
 ## 2026-09-16 - Execute determined owner resolution without a second prompt
 
 - Owner selected resolution 2 for PR #210 finding `M3-03-R1`: narrow the
