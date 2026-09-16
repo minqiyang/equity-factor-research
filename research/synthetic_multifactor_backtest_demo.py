@@ -41,6 +41,10 @@ from research.bar_integrity import (
     require_complete_price_bars,
     require_positive_volume_bars,
 )
+from research.source_row_lag import (
+    DEMO_SIGNAL_LAG_PERIODS,
+    require_observed_source_index,
+)
 from research.synthetic_momentum_demo import (
     SyntheticDemoConfig,
     build_equal_weight_benchmark,
@@ -105,7 +109,7 @@ class SyntheticMultifactorBacktestConfig:
     top_n: int = 5
     transaction_cost_bps: float = 10.0
     slippage_bps: float = 0.0
-    signal_lag_periods: int = 1
+    signal_lag_periods: int = DEMO_SIGNAL_LAG_PERIODS
     periods_per_year: int = 252
 
 
@@ -290,7 +294,7 @@ This report was generated from synthetic data only. It does not use private data
 - Rebalance frequency: `{config.rebalance_frequency}`
 - Selected assets per rebalance: `{config.top_n}`
 - Timing contract: `{result.backtest_result.assumptions["execution_timing"]}`
-- Signal lag periods: `{config.signal_lag_periods}`
+- Signal lag: `{config.signal_lag_periods}` observed source rows (`{result.backtest_result.assumptions["signal_lag_unit"]}`)
 - Turnover model: `{result.backtest_result.assumptions["turnover_model"]}` under the existing undivided absolute-trade convention (`{result.backtest_result.assumptions["trade_weight_model"]}`)
 - Transaction cost: `{config.transaction_cost_bps:.2f}` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
 - Slippage: `{config.slippage_bps:.2f}` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
@@ -335,6 +339,7 @@ This report was generated from synthetic data only. It does not use private data
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
+- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work.
 - All-Attempt Case Logging records every invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seeds and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
@@ -365,6 +370,7 @@ def _run_pipeline(
         expected_rows=config.periods,
         expected_assets=config.asset_count,
     )
+    prices = require_observed_source_index(prices)
     if volume is not None:
         require_positive_volume_bars(volume, prices=prices)
     raw_factors = generate_synthetic_factor_panels(_factor_config(config))

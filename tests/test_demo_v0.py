@@ -1,4 +1,5 @@
 import ast
+from dataclasses import replace
 import inspect
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from research.demo_v0 import (
     main,
     run_demo_v0,
 )
+from research.source_row_lag import DEMO_SIGNAL_LAG_PERIODS, SIGNAL_LAG_UNIT
 from research.synthetic_momentum_demo import (
     SyntheticDemoConfig,
     generate_synthetic_prices,
@@ -91,8 +93,14 @@ def test_demo_v0_writes_comparison_report_claims(tmp_path: Path) -> None:
     assert "All-Attempt Case Logging" in report_text
     assert "legacy diagnostic" in report_text
     assert "zero volume is refused" in report_text
+    assert "observed source rows" in report_text
+    assert "omitted observation" in report_text
+    assert "supplied observed index" in report_text
+    assert "calendar-alignment" in report_text
     assert result.holdings.shape[1] == 8
     assert result.assumptions["execution_timing"] == TIMING_CONTRACT
+    assert result.assumptions["signal_lag_periods"] == DEMO_SIGNAL_LAG_PERIODS
+    assert result.assumptions["signal_lag_unit"] == SIGNAL_LAG_UNIT
     assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
 
 
@@ -105,6 +113,8 @@ def test_demo_v0_source_stays_synthetic_only() -> None:
     assert "run_long_only_backtest" in source
     assert "require_complete_price_bars" in source
     assert "require_positive_volume_bars" in source
+    assert "require_observed_source_index" in source
+    assert "DEMO_SIGNAL_LAG_PERIODS" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
     assert "place_order" not in source
@@ -339,6 +349,80 @@ def test_demo_v0_refuses_zero_volume_without_silent_repair(tmp_path: Path) -> No
     records = load_attempt_records(attempt_log_path)
     assert [record["status"] for record in records] == ["started", "failure"]
     assert "zero volume is refused" in records[1]["error_message"]
+
+
+def test_demo_v0_lag_uses_previous_observed_source_row(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    full_config = SyntheticDemoConfig(
+        seed=123,
+        asset_count=8,
+        periods=40,
+        lookback_periods=10,
+        skip_periods=2,
+        rebalance_frequency="D",
+        top_n=3,
+        transaction_cost_bps=10.0,
+        slippage_bps=0.0,
+        periods_per_year=252,
+    )
+    full_prices = generate_synthetic_prices(full_config)
+    hole = next(
+        date
+        for date in full_prices.index[15:-1]
+        if full_prices.index[full_prices.index.get_loc(date) + 1]
+        == date + pd.Timedelta(days=1)
+    )
+    gapped_prices = full_prices.drop(index=hole)
+    run_config = replace(full_config, periods=len(gapped_prices))
+    after = gapped_prices.index[gapped_prices.index.searchsorted(hole)]
+    before = gapped_prices.index[gapped_prices.index.get_loc(after) - 1]
+
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda config: gapped_prices)
+
+    result = run_demo_v0(
+        config=run_config,
+        report_path=tmp_path / "demo_v0.md",
+        attempt_log_path=tmp_path / "demo_v0_attempts.jsonl",
+    )
+
+    ledger_row = next(row for row in result.timing_ledger if row.ledger_date == after)
+    assert hole not in gapped_prices.index
+    assert (after - before) > pd.Timedelta(days=1)
+    assert after - pd.Timedelta(days=1) == hole
+    assert ledger_row.signal_source_date == before
+    assert result.assumptions["signal_lag_unit"] == SIGNAL_LAG_UNIT
+    assert result.assumptions["signal_lag_periods"] == DEMO_SIGNAL_LAG_PERIODS
+
+
+def test_demo_v0_refuses_extra_price_rows_versus_configured_periods(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(config)
+    extra = prices.reindex(
+        prices.index.append(pd.DatetimeIndex([prices.index[-1] + pd.Timedelta(days=1)]))
+    )
+    run_config = replace(config, periods=len(prices))
+
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: extra)
+    report_path = tmp_path / "demo_v0.md"
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+
+    with pytest.raises(ValueError, match="must keep .* source rows"):
+        run_demo_v0(
+            config=run_config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "must keep" in records[1]["error_message"]
+    assert "source rows" in records[1]["error_message"]
 
 
 def test_demo_v0_accepts_strictly_positive_volume(tmp_path: Path) -> None:

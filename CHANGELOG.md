@@ -17,13 +17,19 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-03 source-row lag tests for Demo v0 and the M3-01 three-factor
+  backtest demo: signal lag counts observed source rows in the bounded
+  accounting slice, and a missing source row remains an omitted
+  observation. Those demos keep the supplied observed index. Detecting
+  invented sessions remains later calendar-alignment work. Frozen Demo v0
+  config is unchanged. Remaining Milestone 3 work covers broader windows,
+  calendar-alignment infrastructure, and adjustment checks.
 - M3-02 zero-volume and missing-bar refusal for Demo v0 and the M3-01
   three-factor backtest demo: complete finite strictly positive price bars
   are required, a supplied volume panel must be strictly positive, and
   killing tests cover missing, dropped, zero, and zero-volume bars without
   silent fill, clip, drop, or repair. Frozen Demo v0 config is unchanged.
-  The local CSV loader still accepts zero volume as loader-valid. Remaining
-  Milestone 3 work covers date-gap calendar alignment and adjustment checks.
+  The local CSV loader still accepts zero volume as loader-valid.
 - M3-01 exploratory synthetic three-factor backtest:
   `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0
   synthetic price dates and assets, the existing factor generator and
