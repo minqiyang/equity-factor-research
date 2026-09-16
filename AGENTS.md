@@ -1,7 +1,8 @@
 # AI Agent Rules
 
 Canonical responsibility: repository invariants, authority boundaries,
-research-safety review standards, and writing-style rules.
+research-safety review standards, writing-style rules, and ablation after
+completed design or implementation.
 
 ## Authority And Scope
 
@@ -213,6 +214,20 @@ itself is a hold or unblock condition.
 - Every finding must cite the file and claim, code/test evidence, mismatch and
   impact, plus a recommended fix or targeted test.
 
+## Ablation
+
+After every completed design or implementation, run an ablation experiment.
+Remove unnecessary abstractions, speculative design, and surplus code. Keep the
+simplest implementation that still meets current requirements.
+
+Preserve the baseline. Test each removal in isolation. Compare behavior,
+correctness, and relevant costs. Keep justified simplifications. Restore
+regressions.
+
+Keep necessary tests, validation, and guards. Record removals, retained
+necessities, and known limitations. A supported no-change outcome is valid.
+Ablation revalidation is not a recursive ablation loop.
+
 ## Engineering And Change Discipline
 
 - State scope before editing; afterward report files, tests, caveats, and next gate.
@@ -223,15 +238,8 @@ itself is a hold or unblock condition.
 - Grow the system in working layers: start with the smallest end-to-end
   version, then add capabilities without trading a working product for
   unfinished complexity.
-- After every completed design or staged implementation, conduct ablation
-  experiments to remove unnecessary abstractions, speculative design, and
-  superfluous code, aiming for the simplest implementation sufficient for current
-  requirements. Preserve baseline; test removals in isolation, compare behavior,
-  correctness, and relevant costs, keep justified simplifications, and restore
-  regressions. Never drop necessary tests, validation, or guards, and never conceal
-  failures just to reduce line count. Record removals, retained necessities, and
-  known limitations. A supported no-change outcome is valid. Ablation revalidation
-  itself is not an infinite recursive ablation loop.
+- Ablation after each completed design or implementation follows the Ablation
+  section.
 - Keep components modular and concerns clearly separated; prefer narrow modules,
   clear pandas, and deterministic tests.
 - Prefer established, well-maintained libraries when they reduce complexity or

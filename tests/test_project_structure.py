@@ -301,7 +301,8 @@ def test_governance_documents_define_unique_policy_owners() -> None:
     owners = {
         "agents": (
             "Canonical responsibility: repository invariants, authority boundaries, "
-            "research-safety review standards, and writing-style rules."
+            "research-safety review standards, writing-style rules, and ablation after "
+            "completed design or implementation."
         ),
         "controller": (
             "Canonical responsibility: staged workflow state transitions, external "
@@ -327,7 +328,11 @@ def test_governance_documents_define_unique_policy_owners() -> None:
                 assert marker not in other_text
 
     exclusive_sections = {
-        "agents": ["Authority And Scope", "Writing Style And Syntax"],
+        "agents": [
+            "Authority And Scope",
+            "Writing Style And Syntax",
+            "Ablation",
+        ],
         "controller": [
             "External Authorization Gate",
             "Predecessor PR Gate",
@@ -7228,6 +7233,19 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
     assert "routing_table.json" in review_lifecycle
     assert "## Predecessor PR Gate" in controller
     assert "## Protected Merge Eligibility" in controller
+
+
+def test_agents_ablation_section_runs_after_each_completed_delivery() -> None:
+    agents = (PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    ablation = " ".join(_markdown_section(agents, "Ablation").split())
+
+    assert "After every completed design or implementation" in ablation
+    assert "run an ablation experiment" in ablation
+    assert "simplest implementation that still meets current requirements" in (
+        ablation
+    )
+    assert "Preserve the baseline" in ablation
+    assert "A supported no-change outcome is valid" in ablation
 
 
 def test_staged_quant_workflow_skill_is_a_thin_router() -> None:

@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `AGENTS.md` has a first-class Ablation section: after every completed design
+  or implementation, run an ablation experiment and keep the simplest code that
+  still meets current requirements.
 - `docs/codex_long_running_controller.md` keeps this repository's GitHub PR
   lifecycle (Draft/Ready, predecessor gate, exact-head review wait, protected
   merge). Reviewer routing, quota rotation, and named-model seats live in the
