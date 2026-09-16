@@ -1,7 +1,7 @@
 # AI Agent Rules
 
-Canonical responsibility: repository invariants, authority boundaries, and
-research-safety review standards.
+Canonical responsibility: repository invariants, authority boundaries,
+research-safety review standards, and writing-style rules.
 
 ## Authority And Scope
 
@@ -19,8 +19,13 @@ research-safety review standards.
 - Lifecycle authorization never covers another PR, scope expansion, auto-merge,
   administrative or protection bypass, deployment, private data, credentials,
   brokerage, or destructive action.
-- Local-edit authorization is not publication authorization; approval for a
-  named PR or remediation does not expand its stage or file scope.
+- Approval for a named PR or remediation does not expand its stage or file
+  scope. The owner grants standing same-change publication: completing an
+  owner-requested in-scope repository change is explicit action-and-scope
+  authorization for that change's ordinary feature-branch publication and
+  same-PR protected lifecycle through eligible normal merge. A higher-level
+  STOP or narrowed request remains a stop. Asking the owner for a second 建PR
+  or merge prompt after that completion is a P1 process failure.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
@@ -40,8 +45,10 @@ research-safety review standards.
   (STANDARD lane requires 1 fresh independent reviewer, fresh Grok latest XHigh;
   CRITICAL lane requires 2 fresh independent reviewers, fresh Grok latest XHigh
   plus GPT Astra latest High / AUDIT). Review is read-only on a clean root at the
-  exact current head, never the producer worktree. The current owner no-GPT /
-  lsgz:1 exception is session-scoped, not the permanent default.
+  exact current head, never the producer worktree. Required review runs in a new
+  Herdr tab or pane opened from the coordinator workspace; a coordinator-session
+  hidden `codex exec review` is not a visible review seat. The current owner
+  no-GPT / lsgz:1 exception is session-scoped, not the permanent default.
 - After two completed formal reviews on the same PR still report P1 or P2,
   stop the review-and-fix loop. Dispatch a fresh Grok latest session and a fresh
   Gemini latest / Antigravity session to analyze the whole PR and current tree,
@@ -53,8 +60,34 @@ research-safety review standards.
   be fixed. If yes, Grok Extra High implements; if no, the coordinator records
   ignore/accept. Do not resume an unbounded review loop.
 
+## Writing Style And Syntax
+
+This section binds every model and harness working in this repository,
+including Codex, Grok Build, Gemini, Pi, and any later replacement.
+Newly authored explanatory prose, comments, reports, and documentation
+use this style. Research-safety invariants and authority prohibitions
+keep their existing wording.
+
+- Direct affirmative construction: state strictly what things are.
+  Define concepts using direct predicates (subject + verb +
+  object/predicate).
+- Definition by negation is banned. False-dichotomy templates are
+  banned: "not just X, but Y"; "not merely X, but rather Y";
+  "it is not about X, it is about Y". Strawmen and
+  pseudo-philosophical antithesis used to make an idea sound deeper
+  are banned.
+- Assertive tone: the first clause states the core definition or
+  conclusion.
+- When a Mermaid diagram or other visualization shows the structure more
+  clearly than prose, use that diagram.
+
 ## Startup And Sources
 
+- Live Herdr+Pi coordination standard is mandatory. Before dispatch or review,
+  read both files in `Codex/Standards/herdr_pi_coordinator_v7_two_file/`:
+  `coordinator.md` and `routing_table.json`. Those files own topology, lanes,
+  routing, review seats, and visible-tab review. Do not load
+  `Codex/standards/archive/`.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
@@ -126,12 +159,13 @@ apology. Acknowledge the concrete failure, record a durable rule so it does
 not recur, then continue the still-authorized task unless the correction
 itself is a hold or unblock condition.
 
-- Record authority and research-safety invariants here. Record the incident
+- Record authority, research-safety, and writing-style invariants here. Record the incident
   in `docs/engineering_log.md`. Operational review, quota, merge-wait, and Herdr
   tab-cleanup steps live in `docs/codex_long_running_controller.md`.
 - Rank severity. Skipping a required live availability check is P1 process
   failure. Skipping the required pre-round Herdr tab inspection is P1 process
-  failure.
+  failure. Asking the owner to type 建PR or merge after an owner-requested
+  in-scope repository change is already complete is a P1 process failure.
 - Before starting the next round of Herdr work, inspect live tabs. Close only
   execution tabs whose process is inactive, required outputs are saved and
   hash-verified, write responsibility is released, and the tab will not be
@@ -145,10 +179,12 @@ itself is a hold or unblock condition.
   blocker, a necessary owner decision, or additional authority. When the owner
   explicitly directs a STOP boundary after an authorized task, checks, and
   version management, that explicit stop directive governs; do not continue into
-  unauthorized implementation or data tasks. A plan does not authorize push, PR
-  creation or merge, private data access, new paid services, credentials, or
-  trading. Do not end a turn merely on dispatch acknowledgment while delegated
-  work is outstanding.
+  unauthorized implementation or data tasks. Completing an owner-requested
+  in-scope repository change includes ordinary feature-branch publication, the
+  PR for that same change, required checks and review, and eligible normal
+  merge. Private data access, new paid services, credentials, and trading stay
+  outside that standing publication path. Do not end a turn merely on dispatch
+  acknowledgment while delegated work is outstanding.
 - Do not end the coordinator process while an authorized PR is waiting for its
   exact-head review body. Keep the session alive and re-check until that body
   exists (pass, findings, or an explicit current limit). Timeout is not a review

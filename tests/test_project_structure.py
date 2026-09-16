@@ -301,7 +301,7 @@ def test_governance_documents_define_unique_policy_owners() -> None:
     owners = {
         "agents": (
             "Canonical responsibility: repository invariants, authority boundaries, "
-            "and research-safety review standards."
+            "research-safety review standards, and writing-style rules."
         ),
         "controller": (
             "Canonical responsibility: staged workflow state transitions, external "
@@ -327,7 +327,7 @@ def test_governance_documents_define_unique_policy_owners() -> None:
                 assert marker not in other_text
 
     exclusive_sections = {
-        "agents": ["Authority And Scope"],
+        "agents": ["Authority And Scope", "Writing Style And Syntax"],
         "controller": [
             "External Authorization Gate",
             "Predecessor PR Gate",

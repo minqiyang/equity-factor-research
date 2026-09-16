@@ -76,7 +76,9 @@ destructive operation must satisfy that boundary.
 Apply the [repository authority boundary](../AGENTS.md#authority-and-scope) to
 external, sensitive, or destructive operations. Workflow eligibility and
 successful checks do not grant authority. Without explicit action-and-scope
-authorization, stop after local validation.
+authorization, stop after local validation. The owner standing same-change
+publication rule in `AGENTS.md` is that explicit authorization for the matching
+PR.
 
 When the same-PR lifecycle authorization defined in `AGENTS.md` is current,
 apply the lifecycle below to that PR. Otherwise, stop after local validation and

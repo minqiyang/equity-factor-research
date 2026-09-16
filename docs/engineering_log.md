@@ -1,5 +1,30 @@
 # Engineering Log
 
+## 2026-09-16 - Mandatory live coordination standard and visible Herdr review
+
+- Owner correction: every coordinator and delegated worker reads the live
+  two-file operating card in `Codex/Standards/herdr_pi_coordinator_v7_two_file/`
+  (`coordinator.md`, `routing_table.json`) before dispatch or review. Required
+  PR review runs in a new Herdr tab or pane from the coordinator workspace.
+  GitHub Code Review remains retired. Coordinator-session hidden `codex exec
+  review` is not a visible review seat. Reviewers do not run `herdr`.
+- Incident: PR #205 review ran as `codex exec review` inside the coordinator
+  session, then a later tabbed Codex session attempted `herdr tab list`.
+- Continuation invariant is in `AGENTS.md` Startup And Sources and the review
+  paragraph.
+
+## 2026-09-15 - Standing publication after in-scope completion
+
+- Owner correction: after an owner-requested in-scope repository change is
+  complete, the coordinator opens the PR, completes required checks and review,
+  and performs the eligible protected merge. Asking the owner to type 建PR or
+  merge is a P1 process failure. Herdr plus Pi coordination runs that lifecycle
+  without continuous owner supervision.
+- Incident: after writing the affirmative-style rule into `AGENTS.md`, work
+  stopped at "reply 建PR" instead of publishing.
+- Continuation invariant is in `AGENTS.md` Authority And Scope and Owner
+  Corrections. Mermaid/visualization guidance is in Writing Style And Syntax.
+
 ## 2026-09-15 - PROSE-007 Public and Private Consumer Consistency
 
 - Executed PROSE-007 public and private consumer consistency corrections under
