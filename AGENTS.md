@@ -1,7 +1,7 @@
 # AI Agent Rules
 
-Canonical responsibility: repository invariants, authority boundaries, and
-research-safety review standards.
+Canonical responsibility: repository invariants, authority boundaries,
+research-safety review standards, and writing-style rules.
 
 ## Authority And Scope
 
@@ -52,6 +52,25 @@ research-safety review standards.
   Grok latest and Antigravity/Gemini latest judge whether those findings should
   be fixed. If yes, Grok Extra High implements; if no, the coordinator records
   ignore/accept. Do not resume an unbounded review loop.
+
+## Writing Style And Syntax
+
+This section binds every model and harness working in this repository,
+including Codex, Grok Build, Gemini, Pi, and any later replacement.
+Newly authored explanatory prose, comments, reports, and documentation
+use this style. Research-safety invariants and authority prohibitions
+keep their existing wording.
+
+- Direct affirmative construction: state strictly what things are.
+  Define concepts using direct predicates (subject + verb +
+  object/predicate).
+- Definition by negation is banned. False-dichotomy templates are
+  banned: "not just X, but Y"; "not merely X, but rather Y";
+  "it is not about X, it is about Y". Strawmen and
+  pseudo-philosophical antithesis used to make an idea sound deeper
+  are banned.
+- Assertive tone: the first clause states the core definition or
+  conclusion.
 
 ## Startup And Sources
 
@@ -126,7 +145,7 @@ apology. Acknowledge the concrete failure, record a durable rule so it does
 not recur, then continue the still-authorized task unless the correction
 itself is a hold or unblock condition.
 
-- Record authority and research-safety invariants here. Record the incident
+- Record authority, research-safety, and writing-style invariants here. Record the incident
   in `docs/engineering_log.md`. Operational review, quota, merge-wait, and Herdr
   tab-cleanup steps live in `docs/codex_long_running_controller.md`.
 - Rank severity. Skipping a required live availability check is P1 process
