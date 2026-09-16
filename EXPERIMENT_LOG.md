@@ -24,17 +24,22 @@ interpretation, factor promotion, a `RESEARCH_PASS`, or a holdout-independence
 claim. "Every configured case" is not evidence of complete trial accounting.
 
 Under the demo-first engineering discipline, All-Attempt Case Logging applies
-to Demo v0 runs: `python -m research.demo_v0` appends every attempted case,
-including failures, to `reports/demo_v0_attempts.jsonl` and writes the
-synthetic comparison report to `reports/demo_v0.md`. This
-lightweight diagnostic run logging is explicitly distinguished from the formal
-experiment/trial-ledger accounting required by charter Stage 4 /
+to Demo v0 runs and to the M3-01 exploratory three-factor backtest:
+`python -m research.demo_v0` appends every attempted case, including failures,
+to `reports/demo_v0_attempts.jsonl` and writes the synthetic comparison report
+to `reports/demo_v0.md`. `python -m research.synthetic_multifactor_backtest_demo`
+appends every attempted case, including failures and catchable interruptions,
+to `reports/synthetic_multifactor_backtest_demo_attempts.jsonl` and writes the
+synthetic comparison report to `reports/synthetic_multifactor_backtest_demo.md`.
+A start record is written before computation so incomplete attempts remain
+visible. This lightweight diagnostic run logging is explicitly distinguished
+from the formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy
-diagnostics and are not accepted Demo v0 evidence. Demo v0 All-Attempt records
-support reproducible demo evidence and track
-non-blocking imperfections in the lightweight backlog; formal factor promotion
-remains reserved for Milestone 4.
+diagnostics and are not accepted Demo v0 evidence. `python -m research.synthetic_multifactor_workflow_demo`
+remains the feature-only workflow. All-Attempt records support reproducible
+demo evidence and track non-blocking imperfections in the lightweight backlog;
+formal factor promotion remains reserved for Milestone 4.
 
 ## Automated Synthetic Demo Logs
 

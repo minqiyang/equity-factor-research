@@ -1,5 +1,26 @@
 # Engineering Log
 
+## 2026-09-16 - M3-01 synthetic three-factor backtest demo
+
+- Implemented `python -m research.synthetic_multifactor_backtest_demo`.
+- Reused Demo v0 synthetic price dates and assets, the existing factor
+  generator and 0.50 / 0.30 / 0.20 weights, existing winsorize/z-score/
+  `combine_factors` helpers, and the existing long-only backtester
+  (monthly top-five, 10 bps, 0 bps slippage labeled diagnostic,
+  `after_close_signal_next_observed_close_v1`).
+- All-Attempt Case Logging writes a `started` record before computation,
+  then appends success, failure, or catchable interruption. Incomplete
+  attempts remain visible.
+- Mismatched price/factor axes and nonfinite factor values are refused.
+  Silent fill, reindex, clip, drop, or repair is not applied.
+- `python -m research.demo_v0` remains the official Demo v0 command.
+  `python -m research.synthetic_multifactor_workflow_demo` remains the
+  feature-only workflow.
+- The three synthetic panels are artificial quality, reversal, and
+  momentum fixtures. They are distinct from Demo v0 12-1 momentum and
+  from fundamentals. No profitability claim. No private data. No new
+  cost engines.
+
 ## 2026-09-16 - Unattended overnight continuation and Astra xhigh decisions
 
 - Owner instruction: during authorized unattended overnight work, keep executing
