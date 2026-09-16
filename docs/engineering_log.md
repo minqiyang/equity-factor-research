@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-09-15 - Standing publication after in-scope completion
+
+- Owner correction: after an owner-requested in-scope repository change is
+  complete, the coordinator opens the PR, completes required checks and review,
+  and performs the eligible protected merge. Asking the owner to type 建PR or
+  merge is a P1 process failure. Herdr plus Pi coordination runs that lifecycle
+  without continuous owner supervision.
+- Incident: after writing the affirmative-style rule into `AGENTS.md`, work
+  stopped at "reply 建PR" instead of publishing.
+- Continuation invariant is in `AGENTS.md` Authority And Scope and Owner
+  Corrections. Mermaid/visualization guidance is in Writing Style And Syntax.
+
 ## 2026-09-15 - PROSE-007 Public and Private Consumer Consistency
 
 - Executed PROSE-007 public and private consumer consistency corrections under

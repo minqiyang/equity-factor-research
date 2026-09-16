@@ -19,8 +19,11 @@ research-safety review standards, and writing-style rules.
 - Lifecycle authorization never covers another PR, scope expansion, auto-merge,
   administrative or protection bypass, deployment, private data, credentials,
   brokerage, or destructive action.
-- Local-edit authorization is not publication authorization; approval for a
-  named PR or remediation does not expand its stage or file scope.
+- Approval for a named PR or remediation does not expand its stage or file
+  scope. Completing an owner-requested in-scope repository change includes that
+  change's ordinary feature-branch publication and same-PR protected lifecycle
+  through eligible normal merge. Asking the owner for a second 建PR or merge
+  prompt after that completion is a P1 process failure.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
@@ -71,6 +74,8 @@ keep their existing wording.
   are banned.
 - Assertive tone: the first clause states the core definition or
   conclusion.
+- When a Mermaid diagram or other visualization shows the structure more
+  clearly than prose, use that diagram.
 
 ## Startup And Sources
 
@@ -150,7 +155,8 @@ itself is a hold or unblock condition.
   tab-cleanup steps live in `docs/codex_long_running_controller.md`.
 - Rank severity. Skipping a required live availability check is P1 process
   failure. Skipping the required pre-round Herdr tab inspection is P1 process
-  failure.
+  failure. Asking the owner to type 建PR or merge after an owner-requested
+  in-scope repository change is already complete is a P1 process failure.
 - Before starting the next round of Herdr work, inspect live tabs. Close only
   execution tabs whose process is inactive, required outputs are saved and
   hash-verified, write responsibility is released, and the tab will not be
@@ -164,10 +170,12 @@ itself is a hold or unblock condition.
   blocker, a necessary owner decision, or additional authority. When the owner
   explicitly directs a STOP boundary after an authorized task, checks, and
   version management, that explicit stop directive governs; do not continue into
-  unauthorized implementation or data tasks. A plan does not authorize push, PR
-  creation or merge, private data access, new paid services, credentials, or
-  trading. Do not end a turn merely on dispatch acknowledgment while delegated
-  work is outstanding.
+  unauthorized implementation or data tasks. Completing an owner-requested
+  in-scope repository change includes ordinary feature-branch publication, the
+  PR for that same change, required checks and review, and eligible normal
+  merge. Private data access, new paid services, credentials, and trading stay
+  outside that standing publication path. Do not end a turn merely on dispatch
+  acknowledgment while delegated work is outstanding.
 - Do not end the coordinator process while an authorized PR is waiting for its
   exact-head review body. Keep the session alive and re-check until that body
   exists (pass, findings, or an explicit current limit). Timeout is not a review
