@@ -20,10 +20,12 @@ research-safety review standards, and writing-style rules.
   administrative or protection bypass, deployment, private data, credentials,
   brokerage, or destructive action.
 - Approval for a named PR or remediation does not expand its stage or file
-  scope. Completing an owner-requested in-scope repository change includes that
-  change's ordinary feature-branch publication and same-PR protected lifecycle
-  through eligible normal merge. Asking the owner for a second 建PR or merge
-  prompt after that completion is a P1 process failure.
+  scope. The owner grants standing same-change publication: completing an
+  owner-requested in-scope repository change is explicit action-and-scope
+  authorization for that change's ordinary feature-branch publication and
+  same-PR protected lifecycle through eligible normal merge. A higher-level
+  STOP or narrowed request remains a stop. Asking the owner for a second 建PR
+  or merge prompt after that completion is a P1 process failure.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
