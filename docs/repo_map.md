@@ -26,7 +26,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 
 ## Important Files
 
-- `AGENTS.md` (present): Canonical external-action authority boundary and repository invariants.
+- `AGENTS.md` (present): Canonical external-action authority boundary, repository invariants, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.
 - `docs/current_handoff.md` (present): Concise operational handoff with a timestamped checkpoint, blockers, and next safe action. Authority remains in AGENTS.md.
 - `docs/north_star.md` (present): Active North Star product aspiration and demo-first delivery principles; not an external-action authority source.
 - `docs/research_program_charter.md` (present): Preserved historical formal research evidence policy; not an external-action authority source or product delivery blocker.

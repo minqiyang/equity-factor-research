@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-09-16 - AGENTS.md reviewer routing belongs to coordination standard
+
+- Owner correction: `AGENTS.md` copied live reviewer seats, models, and
+  quota-rotation steps. That copy fought the Herdr+Pi coordination standard.
+- Durable rule: `AGENTS.md` owns repository invariants, research-safety review
+  standards, and writing style. The live files in
+  `Codex/Standards/herdr_pi_coordinator_v7_two_file/` own reviewer routing,
+  quota, and review-loop dispatch. Do not copy those seats into `AGENTS.md`.
+- GitHub Code Review remains retired. Formal review of this repository remains
+  valid only on a clean root at the exact current head, never the producer
+  worktree.
+
 ## 2026-09-16 - M3-04 PIT-007 no dividend double count
 
 - Added `research/dividend_policy.py` used by `python -m research.demo_v0`

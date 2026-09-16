@@ -7,6 +7,12 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Changed
+
+- `AGENTS.md` keeps repository invariants, research-safety review standards,
+  and writing style. Reviewer routing, quota rotation, and review-loop
+  dispatch live in the live Herdr+Pi coordination standard.
+
 ### Fixed
 
 - Demo v0 All-Attempt Case Logging now writes a start record before

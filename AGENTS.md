@@ -32,37 +32,14 @@ research-safety review standards, and writing-style rules.
   use a separate clean branch or worktree when the current tree is dirty.
 - Treat credentials, private data, licenses, account identifiers, and production
   systems as sensitive. Never store secrets or raw private data in the repo.
-- When ChatGPT/Codex CLI quota is exhausted, rotate to the next owner-designated
-  ChatGPT CLI account in private control before Fable or Grok. Do not skip the
-  remaining designated CLI account. Do not publish those addresses. Do not
-  logout until the replacement login can complete. Skipping that rotation and
-  jumping to Grok is a P1 process failure.
-- After each GPT Astra session, probe remaining weekly quota on the designated
-  Astra ChatGPT CLI account in private control. If remaining weekly quota is
-  below 15%, pause GPT Astra. If that designated account is not the live login,
-  pause GPT Astra until it can be probed. Do not publish account addresses.
 - Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
   review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
-  disabled. Required PR review follows the live coordinator V7.23 standard:
-  NORMAL lane has no mandatory formal review seat (coordinator verification);
-  STANDARD and CRITICAL reviewer routing remains table-owned in routing_table.json
-  (STANDARD lane requires 1 fresh independent reviewer, fresh Grok latest XHigh;
-  CRITICAL lane requires 2 fresh independent reviewers, fresh Grok latest XHigh
-  plus GPT Astra latest High / AUDIT). Review is read-only on a clean root at the
-  exact current head, never the producer worktree. Required review runs in a new
-  Herdr tab or pane opened from the coordinator workspace; a coordinator-session
-  hidden `codex exec review` is not a visible review seat. The current owner
-  no-GPT / lsgz:1 exception is session-scoped, not the permanent default.
-- After two completed formal reviews on the same PR still report P1 or P2,
-  stop the review-and-fix loop. Dispatch a fresh Grok latest session and a fresh
-  Gemini latest / Antigravity session to analyze the whole PR and current tree,
-  then the coordinator decides: escalate that task to EXPERT, keep fixing, or
-  accept/ignore the remaining reported P1/P2 when within authorized bounds.
-- If the coordinator chose keep-fixing and an in-scope fix lands, one additional
-  review of that new exact head is allowed. If that review still reports P1/P2,
-  Grok latest and Antigravity/Gemini latest judge whether those findings should
-  be fixed. If yes, Grok Extra High implements; if no, the coordinator records
-  ignore/accept. Do not resume an unbounded review loop.
+  disabled.
+- This file owns repository invariants, authority boundaries, research-safety
+  review standards, and writing style. The live Herdr+Pi coordination standard
+  owns reviewer routing, quota rotation, and review-loop dispatch.
+- A formal review of this repository is valid only on a clean root at the exact
+  current head, never the producer worktree.
 
 ## Writing Style And Syntax
 
@@ -87,10 +64,10 @@ keep their existing wording.
 
 ## Startup And Sources
 
-- Live Herdr+Pi coordination standard is mandatory. Before dispatch or review,
-  read both files in `Codex/Standards/herdr_pi_coordinator_v7_two_file/`:
-  `coordinator.md` and `routing_table.json`. Those files own topology, lanes,
-  routing, review seats, and visible-tab review. Do not load
+- Live Herdr+Pi coordination standard owns dispatch, lanes, reviewer routing,
+  quota, and visible-tab review. Before dispatch or review, read both files in
+  `Codex/Standards/herdr_pi_coordinator_v7_two_file/`: `coordinator.md` and
+  `routing_table.json`. Do not copy those seats into this file. Do not load
   `Codex/standards/archive/`.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
@@ -165,7 +142,8 @@ itself is a hold or unblock condition.
 
 - Record authority, research-safety, and writing-style invariants here. Record the incident
   in `docs/engineering_log.md`. Operational review, quota, merge-wait, and Herdr
-  tab-cleanup steps live in `docs/codex_long_running_controller.md`.
+  tab-cleanup steps live in `docs/codex_long_running_controller.md`. Reviewer
+  assignment lives in the live Herdr+Pi coordination standard.
 - Rank severity. Skipping a required live availability check is P1 process
   failure. Skipping the required pre-round Herdr tab inspection is P1 process
   failure. Asking the owner to type 建PR or merge after an owner-requested
@@ -184,9 +162,8 @@ itself is a hold or unblock condition.
   step in the same turn without stopping to request repeat permission. Continue
   through ordinary QA, review, and remediation waits. Authorized unattended
   overnight work keeps executing determined roadmap slices until a stop
-  condition. Decision-class questions go to GPT Astra xhigh. Stop only for a
-  genuine blocker, a large unresolvable owner-semantic choice, missing
-  authority, or additional authority. When the owner
+  condition. Stop only for a genuine blocker, a large unresolvable
+  owner-semantic choice, missing authority, or additional authority. When the owner
   explicitly directs a STOP boundary after an authorized task, checks, and
   version management, that explicit stop directive governs; do not continue into
   unauthorized implementation or data tasks. Completing an owner-requested
@@ -199,9 +176,6 @@ itself is a hold or unblock condition.
   exact-head review body. Keep the session alive and re-check until that body
   exists (pass, findings, or an explicit current limit). Timeout is not a review
   result.
-- Owner-authorized Antigravity child sessions start with session-only
-  `--dangerously-skip-permissions`. Do not persist that setting into global
-  `settings.json`.
 - Delivery methodology correction: avoid unbounded perfectionism. Prioritize
   shipping a small, demonstrable, presentable end-to-end version (Demo v0);
   record non-blocking imperfections and caveats in a lightweight backlog and
