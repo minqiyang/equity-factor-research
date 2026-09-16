@@ -99,16 +99,11 @@ re-enter this gate before acting on a different PR or changed scope.
 - Do not use GitHub Code Review. Keep GitHub Codex Automatic Review disabled.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI
-  stabilize on the final stable current head, conduct formal review under live
-  coordinator V7.23 standards: NORMAL lane has no mandatory formal review seat
-  (coordinator verification); STANDARD and CRITICAL reviewer routing remains
-  table-owned in routing_table.json (STANDARD lane requires 1 fresh independent
-  reviewer, fresh Grok latest XHigh; CRITICAL lane requires 2 fresh independent
-  reviewers, fresh Grok latest XHigh plus GPT Astra latest High / AUDIT). Local
-  Codex CLI review with GPT Astra latest High is used when GPT review is called.
-  The reviewer is read-only on a clean root at that exact head, never the producer
-  worktree. The current owner no-GPT / lsgz:1 exception is session-scoped, not
-  permanent policy.
+  stabilize on the final stable current head, conduct formal review under the
+  live Herdr+Pi coordination standard. Reviewer routing, lane seats, quota, and
+  review-loop dispatch live in `coordinator.md` and `routing_table.json`. The
+  reviewer is read-only on a clean root at that exact head, never the producer
+  worktree.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -119,18 +114,18 @@ re-enter this gate before acting on a different PR or changed scope.
 - Never repeat a request for an unchanged head. An actionable fix changes the
   head and requires validation, CI, and one new current-head review.
 - Count completed formal reviews that returned P1 or P2 on that PR. After two
-  such reviews, stop the review-and-fix loop. Open a fresh Grok latest session
-  and a fresh Gemini latest / Antigravity session on a clean read-only root,
-  covering the whole PR, exact head, open findings, and current contracts. Their
-  reports go to the coordinator. The coordinator then chooses, without inventing
-  new authority: EXPERT escalation for this task, continue in-scope fixes, or
-  owner-class acceptance/ignore of the remaining reported P1/P2 when the owner
-  has authorized that decision class.
+  such reviews, stop the review-and-fix loop. Dispatch the live coordination
+  standard's review-loop analysis on a clean read-only root, covering the whole
+  PR, exact head, open findings, and current contracts. Their reports go to the
+  coordinator. The coordinator then chooses, without inventing new authority:
+  EXPERT escalation for this task, continue in-scope fixes, or owner-class
+  acceptance/ignore of the remaining reported P1/P2 when the owner has
+  authorized that decision class.
 - After a keep-fixing decision and a landed in-scope fix, one additional formal
-  review of that new exact head is allowed. If it still reports P1/P2, Grok
-  latest and Antigravity/Gemini latest judge whether to fix. If yes, Grok
-  Extra High implements; if no, record ignore/accept. Do not resume an unbounded
-  review loop.
+  review of that new exact head is allowed. If it still reports P1/P2, the live
+  coordination standard's review-loop analysis judges whether to fix. If yes,
+  that standard's fixer route implements; if no, record ignore/accept. Do not
+  resume an unbounded review loop.
 - A safe actionable finding may be fixed locally inside the already-authorized
   scope. After publishing and verifying the remediation, reply with its evidence
   and resolve only the addressed thread; leave an unverified or disputed thread
@@ -140,7 +135,7 @@ re-enter this gate before acting on a different PR or changed scope.
   actionable finding from any review channel, including PR-level comments or
   independent audits that do not create a resolvable thread.
 - For review-required PRs, active review gates are satisfied by table-owned live
-  independent review reports (V7.23). The legacy requirement where a requested
+  independent review reports. The legacy requirement where a requested
   Codex review has completed on the exact current head via GitHub Code Review is
   retired, as GitHub `@codex review` is retired and not a valid review channel.
   (Retained historical compatibility note for unchanged test pins: "Pending,
@@ -149,42 +144,20 @@ re-enter this gate before acting on a different PR or changed scope.
   technically merge-eligible only when required exact-head independent reviews
   report no actionable findings, no review thread remains unresolved, and all
   required checks and formal reviews pass.
-- Before claiming Codex, another provider, a model, or a quota is unavailable,
-  probe it live in that same turn. Do not reuse an older pull request's limit
-  message.
-- On live ChatGPT/Codex CLI quota exhaustion, rotate every owner-designated
-  ChatGPT CLI account in private control before advancing DESIGN quota order to
-  Fable or Grok. Do not put those addresses in this repository. Do not `codex
-  logout` unless the replacement login can be completed in the same turn.
-  Skipping a remaining designated CLI account is a P1 process failure.
-- After each GPT Astra session, probe remaining weekly quota on the designated
-  Astra ChatGPT CLI account in private control. Remaining weekly quota below 15%
-  pauses GPT Astra. If that designated account is not the live login, pause GPT
-  Astra until it can be probed. Do not publish account addresses.
+- Before claiming a provider, model, or quota is unavailable, probe it live in
+  that same turn. Do not reuse an older pull request's limit message.
 - Merge wait requires the actual exact-head formal review body: pass or
   findings. A silent wait that times out is not evidence of unavailability.
   GitHub Code Review usage-limit is irrelevant because that channel is retired.
-- A fallback seat, model, or equivalent hosted gate is allowed only after that
-  live probe fails in the current turn.
 - Technical eligibility alone never grants merge authority; full-lifecycle or
   explicit merge authorization must also be current for that same PR and scope.
 
 ## Post-Delivery Ablation
 
-After every completed design or staged implementation candidate is ready, and
-before final acceptance, conduct ablation experiments to identify and remove
-unnecessary abstractions, speculative architecture, and redundant code, aiming
-for the simplest implementation sufficient for current requirements.
-
-Preserve baseline and run removals in isolation in a separate candidate under
-single-writer rules. Compare behavior, correctness, and relevant performance or
-cost against acceptance criteria. Retain justified simplifications and revert
-regressions. Never drop necessary tests, guards, or validation just to reduce line
-count. Record all experiments, retained simplifications, and known limitations.
-A supported no-change outcome is valid. Revalidation of the ablated candidate
-follows the lane's ordinary QA and review gates; ablation revalidation itself
-does not trigger a recursive ablation loop. The ablation rule remains
-durable for qualifying future major candidates.
+Ablation experiments follow `AGENTS.md`. ABLATION dispatch lives in the live
+Herdr+Pi coordination standard. Revalidation of an ablated candidate follows
+this file's ordinary QA and review gates; ablation revalidation itself does
+not trigger a recursive ablation loop.
 
 ## Herdr Tab Cleanup Before Next Round
 
@@ -202,20 +175,16 @@ Skipping this inspection is a P1 process failure. `DONE` or `CARD_DONE` is not
 proof that a tab is closeable.
 
 When the next authorized step is already determined, dispatch it in the same
-turn. Decision-class questions go to GPT Astra xhigh. Stop only for a genuine
-blocker, a large unresolvable owner-semantic choice, missing authority, or when
-no capable model can determine the next legal step. Do not pause to request
-permission to continue that step. When the owner explicitly directs a STOP
-boundary after an authorized task, checks, and version management, that explicit
-stop directive governs; do not continue into unauthorized implementation or data
-tasks. Owner standing same-change publication in `AGENTS.md` is the explicit
-authorization for the matching PR. Private data, new paid services, credentials,
-and trading stay outside that path. Do not end a turn merely on dispatch
-acknowledgment while delegated work is outstanding.
-
-Owner-authorized Antigravity child sessions start with
-`--dangerously-skip-permissions` for that session only. Do not write that mode
-into global Antigravity `settings.json`.
+turn. Stop only for a genuine blocker, a large unresolvable owner-semantic
+choice, missing authority, or when no capable model can determine the next
+legal step. Do not pause to request permission to continue that step. When the
+owner explicitly directs a STOP boundary after an authorized task, checks, and
+version management, that explicit stop directive governs; do not continue into
+unauthorized implementation or data tasks. Owner standing same-change
+publication in `AGENTS.md` is the explicit authorization for the matching PR.
+Private data, new paid services, credentials, and trading stay outside that
+path. Do not end a turn merely on dispatch acknowledgment while delegated work
+is outstanding.
 
 ## Waiting And Follow-Up
 

@@ -7206,6 +7206,30 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
     assert "administrative override or protection bypass" in protected_merge
 
 
+def test_controller_does_not_assign_reviewer_seats() -> None:
+    controller = (
+        PROJECT_ROOT / "docs/codex_long_running_controller.md"
+    ).read_text(encoding="utf-8")
+    review_lifecycle = " ".join(
+        _markdown_section(controller, "GitHub Review Lifecycle").split()
+    )
+
+    for assigned_seat in [
+        "fresh Grok latest XHigh",
+        "GPT Astra latest High",
+        "Grok Extra High",
+        "GPT Astra xhigh",
+        "no-GPT / lsgz:1",
+        "--dangerously-skip-permissions",
+    ]:
+        assert assigned_seat not in controller
+
+    assert "live Herdr+Pi coordination standard" in review_lifecycle
+    assert "routing_table.json" in review_lifecycle
+    assert "## Predecessor PR Gate" in controller
+    assert "## Protected Merge Eligibility" in controller
+
+
 def test_staged_quant_workflow_skill_is_a_thin_router() -> None:
     skill_path = PROJECT_ROOT / ".agents/skills/staged-quant-workflow/SKILL.md"
     workflow_skill = skill_path.read_text(encoding="utf-8")
