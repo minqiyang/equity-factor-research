@@ -12,7 +12,7 @@ This report was generated from synthetic data only. It does not use private data
 4. Form simulated long-only top-`5` equal-weight selection with drift-aware holdings.
 5. Compare the strategy with a synthetic equal-weight universe benchmark.
 6. Record explicit fixed-bps cost, explicit slippage, the accepted timing contract, risk metrics, and limitations.
-7. Append this invocation to All-Attempt Case Logging, including failures on other runs.
+7. Persist an All-Attempt start record before computation, then append the success, failure, or catchable interruption outcome. Incomplete attempts remain visible.
 
 ## Configuration
 
@@ -70,7 +70,8 @@ This report was generated from synthetic data only. It does not use private data
 - Zero slippage is labeled diagnostic: `True`.
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
-- All-Attempt Case Logging records every Demo v0 invocation, including failures. It is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
+- Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Silent fill, clip, drop, or repair is not applied.
+- All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seed and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
 

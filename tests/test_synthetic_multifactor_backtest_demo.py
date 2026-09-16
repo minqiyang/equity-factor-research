@@ -203,6 +203,7 @@ def test_report_records_timing_cost_and_required_claims(tmp_path: Path) -> None:
     assert "| Sharpe ratio |" in report_text
     assert "undivided" in report_text
     assert "All-Attempt Case Logging" in report_text
+    assert "zero volume is refused" in report_text
     assert result.backtest_result.assumptions["execution_timing"] == TIMING_CONTRACT
     assert result.backtest_result.assumptions["transaction_cost_bps"] == 10.0
     assert result.backtest_result.assumptions["slippage_bps"] == 0.0
@@ -217,6 +218,8 @@ def test_source_stays_synthetic_only() -> None:
     assert "generate_synthetic_factor_panels" in source
     assert "combine_factors" in source
     assert "run_long_only_backtest" in source
+    assert "require_complete_price_bars" in source
+    assert "require_positive_volume_bars" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
     assert "place_order" not in source
@@ -476,3 +479,77 @@ def test_start_record_is_written_before_compute(
     assert seen_statuses == ["started"]
     records = load_attempt_records(attempt_log_path)
     assert [record["status"] for record in records] == ["started", "success"]
+
+
+def _dirty_prices(mutate):
+    original = demo.generate_synthetic_prices
+
+    def dirty(config):
+        return mutate(original(config).copy())
+
+    return dirty
+
+
+@pytest.mark.parametrize(
+    ("mutate", "match"),
+    [
+        (
+            lambda panel: panel.copy().assign(**{panel.columns[0]: np.nan}),
+            "missing bars is refused",
+        ),
+        (
+            lambda panel: panel.drop(index=panel.index[-1]),
+            "source rows",
+        ),
+        (
+            lambda panel: panel.copy().assign(**{panel.columns[0]: 0.0}),
+            "strictly positive",
+        ),
+    ],
+)
+def test_multifactor_demo_refuses_missing_or_dropped_price_bars_without_silent_repair(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mutate,
+    match: str,
+) -> None:
+    monkeypatch.setattr(demo, "generate_synthetic_prices", _dirty_prices(mutate))
+    report_path = tmp_path / "report.md"
+    attempt_log_path = tmp_path / "attempts.jsonl"
+
+    with pytest.raises(ValueError, match=match):
+        run_synthetic_multifactor_backtest_demo(
+            config=_short_config(),
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert match in records[1]["error_message"]
+    assert records[1]["metrics"] == {}
+
+
+def test_multifactor_demo_refuses_zero_volume_without_silent_repair(
+    tmp_path: Path,
+) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(demo._price_config(config))
+    volume = pd.DataFrame(1.0, index=prices.index, columns=prices.columns)
+    volume.iloc[5, 0] = 0.0
+    report_path = tmp_path / "report.md"
+    attempt_log_path = tmp_path / "attempts.jsonl"
+
+    with pytest.raises(ValueError, match="zero volume is refused"):
+        run_synthetic_multifactor_backtest_demo(
+            config=config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+            volume=volume,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "zero volume is refused" in records[1]["error_message"]

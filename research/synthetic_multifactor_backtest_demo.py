@@ -37,6 +37,10 @@ from features.normalize import (
     cross_sectional_zscore_factor,
 )
 from features.operators import validate_panel_data
+from research.bar_integrity import (
+    require_complete_price_bars,
+    require_positive_volume_bars,
+)
 from research.synthetic_momentum_demo import (
     SyntheticDemoConfig,
     build_equal_weight_benchmark,
@@ -188,6 +192,7 @@ def run_synthetic_multifactor_backtest_demo(
     config: SyntheticMultifactorBacktestConfig = FROZEN_CONFIG,
     report_path: Path = DEFAULT_REPORT_PATH,
     attempt_log_path: Path = DEFAULT_ATTEMPT_LOG_PATH,
+    volume: pd.DataFrame | None = None,
 ) -> SyntheticMultifactorBacktestDemoResult:
     """Run the synthetic three-factor backtest demo and record the attempt."""
 
@@ -198,7 +203,7 @@ def run_synthetic_multifactor_backtest_demo(
     )
     attempt_id = start_record["attempt_id"]
     try:
-        pipeline = _run_pipeline(config=config)
+        pipeline = _run_pipeline(config=config, volume=volume)
         result = SyntheticMultifactorBacktestDemoResult(
             **pipeline,
             report_path=Path(report_path),
@@ -329,7 +334,7 @@ This report was generated from synthetic data only. It does not use private data
 - Zero slippage is labeled diagnostic: `{result.backtest_result.assumptions["zero_cost_or_slippage_is_diagnostic"]}`.
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
-- Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
+- Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
 - All-Attempt Case Logging records every invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seeds and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
@@ -350,10 +355,18 @@ def main() -> None:
 def _run_pipeline(
     *,
     config: SyntheticMultifactorBacktestConfig,
+    volume: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     _validate_config(config)
 
     prices = generate_synthetic_prices(_price_config(config))
+    require_complete_price_bars(
+        prices,
+        expected_rows=config.periods,
+        expected_assets=config.asset_count,
+    )
+    if volume is not None:
+        require_positive_volume_bars(volume, prices=prices)
     raw_factors = generate_synthetic_factor_panels(_factor_config(config))
     _require_aligned_finite_factor_panels(prices, raw_factors)
 
