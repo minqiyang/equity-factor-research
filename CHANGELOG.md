@@ -31,6 +31,14 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-05 broader historical window tests for Demo v0 and the M3-01
+  three-factor backtest demo: `dataclasses.replace` with
+  `periods=2 * DEMO_V0_CONFIG.periods` runs both pipelines on 1512
+  synthetic rows. Official frozen Demo v0 config remains seed 20260521,
+  20 assets, 756 rows, lookback 252, skip 21, ME, top_n 5, 10 bps,
+  0 slippage. Official commands keep that frozen config. Output is a
+  synthetic diagnostic. Remaining Milestone 3 work covers
+  calendar-alignment infrastructure and event-level adjustment checks.
 - M3-04 PIT-007 tests for Demo v0 and the M3-01 three-factor backtest
   demo: held returns use the supplied price series only
   (`current / previous - 1`), and a separate cash-dividend overlay on that

@@ -1,5 +1,19 @@
 # Engineering Log
 
+## 2026-09-16 - M3-05 broader historical windows
+
+- Proved Demo v0 and the M3-01 three-factor backtest demo run on a longer
+  synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through
+  `dataclasses.replace(..., periods=...)`. Official frozen `DEMO_V0_CONFIG`
+  remains seed 20260521, 20 assets, 756 rows, lookback 252, skip 21, ME,
+  top_n 5, 10 bps, 0 slippage. Official commands stay
+  `python -m research.demo_v0` and
+  `python -m research.synthetic_multifactor_backtest_demo`.
+- The longer-window runs keep lookback 252, skip 21, ME rebalance, top_n 5,
+  10 bps cost, and 0 slippage. Output is a synthetic diagnostic.
+- Calendar-alignment infrastructure and event-level adjustment checks remain
+  later Milestone 3 layers. No private data, calendars, or new cost engines.
+
 ## 2026-09-16 - AGENTS.md Ablation section is mandatory after each delivery
 
 - Owner instruction: after every completed design or implementation, run an
