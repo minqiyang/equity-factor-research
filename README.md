@@ -38,6 +38,14 @@ python -m research.demo_v0
 
 This command uses existing 12-1 momentum and frozen `SyntheticDemoConfig` values (seed 20260521, 20 assets, 756 rows, lookback 252, skip 21, ME, top 5, 10 bps, 0 slippage). It writes `reports/demo_v0.md` and appends All-Attempt Case Logging to `reports/demo_v0_attempts.jsonl`. The output is a synthetic diagnostic. It is not a profitability claim and uses no private data.
 
+Run the M3-01 exploratory synthetic three-factor backtest:
+
+```bash
+python -m research.synthetic_multifactor_backtest_demo
+```
+
+This command reuses Demo v0 synthetic price dates and assets, the existing factor generator and 0.50 / 0.30 / 0.20 weights, existing winsorize/z-score/`combine_factors` helpers, and the Demo v0 long-only backtester. The three panels are artificial quality, reversal, and momentum fixtures; they are distinct from Demo v0 12-1 momentum and from fundamentals. It writes `reports/synthetic_multifactor_backtest_demo.md` and appends All-Attempt Case Logging. The output is a synthetic diagnostic. `python -m research.demo_v0` remains the official Demo v0 command. `python -m research.synthetic_multifactor_workflow_demo` remains the feature-only workflow.
+
 Legacy synthetic and fixture diagnostics remain available:
 
 ```bash
@@ -47,7 +55,7 @@ python -m research.synthetic_combined_score_backtest_demo
 python -m research.local_csv_fixture_workflow_demo
 ```
 
-These legacy commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics, not Demo v0 evidence. Multi-factor examples remain available for workflow testing but are outside the single-factor Demo v0 scope.
+These legacy commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics, not Demo v0 evidence. The feature-only multifactor workflow remains available for preprocessing checks. The M3-01 command above is the exploratory three-factor backtest slice.
 
 ## Demo-First Delivery Target (Demo v0)
 

@@ -17,6 +17,19 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-01 exploratory synthetic three-factor backtest:
+  `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0
+  synthetic price dates and assets, the existing factor generator and
+  0.50 / 0.30 / 0.20 weights, existing winsorize/z-score/`combine_factors`
+  helpers, and the Demo v0 long-only backtester (monthly top-five, 10 bps,
+  0 bps slippage labeled diagnostic,
+  `after_close_signal_next_observed_close_v1`). It writes a comparison
+  report and All-Attempt Case Logging with a start record before
+  computation. The three panels are artificial quality, reversal, and
+  momentum fixtures. `python -m research.demo_v0` remains the official
+  Demo v0 command. `python -m research.synthetic_multifactor_workflow_demo`
+  remains the feature-only workflow. No profitability claim. No private
+  data. No new cost engines.
 - Official Demo v0 synthetic vertical slice: `python -m research.demo_v0`
   reuses existing 12-1 momentum and frozen `SyntheticDemoConfig` values,
   writes a comparison report, and appends All-Attempt Case Logging for
