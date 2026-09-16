@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `docs/codex_long_running_controller.md` keeps this repository's GitHub PR
+  lifecycle (Draft/Ready, predecessor gate, exact-head review wait, protected
+  merge). Reviewer routing, quota rotation, and named-model seats live in the
+  live Herdr+Pi coordination standard. An ablation of deleting the file is
+  rejected: those GitHub lifecycle owners have no other canonical home.
 - `AGENTS.md` keeps repository invariants, research-safety review standards,
   and writing style. Reviewer routing, quota rotation, and review-loop
   dispatch live in the live Herdr+Pi coordination standard.

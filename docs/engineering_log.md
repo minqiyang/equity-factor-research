@@ -1,5 +1,23 @@
 # Engineering Log
 
+## 2026-09-16 - Controller ablation: keep GitHub lifecycle, drop seats
+
+- Question: does `docs/codex_long_running_controller.md` still need to exist?
+- H1 delete-the-file: rejected. Unique owners remain Predecessor PR Gate,
+  GitHub Review Lifecycle (Draft/Ready, exact-head CI, merge eligibility),
+  Waiting And Follow-Up, and Protected Merge Eligibility. Structure tests pin
+  those headings and exclusive tokens. The charter links the GitHub lifecycle
+  section. Folding that into `AGENTS.md` would mix project invariants with
+  GitHub state-machine steps.
+- H2 strip copied seats: accepted. Reviewer routing, quota rotation, and
+  named-model review-loop dispatch now live only in the live Herdr+Pi
+  coordination standard. GitHub Code Review remains retired. Formal review
+  remains valid only on a clean root at the exact current head.
+- H3 drop duplicated ablation prose: accepted. Ablation experiments follow
+  `AGENTS.md`; ABLATION dispatch lives in the coordination standard.
+- Supported keep-file outcome: the controller remains the this-repo GitHub PR
+  lifecycle owner.
+
 ## 2026-09-16 - AGENTS.md reviewer routing belongs to coordination standard
 
 - Owner correction: `AGENTS.md` copied live reviewer seats, models, and
