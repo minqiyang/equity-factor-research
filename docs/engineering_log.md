@@ -1,5 +1,15 @@
 # Engineering Log
 
+## 2026-09-16 - AGENTS.md Ablation section is mandatory after each delivery
+
+- Owner instruction: after every completed design or implementation, run an
+  ablation experiment, remove unnecessary abstractions and design, and keep
+  the simplest code that still meets current requirements.
+- Durable rule: `AGENTS.md` now has a first-class Ablation section. The older
+  Engineering bullet pointed at staged implementation only; the section covers
+  every completed design or implementation. Preserve baseline, tests, and
+  guards. A supported no-change outcome is valid.
+
 ## 2026-09-16 - Controller ablation: keep GitHub lifecycle, drop seats
 
 - Question: does `docs/codex_long_running_controller.md` still need to exist?
