@@ -1,4 +1,5 @@
 import ast
+from dataclasses import replace
 import inspect
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 import research.synthetic_multifactor_backtest_demo as demo
 from features.combine import combine_factors
 from research.demo_v0 import DEMO_V0_CONFIG
+from research.source_row_lag import DEMO_SIGNAL_LAG_PERIODS, SIGNAL_LAG_UNIT
 from research.synthetic_momentum_demo import generate_synthetic_prices
 from research.synthetic_multifactor_backtest_demo import (
     COMMAND_NAME,
@@ -20,7 +22,10 @@ from research.synthetic_multifactor_backtest_demo import (
     main,
     run_synthetic_multifactor_backtest_demo,
 )
-from research.synthetic_multifactor_workflow_demo import FACTOR_NAMES
+from research.synthetic_multifactor_workflow_demo import (
+    FACTOR_NAMES,
+    generate_synthetic_factor_panels,
+)
 
 
 def _short_config() -> SyntheticMultifactorBacktestConfig:
@@ -48,6 +53,7 @@ def test_frozen_config_matches_demo_v0_price_fixture_and_workflow_weights() -> N
     assert FROZEN_CONFIG.transaction_cost_bps == DEMO_V0_CONFIG.transaction_cost_bps == 10.0
     assert FROZEN_CONFIG.slippage_bps == DEMO_V0_CONFIG.slippage_bps == 0.0
     assert FROZEN_CONFIG.periods_per_year == DEMO_V0_CONFIG.periods_per_year == 252
+    assert FROZEN_CONFIG.signal_lag_periods == DEMO_SIGNAL_LAG_PERIODS
     assert FROZEN_CONFIG.factor_seed == 20260528
     assert FROZEN_CONFIG.weights == {
         "synthetic_momentum": 0.50,
@@ -204,10 +210,14 @@ def test_report_records_timing_cost_and_required_claims(tmp_path: Path) -> None:
     assert "undivided" in report_text
     assert "All-Attempt Case Logging" in report_text
     assert "zero volume is refused" in report_text
+    assert "observed source rows" in report_text
+    assert "omitted observation" in report_text
+    assert "Silent bar insertion is refused" in report_text
     assert result.backtest_result.assumptions["execution_timing"] == TIMING_CONTRACT
     assert result.backtest_result.assumptions["transaction_cost_bps"] == 10.0
     assert result.backtest_result.assumptions["slippage_bps"] == 0.0
-    assert result.backtest_result.assumptions["signal_lag_periods"] == 1
+    assert result.backtest_result.assumptions["signal_lag_periods"] == DEMO_SIGNAL_LAG_PERIODS
+    assert result.backtest_result.assumptions["signal_lag_unit"] == SIGNAL_LAG_UNIT
     assert result.backtest_result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
     assert result.backtest_result.slippage_costs.eq(0.0).all()
 
@@ -220,6 +230,8 @@ def test_source_stays_synthetic_only() -> None:
     assert "run_long_only_backtest" in source
     assert "require_complete_price_bars" in source
     assert "require_positive_volume_bars" in source
+    assert "require_observed_source_index" in source
+    assert "DEMO_SIGNAL_LAG_PERIODS" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
     assert "place_order" not in source
@@ -553,3 +565,84 @@ def test_multifactor_demo_refuses_zero_volume_without_silent_repair(
     records = load_attempt_records(attempt_log_path)
     assert [record["status"] for record in records] == ["started", "failure"]
     assert "zero volume is refused" in records[1]["error_message"]
+
+
+def test_multifactor_demo_lag_uses_previous_observed_source_row(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    full_config = replace(
+        _short_config(),
+        periods=16,
+        rebalance_frequency="D",
+        top_n=1,
+    )
+    full_prices = generate_synthetic_prices(demo._price_config(full_config))
+    full_factors = generate_synthetic_factor_panels(demo._factor_config(full_config))
+    hole = next(
+        date
+        for date in full_prices.index[5:-1]
+        if full_prices.index[full_prices.index.get_loc(date) + 1]
+        == date + pd.Timedelta(days=1)
+    )
+    gapped_prices = full_prices.drop(index=hole)
+    gapped_factors = {
+        name: panel.drop(index=hole) for name, panel in full_factors.items()
+    }
+    run_config = replace(full_config, periods=len(gapped_prices))
+    after = gapped_prices.index[gapped_prices.index.searchsorted(hole)]
+    before = gapped_prices.index[gapped_prices.index.get_loc(after) - 1]
+
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda config: gapped_prices)
+    monkeypatch.setattr(
+        demo, "generate_synthetic_factor_panels", lambda config: gapped_factors
+    )
+
+    result = run_synthetic_multifactor_backtest_demo(
+        config=run_config,
+        report_path=tmp_path / "report.md",
+        attempt_log_path=tmp_path / "attempts.jsonl",
+    )
+
+    ledger_row = next(
+        row
+        for row in result.backtest_result.timing_ledger
+        if row.ledger_date == after
+    )
+    assert hole not in gapped_prices.index
+    assert (after - before) > pd.Timedelta(days=1)
+    assert after - pd.Timedelta(days=1) == hole
+    assert ledger_row.signal_source_date == before
+    assert result.backtest_result.assumptions["signal_lag_unit"] == SIGNAL_LAG_UNIT
+    assert (
+        result.backtest_result.assumptions["signal_lag_periods"]
+        == DEMO_SIGNAL_LAG_PERIODS
+    )
+
+
+def test_multifactor_demo_refuses_silent_source_row_insertion(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(demo._price_config(config))
+    hole = prices.index[6]
+    gapped = prices.drop(index=hole)
+    inserted = gapped.reindex(prices.index).ffill()
+    run_config = replace(config, periods=len(gapped))
+
+    monkeypatch.setattr(demo, "generate_synthetic_prices", lambda current: inserted)
+    report_path = tmp_path / "report.md"
+    attempt_log_path = tmp_path / "attempts.jsonl"
+
+    with pytest.raises(ValueError, match="source rows"):
+        run_synthetic_multifactor_backtest_demo(
+            config=run_config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "source rows" in records[1]["error_message"]

@@ -1,5 +1,21 @@
 # Engineering Log
 
+## 2026-09-16 - M3-03 source-row lag tests
+
+- Added `research/source_row_lag.py` with observed-source-index checks and
+  positional source-row lag used by `python -m research.demo_v0` and
+  `python -m research.synthetic_multifactor_backtest_demo`.
+- Signal lag counts observed source rows in the bounded accounting slice.
+  A missing source row remains an omitted observation. Silent bar insertion
+  is refused. Frozen `DEMO_V0_CONFIG` is unchanged.
+- Killing tests cover a Monday/Wednesday/Friday gap, Demo v0 and M3-01
+  gapped panels, and ffill insertion of a dropped weekday. Calendar-day
+  lag of one day points at the omitted weekday; source-row lag uses the
+  previous observed row.
+- Broader historical windows, calendar-alignment infrastructure, and
+  adjustment-event checks remain later Milestone 3 layers. No private
+  data, calendars, or new cost engines.
+
 ## 2026-09-16 - M3-02 zero-volume and missing-bar refusal
 
 - Added `research/bar_integrity.py` with fail-closed price and volume bar

@@ -28,6 +28,7 @@ This report was generated from synthetic data only. It does not use private data
 - Rebalance frequency: `ME`
 - Selected assets per rebalance: `5`
 - Timing contract: `after_close_signal_next_observed_close_v1`
+- Signal lag: `1` observed source rows (`observed_source_rows_within_bounded_accounting_slice`)
 - Turnover model: `target_weight_turnover` under the existing undivided absolute-trade convention (`absolute_target_minus_drifted_pretrade_by_asset`)
 - Transaction cost: `10.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
 - Slippage: `0.00` bps per unit of drift-adjusted target-weight turnover on post-return portfolio value
@@ -71,6 +72,7 @@ This report was generated from synthetic data only. It does not use private data
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Silent fill, clip, drop, or repair is not applied.
+- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. Silent bar insertion is refused.
 - All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seed and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
