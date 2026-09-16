@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import research.demo_v0 as demo
 from research.demo_v0 import (
     COMMAND_NAME,
     DEMO_V0_CONFIG,
@@ -114,9 +115,10 @@ def test_successful_attempt_is_logged(tmp_path: Path) -> None:
     )
 
     records = load_attempt_records(attempt_log_path)
-    assert len(records) == 1
-    record = records[0]
-    assert record["attempt_id"] == 1
+    assert [record["status"] for record in records] == ["started", "success"]
+    assert records[0]["attempt_id"] == 1
+    assert records[1]["attempt_id"] == 1
+    record = records[1]
     assert record["status"] == "success"
     assert record["command"] == COMMAND_NAME
     assert record["logging_kind"] == "all_attempt_case_logging"
@@ -153,15 +155,107 @@ def test_failed_attempt_is_logged_and_previous_records_remain(tmp_path: Path) ->
         )
 
     records = load_attempt_records(attempt_log_path)
-    assert [record["status"] for record in records] == ["success", "failure"]
+    assert [record["status"] for record in records] == [
+        "started",
+        "success",
+        "started",
+        "failure",
+    ]
     assert records[0]["attempt_id"] == 1
-    assert records[1]["attempt_id"] == 2
-    assert records[1]["error_type"] == "ValueError"
-    assert "warm-up anchor" in records[1]["error_message"]
-    assert records[1]["timing_contract"] == TIMING_CONTRACT
-    assert records[1]["data_scope"] == "synthetic only"
-    assert records[1]["metrics"] == {}
+    assert records[1]["attempt_id"] == 1
+    assert records[2]["attempt_id"] == 2
+    assert records[3]["attempt_id"] == 2
+    assert records[3]["error_type"] == "ValueError"
+    assert "warm-up anchor" in records[3]["error_message"]
+    assert records[3]["timing_contract"] == TIMING_CONTRACT
+    assert records[3]["data_scope"] == "synthetic only"
+    assert records[3]["metrics"] == {}
     serialized = attempt_log_path.read_text(encoding="utf-8")
-    assert serialized.count("\n") == 2
+    assert serialized.count("\n") == 4
     assert '"status": "failure"' in serialized
     assert '"status": "success"' in serialized
+    assert '"status": "started"' in serialized
+
+
+@pytest.mark.parametrize(
+    ("interrupt", "error_type"),
+    [
+        (KeyboardInterrupt("demo v0 interrupted"), "KeyboardInterrupt"),
+        (SystemExit("demo v0 interrupted"), "SystemExit"),
+    ],
+)
+def test_catchable_interruption_is_logged_and_preserves_prior_records(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    interrupt: BaseException,
+    error_type: str,
+) -> None:
+    report_path = tmp_path / "demo_v0.md"
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+
+    run_demo_v0(
+        config=_short_config(),
+        report_path=report_path,
+        attempt_log_path=attempt_log_path,
+    )
+    prior_report = report_path.read_text(encoding="utf-8")
+    prior_records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in prior_records] == ["started", "success"]
+
+    def raise_interrupt(*args: object, **kwargs: object) -> None:
+        raise interrupt
+
+    monkeypatch.setattr(demo, "_run_demo_v0_pipeline", raise_interrupt)
+
+    with pytest.raises(type(interrupt)):
+        run_demo_v0(
+            config=_short_config(),
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    records = load_attempt_records(attempt_log_path)
+    assert records[:2] == prior_records
+    assert [record["status"] for record in records] == [
+        "started",
+        "success",
+        "started",
+        "interrupted",
+    ]
+    assert records[2]["attempt_id"] == 2
+    assert records[3]["attempt_id"] == 2
+    assert records[3]["error_type"] == error_type
+    assert records[3]["error_message"] == "demo v0 interrupted"
+    assert report_path.read_text(encoding="utf-8") == prior_report
+
+
+def test_logging_not_ready_stops_before_report_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report_path = tmp_path / "demo_v0.md"
+    prior_report = "PRIOR COMPARISON REPORT\n"
+    report_path.write_text(prior_report, encoding="utf-8")
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+    pipeline_calls = {"count": 0}
+
+    def cannot_begin(*args: object, **kwargs: object) -> None:
+        raise OSError("attempt log unavailable")
+
+    def pipeline_must_not_run(*args: object, **kwargs: object) -> None:
+        pipeline_calls["count"] += 1
+        raise AssertionError("pipeline must not run when logging cannot begin")
+
+    monkeypatch.setattr(demo, "append_attempt_record", cannot_begin)
+    monkeypatch.setattr(demo, "_run_demo_v0_pipeline", pipeline_must_not_run)
+
+    with pytest.raises(RuntimeError, match="attempt log cannot begin"):
+        run_demo_v0(
+            config=_short_config(),
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    assert report_path.read_text(encoding="utf-8") == prior_report
+    assert pipeline_calls["count"] == 0
+    assert not attempt_log_path.exists()

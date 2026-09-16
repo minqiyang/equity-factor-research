@@ -7,6 +7,14 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Fixed
+
+- Demo v0 All-Attempt Case Logging now writes a start record before
+  computation, keeps incomplete and interrupted attempts visible, records
+  catchable `KeyboardInterrupt` and `SystemExit` outcomes and re-raises
+  them, and refuses to replace the comparison report when the attempt log
+  cannot begin.
+
 ### Added
 
 - Official Demo v0 synthetic vertical slice: `python -m research.demo_v0`

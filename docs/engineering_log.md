@@ -1,5 +1,14 @@
 # Engineering Log
 
+## 2026-09-16 - DEMO206-01 All-Attempt interruption logging
+
+- All-Attempt Case Logging now persists a `started` record before Demo v0
+  computation. Incomplete attempts remain visible if a later outcome is absent.
+- Catchable `KeyboardInterrupt` and `SystemExit` outcomes are recorded as
+  `interrupted` and re-raised. Ordinary exceptions remain `failure`.
+- If the attempt log cannot begin, Demo v0 stops before replacing the
+  comparison report. Timing and cost math are unchanged.
+
 ## 2026-09-16 - DEMO-V0-001 synthetic vertical slice
 
 - Implemented Demo v0 as the official synthetic vertical slice:

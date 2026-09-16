@@ -39,6 +39,12 @@ TIMING_CONTRACT = "after_close_signal_next_observed_close_v1"
 COMMAND_NAME = "python -m research.demo_v0"
 ATTEMPT_LOG_KIND = "all_attempt_case_logging"
 ATTEMPT_LOG_CEILING = "lightweight_demo_diagnostic"
+ATTEMPT_STATUS_STARTED = "started"
+ATTEMPT_STATUS_SUCCESS = "success"
+ATTEMPT_STATUS_FAILURE = "failure"
+ATTEMPT_STATUS_INTERRUPTED = "interrupted"
+_CATCHABLE_INTERRUPTIONS = (KeyboardInterrupt, SystemExit)
+_CATCHABLE_ATTEMPT_OUTCOMES = (Exception, KeyboardInterrupt, SystemExit)
 
 DEMO_V0_CONFIG = SyntheticDemoConfig(
     seed=20260521,
@@ -92,19 +98,26 @@ def load_attempt_records(log_path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def append_attempt_record(log_path: Path, record: dict[str, Any]) -> dict[str, Any]:
+def append_attempt_record(
+    log_path: Path,
+    record: dict[str, Any],
+    *,
+    attempt_id: int | None = None,
+) -> dict[str, Any]:
     """Append one All-Attempt record and return the stored payload."""
 
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     existing = load_attempt_records(log_path)
+    if attempt_id is None:
+        attempt_id = _next_attempt_id(existing)
     payload = {
         "schema_version": 1,
-        "attempt_id": len(existing) + 1,
         "logging_kind": ATTEMPT_LOG_KIND,
         "logging_ceiling": ATTEMPT_LOG_CEILING,
         "command": COMMAND_NAME,
         **record,
+        "attempt_id": attempt_id,
     }
     serialized = json.dumps(
         _json_ready(payload),
@@ -113,6 +126,7 @@ def append_attempt_record(log_path: Path, record: dict[str, Any]) -> dict[str, A
     )
     with log_path.open("a", encoding="utf-8") as handle:
         handle.write(serialized + "\n")
+        handle.flush()
     return json.loads(serialized)
 
 
@@ -124,6 +138,12 @@ def run_demo_v0(
 ) -> BacktestResult:
     """Run the official Demo v0 slice and record the attempt."""
 
+    start_record = _begin_attempt(
+        attempt_log_path=attempt_log_path,
+        config=config,
+        report_path=report_path,
+    )
+    attempt_id = start_record["attempt_id"]
     try:
         prices, result = _run_demo_v0_pipeline(config=config)
         write_comparison_report(
@@ -133,10 +153,20 @@ def run_demo_v0(
             prices=prices,
             result=result,
         )
-    except Exception as exc:
-        append_attempt_record(
+    except _CATCHABLE_ATTEMPT_OUTCOMES as exc:
+        _record_attempt_outcome(
             attempt_log_path,
-            _failure_record(config=config, report_path=report_path, error=exc),
+            attempt_id=attempt_id,
+            record=_error_record(
+                config=config,
+                report_path=report_path,
+                status=(
+                    ATTEMPT_STATUS_INTERRUPTED
+                    if isinstance(exc, _CATCHABLE_INTERRUPTIONS)
+                    else ATTEMPT_STATUS_FAILURE
+                ),
+                error=exc,
+            ),
         )
         raise
 
@@ -148,6 +178,7 @@ def run_demo_v0(
             prices=prices,
             result=result,
         ),
+        attempt_id=attempt_id,
     )
     return result
 
@@ -179,7 +210,7 @@ This report was generated from synthetic data only. It does not use private data
 4. Form simulated long-only top-`{config.top_n}` equal-weight selection with drift-aware holdings.
 5. Compare the strategy with a synthetic equal-weight universe benchmark.
 6. Record explicit fixed-bps cost, explicit slippage, the accepted timing contract, risk metrics, and limitations.
-7. Append this invocation to All-Attempt Case Logging, including failures on other runs.
+7. Persist an All-Attempt start record before computation, then append the success, failure, or catchable interruption outcome. Incomplete attempts remain visible.
 
 ## Configuration
 
@@ -237,7 +268,7 @@ This report was generated from synthetic data only. It does not use private data
 - Zero slippage is labeled diagnostic: `{result.assumptions["zero_cost_or_slippage_is_diagnostic"]}`.
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
-- All-Attempt Case Logging records every Demo v0 invocation, including failures. It is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
+- All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seed and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
 
@@ -332,6 +363,68 @@ def _base_attempt_record(
     }
 
 
+def _begin_attempt(
+    *,
+    attempt_log_path: Path,
+    config: SyntheticDemoConfig,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Persist the attempt-start record before computation or report replacement."""
+
+    try:
+        return append_attempt_record(
+            attempt_log_path,
+            _start_record(config=config, report_path=report_path),
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "demo v0 attempt log cannot begin; comparison report was not replaced"
+        ) from exc
+
+
+def _record_attempt_outcome(
+    log_path: Path,
+    *,
+    attempt_id: int,
+    record: dict[str, Any],
+) -> None:
+    """Append a terminal outcome. Preserve the original exception if logging fails."""
+
+    try:
+        append_attempt_record(log_path, record, attempt_id=attempt_id)
+    except Exception:
+        return
+
+
+def _next_attempt_id(records: list[dict[str, Any]]) -> int:
+    used_ids = [
+        record["attempt_id"]
+        for record in records
+        if isinstance(record.get("attempt_id"), int)
+        and not isinstance(record.get("attempt_id"), bool)
+    ]
+    return (max(used_ids) if used_ids else 0) + 1
+
+
+def _start_record(
+    *,
+    config: SyntheticDemoConfig,
+    report_path: Path,
+) -> dict[str, Any]:
+    return {
+        **_base_attempt_record(config=config, report_path=report_path),
+        "status": ATTEMPT_STATUS_STARTED,
+        "error_type": None,
+        "error_message": None,
+        "zero_cost_or_slippage_is_diagnostic": config.slippage_bps == 0.0
+        or config.transaction_cost_bps == 0.0,
+        "holdings_rows": None,
+        "holdings_assets": None,
+        "source_price_rows": None,
+        "metrics": {},
+    }
+
+
 def _success_record(
     *,
     config: SyntheticDemoConfig,
@@ -341,7 +434,7 @@ def _success_record(
 ) -> dict[str, Any]:
     return {
         **_base_attempt_record(config=config, report_path=report_path),
-        "status": "success",
+        "status": ATTEMPT_STATUS_SUCCESS,
         "error_type": None,
         "error_message": None,
         "zero_cost_or_slippage_is_diagnostic": result.assumptions[
@@ -368,15 +461,16 @@ def _success_record(
     }
 
 
-def _failure_record(
+def _error_record(
     *,
     config: SyntheticDemoConfig,
     report_path: Path,
+    status: str,
     error: BaseException,
 ) -> dict[str, Any]:
     return {
         **_base_attempt_record(config=config, report_path=report_path),
-        "status": "failure",
+        "status": status,
         "error_type": type(error).__name__,
         "error_message": str(error),
         "zero_cost_or_slippage_is_diagnostic": config.slippage_bps == 0.0
