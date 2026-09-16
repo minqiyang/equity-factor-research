@@ -30,7 +30,15 @@ python -m pip install -e ".[dev]"
 python -m pytest -q
 ```
 
-Run the reproducible examples:
+Run the official Demo v0 synthetic vertical slice:
+
+```bash
+python -m research.demo_v0
+```
+
+This command uses existing 12-1 momentum and frozen `SyntheticDemoConfig` values (seed 20260521, 20 assets, 756 rows, lookback 252, skip 21, ME, top 5, 10 bps, 0 slippage). It writes `reports/demo_v0.md` and appends All-Attempt Case Logging to `reports/demo_v0_attempts.jsonl`. The output is a synthetic diagnostic. It is not a profitability claim and uses no private data.
+
+Legacy synthetic and fixture diagnostics remain available:
 
 ```bash
 python -m research.synthetic_momentum_demo
@@ -39,19 +47,19 @@ python -m research.synthetic_combined_score_backtest_demo
 python -m research.local_csv_fixture_workflow_demo
 ```
 
-These commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are legacy reproducibility and engineering diagnostics, not acceptance of Demo v0. Multi-factor examples remain available for workflow testing but are outside the single-factor Demo v0 scope.
+These legacy commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics, not Demo v0 evidence. Multi-factor examples remain available for workflow testing but are outside the single-factor Demo v0 scope.
 
 ## Demo-First Delivery Target (Demo v0)
 
 The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, complete ledger schema coverage, or a broad factor zoo.
 
-The active delivery target is **Demo v0** (target deliverable, not yet implemented):
-- One reproducible local command/workflow using an existing price-only factor and a fixed strategy configuration;
+**Demo v0** is the synthetic vertical slice. The official command is `python -m research.demo_v0`:
+- One reproducible local command using existing 12-1 momentum and one frozen strategy configuration;
 - Simulated stock selection and drift-aware portfolio holdings;
 - Human-readable comparison report with benchmark, explicit transaction cost and timing models (accepted `after_close_signal_next_observed_close_v1`), risk metrics, and limitations;
-- All-Attempt Case Logging recording all attempted cases (distinguishing lightweight diagnostic run logging from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
+- All-Attempt Case Logging recording all attempted cases, including failures (lightweight diagnostic run logging, distinct from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
 
-Synthetic fixture workflows are demonstrable without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic.
+Synthetic fixture workflows run without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic. Demo v0 makes no profitability claim.
 
 ## Method
 

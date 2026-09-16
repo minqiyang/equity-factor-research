@@ -1,5 +1,21 @@
 # Engineering Log
 
+## 2026-09-16 - DEMO-V0-001 synthetic vertical slice
+
+- Implemented Demo v0 as the official synthetic vertical slice:
+  `python -m research.demo_v0`.
+- Reused existing `calculate_12_1_momentum`, `run_long_only_backtest`,
+  accepted `after_close_signal_next_observed_close_v1` timing, undivided
+  absolute-trade turnover, and frozen `SyntheticDemoConfig` values
+  (seed 20260521, 20 assets, 756 rows, lookback 252, skip 21, ME, top_n 5,
+  10 bps, 0 slippage).
+- `python -m research.synthetic_momentum_demo` remains a legacy diagnostic.
+- All-Attempt Case Logging appends every invocation, including failures, to
+  `reports/demo_v0_attempts.jsonl`. This is lightweight demo logging, not
+  charter Stage 4 ledger accounting.
+- No profitability claim. No private data. No new factors, calendars, or
+  cost engines.
+
 ## 2026-09-16 - Mandatory live coordination standard and visible Herdr review
 
 - Owner correction: every coordinator and delegated worker reads the live

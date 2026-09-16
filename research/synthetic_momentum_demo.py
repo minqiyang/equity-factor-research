@@ -1,8 +1,10 @@
-"""Synthetic-data 12-1 momentum research demo.
+"""Legacy synthetic-data 12-1 momentum research diagnostic.
 
-This script demonstrates the local research workflow without fetching or using
-real market data. The generated results are synthetic diagnostics only and must
-not be interpreted as evidence of real-world strategy profitability.
+This script remains available as a legacy diagnostic. The official Demo v0
+command is ``python -m research.demo_v0``.
+
+The generated results are synthetic diagnostics only and must not be
+interpreted as evidence of real-world strategy profitability.
 """
 
 from __future__ import annotations
