@@ -157,6 +157,10 @@ re-enter this gate before acting on a different PR or changed scope.
   Fable or Grok. Do not put those addresses in this repository. Do not `codex
   logout` unless the replacement login can be completed in the same turn.
   Skipping a remaining designated CLI account is a P1 process failure.
+- After each GPT Astra session, probe remaining weekly quota on the designated
+  Astra ChatGPT CLI account in private control. Remaining weekly quota below 15%
+  pauses GPT Astra. If that designated account is not the live login, pause GPT
+  Astra until it can be probed. Do not publish account addresses.
 - Merge wait requires the actual exact-head formal review body: pass or
   findings. A silent wait that times out is not evidence of unavailability.
   GitHub Code Review usage-limit is irrelevant because that channel is retired.
@@ -198,14 +202,16 @@ Skipping this inspection is a P1 process failure. `DONE` or `CARD_DONE` is not
 proof that a tab is closeable.
 
 When the next authorized step is already determined, dispatch it in the same
-turn. Stop only for a genuine blocker, an owner decision, or when no capable model
-can determine the next legal step. Do not pause to request permission to continue
-that step. When the owner explicitly directs a STOP boundary after an authorized
-task, checks, and version management, that explicit stop directive governs; do
-not continue into unauthorized implementation or data tasks. A plan does not
-authorize push/PR/merge, private data, new paid services, credentials, or trading.
-Do not end a turn merely on dispatch acknowledgment while delegated work is
-outstanding.
+turn. Decision-class questions go to GPT Astra xhigh. Stop only for a genuine
+blocker, a large unresolvable owner-semantic choice, missing authority, or when
+no capable model can determine the next legal step. Do not pause to request
+permission to continue that step. When the owner explicitly directs a STOP
+boundary after an authorized task, checks, and version management, that explicit
+stop directive governs; do not continue into unauthorized implementation or data
+tasks. Owner standing same-change publication in `AGENTS.md` is the explicit
+authorization for the matching PR. Private data, new paid services, credentials,
+and trading stay outside that path. Do not end a turn merely on dispatch
+acknowledgment while delegated work is outstanding.
 
 Owner-authorized Antigravity child sessions start with
 `--dangerously-skip-permissions` for that session only. Do not write that mode
