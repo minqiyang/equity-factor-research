@@ -1,5 +1,18 @@
 # Engineering Log
 
+## 2026-09-16 - Unattended overnight continuation and Astra xhigh decisions
+
+- Owner instruction: during authorized unattended overnight work, keep executing
+  determined roadmap steps without waiting for the owner to type the next
+  command. Decision-class questions go to GPT Astra xhigh. Stop only for a large
+  unresolvable owner-semantic choice, missing authority, or a genuine blocker.
+- Asking the owner to type an already-determined next command is a P1 process
+  failure in that unattended session.
+- Continuation invariant is in `AGENTS.md` Owner Corrections And Continuation.
+- After each GPT Astra session, remaining weekly quota on the designated Astra
+  ChatGPT CLI account is probed live. Remaining weekly quota below 15% pauses
+  GPT Astra. Account addresses stay in private control.
+
 ## 2026-09-16 - DEMO206-01 All-Attempt interruption logging
 
 - All-Attempt Case Logging now persists a `started` record before Demo v0

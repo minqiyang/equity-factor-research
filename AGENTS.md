@@ -37,6 +37,10 @@ research-safety review standards, and writing-style rules.
   remaining designated CLI account. Do not publish those addresses. Do not
   logout until the replacement login can complete. Skipping that rotation and
   jumping to Grok is a P1 process failure.
+- After each GPT Astra session, probe remaining weekly quota on the designated
+  Astra ChatGPT CLI account in private control. If remaining weekly quota is
+  below 15%, pause GPT Astra. If that designated account is not the live login,
+  pause GPT Astra until it can be probed. Do not publish account addresses.
 - Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
   review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
   disabled. Required PR review follows the live coordinator V7.23 standard:
@@ -166,6 +170,9 @@ itself is a hold or unblock condition.
   failure. Skipping the required pre-round Herdr tab inspection is P1 process
   failure. Asking the owner to type 建PR or merge after an owner-requested
   in-scope repository change is already complete is a P1 process failure.
+  Asking the owner to type the next already-determined command, including
+  running a demo or starting the next roadmap slice, is a P1 process failure
+  during an authorized unattended session.
 - Before starting the next round of Herdr work, inspect live tabs. Close only
   execution tabs whose process is inactive, required outputs are saved and
   hash-verified, write responsibility is released, and the tab will not be
@@ -175,8 +182,11 @@ itself is a hold or unblock condition.
 - When the next step is already determined by an accepted plan, owner decision,
   or repository rules, automatically execute the next clear, already-authorized
   step in the same turn without stopping to request repeat permission. Continue
-  through ordinary QA, review, and remediation waits; stop only for a genuine
-  blocker, a necessary owner decision, or additional authority. When the owner
+  through ordinary QA, review, and remediation waits. Authorized unattended
+  overnight work keeps executing determined roadmap slices until a stop
+  condition. Decision-class questions go to GPT Astra xhigh. Stop only for a
+  genuine blocker, a large unresolvable owner-semantic choice, missing
+  authority, or additional authority. When the owner
   explicitly directs a STOP boundary after an authorized task, checks, and
   version management, that explicit stop directive governs; do not continue into
   unauthorized implementation or data tasks. Completing an owner-requested
