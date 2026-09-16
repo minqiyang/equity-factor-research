@@ -37,7 +37,10 @@ two demos and refuses a supplied missing or zero-volume panel without silent
 fill, clip, drop, or repair. M3-03 proves signal lag on those commands counts
 observed source rows; a missing source row remains an omitted observation.
 Those demos keep the supplied observed index. Detecting invented sessions
-remains later calendar-alignment work. This lightweight diagnostic run logging is explicitly distinguished
+remains later calendar-alignment work. M3-04 proves those commands compute
+held returns from the supplied price series only and refuse a separate
+cash-dividend overlay (PIT-007). Event-level dividend and split
+reconciliation remains later Milestone 3/4 work. This lightweight diagnostic run logging is explicitly distinguished
 from the formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy
