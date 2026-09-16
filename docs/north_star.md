@@ -64,7 +64,7 @@ prevent shipping the initial, visibly limited Demo v0 vertical slice.
 
 The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, and coarse status are owned by [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones); detailed Demo v0 deliverable definitions and criteria are owned exclusively by [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
 
-Under demo-first delivery, every actual attempted run retains its outcomes and negative evidence; when Demo v0 runs exist, All-Attempt Case Logging across all attempted cases is mandatory for future Demo v0 runs to meet the canonical Definition of Done; existing synthetic sidecars are legacy diagnostics and are not accepted Demo v0 evidence; cherry-picking or omitting failed trials is strictly forbidden. This lightweight diagnostic run logging is explicitly distinguished from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4.
+Under demo-first delivery, every actual attempted run retains its outcomes and negative evidence. Demo v0 All-Attempt Case Logging records every attempted case, including failures, for `python -m research.demo_v0`; existing synthetic sidecars are legacy diagnostics and are not accepted Demo v0 evidence; cherry-picking or omitting failed trials is strictly forbidden. This lightweight diagnostic run logging is explicitly distinguished from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4.
 
 ## Authoritative Backlog and Imperfection Policy
 

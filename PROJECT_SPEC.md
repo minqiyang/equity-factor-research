@@ -393,7 +393,7 @@ market validity, paper readiness, or live readiness.
 The project operates under two clearly bounded modes to prevent conflating exploratory demo development with formal empirical promotion:
 
 1. **Exploratory Demo Mode (Demo-First Delivery)**:
-   - Target deliverable for active Milestone 2 (not yet implemented): will deliver a basic, presentable, and reproducible end-to-end slice (Demo v0) showing simulated stock selection, portfolio holdings, benchmark comparison, explicit frictional costs, and diagnostic reporting.
+   - Milestone 2 Demo v0 is the synthetic vertical slice: `python -m research.demo_v0` using existing 12-1 momentum and frozen `SyntheticDemoConfig` values, showing simulated stock selection, portfolio holdings, benchmark comparison, explicit frictional costs, All-Attempt Case Logging, and diagnostic reporting. No profitability claim. No private data.
    - Planned to run locally on committed synthetic fixtures without private data. Any separately authorized local CSV runs remain explicitly exploratory and diagnostic.
    - Non-blocking imperfections and data caveats are recorded in the canonical lightweight backlog in [docs/current_roadmap.md](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog) and improved in layers.
    - Results are diagnostic only; no claims of market alpha, general predictability, or trading profitability.
