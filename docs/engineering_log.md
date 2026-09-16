@@ -9,6 +9,9 @@
 - Asking the owner to type an already-determined next command is a P1 process
   failure in that unattended session.
 - Continuation invariant is in `AGENTS.md` Owner Corrections And Continuation.
+- After each GPT Astra session, remaining weekly quota on the designated Astra
+  ChatGPT CLI account is probed live. Remaining weekly quota below 15% pauses
+  GPT Astra. Account addresses stay in private control.
 
 ## 2026-09-16 - DEMO206-01 All-Attempt interruption logging
 

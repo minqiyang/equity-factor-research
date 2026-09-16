@@ -37,6 +37,10 @@ research-safety review standards, and writing-style rules.
   remaining designated CLI account. Do not publish those addresses. Do not
   logout until the replacement login can complete. Skipping that rotation and
   jumping to Grok is a P1 process failure.
+- After each GPT Astra session, probe remaining weekly quota on the designated
+  Astra ChatGPT CLI account in private control. If remaining weekly quota is
+  below 15%, pause GPT Astra. If that designated account is not the live login,
+  pause GPT Astra until it can be probed. Do not publish account addresses.
 - Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
   review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
   disabled. Required PR review follows the live coordinator V7.23 standard:
