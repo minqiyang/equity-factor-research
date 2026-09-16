@@ -2,6 +2,8 @@ import ast
 import inspect
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import research.demo_v0 as demo
@@ -13,7 +15,10 @@ from research.demo_v0 import (
     main,
     run_demo_v0,
 )
-from research.synthetic_momentum_demo import SyntheticDemoConfig
+from research.synthetic_momentum_demo import (
+    SyntheticDemoConfig,
+    generate_synthetic_prices,
+)
 
 
 def _short_config() -> SyntheticDemoConfig:
@@ -85,6 +90,7 @@ def test_demo_v0_writes_comparison_report_claims(tmp_path: Path) -> None:
     assert "undivided" in report_text
     assert "All-Attempt Case Logging" in report_text
     assert "legacy diagnostic" in report_text
+    assert "zero volume is refused" in report_text
     assert result.holdings.shape[1] == 8
     assert result.assumptions["execution_timing"] == TIMING_CONTRACT
     assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
@@ -97,6 +103,8 @@ def test_demo_v0_source_stays_synthetic_only() -> None:
     assert "generate_synthetic_prices" in source
     assert "calculate_12_1_momentum" in source
     assert "run_long_only_backtest" in source
+    assert "require_complete_price_bars" in source
+    assert "require_positive_volume_bars" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source
     assert "place_order" not in source
@@ -259,3 +267,90 @@ def test_logging_not_ready_stops_before_report_replacement(
     assert report_path.read_text(encoding="utf-8") == prior_report
     assert pipeline_calls["count"] == 0
     assert not attempt_log_path.exists()
+
+
+def _dirty_prices(mutate):
+    original = demo.generate_synthetic_prices
+
+    def dirty(config: SyntheticDemoConfig) -> pd.DataFrame:
+        return mutate(original(config).copy())
+
+    return dirty
+
+
+@pytest.mark.parametrize(
+    ("mutate", "match"),
+    [
+        (
+            lambda panel: panel.assign(**{panel.columns[0]: np.nan}),
+            "missing bars is refused",
+        ),
+        (
+            lambda panel: panel.drop(index=panel.index[0]),
+            "source rows",
+        ),
+        (
+            lambda panel: panel.assign(**{panel.columns[0]: 0.0}),
+            "strictly positive",
+        ),
+    ],
+)
+def test_demo_v0_refuses_missing_or_dropped_price_bars_without_silent_repair(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mutate,
+    match: str,
+) -> None:
+    monkeypatch.setattr(demo, "generate_synthetic_prices", _dirty_prices(mutate))
+    report_path = tmp_path / "demo_v0.md"
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+
+    with pytest.raises(ValueError, match=match):
+        run_demo_v0(
+            config=_short_config(),
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert match in records[1]["error_message"]
+    assert records[1]["metrics"] == {}
+
+
+def test_demo_v0_refuses_zero_volume_without_silent_repair(tmp_path: Path) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(config)
+    volume = pd.DataFrame(1.0, index=prices.index, columns=prices.columns)
+    volume.iloc[3, 1] = 0.0
+    report_path = tmp_path / "demo_v0.md"
+    attempt_log_path = tmp_path / "demo_v0_attempts.jsonl"
+
+    with pytest.raises(ValueError, match="zero volume is refused"):
+        run_demo_v0(
+            config=config,
+            report_path=report_path,
+            attempt_log_path=attempt_log_path,
+            volume=volume,
+        )
+
+    assert not report_path.exists()
+    records = load_attempt_records(attempt_log_path)
+    assert [record["status"] for record in records] == ["started", "failure"]
+    assert "zero volume is refused" in records[1]["error_message"]
+
+
+def test_demo_v0_accepts_strictly_positive_volume(tmp_path: Path) -> None:
+    config = _short_config()
+    prices = generate_synthetic_prices(config)
+    volume = pd.DataFrame(1.0, index=prices.index, columns=prices.columns)
+
+    result = run_demo_v0(
+        config=config,
+        report_path=tmp_path / "demo_v0.md",
+        attempt_log_path=tmp_path / "demo_v0_attempts.jsonl",
+        volume=volume,
+    )
+
+    assert result.holdings.shape[1] == config.asset_count

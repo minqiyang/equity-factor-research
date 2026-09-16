@@ -1,5 +1,24 @@
 # Engineering Log
 
+## 2026-09-16 - M3-02 zero-volume and missing-bar refusal
+
+- Added `research/bar_integrity.py` with fail-closed price and volume bar
+  checks used by `python -m research.demo_v0` and
+  `python -m research.synthetic_multifactor_backtest_demo`.
+- Price bars must keep the configured row and asset counts and remain finite
+  and strictly positive. A supplied volume panel must share those axes and
+  remain finite and strictly positive.
+- Pre-change probes showed Demo v0 accepting a dropped source row and an
+  unheld first-row missing price, and the M3-01 demo accepting first-row and
+  last-row missing prices when those cells were not held-trade endpoints.
+  The new guards raise before momentum, combination, or backtest accounting.
+- Killing tests cover missing, dropped, zero, and zero-volume bars and keep
+  the comparison report unwritten. Frozen `DEMO_V0_CONFIG` is unchanged.
+- The local CSV loader still accepts zero volume as loader-valid. Liquidity
+  eligibility and volume-aware slippage keep their existing contracts.
+- Date-gap calendar alignment and adjustment-event checks remain later
+  Milestone 3 layers. No private data, calendars, or new cost engines.
+
 ## 2026-09-16 - M3-01 synthetic three-factor backtest demo
 
 - Implemented `python -m research.synthetic_multifactor_backtest_demo`.

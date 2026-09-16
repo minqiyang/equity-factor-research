@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-16 after M3-01 synthetic three-factor backtest demo implementation.
+Updated: 2026-09-16 after M3-02 zero-volume and missing-bar refusal.
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -44,7 +44,7 @@ The program follows five primary milestones:
 | --- | --- | --- | --- |
 | **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic provided qualitative feasibility/planning context with documented caveats (outside Demo v0 acceptance; no tradability, universe-completeness, or holdout claim). |
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Implemented (synthetic fixtures)** | Official command `python -m research.demo_v0` reuses existing 12-1 momentum and frozen `SyntheticDemoConfig` values -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations; All-Attempt Case Logging records successes and failures. Synthetic fixtures only; no profitability claim; no private data. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic. Separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections stay in the backlog. |
-| **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **In progress (M3-01 implemented)** | M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. Remaining Milestone 3 work covers broader historical windows and data-cleaning layers (date gaps, zero-volume segments, adjustment checks). All empirical runs remain explicitly caveated exploratory diagnostics. |
+| **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **In progress (M3-01 and M3-02 implemented)** | M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. M3-02 requires complete finite strictly positive price bars in Demo v0 and the M3-01 demo, and refuses a supplied zero-volume or missing volume panel without silent fill, clip, drop, or repair. Remaining Milestone 3 work covers broader historical windows, date-gap calendar alignment, and adjustment checks. All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
 | **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
 
@@ -101,8 +101,9 @@ The program follows five primary milestones:
   on Demo v0 synthetic price dates and assets, using existing combine/normalize
   helpers and the Demo v0 backtester. The three panels are artificial quality,
   reversal, and momentum fixtures. `python -m research.synthetic_multifactor_workflow_demo`
-  remains the feature-only workflow. Remaining Milestone 3 data-cleaning work
-  stays open.
+  remains the feature-only workflow. M3-02 adds fail-closed missing-bar and
+  zero-volume refusal for those two demos. Remaining Milestone 3 work covers
+  date-gap calendar alignment and adjustment checks.
 
 ## Active Delivery Target: Demo v0 Definition of Done
 
@@ -120,7 +121,9 @@ The first delivery target is deliberately narrow:
 
 The official synthetic command is `python -m research.demo_v0`. The M3-01
 exploratory command is `python -m research.synthetic_multifactor_backtest_demo`.
-Remaining Milestone 3 work covers broader windows and data-cleaning layers.
+M3-02 is the missing-bar and zero-volume refusal layer for those commands.
+Remaining Milestone 3 work covers broader windows, date-gap calendar
+alignment, and adjustment checks.
 
 ## Imperfection Policy And Lightweight Backlog
 
@@ -141,7 +144,7 @@ research validity:
 | Item | Category | Impact | Current Handling / Limitation | Revisit Trigger | Status |
 | --- | --- | --- | --- | --- | --- |
 | Complete SEC entity lineage & symbol aliasing | Data Lineage | Incomplete corporate action / alias history | Disclose symbol alias risk and lack of full historical CIK/FIGI mapping; do not silently join across permanent securities; do not select on future continuity or survivor cohorts | Milestone 4 formal lineage promotion | Safe to defer for Demo v0 (provided no identity mis-stitching occurs) |
-| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Log caveats in diagnostic reports; do not silently drop, interpolate, or clip missing or zero-volume bars; adhere to explicit dollar-volume conventions if filtering | Milestone 3 data cleaning layer | Safe to defer with explicit caveated reporting (no silent repair) |
+| Zero-volume & unchanging price segments | Data Quality | Potential stale prices or illiquid periods | Demo v0 and the M3-01 three-factor demo require complete finite strictly positive price bars and refuse a supplied missing or zero-volume panel without silent fill, clip, drop, or repair. The local CSV loader still accepts zero volume as loader-valid. Unchanging-price segment reporting remains a later diagnostic layer. | Remaining Milestone 3 unchanging-price reporting after M3-02 | Safe to defer remaining unchanging-price reporting; M3-02 demo refusal is implemented |
 | Internal & provider date gaps | Data Quality | Discontinuous trading history or missing calendar sessions across assets | Transparently disclose in diagnostic reports; do not silently insert, fill, or drop bars; accepted next-observed-close contract advances strictly to the next observed source row (lag counts source rows, not calendar days; absence of a source row does not imply a verified calendar non-session, and existing zero-volume or stale rows are never skipped or dropped); scope-relevant unresolved gaps block affected interpretation | Milestone 3 data cleaning & calendar alignment | Safe to defer calendar-alignment infrastructure for synthetic Demo v0; unresolved scope-relevant local-data gaps block affected interpretation (no silent bar insertion) |
 | Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty; strictly forbid adding cash dividends on top of total-return series | Milestone 3/4 corporate action pipeline | Safe to defer for demo; cannot claim audited point-in-time adjustment |
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Demo v0 uses one price-only factor; M3-01 adds three artificial synthetic panels | Demo v0 remains the single-factor official slice. M3-01 combines artificial quality, reversal, and momentum fixtures through existing helpers. Remaining zoo expansion stays deferred. | Remaining Milestone 3 factor-family work after M3-01 | Safe to defer remaining zoo expansion; M3-01 three-factor synthetic backtest is implemented |

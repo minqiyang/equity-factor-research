@@ -25,6 +25,10 @@ from backtest.portfolio import (
     run_long_only_backtest,
 )
 from features.momentum import calculate_12_1_momentum
+from research.bar_integrity import (
+    require_complete_price_bars,
+    require_positive_volume_bars,
+)
 from research.synthetic_momentum_demo import (
     SyntheticDemoConfig,
     build_equal_weight_benchmark,
@@ -135,6 +139,7 @@ def run_demo_v0(
     config: SyntheticDemoConfig = DEMO_V0_CONFIG,
     report_path: Path = DEFAULT_REPORT_PATH,
     attempt_log_path: Path = DEFAULT_ATTEMPT_LOG_PATH,
+    volume: pd.DataFrame | None = None,
 ) -> BacktestResult:
     """Run the official Demo v0 slice and record the attempt."""
 
@@ -145,7 +150,7 @@ def run_demo_v0(
     )
     attempt_id = start_record["attempt_id"]
     try:
-        prices, result = _run_demo_v0_pipeline(config=config)
+        prices, result = _run_demo_v0_pipeline(config=config, volume=volume)
         write_comparison_report(
             report_path=report_path,
             attempt_log_path=attempt_log_path,
@@ -268,6 +273,7 @@ This report was generated from synthetic data only. It does not use private data
 - Zero slippage is labeled diagnostic: `{result.assumptions["zero_cost_or_slippage_is_diagnostic"]}`.
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
+- Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Silent fill, clip, drop, or repair is not applied.
 - All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seed and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
@@ -288,6 +294,7 @@ def main() -> None:
 def _run_demo_v0_pipeline(
     *,
     config: SyntheticDemoConfig,
+    volume: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, BacktestResult]:
     if (
         isinstance(config.periods_per_year, bool)
@@ -303,6 +310,13 @@ def _run_demo_v0_pipeline(
         raise ValueError("lookback_periods must be a positive non-boolean integer")
 
     prices = generate_synthetic_prices(config)
+    require_complete_price_bars(
+        prices,
+        expected_rows=config.periods,
+        expected_assets=config.asset_count,
+    )
+    if volume is not None:
+        require_positive_volume_bars(volume, prices=prices)
     momentum = calculate_12_1_momentum(
         prices,
         lookback_periods=config.lookback_periods,

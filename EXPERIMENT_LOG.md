@@ -32,7 +32,9 @@ appends every attempted case, including failures and catchable interruptions,
 to `reports/synthetic_multifactor_backtest_demo_attempts.jsonl` and writes the
 synthetic comparison report to `reports/synthetic_multifactor_backtest_demo.md`.
 A start record is written before computation so incomplete attempts remain
-visible. This lightweight diagnostic run logging is explicitly distinguished
+visible. M3-02 requires complete finite strictly positive price bars in those
+two demos and refuses a supplied missing or zero-volume panel without silent
+fill, clip, drop, or repair. This lightweight diagnostic run logging is explicitly distinguished
 from the formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy
