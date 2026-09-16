@@ -45,8 +45,10 @@ research-safety review standards, and writing-style rules.
   (STANDARD lane requires 1 fresh independent reviewer, fresh Grok latest XHigh;
   CRITICAL lane requires 2 fresh independent reviewers, fresh Grok latest XHigh
   plus GPT Astra latest High / AUDIT). Review is read-only on a clean root at the
-  exact current head, never the producer worktree. The current owner no-GPT /
-  lsgz:1 exception is session-scoped, not the permanent default.
+  exact current head, never the producer worktree. Required review runs in a new
+  Herdr tab or pane opened from the coordinator workspace; a coordinator-session
+  hidden `codex exec review` is not a visible review seat. The current owner
+  no-GPT / lsgz:1 exception is session-scoped, not the permanent default.
 - After two completed formal reviews on the same PR still report P1 or P2,
   stop the review-and-fix loop. Dispatch a fresh Grok latest session and a fresh
   Gemini latest / Antigravity session to analyze the whole PR and current tree,
@@ -81,6 +83,11 @@ keep their existing wording.
 
 ## Startup And Sources
 
+- Live Herdr+Pi coordination standard is mandatory. Before dispatch or review,
+  read both files in `Codex/Standards/herdr_pi_coordinator_v7_two_file/`:
+  `coordinator.md` and `routing_table.json`. Those files own topology, lanes,
+  routing, review seats, and visible-tab review. Do not load
+  `Codex/standards/archive/`.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
