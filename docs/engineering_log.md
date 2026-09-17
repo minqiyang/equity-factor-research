@@ -1,5 +1,21 @@
 # Engineering Log
 
+## 2026-09-16 - M3-06 unchanging-price segment reporting
+
+- Added `research/unchanging_price.py` used by `python -m research.demo_v0`
+  and `python -m research.synthetic_multifactor_backtest_demo`.
+- An unchanging-price segment is a consecutive run of equal prices for
+  one asset with length >= 2. Both comparison reports record segment
+  count, assets affected, and max run length. Consecutive equal prices
+  stay in the panel. The backtest uses every supplied bar.
+- Frozen `DEMO_V0_CONFIG` remains seed 20260521, 20 assets, 756 rows,
+  lookback 252, skip 21, ME, top_n 5, 10 bps, 0 slippage. Official
+  commands stay `python -m research.demo_v0` and
+  `python -m research.synthetic_multifactor_backtest_demo`.
+- Calendar-alignment infrastructure and event-level adjustment checks
+  remain later Milestone 3 layers. No private data, calendars, or new
+  cost engines.
+
 ## 2026-09-16 - M3-05 broader historical windows
 
 - Proved Demo v0 and the M3-01 three-factor backtest demo run on a longer

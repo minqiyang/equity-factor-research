@@ -210,6 +210,10 @@ def test_report_records_timing_cost_and_required_claims(tmp_path: Path) -> None:
     assert "undivided" in report_text
     assert "All-Attempt Case Logging" in report_text
     assert "zero volume is refused" in report_text
+    assert "Unchanging-price segments:" in report_text
+    assert "Assets with unchanging-price segments:" in report_text
+    assert "Max unchanging-price run length:" in report_text
+    assert "every supplied bar" in report_text
     assert "supplied price series only" in report_text
     assert "cash-dividend overlay" in report_text
     assert "observed source rows" in report_text
@@ -235,6 +239,7 @@ def test_source_stays_synthetic_only() -> None:
     assert "require_positive_volume_bars" in source
     assert "require_observed_source_index" in source
     assert "refuse_cash_dividend_overlay" in source
+    assert "report_unchanging_price_segments" in source
     assert "DEMO_SIGNAL_LAG_PERIODS" in source
     assert "csv_loader" not in source
     assert "local_csv" not in source

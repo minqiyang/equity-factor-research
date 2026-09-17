@@ -31,6 +31,14 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-06 unchanging-price segment reporting for Demo v0 and the M3-01
+  three-factor backtest demo: consecutive equal prices of length >= 2
+  are counted as segments, with assets affected and max run length
+  written into both comparison reports. Consecutive equal prices stay
+  in the panel. The backtest uses every supplied bar. Frozen Demo v0
+  config is unchanged. No new public command. Remaining Milestone 3
+  work covers calendar-alignment infrastructure and event-level
+  adjustment checks.
 - M3-05 broader historical window tests for Demo v0 and the M3-01
   three-factor backtest demo: `dataclasses.replace` with
   `periods=2 * DEMO_V0_CONFIG.periods` runs both pipelines on 1512
