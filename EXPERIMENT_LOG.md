@@ -40,7 +40,11 @@ Those demos keep the supplied observed index. Detecting invented sessions
 remains later calendar-alignment work. M3-04 proves those commands compute
 held returns from the supplied price series only and refuse a separate
 cash-dividend overlay (PIT-007). Event-level dividend and split
-reconciliation remains later Milestone 3/4 work. This lightweight diagnostic run logging is explicitly distinguished
+reconciliation remains later Milestone 3/4 work. M3-05 proves those
+commands run on a longer synthetic panel of length
+`2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official
+frozen Demo v0 config remains 756 rows. Remaining Milestone 3 work covers
+calendar-alignment infrastructure and event-level adjustment checks. This lightweight diagnostic run logging is explicitly distinguished
 from the formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy

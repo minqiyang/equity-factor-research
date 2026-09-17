@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-16 after M3-04 PIT-007 no dividend double count.
+Updated: 2026-09-16 after M3-05 broader historical windows.
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -44,7 +44,7 @@ The program follows five primary milestones:
 | --- | --- | --- | --- |
 | **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic provided qualitative feasibility/planning context with documented caveats (outside Demo v0 acceptance; no tradability, universe-completeness, or holdout claim). |
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Implemented (synthetic fixtures)** | Official command `python -m research.demo_v0` reuses existing 12-1 momentum and frozen `SyntheticDemoConfig` values -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations; All-Attempt Case Logging records successes and failures. Synthetic fixtures only; no profitability claim; no private data. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic. Separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections stay in the backlog. |
-| **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **In progress (M3-01, M3-02, M3-03, and M3-04 implemented)** | M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. M3-02 requires complete finite strictly positive price bars in Demo v0 and the M3-01 demo, and refuses a supplied zero-volume or missing volume panel without silent fill, clip, drop, or repair. M3-03 proves those demos count signal lag in observed source rows; a missing source row remains an omitted observation. Those demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work. M3-04 proves those demos compute held returns from the supplied price series only and refuse a separate cash-dividend overlay (PIT-007). Remaining Milestone 3 work covers broader historical windows, calendar-alignment infrastructure, and event-level adjustment checks. All empirical runs remain explicitly caveated exploratory diagnostics. |
+| **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **In progress (M3-01, M3-02, M3-03, M3-04, and M3-05 implemented)** | M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. M3-02 requires complete finite strictly positive price bars in Demo v0 and the M3-01 demo, and refuses a supplied zero-volume or missing volume panel without silent fill, clip, drop, or repair. M3-03 proves those demos count signal lag in observed source rows; a missing source row remains an omitted observation. Those demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work. M3-04 proves those demos compute held returns from the supplied price series only and refuse a separate cash-dividend overlay (PIT-007). M3-05 proves those demos run on a longer synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official frozen `DEMO_V0_CONFIG` remains 756 rows. Remaining Milestone 3 work covers calendar-alignment infrastructure and event-level adjustment checks. All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **Future Evidence Gate** | Full point-in-time corporate action reconciliation, survivorship-bias-free universe construction, complete all-trial append-only ledger enforcement, purged/embargoed sample splits, and multiple-testing inference packages. Prerequisite for formal factor promotion; not a blocker for early exploratory demos. |
 | **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
 
@@ -105,8 +105,11 @@ The program follows five primary milestones:
   zero-volume refusal for those two demos. M3-03 proves signal lag counts
   observed source rows on those commands. M3-04 proves those commands compute
   held returns from the supplied price series only and refuse a separate
-  cash-dividend overlay. Remaining Milestone 3 work covers broader windows,
-  calendar-alignment infrastructure, and event-level adjustment checks.
+  cash-dividend overlay. M3-05 proves those commands run on a longer
+  synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through
+  `dataclasses.replace`; official frozen `DEMO_V0_CONFIG` remains 756 rows.
+  Remaining Milestone 3 work covers calendar-alignment infrastructure and
+  event-level adjustment checks.
 
 ## Active Delivery Target: Demo v0 Definition of Done
 
@@ -130,8 +133,11 @@ remains an omitted observation. Those demos keep the supplied observed index.
 Detecting invented sessions remains later calendar-alignment work.
 M3-04 proves those demos compute held returns from the supplied price series
 only and refuse a separate cash-dividend overlay (PIT-007).
-Remaining Milestone 3 work covers broader windows, calendar-alignment
-infrastructure, and event-level adjustment checks.
+M3-05 proves those demos run on a longer synthetic panel of length
+`2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official
+frozen `DEMO_V0_CONFIG` remains 756 rows.
+Remaining Milestone 3 work covers calendar-alignment infrastructure and
+event-level adjustment checks.
 
 ## Imperfection Policy And Lightweight Backlog
 
