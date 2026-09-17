@@ -1,5 +1,36 @@
 # Engineering Log
 
+## 2026-09-16 - MATERIAL-216-1 official report log paths
+
+- Restored the repository-relative All-Attempt paths in `reports/demo_v0.md`
+  and `reports/synthetic_multifactor_backtest_demo.md` by editing those lines.
+  Byte comparison against `fd8d6d7` confirms all other report content,
+  including metrics and unchanging-price lines, remains identical.
+  `research/demo_v0.py`, including frozen `DEMO_V0_CONFIG`, remains identical.
+- Added `tests/test_official_report_paths.py` to check both committed report
+  files for their exact relative log lines and absence of `/var/folders`.
+  Baseline: 2 failed. Corrected reports: 2 passed. Official demos were left idle.
+- Ablation: removing each path correction in isolation yielded 1 failed and
+  1 passed; both corrections were retained. Appending `/var/folders` elsewhere
+  in each report also yielded 1 failed and 1 passed. Each control was restored.
+  Verification covers committed report paths; runtime generation stays unchanged.
+
+## 2026-09-16 - M3-06 unchanging-price segment reporting
+
+- Added `research/unchanging_price.py` used by `python -m research.demo_v0`
+  and `python -m research.synthetic_multifactor_backtest_demo`.
+- An unchanging-price segment is a consecutive run of equal prices for
+  one asset with length >= 2. Both comparison reports record segment
+  count, assets affected, and max run length. Consecutive equal prices
+  stay in the panel. The backtest uses every supplied bar.
+- Frozen `DEMO_V0_CONFIG` remains seed 20260521, 20 assets, 756 rows,
+  lookback 252, skip 21, ME, top_n 5, 10 bps, 0 slippage. Official
+  commands stay `python -m research.demo_v0` and
+  `python -m research.synthetic_multifactor_backtest_demo`.
+- Calendar-alignment infrastructure and event-level adjustment checks
+  remain later Milestone 3 layers. No private data, calendars, or new
+  cost engines.
+
 ## 2026-09-16 - M3-05 broader historical windows
 
 - Proved Demo v0 and the M3-01 three-factor backtest demo run on a longer

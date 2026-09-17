@@ -34,6 +34,7 @@ from research.source_row_lag import (
     DEMO_SIGNAL_LAG_PERIODS,
     require_observed_source_index,
 )
+from research.unchanging_price import report_unchanging_price_segments
 from research.synthetic_momentum_demo import (
     SyntheticDemoConfig,
     build_equal_weight_benchmark,
@@ -211,6 +212,7 @@ def write_comparison_report(
     report_path = Path(report_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     metrics = result.metrics
+    unchanging = report_unchanging_price_segments(prices)
     content = f"""# Demo v0 Comparison Report
 
 This report is the official Demo v0 synthetic vertical slice. It uses existing 12-1 momentum, frozen `SyntheticDemoConfig` values, and the existing long-only backtester. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic.
@@ -234,6 +236,9 @@ This report was generated from synthetic data only. It does not use private data
 - Random seed: `{config.seed}`
 - Asset count: `{config.asset_count}`
 - Price rows: `{len(prices)}`
+- Unchanging-price segments: `{unchanging.segment_count}`
+- Assets with unchanging-price segments: `{unchanging.assets_affected}`
+- Max unchanging-price run length: `{unchanging.max_run_length}`
 - Source date range: `{prices.index.min().date()}` to `{prices.index.max().date()}`
 - Evaluation date range: `{result.timing_metadata["evaluation_start"].date()}` to `{result.timing_metadata["evaluation_end"].date()}`
 - Momentum lookback periods: `{config.lookback_periods}`
@@ -285,6 +290,7 @@ This report was generated from synthetic data only. It does not use private data
 - Holdings drift with asset returns between scheduled rebalances; turnover is the undivided sum of absolute signed trades against drifted pre-trade weights. Fixed-bps costs are charged on post-return portfolio value and expressed as beginning-period return impacts. This is weight-level accounting, not an order-fill model.
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Silent fill, clip, drop, or repair is not applied.
+- Consecutive equal prices stay in the panel. Unchanging-price segment count, assets affected, and max run length are recorded. The backtest uses every supplied bar.
 - Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. Event-level dividend and split reconciliation remains later Milestone 3/4 work.
 - Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work.
 - All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
