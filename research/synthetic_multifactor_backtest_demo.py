@@ -41,7 +41,10 @@ from research.bar_integrity import (
     require_complete_price_bars,
     require_positive_volume_bars,
 )
-from research.dividend_policy import refuse_cash_dividend_overlay
+from research.dividend_policy import (
+    refuse_cash_dividend_overlay,
+    require_event_date_membership,
+)
 from research.source_row_lag import (
     DEMO_SIGNAL_LAG_PERIODS,
     refuse_inserted_source_rows,
@@ -202,6 +205,7 @@ def run_synthetic_multifactor_backtest_demo(
     volume: pd.DataFrame | None = None,
     cash_dividends: object = None,
     observed_index: pd.DatetimeIndex | None = None,
+    event_table: pd.DataFrame | None = None,
 ) -> SyntheticMultifactorBacktestDemoResult:
     """Run the synthetic three-factor backtest demo and record the attempt."""
 
@@ -217,6 +221,7 @@ def run_synthetic_multifactor_backtest_demo(
             volume=volume,
             cash_dividends=cash_dividends,
             observed_index=observed_index,
+            event_table=event_table,
         )
         result = SyntheticMultifactorBacktestDemoResult(
             **pipeline,
@@ -227,6 +232,7 @@ def run_synthetic_multifactor_backtest_demo(
             attempt_log_path=attempt_log_path,
             config=config,
             result=result,
+            event_table=event_table,
         )
     except _CATCHABLE_ATTEMPT_OUTCOMES as exc:
         _record_attempt_outcome(
@@ -263,6 +269,7 @@ def write_comparison_report(
     attempt_log_path: Path,
     config: SyntheticMultifactorBacktestConfig,
     result: SyntheticMultifactorBacktestDemoResult,
+    event_table: pd.DataFrame | None = None,
 ) -> None:
     """Write the human-readable synthetic three-factor comparison report."""
 
@@ -271,6 +278,12 @@ def write_comparison_report(
     metrics = result.backtest_result.metrics
     unchanging = report_unchanging_price_segments(result.prices)
     calendar_spans = report_calendar_day_spans(result.prices.index)
+    event_status = (
+        "Event-level reconciliation was not performed because no independent event table was supplied."
+        if event_table is None
+        else "Supplied event dates passed membership in the declared source index. "
+        "Full economic dividend/split reconciliation remains deferred."
+    )
     content = f"""# Synthetic Multifactor Backtest Comparison Report
 
 This report is the M3-01 exploratory synthetic three-factor backtest. It reuses Demo v0 synthetic price dates and assets, the existing factor generator and `{_format_weights(config.weights)}` weights, existing winsorize/z-score/`combine_factors` helpers, and the existing long-only backtester. `python -m research.demo_v0` remains the official Demo v0 command. `python -m research.synthetic_multifactor_workflow_demo` remains the feature-only workflow.
@@ -357,7 +370,7 @@ This report was generated from synthetic data only. It does not use private data
 - There is no survivorship-bias, delisting, borrow, tax, liquidity, or market-impact model in this slice.
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
 - Consecutive equal prices stay in the panel. Unchanging-price segment count, assets affected, and max run length are recorded. The backtest uses every supplied bar.
-- Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. Event-level dividend and split reconciliation remains later Milestone 3/4 work.
+- Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. {event_status} Event tables receive date-membership checks only; event values leave prices and held returns unchanged.
 - Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. M3-07 calendar-alignment checks refuse invented sessions: panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Adjacent calendar-day spans measure `(next.normalize() - current.normalize()).days` and disclose omitted-observation gaps in wall time. Session and holiday status remains unverified. Every supplied observed bar stays in the panel, including Friday-Monday bars.
 - All-Attempt Case Logging records every invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seeds and remain workflow diagnostics only.
@@ -382,6 +395,7 @@ def _run_pipeline(
     volume: pd.DataFrame | None = None,
     cash_dividends: object = None,
     observed_index: pd.DatetimeIndex | None = None,
+    event_table: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     _validate_config(config)
 
@@ -395,6 +409,7 @@ def _run_pipeline(
     )
     prices = refuse_inserted_source_rows(prices, observed_index=observed_index)
     refuse_cash_dividend_overlay(cash_dividends)
+    require_event_date_membership(event_table, observed_index=observed_index)
     if volume is not None:
         require_positive_volume_bars(volume, prices=prices)
     raw_factors = generate_synthetic_factor_panels(_factor_config(config))

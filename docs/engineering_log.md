@@ -1,5 +1,43 @@
 # Engineering Log
 
+## 2026-09-16 - M3-08 event-date membership and event-table disclosure
+
+- Demo v0 and M3-01 accept an optional `event_table` DataFrame with a
+  `DatetimeIndex` of event dates. The existing dividend-policy module checks
+  each timestamp against the declared source index. Absent or missing dates
+  and untyped indexes are refused; repeated dates and empty typed tables pass.
+  Event values remain opaque metadata. Prices and held returns stay unchanged,
+  and the existing PIT-007 cash-dividend overlay refusal remains active.
+- Both official commands supply no independent event table. Both reports
+  state that event-level reconciliation was not performed because no
+  independent event table was supplied. Each official command appended
+  attempt 5 with started/success records, preserving earlier log bytes.
+  Report contents differ from baseline only in the event-policy sentence;
+  metrics and relative log paths remain byte-identical. Frozen
+  `DEMO_V0_CONFIG` is byte-identical to baseline.
+- Added 21 deterministic cases for absent and malformed dates, empty and
+  repeated-date tables, unchanged prices and held results, source membership,
+  previous-report preservation, failure logging, and official reports.
+  Baseline focused suite: 274 passed, 2 skipped. Initial new-case run:
+  19 passed, 2 deselected. Expanded focused suite: 295 passed, 2 skipped.
+  Full suite: 2888 passed, 2 platform skips, 1 constant-input correlation
+  warning. All pytest runs used the owner-specified existing interpreter
+  with `PYTHONPATH=src`. Repository-wide Ruff, compilation, map regeneration,
+  and whitespace checks passed.
+- Ablation removed one guard per isolated in-memory subprocess. Bypassing
+  event-date refusal yielded 4 failed tests in each demo; bypassing the
+  cash-dividend overlay refusal yielded 1 failed test in each demo. All
+  source hashes remained unchanged. Both guards are retained. One small
+  helper in the existing policy module implements membership; an adjustment
+  engine has zero implementation footprint. The experiment establishes
+  behavior and correctness; runtime and allocation costs remain unbenchmarked.
+- M3-08 completes supplied-event date membership and explicit no-table
+  disclosure. Full economic dividend/split reconciliation remains a separately
+  scoped Milestone 3/4 task. Earlier dated entries preserve historical
+  checkpoint wording. `reports/m3_08_attempt.md` records commands, outcomes,
+  and ablation evidence. Delivery ends with a local implementation commit
+  in the requested worktree and branch; the coordinator card stays untracked.
+
 ## 2026-09-16 - M3-07 calendar-day spans and invented-session refusal
 
 - Demo v0 and M3-01 report adjacent normalized timestamp spans using
