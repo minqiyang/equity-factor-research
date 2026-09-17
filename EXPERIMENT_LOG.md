@@ -36,18 +36,19 @@ visible. M3-02 requires complete finite strictly positive price bars in those
 two demos and refuses a supplied missing or zero-volume panel without silent
 fill, clip, drop, or repair. M3-03 proves signal lag on those commands counts
 observed source rows; a missing source row remains an omitted observation.
-Those demos keep the supplied observed index. Detecting invented sessions
-remains later calendar-alignment work. M3-04 proves those commands compute
-held returns from the supplied price series only and refuse a separate
-cash-dividend overlay (PIT-007). Event-level dividend and split
-reconciliation remains later Milestone 3/4 work. M3-05 proves those
-commands run on a longer synthetic panel of length
-`2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official
-frozen Demo v0 config remains 756 rows. M3-06 counts unchanging-price
-segments on those commands and keeps every supplied bar. Remaining
-Milestone 3 work covers calendar-alignment infrastructure and
-event-level adjustment checks. This lightweight diagnostic run logging is explicitly distinguished
-from the formal experiment/trial-ledger accounting required by charter Stage 4 /
+Those demos keep the supplied observed index. M3-07 reports adjacent
+calendar-day spans and refuses panel timestamps absent from the declared
+source index. Official demos declare the generated price index as source.
+Session and holiday status remains unverified. M3-04 proves those commands
+compute held returns from the supplied price series only and refuse a separate
+cash-dividend overlay (PIT-007). Event-level dividend and split reconciliation
+remains later Milestone 3/4 work. M3-05 proves those commands run on a longer
+synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through
+`dataclasses.replace`; official frozen Demo v0 config remains 756 rows. M3-06
+counts unchanging-price segments on those commands and keeps every supplied
+bar. Remaining Milestone 3 work is event-level dividend/split reconciliation.
+This lightweight diagnostic run logging is explicitly distinguished from the
+formal experiment/trial-ledger accounting required by charter Stage 4 /
 `docs/experiment_trial_ledger_contract.md` and by Milestone 4 formal research.
 Existing synthetic sidecar logs under `reports/experiment_logs/` remain legacy
 diagnostics and are not accepted Demo v0 evidence. `python -m research.synthetic_multifactor_workflow_demo`

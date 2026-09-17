@@ -28,6 +28,8 @@ This report was generated from synthetic data only. It does not use private data
 - Unchanging-price segments: `0`
 - Assets with unchanging-price segments: `0`
 - Max unchanging-price run length: `0`
+- Adjacent timestamp pairs with calendar-day span > 1: `151`
+- Max adjacent calendar-day span: `3` days
 - Source date range: `2021-01-01` to `2023-11-24`
 - Evaluation date range: `2021-01-01` to `2023-11-24`
 - Factor names: `synthetic_momentum, synthetic_quality, synthetic_reversal`
@@ -83,7 +85,7 @@ This report was generated from synthetic data only. It does not use private data
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Mismatched price/factor axes and nonfinite factor values are refused. Silent fill, reindex, clip, drop, or repair is not applied.
 - Consecutive equal prices stay in the panel. Unchanging-price segment count, assets affected, and max run length are recorded. The backtest uses every supplied bar.
 - Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. Event-level dividend and split reconciliation remains later Milestone 3/4 work.
-- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work.
+- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. M3-07 calendar-alignment checks refuse invented sessions: panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Adjacent calendar-day spans measure `(next.normalize() - current.normalize()).days` and disclose omitted-observation gaps in wall time. Session and holiday status remains unverified. Every supplied observed bar stays in the panel, including Friday-Monday bars.
 - All-Attempt Case Logging records every invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seeds and remain workflow diagnostics only.
 - No claim of strategy profitability is made.

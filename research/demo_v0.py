@@ -32,7 +32,8 @@ from research.bar_integrity import (
 from research.dividend_policy import refuse_cash_dividend_overlay
 from research.source_row_lag import (
     DEMO_SIGNAL_LAG_PERIODS,
-    require_observed_source_index,
+    refuse_inserted_source_rows,
+    report_calendar_day_spans,
 )
 from research.unchanging_price import report_unchanging_price_segments
 from research.synthetic_momentum_demo import (
@@ -147,6 +148,7 @@ def run_demo_v0(
     attempt_log_path: Path = DEFAULT_ATTEMPT_LOG_PATH,
     volume: pd.DataFrame | None = None,
     cash_dividends: object = None,
+    observed_index: pd.DatetimeIndex | None = None,
 ) -> BacktestResult:
     """Run the official Demo v0 slice and record the attempt."""
 
@@ -161,6 +163,7 @@ def run_demo_v0(
             config=config,
             volume=volume,
             cash_dividends=cash_dividends,
+            observed_index=observed_index,
         )
         write_comparison_report(
             report_path=report_path,
@@ -213,6 +216,7 @@ def write_comparison_report(
     report_path.parent.mkdir(parents=True, exist_ok=True)
     metrics = result.metrics
     unchanging = report_unchanging_price_segments(prices)
+    calendar_spans = report_calendar_day_spans(prices.index)
     content = f"""# Demo v0 Comparison Report
 
 This report is the official Demo v0 synthetic vertical slice. It uses existing 12-1 momentum, frozen `SyntheticDemoConfig` values, and the existing long-only backtester. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic.
@@ -239,6 +243,8 @@ This report was generated from synthetic data only. It does not use private data
 - Unchanging-price segments: `{unchanging.segment_count}`
 - Assets with unchanging-price segments: `{unchanging.assets_affected}`
 - Max unchanging-price run length: `{unchanging.max_run_length}`
+- Adjacent timestamp pairs with calendar-day span > 1: `{calendar_spans.pairs_over_one_day}`
+- Max adjacent calendar-day span: `{calendar_spans.max_span_days}` days
 - Source date range: `{prices.index.min().date()}` to `{prices.index.max().date()}`
 - Evaluation date range: `{result.timing_metadata["evaluation_start"].date()}` to `{result.timing_metadata["evaluation_end"].date()}`
 - Momentum lookback periods: `{config.lookback_periods}`
@@ -292,7 +298,7 @@ This report was generated from synthetic data only. It does not use private data
 - Price bars must be complete, finite, and strictly positive. A supplied volume panel must be complete, finite, and strictly positive; zero volume is refused. Silent fill, clip, drop, or repair is not applied.
 - Consecutive equal prices stay in the panel. Unchanging-price segment count, assets affected, and max run length are recorded. The backtest uses every supplied bar.
 - Held returns use the supplied price series only (`current / previous - 1`). A separate cash-dividend overlay on that series is refused. Event-level dividend and split reconciliation remains later Milestone 3/4 work.
-- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. Detecting invented sessions remains later calendar-alignment work.
+- Signal lag counts observed source rows in the bounded accounting slice. A missing source row remains an omitted observation. These demos keep the supplied observed index. M3-07 calendar-alignment checks refuse invented sessions: panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Adjacent calendar-day spans measure `(next.normalize() - current.normalize()).days` and disclose omitted-observation gaps in wall time. Session and holiday status remains unverified. Every supplied observed bar stays in the panel, including Friday-Monday bars.
 - All-Attempt Case Logging records every Demo v0 invocation, including failures and catchable interruptions. A start record is written before computation so incomplete attempts stay visible. This is lightweight demo logging, not charter Stage 4 experiment/trial-ledger accounting.
 - Results depend on the frozen synthetic seed and remain workflow diagnostics only.
 - No claim of strategy profitability is made.
@@ -315,6 +321,7 @@ def _run_demo_v0_pipeline(
     config: SyntheticDemoConfig,
     volume: pd.DataFrame | None = None,
     cash_dividends: object = None,
+    observed_index: pd.DatetimeIndex | None = None,
 ) -> tuple[pd.DataFrame, BacktestResult]:
     if (
         isinstance(config.periods_per_year, bool)
@@ -330,12 +337,14 @@ def _run_demo_v0_pipeline(
         raise ValueError("lookback_periods must be a positive non-boolean integer")
 
     prices = generate_synthetic_prices(config)
+    if observed_index is None:
+        observed_index = prices.index.copy()
     require_complete_price_bars(
         prices,
         expected_rows=config.periods,
         expected_assets=config.asset_count,
     )
-    prices = require_observed_source_index(prices)
+    prices = refuse_inserted_source_rows(prices, observed_index=observed_index)
     refuse_cash_dividend_overlay(cash_dividends)
     if volume is not None:
         require_positive_volume_bars(volume, prices=prices)

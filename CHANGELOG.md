@@ -31,22 +31,30 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-07 calendar-day span reporting for Demo v0 and M3-01: both reports record
+  the count of adjacent timestamp pairs spanning more than one day and the
+  maximum span. Both pipelines reuse `refuse_inserted_source_rows` against a
+  declared source index; official demos declare the generated price index.
+  Session and holiday status remains unverified. Every supplied observed bar
+  stays in place, including Friday-Monday bars. Frozen `DEMO_V0_CONFIG` stays
+  unchanged. Remaining Milestone 3 work is event-level dividend/split
+  reconciliation.
+
 - M3-06 unchanging-price segment reporting for Demo v0 and the M3-01
   three-factor backtest demo: consecutive equal prices of length >= 2
   are counted as segments, with assets affected and max run length
   written into both comparison reports. Consecutive equal prices stay
   in the panel. The backtest uses every supplied bar. Frozen Demo v0
   config is unchanged. No new public command. Remaining Milestone 3
-  work covers calendar-alignment infrastructure and event-level
-  adjustment checks.
+  work is event-level dividend/split reconciliation.
 - M3-05 broader historical window tests for Demo v0 and the M3-01
   three-factor backtest demo: `dataclasses.replace` with
   `periods=2 * DEMO_V0_CONFIG.periods` runs both pipelines on 1512
   synthetic rows. Official frozen Demo v0 config remains seed 20260521,
   20 assets, 756 rows, lookback 252, skip 21, ME, top_n 5, 10 bps,
   0 slippage. Official commands keep that frozen config. Output is a
-  synthetic diagnostic. Remaining Milestone 3 work covers
-  calendar-alignment infrastructure and event-level adjustment checks.
+  synthetic diagnostic. Remaining Milestone 3 work is
+  event-level dividend/split reconciliation.
 - M3-04 PIT-007 tests for Demo v0 and the M3-01 three-factor backtest
   demo: held returns use the supplied price series only
   (`current / previous - 1`), and a separate cash-dividend overlay on that
@@ -56,10 +64,11 @@ profitability, or trading readiness.
 - M3-03 source-row lag tests for Demo v0 and the M3-01 three-factor
   backtest demo: signal lag counts observed source rows in the bounded
   accounting slice, and a missing source row remains an omitted
-  observation. Those demos keep the supplied observed index. Detecting
-  invented sessions remains later calendar-alignment work. Frozen Demo v0
-  config is unchanged. Remaining Milestone 3 work covers broader windows,
-  calendar-alignment infrastructure, and adjustment checks.
+  observation. Those demos keep the supplied observed index. M3-07 now
+  reports adjacent calendar-day spans and refuses panel timestamps absent
+  from the declared source index. Frozen Demo v0
+  config is unchanged. Remaining Milestone 3 work is event-level
+  dividend/split reconciliation.
 - M3-02 zero-volume and missing-bar refusal for Demo v0 and the M3-01
   three-factor backtest demo: complete finite strictly positive price bars
   are required, a supplied volume panel must be strictly positive, and

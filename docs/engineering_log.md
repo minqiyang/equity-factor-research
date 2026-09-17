@@ -1,5 +1,40 @@
 # Engineering Log
 
+## 2026-09-16 - M3-07 calendar-day spans and invented-session refusal
+
+- Demo v0 and M3-01 report adjacent normalized timestamp spans using
+  `(next.normalize() - current.normalize()).days`: count pairs greater than
+  one day and record the maximum; indexes with zero pairs report zero.
+  The span helper lives in `research/source_row_lag.py`.
+- Both run functions accept an optional declared `observed_index` and reuse
+  `refuse_inserted_source_rows`. Official commands declare their generated
+  price index as source. Panel timestamps absent from that source are refused;
+  the existing helper also refuses dropped or reordered source rows.
+- Every supplied observed bar stays in the pipeline, including Friday-Monday
+  bars. Both official 756-row synthetic reports record 151 pairs spanning more
+  than one calendar day and a maximum of 3 days. Session and holiday status
+  remains unverified. Frozen `DEMO_V0_CONFIG` is byte-identical to the baseline.
+  Report metrics and relative All-Attempt paths remain identical. Each official
+  command appended attempt 4 with started/success records.
+- Baseline focused suite: 259 passed, 2 platform skips. Initial expanded run:
+  3 failed, 271 passed, 2 skipped; three-row Demo v0 fixtures lacked the warm-up
+  anchor needed before two measured returns. Adding a preceding adjacent
+  warm-up date to the integration fixtures preserved their expected span
+  counts. The exact Mon/Wed/Fri unit fixture remains three timestamps.
+- Final focused suite: 274 passed, 2 skipped. Full suite: 2867 passed,
+  2 platform skips, 1 constant-input correlation warning. Changed Python files
+  pass Ruff; `git diff --check` passes. Tests used the owner-specified existing
+  interpreter with `PYTHONPATH=src`. `docs/repo_map.md` was regenerated.
+- Ablation: isolated in-memory removal of span measurement yielded 10 failed,
+  5 passed. Bypassing each demo's source refusal separately yielded 1 failed.
+  Source hashes remained identical throughout these controls. Both features
+  are retained; a market calendar and bar filtering remain outside this slice.
+  The evidence covers M3-07 behavior and makes no performance-cost claim.
+- Remaining Milestone 3 work is event-level dividend/split reconciliation.
+  Earlier dated entries preserve their historical checkpoint wording. The
+  attempt record is `reports/m3_07_attempt.md`; delivery is a local commit on
+  the requested branch within the requested worktree.
+
 ## 2026-09-16 - MATERIAL-216-1 official report log paths
 
 - Restored the repository-relative All-Attempt paths in `reports/demo_v0.md`
