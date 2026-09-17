@@ -31,6 +31,16 @@ profitability, or trading readiness.
 
 ### Added
 
+- M3-08 supplied-event date membership for Demo v0 and M3-01: an optional
+  `event_table` DataFrame uses a `DatetimeIndex` of event dates. Every date must
+  exist in the declared source index; absent or missing dates are refused.
+  Repeated dates and empty typed tables are accepted. Event values remain
+  metadata, and prices and held returns remain unchanged. The PIT-007
+  cash-dividend overlay refusal remains active. Both official reports state
+  that event-level reconciliation was not performed because no independent
+  event table was supplied. Frozen `DEMO_V0_CONFIG` remains unchanged.
+  Full economic dividend/split reconciliation remains separately scoped work.
+
 - M3-07 calendar-day span reporting for Demo v0 and M3-01: both reports record
   the count of adjacent timestamp pairs spanning more than one day and the
   maximum span. Both pipelines reuse `refuse_inserted_source_rows` against a
