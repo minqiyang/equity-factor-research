@@ -1,12 +1,14 @@
 """Observed source-row lag helpers for Demo v0 and the M3-01 demo.
 
 Lag counts observed source rows in the supplied index. The demos keep that
-index. A missing source row remains an omitted observation. Detecting
-invented sessions remains later calendar-alignment work.
+index. A missing source row remains an omitted observation. Calendar-day
+spans describe wall-time gaps. Invented sessions are refused against the
+declared source index.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from numbers import Integral
 
 import pandas as pd
@@ -16,6 +18,25 @@ from features.operators import validate_panel_data
 
 DEMO_SIGNAL_LAG_PERIODS = 1
 SIGNAL_LAG_UNIT = "observed_source_rows_within_bounded_accounting_slice"
+
+
+@dataclass(frozen=True)
+class CalendarDaySpanReport:
+    """Wall-time span counts across consecutive observed timestamps."""
+
+    pairs_over_one_day: int
+    max_span_days: int
+
+
+def report_calendar_day_spans(index: pd.DatetimeIndex) -> CalendarDaySpanReport:
+    """Measure normalized adjacent spans; an index with no pairs reports zero."""
+
+    normalized = index.normalize()
+    spans = (normalized[1:] - normalized[:-1]).days
+    return CalendarDaySpanReport(
+        pairs_over_one_day=int((spans > 1).sum()),
+        max_span_days=int(spans.max()) if len(spans) else 0,
+    )
 
 
 def require_observed_source_index(

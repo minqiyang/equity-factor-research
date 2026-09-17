@@ -119,7 +119,7 @@ def test_demo_v0_source_stays_synthetic_only() -> None:
     assert "run_long_only_backtest" in source
     assert "require_complete_price_bars" in source
     assert "require_positive_volume_bars" in source
-    assert "require_observed_source_index" in source
+    assert "refuse_inserted_source_rows" in source
     assert "refuse_cash_dividend_overlay" in source
     assert "report_unchanging_price_segments" in source
     assert "DEMO_SIGNAL_LAG_PERIODS" in source
