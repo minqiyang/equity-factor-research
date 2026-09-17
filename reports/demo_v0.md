@@ -43,7 +43,7 @@ This report was generated from synthetic data only. It does not use private data
 - Tracking-error return basis: `strategy_net_after_applied_costs_vs_cost_free_benchmark`
 - Sharpe convention: `net_after_applied_costs`, risk-free `zero`, `ddof=0`, `252` periods/year, `exclude_initialization_anchor`
 - Holding-episode contract: `continuous_positive_weight_v1`
-- All-Attempt Case Logging: `/var/folders/5r/vgv5b5gs3s91w6gp1mtbgnnc0000gn/T/tmpo80yls7c/demo.jsonl` (lightweight demo logging; not charter Stage 4 ledger accounting)
+- All-Attempt Case Logging: `reports/demo_v0_attempts.jsonl` (lightweight demo logging; not charter Stage 4 ledger accounting)
 
 ## Metrics
 

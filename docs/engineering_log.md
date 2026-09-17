@@ -1,5 +1,20 @@
 # Engineering Log
 
+## 2026-09-16 - MATERIAL-216-1 official report log paths
+
+- Restored the repository-relative All-Attempt paths in `reports/demo_v0.md`
+  and `reports/synthetic_multifactor_backtest_demo.md` by editing those lines.
+  Byte comparison against `fd8d6d7` confirms all other report content,
+  including metrics and unchanging-price lines, remains identical.
+  `research/demo_v0.py`, including frozen `DEMO_V0_CONFIG`, remains identical.
+- Added `tests/test_official_report_paths.py` to check both committed report
+  files for their exact relative log lines and absence of `/var/folders`.
+  Baseline: 2 failed. Corrected reports: 2 passed. Official demos were left idle.
+- Ablation: removing each path correction in isolation yielded 1 failed and
+  1 passed; both corrections were retained. Appending `/var/folders` elsewhere
+  in each report also yielded 1 failed and 1 passed. Each control was restored.
+  Verification covers committed report paths; runtime generation stays unchanged.
+
 ## 2026-09-16 - M3-06 unchanging-price segment reporting
 
 - Added `research/unchanging_price.py` used by `python -m research.demo_v0`
