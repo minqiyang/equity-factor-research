@@ -4,7 +4,9 @@ Status: **OWNER SEMANTICS ACCEPTED FOR SYNTHETIC TESTS ONLY; FORMAL CRITICAL
 ACCEPTANCE PENDING**. This Step 2 local draft specifies one synthetic
 comparison. Independent CRITICAL reviews, binding acceptance and Step 3
 implementation remain pending. Source baseline:
-`57035fbfe3f8495e6495feecb8afbc2664f3f237`.
+`57035fbfe3f8495e6495feecb8afbc2664f3f237`. Numeric precision/error contract
+repaired on `3a040b67d874dc850772d8053fd8c15cc9e29060`. Owner-approved
+synthetic economics are unchanged.
 
 The recommendation is `synthetic_ordinary_cash_dividend_gross_ex_close_v1`:
 compare an independently declared ordinary dividend and raw close anchors
@@ -93,7 +95,7 @@ only. Absence of a row establishes zero evidence coverage.
 | Independent raw anchors `P_p`, `P_e` | USD per one unchanged ordinary share at prior close `p` and ex-date close `e`; raw price basis, same share basis and currency, both strictly positive. Their fixture literals and provenance are independent of supplied levels. |
 | Dividend `D` | Strictly positive finite gross USD per entitled pre-ex-date ordinary share; event type explicitly ordinary cash dividend. A declared zero amount is outside this first event family. |
 | Supplied levels `A_p`, `A_e` | Positive gross total-return index levels with one common scale, explicit USD economics, zero withholding and ex-close reinvestment policy, and an immutable adjustment-set/version declaration. The levels have index-point units and supply only their ratio. |
-| Numeric representation | Real non-Boolean finite scalars within binary64 range; required anchors and amount have `OBSERVED` status. Missing fields carry a typed reason. Strings, complex values, Boolean values, infinities and NaNs receive explicit refusal; conversion, fill, clipping and silent repair stay prohibited. |
+| Numeric representation | Real non-Boolean finite scalars whose values equal finite IEEE-754 binary64 encodings; required anchors, supplied levels and amount have `OBSERVED` status. Missing fields carry a typed reason. Strings, complex values, Boolean values, infinities and NaNs receive explicit refusal; conversion, fill, clipping and silent repair stay prohibited. Each admitted scalar converts to the unique rational equal to its binary64 encoding before comparison. |
 | Evidence identity | Freeze fixture contents/hashes, convention version, raw and adjusted field descriptions, identity mapping, selected event revision, source-label mapping, availability declarations, window, cutoff, coverage and numeric precision. Preserve prior versions and results. |
 | Coverage | Complete explicit coverage through the cutoff for every required role, the two anchors, the listing episode and the event interval; an unverified coverage declaration gives insufficient evidence. |
 
@@ -169,22 +171,72 @@ theoretical ending share units  = 1 + D / P_e
 r_reference                     = (P_e + D) / P_p - 1
 r_supplied                      = A_e / A_p - 1
 delta                           = r_supplied - r_reference
-match                           = abs(delta) <= 0.000000000001
+TOLERANCE                       = 1/10^12
+match                           = abs(delta) <= TOLERANCE
 ```
 
-Tolerance is an absolute return difference of `1e-12`, inclusive, with
-relative tolerance zero. Identity, basis, availability, coverage and missingness
-checks receive no numerical tolerance. Arithmetic and results must remain
-finite. Overflow gives insufficient evidence. Rounding precedes display only;
-comparisons use unrounded results. Boundary checks use errors `5e-13` and
-`2e-12` to avoid ambiguous binary64 ties from division; the scalar tolerance
-predicate separately includes exact equality.
+### Numeric precision and error contract
+
+Admitted numeric inputs are real non-Boolean finite scalars whose values
+equal finite IEEE-754 binary64 encodings. Each admitted value converts to
+the unique rational equal to that encoding:
+
+```text
+to_rational(x) = Fraction(*float(x).as_integer_ratio())
+```
+
+That map is the exact dyadic rational of the binary64 bit pattern. Local
+design evidence uses Python's standard-library `fractions.Fraction` and
+`float.as_integer_ratio`. Boolean values, including `True` and `False`,
+follow D30 before conversion.
+
+The formulas above are evaluated in the field of rationals on those
+`to_rational` images. `TOLERANCE` is the exact decimal rational `1/10^12`.
+Relative tolerance is zero. Identity, basis, availability, coverage and
+missingness checks receive no numerical tolerance. Display rounding occurs
+after the predicate. The match predicate uses the unrounded rational
+`delta`.
+
+Fixture decimals that name injected returns or the tolerance (`5e-13`,
+`2e-12`, `1e-12`) are the exact decimal rationals `5/10^13`, `2/10^12`, and
+`1/10^12`. Fixture decimals that name prices, amounts, or index levels
+convert by IEEE-754 round-to-nearest-even into binary64, then `to_rational`.
+D04, D05, and D44 use injected `r_supplied` literals. D42, D43, and D45 use
+explicit `A_p` / `A_e` binary64 literals; their comparison input is the
+unrounded computed rational delta.
+
+MATCHED and MISMATCHED follow the rational predicate, or a proven error
+bound that selects one side of `1/10^12`. A diagnostic binary64 evaluation
+of the same formulas may be recorded as an observation. A proven bound uses
+a rounded value `delta_hat` and a finite `eps` satisfying
+`|delta_hat - delta| <= eps`:
+
+- `|delta_hat| + eps <= 1/10^12` classifies MATCHED.
+- `|delta_hat| - eps > 1/10^12` classifies MISMATCHED.
+- A bound that includes both sides of `1/10^12`, with no rational
+  classification produced, classifies `INSUFFICIENT_EVIDENCE` with reason
+  `comparison_precision_insufficient`.
+
+Exact rational classification of admitted inputs is the local-evidence
+method. The finite-rounding witness is `P_p=1`, `P_e=1e16`, `D=1`,
+`A_p=1`, `A_e=1e16`. Every input is a positive finite exact binary64 value.
+Rational evaluation yields `r_supplied = 10^16 - 1`, `r_reference = 10^16`,
+`delta = -1`. Binary64 evaluation of the documented formulas yields
+`delta = 0.0` because `1e16 + 1` rounds to `1e16`. Required outcome:
+`MISMATCHED`, `1/1`, `return_difference`.
+
+Exact rational evaluation of admitted positive finite inputs yields a
+finite rational. Diagnostic binary64 overflow is recorded and leaves that
+rational classification in force. An implementation that emits no rational
+or proven-bound classification, including when diagnostic binary64
+evaluation is nonfinite, emits `INSUFFICIENT_EVIDENCE` with reason
+`arithmetic_nonfinite` or `comparison_precision_insufficient`.
 
 The hand oracle fixes `P_p=100`, `P_e=98`, `D=2`, `A_p=100`, `A_e=100`.
-Ending share units are `50/49`, whose value at 98 is exactly 100. Both returns
-are exactly zero. A second independent witness uses `P_e=101`: wealth is 103,
-reference return `3/100`, and supplied levels 100 -> 103 match. Common
-rescaling to 50 -> 51.5 leaves that return unchanged.
+Ending share units are `50/49`, whose value at 98 is exactly 100. Both
+returns are exactly zero. A second independent witness uses `P_e=101`:
+wealth is 103, reference return `3/100`, and supplied levels 100 -> 103
+match. Common rescaling to 50 -> 51.5 leaves that return unchanged.
 
 The independent test oracle uses these literal wealth values and rational
 expected returns, fixed before evaluating supplied levels. It imports no
@@ -208,6 +260,9 @@ blocks an economic acceptance claim for the named scope. `NOT_REQUESTED`
 records the default path. The labels and reasons below are proposed diagnostic
 vocabulary, separate from existing runtime exceptions and research promotion
 states. Every row remains under the synthetic diagnostic evidence ceiling.
+Comparable numeric success uses reason `within_tolerance`. Comparable numeric
+difference uses reason `return_difference`. Every `MATCHED` or `MISMATCHED`
+row carries that default token.
 
 Coverage notation is `compared / requested`, followed by the reason.
 Requested items are explicit security/window requests; duplicate supplied
@@ -219,28 +274,28 @@ mismatch or insufficient item prevents an all-requested-windows match claim.
 | Case | Mutation | Exact proposed outcome |
 | --- | --- | --- |
 | D01 | Base fixture | `MATCHED`, `1/1`, `within_tolerance`; reference 0, supplied 0, delta 0 |
-| D02 | `P_e=101`, `A_e=103` | `MATCHED`, `1/1`; reference and supplied `3/100` |
-| D03 | D02 with `A_p=50`, `A_e=51.5` | `MATCHED`, `1/1`; both `3/100`, scale invariant |
-| D04 | Base with supplied return `5e-13` | `MATCHED`, `1/1`; delta `5e-13` |
-| D05 | Base with supplied return `2e-12` | `MISMATCHED`, `1/1`, `return_difference`; delta `2e-12` |
-| D06 | `D=3`, other values fixed | `MISMATCHED`, `1/1`; reference `1/100`, supplied 0, delta `-1/100` |
-| D07 | `P_e=97`, other values fixed | `MISMATCHED`, `1/1`; reference `-1/100`, supplied 0, delta `1/100` |
-| D08 | Levels 100 -> 98 falsely declared gross total return | `MISMATCHED`, `1/1`; reference 0, supplied `-1/50`, delta `-1/50` |
-| D09 | Levels 100 -> 102 under base evidence | `MISMATCHED`, `1/1`; reference 0, supplied `1/50`, delta `1/50` |
+| D02 | `P_e=101`, `A_e=103` | `MATCHED`, `1/1`, `within_tolerance`; reference and supplied `3/100` |
+| D03 | D02 with `A_p=50`, `A_e=51.5` | `MATCHED`, `1/1`, `within_tolerance`; both `3/100`, scale invariant |
+| D04 | Base with injected `r_supplied = 5/10^13` (exact decimal; `r_reference = 0`) | `MATCHED`, `1/1`, `within_tolerance`; unrounded delta `5/10^13` |
+| D05 | Base with injected `r_supplied = 2/10^12` (exact decimal; `r_reference = 0`) | `MISMATCHED`, `1/1`, `return_difference`; unrounded delta `2/10^12` |
+| D06 | `D=3`, other values fixed | `MISMATCHED`, `1/1`, `return_difference`; reference `1/100`, supplied 0, delta `-1/100` |
+| D07 | `P_e=97`, other values fixed | `MISMATCHED`, `1/1`, `return_difference`; reference `-1/100`, supplied 0, delta `1/100` |
+| D08 | Levels 100 -> 98 falsely declared gross total return | `MISMATCHED`, `1/1`, `return_difference`; reference 0, supplied `-1/50`, delta `-1/50` |
+| D09 | Levels 100 -> 102 under base evidence | `MISMATCHED`, `1/1`, `return_difference`; reference 0, supplied `1/50`, delta `1/50` |
 | D10 | Unknown raw/share basis or generic vendor-adjusted levels | `INSUFFICIENT_EVIDENCE`, `0/1`, `basis_unknown` |
 | D11 | Declared raw, split-only, net-dividend, or different reinvestment basis for supplied levels | `INSUFFICIENT_EVIDENCE`, `0/1`, `basis_incompatible`, even for an equal ratio |
 | D12 | Currency differs or amount is cents/lot with unaccepted conversion | `INSUFFICIENT_EVIDENCE`, `0/1`, `currency_or_unit_incompatible` |
 | D13 | Either raw or adjusted anchor missing, including no prior row | `INSUFFICIENT_EVIDENCE`, `0/1`, `anchor_missing`; preserve typed reason |
 | D14 | Anchors skip an observed row, ex-date role differs, date is off-source, or timestamp mapping is ambiguous | `INSUFFICIENT_EVIDENCE`, `0/1`, `window_invalid` |
 | D15 | Ticker-only, ambiguous column mapping, changed permanent security or listing episode | `INSUFFICIENT_EVIDENCE`, `0/1`, `identity_unresolved` |
-| D16 | Eligible `r1` plus retained `r2` known after `C` | `MATCHED`, `1/1`; select `r1`, reference 0; excluded `r2` disclosed |
+| D16 | Eligible `r1` plus retained `r2` known after `C` | `MATCHED`, `1/1`, `within_tolerance`; select `r1`, reference 0; excluded `r2` disclosed |
 | D17 | Only event revision becomes known after `C` | `INSUFFICIENT_EVIDENCE`, `0/1`, `event_unavailable_at_cutoff` |
-| D18 | Later covered cutoff selects `r2` with `D=3`; unchanged levels | `MISMATCHED`, `1/1`; reference `1/100`, delta `-1/100`; retain original D16 result |
+| D18 | Later covered cutoff selects `r2` with `D=3`; unchanged levels | `MISMATCHED`, `1/1`, `return_difference`; reference `1/100`, delta `-1/100`; retain original D16 result |
 | D19 | `known_at` predates an applicable parent/provider/revision timestamp | `INSUFFICIENT_EVIDENCE`, `0/1`, `availability_inconsistent` |
 | D20 | Unknown/date-only availability, latest-only history, or unavailable anchor | `INSUFFICIENT_EVIDENCE`, `0/1`, `availability_unproven` |
 | D21 | Duplicate `(event_id, revision_id)` rows, even identical copies | `INSUFFICIENT_EVIDENCE`, `0/1`, `duplicate_event_revision` |
 | D22 | Competing heads, cycle, missing predecessor or conflicting stable event identity | `INSUFFICIENT_EVIDENCE`, `0/1`, `revision_lineage_unresolved` |
-| D23 | Two distinct events on the same ex-date for two independently mapped securities; both use base values | Two `MATCHED` items, aggregate `2/2`; repeated date preserved |
+| D23 | Two distinct events on the same ex-date for two independently mapped securities; both use base values | Two `MATCHED` items, aggregate `2/2`, `within_tolerance`; repeated date preserved |
 | D24 | Two distinct ordinary events on the same security/window | `INSUFFICIENT_EVIDENCE`, `0/1`, `multiple_events_in_window`; aggregation deferred |
 | D25 | Explicit request with absent evidence | `INSUFFICIENT_EVIDENCE`, `0/1`, `event_evidence_absent` |
 | D26 | Explicit request with empty evidence | `INSUFFICIENT_EVIDENCE`, `0/1`, `event_evidence_empty` |
@@ -248,16 +303,23 @@ mismatch or insufficient item prevents an all-requested-windows match claim.
 | D28 | Split, special dividend, stock dividend, spin-off or other unsupported event in requested interval | `INSUFFICIENT_EVIDENCE`, `0/1`, `event_type_unsupported` |
 | D29 | Mixed ordinary dividend and split/terminal event on same security/window | `INSUFFICIENT_EVIDENCE`, `0/1`, `event_type_unsupported`; retain every row |
 | D30 | Any required numeric is Boolean, complex, text, NaN, infinity or an untyped null | `INSUFFICIENT_EVIDENCE`, `0/1`, `numeric_invalid` |
-| D31 | Any anchor <= 0 or `D <= 0` | `INSUFFICIENT_EVIDENCE`, `0/1`, `numeric_domain_invalid` |
-| D32 | Valid finite input scalars produce nonfinite arithmetic | `INSUFFICIENT_EVIDENCE`, `0/1`, `arithmetic_nonfinite` |
+| D31 | Any of raw anchors `P_p`, `P_e` or supplied levels `A_p`, `A_e` is `<= 0`, or `D <= 0` | `INSUFFICIENT_EVIDENCE`, `0/1`, `numeric_domain_invalid` |
+| D32 | Valid finite input scalars produce nonfinite diagnostic binary64 arithmetic, and the comparison emits no rational or proven-bound classification | `INSUFFICIENT_EVIDENCE`, `0/1`, `arithmetic_nonfinite` |
 | D33 | Anchor status is `PROVIDER_GAP`, `STALE`, `HALTED`, or another state outside `OBSERVED` | `INSUFFICIENT_EVIDENCE`, `0/1`, `observation_unusable`; retain supplied typed state |
 | D34 | Required role coverage or immutable vintage cutoff ends before `C` | `INSUFFICIENT_EVIDENCE`, `0/1`, `coverage_unproven` |
 | D35 | Entitlement, gross/withholding, or reinvestment policy absent | `INSUFFICIENT_EVIDENCE`, `0/1`, `policy_unresolved` |
 | D36 | One base match and one separately requested unsupported-security window | Per-item D01 and D28; aggregate `1/2`, partial coverage, no aggregate match |
 | D37 | Separate `cash_dividends` argument supplied, including zero/empty | Existing PIT-007 `ValueError` before economic success; previous report retained |
 | D38 | Malformed/missing/off-source M3-08 event dates | Existing M3-08 type/value refusal independently retained; previous report retained |
-| D39 | `r1` and valid superseding `r2` both known by later covered cutoff | Select `r2` once; D18 numeric mismatch; `1/1`, no duplicate-identity refusal |
+| D39 | `r1` and valid superseding `r2` both known by later covered cutoff | Select `r2` once; D18 numeric mismatch; `1/1`, `return_difference`, no duplicate-identity refusal |
 | D40 | Complete values and roles, but any required provenance/hash is absent or inconsistent | `INSUFFICIENT_EVIDENCE`, `0/1`, `evidence_identity_unproven` |
+| D41 | Finite-rounding witness: `P_p=1`, `P_e=1e16`, `D=1`, `A_p=1`, `A_e=1e16` | `MISMATCHED`, `1/1`, `return_difference`; exact delta `-1`; diagnostic binary64 delta `0.0` |
+| D42 | Explicit levels `A_p=100`, `A_e=0x1.9000000000dbfp+6` (binary64 of `100*(1+5e-13)`) | `MATCHED`, `1/1`, `within_tolerance`; unrounded delta `3519/7036874417766400` |
+| D43 | Explicit levels `A_p=100`, `A_e=0x1.90000000036f9p+6` (binary64 of `100*(1+2e-12)`) | `MISMATCHED`, `1/1`, `return_difference`; unrounded delta `14073/7036874417766400` |
+| D44 | Base with injected `r_supplied = 1/10^12` (exact decimal inclusive boundary) | `MATCHED`, `1/1`, `within_tolerance`; unrounded delta `1/10^12` |
+| D45 | Explicit levels `A_p=100`, `A_e=0x1.9000000001b7ep+6` (binary64 of `100*(1+1e-12)`) | `MISMATCHED`, `1/1`, `return_difference`; unrounded delta `3519/3518437208883200` |
+| D46 | Overflow/range witness: `P_p=2^-1074`, `P_e=1`, `D=1`, `A_p=1`, `A_e=1` | `MISMATCHED`, `1/1`, `return_difference`; exact finite rational delta; diagnostic binary64 nonfinite |
+| D47 | Proven error bound includes both sides of `1/10^12`, and no rational classification is produced | `INSUFFICIENT_EVIDENCE`, `0/1`, `comparison_precision_insufficient` |
 
 A request with several defects retains every applicable reason, ordered by
 evidence identity, permanent identity, event/revision uniqueness, policy/basis,
@@ -267,22 +329,40 @@ Present missing fields as typed missing evidence and observed invalid values
 as invalid evidence; never infer a zero dividend, zero return, or a terminal
 payoff. Requests cannot hide an unsupported co-event by filtering it out.
 
+## Diagnostic labels and runner effect
+
+`MATCHED`, `MISMATCHED`, `INSUFFICIENT_EVIDENCE`, and `NOT_REQUESTED` are
+diagnostic comparison labels. They remain separate from existing runtime
+exceptions and research promotion states. `NOT_REQUESTED` is the default
+path: supplying `event_table` alone continues to request only M3-08 date
+membership. An explicit comparison request records one of the other three
+labels as diagnostic evidence. D37 and D38 keep their existing exception
+types, reasons, previous-report retention, and attempt retention.
+
+Current contracts uniquely imply that diagnostic/exception split and the
+unchanged M3-08 metadata API. The mapping from `MATCHED`, `MISMATCHED`, and
+`INSUFFICIENT_EVIDENCE` onto Step 3 demo-runner attempt success or official
+report replacement remains an owner-semantic implementation question. This
+repair leaves that mapping unset.
+
 ## Verification and remaining gates
 
 Step 2 verifies hand arithmetic, numeric perturbations, scenario dispositions,
 and isolated design ablations using local synthetic evidence. These checks
-establish internal consistency of the proposal. The
-[attempt report](../reports/dividend_design_attempt.md) records exact inputs,
-commands, results, negative evidence, hashes and execution limitations.
+establish internal consistency of the proposal. The historical
+[Step 2 attempt report](../reports/dividend_design_attempt.md) records the
+original design checks. The precision-contract repair evidence is recorded in
+[the precision-fix attempt report](../reports/pr221_precision_fix_attempt.md).
 
 Owner semantic acceptance covers synthetic tests only. Step 3 still requires
 the independent CRITICAL reviews and binding-plan acceptance, followed by
 explicit implementation scope. Its tests must exercise both demo consumers,
 exact input and accounting
 preservation, explicit comparison opt-in, default disclosures, refusal and
-start/failure retention, and every applicable case above. Comparison failure
-must be retained before any successful-report replacement. Producer scenario
-checks leave runtime enforcement and independent review unverified.
+start/failure retention, and every applicable case above. D37 and D38
+comparison-path failures remain retained before any successful-report
+replacement. Producer scenario checks leave runtime enforcement and
+independent review unverified.
 
 The first implementation has no schema registry, generalized event engine,
 provider adapter, calendar inference, adjustment-factor reconstruction,

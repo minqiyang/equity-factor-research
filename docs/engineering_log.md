@@ -9401,3 +9401,39 @@ This ablation round completes the implementation and machine verification of sev
   revalidation, documentation QA, diff and preservation checks, exact file
   hashes and version-management disposition. Existing design witnesses are
   revalidated; this owner-state update starts no new ablation loop.
+
+## 2026-09-17 - PR221 numeric precision/error contract repair
+
+- Repaired `docs/synthetic_event_reconciliation_design.md` on baseline
+  `3a040b67d874dc850772d8053fd8c15cc9e29060`. AUDIT-001 required a precision
+  contract over the admitted positive finite binary64 domain. The match
+  predicate now uses exact rationals from `to_rational(x) =
+  Fraction(*float(x).as_integer_ratio())` and unrounded absolute tolerance
+  `1/10^12`. Finite-rounding witness D41 (`P_p=1`, `P_e=1e16`, `D=1`,
+  `A_p=1`, `A_e=1e16`) is `MISMATCHED` with exact delta `-1`; diagnostic
+  binary64 delta is `0.0`.
+- GROK-221-ADV-1: D04/D05/D44 are injected decimal `r_supplied` literals;
+  D42/D43/D45 are explicit binary64 level literals with unrounded computed
+  deltas. GROK-221-ADV-2: comparable rows carry `within_tolerance` or
+  `return_difference`. GROK-221-ADV-4: D31 names `P_p`, `P_e`, `A_p`, `A_e`
+  and `D`. GROK-221-ADV-3: diagnostic labels remain separate from existing
+  exceptions and the M3-08 metadata API; Step 3 runner mapping of those
+  labels onto attempt success or official-report replacement remains an
+  owner-semantic question and is unset.
+- Owner-approved synthetic economics are unchanged: pre-ex-date holder
+  gross entitlement, zero withholding, theoretical fractional ex-close
+  reinvestment, after-ex-close cutoff, and the 100/98/2 zero-return
+  example bound to draft `a6a22e8a3f9007dfe439192aae1dd433d6a093f7`.
+- Local stdlib checker recorded 110 assertions and five isolated guard
+  restorations (binary64-only match, omitted supplied-level domain,
+  rounded delta, collapsed injected/reconstructed literals, Boolean
+  conversion). Supported ablation outcome is no design removal. Existing
+  documentation QA passed 66 tests. Focused dividend/event guards passed
+  94 tests. Full suite passed 2908 tests with two platform precision skips
+  and one existing constant-input warning. Ruff, compileall, offline build
+  and whitespace checks passed. `docs/repo_map.md` regenerated identically.
+- Runtime, schemas, fixtures, official reports and
+  `reports/dividend_design_attempt.md` are preserved. No comparator or
+  schema implementation was added. Exact commands, log hashes and
+  limitations are in `reports/pr221_precision_fix_attempt.md`. Formal
+  CRITICAL reviews remain required on the new exact head.
