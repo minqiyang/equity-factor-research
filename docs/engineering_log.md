@@ -9328,3 +9328,166 @@ This ablation round completes the implementation and machine verification of sev
   delivery patch and QA evidence remain under `build/split-proof-evidence/`.
   Writer responsibility is released at handoff. A Git-writable coordinator
   session owns the local commit and subsequent exact-head CI/review gate.
+
+## 2026-09-17 - Step 2 proposed synthetic dividend comparison
+
+- Added `docs/synthetic_event_reconciliation_design.md` as an unaccepted
+  Step 2 proposal on source HEAD
+  `57035fbfe3f8495e6495feecb8afbc2664f3f237`. The single owner decision covers
+  pre-ex-date holder entitlement, gross zero-withholding treatment,
+  theoretical ex-close reinvestment and an after-ex-close evidence cutoff.
+  The USD 100 -> USD 98 raw-price example plus USD 2 dividend gives 0%
+  reference return; unchanged supplied total-return levels match that value.
+- The note supplies independent hand arithmetic and 40 outcome rows covering
+  numeric discrepancies, field bases, identity, missing anchors, revisions,
+  repeated dates, duplicates, empty evidence, invalid inputs and unsupported
+  events. An explicit future comparison request preserves the current M3-08
+  metadata API and independent PIT-007 overlay refusal. Runtime, schemas,
+  official configurations/reports, data access and publication remain outside
+  this design attempt. Owner semantics and formal acceptance remain pending.
+- Local evidence recorded 169 literal assertions, including 12 numeric
+  scenarios, 40 matrix-row consistency checks and six isolated guard
+  ablations. Each removed guard admitted an unsafe match; all six were
+  restored, preserving the original proposal bytes. This is a supported
+  no-change design outcome. Future runtime enforcement remains unverified.
+- Existing focused regressions passed 94 tests. The full suite passed 2908
+  tests with two platform precision skips and one existing constant-input
+  warning. Ruff, compilation and the offline build with cached tools passed.
+  `docs/repo_map.md` was regenerated. The attempt report records commands,
+  environment, baseline identities, read scope, negative evidence and limits.
+- Herdr inspection returned `PermissionDenied: Operation not permitted`.
+  The inherited worker locator is workspace `w3`, tab `w3:tBS`, pane
+  `w3:pDR`; actual pane rendering and native model settings require
+  coordinator verification. QA output streamed through the active worker.
+  Live remote verification failed at GitHub DNS resolution. These operational
+  limits establish no unavailable-model claim and grant no permission bypass.
+- Current process evidence incorporates the live v7.24 operating card's
+  section 6 adaptive waiting correction: select supported waits or adaptive
+  polling from task duration, progress, risk and intervention needs; prefer
+  lightweight state checks, reconcile reports and processes on each wake,
+  and maintain an active wait when notification-driven resumption is
+  unverified. Completion notifications follow saved evidence and require
+  recipient verification. Earlier historical incidents retain their bytes.
+- `reports/dividend_design_attempt.md` owns the full local attempt evidence
+  and owner decision. The worker stops at the proposed draft; CRITICAL
+  reviews, binding acceptance and Step 3 implementation remain later gates.
+- Local staging failed with exit 128 because `.git/index.lock` creation
+  received `Operation not permitted`. The four-file draft remains unstaged
+  at the source HEAD. The delivery manifest, complete patch and evidence
+  manifest are saved under `build/dividend-design-evidence/`. Writer
+  responsibility is released at final handoff for a Git-writable coordinator
+  session to commit the exact bytes. Herdr notification remains unavailable
+  under the same session-inspection restriction; the final response carries
+  the full report and manifest locators.
+
+## 2026-09-17 - Step 2 owner semantic acceptance for synthetic tests
+
+- The owner accepted the convention presented in draft
+  `a6a22e8a3f9007dfe439192aae1dd433d6a093f7` for synthetic tests only:
+  pre-ex-date holder gross entitlement, zero withholding, theoretical
+  fractional reinvestment at the ex-date close and an after-ex-close evidence
+  cutoff. The prior-close 100, ex-close 98 and dividend 2 example retains its
+  zero gross reference return and the existing dividend double-count refusal.
+- Acceptance evidence is the coordinator record
+  `coord/step2_semantic_acceptance.md`, SHA-256
+  `b6ae3b63af80e7afda8dc72784ec69b8cecae7697bbbcf3aa562d43943d01ba1`.
+  The current design records the resolved owner semantic gate. Independent
+  CRITICAL reviews, exact-head QA, binding acceptance and implementation gates
+  remain pending. The decision's scope is synthetic tests only.
+- This metadata update preserves economic definitions, examples, matrix rows,
+  runtime, schemas, historical reports and earlier engineering entries.
+  The separate local report
+  `build/dividend-design-evidence/owner-acceptance-qa.md` records design-check
+  revalidation, documentation QA, diff and preservation checks, exact file
+  hashes and version-management disposition. Existing design witnesses are
+  revalidated; this owner-state update starts no new ablation loop.
+
+## 2026-09-17 - PR221 numeric precision/error contract repair
+
+- Repaired `docs/synthetic_event_reconciliation_design.md` on baseline
+  `3a040b67d874dc850772d8053fd8c15cc9e29060`. AUDIT-001 required a precision
+  contract over the admitted positive finite binary64 domain. The match
+  predicate now uses exact rationals from `to_rational(x) =
+  Fraction(*float(x).as_integer_ratio())` and unrounded absolute tolerance
+  `1/10^12`. Finite-rounding witness D41 (`P_p=1`, `P_e=1e16`, `D=1`,
+  `A_p=1`, `A_e=1e16`) is `MISMATCHED` with exact delta `-1`; diagnostic
+  binary64 delta is `0.0`.
+- GROK-221-ADV-1: D04/D05/D44 are injected decimal `r_supplied` literals;
+  D42/D43/D45 are explicit binary64 level literals with unrounded computed
+  deltas. GROK-221-ADV-2: comparable rows carry `within_tolerance` or
+  `return_difference`. GROK-221-ADV-4: D31 names `P_p`, `P_e`, `A_p`, `A_e`
+  and `D`. GROK-221-ADV-3: diagnostic labels remain separate from existing
+  exceptions and the M3-08 metadata API; Step 3 runner mapping of those
+  labels onto attempt success or official-report replacement remains an
+  owner-semantic question and is unset.
+- Owner-approved synthetic economics are unchanged: pre-ex-date holder
+  gross entitlement, zero withholding, theoretical fractional ex-close
+  reinvestment, after-ex-close cutoff, and the 100/98/2 zero-return
+  example bound to draft `a6a22e8a3f9007dfe439192aae1dd433d6a093f7`.
+- Local stdlib checker recorded 110 assertions and five isolated guard
+  restorations (binary64-only match, omitted supplied-level domain,
+  rounded delta, collapsed injected/reconstructed literals, Boolean
+  conversion). Supported ablation outcome is no design removal. Existing
+  documentation QA passed 66 tests. Focused dividend/event guards passed
+  94 tests. Full suite passed 2908 tests with two platform precision skips
+  and one existing constant-input warning. Ruff, compileall, offline build
+  and whitespace checks passed. `docs/repo_map.md` regenerated identically.
+- Runtime, schemas, fixtures, official reports and
+  `reports/dividend_design_attempt.md` are preserved. No comparator or
+  schema implementation was added. Exact commands, log hashes and
+  limitations are in `reports/pr221_precision_fix_attempt.md`. Formal
+  CRITICAL reviews remain required on the new exact head.
+
+## 2026-09-18 - PR221 delegated runner-outcome decision
+
+- The owner delegated GROK-221-ADV-3's A/B runner-outcome decision through
+  `coord/pr221_astra_decision_card.md`, SHA-256
+  `63513da756d935defa77249899919c878b7bdf759593b04bc4e8e922642866ca`.
+  Starting HEAD was `3cee36c3a335e69a21e29edd6246fc0421787ce2` on clean
+  branch `codex/pr221-astra-outcome-decision`. One writer handled the
+  bounded design/evidence scope.
+- Chosen policy: diagnostic-only completion. Completed `MATCHED`,
+  `MISMATCHED` and valid `INSUFFICIENT_EVIDENCE` results permit attempt
+  `success` after the diagnostic evidence, report and terminal log complete.
+  The affected economic acceptance claim remains blocked for a mismatch or
+  evidence gap. `NOT_REQUESTED` preserves existing default report/log
+  behavior. The repeated owner-choice gate is resolved; formal review and
+  binding acceptance remain pending.
+- The design now binds report replacement, ordered per-item retention,
+  partial coverage, malformed request versus typed evidence deficiencies,
+  existing input/source-date/overlay refusals, unexpected execution errors,
+  logging failures and interruptions. The opt-in order is start, existing
+  guards/simulation, comparison with per-item retention, prepared report
+  replacement, then terminal success. A late logging failure remains an
+  incomplete attempt even when a new report exists. Earlier negative
+  evidence survives a later match.
+- The accepted four synthetic economic choices, evidence boundary, fixture
+  and timing/revision definitions, exact rational precision contract and
+  D01-D47 matrix retain their baseline bytes. Source, schemas, frozen
+  configurations, fixtures, official outputs and historical reports remain
+  preserved. Comparison output supplies no accounting or signal feedback.
+- Local design evidence passed 103 assertions, including 15 arithmetic
+  witnesses, 22 lifecycle traces and 24 completion-order permutations.
+  Seven isolated constraint removals each admitted a concrete regression;
+  all guards were retained. The supported ablation outcome is no further
+  design removal. These are producer design checks; future runtime
+  enforcement remains unverified.
+- Both current runners passed 44 retained scenarios. Injected partial report
+  writes reproduced damage to previous bytes; injected terminal-log failure
+  reproduced a new report with only a start record. These existing limits
+  are recorded explicitly and motivate the future opt-in report-preservation
+  requirements. Initial probe-import and prose-whitespace checker failures
+  were corrected; their logs remain retained.
+- Documentation QA passed 66 tests; focused consumer/split/event/overlay
+  regressions passed 94 tests. The full suite passed 2908 tests with two
+  platform precision skips and one existing constant-input warning. Ruff,
+  compilation and offline build passed. The generated map matched baseline.
+  `reports/pr221_runner_decision_attempt.md` records the policy, evidence,
+  commands, environment, trade-offs and genuine remaining gates.
+- Staging failed with exit 128 because `.git/index.lock` creation received
+  `Operation not permitted`. No commit was created. Exact delivery bytes,
+  SHA-256 manifests, replay evidence and final checks are released under
+  `build/pr221-runner-decision-evidence/` for a Git-writable coordinator.
+  Writer responsibility ends at that handoff. Fresh exact-head QA, two-seat
+  CRITICAL review, binding acceptance and Step 3 implementation remain
+  separate gates; this worker performed no publication or self-acceptance.
