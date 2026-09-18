@@ -9328,3 +9328,54 @@ This ablation round completes the implementation and machine verification of sev
   delivery patch and QA evidence remain under `build/split-proof-evidence/`.
   Writer responsibility is released at handoff. A Git-writable coordinator
   session owns the local commit and subsequent exact-head CI/review gate.
+
+## 2026-09-17 - Step 2 proposed synthetic dividend comparison
+
+- Added `docs/synthetic_event_reconciliation_design.md` as an unaccepted
+  Step 2 proposal on source HEAD
+  `57035fbfe3f8495e6495feecb8afbc2664f3f237`. The single owner decision covers
+  pre-ex-date holder entitlement, gross zero-withholding treatment,
+  theoretical ex-close reinvestment and an after-ex-close evidence cutoff.
+  The USD 100 -> USD 98 raw-price example plus USD 2 dividend gives 0%
+  reference return; unchanged supplied total-return levels match that value.
+- The note supplies independent hand arithmetic and 40 outcome rows covering
+  numeric discrepancies, field bases, identity, missing anchors, revisions,
+  repeated dates, duplicates, empty evidence, invalid inputs and unsupported
+  events. An explicit future comparison request preserves the current M3-08
+  metadata API and independent PIT-007 overlay refusal. Runtime, schemas,
+  official configurations/reports, data access and publication remain outside
+  this design attempt. Owner semantics and formal acceptance remain pending.
+- Local evidence recorded 169 literal assertions, including 12 numeric
+  scenarios, 40 matrix-row consistency checks and six isolated guard
+  ablations. Each removed guard admitted an unsafe match; all six were
+  restored, preserving the original proposal bytes. This is a supported
+  no-change design outcome. Future runtime enforcement remains unverified.
+- Existing focused regressions passed 94 tests. The full suite passed 2908
+  tests with two platform precision skips and one existing constant-input
+  warning. Ruff, compilation and the offline build with cached tools passed.
+  `docs/repo_map.md` was regenerated. The attempt report records commands,
+  environment, baseline identities, read scope, negative evidence and limits.
+- Herdr inspection returned `PermissionDenied: Operation not permitted`.
+  The inherited worker locator is workspace `w3`, tab `w3:tBS`, pane
+  `w3:pDR`; actual pane rendering and native model settings require
+  coordinator verification. QA output streamed through the active worker.
+  Live remote verification failed at GitHub DNS resolution. These operational
+  limits establish no unavailable-model claim and grant no permission bypass.
+- Current process evidence incorporates the live v7.24 operating card's
+  section 6 adaptive waiting correction: select supported waits or adaptive
+  polling from task duration, progress, risk and intervention needs; prefer
+  lightweight state checks, reconcile reports and processes on each wake,
+  and maintain an active wait when notification-driven resumption is
+  unverified. Completion notifications follow saved evidence and require
+  recipient verification. Earlier historical incidents retain their bytes.
+- `reports/dividend_design_attempt.md` owns the full local attempt evidence
+  and owner decision. The worker stops at the proposed draft; CRITICAL
+  reviews, binding acceptance and Step 3 implementation remain later gates.
+- Local staging failed with exit 128 because `.git/index.lock` creation
+  received `Operation not permitted`. The four-file draft remains unstaged
+  at the source HEAD. The delivery manifest, complete patch and evidence
+  manifest are saved under `build/dividend-design-evidence/`. Writer
+  responsibility is released at final handoff for a Git-writable coordinator
+  session to commit the exact bytes. Herdr notification remains unavailable
+  under the same session-inspection restriction; the final response carries
+  the full report and manifest locators.
