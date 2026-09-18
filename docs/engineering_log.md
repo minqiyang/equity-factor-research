@@ -9245,3 +9245,86 @@ This ablation round completes the implementation and machine verification of sev
 - **Implementation & Review Status:** The coordinator has formally accepted exact frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (recorded in local coordinator archive `coord/decision_implementation_b2.md`). Three eligible mutually blind reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) reported zero MATERIAL findings. (A prior Gemini attempt was excluded for a prohibited native self-transcript read-boundary violation; metadata-only observed return, no peer-text exposure; preserved in local coordinator archive `coord/agy_b2_exclusion.json` as internal audit history, not a published repository artifact).
 - **Open Advisories Preserved:** Three advisories remain OPEN: `B2-GPT-ADD-001` (original independent campaign single triple +10.8% wall time slower than B1; recurrence/cause unresolved; follow-up 7-triple cohort on C1 evaluated with wall median +0.214059% and CPU +0.226770% vs B1, 5/7 wall pairs slower, max increase +3.858665% in rep 5); `ADVISORY-B2-GROK-001` (fixture matrix002 pair 4 slower 0.897ms than baseline); and `ADVISORY-B2-GROK-002` (named B1-to-B2 slower-pair counts, medians, and allocation/RSS tradeoffs preserved).
 - **Gates Applying to Later Final Candidate:** Initial clean worktree integration checkpoint (commit `713bba95...`) and initial C1 integration QA are complete. Initial C1 whole-commit QA does not imply acceptance of changed final bytes. Any later assembled final candidate (incorporating documentation updates) requires fresh exact-candidate QA before fresh reviews, followed by fresh exact-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 runtime CI. Live publication head and check verification belong in the eventual PR gate record rather than this historical checkpoint log. No integration PR acceptance, Codex PR review, Linux CI, or publication has occurred at this checkpoint. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
+
+
+## 2026-09-17 - Astra roadmap Step 1 split consumption proof
+
+- PR #219 is merged at source HEAD
+  `744f4922485b34317bb472e43bf5eb79e7f713e7`, as recorded in local Git
+  history. This authorized increment implements Step 1 through tests and
+  evidence on `codex/split-proof-20260918`.
+- Added `tests/test_demo_split_proof.py` with 20 deterministic cases across
+  Demo v0 and M3-01. Both actual pipelines establish equal-weight holdings
+  before the golden's April 1-2 split interval. Independent committed
+  expectations pin adjusted gross return, drift, turnover, and cost. The raw
+  contamination counterexample pins -0.25 gross return, one-third turnover,
+  and 0.00025 event cost. Initial deployment cost 0.001 is asserted separately.
+- Tests preserve metadata equivalence, source prices/index/events, frozen
+  configurations, the original split golden, and success/refusal attempt
+  prefixes. Absent, malformed, and missing event dates and cash overlays
+  preserve the previous successful report. Official reports/logs and runtime
+  files retain their baseline bytes. The generated map records 216 test files.
+- Tested source HEAD was `744f4922485b34317bb472e43bf5eb79e7f713e7` plus the
+  new test with SHA-256
+  `653d0e80146fed242c4574ddb7194601e0975d4d6e26231b2ef59737c757b12f`.
+  Existing focused baseline: 78 passed. New proof and isolated ablation:
+  20 passed each. Baseline archive suite: 2888 passed, two platform skips,
+  one existing constant-input warning. Candidate suite: 2908 passed with
+  the same skips and warning. Ruff and compilation passed. The default
+  isolated build failed at dependency download because PyPI resolution was
+  unavailable. An offline build using existing cached setuptools 84.0.0 and
+  wheel 0.48.0 produced both distribution formats.
+- The first candidate suite retained 102 failures: 101 from placing pytest
+  temporary outputs inside the repository, where existing safety guards
+  require external paths, and one stale generated-map count. Restoring
+  pytest's standard temporary location and regenerating the map resolved
+  these failures. Source guards and existing tests retained their bytes.
+  The initial environment probe also retained its missing-setuptools result.
+- Isolated ablation inlined the single-use event-value projection helper,
+  reducing the test from 221 to 217 lines. All 12 value snapshots, 20 attempt
+  logs, and 20 temporary reports matched after output-directory normalization.
+  The simplification is retained; input capture, golden assertions, and
+  refusal checks remain. Single-run timings provide no speedup claim.
+- `reports/split_proof_attempt.md` records exact commands, environment,
+  hashes, preserved failures, reconstruction instructions, limitations, and
+  the next coordinator CI/review gate. This evidence covers one synthetic
+  adjusted-series consumption proof. Full corporate-action reconciliation
+  remains open, Milestone 3 remains in progress, and Step 2 design acceptance
+  remains a separate owner semantic gate. Historical language exceptions
+  retain their immutable bytes; all prose added in this increment is English.
+
+### PR #219 process incidents carried by the canonical writer
+
+- **Visibility incident, P1:** `coord/pr219_visibility_incident.md` records
+  four minutes of empty output from a non-interactive Pi reviewer. The
+  coordinator retained the empty attempt, stopped the original process,
+  verified its exit, and replaced it with an interactive TUI review in the
+  same tab. Visible prompt delivery and live response were verified. The
+  operating correction requires interactive review and verification of both
+  submitted task and live response after startup settles. Shell command
+  display and an empty output file provide insufficient visibility evidence.
+- **Continuation incident, P1:** `coord/continuation_correction.md` records
+  the coordinator ending a turn while that authorized review remained active.
+  The resumed coordination captured the final MATERIAL 0 / ADVISORY 0 body
+  for candidate `ee98ee674fba1d86b66037c3f81bfbcf1ff69355`, with CI run
+  `35296802364` passed and the independent clone clean. The existing
+  controller's Waiting And Follow-Up section owns continued bounded waits,
+  evidence reconciliation, and advancement through the authorized scope.
+  This entry records the incident and recovery under that existing policy.
+- The incident records' pending-review and pending-merge statements describe
+  their historical checkpoints. The subsequent local PR #219 merge at
+  `744f4922485b34317bb472e43bf5eb79e7f713e7` supplies this increment's baseline.
+
+### Local version-management handoff
+
+- Final documentation regression: 66 passed. Ruff passed again. Ablation
+  reconstruction reproduced the saved baseline bytes. The baseline manifest
+  comparison confirmed the complete engineering-log prefix and every other
+  pre-existing tracked file except the generated map count remained intact.
+- Local staging failed with exit 128 because `.git/index.lock` creation
+  received `Operation not permitted`; the session exposes `.git` as read-only.
+  The four-file change remains unstaged, with current HEAD
+  `744f4922485b34317bb472e43bf5eb79e7f713e7` and no new commit. The complete
+  delivery patch and QA evidence remain under `build/split-proof-evidence/`.
+  Writer responsibility is released at handoff. A Git-writable coordinator
+  session owns the local commit and subsequent exact-head CI/review gate.
