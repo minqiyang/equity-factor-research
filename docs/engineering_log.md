@@ -9437,3 +9437,57 @@ This ablation round completes the implementation and machine verification of sev
   schema implementation was added. Exact commands, log hashes and
   limitations are in `reports/pr221_precision_fix_attempt.md`. Formal
   CRITICAL reviews remain required on the new exact head.
+
+## 2026-09-18 - PR221 delegated runner-outcome decision
+
+- The owner delegated GROK-221-ADV-3's A/B runner-outcome decision through
+  `coord/pr221_astra_decision_card.md`, SHA-256
+  `63513da756d935defa77249899919c878b7bdf759593b04bc4e8e922642866ca`.
+  Starting HEAD was `3cee36c3a335e69a21e29edd6246fc0421787ce2` on clean
+  branch `codex/pr221-astra-outcome-decision`. One writer handled the
+  bounded design/evidence scope.
+- Chosen policy: diagnostic-only completion. Completed `MATCHED`,
+  `MISMATCHED` and valid `INSUFFICIENT_EVIDENCE` results permit attempt
+  `success` after the diagnostic evidence, report and terminal log complete.
+  The affected economic acceptance claim remains blocked for a mismatch or
+  evidence gap. `NOT_REQUESTED` preserves existing default report/log
+  behavior. The repeated owner-choice gate is resolved; formal review and
+  binding acceptance remain pending.
+- The design now binds report replacement, ordered per-item retention,
+  partial coverage, malformed request versus typed evidence deficiencies,
+  existing input/source-date/overlay refusals, unexpected execution errors,
+  logging failures and interruptions. The opt-in order is start, existing
+  guards/simulation, comparison with per-item retention, prepared report
+  replacement, then terminal success. A late logging failure remains an
+  incomplete attempt even when a new report exists. Earlier negative
+  evidence survives a later match.
+- The accepted four synthetic economic choices, evidence boundary, fixture
+  and timing/revision definitions, exact rational precision contract and
+  D01-D47 matrix retain their baseline bytes. Source, schemas, frozen
+  configurations, fixtures, official outputs and historical reports remain
+  preserved. Comparison output supplies no accounting or signal feedback.
+- Local design evidence passed 103 assertions, including 15 arithmetic
+  witnesses, 22 lifecycle traces and 24 completion-order permutations.
+  Seven isolated constraint removals each admitted a concrete regression;
+  all guards were retained. The supported ablation outcome is no further
+  design removal. These are producer design checks; future runtime
+  enforcement remains unverified.
+- Both current runners passed 44 retained scenarios. Injected partial report
+  writes reproduced damage to previous bytes; injected terminal-log failure
+  reproduced a new report with only a start record. These existing limits
+  are recorded explicitly and motivate the future opt-in report-preservation
+  requirements. Initial probe-import and prose-whitespace checker failures
+  were corrected; their logs remain retained.
+- Documentation QA passed 66 tests; focused consumer/split/event/overlay
+  regressions passed 94 tests. The full suite passed 2908 tests with two
+  platform precision skips and one existing constant-input warning. Ruff,
+  compilation and offline build passed. The generated map matched baseline.
+  `reports/pr221_runner_decision_attempt.md` records the policy, evidence,
+  commands, environment, trade-offs and genuine remaining gates.
+- Staging failed with exit 128 because `.git/index.lock` creation received
+  `Operation not permitted`. No commit was created. Exact delivery bytes,
+  SHA-256 manifests, replay evidence and final checks are released under
+  `build/pr221-runner-decision-evidence/` for a Git-writable coordinator.
+  Writer responsibility ends at that handoff. Fresh exact-head QA, two-seat
+  CRITICAL review, binding acceptance and Step 3 implementation remain
+  separate gates; this worker performed no publication or self-acceptance.

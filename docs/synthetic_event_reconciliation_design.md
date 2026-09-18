@@ -8,6 +8,11 @@ implementation remain pending. Source baseline:
 repaired on `3a040b67d874dc850772d8053fd8c15cc9e29060`. Owner-approved
 synthetic economics are unchanged.
 
+Runner-outcome policy: **DECIDED UNDER OWNER DELEGATION, 2026-09-18**.
+The diagnostic-only completion policy below resolves GROK-221-ADV-3 on
+precision-repair baseline `3cee36c3a335e69a21e29edd6246fc0421787ce2`.
+Independent review and binding acceptance remain pending for these bytes.
+
 The recommendation is `synthetic_ordinary_cash_dividend_gross_ex_close_v1`:
 compare an independently declared ordinary dividend and raw close anchors
 with the return already encoded in supplied gross total-return levels. One
@@ -331,19 +336,128 @@ payoff. Requests cannot hide an unsupported co-event by filtering it out.
 
 ## Diagnostic labels and runner effect
 
-`MATCHED`, `MISMATCHED`, `INSUFFICIENT_EVIDENCE`, and `NOT_REQUESTED` are
-diagnostic comparison labels. They remain separate from existing runtime
-exceptions and research promotion states. `NOT_REQUESTED` is the default
-path: supplying `event_table` alone continues to request only M3-08 date
-membership. An explicit comparison request records one of the other three
-labels as diagnostic evidence. D37 and D38 keep their existing exception
-types, reasons, previous-report retention, and attempt retention.
+**Decision: diagnostic-only completion.** The owner delegated the A/B
+runner-outcome choice to GPT-6 Astra Max in
+`coord/pr221_astra_decision_card.md`. This section records the chosen
+behavior for both demo consumers. GROK-221-ADV-3 has a specified disposition;
+the repeated owner-choice gate is resolved. Formal CRITICAL review and
+binding acceptance retain their separate gates.
 
-Current contracts uniquely imply that diagnostic/exception split and the
-unchanged M3-08 metadata API. The mapping from `MATCHED`, `MISMATCHED`, and
-`INSUFFICIENT_EVIDENCE` onto Step 3 demo-runner attempt success or official
-report replacement remains an owner-semantic implementation question. This
-repair leaves that mapping unset.
+Attempt status records execution completion. Comparison status records the
+economic evidence for each requested security/window. A completed mismatch
+or insufficient-evidence diagnosis is a successful diagnostic execution.
+Economic acceptance remains blocked for that affected scope. All existing
+input, identity, accounting, source-date and overlay guards remain mandatory;
+the diagnostic label supplies no waiver for a failing guard.
+
+This policy preserves the small opt-in demonstration and exposes contrary
+evidence through its normal report/log path. Strict failure for every
+mismatch or evidence gap would preserve an older report while routing an
+expected diagnostic result through the exception path. Diagnostic completion
+keeps the latest finding visible, including negative controls and missing
+coverage. Its trade-off is that consumers must inspect comparison status and
+coverage alongside attempt status. The opt-in report must show both together;
+an execution `success` carries no economic-match or promotion claim.
+
+### Outcome and report mapping
+
+The table assumes the existing pipeline guards pass. `success` requires
+successful computation, evidence retention, report writing and terminal-log
+append. Any exception follows the failure rules below. Report replacement
+means the caller-selected diagnostic report. Step 3 fixture calls use
+explicit report/log paths outside the committed official artifacts. Frozen
+`DEMO_V0_CONFIG`, `FROZEN_CONFIG`, official commands and default callers
+retain their existing behavior, disclosures and output format.
+
+| Comparison outcome | Terminal attempt status | Report action on completed execution | Retained evidence and claim |
+| --- | --- | --- | --- |
+| `MATCHED` | `success` | Replace the selected report after retaining the comparison result. | Preserve every requested item, exact comparison, `within_tolerance`, evidence identity and coverage. A match covers only the declared synthetic window. |
+| `MISMATCHED` | `success` | Replace the selected report after retaining the negative result; display the mismatch beside attempt completion. | Preserve exact returns/delta, `return_difference`, scope and coverage. The affected economic match claim is blocked. |
+| `INSUFFICIENT_EVIDENCE` from a well-formed request | `success` | Replace the selected report after retaining the insufficient result; display the gap beside attempt completion. | Preserve every applicable ordered reason, typed missing/invalid evidence and requested/compared counts. The affected economic acceptance claim is blocked. |
+| `NOT_REQUESTED` | `success` when the existing run completes | Follow the existing report-write and terminal-log sequence. | Conceptual coverage is `0/0`, with no percentage. Preserve current absent/empty/repeated-date metadata disclosures; add no comparison fields or log records on this default path. |
+
+Multiple requests retain every item and their compared/requested counts.
+D36 completes with attempt `success`, one `MATCHED` item, one
+`INSUFFICIENT_EVIDENCE` item and coverage `1/2`. A mixed mismatch/insufficient
+set retains both labels and all reasons. An all-requested-windows match
+requires a nonempty request set with every item `MATCHED`; zero requests,
+partial coverage and any mismatch block that claim. No additional aggregate
+status or strict-mode switch is introduced by this decision.
+
+### Input refusal and execution failure
+
+A well-formed comparison request identifies an explicit requested scope and
+can be inspected under the D01-D47 matrix. Missing or empty evidence for
+that scope follows D25/D26. Rows classified `INSUFFICIENT_EVIDENCE` keep
+their existing reasons, including D30/D31 invalid numeric evidence. A missing
+identity within a declared security/window request remains D15; an unknown
+basis remains D10. D20's unknown/date-only evidence availability remains
+insufficient. Evidence eligibility is distinct from the callable input
+boundary.
+
+A malformed request container, unusable request structure (including an
+explicit request with no requested windows), or invalid scope/cutoff
+encoding raises `TypeError` or `ValueError` before comparison
+classification. The later callable specification must distinguish these
+structural errors from the matrix's typed evidence deficiencies. Callable
+details belong to the separately authorized Step 3 implementation scope.
+D14's off-source comparison-evidence window remains insufficient; an
+off-source `event_table` or invalid source panel independently raises through
+the existing source-date guard. When both apply, the existing guard refusal
+prevents report replacement and execution success.
+
+| Failure boundary | Attempt disposition | Comparison disposition | Report and logging effect |
+| --- | --- | --- | --- |
+| Malformed request; invalid existing config, price, volume, factor or source-date input; D37 overlay; D38 M3-08 input | `failure` after `started` | Classification absent when evaluation has not completed; retain any already completed item results. | Raise the original error; retain the previous report. D37/D38 keep their existing types and reasons. Append failure when the log is writable. |
+| Unexpected pipeline/comparator exception | `failure` after `started` | Retain completed results; preserve the exception independently. | Raise; preserve the previous report before replacement; append failure when possible. An exception supplies no insufficient-evidence fallback. |
+| `KeyboardInterrupt` or `SystemExit` | `interrupted` after `started`, when logging succeeds | Retain completed results and the interruption. | Re-raise; preserve the previous report before replacement. |
+| Start log cannot be appended | No successfully started attempt; start failure propagates as the existing `RuntimeError` | Evaluation remains unstarted. | Keep the previous report; run no pipeline/comparison. Logging unavailability remains visible through the raised error. |
+| Comparison-result retention, report preparation or replacement fails | `failure` when the terminal append succeeds; otherwise retained `started` remains incomplete | Keep every result already retained. | Raise; block a successful return. The opt-in replacement procedure below preserves the previous report until replacement succeeds. |
+| Terminal success append fails after report replacement | No recorded terminal success; retained attempt remains incomplete unless a failure record can be appended | The pre-retained comparison result remains available. | Raise the logging error. The new report may already exist; its attempt remains incomplete. Preserve the log prefix and avoid an automatic retry or success claim. |
+
+D32 and D47 describe completed, explicitly reasoned numeric diagnoses.
+Unexpected arithmetic/programming exceptions, resource exhaustion and I/O
+failures take the exception path above. Rational D41 remains `MISMATCHED`
+with exact delta `-1`; diagnostic binary64 overflow in D46 retains the
+rational verdict. Runner policy leaves the precision contract unchanged.
+
+### Logging order and negative-evidence retention
+
+For an explicit request, Step 3 must enforce this order:
+
+1. Append the existing attempt `started` record before computation.
+2. Run existing guards and compute the unchanged supplied-series simulation.
+   Evaluate comparison items in request order through the isolated path.
+3. Append each completed item's evidence to the existing diagnostic log path
+   under the same attempt identity before evaluating the next item or
+   preparing the report. Retain all outcomes, reasons, counts, cutoff,
+   evidence vintage and exact numeric results where comparable. The attempt
+   remains in progress. Evidence-append failure blocks report replacement
+   and propagates through the failure path; earlier retained items survive.
+4. Prepare the full diagnostic report in a temporary file on the same
+   filesystem, then replace the selected report. Preparation or failed
+   replacement preserves prior report bytes. The report names the attempt
+   and shows comparison status/coverage
+   beside execution status; terminal completion is established by the log.
+5. Append terminal `success` only after successful report replacement. A
+   catchable failure or interruption attempts its existing terminal record,
+   preserves the original exception and propagates it.
+
+This ordering is a Step 3 requirement for the opt-in path. Current runners
+use direct report writes followed by success append; current code supplies
+no atomic report/log transaction or rollback after a late logging error.
+Default callers retain that sequence. The future opt-in path must prove
+pre-replacement preservation and expose any incomplete attempt after
+replacement; this design claims no crash-atomic transaction across files.
+An uncatchable termination can leave a retained start and completed evidence
+without a terminal record.
+
+Append-only retention preserves earlier attempts and every negative result,
+including a mismatch followed by a later match or a revised evidence cutoff.
+The selected report may change; earlier evidence and attempt-log prefixes
+remain intact. Reports with explicit requests label the supplied-series
+metrics as synthetic diagnostics with the comparison's actual limitations.
+Comparison output continues to have no accounting or signal feedback path.
 
 ## Verification and remaining gates
 
@@ -353,15 +467,20 @@ establish internal consistency of the proposal. The historical
 [Step 2 attempt report](../reports/dividend_design_attempt.md) records the
 original design checks. The precision-contract repair evidence is recorded in
 [the precision-fix attempt report](../reports/pr221_precision_fix_attempt.md).
+The delegated runner decision, state checks and isolated design ablation
+are recorded in [the runner-decision attempt report](../reports/pr221_runner_decision_attempt.md).
 
 Owner semantic acceptance covers synthetic tests only. Step 3 still requires
 the independent CRITICAL reviews and binding-plan acceptance, followed by
 explicit implementation scope. Its tests must exercise both demo consumers,
 exact input and accounting
 preservation, explicit comparison opt-in, default disclosures, refusal and
-start/failure retention, and every applicable case above. D37 and D38
-comparison-path failures remain retained before any successful-report
-replacement. Producer scenario checks leave runtime enforcement and
+start/failure retention, and every applicable case above. Runner checks must
+cover all four labels, mixed/partial coverage, malformed structure versus
+typed evidence gaps, D37/D38 precedence, each logging/replacement boundary,
+interruptions and mismatch-then-match history. Existing refusals preserve the
+previous report; completed negative comparisons are retained before opt-in
+report replacement. Producer scenario checks leave runtime enforcement and
 independent review unverified.
 
 The first implementation has no schema registry, generalized event engine,
