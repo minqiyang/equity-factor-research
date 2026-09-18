@@ -31,6 +31,15 @@ profitability, or trading readiness.
 
 ### Added
 
+- Step 3 adds the accepted ordinary synthetic dividend comparison as an explicit
+  opt-in argument to Demo v0 and M3-01. Exact rational diagnoses retain scoped
+  evidence, revisions, typed gaps, and negative outcomes under the same attempt.
+  The opt-in report uses temporary-file replacement after per-item retention.
+  Default reports, configurations, event metadata, and accounting stay intact.
+  See `reports/dividend_comparison_attempt.md` for D01-D47, fault tests, QA,
+  ablation evidence, and the remaining coordinator review/private-data gates.
+
+
 - M3-08 supplied-event date membership for Demo v0 and M3-01: an optional
   `event_table` DataFrame uses a `DatetimeIndex` of event dates. Every date must
   exist in the declared source index; absent or missing dates are refused.

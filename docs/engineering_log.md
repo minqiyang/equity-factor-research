@@ -1,5 +1,44 @@
 # Engineering Log
 
+## 2026-09-18 - Accepted Step 3 synthetic dividend comparison
+
+- Implemented the PR221 accepted synthetic-only convention in
+  `research/dividend_comparison.py`, with explicit request/window structures,
+  exact pre-conversion numeric admission, rational return classification,
+  immutable fixture hashes, identity/availability/coverage/revision checks,
+  and typed evidence retention. The callable fields are documented in
+  `docs/dividend_comparison_api.md`.
+- Both demo runners expose the opt-in path after existing guards and simulation.
+  Completed items append before the next item and before report preparation.
+  Same-filesystem report replacement precedes terminal success. Late failures
+  preserve the retained items and expose the actual incomplete/failed attempt.
+  Default configuration, report, attempt-log, and accounting behavior remains
+  covered by the existing regression tests and frozen artifact hashes.
+- The initial focused run found a missing secondary numeric-invalid reason on
+  duplicate revisions; remediation retains all applicable current-head reasons.
+  Expanded tests corrected an expectation for already-enforced source-row
+  refusal. The first full run found the generated map freshness check; the map
+  was regenerated. Every run and failure is retained in the attempt report.
+- Isolated ablation retained removal of duplicate source-index validation and
+  parameter forwarding: existing demo guards already require exact source-row
+  preservation. Removing numeric admission produced 25 failures; replacing the
+  rational predicate produced the D41 false match; deferring item appends lost
+  six later-failure retention checks. Those necessary guards remain present.
+- Final focused verification passed 523 cases; the full suite passed 3337 with
+  two platform skips and one existing constant-input warning. Ruff and source,
+  tests, research and LEAN compilation passed. All 34 preserved official
+  report/log/golden files retained their hashes. Packaging remained blocked:
+  isolated dependency resolution was unavailable, and the supplied interpreter
+  lacked setuptools for the offline build. Git staging failed because the
+  sandbox refused `.git/index.lock`; the release manifest supplies local
+  coordinator commit evidence.
+- Final verification counts, environment, per-file hashes, acceptance coverage,
+  local release identity and limitations are recorded in
+  `reports/dividend_comparison_attempt.md`. Fresh CRITICAL reviews remain with
+  the coordinator. Milestone 3 remains in progress and Step 4 retains its
+  separate private-data owner gate.
+
+
 ## 2026-09-16 - M3-08 event-date membership and event-table disclosure
 
 - Demo v0 and M3-01 accept an optional `event_table` DataFrame with a

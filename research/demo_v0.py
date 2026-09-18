@@ -29,6 +29,12 @@ from research.bar_integrity import (
     require_complete_price_bars,
     require_positive_volume_bars,
 )
+from research.dividend_comparison import (
+    DividendComparisonRequest,
+    retain_comparisons,
+    require_distinct_outputs,
+    write_diagnostic_report,
+)
 from research.dividend_policy import (
     refuse_cash_dividend_overlay,
     require_event_date_membership,
@@ -153,9 +159,12 @@ def run_demo_v0(
     cash_dividends: object = None,
     observed_index: pd.DatetimeIndex | None = None,
     event_table: pd.DataFrame | None = None,
+    comparison_request: DividendComparisonRequest | None = None,
 ) -> BacktestResult:
     """Run the official Demo v0 slice and record the attempt."""
 
+    if comparison_request is not None:
+        require_distinct_outputs(report_path, attempt_log_path)
     start_record = _begin_attempt(
         attempt_log_path=attempt_log_path,
         config=config,
@@ -170,6 +179,36 @@ def run_demo_v0(
             observed_index=observed_index,
             event_table=event_table,
         )
+        if comparison_request is not None:
+            items = retain_comparisons(
+                comparison_request, prices,
+                lambda item: append_attempt_record(
+                    attempt_log_path, item, attempt_id=attempt_id,
+                ),
+            )
+
+            def prepare(temporary):
+                write_comparison_report(
+                    report_path=temporary,
+                    attempt_log_path=attempt_log_path,
+                    config=config,
+                    prices=prices,
+                    result=result,
+                    event_table=event_table,
+                )
+
+            write_diagnostic_report(report_path, prepare, items, attempt_id)
+            append_attempt_record(
+                attempt_log_path,
+                _success_record(
+                    config=config,
+                    report_path=report_path,
+                    prices=prices,
+                    result=result,
+                ),
+                attempt_id=attempt_id,
+            )
+            return result
         write_comparison_report(
             report_path=report_path,
             attempt_log_path=attempt_log_path,
@@ -179,20 +218,24 @@ def run_demo_v0(
             event_table=event_table,
         )
     except _CATCHABLE_ATTEMPT_OUTCOMES as exc:
-        _record_attempt_outcome(
-            attempt_log_path,
-            attempt_id=attempt_id,
-            record=_error_record(
-                config=config,
-                report_path=report_path,
-                status=(
-                    ATTEMPT_STATUS_INTERRUPTED
-                    if isinstance(exc, _CATCHABLE_INTERRUPTIONS)
-                    else ATTEMPT_STATUS_FAILURE
+        try:
+            _record_attempt_outcome(
+                attempt_log_path,
+                attempt_id=attempt_id,
+                record=_error_record(
+                    config=config,
+                    report_path=report_path,
+                    status=(
+                        ATTEMPT_STATUS_INTERRUPTED
+                        if isinstance(exc, _CATCHABLE_INTERRUPTIONS)
+                        else ATTEMPT_STATUS_FAILURE
+                    ),
+                    error=exc,
                 ),
-                error=exc,
-            ),
-        )
+            )
+        except _CATCHABLE_ATTEMPT_OUTCOMES:
+            if comparison_request is None:
+                raise
         raise
 
     append_attempt_record(
