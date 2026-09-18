@@ -1,7 +1,8 @@
 # Proposed Synthetic Ordinary Cash Dividend Comparison
 
-Status: **PROPOSED; OWNER SEMANTIC DECISION PENDING**. This Step 2 local
-draft specifies one synthetic comparison. Binding acceptance and Step 3
+Status: **OWNER SEMANTICS ACCEPTED FOR SYNTHETIC TESTS ONLY; FORMAL CRITICAL
+ACCEPTANCE PENDING**. This Step 2 local draft specifies one synthetic
+comparison. Independent CRITICAL reviews, binding acceptance and Step 3
 implementation remain pending. Source baseline:
 `57035fbfe3f8495e6495feecb8afbc2664f3f237`.
 
@@ -17,12 +18,13 @@ split-series consumption through both demos. The
 [proposed roadmap](proposed_next_steps_roadmap.md#2-freeze-one-economic-event-comparison-contract)
 assigns this separate economic convention to an owner decision.
 
-## One owner decision
+## Owner semantic decision
 
-**Accept this convention for the first synthetic ordinary-dividend fixture?**
-Recommended answer: **Yes, for this synthetic comparison only**, accepting the
+**Owner decision: accepted for synthetic tests only.** Approval covers the
 pre-ex-date holder entitlement, gross zero-withholding treatment, theoretical
-ex-close reinvestment, and after-ex-close evidence cutoff together.
+fractional ex-close reinvestment, and after-ex-close evidence cutoff together.
+The coordinator record `coord/step2_semantic_acceptance.md` binds this decision
+to draft `a6a22e8a3f9007dfe439192aae1dd433d6a093f7`.
 
 A share worth USD 100 at the prior observed close, with a USD 2 dividend and
 USD 98 ex-date close, has ending gross wealth USD 100. Supplied total-return
@@ -39,9 +41,10 @@ accepted semantics for any later dataset or execution use. With 20%
 withholding, ending wealth would be 98 + 1.6 = 99.6 and return -0.4%, which
 illustrates why this owner choice changes the reference economics.
 
-The owner response remains pending. An amended entitlement, withholding,
-reinvestment, or timing choice requires revised examples and expectations
-before economic acceptance behavior can be implemented.
+The owner semantic gate is resolved for that synthetic scope. Formal CRITICAL
+acceptance remains pending. An amended entitlement, withholding, reinvestment,
+or timing choice requires revised examples and expectations before economic
+acceptance behavior can be implemented.
 
 ## Evidence boundary and compatibility
 
@@ -272,9 +275,10 @@ establish internal consistency of the proposal. The
 [attempt report](../reports/dividend_design_attempt.md) records exact inputs,
 commands, results, negative evidence, hashes and execution limitations.
 
-Step 3 requires owner semantic acceptance, the required independent CRITICAL
-reviews and binding-plan acceptance, followed by explicit implementation
-scope. Its tests must exercise both demo consumers, exact input and accounting
+Owner semantic acceptance covers synthetic tests only. Step 3 still requires
+the independent CRITICAL reviews and binding-plan acceptance, followed by
+explicit implementation scope. Its tests must exercise both demo consumers,
+exact input and accounting
 preservation, explicit comparison opt-in, default disclosures, refusal and
 start/failure retention, and every applicable case above. Comparison failure
 must be retained before any successful-report replacement. Producer scenario

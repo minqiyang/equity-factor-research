@@ -9379,3 +9379,25 @@ This ablation round completes the implementation and machine verification of sev
   session to commit the exact bytes. Herdr notification remains unavailable
   under the same session-inspection restriction; the final response carries
   the full report and manifest locators.
+
+## 2026-09-17 - Step 2 owner semantic acceptance for synthetic tests
+
+- The owner accepted the convention presented in draft
+  `a6a22e8a3f9007dfe439192aae1dd433d6a093f7` for synthetic tests only:
+  pre-ex-date holder gross entitlement, zero withholding, theoretical
+  fractional reinvestment at the ex-date close and an after-ex-close evidence
+  cutoff. The prior-close 100, ex-close 98 and dividend 2 example retains its
+  zero gross reference return and the existing dividend double-count refusal.
+- Acceptance evidence is the coordinator record
+  `coord/step2_semantic_acceptance.md`, SHA-256
+  `b6ae3b63af80e7afda8dc72784ec69b8cecae7697bbbcf3aa562d43943d01ba1`.
+  The current design records the resolved owner semantic gate. Independent
+  CRITICAL reviews, exact-head QA, binding acceptance and implementation gates
+  remain pending. The decision's scope is synthetic tests only.
+- This metadata update preserves economic definitions, examples, matrix rows,
+  runtime, schemas, historical reports and earlier engineering entries.
+  The separate local report
+  `build/dividend-design-evidence/owner-acceptance-qa.md` records design-check
+  revalidation, documentation QA, diff and preservation checks, exact file
+  hashes and version-management disposition. Existing design witnesses are
+  revalidated; this owner-state update starts no new ablation loop.
