@@ -84,6 +84,7 @@ from features.diagnostics import (
     deflated_sharpe_ratio,
     factor_rank_information_coefficient,
     information_coefficient_summary,
+    probability_of_backtest_overfitting,
 )
 from reporting.experiment_log import (
     SYNTHETIC_RESEARCH_CAVEATS,
@@ -235,6 +236,7 @@ class MultifactorDiagnosticConfig:
     n_trials: int = 54
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
+    pbo_n_splits: int = 8
 
 
 def calculate_diagnostic_alpha(
@@ -460,6 +462,17 @@ def run_multifactor_diagnostic_mvp(
             config=config,
         )
 
+    alpha_returns = pd.DataFrame(
+        {
+            factor_id: factor_results[factor_id]["backtest"].returns.iloc[1:]
+            for factor_id in ALPHA_IDS
+        }
+    )
+    pbo_summary = probability_of_backtest_overfitting(
+        alpha_returns,
+        n_splits=config.pbo_n_splits,
+    )
+
     result = {
         "manifest": manifest,
         "panels": panels,
@@ -470,6 +483,7 @@ def run_multifactor_diagnostic_mvp(
         "benchmark": benchmark,
         "factors": factor_results,
         "ic_weights": dict(zip(ALPHA_IDS, ic_weights, strict=True)),
+        "pbo_summary": pbo_summary,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
         "evidence_ceiling": manifest["evidence_ceiling"],
@@ -620,7 +634,10 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "markdown_report": _project_relative_path(result["report_path"]),
             "experiment_log": _project_relative_path(result["experiment_log_path"]),
         },
-        metrics=factor_metrics,
+        metrics={
+            **factor_metrics,
+            "pbo_summary": result["pbo_summary"],
+        },
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
             "DIAGNOSTIC_ONLY",
@@ -638,13 +655,15 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
 
 
 def write_report(*, result: dict[str, Any]) -> None:
-    """Write the consolidated diagnostic evidence summary."""
+    """Write human-readable markdown for the implemented-alpha diagnostic."""
 
-    report_path = Path(result["report_path"])
-    report_path.parent.mkdir(parents=True, exist_ok=True)
     config: MultifactorDiagnosticConfig = result["config"]
     manifest = result["manifest"]
+    report_path = Path(result["report_path"])
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     first_backtest: BacktestResult = result["factors"][ALPHA_IDS[0]]["backtest"]
+    pbo_summary = result["pbo_summary"]
+
     rows = []
     for factor_id in FACTOR_IDS:
         payload = result["factors"][factor_id]
@@ -656,7 +675,7 @@ def write_report(*, result: dict[str, Any]) -> None:
                 [
                     factor_id,
                     _format_number(ic_summary["mean_ic"]),
-                    _format_number(ic_summary["icir"]),
+                    _format_number(ic_summary["icIR"] if "icIR" in ic_summary else ic_summary["icir"]),
                     _format_number(ic_summary["newey_west_tstat"]),
                     _format_number(payload["dsr"]),
                     _format_percent(metrics["total_return"]),
@@ -711,6 +730,8 @@ profitability.
    `{config.slippage_bps:.2f}` bps slippage and `{config.top_n}` names.
 8. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
    `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
+9. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
+   alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
 
@@ -728,6 +749,7 @@ profitability.
 - Benchmark: synthetic equal-weight diagnostic-cohort benchmark
 - Timing contract: `{first_backtest.timing_metadata["timing_contract"]}`
 - DSR expected-maximum mix: Euler-Mascheroni constant `np.euler_gamma`
+- PBO splits: `{config.pbo_n_splits}`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
 
@@ -743,13 +765,23 @@ combination rule.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(rows)}
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
 with the Euler-Mascheroni mix. All {IMPLEMENTED_ALPHA_COUNT} alphas and both composites are
 reported; weak or negative diagnostics are retained.
+
+## Overfitting diagnostics (CSCV / PBO)
+
+- Probability of Backtest Overfitting (PBO): `{_format_number(pbo_summary["pbo"])}`
+- Out-of-Sample Probability of Loss: `{_format_number(pbo_summary["prob_loss"])}`
+- Combinations: `{pbo_summary["n_combinations"]}` (from `{pbo_summary["n_splits"]}` splits)
+- Mean OOS Relative Rank: `{_format_number(pbo_summary["mean_relative_rank"])}`
+- Median OOS Relative Rank: `{_format_number(pbo_summary["median_relative_rank"])}`
+- Mean IS Sharpe: `{_format_number(pbo_summary["mean_is_sharpe"])}`
+- Mean OOS Sharpe: `{_format_number(pbo_summary["mean_oos_sharpe"])}`
 
 ## Limitations
 
