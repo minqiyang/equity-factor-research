@@ -157,6 +157,99 @@ dataset review. This is not a 14-trial run.
 Keep as a walking-skeleton wiring check. Do not reopen identity, D8, A2, or
 formal interpretation from this result.
 
+## 20260919-001-alphas-diagnostic-mvp
+
+### Experiment ID
+
+`20260919-001-alphas-diagnostic-mvp`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+Classical WorldQuant price-volume alphas can be wired through the committed
+50-stock diagnostic cohort with the same Rank IC, ICIR, Newey-West, DSR, and
+5 bps monthly backtest path as the walking skeleton.
+
+### Data Source
+
+Synthetic local generator from
+`tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use
+seed `20260919`. Companion open, low, and volume use `seed + 1`. No vendor,
+private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased
+by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through
+`2023-11-27` after 25-row alpha warm-up.
+
+### Features / Factors
+
+- `ALPHA_001`: `rank(Ts_ArgMax(SignedPower(((returns < 0) ? stddev(returns, 20) : close), 2), 5)) - 0.5`
+- `ALPHA_002`: `-correlation(rank(delta(log(volume), 2)), rank((close-open)/open), 6)`
+- `ALPHA_003`: `-correlation(rank(open), rank(volume), 10)`
+- `ALPHA_004`: `-Ts_Rank(rank(low), 9)`
+- `ALPHA_006`: `-correlation(open, volume, 10)`
+- `ALPHA_012`: `sign(delta(volume, 1)) * (-delta(close, 1))`
+- Signal lag: 1 observed source row. Forward IC labels start at the execution
+  close.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+`signal_lag_periods=1`, `n_trials=6` for DSR with Euler-Mascheroni mix.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/alphas_diagnostic_mvp.md` and
+`reports/experiment_logs/alphas_diagnostic_mvp.json`. All six factors are
+retained, including negative mean IC. Official 4-decimal rows:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.1123 | -0.40% | 0.0505 | -23.34% |
+| ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0235 | -15.29% | -0.4035 | -27.88% |
+| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.5251 | 31.28% | 0.8040 | -16.56% |
+| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.2068 | 8.41% | 0.2839 | -23.66% |
+| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.1514 | 3.59% | 0.1589 | -14.41% |
+| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.3865 | 21.76% | 0.5961 | -18.88% |
+
+These are `DIAGNOSTIC_ONLY` synthetic values, not profitability evidence.
+
+### Limitations
+
+Static membership, synthetic prices, companion synthetic OHLCV, idealized
+close-reset execution, and no dataset review. This is not a 14-trial run.
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY price-volume alpha wiring check. Do not reopen
+identity, D8, A2, or formal interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

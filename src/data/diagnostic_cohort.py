@@ -73,6 +73,47 @@ def load_diagnostic_cohort(path: str | Path) -> tuple[dict[str, Any], pd.DataFra
     return manifest, generate_diagnostic_cohort_prices(manifest)
 
 
+def generate_diagnostic_cohort_ohlcv(manifest: Mapping[str, Any]) -> dict[str, pd.DataFrame]:
+    """Generate companion synthetic OHLCV for price-volume diagnostic alphas.
+
+    Close prices match :func:`generate_diagnostic_cohort_prices`. Open, low, and
+    volume are additional local synthetic draws from ``seed + 1``. They are not
+    real market data and are not a point-in-time membership record.
+    """
+
+    close = generate_diagnostic_cohort_prices(manifest)
+    validated = _validate_diagnostic_cohort_manifest(manifest)
+    generation = validated["generation"]
+    rng = np.random.default_rng(int(generation["seed"]) + 1)
+    n_rows, n_assets = close.shape
+    overnight = rng.normal(loc=0.0, scale=0.0020, size=(n_rows, n_assets))
+    low_gap = rng.uniform(low=0.0, high=0.010, size=(n_rows, n_assets))
+    volume_draws = rng.lognormal(mean=12.0, sigma=0.35, size=(n_rows, n_assets))
+
+    close_values = close.to_numpy(dtype=float)
+    previous_close = np.empty_like(close_values)
+    previous_close[0, :] = float(generation["starting_price"])
+    previous_close[1:, :] = close_values[:-1, :]
+    open_values = previous_close * np.exp(overnight)
+    low_values = np.minimum(open_values, close_values) * (1.0 - low_gap)
+    returns = close.pct_change(fill_method=None)
+
+    return {
+        "open": pd.DataFrame(open_values, index=close.index, columns=close.columns),
+        "low": pd.DataFrame(low_values, index=close.index, columns=close.columns),
+        "close": close,
+        "volume": pd.DataFrame(volume_draws, index=close.index, columns=close.columns),
+        "returns": returns,
+    }
+
+
+def load_diagnostic_cohort_ohlcv(path: str | Path) -> tuple[dict[str, Any], dict[str, pd.DataFrame]]:
+    """Load a validated diagnostic-cohort manifest and companion synthetic OHLCV."""
+
+    manifest = load_diagnostic_cohort_manifest(path)
+    return manifest, generate_diagnostic_cohort_ohlcv(manifest)
+
+
 def _validate_diagnostic_cohort_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     required_text = {
         "cohort_id": str,
@@ -160,7 +201,9 @@ def _validate_diagnostic_cohort_manifest(manifest: Mapping[str, Any]) -> dict[st
 __all__ = [
     "REQUIRED_ASSET_COUNT",
     "REQUIRED_EVIDENCE_CEILING",
+    "generate_diagnostic_cohort_ohlcv",
     "generate_diagnostic_cohort_prices",
     "load_diagnostic_cohort",
     "load_diagnostic_cohort_manifest",
+    "load_diagnostic_cohort_ohlcv",
 ]

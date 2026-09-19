@@ -113,6 +113,20 @@ def rolling_mean(data: pd.DataFrame, window: int) -> pd.DataFrame:
     return panel.rolling(window=window, min_periods=window).mean()
 
 
+def ts_mean(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Alias of :func:`rolling_mean` for the WorldQuant-style ``ts_mean(x, d)`` name."""
+
+    return rolling_mean(data, window)
+
+
+def ts_sum(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Calculate trailing rolling sum with full windows only."""
+
+    _validate_positive_integer(window, "window")
+    panel = validate_panel_data(data)
+    return panel.rolling(window=window, min_periods=window).sum()
+
+
 def rolling_std(data: pd.DataFrame, window: int, *, ddof: int = 0) -> pd.DataFrame:
     """Calculate trailing rolling standard deviation with full windows only."""
 
@@ -120,6 +134,12 @@ def rolling_std(data: pd.DataFrame, window: int, *, ddof: int = 0) -> pd.DataFra
     _validate_non_negative_integer(ddof, "ddof")
     panel = validate_panel_data(data)
     return panel.rolling(window=window, min_periods=window).std(ddof=ddof)
+
+
+def ts_std(data: pd.DataFrame, window: int, ddof: int = 0) -> pd.DataFrame:
+    """Alias of :func:`rolling_std` for the WorldQuant-style ``ts_std(x, d)`` name."""
+
+    return rolling_std(data, window, ddof=ddof)
 
 
 def rolling_min(data: pd.DataFrame, window: int) -> pd.DataFrame:
@@ -130,12 +150,46 @@ def rolling_min(data: pd.DataFrame, window: int) -> pd.DataFrame:
     return panel.rolling(window=window, min_periods=window).min()
 
 
+def ts_min(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Alias of :func:`rolling_min` for the WorldQuant-style ``ts_min(x, d)`` name."""
+
+    return rolling_min(data, window)
+
+
 def rolling_max(data: pd.DataFrame, window: int) -> pd.DataFrame:
     """Calculate trailing rolling maximum with full windows only."""
 
     _validate_positive_integer(window, "window")
     panel = validate_panel_data(data)
     return panel.rolling(window=window, min_periods=window).max()
+
+
+def ts_max(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Alias of :func:`rolling_max` for the WorldQuant-style ``ts_max(x, d)`` name."""
+
+    return rolling_max(data, window)
+
+
+def ts_argmax(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Return the 1-based index of the trailing-window maximum.
+
+    Index ``1`` is the oldest observation in the window and ``window`` is the
+    current row. Ties keep the oldest maximum. Missing values inside the
+    required window produce ``NaN``.
+    """
+
+    return _ts_arg_extremum(data, window, pick_max=True)
+
+
+def ts_argmin(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Return the 1-based index of the trailing-window minimum.
+
+    Index ``1`` is the oldest observation in the window and ``window`` is the
+    current row. Ties keep the oldest minimum. Missing values inside the
+    required window produce ``NaN``.
+    """
+
+    return _ts_arg_extremum(data, window, pick_max=False)
 
 
 def rolling_corr(left: pd.DataFrame, right: pd.DataFrame, window: int) -> pd.DataFrame:
@@ -147,7 +201,14 @@ def rolling_corr(left: pd.DataFrame, right: pd.DataFrame, window: int) -> pd.Dat
 
     _validate_minimum_integer(window, "window", minimum=2)
     left_panel, right_panel = _validate_matching_panel_data(left, right)
-    return left_panel.rolling(window=window, min_periods=window).corr(right_panel)
+    result = left_panel.rolling(window=window, min_periods=window).corr(right_panel)
+    return result.replace([np.inf, -np.inf], np.nan)
+
+
+def ts_corr(x: pd.DataFrame, y: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Alias of :func:`rolling_corr` for the WorldQuant-style ``ts_corr(x, y, d)`` name."""
+
+    return rolling_corr(x, y, window)
 
 
 def rolling_cov(
@@ -167,6 +228,12 @@ def rolling_cov(
     _validate_non_negative_integer(ddof, "ddof")
     left_panel, right_panel = _validate_matching_panel_data(left, right)
     return left_panel.rolling(window=window, min_periods=window).cov(right_panel, ddof=ddof)
+
+
+def ts_cov(x: pd.DataFrame, y: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Alias of :func:`rolling_cov` for the WorldQuant-style ``ts_cov(x, y, d)`` name."""
+
+    return rolling_cov(x, y, window)
 
 
 def cross_sectional_rank(
@@ -271,25 +338,29 @@ def ts_rank(
     return panel.rolling(window=window, min_periods=window).apply(rank_current, raw=False)
 
 
-def signed_power(data: pd.DataFrame, exponent: float) -> pd.DataFrame:
-    """Raise absolute values to ``exponent`` while preserving original signs."""
+def signed_power(data: pd.DataFrame, a: float) -> pd.DataFrame:
+    """Raise absolute values to ``a`` while preserving original signs."""
 
-    if exponent <= 0:
-        raise ValueError("exponent must be positive")
+    if a <= 0:
+        raise ValueError("a must be positive")
 
     panel = validate_panel_data(data)
-    return np.sign(panel) * panel.abs().pow(exponent)
+    return np.sign(panel) * panel.abs().pow(a)
 
 
-def scale(data: pd.DataFrame, *, target_abs_sum: float = 1.0) -> pd.DataFrame:
-    """Scale each row so absolute non-missing values sum to ``target_abs_sum``."""
+def scale(data: pd.DataFrame, a: float = 1.0, *, target_abs_sum: float | None = None) -> pd.DataFrame:
+    """Scale each row so absolute non-missing values sum to ``a``.
 
-    if target_abs_sum <= 0:
-        raise ValueError("target_abs_sum must be positive")
+    ``target_abs_sum`` is accepted as a keyword alias of ``a``.
+    """
+
+    scale_target = a if target_abs_sum is None else target_abs_sum
+    if scale_target <= 0:
+        raise ValueError("a must be positive")
 
     panel = validate_panel_data(data)
     abs_sum = panel.abs().sum(axis=1, skipna=True).replace(0.0, np.nan)
-    return panel.div(abs_sum, axis=0) * target_abs_sum
+    return panel.div(abs_sum, axis=0) * scale_target
 
 
 def safe_divide(numerator: pd.DataFrame, denominator: pd.DataFrame) -> pd.DataFrame:
@@ -302,6 +373,24 @@ def safe_divide(numerator: pd.DataFrame, denominator: pd.DataFrame) -> pd.DataFr
         result = numerator_panel / denominator_panel
 
     return result.replace([np.inf, -np.inf], np.nan)
+
+
+def _ts_arg_extremum(
+    data: pd.DataFrame,
+    window: int,
+    *,
+    pick_max: bool,
+) -> pd.DataFrame:
+    _validate_positive_integer(window, "window")
+    panel = validate_panel_data(data)
+
+    def _index(values: np.ndarray) -> float:
+        if values.size != window or not np.isfinite(values).all():
+            return np.nan
+        location = int(np.argmax(values) if pick_max else np.argmin(values))
+        return float(location + 1)
+
+    return panel.rolling(window=window, min_periods=window).apply(_index, raw=True)
 
 
 def _validate_matching_panel_data(
@@ -360,9 +449,18 @@ __all__ = [
     "safe_divide",
     "scale",
     "signed_power",
+    "ts_argmax",
+    "ts_argmin",
+    "ts_corr",
+    "ts_cov",
     "ts_delay",
     "ts_delta",
+    "ts_max",
+    "ts_mean",
+    "ts_min",
     "ts_rank",
+    "ts_std",
+    "ts_sum",
     "validate_panel_data",
     "winsorize_cross_sectional",
 ]

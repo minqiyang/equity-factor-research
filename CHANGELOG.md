@@ -50,6 +50,15 @@ profitability, or trading readiness.
 
 ### Added
 
+- WorldQuant-style panel operators `ts_sum`, `ts_mean`, `ts_std`, `ts_min`,
+  `ts_max`, `ts_argmax`, `ts_argmin`, `ts_corr`, and `ts_cov`, plus classical
+  price-volume alphas `alpha_001`, `alpha_002`, `alpha_003`, `alpha_004`,
+  `alpha_006`, and `alpha_012`. The 50-stock diagnostic cohort now has a
+  companion synthetic OHLCV generator. Command
+  `python -m research.alphas_diagnostic_mvp` writes Rank IC, ICIR,
+  Newey-West t-stat, Euler-Mascheroni DSR, and 5 bps monthly backtests under
+  `DIAGNOSTIC_ONLY`. See `reports/alphas_diagnostic_mvp.md`.
+
 - Step 3 adds the accepted ordinary synthetic dividend comparison as an explicit
   opt-in argument to Demo v0 and M3-01. Exact rational diagnoses retain scoped
   evidence, revisions, typed gaps, and negative outcomes under the same attempt.

@@ -19,9 +19,18 @@ from features.operators import (
     safe_divide,
     scale,
     signed_power,
+    ts_argmax,
+    ts_argmin,
+    ts_corr,
+    ts_cov,
     ts_delay,
     ts_delta,
+    ts_max,
+    ts_mean,
+    ts_min,
     ts_rank,
+    ts_std,
+    ts_sum,
     validate_panel_data,
     winsorize_cross_sectional,
 )
@@ -297,11 +306,20 @@ def test_operators_preserve_index_and_columns() -> None:
         delta(data),
         ts_delta(data),
         rolling_mean(data, 2),
+        ts_mean(data, 2),
+        ts_sum(data, 2),
         rolling_std(data, 2),
+        ts_std(data, 2),
         rolling_min(data, 2),
+        ts_min(data, 2),
         rolling_max(data, 2),
+        ts_max(data, 2),
+        ts_argmax(data, 2),
+        ts_argmin(data, 2),
         rolling_corr(data, other, 2),
+        ts_corr(data, other, 2),
         rolling_cov(data, other, 2),
+        ts_cov(data, other, 2),
         cross_sectional_rank(data),
         cs_rank(data),
         decay_linear(data, 2),
@@ -310,6 +328,7 @@ def test_operators_preserve_index_and_columns() -> None:
         ts_rank(data, 2),
         signed_power(data, 2.0),
         scale(data),
+        scale(data, 1.0),
         safe_divide(data, other),
     ]
 
@@ -326,11 +345,20 @@ def test_operators_preserve_index_and_columns() -> None:
         lambda data: delta(data, 1),
         lambda data: ts_delta(data, 1),
         lambda data: rolling_mean(data, 3),
+        lambda data: ts_mean(data, 3),
+        lambda data: ts_sum(data, 3),
         lambda data: rolling_std(data, 3),
+        lambda data: ts_std(data, 3),
         lambda data: rolling_min(data, 3),
+        lambda data: ts_min(data, 3),
         lambda data: rolling_max(data, 3),
+        lambda data: ts_max(data, 3),
+        lambda data: ts_argmax(data, 3),
+        lambda data: ts_argmin(data, 3),
         lambda data: ts_rank(data, 3),
         lambda data: decay_linear(data, 3),
+        lambda data: signed_power(data, 2.0),
+        lambda data: scale(data, 1.0),
     ],
 )
 def test_time_series_operators_do_not_use_future_rows(operator) -> None:
@@ -358,8 +386,18 @@ def test_rolling_pair_operators_do_not_use_future_rows() -> None:
         check_names=False,
     )
     assert_series_equal(
+        ts_corr(left, changed_future, 3).loc[signal_date],
+        ts_corr(left, right, 3).loc[signal_date],
+        check_names=False,
+    )
+    assert_series_equal(
         rolling_cov(left, changed_future, 3).loc[signal_date],
         rolling_cov(left, right, 3).loc[signal_date],
+        check_names=False,
+    )
+    assert_series_equal(
+        ts_cov(left, changed_future, 3).loc[signal_date],
+        ts_cov(left, right, 3).loc[signal_date],
         check_names=False,
     )
 
@@ -381,10 +419,18 @@ def test_ts_rank_retains_first_and_dense_ties(method, ascending, expected):
 
 def test_named_operator_aliases_match_existing_implementations() -> None:
     data = _panel({"AAA": [1.0, 3.0, 6.0, 10.0], "BBB": [10.0, 9.0, 7.0, 4.0]})
+    other = _panel({"AAA": [2.0, 4.0, 6.0, 8.0], "BBB": [1.0, 2.0, 3.0, 4.0]})
 
     assert_frame_equal(ts_delay(data, 2), delay(data, periods=2))
     assert_frame_equal(ts_delta(data, 1), delta(data, periods=1))
     assert_frame_equal(cs_rank(data), cross_sectional_rank(data))
+    assert_frame_equal(ts_mean(data, 2), rolling_mean(data, 2))
+    assert_frame_equal(ts_std(data, 3), rolling_std(data, 3, ddof=0))
+    assert_frame_equal(ts_min(data, 2), rolling_min(data, 2))
+    assert_frame_equal(ts_max(data, 2), rolling_max(data, 2))
+    assert_frame_equal(ts_corr(data, other, 3), rolling_corr(data, other, 3))
+    assert_frame_equal(ts_cov(data, other, 3), rolling_cov(data, other, 3))
+    assert_frame_equal(scale(data, 2.0), scale(data, target_abs_sum=2.0))
 
 
 def test_decay_linear_uses_hand_calculated_oldest_to_newest_weights() -> None:
@@ -406,3 +452,73 @@ def test_decay_linear_uses_hand_calculated_oldest_to_newest_weights() -> None:
 
     with pytest.raises(ValueError, match="at least 1"):
         decay_linear(data, 0)
+
+
+def test_ts_sum_uses_full_trailing_windows_and_preserves_nan() -> None:
+    data = _panel({"AAA": [1.0, 2.0, 3.0, 4.0], "BBB": [4.0, np.nan, 8.0, 10.0]})
+
+    expected = _panel({"AAA": [np.nan, 3.0, 5.0, 7.0], "BBB": [np.nan, np.nan, np.nan, 18.0]})
+    assert_frame_equal(ts_sum(data, 2), expected)
+
+    with pytest.raises(ValueError, match="at least 1"):
+        ts_sum(data, 0)
+
+
+def test_ts_argmax_and_ts_argmin_are_one_based_and_keep_oldest_ties() -> None:
+    data = _panel(
+        {
+            "AAA": [1.0, 3.0, 2.0, 5.0],
+            "BBB": [4.0, 1.0, 1.0, 0.0],
+            "CCC": [2.0, np.nan, 1.0, 3.0],
+        }
+    )
+
+    argmax = ts_argmax(data, 3)
+    argmin = ts_argmin(data, 3)
+
+    assert np.isnan(argmax.loc[data.index[1], "AAA"])
+    # window [1, 3, 2] -> max 3 at 1-based index 2; min 1 at index 1
+    assert argmax.loc[data.index[2], "AAA"] == pytest.approx(2.0)
+    assert argmin.loc[data.index[2], "AAA"] == pytest.approx(1.0)
+    # window [3, 2, 5] -> max 5 at index 3; min 2 at index 2
+    assert argmax.loc[data.index[3], "AAA"] == pytest.approx(3.0)
+    assert argmin.loc[data.index[3], "AAA"] == pytest.approx(2.0)
+    # window [4, 1, 1] -> max 4 at oldest index 1; min 1 ties keep oldest at 2
+    assert argmax.loc[data.index[2], "BBB"] == pytest.approx(1.0)
+    assert argmin.loc[data.index[2], "BBB"] == pytest.approx(2.0)
+    assert np.isnan(argmax.loc[data.index[2], "CCC"])
+    assert np.isnan(argmin.loc[data.index[3], "CCC"])
+
+
+def test_ts_corr_constant_window_is_nan_not_inf() -> None:
+    left = _panel({"AAA": [1.0, 1.0, 1.0, 1.0], "BBB": [1.0, 2.0, 3.0, 4.0]})
+    right = _panel({"AAA": [2.0, 3.0, 4.0, 5.0], "BBB": [2.0, 4.0, 6.0, 8.0]})
+
+    result = ts_corr(left, right, 3)
+
+    assert np.isnan(result.loc[left.index[2], "AAA"])
+    assert not np.isinf(result.to_numpy()).any()
+    assert result.loc[left.index[3], "BBB"] == pytest.approx(1.0)
+
+
+def test_ts_std_population_std_on_two_point_window() -> None:
+    data = _panel({"AAA": [1.0, 2.0, 3.0], "BBB": [4.0, 4.0, 4.0]})
+
+    result = ts_std(data, 2, 0)
+
+    assert np.isnan(result.loc[data.index[0], "AAA"])
+    assert result.loc[data.index[1], "AAA"] == pytest.approx(0.5)
+    assert result.loc[data.index[2], "AAA"] == pytest.approx(0.5)
+    assert result.loc[data.index[2], "BBB"] == pytest.approx(0.0)
+
+
+def test_worldquant_operators_have_no_abstract_class_hierarchy() -> None:
+    import ast
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "src" / "features" / "operators.py").read_text(
+        encoding="utf-8"
+    )
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        assert not isinstance(node, ast.ClassDef)

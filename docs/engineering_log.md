@@ -1,5 +1,37 @@
 # Engineering Log
 
+## 2026-09-19 - WorldQuant operators and classical alphas diagnostic
+
+- Working root `efr-operators-alphas-20260919` on
+  `codex/operators-alphas-20260919` from protected baseline `d6c38e8`.
+- Added WorldQuant-style panel operators `ts_sum`, `ts_mean`, `ts_std`,
+  `ts_min`, `ts_max`, `ts_argmax`, `ts_argmin`, `ts_corr`, and `ts_cov` in
+  `src/features/operators.py`. `ts_mean` / `ts_std` / `ts_min` / `ts_max` /
+  `ts_corr` / `ts_cov` alias existing rolling helpers. `scale(df, a)` accepts
+  the WorldQuant positional scale target. `signed_power(df, a)` keeps sign
+  while raising absolute values. Degenerate rolling correlations emit `NaN`
+  rather than `Inf`.
+- Implemented classical price-volume alphas `alpha_001`, `alpha_002`,
+  `alpha_003`, `alpha_004`, `alpha_006`, and `alpha_012` as plain functions
+  in `src/features/alphas.py`. Golden tests cover hand-calculated matrices,
+  lookahead isolation, empty/sparse/constant/zero-volume inputs, and no ABC
+  hierarchy.
+- Companion synthetic OHLCV uses the committed 50-stock diagnostic cohort
+  close panel plus `seed + 1` open/low/volume draws. Runner
+  `python -m research.alphas_diagnostic_mvp` reports monthly Rank IC, ICIR,
+  Newey-West t-stat, DSR with Euler-Mascheroni mix (`n_trials=6`), and
+  equal-weight monthly backtests at 5 bps slippage.
+- Ablation: named rolling aliases match existing operators; factor helpers
+  match `features.alphas` with no extra wrapper math; pipeline module has
+  one frozen config dataclass and no ABC / metaclass hierarchy.
+- Focused pytest: `tests/test_operators.py`, `tests/test_alphas.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_alphas_diagnostic_mvp.py`
+  (80 passed). Full pytest `--basetemp=/tmp/operators_alphas_pytest`:
+  3426 passed, 2 skipped. `ruff check .` and
+  `compileall src tests research lean` passed.
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-18 - Walking Skeleton DSR Euler-Mascheroni remediation
 
 - Exact-head `GROK_REVIEW` on `81499c6` recorded MATERIAL-WS-1:

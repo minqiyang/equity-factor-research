@@ -1,15 +1,18 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from data.diagnostic_cohort import (
     REQUIRED_ASSET_COUNT,
     REQUIRED_EVIDENCE_CEILING,
+    generate_diagnostic_cohort_ohlcv,
     generate_diagnostic_cohort_prices,
     load_diagnostic_cohort,
     load_diagnostic_cohort_manifest,
+    load_diagnostic_cohort_ohlcv,
 )
 
 
@@ -44,6 +47,28 @@ def test_diagnostic_cohort_prices_are_deterministic() -> None:
     )
 
     pd.testing.assert_frame_equal(first, second)
+
+
+def test_diagnostic_cohort_ohlcv_matches_close_prices_and_stays_positive() -> None:
+    manifest = load_diagnostic_cohort_manifest(DEFAULT_MANIFEST_PATH)
+    prices = generate_diagnostic_cohort_prices(manifest)
+    first = generate_diagnostic_cohort_ohlcv(manifest)
+    second = generate_diagnostic_cohort_ohlcv(manifest)
+    loaded_manifest, loaded_panels = load_diagnostic_cohort_ohlcv(DEFAULT_MANIFEST_PATH)
+
+    pd.testing.assert_frame_equal(first["close"], prices)
+    pd.testing.assert_frame_equal(first["close"], second["close"])
+    pd.testing.assert_frame_equal(first["open"], second["open"])
+    pd.testing.assert_frame_equal(first["volume"], second["volume"])
+    assert loaded_manifest["evidence_ceiling"] == REQUIRED_EVIDENCE_CEILING
+    pd.testing.assert_frame_equal(loaded_panels["close"], prices)
+    assert (first["open"] > 0.0).all().all()
+    assert (first["low"] > 0.0).all().all()
+    assert (first["volume"] > 0.0).all().all()
+    assert (
+        first["low"].to_numpy()
+        <= np.minimum(first["open"].to_numpy(), first["close"].to_numpy()) + 1e-12
+    ).all()
 
 
 def test_diagnostic_cohort_rejects_non_diagnostic_ceiling(tmp_path: Path) -> None:
