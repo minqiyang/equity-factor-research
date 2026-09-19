@@ -1,0 +1,139 @@
+{
+  "base_commit": "5d673f26eea0174236c601fa822916506894ef20",
+  "branch": "codex/dividend-comparison-20260919",
+  "delivery_files": {
+    "CHANGELOG.md": {
+      "bytes": 76657,
+      "sha256": "7d299c1c799e390d707390e5731c6026859dfe7b3e25dc16c58d5aea846f9a45"
+    },
+    "docs/dividend_comparison_api.md": {
+      "bytes": 12127,
+      "sha256": "2d0446df3dba3ebd2c4fe594a92f588f3ba44590e46c186e6a3767b987f7c558"
+    },
+    "docs/engineering_log.md": {
+      "bytes": 514085,
+      "sha256": "c4dd66c6ee2c67a0205dedcc7e85195db22735827a579feca3f62b9645c543de"
+    },
+    "docs/repo_map.md": {
+      "bytes": 6918,
+      "sha256": "6fcadf749e5e15b229e808ded34827c47072115aafb731b8cffc08231547b445"
+    },
+    "reports/dividend_comparison_attempt.md": {
+      "bytes": 23655,
+      "sha256": "083d561c8efaec8be7a46fab998840d78777b507c6f19f75e101eae773d9d1ec"
+    },
+    "research/demo_v0.py": {
+      "bytes": 25075,
+      "sha256": "7d559e4cfa9a941acb2ff928cf77a3ab116cf5767f9197265222138c3eb43821"
+    },
+    "research/dividend_comparison.py": {
+      "bytes": 25153,
+      "sha256": "51ce97cff9951d8253c04a3d6e560df3801099f9fc979b2e5341d83e2735b6df"
+    },
+    "research/synthetic_multifactor_backtest_demo.py": {
+      "bytes": 32915,
+      "sha256": "4cdb824e83a29e0bad22dec65d61cda4cb16d6685a3b7515bfa20a41ff29c407"
+    },
+    "tests/test_dividend_comparison.py": {
+      "bytes": 44353,
+      "sha256": "6b104ebacd37f226c214f663115c8dcd6188b77abb719bb97a714482889462a7"
+    }
+  },
+  "git_stage_result": "Operation not permitted creating .git/index.lock; no commit created",
+  "local_evidence_sha256": {
+    "build/dividend_comparison/ablate.py": "d8cad6582b09c57d510220c1b2b7342dc3f25b139cd65e9bce30db9db2e2f5fe",
+    "build/dividend_comparison/ablation_baseline.log": "80ab11c532ffcbe966587cd153ca6ccbaca6d7e9c9f7752e953cc5b527ecde29",
+    "build/dividend_comparison/ablation_item_retention.log": "a9fb587d33ae5c1b1d0c7461a31018cf5fbcddfcab50ea9aedfaf1f4ca7dadf3",
+    "build/dividend_comparison/ablation_numeric_admission.log": "79ef5ceab7d520ac1bf6486d7a6e317a5bf807e3df1e14474975a744253b4768",
+    "build/dividend_comparison/ablation_output_identity.log": "bc7b519675f93f683f5609a091d1c498608624a0c2a5b016cea33f6724b993a0",
+    "build/dividend_comparison/ablation_rational_predicate.log": "8df4c00793e92d64e613818ac98a2e0273c16b80a4fa6ceabd10fc8cac9fb511",
+    "build/dividend_comparison/ablation_redundant_source.log": "ffe1482d5cb7a3b6804b967cde14925f652a23ad2b992f91322fff4faff9a8bd",
+    "build/dividend_comparison/ablation_results.json": "51f599a3bbaf7d09dce8d63751f9fdc0341785caee5f7c0149e7a1a2b862fa19",
+    "build/dividend_comparison/baseline_hashes.json": "079e93274f644f1da45f79fbd6199bdf459ec796168897e7d6a105253a657153",
+    "build/dividend_comparison/build_final.log": "b344758c1ff8db5b2257cd268586a8f180b8ca26d989779e1c32367c5910cdbd",
+    "build/dividend_comparison/build_no_isolation.log": "cd33aad201fac8df8704e09f3859c525b2b5c85d9d3c44a6d31db33caec4b55c",
+    "build/dividend_comparison/compile_delivery.log": "3b5ecc21e069f07357433bf0172710a64c9f6a21945793f43d727267c21f3276",
+    "build/dividend_comparison/compile_final.log": "c259cb95bc19df1cf04fa9dba6ce69ad3b6c17a004aca2615b480674ef7dd2a5",
+    "build/dividend_comparison/compile_release.log": "3b5ecc21e069f07357433bf0172710a64c9f6a21945793f43d727267c21f3276",
+    "build/dividend_comparison/focused_delivery.log": "54fad60a15afeebf9bee93877f878f319ce0acbbc60421ec84420a2b86e80399",
+    "build/dividend_comparison/focused_expanded.log": "01f7c68e9081f73b16c64e7c30875bac47a1f7a2b19f5582b78bd355787cae5b",
+    "build/dividend_comparison/focused_final.log": "e34df62c23eba1ac8f7fe9c6dcc93c25cb84c59bef2608b72c4e8db2370b6758",
+    "build/dividend_comparison/focused_final_baseline.log": "72140600be96160bf39218155befd07d8f86d27630d8fc49fb12bae4a5fc2019",
+    "build/dividend_comparison/focused_initial.log": "696c7bc63afb9a9bb1ea5bcf50f3df758a36c25332ff8fd46750a99979792aa6",
+    "build/dividend_comparison/focused_release.log": "e71498cd1722e098ba9d0f80b0973cbcc316694e90763eac035396590cc69456",
+    "build/dividend_comparison/focused_second.log": "b8fb2a8bc58f0d460439c50a765b94ab6990941033fd5255eec6d75104793698",
+    "build/dividend_comparison/frozen_hashes.json": "f2c5540bf3b069aed10e08dc3c21133e07216001d05fbe541cb865b1ec90991a",
+    "build/dividend_comparison/frozen_paths.txt": "7ab6eb76d3955570b2bf210809e6f48b037af9a52c679469cc53f6ad046a37b3",
+    "build/dividend_comparison/frozen_verification.json": "9c91a0c45f8eddeb3fd3fda3e397623581ae3d09ad4a3f5f6ffefdb83c6fd690",
+    "build/dividend_comparison/full_delivery.log": "dda9990d0cacd71c0cc2b0a092b289f467c448914ccad63876cdd1cab48c6b74",
+    "build/dividend_comparison/full_final.log": "d17a8335d7b03b833f0ccd79e5997fcdb093ad34b0ba9357799c04919fd3005c",
+    "build/dividend_comparison/full_pre_ablation.log": "7fe7a1d4449b9fb64428538c4d652442fc35bd7c7d1c0fd4ed84b6d14f59b1df",
+    "build/dividend_comparison/full_release.log": "e1bfbb2d78044699ed52dac54a59e867d01d86a948e105c67b732d8df90db7da",
+    "build/dividend_comparison/git_add.log": "5fa8393de86c1dddc90f98a0764054f1ad0330be46aee549b20588f16f32905d",
+    "build/dividend_comparison/map.log": "189b944325521e89bbd70a379e34aec8b75ee20a1a00aa4a4f89c13cfdc2da5c",
+    "build/dividend_comparison/map_delivery.log": "189b944325521e89bbd70a379e34aec8b75ee20a1a00aa4a4f89c13cfdc2da5c",
+    "build/dividend_comparison/map_final.log": "189b944325521e89bbd70a379e34aec8b75ee20a1a00aa4a4f89c13cfdc2da5c",
+    "build/dividend_comparison/ruff_delivery.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "build/dividend_comparison/ruff_final.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "build/dividend_comparison/ruff_initial.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "build/dividend_comparison/ruff_pre_ablation.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "build/dividend_comparison/ruff_release.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "build/dividend_comparison/runtime_final_index.json": "f097db5375d75f38c2b2924090efc05263878617b843e4ba6ff9ddd65d25ae75",
+    "build/dividend_comparison/runtime_index.json": "9615676af79aa86ace19b99152ced8bc8dbace66f164d5e9bffa06df2d30aa3b",
+    "build/dividend_comparison/runtime_release_index.json": "1a667c1cc35f192b1bc82672f7e1f5a8208dabdac8c5d3e3b647696b95c037cb",
+    "build/dividend_comparison/source_hashes.json": "e23d01b177ee2cee2dd3bc6b78f8443a2f611c946b3347252250d465e10b997d"
+  },
+  "manifest_hash_policy": "This manifest excludes its own recursive hash.",
+  "next_gate": "Coordinator exact-candidate CRITICAL reviews and packaging in a provisioned environment; no push or external actions authorized.",
+  "preserved_artifacts": {
+    "reports/.gitkeep": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "reports/astra_max_roadmap_attempt.md": "c181149f9b3570f6251baad17f241f981ba3ca6657f2c54f84779eed3546771f",
+    "reports/demo_v0.md": "939e6b6b0371267fe9a023551667ce7574ec7a413ab8b24777465ed6c5757ad4",
+    "reports/demo_v0_attempt.md": "fde98ec051428f8bda8b2ca2db893f7ce15c2efe6ec22966c61e958983392356",
+    "reports/demo_v0_attempts.jsonl": "05f4d1a894b733e38b6de1e75e1b8e787ecb614ae730070a9b4ad414093b6fb0",
+    "reports/dividend_design_attempt.md": "9c72132be00e8e66f3d2da6db9bcd533d5ba620de30018d817314e0c12bf39a4",
+    "reports/experiment_logs/local_csv_fixture_workflow_demo.json": "fcfda9de7eca831fe724aac9120846079a9769d0a1e1e9c0141db675573d6405",
+    "reports/experiment_logs/synthetic_combined_score_backtest_demo.json": "efd0482d4e28509d94a2fcd903ce4b4dc0790a6cb8bca6389af28517db5d229c",
+    "reports/experiment_logs/synthetic_momentum_demo.json": "8213abbad4dcebaf76cbb0e5e4b2335b65c89ff752a1776131b3b62d4b4beb70",
+    "reports/experiment_logs/synthetic_multifactor_parameter_sweep.json": "f07238493562e6c56445e1f00298d5303cc98eed4f7883de4815236cfbcf0c3a",
+    "reports/experiment_logs/synthetic_multifactor_workflow_demo.json": "12f24ca3f2ffc8fab72f1202137242ac3f33e227468999c84ea9ba9527532256",
+    "reports/experiment_logs/synthetic_split_robustness_demo.json": "672f715631410f179c6658c2875c34b052b723258fe96d46b12c708fad095aa3",
+    "reports/experiment_registry.md": "68aee69fe0db10340044e360ed4bfc5693209f1f9701525d591d0ea7903eb110",
+    "reports/local_csv_fixture_workflow_demo.md": "7a363ce9939de7903e2fa77d1770b49da98b52df90d9e50cd0922882ca6a6bd3",
+    "reports/m3_01_attempt.md": "11f2771a97b95eb1bfbf06c433eec6c14281f5f45befc5e2622755bbe1fd92d3",
+    "reports/m3_02_attempt.md": "3e67dad86e38bb2bac9f3dd5dae22e38a827021534099b86d1f45fa2c0d2f50f",
+    "reports/m3_03_attempt.md": "4d81f25dca427b84f084684c2abe28067d69cae35d0821544d4ff7b034fb6752",
+    "reports/m3_04_attempt.md": "9333ef9727ca859050efd2cef02f84d880f5e78275021c5b88f788d7fda218d7",
+    "reports/m3_05_attempt.md": "cf2e9e33024d9bb498151349ebebdaa88dda2b2ab466444e793728e646e23815",
+    "reports/m3_06_attempt.md": "c871cdb18be73c5dfae43c3d6d4220b1979d84fb4468c10793e94347c2ca1b08",
+    "reports/m3_07_attempt.md": "83a70d3ffb1cfd3b33bacd1f97279eb87c741c2bb3f495a1500bda2bfc9fec4a",
+    "reports/m3_08_attempt.md": "ed68dbec21b59ef5bab2c7a1c5b5d28fc5e549d202e50f95b9202eff358c8cce",
+    "reports/pr221_precision_fix_attempt.md": "a877e0584a13d2f79dc0aac15a34036b5e71e7e71a976ae00b3a20bfd043bb4c",
+    "reports/pr221_runner_decision_attempt.md": "695ab8453580bd602e6ebec0a4761e14b3664f3b7ec4aed2610f9522955c1e8d",
+    "reports/program_assessment_20260917.md": "1d808ded106f15571b25acf7f3e47f1aa8f00730db35e7f7755a6312ab4d64fa",
+    "reports/split_proof_attempt.md": "e2b712a8b950032cd1ea78024e384c393756a4606b13f4ae289766aad74f5f9b",
+    "reports/synthetic_combined_score_backtest_demo.md": "6f005b5d15d106ffdd724be48a69be4b020ea66221a44ecf327e8a828c2c0e12",
+    "reports/synthetic_momentum_demo.md": "dd3dd64ca9595f45a133dc466ab0a75cdff775f0f6ec7440e8c83605ad2f0f5a",
+    "reports/synthetic_multifactor_backtest_demo.md": "03335a7e581943a58c11619b855c73de9b36f86c3f4691ab63781f63eead2f9b",
+    "reports/synthetic_multifactor_backtest_demo_attempts.jsonl": "9ae1a26fb8466b9479dc74142842be51f5654779dbd0692d0edede2134f00d5d",
+    "reports/synthetic_multifactor_parameter_sweep.md": "aeddb0a42312d94897cc6be29b2b91c4d4fe6faa4e67f70da254536b986c317e",
+    "reports/synthetic_multifactor_workflow_demo.md": "9d07a75553bdfb0bb007eb7696f49c29e9cccd0f0061704ea8cc445981f645bc",
+    "reports/synthetic_split_robustness_demo.md": "f4e89ba06bcfb1563ee50b6f0a3f095117be1e0ad666fd3e79f36c0244a127eb",
+    "tests/fixtures/campaign_runner_v1/split_corporate_action.json": "90487b6ffabdc5b5d9eca9220712e5f1e84789658b5fa1fad614205038c1a52a"
+  },
+  "qa": {
+    "compile": "passed",
+    "focused_passed": 523,
+    "full_passed": 3337,
+    "full_skipped": 2,
+    "full_warnings": 1,
+    "other_environments": "untested; historical pandas 2.2.3 failures preserved",
+    "package_build": "blocked: isolated dependency resolution unavailable; offline interpreter lacks setuptools",
+    "repo_map": "regenerated and full-suite freshness passed",
+    "ruff": "passed"
+  },
+  "release_kind": "local_worktree_manifest_git_sandbox_blocked",
+  "scope": "Accepted Step 3 synthetic ordinary dividend comparison; coordinator owns fresh CRITICAL reviews; Step 4 private-data owner gate remains closed.",
+  "writer_released": true,
+  "writer_root": "/Users/rhapsoul/Documents/Codex/projects/efr-dividend-comparison-20260919"
+}

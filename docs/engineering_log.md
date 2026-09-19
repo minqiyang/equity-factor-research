@@ -1,5 +1,96 @@
 # Engineering Log
 
+## 2026-09-18 - PR222 remaining dictionary-envelope hash collision
+
+- Reproduced remaining AUDIT-222-002 on candidate
+  `10825d64acae25b16227787112f6210a8ae9cdec` before editing. After sealing
+  `raw_ex = {"items": anchor}`, replacing it with
+  `{**anchor, "json_evidence": "dict"}` without resealing kept snapshot and
+  hash `3cacca983b5617b43ce6deccf4cae30b8a96fe9da051c86e6e81cad9f7abb5ab`
+  while classification changed from `INSUFFICIENT_EVIDENCE` / false to
+  `MATCHED` / true. The sibling-mark encoder produced the same JSON for
+  those two caller dictionaries.
+- Dictionaries now encode as `{"json_evidence": "object", "items": {<caller
+  keys>}}`. Caller `items` and `json_evidence` keys remain inside the
+  envelope. The exact mutation changes digest and snapshot with the declared
+  hash left unchanged; economic acceptance stays false. Callable and both
+  runners cover that sequence. Prior scalar-wrapper and identity-overlap
+  regressions remain.
+- AUDIT-222-FIX-ADV-001 reproduced: `Decimal("2")` revision_id diagnosed
+  `revision_lineage_unresolved` and `json.dumps(item, allow_nan=False)`
+  raised `TypeError`. Selected revision fields now pass through
+  `json_evidence`. Local typed-serialization hole, same family as
+  observation-state encoding.
+
+## 2026-09-18 - PR222 identity consistency and evidence-hash repair
+
+- Reproduced AUDIT-222-001 and AUDIT-222-002 on failed candidate
+  `4d4d4f2c8b28dd6883a6155f8c250371ee42a753` before editing. Two windows
+  assigned the same asset and identical prior/ex labels to different
+  `SYNTH:` identities, both `MATCHED`, aggregate acceptance true, including
+  through Demo v0 and M3-01. Integer 98 and the caller dictionary
+  `{"type":"int","value":"98"}` shared snapshot and hash
+  `159b4f7644efc32d3152abae5371d24b4daa1871ed69118ddc26853d8b2398d8`
+  while classification changed from `INSUFFICIENT_EVIDENCE` to `MATCHED`.
+- Overlapping requested scopes now contribute `identity_unresolved` for
+  contradictory asset/identity assignments before each item is appended.
+  Distinct assets (D23) and nonoverlapping sequential episodes keep their
+  prior diagnoses. `json_evidence` marks caller dictionaries and tuples so
+  encoded integers, rationals, nonfinite scalars, and list/tuple containers
+  remain distinct; a classification-changing mutation changes digest and
+  snapshot.
+- Existing-contract advisory holes that had a local repair were closed:
+  observation states serialize through `json_evidence` (AUDIT-222-003);
+  report JSON copies `attempt_id` (GROK-222-ADV-001); adjusted-anchor panel
+  binding runs independently of `identity_unresolved` (GROK-222-ADV-002);
+  non-string evidence keys diagnose `evidence_identity_unproven`
+  (GROK-222-ADV-004). GROK-222-ADV-003 did not raise on a tz-aware panel;
+  the live probe already returned `window_invalid`, and binding now uses
+  the same tz-naive unique-index predicates.
+- Economics, runner diagnostic-completion policy, default `NOT_REQUESTED`
+  bytes, frozen configs/official reports/logs/split golden, and
+  accounting/signal/price/holding paths stay unchanged. Isolated ablation
+  was not required for this bounded repair.
+
+## 2026-09-18 - Accepted Step 3 synthetic dividend comparison
+
+- Implemented the PR221 accepted synthetic-only convention in
+  `research/dividend_comparison.py`, with explicit request/window structures,
+  exact pre-conversion numeric admission, rational return classification,
+  immutable fixture hashes, identity/availability/coverage/revision checks,
+  and typed evidence retention. The callable fields are documented in
+  `docs/dividend_comparison_api.md`.
+- Both demo runners expose the opt-in path after existing guards and simulation.
+  Completed items append before the next item and before report preparation.
+  Same-filesystem report replacement precedes terminal success. Late failures
+  preserve the retained items and expose the actual incomplete/failed attempt.
+  Default configuration, report, attempt-log, and accounting behavior remains
+  covered by the existing regression tests and frozen artifact hashes.
+- The initial focused run found a missing secondary numeric-invalid reason on
+  duplicate revisions; remediation retains all applicable current-head reasons.
+  Expanded tests corrected an expectation for already-enforced source-row
+  refusal. The first full run found the generated map freshness check; the map
+  was regenerated. Every run and failure is retained in the attempt report.
+- Isolated ablation retained removal of duplicate source-index validation and
+  parameter forwarding: existing demo guards already require exact source-row
+  preservation. Removing numeric admission produced 25 failures; replacing the
+  rational predicate produced the D41 false match; deferring item appends lost
+  six later-failure retention checks. Those necessary guards remain present.
+- Final focused verification passed 523 cases; the full suite passed 3337 with
+  two platform skips and one existing constant-input warning. Ruff and source,
+  tests, research and LEAN compilation passed. All 34 preserved official
+  report/log/golden files retained their hashes. Packaging remained blocked:
+  isolated dependency resolution was unavailable, and the supplied interpreter
+  lacked setuptools for the offline build. Git staging failed because the
+  sandbox refused `.git/index.lock`; the release manifest supplies local
+  coordinator commit evidence.
+- Final verification counts, environment, per-file hashes, acceptance coverage,
+  local release identity and limitations are recorded in
+  `reports/dividend_comparison_attempt.md`. Fresh CRITICAL reviews remain with
+  the coordinator. Milestone 3 remains in progress and Step 4 retains its
+  separate private-data owner gate.
+
+
 ## 2026-09-16 - M3-08 event-date membership and event-table disclosure
 
 - Demo v0 and M3-01 accept an optional `event_table` DataFrame with a

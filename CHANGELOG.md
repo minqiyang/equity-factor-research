@@ -23,6 +23,21 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Synthetic dividend evidence dictionaries encode as
+  `{"json_evidence": "object", "items": {<caller keys>}}`. Nested caller
+  `items` and `json_evidence` keys stay inside the envelope, so
+  classification-changing mutations change digest and snapshot when the
+  declared hash is left unchanged. Selected revision identifiers serialize
+  through `json_evidence`. See `reports/dividend_comparison_attempt.md`.
+- Overlapping synthetic dividend comparison scopes that assign the same
+  supplied asset to different permanent identities, or the same identity to
+  different assets, now diagnose `identity_unresolved` and keep economic
+  acceptance false. Evidence canonicalization distinguishes caller
+  dictionaries from encoded scalars, so classification-changing mutations
+  change the digest and retained snapshot. Invalid observation states and
+  non-string evidence keys remain typed on completed diagnostic items. The
+  opt-in report JSON copies the runner `attempt_id` onto each item. See
+  `reports/dividend_comparison_attempt.md`.
 - Demo v0 All-Attempt Case Logging now writes a start record before
   computation, keeps incomplete and interrupted attempts visible, records
   catchable `KeyboardInterrupt` and `SystemExit` outcomes and re-raises
@@ -30,6 +45,15 @@ profitability, or trading readiness.
   cannot begin.
 
 ### Added
+
+- Step 3 adds the accepted ordinary synthetic dividend comparison as an explicit
+  opt-in argument to Demo v0 and M3-01. Exact rational diagnoses retain scoped
+  evidence, revisions, typed gaps, and negative outcomes under the same attempt.
+  The opt-in report uses temporary-file replacement after per-item retention.
+  Default reports, configurations, event metadata, and accounting stay intact.
+  See `reports/dividend_comparison_attempt.md` for D01-D47, fault tests, QA,
+  ablation evidence, and the remaining coordinator review/private-data gates.
+
 
 - M3-08 supplied-event date membership for Demo v0 and M3-01: an optional
   `event_table` DataFrame uses a `DatetimeIndex` of event dates. Every date must
