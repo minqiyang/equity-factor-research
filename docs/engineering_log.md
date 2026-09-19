@@ -1,5 +1,37 @@
 # Engineering Log
 
+## 2026-09-19 - WorldQuant alphas batch 5 and consolidated 52-alpha diagnostic
+
+- Working root `efr-alphas-batch5-20260919` on
+  `codex/alphas-batch5-20260919` from protected baseline `9be4d17`.
+- Implemented classical price-volume alphas `alpha_015`, `alpha_016`,
+  `alpha_022`, `alpha_025`, `alpha_031`, `alpha_036`, `alpha_037`,
+  `alpha_040`, `alpha_041`, `alpha_042`, `alpha_044`, `alpha_046`,
+  `alpha_050`, and `alpha_052` as plain functions in
+  `src/features/alphas.py`. Golden tests cover hand-calculated matrices,
+  lookahead isolation, empty/sparse/constant/zero-volume/zero-denominator
+  inputs, and no ABC hierarchy.
+- Incomplete trailing windows stay `NaN` for `alpha_046`. Negative
+  `high * low` clips to 0 before the square root in `alpha_041`.
+  `alpha_025`, `alpha_036`, `alpha_041`, `alpha_042`, and `alpha_050` use
+  typical-price VWAP on companion synthetic bars.
+- Runner `python -m research.multifactor_diagnostic_mvp` now evaluates
+  all 52 implemented alphas plus equal-weighted and in-sample IC-weighted
+  composites. DSR uses `n_trials=54` and the Euler-Mascheroni mix.
+  Overlapping batch-4 IC, ICIR, Newey-West, return, and Sharpe values
+  stay on the same evaluation window; DSR and composites change with the
+  52-alpha trial set.
+- Ablation: pipeline factor helpers match `features.alphas` with no extra
+  wrapper math; composites match `features.combination`; pipeline module
+  has one frozen config dataclass and no ABC / metaclass hierarchy.
+- Focused pytest: `tests/test_alphas.py`, `tests/test_combination.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_alphas_diagnostic_mvp.py`,
+  `tests/test_multifactor_diagnostic_mvp.py` (147 passed). Full pytest
+  `--basetemp=/tmp/alphas_batch5_pytest`: 3541 passed, 2 skipped.
+  `ruff check .` and `compileall src tests research lean` passed.
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-19 - WorldQuant alphas batch 4 and consolidated 38-alpha diagnostic
 
 - Working root `efr-alphas-batch4-20260919` on
