@@ -1,5 +1,32 @@
 # Engineering Log
 
+## 2026-09-18 - Walking Skeleton MVP diagnostic closed loop
+
+- Working root `efr-walking-skeleton-20260919` on
+  `codex/walking-skeleton-20260919` from protected baseline `577a41f`.
+- Added a committed 50-stock static diagnostic cohort fixture and loader
+  stamped `DIAGNOSTIC_ONLY`, survivorship-biased, and not point-in-time
+  universe evidence. Prices are local synthetic draws from seed
+  `20260919`; no vendor or private data.
+- Named operators `ts_delay`, `ts_delta`, `cs_rank`, and `decay_linear`
+  in `src/features/operators.py`, with golden tests in
+  `tests/test_operators.py`. Existing `delay` / `delta` /
+  `cross_sectional_rank` / `ts_rank` behavior is reused.
+- Wired `MOM_12_1`, `REV_1M`, and `LOW_VOL_3M` through the existing
+  long-only monthly equal-weight backtester at 5 bps slippage. Stats are
+  mean monthly Rank IC, ICIR, Newey-West t-stat of mean IC, and DSR with
+  `n_trials=3`. Weak and negative diagnostics are retained.
+- Ablation: aliases match existing operators; `decay_linear` matches
+  explicit numpy weights; factor helpers match existing feature
+  functions; pipeline module has no abstract class hierarchy.
+- Focused pytest: `tests/test_operators.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_diagnostics.py`,
+  `tests/test_walking_skeleton_mvp.py` (101 passed). Full pytest
+  `--basetemp=/tmp/walking_skeleton_pytest`: 2575 passed, 2 skipped.
+  `ruff check .` and `compileall src tests research lean` passed.
+  Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-18 - PR222 remaining dictionary-envelope hash collision
 
 - Reproduced remaining AUDIT-222-002 on candidate

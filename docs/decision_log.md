@@ -15,6 +15,36 @@ investment performance.
 
 ---
 
+## 2026-09-18 - Walking Skeleton Uses Static 50-Stock Diagnostic Cohort
+
+Context:
+
+- The 14-trial run remains REFUSED for
+  `ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`.
+- `PROJECT_SPEC.md` allows a static survivor cohort for diagnostics but
+  not as point-in-time universe evidence.
+
+Decision:
+
+- Unblock the first end-to-end walking skeleton with a committed
+  50-stock synthetic static cohort under `DIAGNOSTIC_ONLY`.
+- Do not present that cohort as point-in-time membership, dataset
+  review, or a 14-trial campaign execution.
+- Reuse existing factor, backtest, and IC helpers; add only named
+  operators, the cohort fixture/loader, and a thin pipeline.
+
+Consequences:
+
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+- D8, A2, identity reopen, and formal interpretation stay closed.
+
+Follow-up:
+
+- Keep the 14-trial identity gate unchanged. Later empirical slices still
+  require accepted dataset identities and separate authorization.
+
+---
+
 ## 2026-09-15 - North Star Alignment And Demo-First Delivery Strategy
 
 Context:

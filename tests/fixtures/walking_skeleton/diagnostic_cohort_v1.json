@@ -1,0 +1,31 @@
+{
+  "cohort_id": "walking_skeleton_diagnostic_cohort_v1",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "review_decision": "diagnostic_only",
+  "dataset_manifest_reviewed": false,
+  "formal_interpretation_eligible": false,
+  "universe_status": "static_survivor_cohort_diagnostic_only",
+  "survivorship_bias": true,
+  "not_point_in_time_universe_evidence": true,
+  "asset_count": 50,
+  "identifiers": [
+    "D50_01", "D50_02", "D50_03", "D50_04", "D50_05",
+    "D50_06", "D50_07", "D50_08", "D50_09", "D50_10",
+    "D50_11", "D50_12", "D50_13", "D50_14", "D50_15",
+    "D50_16", "D50_17", "D50_18", "D50_19", "D50_20",
+    "D50_21", "D50_22", "D50_23", "D50_24", "D50_25",
+    "D50_26", "D50_27", "D50_28", "D50_29", "D50_30",
+    "D50_31", "D50_32", "D50_33", "D50_34", "D50_35",
+    "D50_36", "D50_37", "D50_38", "D50_39", "D50_40",
+    "D50_41", "D50_42", "D50_43", "D50_44", "D50_45",
+    "D50_46", "D50_47", "D50_48", "D50_49", "D50_50"
+  ],
+  "generation": {
+    "kind": "synthetic_local_generator",
+    "seed": 20260919,
+    "start_date": "2021-01-04",
+    "periods": 756,
+    "starting_price": 100.0,
+    "calendar": "pandas_bdate_range"
+  }
+}

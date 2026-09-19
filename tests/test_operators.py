@@ -6,6 +6,8 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from features.operators import (
     cross_sectional_rank,
     cross_sectional_zscore,
+    cs_rank,
+    decay_linear,
     delay,
     delta,
     rolling_corr,
@@ -17,6 +19,8 @@ from features.operators import (
     safe_divide,
     scale,
     signed_power,
+    ts_delay,
+    ts_delta,
     ts_rank,
     validate_panel_data,
     winsorize_cross_sectional,
@@ -129,6 +133,8 @@ def test_delay_and_delta_are_hand_calculated_and_reject_invalid_lags() -> None:
 
     assert_frame_equal(delay(data, periods=1), expected_delay)
     assert_frame_equal(delta(data, periods=2), expected_delta)
+    assert_frame_equal(ts_delay(data, 1), expected_delay)
+    assert_frame_equal(ts_delta(data, 2), expected_delta)
 
     with pytest.raises(ValueError, match="at least 0"):
         delay(data, periods=-1)
@@ -190,6 +196,7 @@ def test_cross_sectional_rank_preserves_nan_and_uses_average_ties() -> None:
 
     expected = _panel({"AAA": [0.25], "BBB": [0.625], "CCC": [0.625], "DDD": [1.0], "EEE": [np.nan]})
     assert_frame_equal(ranked, expected)
+    assert_frame_equal(cs_rank(data), expected)
 
 
 def test_cross_sectional_zscore_uses_row_statistics_and_zero_std_returns_nan() -> None:
@@ -286,7 +293,9 @@ def test_operators_preserve_index_and_columns() -> None:
     operator_results = [
         validate_panel_data(data),
         delay(data),
+        ts_delay(data),
         delta(data),
+        ts_delta(data),
         rolling_mean(data, 2),
         rolling_std(data, 2),
         rolling_min(data, 2),
@@ -294,6 +303,8 @@ def test_operators_preserve_index_and_columns() -> None:
         rolling_corr(data, other, 2),
         rolling_cov(data, other, 2),
         cross_sectional_rank(data),
+        cs_rank(data),
+        decay_linear(data, 2),
         cross_sectional_zscore(data),
         winsorize_cross_sectional(data),
         ts_rank(data, 2),
@@ -311,12 +322,15 @@ def test_operators_preserve_index_and_columns() -> None:
     "operator",
     [
         lambda data: delay(data, 1),
+        lambda data: ts_delay(data, 1),
         lambda data: delta(data, 1),
+        lambda data: ts_delta(data, 1),
         lambda data: rolling_mean(data, 3),
         lambda data: rolling_std(data, 3),
         lambda data: rolling_min(data, 3),
         lambda data: rolling_max(data, 3),
         lambda data: ts_rank(data, 3),
+        lambda data: decay_linear(data, 3),
     ],
 )
 def test_time_series_operators_do_not_use_future_rows(operator) -> None:
@@ -363,3 +377,32 @@ def test_ts_rank_retains_first_and_dense_ties(method, ascending, expected):
     assert result.iloc[-1, 0] == pytest.approx(expected)
     assert ts_rank(data, 10, method=method, ascending=ascending).isna().all().all()
     assert_frame_equal(data, before, check_exact=True)
+
+
+def test_named_operator_aliases_match_existing_implementations() -> None:
+    data = _panel({"AAA": [1.0, 3.0, 6.0, 10.0], "BBB": [10.0, 9.0, 7.0, 4.0]})
+
+    assert_frame_equal(ts_delay(data, 2), delay(data, periods=2))
+    assert_frame_equal(ts_delta(data, 1), delta(data, periods=1))
+    assert_frame_equal(cs_rank(data), cross_sectional_rank(data))
+
+
+def test_decay_linear_uses_hand_calculated_oldest_to_newest_weights() -> None:
+    data = _panel({"AAA": [1.0, 2.0, 3.0, 6.0], "BBB": [4.0, np.nan, 8.0, 10.0]})
+
+    ranked = decay_linear(data, 3)
+    weights = np.array([1.0, 2.0, 3.0])
+    weight_sum = 6.0
+
+    assert np.isnan(ranked.loc[data.index[1], "AAA"])
+    assert ranked.loc[data.index[2], "AAA"] == pytest.approx(
+        (1.0 * 1.0 + 2.0 * 2.0 + 3.0 * 3.0) / weight_sum
+    )
+    assert ranked.loc[data.index[3], "AAA"] == pytest.approx(
+        float(np.dot(np.array([2.0, 3.0, 6.0]), weights) / weight_sum)
+    )
+    assert np.isnan(ranked.loc[data.index[2], "BBB"])
+    assert np.isnan(ranked.loc[data.index[3], "BBB"])
+
+    with pytest.raises(ValueError, match="at least 1"):
+        decay_linear(data, 0)

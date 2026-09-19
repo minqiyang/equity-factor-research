@@ -15,7 +15,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `src/campaign/` | Frozen dataset-independent computations for bounded research campaigns. | 21 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 11 mapped files |
 | `src/backtest/` | Simulated long-only backtester and metrics helpers. | 4 mapped files |
-| `src/data/` | Strict local CSV loaders and metadata review helpers. | 3 mapped files |
+| `src/data/` | Strict local CSV loaders and metadata review helpers. | 4 mapped files |
 | `src/ledger/` | Fail-closed Stage 4B schema-registry helpers and Path A/B sqlite3 runtime; caller-supplied DB path outside the repository. | 23 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
 | `research/` | Synthetic and committed-fixture demo workflows. | 21 mapped files |

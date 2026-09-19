@@ -8,10 +8,13 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 import features.diagnostics as diagnostics
 from features.diagnostics import (
+    deflated_sharpe_ratio,
     factor_correlation_matrix,
     factor_information_coefficient,
     factor_quantile_spread,
     factor_rank_information_coefficient,
+    information_coefficient_summary,
+    newey_west_mean_tstat,
 )
 
 
@@ -527,6 +530,48 @@ def test_factor_quantile_spread_rejects_non_integer_min_assets_per_quantile(
             forward_returns,
             min_assets_per_quantile=bad_min_assets,  # type: ignore[arg-type]
         )
+
+
+def test_newey_west_mean_tstat_matches_hand_calculated_white_standard_error() -> None:
+    values = pd.Series([1.0, 3.0])
+
+    observed = newey_west_mean_tstat(values, lags=0)
+
+    mean = 2.0
+    hac = 1.0
+    standard_error = np.sqrt(hac / 2.0)
+    assert observed == pytest.approx(mean / standard_error)
+
+
+def test_information_coefficient_summary_uses_sample_icir() -> None:
+    ic = pd.Series([0.2, 0.0, -0.1, 0.3])
+
+    summary = information_coefficient_summary(ic, lags=0)
+
+    mean = float(ic.mean())
+    std = float(ic.std(ddof=1))
+    assert summary["count"] == pytest.approx(4.0)
+    assert summary["mean_ic"] == pytest.approx(mean)
+    assert summary["ic_std"] == pytest.approx(std)
+    assert summary["icir"] == pytest.approx(mean / std)
+    assert summary["newey_west_tstat"] == pytest.approx(
+        newey_west_mean_tstat(ic, lags=0)
+    )
+
+
+def test_deflated_sharpe_ratio_is_finite_probability_for_noisy_positive_returns() -> None:
+    returns = pd.Series([0.01, 0.02, -0.005, 0.015, 0.008, 0.012, -0.002, 0.01])
+
+    result = deflated_sharpe_ratio(returns, n_trials=3)
+
+    assert 0.0 <= result <= 1.0
+
+
+def test_deflated_sharpe_ratio_rejects_single_trial_and_zero_vol() -> None:
+    with pytest.raises(ValueError, match="at least 2"):
+        deflated_sharpe_ratio(pd.Series([0.01, 0.02, 0.03]), n_trials=1)
+
+    assert np.isnan(deflated_sharpe_ratio(pd.Series([0.01, 0.01, 0.01]), n_trials=3))
 
 
 def test_diagnostics_module_has_no_backtest_alpha_reporting_or_real_data_imports() -> None:

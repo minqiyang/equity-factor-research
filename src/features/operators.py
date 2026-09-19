@@ -85,12 +85,24 @@ def delay(data: pd.DataFrame, periods: int = 1) -> pd.DataFrame:
     return panel.shift(periods)
 
 
+def ts_delay(data: pd.DataFrame, periods: int = 1) -> pd.DataFrame:
+    """Alias of :func:`delay` for the WorldQuant-style ``ts_delay(x, d)`` name."""
+
+    return delay(data, periods=periods)
+
+
 def delta(data: pd.DataFrame, periods: int = 1) -> pd.DataFrame:
     """Calculate current value minus the trailing value ``periods`` rows ago."""
 
     _validate_positive_integer(periods, "periods")
     panel = validate_panel_data(data)
     return panel - panel.shift(periods)
+
+
+def ts_delta(data: pd.DataFrame, periods: int = 1) -> pd.DataFrame:
+    """Alias of :func:`delta` for the WorldQuant-style ``ts_delta(x, d)`` name."""
+
+    return delta(data, periods=periods)
 
 
 def rolling_mean(data: pd.DataFrame, window: int) -> pd.DataFrame:
@@ -167,6 +179,42 @@ def cross_sectional_rank(
 
     panel = validate_panel_data(data)
     return panel.rank(axis=1, method=method, ascending=ascending, pct=True)
+
+
+def cs_rank(
+    data: pd.DataFrame,
+    *,
+    method: str = "average",
+    ascending: bool = True,
+) -> pd.DataFrame:
+    """Alias of :func:`cross_sectional_rank` for the ``cs_rank(x)`` name."""
+
+    return cross_sectional_rank(data, method=method, ascending=ascending)
+
+
+def decay_linear(data: pd.DataFrame, window: int) -> pd.DataFrame:
+    """Linearly decay-weighted trailing mean with full windows only.
+
+    Weights are ``1, 2, ..., window`` from oldest to newest, so the current
+    observation receives the largest weight. Missing values inside the required
+    window produce ``NaN``. The operator uses only the current row and trailing
+    historical rows; it does not fill or look ahead.
+    """
+
+    _validate_positive_integer(window, "window")
+    panel = validate_panel_data(data)
+    weights = np.arange(1, window + 1, dtype=float)
+    weight_sum = float(weights.sum())
+
+    def _weighted(values: np.ndarray) -> float:
+        if values.size != window or not np.isfinite(values).all():
+            return np.nan
+        return float(np.dot(values, weights) / weight_sum)
+
+    return panel.rolling(window=window, min_periods=window).apply(
+        _weighted,
+        raw=True,
+    )
 
 
 def cross_sectional_zscore(data: pd.DataFrame, *, ddof: int = 0) -> pd.DataFrame:
@@ -299,6 +347,8 @@ def _validate_quantiles(lower_quantile: float, upper_quantile: float) -> None:
 __all__ = [
     "cross_sectional_rank",
     "cross_sectional_zscore",
+    "cs_rank",
+    "decay_linear",
     "delay",
     "delta",
     "rolling_corr",
@@ -310,6 +360,8 @@ __all__ = [
     "safe_divide",
     "scale",
     "signed_power",
+    "ts_delay",
+    "ts_delta",
     "ts_rank",
     "validate_panel_data",
     "winsorize_cross_sectional",
