@@ -1,6 +1,6 @@
 """End-to-end WorldQuant alpha and multi-factor diagnostic pipeline.
 
-This module wires the 23 implemented classical price-volume alphas plus
+This module wires the 38 implemented classical price-volume alphas plus
 equal-weighted and in-sample IC-weighted composites through the committed
 50-stock static diagnostic cohort, a small IC/ICIR/Newey-West/DSR summary, and
 the existing equal-weight monthly long-only backtester with 5 bps slippage.
@@ -43,11 +43,26 @@ from features.alphas import (
     alpha_018,
     alpha_019,
     alpha_020,
+    alpha_021,
     alpha_023,
+    alpha_024,
+    alpha_026,
     alpha_028,
+    alpha_030,
+    alpha_032,
     alpha_033,
+    alpha_034,
+    alpha_035,
     alpha_038,
+    alpha_039,
+    alpha_043,
+    alpha_045,
+    alpha_049,
+    alpha_051,
+    alpha_053,
     alpha_054,
+    alpha_055,
+    alpha_060,
     alpha_101,
 )
 from features.combination import equal_weighted_composite, ic_weighted_composite
@@ -96,11 +111,26 @@ ALPHA_017 = "ALPHA_017"
 ALPHA_018 = "ALPHA_018"
 ALPHA_019 = "ALPHA_019"
 ALPHA_020 = "ALPHA_020"
+ALPHA_021 = "ALPHA_021"
 ALPHA_023 = "ALPHA_023"
+ALPHA_024 = "ALPHA_024"
+ALPHA_026 = "ALPHA_026"
 ALPHA_028 = "ALPHA_028"
+ALPHA_030 = "ALPHA_030"
+ALPHA_032 = "ALPHA_032"
 ALPHA_033 = "ALPHA_033"
+ALPHA_034 = "ALPHA_034"
+ALPHA_035 = "ALPHA_035"
 ALPHA_038 = "ALPHA_038"
+ALPHA_039 = "ALPHA_039"
+ALPHA_043 = "ALPHA_043"
+ALPHA_045 = "ALPHA_045"
+ALPHA_049 = "ALPHA_049"
+ALPHA_051 = "ALPHA_051"
+ALPHA_053 = "ALPHA_053"
 ALPHA_054 = "ALPHA_054"
+ALPHA_055 = "ALPHA_055"
+ALPHA_060 = "ALPHA_060"
 ALPHA_101 = "ALPHA_101"
 EQUAL_WEIGHTED_COMPOSITE = "EQUAL_WEIGHTED_COMPOSITE"
 IC_WEIGHTED_COMPOSITE = "IC_WEIGHTED_COMPOSITE"
@@ -122,11 +152,26 @@ ALPHA_IDS = (
     ALPHA_018,
     ALPHA_019,
     ALPHA_020,
+    ALPHA_021,
     ALPHA_023,
+    ALPHA_024,
+    ALPHA_026,
     ALPHA_028,
+    ALPHA_030,
+    ALPHA_032,
     ALPHA_033,
+    ALPHA_034,
+    ALPHA_035,
     ALPHA_038,
+    ALPHA_039,
+    ALPHA_043,
+    ALPHA_045,
+    ALPHA_049,
+    ALPHA_051,
+    ALPHA_053,
     ALPHA_054,
+    ALPHA_055,
+    ALPHA_060,
     ALPHA_101,
 )
 FACTOR_IDS = (*ALPHA_IDS, EQUAL_WEIGHTED_COMPOSITE, IC_WEIGHTED_COMPOSITE)
@@ -145,7 +190,7 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 25
+    n_trials: int = 40
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
 
@@ -190,8 +235,14 @@ def calculate_diagnostic_alpha(
         return alpha_019(panels["close"], panels["returns"])
     if factor_id == ALPHA_020:
         return alpha_020(panels["open"], panels["high"], panels["low"], panels["close"])
+    if factor_id == ALPHA_021:
+        return alpha_021(panels["close"], panels["volume"])
     if factor_id == ALPHA_023:
         return alpha_023(panels["high"])
+    if factor_id == ALPHA_024:
+        return alpha_024(panels["close"])
+    if factor_id == ALPHA_026:
+        return alpha_026(panels["high"], panels["volume"])
     if factor_id == ALPHA_028:
         return alpha_028(
             panels["close"],
@@ -199,12 +250,52 @@ def calculate_diagnostic_alpha(
             panels["low"],
             panels["volume"],
         )
+    if factor_id == ALPHA_030:
+        return alpha_030(panels["close"], panels["volume"])
+    if factor_id == ALPHA_032:
+        return alpha_032(panels["close"], panels["vwap"])
     if factor_id == ALPHA_033:
         return alpha_033(panels["open"], panels["close"])
+    if factor_id == ALPHA_034:
+        return alpha_034(panels["close"], panels["returns"])
+    if factor_id == ALPHA_035:
+        return alpha_035(
+            panels["high"],
+            panels["low"],
+            panels["close"],
+            panels["volume"],
+            panels["returns"],
+        )
     if factor_id == ALPHA_038:
         return alpha_038(panels["open"], panels["close"])
+    if factor_id == ALPHA_039:
+        return alpha_039(panels["close"], panels["volume"], panels["returns"])
+    if factor_id == ALPHA_043:
+        return alpha_043(panels["close"], panels["volume"])
+    if factor_id == ALPHA_045:
+        return alpha_045(panels["close"], panels["volume"])
+    if factor_id == ALPHA_049:
+        return alpha_049(panels["close"])
+    if factor_id == ALPHA_051:
+        return alpha_051(panels["close"])
+    if factor_id == ALPHA_053:
+        return alpha_053(panels["high"], panels["low"], panels["close"])
     if factor_id == ALPHA_054:
         return alpha_054(panels["open"], panels["high"], panels["low"], panels["close"])
+    if factor_id == ALPHA_055:
+        return alpha_055(
+            panels["high"],
+            panels["low"],
+            panels["close"],
+            panels["volume"],
+        )
+    if factor_id == ALPHA_060:
+        return alpha_060(
+            panels["high"],
+            panels["low"],
+            panels["close"],
+            panels["volume"],
+        )
     if factor_id == ALPHA_101:
         return alpha_101(panels["open"], panels["high"], panels["low"], panels["close"])
     raise ValueError(f"unknown diagnostic alpha: {factor_id}")
@@ -370,11 +461,11 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
     return write_experiment_log(
         log_path=result["experiment_log_path"],
         experiment_id="multifactor-diagnostic-mvp",
-        title="WorldQuant Alphas Batch 3 Multifactor Diagnostic MVP",
+        title="WorldQuant Alphas Batch 4 Multifactor Diagnostic MVP",
         experiment_type="synthetic_alphas_diagnostic",
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock synthetic cohort wired through "
-            "the 23 implemented classical price-volume alphas, an "
+            "the 38 implemented classical price-volume alphas, an "
             "equal-weighted z-score composite, and an in-sample IC-weighted "
             "z-score composite with monthly Rank IC, ICIR, Newey-West t-stat, "
             "DSR with Euler-Mascheroni mix, and equal-weight monthly "
@@ -437,7 +528,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "n_trials_for_dsr": config.n_trials,
             "dsr_expected_max_mix": "euler_mascheroni",
             "composite_ic_weights": (
-                "in-sample mean monthly Rank IC of the 23 implemented alphas"
+                "in-sample mean monthly Rank IC of the 38 implemented alphas"
             ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
@@ -502,7 +593,7 @@ def write_report(*, result: dict[str, Any]) -> None:
         )
 
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in ALPHA_IDS)
-    content = f"""# WorldQuant Alphas Batch 3 Multifactor Diagnostic MVP Evidence
+    content = f"""# WorldQuant Alphas Batch 4 Multifactor Diagnostic MVP Evidence
 
 This report is `DIAGNOSTIC_ONLY`. It uses a committed synthetic 50-stock static
 survivor cohort. That cohort is not point-in-time universe evidence, not a

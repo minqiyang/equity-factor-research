@@ -1,5 +1,37 @@
 # Engineering Log
 
+## 2026-09-19 - WorldQuant alphas batch 4 and consolidated 38-alpha diagnostic
+
+- Working root `efr-alphas-batch4-20260919` on
+  `codex/alphas-batch4-20260919` from protected baseline `ae8b542`.
+- Implemented classical price-volume alphas `alpha_021`, `alpha_024`,
+  `alpha_026`, `alpha_030`, `alpha_032`, `alpha_034`, `alpha_035`,
+  `alpha_039`, `alpha_043`, `alpha_045`, `alpha_049`, `alpha_051`,
+  `alpha_053`, `alpha_055`, and `alpha_060` as plain functions in
+  `src/features/alphas.py`. Golden tests cover hand-calculated matrices,
+  lookahead isolation, empty/sparse/constant/zero-volume/zero-denominator
+  inputs, and no ABC hierarchy.
+- Incomplete trailing windows stay `NaN` for `alpha_021`, `alpha_024`,
+  `alpha_049`, and `alpha_051`. Zero high-low or close-low ranges stay
+  `NaN` for `alpha_053`, `alpha_055`, and `alpha_060`. `alpha_032` uses
+  typical-price VWAP on companion synthetic bars.
+- Runner `python -m research.multifactor_diagnostic_mvp` now evaluates
+  all 38 implemented alphas plus equal-weighted and in-sample IC-weighted
+  composites. DSR uses `n_trials=40` and the Euler-Mascheroni mix.
+  Overlapping batch-3 IC, ICIR, Newey-West, return, and Sharpe values
+  stay on the same evaluation window; DSR and composites change with the
+  38-alpha trial set.
+- Ablation: pipeline factor helpers match `features.alphas` with no extra
+  wrapper math; composites match `features.combination`; pipeline module
+  has one frozen config dataclass and no ABC / metaclass hierarchy.
+- Focused pytest: `tests/test_alphas.py`, `tests/test_combination.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_alphas_diagnostic_mvp.py`,
+  `tests/test_multifactor_diagnostic_mvp.py` (118 passed). Full pytest
+  `--basetemp=/tmp/alphas_batch4_pytest`: 3512 passed, 2 skipped.
+  `ruff check .` and `compileall src tests research lean` passed.
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-19 - WorldQuant alphas batch 3 and consolidated multifactor diagnostic
 
 - Working root `efr-alphas-batch3-20260919` on
