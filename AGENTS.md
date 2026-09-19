@@ -27,6 +27,14 @@ completed design or implementation.
   same-PR protected lifecycle through eligible normal merge. A higher-level
   STOP or narrowed request remains a stop. Asking the owner for a second 建PR
   or merge prompt after that completion is a P1 process failure.
+- **Owner-Authorized Autonomous Coordinator Lifecycle**: Under explicit owner
+  authorization for unattended progression, the Coordinator is authorized to
+  autonomously execute the full development and delivery lifecycle: push
+  passing candidate branches, create/publish PRs, manage required reviews and
+  remediations, perform eligible normal merge once all deterministic tests and
+  independent reviews pass with zero open MATERIAL findings (MATERIAL: 0), and
+  advance to the next authorized research milestone without pausing for manual
+  interactive confirmation.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
@@ -118,6 +126,10 @@ keep their existing wording.
   same-period target returns, or any other look-ahead or survivorship leakage.
 - Real/private-data access or interpretation requires accepted methodology,
   evidence gates, and explicit authorization.
+- **Pragmatic Data First**: Under `DIAGNOSTIC_ONLY`, permit a verified static
+  cohort (e.g. 50 liquid blue chips) to run end-to-end diagnostic pipelines.
+  Forbid blocking research execution on unresolved legal/textual SEC EDGAR
+  lineage parsing.
 - Explain data provenance, missingness, costs, slippage, execution timing,
   benchmark choice, sample splits, and material limitations.
 
@@ -235,9 +247,22 @@ Ablation revalidation is not a recursive ablation loop.
 - Never remove, weaken, or skip tests to make a change pass.
 - Choose the simplest implementation that fully meets current requirements;
   avoid speculative abstractions, configuration, and indirection.
+- **Anti-Overengineering**: Explicitly forbid speculative multi-layer schema
+  registries, capability minting, or recursive abstraction layers before
+  end-to-end business logic works.
+- **Walking Skeleton First (End-to-End Minimal Closed Loop)**: Prioritize
+  completing and maintaining a single minimal thread connecting data -> factor ->
+  basic statistics -> simple portfolio backtest -> evidence report before
+  expanding any single component.
 - Grow the system in working layers: start with the smallest end-to-end
   version, then add capabilities without trading a working product for
   unfinished complexity.
+- **Mandatory Ablation Experiments**: Whenever agents introduce excessive
+  abstractions, wrapper layers, or boilerplate, coordinators and reviewers shall
+  trigger ablation experiments to remove unnecessary elements and simplify code.
+- **Anti-Gridlock Decoupling**: When data or infrastructure is blocked, unblocked
+  modules (such as pure math factor operators and statistical test formulas) must
+  proceed in parallel using synthetic golden fixtures.
 - Ablation after each completed design or implementation follows the Ablation
   section.
 - Keep components modular and concerns clearly separated; prefer narrow modules,
