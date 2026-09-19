@@ -250,6 +250,109 @@ close-reset execution, and no dataset review. This is not a 14-trial run.
 Keep as a DIAGNOSTIC_ONLY price-volume alpha wiring check. Do not reopen
 identity, D8, A2, or formal interpretation from this result.
 
+## 20260919-002-multifactor-diagnostic-mvp
+
+### Experiment ID
+
+`20260919-002-multifactor-diagnostic-mvp`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+WorldQuant price-volume alphas 5, 8, 10, 13, 14, 18, and 20, plus equal-weighted
+and in-sample IC-weighted z-score composites, can be wired through the committed
+50-stock diagnostic cohort with the same Rank IC, ICIR, Newey-West, DSR, and
+5 bps monthly backtest path as batch 1.
+
+### Data Source
+
+Synthetic local generator from
+`tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use
+seed `20260919`. Companion open, low, and volume use `seed + 1`. High is an
+additional `seed + 1` draw after those panels. VWAP is typical price
+`(high + low + close) / 3`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased
+by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through
+`2023-11-27` after 25-row alpha warm-up.
+
+### Features / Factors
+
+- `ALPHA_005`: `rank(open - ts_mean(vwap, 10)) * (-abs(rank(close - vwap)))`
+- `ALPHA_008`: `-rank((ts_sum(open, 5) * ts_sum(returns, 5)) - ts_delay(that product, 10))`
+- `ALPHA_010`: `rank(delta if ts_min(delta, 4) > 0 or ts_max(delta, 4) < 0 else -delta)`
+- `ALPHA_013`: `-rank(ts_cov(rank(close), rank(volume), 5))`
+- `ALPHA_014`: `-rank(ts_delta(returns, 3)) * ts_corr(open, volume, 10)`
+- `ALPHA_018`: `-rank(ts_std(abs(close-open), 5) + (close-open) + ts_corr(close, open, 10))`
+- `ALPHA_020`: `-rank(open - delay(high, 1)) * rank(open - delay(close, 1)) * rank(open - delay(low, 1))`
+- `EQUAL_WEIGHTED_COMPOSITE`: equal-weight average of cross-sectional z-scores
+- `IC_WEIGHTED_COMPOSITE`: same z-scores with in-sample mean monthly Rank IC weights
+- Signal lag: 1 observed source row. Forward IC labels start at the execution
+  close.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+`signal_lag_periods=1`, `n_trials=9` for DSR with Euler-Mascheroni mix.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/multifactor_diagnostic_mvp.md` and
+`reports/experiment_logs/multifactor_diagnostic_mvp.json`. All seven alphas and
+both composites are retained, including negative mean IC. Official 4-decimal
+rows:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ALPHA_005 | -0.0254 | -0.1645 | -0.8436 | 0.2252 | 15.55% | 0.4512 | -23.13% |
+| ALPHA_008 | -0.0291 | -0.2172 | -1.3083 | 0.1527 | 8.87% | 0.2920 | -23.31% |
+| ALPHA_010 | -0.0182 | -0.1064 | -0.7266 | 0.2813 | 19.43% | 0.5551 | -23.54% |
+| ALPHA_013 | 0.0345 | 0.2377 | 1.6730 | 0.1071 | 3.69% | 0.1639 | -24.01% |
+| ALPHA_014 | -0.0063 | -0.0432 | -0.2736 | 0.0667 | -2.02% | 0.0119 | -23.78% |
+| ALPHA_018 | -0.0324 | -0.2301 | -2.2995 | 0.0648 | -2.16% | 0.0032 | -20.67% |
+| ALPHA_020 | -0.0315 | -0.2621 | -1.6914 | 0.1781 | 11.10% | 0.3520 | -20.93% |
+| EQUAL_WEIGHTED_COMPOSITE | -0.0320 | -0.2186 | -1.5392 | 0.0073 | -19.77% | -0.5429 | -34.25% |
+| IC_WEIGHTED_COMPOSITE | 0.0420 | 0.2742 | 1.6372 | 0.2277 | 15.84% | 0.4563 | -21.13% |
+
+These are `DIAGNOSTIC_ONLY` synthetic values, not profitability evidence.
+
+### Limitations
+
+Static membership, synthetic prices, companion synthetic OHLCV, typical-price
+VWAP proxy, in-sample IC weights, idealized close-reset execution, and no
+dataset review. This is not a 14-trial run.
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY batch-2 alpha and composite wiring check. Do not
+reopen identity, D8, A2, or formal interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

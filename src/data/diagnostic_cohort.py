@@ -76,8 +76,10 @@ def load_diagnostic_cohort(path: str | Path) -> tuple[dict[str, Any], pd.DataFra
 def generate_diagnostic_cohort_ohlcv(manifest: Mapping[str, Any]) -> dict[str, pd.DataFrame]:
     """Generate companion synthetic OHLCV for price-volume diagnostic alphas.
 
-    Close prices match :func:`generate_diagnostic_cohort_prices`. Open, low, and
-    volume are additional local synthetic draws from ``seed + 1``. They are not
+    Close prices match :func:`generate_diagnostic_cohort_prices`. Open, low,
+    high, and volume are additional local synthetic draws from ``seed + 1``.
+    High and typical-price VWAP are drawn after open, low, and volume so those
+    companion panels stay bit-identical to the prior generator. They are not
     real market data and are not a point-in-time membership record.
     """
 
@@ -89,6 +91,7 @@ def generate_diagnostic_cohort_ohlcv(manifest: Mapping[str, Any]) -> dict[str, p
     overnight = rng.normal(loc=0.0, scale=0.0020, size=(n_rows, n_assets))
     low_gap = rng.uniform(low=0.0, high=0.010, size=(n_rows, n_assets))
     volume_draws = rng.lognormal(mean=12.0, sigma=0.35, size=(n_rows, n_assets))
+    high_gap = rng.uniform(low=0.0, high=0.010, size=(n_rows, n_assets))
 
     close_values = close.to_numpy(dtype=float)
     previous_close = np.empty_like(close_values)
@@ -96,12 +99,16 @@ def generate_diagnostic_cohort_ohlcv(manifest: Mapping[str, Any]) -> dict[str, p
     previous_close[1:, :] = close_values[:-1, :]
     open_values = previous_close * np.exp(overnight)
     low_values = np.minimum(open_values, close_values) * (1.0 - low_gap)
+    high_values = np.maximum(open_values, close_values) * (1.0 + high_gap)
+    vwap_values = (high_values + low_values + close_values) / 3.0
     returns = close.pct_change(fill_method=None)
 
     return {
         "open": pd.DataFrame(open_values, index=close.index, columns=close.columns),
+        "high": pd.DataFrame(high_values, index=close.index, columns=close.columns),
         "low": pd.DataFrame(low_values, index=close.index, columns=close.columns),
         "close": close,
+        "vwap": pd.DataFrame(vwap_values, index=close.index, columns=close.columns),
         "volume": pd.DataFrame(volume_draws, index=close.index, columns=close.columns),
         "returns": returns,
     }

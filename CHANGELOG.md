@@ -50,6 +50,15 @@ profitability, or trading readiness.
 
 ### Added
 
+- WorldQuant classical price-volume alphas `alpha_005`, `alpha_008`,
+  `alpha_010`, `alpha_013`, `alpha_014`, `alpha_018`, and `alpha_020`, plus
+  equal-weighted and IC-weighted z-score composites in
+  `src/features/combination.py`. Companion diagnostic OHLCV now includes high
+  and typical-price VWAP. Command
+  `python -m research.multifactor_diagnostic_mvp` writes Rank IC, ICIR,
+  Newey-West t-stat, Euler-Mascheroni DSR, and 5 bps monthly backtests under
+  `DIAGNOSTIC_ONLY`. See `reports/multifactor_diagnostic_mvp.md`.
+
 - WorldQuant-style panel operators `ts_sum`, `ts_mean`, `ts_std`, `ts_min`,
   `ts_max`, `ts_argmax`, `ts_argmin`, `ts_corr`, and `ts_cov`, plus classical
   price-volume alphas `alpha_001`, `alpha_002`, `alpha_003`, `alpha_004`,
