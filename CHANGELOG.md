@@ -50,6 +50,16 @@ profitability, or trading readiness.
 
 ### Added
 
+- WorldQuant classical price-volume alphas `alpha_021`, `alpha_024`,
+  `alpha_026`, `alpha_030`, `alpha_032`, `alpha_034`, `alpha_035`,
+  `alpha_039`, `alpha_043`, `alpha_045`, `alpha_049`, `alpha_051`,
+  `alpha_053`, `alpha_055`, and `alpha_060`. Command
+  `python -m research.multifactor_diagnostic_mvp` now evaluates all 38
+  implemented alphas plus equal-weighted and IC-weighted composites with
+  Rank IC, ICIR, Newey-West t-stat, Euler-Mascheroni DSR (`n_trials=40`),
+  and 5 bps monthly backtests under `DIAGNOSTIC_ONLY`. See
+  `reports/multifactor_diagnostic_mvp.md`.
+
 - WorldQuant classical price-volume alphas `alpha_007`, `alpha_009`,
   `alpha_017`, `alpha_019`, `alpha_023`, `alpha_028`, `alpha_033`,
   `alpha_038`, `alpha_054`, and `alpha_101`. Command

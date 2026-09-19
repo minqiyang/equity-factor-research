@@ -468,6 +468,139 @@ dataset review. `alpha_019` has a longer effective warm-up than the shared
 Keep as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. Do not
 reopen identity, D8, A2, or formal interpretation from this result.
 
+## 20260919-004-multifactor-diagnostic-mvp
+
+### Experiment ID
+
+`20260919-004-multifactor-diagnostic-mvp`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+The 38 implemented WorldQuant price-volume alphas, plus equal-weighted and
+in-sample IC-weighted z-score composites, can be wired through the committed
+50-stock diagnostic cohort with monthly Rank IC, ICIR, Newey-West, DSR
+(`n_trials=40`), and 5 bps monthly backtests.
+
+### Data Source
+
+Synthetic local generator from
+`tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use
+seed `20260919`. Companion open, low, and volume use `seed + 1`. High is an
+additional `seed + 1` draw after those panels. VWAP is typical price
+`(high + low + close) / 3`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased
+by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through
+`2023-11-27` after 25-row alpha warm-up. `alpha_019` and `alpha_039` use a
+250-row return sum, `alpha_024` uses a 200-row mean-drift window, and
+`alpha_032` uses a 230-row VWAP correlation, so their early monthly IC cells
+stay missing until those windows are full.
+
+### Features / Factors
+
+Implemented alphas `ALPHA_001` through `ALPHA_101` listed in
+`research/multifactor_diagnostic_mvp.py` `ALPHA_IDS`, plus
+`EQUAL_WEIGHTED_COMPOSITE` and `IC_WEIGHTED_COMPOSITE`. Signal lag: 1 observed
+source row. Forward IC labels start at the execution close. IC-weighted
+composite uses in-sample mean monthly Rank IC of the 38 alphas.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+`signal_lag_periods=1`, `n_trials=40` for DSR with Euler-Mascheroni mix.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/multifactor_diagnostic_mvp.md` and
+`reports/experiment_logs/multifactor_diagnostic_mvp.json`. All 38 alphas and
+both composites are retained, including negative mean IC. Official 4-decimal
+rows:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.0177 | -0.40% | 0.0505 | -23.34% |
+| ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0020 | -15.29% | -0.4035 | -27.88% |
+| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.2043 | 31.28% | 0.8040 | -16.56% |
+| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.0439 | 8.41% | 0.2839 | -23.66% |
+| ALPHA_005 | -0.0254 | -0.1645 | -0.8436 | 0.0773 | 15.55% | 0.4512 | -23.13% |
+| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.0274 | 3.59% | 0.1589 | -14.41% |
+| ALPHA_007 | 0.0106 | 0.0984 | 0.5324 | 0.0015 | -17.35% | -0.4558 | -25.97% |
+| ALPHA_008 | -0.0291 | -0.2172 | -1.3083 | 0.0452 | 8.87% | 0.2920 | -23.31% |
+| ALPHA_009 | -0.0194 | -0.1182 | -0.7920 | 0.0701 | 13.74% | 0.4208 | -24.30% |
+| ALPHA_010 | -0.0182 | -0.1064 | -0.7266 | 0.1061 | 19.43% | 0.5551 | -23.54% |
+| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.1195 | 21.76% | 0.5961 | -18.88% |
+| ALPHA_013 | 0.0345 | 0.2377 | 1.6730 | 0.0280 | 3.69% | 0.1639 | -24.01% |
+| ALPHA_014 | -0.0063 | -0.0432 | -0.2736 | 0.0150 | -2.02% | 0.0119 | -23.78% |
+| ALPHA_017 | -0.0478 | -0.4175 | -2.9894 | 0.2443 | 34.36% | 0.8826 | -14.41% |
+| ALPHA_018 | -0.0324 | -0.2301 | -2.2995 | 0.0145 | -2.16% | 0.0032 | -20.67% |
+| ALPHA_019 | -0.0974 | -0.6117 | -2.9056 | 0.0062 | -6.88% | -0.1828 | -14.82% |
+| ALPHA_020 | -0.0315 | -0.2621 | -1.6914 | 0.0557 | 11.10% | 0.3520 | -20.93% |
+| ALPHA_021 | -0.0007 | -0.0049 | -0.0286 | 0.0299 | 4.43% | 0.1810 | -22.81% |
+| ALPHA_023 | -0.0152 | -0.0973 | -0.6273 | 0.1754 | 28.34% | 0.7390 | -17.50% |
+| ALPHA_024 | -0.0023 | -0.0137 | -0.0780 | 0.0030 | -11.63% | -0.3295 | -24.82% |
+| ALPHA_026 | 0.0420 | 0.2824 | 1.6224 | 0.1027 | 19.19% | 0.5438 | -19.93% |
+| ALPHA_028 | 0.0097 | 0.0693 | 0.3415 | 0.0401 | 7.55% | 0.2593 | -30.66% |
+| ALPHA_030 | -0.0112 | -0.0723 | -0.4867 | 0.0687 | 13.78% | 0.4145 | -19.70% |
+| ALPHA_032 | -0.0260 | -0.1733 | -0.8504 | 0.0084 | -4.97% | -0.1185 | -22.85% |
+| ALPHA_033 | -0.0308 | -0.2051 | -2.0262 | 0.1230 | 22.10% | 0.6057 | -17.06% |
+| ALPHA_034 | 0.0010 | 0.0068 | 0.0458 | 0.0990 | 19.40% | 0.5305 | -13.73% |
+| ALPHA_035 | -0.0028 | -0.0186 | -0.1299 | 0.0063 | -8.62% | -0.1802 | -19.08% |
+| ALPHA_038 | -0.0174 | -0.1119 | -0.7676 | 0.0281 | 3.77% | 0.1647 | -20.58% |
+| ALPHA_039 | -0.0661 | -0.4513 | -1.9483 | 0.0078 | -5.51% | -0.1338 | -17.86% |
+| ALPHA_043 | 0.0338 | 0.2310 | 1.6466 | 0.0004 | -24.62% | -0.7007 | -32.69% |
+| ALPHA_045 | -0.0006 | -0.0044 | -0.0261 | 0.1768 | 27.64% | 0.7443 | -15.48% |
+| ALPHA_049 | -0.0232 | -0.1703 | -1.3605 | 0.0602 | 12.17% | 0.3746 | -24.35% |
+| ALPHA_051 | 0.0025 | 0.0198 | 0.1748 | 0.1011 | 18.95% | 0.5392 | -20.51% |
+| ALPHA_053 | -0.0096 | -0.0809 | -0.6399 | 0.0119 | -3.94% | -0.0416 | -26.81% |
+| ALPHA_054 | 0.0048 | 0.0346 | 0.3353 | 0.0231 | 1.93% | 0.1156 | -25.60% |
+| ALPHA_055 | -0.0017 | -0.0114 | -0.0662 | 0.0134 | -2.63% | -0.0151 | -24.90% |
+| ALPHA_060 | 0.0103 | 0.0727 | 0.6986 | 0.0145 | -1.97% | 0.0042 | -23.44% |
+| ALPHA_101 | 0.0181 | 0.1150 | 1.0473 | 0.0193 | 0.28% | 0.0709 | -29.74% |
+| EQUAL_WEIGHTED_COMPOSITE | -0.0216 | -0.1387 | -1.0344 | 0.0070 | -7.98% | -0.1587 | -25.20% |
+| IC_WEIGHTED_COMPOSITE | 0.0718 | 0.5086 | 3.0392 | 0.1003 | 18.39% | 0.5368 | -23.22% |
+
+These are `DIAGNOSTIC_ONLY` synthetic values, not profitability evidence.
+
+### Limitations
+
+Static membership, synthetic prices, companion synthetic OHLCV, typical-price
+VWAP proxy, in-sample IC weights, idealized close-reset execution, and no
+dataset review. `alpha_019`, `alpha_024`, `alpha_032`, and `alpha_039` have a
+longer effective warm-up than the shared 25-row evaluation start. This is not
+a 14-trial run.
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. Do not
+reopen identity, D8, A2, or formal interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
