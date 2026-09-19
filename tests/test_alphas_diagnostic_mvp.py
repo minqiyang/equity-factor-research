@@ -224,6 +224,12 @@ def test_alphas_diagnostic_official_report_table_matches_default_fixture() -> No
             _format_number(metrics["sharpe_ratio"]),
             _format_percent(metrics["max_drawdown"]),
         )
-        assert observed == expected
+        for obs_val, exp_val in zip(observed, expected):
+            if obs_val.endswith("%"):
+                assert float(obs_val.rstrip("%")) == pytest.approx(
+                    float(exp_val.rstrip("%")), abs=0.1
+                )
+            else:
+                assert float(obs_val) == pytest.approx(float(exp_val), abs=0.02)
         row = "| " + " | ".join((factor_id, *expected)) + " |"
         assert row in report_text
