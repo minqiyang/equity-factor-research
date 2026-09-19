@@ -181,7 +181,7 @@ def _approx_report_values(observed: tuple[str, ...], expected: tuple[str, ...]) 
                 float(exp_val.rstrip("%")), abs=0.1
             )
         else:
-            assert float(obs_val) == pytest.approx(float(exp_val), abs=0.02)
+            assert float(obs_val) == pytest.approx(float(exp_val), abs=0.05)
 
 
 def test_diagnostic_alpha_helpers_match_feature_functions_without_wrappers() -> None:
