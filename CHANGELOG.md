@@ -7,6 +7,17 @@ profitability, or trading readiness.
 
 ## Unreleased
 
+### Added
+
+- `src/features/diagnostics.py`: Added `probability_of_backtest_overfitting` implementing
+  Combinatorially Symmetric Cross-Validation (CSCV) to evaluate backtest overfitting probability
+  and out-of-sample loss probability across multiple strategy/alpha variants.
+- `src/data/constituent_table.py`: Added point-in-time constituent membership table loader
+  `load_constituent_intervals_csv` and lookahead-free dynamic universe mask builder
+  `build_membership_mask` with ticker reuse prevention (PIT-005).
+- `research/multifactor_diagnostic_mvp.py`: Wired PBO evaluation across the 52 implemented
+  WorldQuant alphas into the consolidated diagnostic report and experiment log.
+
 ### Changed
 
 - `AGENTS.md` has a first-class Ablation section: after every completed design

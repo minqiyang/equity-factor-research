@@ -484,6 +484,141 @@ def _empty_quantile_spread_record(valid_asset_count: int) -> dict[str, float | i
     }
 
 
+def probability_of_backtest_overfitting(
+    returns_matrix: pd.DataFrame,
+    *,
+    n_splits: int = 16,
+    risk_free_rate: float = 0.0,
+) -> dict[str, float | int]:
+    """Bailey, Borwein, Lopez de Prado, and Zhu Probability of Backtest Overfitting (PBO).
+
+    Computes PBO using Combinatorially Symmetric Cross-Validation (CSCV).
+    The input matrix of returns represents N strategy variants observed across T periods.
+    The T periods are split into S contiguous non-overlapping blocks. For each
+    combination of S/2 in-sample (IS) blocks, the best performing strategy is
+    selected by Sharpe ratio. Its out-of-sample (OOS) Sharpe ratio rank percentile omega
+    is evaluated against all N strategies.
+
+    PBO is the empirical probability that the in-sample optimal strategy performs below
+    the median out-of-sample (omega <= 0.5).
+
+    Args:
+        returns_matrix: 2D DataFrame of shape (T, N) where T >= 2 * n_splits and N >= 2.
+            Must contain finite numeric values.
+        n_splits: Number of contiguous blocks (S). Must be an even integer >= 4. Default is 16.
+        risk_free_rate: Benchmark or risk-free return subtracted in Sharpe ratio calculation.
+
+    Returns:
+        Dictionary containing:
+            - 'pbo': Probability of Backtest Overfitting (float in [0, 1]).
+            - 'prob_loss': Probability of out-of-sample loss for the IS optimal strategy.
+            - 'n_splits': S.
+            - 'n_combinations': Number of IS/OOS combinations (C(S, S/2)).
+            - 'mean_relative_rank': Average OOS relative rank percentile.
+            - 'median_relative_rank': Median OOS relative rank percentile.
+            - 'mean_is_sharpe': Average IS Sharpe ratio of the selected strategies.
+            - 'mean_oos_sharpe': Average OOS Sharpe ratio of the selected strategies.
+    """
+
+    if not isinstance(returns_matrix, pd.DataFrame):
+        raise TypeError("returns_matrix must be a pandas DataFrame")
+
+    if any(
+        is_bool_dtype(dtype) or not is_numeric_dtype(dtype)
+        for dtype in returns_matrix.dtypes
+    ):
+        raise TypeError("returns_matrix must contain numeric non-boolean values")
+
+    values = returns_matrix.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("returns_matrix must contain finite values without NaN or Inf")
+
+    n_rows, n_cols = values.shape
+    if n_cols < 2:
+        raise ValueError("returns_matrix must contain at least 2 strategy columns")
+
+    if isinstance(n_splits, bool) or not isinstance(n_splits, int) or n_splits < 4 or n_splits % 2 != 0:
+        raise ValueError("n_splits must be an even integer of at least 4")
+
+    if n_rows < 2 * n_splits:
+        raise ValueError(
+            f"returns_matrix has {n_rows} rows; requires at least 2 * n_splits = {2 * n_splits} rows for n_splits={n_splits}"
+        )
+
+    rf = float(risk_free_rate)
+    if not math.isfinite(rf):
+        raise ValueError("risk_free_rate must be a finite float")
+
+    blocks = np.array_split(np.arange(n_rows), n_splits)
+    block_counts = np.array([len(b) for b in blocks], dtype=float)
+    block_sums = np.array([values[b].sum(axis=0) for b in blocks], dtype=float)
+    block_sum_sqs = np.array([(values[b] ** 2).sum(axis=0) for b in blocks], dtype=float)
+
+    import itertools
+
+    half_s = n_splits // 2
+    all_blocks = set(range(n_splits))
+    combinations = list(itertools.combinations(range(n_splits), half_s))
+    n_combinations = len(combinations)
+
+    omegas: list[float] = []
+    oos_losses: list[bool] = []
+    is_sharpes: list[float] = []
+    oos_sharpes: list[float] = []
+
+    for is_idx in combinations:
+        oos_idx = tuple(all_blocks.difference(is_idx))
+
+        # IS statistics
+        is_n = block_counts[list(is_idx)].sum()
+        is_sum = block_sums[list(is_idx)].sum(axis=0)
+        is_sum_sq = block_sum_sqs[list(is_idx)].sum(axis=0)
+        is_mean = is_sum / is_n
+        is_var = np.maximum((is_sum_sq - (is_sum ** 2) / is_n) / (is_n - 1.0), 0.0)
+        is_std = np.sqrt(is_var)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            is_sr = np.where(is_std > 0.0, (is_mean - rf) / is_std, 0.0)
+
+        best_strategy = int(np.argmax(is_sr))
+        is_sharpes.append(float(is_sr[best_strategy]))
+
+        # OOS statistics
+        oos_n = block_counts[list(oos_idx)].sum()
+        oos_sum = block_sums[list(oos_idx)].sum(axis=0)
+        oos_sum_sq = block_sum_sqs[list(oos_idx)].sum(axis=0)
+        oos_mean = oos_sum / oos_n
+        oos_var = np.maximum((oos_sum_sq - (oos_sum ** 2) / oos_n) / (oos_n - 1.0), 0.0)
+        oos_std = np.sqrt(oos_var)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            oos_sr = np.where(oos_std > 0.0, (oos_mean - rf) / oos_std, 0.0)
+
+        best_oos_sr = oos_sr[best_strategy]
+        oos_sharpes.append(float(best_oos_sr))
+        oos_losses.append(bool(best_oos_sr <= 0.0))
+
+        # Relative rank of best_strategy in OOS Sharpe distribution
+        strictly_worse = (oos_sr < best_oos_sr).sum()
+        equal = (oos_sr == best_oos_sr).sum() - 1
+        rank = 1.0 + strictly_worse + 0.5 * equal
+        omega = rank / (n_cols + 1.0)
+        omegas.append(float(omega))
+
+    omegas_arr = np.array(omegas)
+    pbo = float((omegas_arr <= 0.5).mean())
+    prob_loss = float(np.mean(oos_losses))
+
+    return {
+        "pbo": pbo,
+        "prob_loss": prob_loss,
+        "n_splits": n_splits,
+        "n_combinations": n_combinations,
+        "mean_relative_rank": float(np.mean(omegas_arr)),
+        "median_relative_rank": float(np.median(omegas_arr)),
+        "mean_is_sharpe": float(np.mean(is_sharpes)),
+        "mean_oos_sharpe": float(np.mean(oos_sharpes)),
+    }
+
+
 def _validate_minimum_integer(value: int, name: str, *, minimum: int) -> None:
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be an integer")
@@ -505,4 +640,5 @@ __all__ = [
     "factor_rank_information_coefficient",
     "information_coefficient_summary",
     "newey_west_mean_tstat",
+    "probability_of_backtest_overfitting",
 ]

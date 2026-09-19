@@ -1,5 +1,25 @@
 # Engineering Log
 
+## 2026-09-19 - Probability of Backtest Overfitting (PBO) and point-in-time constituent adapter
+
+- Working root `efr-pbo-constituent-20260919` on
+  `codex/pbo-and-constituent-adapter-20260919` from protected baseline `6cb4991`.
+- Implemented `probability_of_backtest_overfitting` in `src/features/diagnostics.py`
+  using Combinatorially Symmetric Cross-Validation (CSCV) following Bailey,
+  Borwein, Lopez de Prado, and Zhu (2015). Validates input matrix dimensions,
+  generates S/2 in-sample combinations, computes IS and OOS Sharpe ratios,
+  and evaluates relative rank percentile omega to calculate PBO and loss probability.
+- Implemented `load_constituent_intervals_csv` and `build_membership_mask` in
+  `src/data/constituent_table.py`. Provides point-in-time constituent membership
+  table parsing, non-overlapping interval validation (PIT-005 ticker reuse prevention),
+  and lookahead-free dynamic boolean universe masking for research panels and backtests.
+- Wired PBO evaluation across all 52 implemented WorldQuant alphas into
+  `research/multifactor_diagnostic_mvp.py`, writing PBO metrics to
+  `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`.
+- Tests: `tests/test_diagnostics.py` (67 passed), `tests/test_constituent_table.py`
+  (7 passed), `tests/test_multifactor_diagnostic_mvp.py` (4 passed).
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+
 ## 2026-09-19 - WorldQuant alphas batch 5 and consolidated 52-alpha diagnostic
 
 - Working root `efr-alphas-batch5-20260919` on

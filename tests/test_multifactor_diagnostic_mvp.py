@@ -454,6 +454,21 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
     report_text = OFFICIAL_REPORT_PATH.read_text(encoding="utf-8")
     assert "DIAGNOSTIC_ONLY" in report_text
     assert "Euler-Mascheroni" in report_text
+    assert "Probability of Backtest Overfitting" in report_text
+    assert "pbo_summary" in result
+    pbo_summary = result["pbo_summary"]
+    assert 0.0 <= pbo_summary["pbo"] <= 1.0
+    assert 0.0 <= pbo_summary["prob_loss"] <= 1.0
+    assert pbo_summary["n_combinations"] == 70
+    assert pbo_summary["n_splits"] == 8
+    # Cross-platform floating point variance in rolling operations can shift borderline
+    # combinations (e.g. 41/70 on x86 vs 43/70 on ARM); use abs=0.05.
+    assert pbo_summary["pbo"] == pytest.approx(0.6143, abs=0.05)
+    assert pbo_summary["prob_loss"] == pytest.approx(0.5000, abs=0.05)
+    assert pbo_summary["mean_relative_rank"] == pytest.approx(0.4340, abs=0.05)
+    assert pbo_summary["median_relative_rank"] == pytest.approx(0.4057, abs=0.05)
+    assert pbo_summary["mean_is_sharpe"] == pytest.approx(0.0871, abs=0.05)
+    assert pbo_summary["mean_oos_sharpe"] == pytest.approx(0.0059, abs=0.05)
     for factor_id, expected in OFFICIAL_FOUR_DECIMAL_ROWS.items():
         payload = result["factors"][factor_id]
         ic_summary = payload["ic_summary"]

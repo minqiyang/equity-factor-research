@@ -16,6 +16,7 @@ from features.diagnostics import (
     factor_rank_information_coefficient,
     information_coefficient_summary,
     newey_west_mean_tstat,
+    probability_of_backtest_overfitting,
 )
 
 
@@ -629,3 +630,75 @@ def test_diagnostics_module_has_no_backtest_alpha_reporting_or_real_data_imports
 
     for module_name in imported_modules:
         assert not any(term in module_name for term in forbidden_terms)
+
+
+def test_probability_of_backtest_overfitting_validates_inputs() -> None:
+    valid_df = pd.DataFrame(
+        {"s1": np.linspace(0.01, 0.05, 40), "s2": np.linspace(0.02, 0.04, 40)}
+    )
+
+    # Must be DataFrame
+    with pytest.raises(TypeError, match="must be a pandas DataFrame"):
+        probability_of_backtest_overfitting(valid_df.to_numpy())  # type: ignore[arg-type]
+
+    # Must be numeric
+    with pytest.raises(TypeError, match="must contain numeric"):
+        probability_of_backtest_overfitting(pd.DataFrame({"s1": [True] * 40, "s2": [False] * 40}))
+
+    # Must have no NaN
+    nan_df = valid_df.copy()
+    nan_df.iloc[0, 0] = np.nan
+    with pytest.raises(ValueError, match="finite values without NaN"):
+        probability_of_backtest_overfitting(nan_df)
+
+    # Must have at least 2 strategies
+    with pytest.raises(ValueError, match="at least 2 strategy"):
+        probability_of_backtest_overfitting(pd.DataFrame({"s1": np.linspace(0.01, 0.05, 40)}))
+
+    # n_splits must be even integer >= 4
+    with pytest.raises(ValueError, match="even integer of at least 4"):
+        probability_of_backtest_overfitting(valid_df, n_splits=3)
+    with pytest.raises(ValueError, match="even integer of at least 4"):
+        probability_of_backtest_overfitting(valid_df, n_splits=5)
+    with pytest.raises(ValueError, match="even integer of at least 4"):
+        probability_of_backtest_overfitting(valid_df, n_splits=2)
+
+    # Length must be at least 2 * n_splits
+    with pytest.raises(ValueError, match="requires at least 2 \\* n_splits"):
+        probability_of_backtest_overfitting(valid_df.iloc[:20], n_splits=16)
+
+
+def test_probability_of_backtest_overfitting_dominant_strategy_has_zero_pbo() -> None:
+    # Strategy 1 is consistently positive, Strategy 2 is consistently negative
+    rng = np.random.default_rng(42)
+    s1 = rng.normal(loc=0.05, scale=0.01, size=60)
+    s2 = rng.normal(loc=-0.05, scale=0.01, size=60)
+    df = pd.DataFrame({"winner": s1, "loser": s2})
+
+    result = probability_of_backtest_overfitting(df, n_splits=6)
+
+    # Winner always selected in-sample and always wins out-of-sample
+    assert result["pbo"] == 0.0
+    assert result["prob_loss"] == 0.0
+    assert result["n_splits"] == 6
+    assert result["n_combinations"] == 20  # C(6, 3) = 20
+    assert result["mean_relative_rank"] == pytest.approx(2.0 / 3.0)
+    assert result["median_relative_rank"] == pytest.approx(2.0 / 3.0)
+    assert result["mean_is_sharpe"] > 0.0
+    assert result["mean_oos_sharpe"] > 0.0
+
+
+def test_probability_of_backtest_overfitting_symmetric_noise() -> None:
+    # Multiple strategies generated with identical noise
+    rng = np.random.default_rng(123)
+    data = {f"strat_{i}": rng.normal(loc=0.0, scale=0.02, size=100) for i in range(10)}
+    df = pd.DataFrame(data)
+
+    result = probability_of_backtest_overfitting(df, n_splits=8)
+
+    # Pure noise strategies should have substantial PBO
+    assert 0.2 <= result["pbo"] <= 0.8
+    assert result["n_splits"] == 8
+    assert result["n_combinations"] == 70  # C(8, 4) = 70
+    assert 0.0 <= result["prob_loss"] <= 1.0
+    assert 0.0 <= result["mean_relative_rank"] <= 1.0

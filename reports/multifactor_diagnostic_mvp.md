@@ -34,6 +34,8 @@ profitability.
    `5.00` bps slippage and `5` names.
 8. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
    `n_trials=54` and the Euler-Mascheroni expected-maximum mix.
+9. Compute the Probability of Backtest Overfitting (PBO) across all 52
+   alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
 
@@ -51,6 +53,7 @@ profitability.
 - Benchmark: synthetic equal-weight diagnostic-cohort benchmark
 - Timing contract: `after_close_signal_next_observed_close_v1`
 - DSR expected-maximum mix: Euler-Mascheroni constant `np.euler_gamma`
+- PBO splits: `8`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the 52 implemented alphas
 
@@ -117,7 +120,7 @@ combination rule.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.0132 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
 | ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0014 | -15.29% | -0.4035 | -27.88% | 0.0838 | 0.0306 |
 | ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.1729 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
@@ -177,6 +180,16 @@ IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
 with the Euler-Mascheroni mix. All 52 alphas and both composites are
 reported; weak or negative diagnostics are retained.
+
+## Overfitting diagnostics (CSCV / PBO)
+
+- Probability of Backtest Overfitting (PBO): `0.6143`
+- Out-of-Sample Probability of Loss: `0.5000`
+- Combinations: `70` (from `8` splits)
+- Mean OOS Relative Rank: `0.4340`
+- Median OOS Relative Rank: `0.4057`
+- Mean IS Sharpe: `0.0871`
+- Mean OOS Sharpe: `0.0059`
 
 ## Limitations
 
