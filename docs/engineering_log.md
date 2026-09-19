@@ -1,5 +1,35 @@
 # Engineering Log
 
+## 2026-09-19 - WorldQuant alphas batch 2 and multifactor diagnostic
+
+- Working root `efr-alphas-batch2-20260919` on
+  `codex/alphas-batch2-20260919` from protected baseline `6d24bfb`.
+- Implemented classical price-volume alphas `alpha_005`, `alpha_008`,
+  `alpha_010`, `alpha_013`, `alpha_014`, `alpha_018`, and `alpha_020` as
+  plain functions in `src/features/alphas.py`. Golden tests cover
+  hand-calculated matrices, lookahead isolation, empty/sparse/constant
+  inputs, and no ABC hierarchy.
+- Added `equal_weighted_composite` and `ic_weighted_composite` in
+  `src/features/combination.py`. Both z-score each factor cross-sectionally
+  and average with skipna; IC weights are supplied by the caller.
+- Companion synthetic OHLCV now includes high and typical-price VWAP
+  `(high + low + close) / 3`. High is drawn after open/low/volume so those
+  batch-1 panels stay bit-identical.
+- Runner `python -m research.multifactor_diagnostic_mvp` reports monthly
+  Rank IC, ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix
+  (`n_trials=9`), and equal-weight monthly backtests at 5 bps slippage.
+  IC-weighted composite uses in-sample mean monthly Rank IC.
+- Ablation: pipeline factor helpers match `features.alphas` with no extra
+  wrapper math; composites match `features.combination`; pipeline module has
+  one frozen config dataclass and no ABC / metaclass hierarchy.
+- Focused pytest: `tests/test_alphas.py`, `tests/test_combination.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_alphas_diagnostic_mvp.py`,
+  `tests/test_multifactor_diagnostic_mvp.py` (60 passed). Full pytest
+  `--basetemp=/tmp/alphas_batch2_pytest`: 3454 passed, 2 skipped.
+  `ruff check .` and `compileall src tests research lean` passed.
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-19 - WorldQuant operators and classical alphas diagnostic
 
 - Working root `efr-operators-alphas-20260919` on

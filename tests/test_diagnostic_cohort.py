@@ -59,16 +59,28 @@ def test_diagnostic_cohort_ohlcv_matches_close_prices_and_stays_positive() -> No
     pd.testing.assert_frame_equal(first["close"], prices)
     pd.testing.assert_frame_equal(first["close"], second["close"])
     pd.testing.assert_frame_equal(first["open"], second["open"])
+    pd.testing.assert_frame_equal(first["high"], second["high"])
+    pd.testing.assert_frame_equal(first["vwap"], second["vwap"])
     pd.testing.assert_frame_equal(first["volume"], second["volume"])
     assert loaded_manifest["evidence_ceiling"] == REQUIRED_EVIDENCE_CEILING
     pd.testing.assert_frame_equal(loaded_panels["close"], prices)
     assert (first["open"] > 0.0).all().all()
+    assert (first["high"] > 0.0).all().all()
     assert (first["low"] > 0.0).all().all()
+    assert (first["vwap"] > 0.0).all().all()
     assert (first["volume"] > 0.0).all().all()
     assert (
         first["low"].to_numpy()
         <= np.minimum(first["open"].to_numpy(), first["close"].to_numpy()) + 1e-12
     ).all()
+    assert (
+        first["high"].to_numpy()
+        >= np.maximum(first["open"].to_numpy(), first["close"].to_numpy()) - 1e-12
+    ).all()
+    pd.testing.assert_frame_equal(
+        first["vwap"],
+        (first["high"] + first["low"] + first["close"]) / 3.0,
+    )
 
 
 def test_diagnostic_cohort_rejects_non_diagnostic_ceiling(tmp_path: Path) -> None:
