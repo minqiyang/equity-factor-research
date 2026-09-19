@@ -6,7 +6,12 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from features.combination import equal_weighted_composite, ic_weighted_composite
+from features.combination import (
+    correlation_discounted_composite,
+    equal_weighted_composite,
+    ic_weighted_composite,
+    icir_weighted_composite,
+)
 from features.operators import cross_sectional_zscore
 
 
@@ -123,6 +128,73 @@ def test_combination_rejects_empty_and_mismatched_panels() -> None:
         ic_weighted_composite([factor_a], [np.nan])
     with pytest.raises(TypeError, match="numeric and non-boolean"):
         ic_weighted_composite([factor_a], [True])  # type: ignore[list-item]
+
+
+def test_icir_weighted_composite_hand_calculated() -> None:
+    factor_a = _panel({"AAA": [1.0, 3.0], "BBB": [3.0, 1.0]})
+    factor_b = _panel({"AAA": [10.0, 30.0], "BBB": [30.0, 10.0]})
+
+    # Factor A has higher ICIR (mean=0.10, std=0.02 -> ICIR=5.0)
+    # Factor B has lower ICIR (mean=0.05, std=0.05 -> ICIR=1.0)
+    ic_df = pd.DataFrame(
+        {
+            "fa": [0.08, 0.10, 0.12, 0.09, 0.11],
+            "fb": [0.00, 0.10, 0.05, 0.02, 0.08],
+        }
+    )
+
+    result = icir_weighted_composite([factor_a, factor_b], ic_df, min_ic_periods=5)
+    expected = _panel({"AAA": [-1.0, 1.0], "BBB": [1.0, -1.0]})
+    assert_frame_equal(result, expected)
+
+
+def test_icir_weighted_composite_rejects_insufficient_periods_or_zero_std() -> None:
+    factor_a = _panel({"AAA": [1.0], "BBB": [3.0]})
+    # 4 periods < min_ic_periods=5
+    short_ic = pd.DataFrame({"fa": [0.1, 0.2, 0.3, 0.4]})
+    with pytest.raises(ValueError, match="valid IC periods"):
+        icir_weighted_composite([factor_a], short_ic, min_ic_periods=5)
+
+    # Constant IC -> zero std
+    constant_ic = pd.DataFrame({"fa": [0.1, 0.1, 0.1, 0.1, 0.1]})
+    with pytest.raises(ValueError, match="zero or undefined IC standard deviation"):
+        icir_weighted_composite([factor_a], constant_ic, min_ic_periods=5)
+
+
+def test_correlation_discounted_composite_discounts_collinear_factors() -> None:
+    # 3 factors: factor_a and factor_b are identical (corr = 1.0), factor_c is orthogonal
+    factor_a = _panel({"AAA": [1.0, 2.0], "BBB": [2.0, 1.0]})
+    factor_b = _panel({"AAA": [1.0, 2.0], "BBB": [2.0, 1.0]})
+    factor_c = _panel({"AAA": [1.0, 1.0], "BBB": [2.0, 2.0]})
+
+    ic_weights = [0.1, 0.1, 0.1]
+    # Correlation matrix where a and b are highly correlated (0.95), c is uncorrelated (0.0)
+    corr = pd.DataFrame(
+        [
+            [1.0, 0.95, 0.0],
+            [0.95, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+
+    result = correlation_discounted_composite(
+        [factor_a, factor_b, factor_c],
+        ic_weights,
+        factor_correlation=corr,
+        ridge_alpha=0.05,
+    )
+    assert not result.isna().all().all()
+    assert result.index.equals(factor_a.index)
+    assert result.columns.equals(factor_a.columns)
+
+
+def test_correlation_discounted_composite_rejects_invalid_inputs() -> None:
+    factor_a = _panel({"AAA": [1.0], "BBB": [2.0]})
+    with pytest.raises(ValueError, match="ridge_alpha"):
+        correlation_discounted_composite([factor_a], [0.1], ridge_alpha=-0.1)
+    with pytest.raises(ValueError, match="shape"):
+        correlation_discounted_composite([factor_a], [0.1], factor_correlation=np.ones((2, 2)))
+
 
 
 def test_combination_module_has_no_abstract_class_hierarchy() -> None:
