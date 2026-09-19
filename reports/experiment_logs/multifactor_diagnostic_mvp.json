@@ -1572,6 +1572,16 @@
       "total_turnover": 57.44079493657294,
       "total_volume_aware_slippage_cost_impact": 0.0,
       "tracking_error": 0.08051885674183797
+    },
+    "pbo_summary": {
+      "mean_is_sharpe": 0.08708038340914943,
+      "mean_oos_sharpe": 0.005945734111907135,
+      "mean_relative_rank": 0.43396226415094336,
+      "median_relative_rank": 0.4056603773584906,
+      "n_combinations": 70,
+      "n_splits": 8,
+      "pbo": 0.6142857142857143,
+      "prob_loss": 0.5
     }
   },
   "next_action": "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. It does not reopen identity, D8, A2, or formal interpretation.",

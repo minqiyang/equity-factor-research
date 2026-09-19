@@ -454,6 +454,13 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
     report_text = OFFICIAL_REPORT_PATH.read_text(encoding="utf-8")
     assert "DIAGNOSTIC_ONLY" in report_text
     assert "Euler-Mascheroni" in report_text
+    assert "Probability of Backtest Overfitting" in report_text
+    assert "pbo_summary" in result
+    pbo_summary = result["pbo_summary"]
+    assert 0.0 <= pbo_summary["pbo"] <= 1.0
+    assert 0.0 <= pbo_summary["prob_loss"] <= 1.0
+    assert pbo_summary["n_combinations"] == 70
+    assert pbo_summary["n_splits"] == 8
     for factor_id, expected in OFFICIAL_FOUR_DECIMAL_ROWS.items():
         payload = result["factors"][factor_id]
         ic_summary = payload["ic_summary"]
