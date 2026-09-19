@@ -7,12 +7,17 @@ backtest, fetch data, or make profitability claims.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype, is_numeric_dtype
+from scipy.stats import kurtosis, norm, skew
 
 from features.operators import validate_panel_data
 
 _SUPPORTED_CORRELATION_METHODS = {"pearson", "spearman"}
+EULER_MASCHERONI = float(np.euler_gamma)
 _QUANTILE_SPREAD_COLUMNS = [
     "bottom_quantile_mean_return",
     "top_quantile_mean_return",
@@ -198,6 +203,136 @@ def factor_rank_information_coefficient(
     return result.rename("rank_information_coefficient")
 
 
+def newey_west_mean_tstat(
+    values: pd.Series,
+    *,
+    lags: int | None = None,
+) -> float:
+    """Newey-West t-statistic for the mean of a one-dimensional series.
+
+    Automatic lag selection uses the Newey-West 1994 rule
+    ``floor(4 * (n / 100) ** (2 / 9))``. The series is not filled. Fewer than
+    two finite observations return ``NaN``.
+    """
+
+    clean = _finite_series(values, name="values")
+    count = int(clean.size)
+    if count < 2:
+        return math.nan
+
+    if lags is None:
+        lags = int(np.floor(4.0 * (count / 100.0) ** (2.0 / 9.0)))
+    elif isinstance(lags, bool) or not isinstance(lags, int) or lags < 0:
+        raise ValueError("lags must be a non-negative integer")
+
+    mean = float(clean.mean())
+    residual = clean - mean
+    gamma0 = float(np.dot(residual, residual) / count)
+    hac = gamma0
+    for lag in range(1, lags + 1):
+        gamma = float(np.dot(residual[lag:], residual[:-lag]) / count)
+        weight = 1.0 - lag / (lags + 1.0)
+        hac += 2.0 * weight * gamma
+    if not math.isfinite(hac) or hac <= 0.0:
+        return math.nan
+    standard_error = math.sqrt(hac / count)
+    if standard_error == 0.0:
+        return math.nan
+    return float(mean / standard_error)
+
+
+def information_coefficient_summary(
+    ic: pd.Series,
+    *,
+    lags: int | None = None,
+) -> dict[str, float]:
+    """Mean IC, sample ICIR, and Newey-West t-statistic of a date-indexed IC series.
+
+    ICIR is ``mean / sample_std`` with ``ddof=1`` and is not annualized. Missing
+    IC dates are dropped rather than filled.
+    """
+
+    clean = pd.Series(ic, copy=True).dropna().astype(float)
+    count = int(clean.size)
+    if count == 0:
+        return {
+            "count": 0.0,
+            "mean_ic": math.nan,
+            "ic_std": math.nan,
+            "icir": math.nan,
+            "newey_west_tstat": math.nan,
+        }
+
+    mean_ic = float(clean.mean())
+    ic_std = float(clean.std(ddof=1)) if count >= 2 else math.nan
+    icir = math.nan
+    if math.isfinite(ic_std) and ic_std > 0.0:
+        icir = float(mean_ic / ic_std)
+    return {
+        "count": float(count),
+        "mean_ic": mean_ic,
+        "ic_std": ic_std,
+        "icir": icir,
+        "newey_west_tstat": newey_west_mean_tstat(clean, lags=lags),
+    }
+
+
+def deflated_sharpe_ratio(
+    returns: pd.Series,
+    *,
+    n_trials: int,
+) -> float:
+    """Bailey and Lopez de Prado Deflated Sharpe Ratio of a return series.
+
+    The statistic is computed on the non-annualized Sharpe of the supplied
+    series. Sample skewness and kurtosis enter only the Sharpe-variance term
+    ``V[SR]``. The expected-maximum mix uses the Euler-Mascheroni constant,
+    not return skewness. ``n_trials`` is the number of independent trials used
+    to form that expected maximum. The result is a probability in ``[0, 1]``,
+    not a profitability claim. Fewer than three observations, zero volatility,
+    or a non-positive Sharpe variance term return ``NaN``.
+    """
+
+    if isinstance(n_trials, bool) or not isinstance(n_trials, int) or n_trials < 2:
+        raise ValueError("n_trials must be an integer of at least 2")
+
+    clean = _finite_series(returns, name="returns")
+    count = int(clean.size)
+    if count < 3:
+        return math.nan
+
+    mean = float(clean.mean())
+    std = float(clean.std(ddof=1))
+    if not math.isfinite(std) or std <= 0.0:
+        return math.nan
+
+    sharpe = mean / std
+    skewness = float(skew(clean, bias=False))
+    raw_kurtosis = float(kurtosis(clean, fisher=False, bias=False))
+    inner = 1.0 - skewness * sharpe + ((raw_kurtosis - 1.0) / 4.0) * sharpe * sharpe
+    if not math.isfinite(inner) or inner <= 0.0:
+        return math.nan
+
+    z_one = float(norm.ppf(1.0 - 1.0 / n_trials))
+    z_two = float(norm.ppf(1.0 - 1.0 / (n_trials * math.e)))
+    expected_max = math.sqrt(inner / (count - 1)) * (
+        (1.0 - EULER_MASCHERONI) * z_one + EULER_MASCHERONI * z_two
+    )
+    statistic = (sharpe - expected_max) * math.sqrt(count - 1) / math.sqrt(inner)
+    if not math.isfinite(statistic):
+        return math.nan
+    return float(norm.cdf(statistic))
+
+
+def _finite_series(values: pd.Series, *, name: str) -> np.ndarray:
+    if not isinstance(values, pd.Series):
+        raise TypeError(f"{name} must be a pandas Series")
+    if is_bool_dtype(values.dtype) or not is_numeric_dtype(values.dtype):
+        raise TypeError(f"{name} must contain numeric non-boolean values")
+    clean = values.astype(float).replace([np.inf, -np.inf], np.nan).dropna()
+    return clean.to_numpy(dtype=float)
+
+
 def factor_quantile_spread(
     factor: pd.DataFrame,
     forward_returns: pd.DataFrame,
@@ -362,8 +497,12 @@ def _validate_min_periods(min_periods: int, *, minimum: int = 1) -> None:
 
 
 __all__ = [
+    "EULER_MASCHERONI",
+    "deflated_sharpe_ratio",
     "factor_correlation_matrix",
     "factor_information_coefficient",
     "factor_quantile_spread",
     "factor_rank_information_coefficient",
+    "information_coefficient_summary",
+    "newey_west_mean_tstat",
 ]

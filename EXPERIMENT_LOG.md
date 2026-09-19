@@ -77,6 +77,86 @@ parameter sensitivity smoke test. It reports every configured case and should
 not be used as parameter selection, strategy validation, financial advice, or
 profitability evidence.
 
+## 20260918-001-walking-skeleton-mvp
+
+### Experiment ID
+
+`20260918-001-walking-skeleton-mvp`
+
+### Date
+
+`2026-09-18`
+
+### Hypothesis
+
+A committed 50-stock static diagnostic cohort can close a synthetic
+data-to-evidence loop through the three frozen diagnostic factors without
+claiming point-in-time universe evidence.
+
+### Data Source
+
+Synthetic local generator from
+`tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Seed
+`20260919`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased
+by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-12-22` through
+`2023-11-27` after 252-row momentum warm-up.
+
+### Features / Factors
+
+- `MOM_12_1`: `price[t-21] / price[t-252] - 1`
+- `REV_1M`: `-(price[t] / price[t-21] - 1)`
+- `LOW_VOL_3M`: negative sample standard deviation of 63 trailing simple
+  returns (`ddof=1`)
+- Signal lag: 1 observed source row. Forward IC labels start at the execution
+  close.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+`signal_lag_periods=1`, `n_trials=3` for DSR.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/walking_skeleton_mvp.md` and
+`reports/experiment_logs/walking_skeleton_mvp.json`. All three factors are
+retained, including negative mean IC and negative Sharpe. These are
+`DIAGNOSTIC_ONLY` synthetic values, not profitability evidence.
+
+### Limitations
+
+Static membership, synthetic prices, idealized close-reset execution, and no
+dataset review. This is not a 14-trial run.
+
+### Next Action
+
+Keep as a walking-skeleton wiring check. Do not reopen identity, D8, A2, or
+formal interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

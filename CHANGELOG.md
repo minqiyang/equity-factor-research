@@ -23,6 +23,10 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Walking Skeleton DSR uses the Euler-Mascheroni constant in the
+  Bailey-Lopez de Prado expected-maximum mix. Sample skewness and
+  kurtosis remain only in `V[SR]`. Regenerated diagnostic report DSR
+  values and golden tests follow the paper mix. DIAGNOSTIC_ONLY.
 - Synthetic dividend evidence dictionaries encode as
   `{"json_evidence": "object", "items": {<caller keys>}}`. Nested caller
   `items` and `json_evidence` keys stay inside the envelope, so
@@ -226,6 +230,15 @@ profitability, or trading readiness.
   and expiry. DIAGNOSTIC_ONLY.
 
 ### Added
+
+- Walking Skeleton MVP: committed 50-stock static diagnostic cohort
+  fixture under `DIAGNOSTIC_ONLY`, named operators `ts_delay`,
+  `ts_delta`, `ts_rank`, `decay_linear`, and `cs_rank`, and a synthetic
+  end-to-end pipeline through `MOM_12_1`, `REV_1M`, and `LOW_VOL_3M`
+  with monthly Rank IC, ICIR, Newey-West t-stat, DSR, and equal-weight
+  monthly rebalance at 5 bps slippage. The static cohort is not
+  point-in-time universe evidence and is not a 14-trial run. This adds
+  no private data, D8, A2, identity reopen, brokerage, or vendor API.
 
 - Track B v7 Path B first checkpoint: extend the stdlib sqlite3 Path A
   ledger runtime with first-attempt `ATTEMPT_ALLOCATED` then valid

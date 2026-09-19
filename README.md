@@ -53,6 +53,7 @@ python -m research.synthetic_momentum_demo
 python -m research.synthetic_multifactor_workflow_demo
 python -m research.synthetic_combined_score_backtest_demo
 python -m research.local_csv_fixture_workflow_demo
+python -m research.walking_skeleton_mvp
 ```
 
 These legacy commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics, not Demo v0 evidence. The feature-only multifactor workflow remains available for preprocessing checks. The M3-01 command above is the exploratory three-factor backtest slice.
