@@ -13,14 +13,26 @@ from features.alphas import (
     alpha_004,
     alpha_005,
     alpha_006,
+    alpha_007,
     alpha_008,
+    alpha_009,
     alpha_010,
     alpha_012,
     alpha_013,
     alpha_014,
+    alpha_017,
     alpha_018,
+    alpha_019,
     alpha_020,
+    alpha_023,
+    alpha_028,
+    alpha_033,
+    alpha_038,
+    alpha_054,
+    alpha_101,
 )
+from features.operators import cs_rank, scale, ts_corr, ts_mean
+from features.worldquant_alphas import alpha_009 as worldquant_alpha_009
 from features.worldquant_alphas import alpha_012 as worldquant_alpha_012
 
 
@@ -411,6 +423,246 @@ def test_alpha_020_hand_calculated_delayed_ohlc_ranks() -> None:
     assert alpha.iloc[-1, 1] == pytest.approx(-0.125)
 
 
+def test_alpha_007_volume_gate_and_constant_abs_delta_rank() -> None:
+    n = 67
+    close = _panel(
+        {
+            "AAA": [10.0 + float(i) for i in range(n)],
+            "BBB": [100.0 - float(i) for i in range(n)],
+        }
+    )
+    volume = _panel(
+        {
+            "AAA": [1.0 + float(i) for i in range(n)],
+            "BBB": [float(n) - float(i) for i in range(n)],
+        }
+    )
+
+    alpha = alpha_007(close, volume)
+
+    assert alpha.iloc[:19].isna().all().all()
+    # 60-way tie of |delta(close, 7)| = 7; percentile rank = 30.5 / 60
+    expected_rank = 30.5 / 60.0
+    assert alpha.iloc[-1, 0] == pytest.approx(-expected_rank)
+    # BBB current volume is below adv20, so the else branch is -1
+    assert alpha.iloc[-1, 1] == pytest.approx(-1.0)
+    assert alpha.iloc[19, 1] == pytest.approx(-1.0)
+    assert np.isnan(alpha.iloc[19, 0])
+
+
+def test_alpha_007_supplied_adv20_matches_explicit_mean() -> None:
+    n = 67
+    close = _panel(
+        {
+            "AAA": [10.0 + float(i) for i in range(n)],
+            "BBB": [100.0 - float(i) for i in range(n)],
+        }
+    )
+    volume = _panel(
+        {
+            "AAA": [1.0 + float(i) for i in range(n)],
+            "BBB": [float(n) - float(i) for i in range(n)],
+        }
+    )
+
+    assert_frame_equal(alpha_007(close, volume), alpha_007(close, volume, ts_mean(volume, 20)))
+
+
+def test_alpha_009_trend_continuation_and_reversal_branches() -> None:
+    close = _panel(
+        {
+            "AAA": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+            "BBB": [15.0, 14.0, 13.0, 12.0, 11.0, 10.0],
+        }
+    )
+
+    alpha = alpha_009(close)
+
+    assert alpha.iloc[:5].isna().all().all()
+    # AAA deltas all +1, ts_min(5) > 0 -> keep +1
+    # BBB deltas all -1, ts_max(5) < 0 -> keep -1
+    # cs_rank(1, -1) = 1.0, 0.5
+    assert alpha.iloc[-1, 0] == pytest.approx(1.0)
+    assert alpha.iloc[-1, 1] == pytest.approx(0.5)
+    assert_frame_equal(alpha, cs_rank(worldquant_alpha_009(close)))
+
+
+def test_alpha_009_mixed_window_uses_negative_delta() -> None:
+    close = _panel(
+        {
+            "AAA": [10.0, 12.0, 11.0, 13.0, 12.0, 14.0],
+            "BBB": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+        }
+    )
+
+    alpha = alpha_009(close)
+
+    # AAA last five deltas mixed -> -delta = -2; BBB all +1 -> keep +1
+    # cs_rank(-2, 1) = 0.5, 1.0
+    assert alpha.iloc[-1, 0] == pytest.approx(0.5)
+    assert alpha.iloc[-1, 1] == pytest.approx(1.0)
+
+
+def test_alpha_017_hand_calculated_rank_product() -> None:
+    n = 24
+    close = _panel(
+        {
+            "AAA": [float(i + 1) for i in range(n)],
+            "BBB": [float(n - i) for i in range(n)],
+        }
+    )
+    volume = _panel({"AAA": [10.0] * n, "BBB": [10.0] * n})
+
+    alpha = alpha_017(close, volume)
+
+    assert alpha.iloc[:23].isna().all().all()
+    # ts_rank(close, 10): AAA current max -> 1.0; BBB current min -> 0.1
+    # cs_rank of those values -> 1.0, 0.5 then multiply by -1
+    # second close delta is 0, 0; cs_rank tie at 0.75
+    # volume/adv20 is 1, 1; ts_rank of a 5-way tie is 0.6; cs_rank tie 0.75
+    assert alpha.iloc[-1, 0] == pytest.approx(-1.0 * 0.75 * 0.75)
+    assert alpha.iloc[-1, 1] == pytest.approx(-0.5 * 0.75 * 0.75)
+
+
+def test_alpha_019_hand_calculated_signed_move_and_return_sum() -> None:
+    n = 251
+    close = _panel(
+        {
+            "AAA": [float(i) for i in range(n)],
+            "BBB": [float(n - 1 - i) for i in range(n)],
+        }
+    )
+    returns = _panel({"AAA": [0.01] * n, "BBB": [0.02] * n})
+
+    alpha = alpha_019(close, returns)
+
+    assert alpha.iloc[:249].isna().all().all()
+    # (close - delay(close, 7)) + delta(close, 7) = 2 * delta; signs +1, -1
+    # ts_sum(returns, 250) = 2.5, 5.0; 1 + rank(1 + sum) = 1.5, 2.0
+    assert alpha.iloc[-1, 0] == pytest.approx(-1.5)
+    assert alpha.iloc[-1, 1] == pytest.approx(2.0)
+
+
+def test_alpha_023_mean_gate_keeps_incomplete_windows_missing() -> None:
+    high = _panel(
+        {
+            "AAA": [float(i + 1) for i in range(20)],
+            "BBB": [float(20 - i) for i in range(20)],
+        }
+    )
+
+    alpha = alpha_023(high)
+
+    assert alpha.iloc[:19].isna().all().all()
+    # AAA last high 20 > mean 10.5, delta(high, 2) = 2 -> -2
+    # BBB last high 1 < mean 10.5 -> 0
+    assert alpha.iloc[-1, 0] == pytest.approx(-2.0)
+    assert alpha.iloc[-1, 1] == pytest.approx(0.0)
+
+
+def test_alpha_028_scale_of_correlation_plus_typical_minus_close() -> None:
+    adv20 = _panel(
+        {
+            "AAA": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "BBB": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    low = _panel(
+        {
+            "AAA": [1.0, 2.0, 3.0, 4.0, 5.0],
+            "BBB": [5.0, 4.0, 3.0, 2.0, 1.0],
+        }
+    )
+    high = low.copy()
+    close = low.copy()
+    volume = _panel({"AAA": [1.0] * 5, "BBB": [1.0] * 5})
+
+    alpha = alpha_028(close, high, low, volume, adv20=adv20)
+
+    assert alpha.iloc[:4].isna().all().all()
+    # corr = 1, -1; typical equals close, so inner = corr; scale abs-sum 2 -> 0.5, -0.5
+    assert alpha.iloc[-1, 0] == pytest.approx(0.5)
+    assert alpha.iloc[-1, 1] == pytest.approx(-0.5)
+    inner = ts_corr(adv20, low, 5) + (high + low) / 2.0 - close
+    assert_frame_equal(alpha, scale(inner))
+
+
+def test_alpha_033_hand_calculated_open_close_ratio_rank() -> None:
+    open_price = _panel({"AAA": [10.0], "BBB": [20.0]})
+    close = _panel({"AAA": [10.0], "BBB": [10.0]})
+
+    alpha = alpha_033(open_price, close)
+
+    # AAA: -1 * (1 - 1) = 0; BBB: -1 * (1 - 2) = 1; cs_rank = 0.5, 1.0
+    assert alpha.iloc[-1, 0] == pytest.approx(0.5)
+    assert alpha.iloc[-1, 1] == pytest.approx(1.0)
+
+
+def test_alpha_033_zero_close_is_missing() -> None:
+    open_price = _panel({"AAA": [10.0], "BBB": [20.0]})
+    close = _panel({"AAA": [0.0], "BBB": [10.0]})
+
+    alpha = alpha_033(open_price, close)
+
+    assert np.isnan(alpha.iloc[-1, 0])
+    assert alpha.iloc[-1, 1] == pytest.approx(1.0)
+
+
+def test_alpha_038_hand_calculated_close_rank_and_open_ratio() -> None:
+    n = 10
+    close = _panel(
+        {
+            "AAA": [float(i + 1) for i in range(n)],
+            "BBB": [float(n - i) for i in range(n)],
+        }
+    )
+    open_price = close.copy()
+
+    alpha = alpha_038(open_price, close)
+
+    assert alpha.iloc[:9].isna().all().all()
+    # ts_rank(close, 10): 1.0, 0.1; cs_rank -> 1.0, 0.5; times -1
+    # close/open = 1, 1; cs_rank tie 0.75
+    assert alpha.iloc[-1, 0] == pytest.approx(-0.75)
+    assert alpha.iloc[-1, 1] == pytest.approx(-0.375)
+
+
+def test_alpha_054_hand_calculated_powered_ohlc_ratio() -> None:
+    open_price = _panel({"AAA": [2.0], "BBB": [1.0]})
+    high = _panel({"AAA": [10.0], "BBB": [6.0]})
+    low = _panel({"AAA": [4.0], "BBB": [2.0]})
+    close = _panel({"AAA": [8.0], "BBB": [4.0]})
+
+    alpha = alpha_054(open_price, high, low, close)
+
+    assert alpha.iloc[-1, 0] == pytest.approx(-1.0 / 1536.0)
+    assert alpha.iloc[-1, 1] == pytest.approx(-1.0 / 2048.0)
+
+
+def test_alpha_054_zero_range_or_close_is_missing() -> None:
+    open_price = _panel({"AAA": [2.0], "BBB": [1.0]})
+    high = _panel({"AAA": [5.0], "BBB": [6.0]})
+    low = _panel({"AAA": [5.0], "BBB": [2.0]})
+    close = _panel({"AAA": [5.0], "BBB": [0.0]})
+
+    alpha = alpha_054(open_price, high, low, close)
+
+    assert np.isnan(alpha.iloc[-1, 0])
+    assert np.isnan(alpha.iloc[-1, 1])
+
+
+def test_alpha_101_hand_calculated_intraday_range_ratio() -> None:
+    open_price = _panel({"AAA": [10.0], "BBB": [10.0]})
+    high = _panel({"AAA": [12.0], "BBB": [10.0]})
+    low = _panel({"AAA": [8.0], "BBB": [10.0]})
+    close = _panel({"AAA": [11.0], "BBB": [10.0]})
+
+    alpha = alpha_101(open_price, high, low, close)
+
+    assert alpha.iloc[-1, 0] == pytest.approx(1.0 / 4.001)
+    assert alpha.iloc[-1, 1] == pytest.approx(0.0)
+
+
 def test_alpha_012_zero_volume_delta_is_explicit_zero() -> None:
     close = _panel({"AAA": [10.0, 11.0, 12.0]})
     volume = _panel({"AAA": [100.0, 0.0, 0.0]})
@@ -430,17 +682,42 @@ def test_alpha_012_zero_volume_delta_is_explicit_zero() -> None:
         lambda panels: alpha_004(panels["low"]),
         lambda panels: alpha_005(panels["open"], panels["close"], panels["vwap"]),
         lambda panels: alpha_006(panels["open"], panels["volume"]),
+        lambda panels: alpha_007(panels["close"], panels["volume"]),
         lambda panels: alpha_008(panels["open"], panels["returns"]),
+        lambda panels: alpha_009(panels["close"]),
         lambda panels: alpha_010(panels["close"]),
         lambda panels: alpha_012(panels["close"], panels["volume"]),
         lambda panels: alpha_013(panels["close"], panels["volume"]),
         lambda panels: alpha_014(panels["open"], panels["volume"], panels["returns"]),
+        lambda panels: alpha_017(panels["close"], panels["volume"]),
         lambda panels: alpha_018(panels["open"], panels["close"]),
+        lambda panels: alpha_019(panels["close"], panels["returns"]),
         lambda panels: alpha_020(panels["open"], panels["high"], panels["low"], panels["close"]),
+        lambda panels: alpha_023(panels["high"]),
+        lambda panels: alpha_028(
+            panels["close"],
+            panels["high"],
+            panels["low"],
+            panels["volume"],
+        ),
+        lambda panels: alpha_033(panels["open"], panels["close"]),
+        lambda panels: alpha_038(panels["open"], panels["close"]),
+        lambda panels: alpha_054(
+            panels["open"],
+            panels["high"],
+            panels["low"],
+            panels["close"],
+        ),
+        lambda panels: alpha_101(
+            panels["open"],
+            panels["high"],
+            panels["low"],
+            panels["close"],
+        ),
     ],
 )
 def test_alphas_do_not_use_future_rows(alpha_fn) -> None:
-    n = 24
+    n = 260
     close = _panel(
         {
             "AAA": list(np.linspace(10.0, 20.0, n)),
@@ -484,13 +761,23 @@ def test_alphas_preserve_shape_index_and_columns() -> None:
         alpha_004(low),
         alpha_005(open_price, close, vwap),
         alpha_006(open_price, volume),
+        alpha_007(close, volume),
         alpha_008(open_price, returns),
+        alpha_009(close),
         alpha_010(close),
         alpha_012(close, volume),
         alpha_013(close, volume),
         alpha_014(open_price, volume, returns),
+        alpha_017(close, volume),
         alpha_018(open_price, close),
+        alpha_019(close, returns),
         alpha_020(open_price, high, low, close),
+        alpha_023(high),
+        alpha_028(close, high, low, volume),
+        alpha_033(open_price, close),
+        alpha_038(open_price, close),
+        alpha_054(open_price, high, low, close),
+        alpha_101(open_price, high, low, close),
     ]
     for result in results:
         assert result.index.equals(close.index)
@@ -524,6 +811,20 @@ def test_alphas_sparse_and_constant_inputs_do_not_fill() -> None:
     assert constant_alpha_010.iloc[-1, 0] == pytest.approx(0.75)
     assert constant_alpha_010.iloc[-1, 1] == pytest.approx(0.75)
 
+    constant_close_009 = _panel({"AAA": [3.0] * 6, "BBB": [3.0] * 6})
+    constant_alpha_009 = alpha_009(constant_close_009)
+    assert constant_alpha_009.iloc[:5].isna().all().all()
+    assert constant_alpha_009.iloc[-1, 0] == pytest.approx(0.75)
+    assert constant_alpha_009.iloc[-1, 1] == pytest.approx(0.75)
+    assert np.isnan(alpha_007(close, zero_volume).iloc[1, 0])
+    assert np.isnan(alpha_017(close, zero_volume).iloc[-1, 0])
+    assert np.isnan(alpha_023(constant_close).iloc[-1, 0])
+    constant_open = constant_close.copy()
+    assert alpha_033(constant_open, constant_close).iloc[-1, 0] == pytest.approx(0.75)
+    assert alpha_101(constant_open, constant_close, constant_close, constant_close).iloc[
+        -1, 0
+    ] == pytest.approx(0.0)
+
 
 def test_alphas_reject_empty_and_mismatched_panels() -> None:
     dates = pd.date_range("2024-01-01", periods=3, freq="D")
@@ -542,6 +843,12 @@ def test_alphas_reject_empty_and_mismatched_panels() -> None:
         alpha_012(close, _panel({"AAA": [100.0, -1.0, 120.0]}))
     with pytest.raises(ValueError, match="non-negative"):
         alpha_003(close, _panel({"AAA": [100.0, -1.0, 120.0]}))
+    with pytest.raises(ValueError, match="non-negative"):
+        alpha_007(close, _panel({"AAA": [100.0, -1.0, 120.0]}))
+    with pytest.raises(ValueError, match="identical columns"):
+        alpha_028(close, close, close, volume)
+    with pytest.raises(ValueError, match="identical indexes"):
+        alpha_101(close, close, close, shifted)
 
 
 def test_alphas_module_has_no_abstract_class_hierarchy() -> None:

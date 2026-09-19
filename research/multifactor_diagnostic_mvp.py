@@ -1,7 +1,7 @@
-"""End-to-end WorldQuant batch-2 alpha and multi-factor diagnostic pipeline.
+"""End-to-end WorldQuant alpha and multi-factor diagnostic pipeline.
 
-This module wires classical price-volume alphas 5, 8, 10, 13, 14, 18, and 20
-plus equal-weighted and in-sample IC-weighted composites through the committed
+This module wires the 23 implemented classical price-volume alphas plus
+equal-weighted and in-sample IC-weighted composites through the committed
 50-stock static diagnostic cohort, a small IC/ICIR/Newey-West/DSR summary, and
 the existing equal-weight monthly long-only backtester with 5 bps slippage.
 
@@ -26,13 +26,29 @@ from backtest.portfolio import (
 )
 from data.diagnostic_cohort import load_diagnostic_cohort_ohlcv
 from features.alphas import (
+    alpha_001,
+    alpha_002,
+    alpha_003,
+    alpha_004,
     alpha_005,
+    alpha_006,
+    alpha_007,
     alpha_008,
+    alpha_009,
     alpha_010,
+    alpha_012,
     alpha_013,
     alpha_014,
+    alpha_017,
     alpha_018,
+    alpha_019,
     alpha_020,
+    alpha_023,
+    alpha_028,
+    alpha_033,
+    alpha_038,
+    alpha_054,
+    alpha_101,
 )
 from features.combination import equal_weighted_composite, ic_weighted_composite
 from features.diagnostics import (
@@ -63,31 +79,64 @@ DEFAULT_EXPERIMENT_LOG_PATH = (
     PROJECT_ROOT / "reports" / "experiment_logs" / "multifactor_diagnostic_mvp.json"
 )
 
+ALPHA_001 = "ALPHA_001"
+ALPHA_002 = "ALPHA_002"
+ALPHA_003 = "ALPHA_003"
+ALPHA_004 = "ALPHA_004"
 ALPHA_005 = "ALPHA_005"
+ALPHA_006 = "ALPHA_006"
+ALPHA_007 = "ALPHA_007"
 ALPHA_008 = "ALPHA_008"
+ALPHA_009 = "ALPHA_009"
 ALPHA_010 = "ALPHA_010"
+ALPHA_012 = "ALPHA_012"
 ALPHA_013 = "ALPHA_013"
 ALPHA_014 = "ALPHA_014"
+ALPHA_017 = "ALPHA_017"
 ALPHA_018 = "ALPHA_018"
+ALPHA_019 = "ALPHA_019"
 ALPHA_020 = "ALPHA_020"
+ALPHA_023 = "ALPHA_023"
+ALPHA_028 = "ALPHA_028"
+ALPHA_033 = "ALPHA_033"
+ALPHA_038 = "ALPHA_038"
+ALPHA_054 = "ALPHA_054"
+ALPHA_101 = "ALPHA_101"
 EQUAL_WEIGHTED_COMPOSITE = "EQUAL_WEIGHTED_COMPOSITE"
 IC_WEIGHTED_COMPOSITE = "IC_WEIGHTED_COMPOSITE"
 ALPHA_IDS = (
+    ALPHA_001,
+    ALPHA_002,
+    ALPHA_003,
+    ALPHA_004,
     ALPHA_005,
+    ALPHA_006,
+    ALPHA_007,
     ALPHA_008,
+    ALPHA_009,
     ALPHA_010,
+    ALPHA_012,
     ALPHA_013,
     ALPHA_014,
+    ALPHA_017,
     ALPHA_018,
+    ALPHA_019,
     ALPHA_020,
+    ALPHA_023,
+    ALPHA_028,
+    ALPHA_033,
+    ALPHA_038,
+    ALPHA_054,
+    ALPHA_101,
 )
 FACTOR_IDS = (*ALPHA_IDS, EQUAL_WEIGHTED_COMPOSITE, IC_WEIGHTED_COMPOSITE)
 ALPHA_WARMUP_PERIODS = 25
+IMPLEMENTED_ALPHA_COUNT = len(ALPHA_IDS)
 
 
 @dataclass(frozen=True)
 class MultifactorDiagnosticConfig:
-    """Frozen diagnostic settings for the batch-2 alpha pipeline."""
+    """Frozen diagnostic settings for the implemented-alpha pipeline."""
 
     manifest_path: Path = DEFAULT_MANIFEST_PATH
     rebalance_frequency: str = "ME"
@@ -96,31 +145,68 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 9
+    n_trials: int = 25
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
 
 
-def calculate_batch2_alpha(
+def calculate_diagnostic_alpha(
     factor_id: str,
     panels: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Compute one batch-2 price-volume alpha on companion OHLCV panels."""
+    """Compute one implemented price-volume alpha on companion OHLCV panels."""
 
+    if factor_id == ALPHA_001:
+        return alpha_001(panels["close"], panels["returns"])
+    if factor_id == ALPHA_002:
+        return alpha_002(panels["open"], panels["close"], panels["volume"])
+    if factor_id == ALPHA_003:
+        return alpha_003(panels["open"], panels["volume"])
+    if factor_id == ALPHA_004:
+        return alpha_004(panels["low"])
     if factor_id == ALPHA_005:
         return alpha_005(panels["open"], panels["close"], panels["vwap"])
+    if factor_id == ALPHA_006:
+        return alpha_006(panels["open"], panels["volume"])
+    if factor_id == ALPHA_007:
+        return alpha_007(panels["close"], panels["volume"])
     if factor_id == ALPHA_008:
         return alpha_008(panels["open"], panels["returns"])
+    if factor_id == ALPHA_009:
+        return alpha_009(panels["close"])
     if factor_id == ALPHA_010:
         return alpha_010(panels["close"])
+    if factor_id == ALPHA_012:
+        return alpha_012(panels["close"], panels["volume"])
     if factor_id == ALPHA_013:
         return alpha_013(panels["close"], panels["volume"])
     if factor_id == ALPHA_014:
         return alpha_014(panels["open"], panels["volume"], panels["returns"])
+    if factor_id == ALPHA_017:
+        return alpha_017(panels["close"], panels["volume"])
     if factor_id == ALPHA_018:
         return alpha_018(panels["open"], panels["close"])
+    if factor_id == ALPHA_019:
+        return alpha_019(panels["close"], panels["returns"])
     if factor_id == ALPHA_020:
         return alpha_020(panels["open"], panels["high"], panels["low"], panels["close"])
+    if factor_id == ALPHA_023:
+        return alpha_023(panels["high"])
+    if factor_id == ALPHA_028:
+        return alpha_028(
+            panels["close"],
+            panels["high"],
+            panels["low"],
+            panels["volume"],
+        )
+    if factor_id == ALPHA_033:
+        return alpha_033(panels["open"], panels["close"])
+    if factor_id == ALPHA_038:
+        return alpha_038(panels["open"], panels["close"])
+    if factor_id == ALPHA_054:
+        return alpha_054(panels["open"], panels["high"], panels["low"], panels["close"])
+    if factor_id == ALPHA_101:
+        return alpha_101(panels["open"], panels["high"], panels["low"], panels["close"])
     raise ValueError(f"unknown diagnostic alpha: {factor_id}")
 
 
@@ -131,7 +217,7 @@ def run_multifactor_diagnostic_mvp(
     experiment_log_path: Path | None = None,
     write_outputs: bool = True,
 ) -> dict[str, Any]:
-    """Run the 50-stock batch-2 alpha diagnostic and optionally write reports."""
+    """Run the 50-stock implemented-alpha diagnostic and optionally write reports."""
 
     experiment_log_path = (
         resolve_experiment_log_path(
@@ -166,7 +252,7 @@ def run_multifactor_diagnostic_mvp(
     alpha_panels: dict[str, pd.DataFrame] = {}
     factor_results: dict[str, dict[str, Any]] = {}
     for factor_id in ALPHA_IDS:
-        factor = calculate_batch2_alpha(factor_id, panels)
+        factor = calculate_diagnostic_alpha(factor_id, panels)
         alpha_panels[factor_id] = factor
         factor_results[factor_id] = _evaluate_factor(
             factor_id=factor_id,
@@ -269,10 +355,10 @@ def _evaluate_factor(
 
 
 def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, object]:
-    """Write a deterministic JSON log for the batch-2 alpha diagnostic."""
+    """Write a deterministic JSON log for the implemented-alpha diagnostic."""
 
     config: MultifactorDiagnosticConfig = result["config"]
-    first_backtest: BacktestResult = result["factors"][ALPHA_005]["backtest"]
+    first_backtest: BacktestResult = result["factors"][ALPHA_IDS[0]]["backtest"]
     factor_metrics = {
         factor_id: {
             **payload["ic_summary"],
@@ -284,15 +370,15 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
     return write_experiment_log(
         log_path=result["experiment_log_path"],
         experiment_id="multifactor-diagnostic-mvp",
-        title="WorldQuant Alphas Batch 2 Multifactor Diagnostic MVP",
+        title="WorldQuant Alphas Batch 3 Multifactor Diagnostic MVP",
         experiment_type="synthetic_alphas_diagnostic",
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock synthetic cohort wired through "
-            "ALPHA_005, ALPHA_008, ALPHA_010, ALPHA_013, ALPHA_014, "
-            "ALPHA_018, ALPHA_020, an equal-weighted z-score composite, and "
-            "an in-sample IC-weighted z-score composite with monthly Rank IC, "
-            "ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix, and "
-            "equal-weight monthly rebalance backtests at 5 bps slippage."
+            "the 23 implemented classical price-volume alphas, an "
+            "equal-weighted z-score composite, and an in-sample IC-weighted "
+            "z-score composite with monthly Rank IC, ICIR, Newey-West t-stat, "
+            "DSR with Euler-Mascheroni mix, and equal-weight monthly "
+            "rebalance backtests at 5 bps slippage."
         ),
         config={
             "manifest_path": _project_relative_path(config.manifest_path),
@@ -325,9 +411,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
                 "end": result["prices"].index.max().date(),
             },
             "feature_timing": (
-                "batch-2 alphas use only open, high, low, close, vwap, volume, "
-                "and returns on or before the signal date; signal_lag_periods=1 "
-                "delays portfolio formation"
+                "implemented alphas use only open, high, low, close, vwap, "
+                "volume, and returns on or before the signal date; "
+                "signal_lag_periods=1 delays portfolio formation"
             ),
             "execution_timing": first_backtest.assumptions["execution_timing"],
             "rebalance_frequency": config.rebalance_frequency,
@@ -350,7 +436,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             ],
             "n_trials_for_dsr": config.n_trials,
             "dsr_expected_max_mix": "euler_mascheroni",
-            "composite_ic_weights": "in-sample mean monthly Rank IC of the seven batch-2 alphas",
+            "composite_ic_weights": (
+                "in-sample mean monthly Rank IC of the 23 implemented alphas"
+            ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
             "brokerage_integration": False,
@@ -369,8 +457,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "IC-weighted composite uses in-sample mean monthly Rank IC weights",
         ),
         next_action=(
-            "Keep this as a DIAGNOSTIC_ONLY batch-2 alpha and composite wiring "
-            "check. It does not reopen identity, D8, A2, or formal interpretation."
+            "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite "
+            "wiring check. It does not reopen identity, D8, A2, or formal "
+            "interpretation."
         ),
     )
 
@@ -382,7 +471,7 @@ def write_report(*, result: dict[str, Any]) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     config: MultifactorDiagnosticConfig = result["config"]
     manifest = result["manifest"]
-    first_backtest: BacktestResult = result["factors"][ALPHA_005]["backtest"]
+    first_backtest: BacktestResult = result["factors"][ALPHA_IDS[0]]["backtest"]
     rows = []
     for factor_id in FACTOR_IDS:
         payload = result["factors"][factor_id]
@@ -412,7 +501,8 @@ def write_report(*, result: dict[str, Any]) -> None:
             f"| {factor_id} | {_format_number(result['ic_weights'][factor_id])} |"
         )
 
-    content = f"""# WorldQuant Alphas Batch 2 Multifactor Diagnostic MVP Evidence
+    alpha_names = ", ".join(f"`{factor_id}`" for factor_id in ALPHA_IDS)
+    content = f"""# WorldQuant Alphas Batch 3 Multifactor Diagnostic MVP Evidence
 
 This report is `DIAGNOSTIC_ONLY`. It uses a committed synthetic 50-stock static
 survivor cohort. That cohort is not point-in-time universe evidence, not a
@@ -435,10 +525,9 @@ profitability.
 1. Load the 50-stock diagnostic cohort fixture and generate synthetic close
    prices plus companion open, high, low, typical-price VWAP, volume, and
    close-to-close returns.
-2. Compute classical price-volume alphas `ALPHA_005`, `ALPHA_008`,
-   `ALPHA_010`, `ALPHA_013`, `ALPHA_014`, `ALPHA_018`, and `ALPHA_020`.
+2. Compute classical price-volume alphas {alpha_names}.
 3. Build `EQUAL_WEIGHTED_COMPOSITE` as the equal-weight average of
-   cross-sectional z-scores of those seven alphas.
+   cross-sectional z-scores of those {IMPLEMENTED_ALPHA_COUNT} alphas.
 4. Build `IC_WEIGHTED_COMPOSITE` with the same z-scores and in-sample mean
    monthly Rank IC as static supplied weights.
 5. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
@@ -467,7 +556,7 @@ profitability.
 - Timing contract: `{first_backtest.timing_metadata["timing_contract"]}`
 - DSR expected-maximum mix: Euler-Mascheroni constant `np.euler_gamma`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
-- Composite IC weights: in-sample mean monthly Rank IC of the seven batch-2 alphas
+- Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
 
 ## In-sample IC weights
 
@@ -486,7 +575,7 @@ combination rule.
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
-with the Euler-Mascheroni mix. All seven alphas and both composites are
+with the Euler-Mascheroni mix. All {IMPLEMENTED_ALPHA_COUNT} alphas and both composites are
 reported; weak or negative diagnostics are retained.
 
 ## Limitations
@@ -528,7 +617,7 @@ def main(
     report_path: Path = DEFAULT_REPORT_PATH,
     experiment_log_path: Path | None = None,
 ) -> None:
-    """Run the batch-2 alpha diagnostic with default settings."""
+    """Run the implemented-alpha diagnostic with default settings."""
 
     run_multifactor_diagnostic_mvp(
         report_path=report_path,

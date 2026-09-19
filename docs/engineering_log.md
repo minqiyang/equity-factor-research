@@ -1,5 +1,35 @@
 # Engineering Log
 
+## 2026-09-19 - WorldQuant alphas batch 3 and consolidated multifactor diagnostic
+
+- Working root `efr-alphas-batch3-20260919` on
+  `codex/alphas-batch3-20260919` from protected baseline `4a68866`.
+- Implemented classical price-volume alphas `alpha_007`, `alpha_009`,
+  `alpha_017`, `alpha_019`, `alpha_023`, `alpha_028`, `alpha_033`,
+  `alpha_038`, `alpha_054`, and `alpha_101` as plain functions in
+  `src/features/alphas.py`. Golden tests cover hand-calculated matrices,
+  lookahead isolation, empty/sparse/constant/zero-volume/zero-denominator
+  inputs, and no ABC hierarchy.
+- `features.alphas.alpha_009` is the cross-sectional rank of the same
+  sign-rule inner value as `features.worldquant_alphas.alpha_009`.
+  Incomplete trailing windows stay `NaN` for `alpha_009` and `alpha_023`.
+- Runner `python -m research.multifactor_diagnostic_mvp` now evaluates
+  all 23 implemented alphas plus equal-weighted and in-sample IC-weighted
+  composites. DSR uses `n_trials=25` and the Euler-Mascheroni mix.
+  Overlapping batch-2 IC, ICIR, Newey-West, return, and Sharpe values
+  stay on the same evaluation window; DSR and composites change with the
+  23-alpha trial set.
+- Ablation: pipeline factor helpers match `features.alphas` with no extra
+  wrapper math; composites match `features.combination`; pipeline module
+  has one frozen config dataclass and no ABC / metaclass hierarchy.
+- Focused pytest: `tests/test_alphas.py`, `tests/test_combination.py`,
+  `tests/test_diagnostic_cohort.py`, `tests/test_alphas_diagnostic_mvp.py`,
+  `tests/test_multifactor_diagnostic_mvp.py` (84 passed). Full pytest
+  `--basetemp=/tmp/alphas_batch3_pytest`: 3478 passed, 2 skipped.
+  `ruff check .` and `compileall src tests research lean` passed.
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`. 14-trial remains REFUSED.
+  No push or PR.
+
 ## 2026-09-19 - WorldQuant alphas batch 2 and multifactor diagnostic
 
 - Working root `efr-alphas-batch2-20260919` on

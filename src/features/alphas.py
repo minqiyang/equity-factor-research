@@ -14,6 +14,7 @@ from features.operators import (
     cs_rank,
     delta,
     safe_divide,
+    scale,
     signed_power,
     ts_argmax,
     ts_corr,
@@ -129,6 +130,30 @@ def alpha_006(open_price: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
     return -ts_corr(panels["open"], panels["volume"], 10)
 
 
+def alpha_007(
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#007 from close and volume panels.
+
+    ``np.where(adv20 < volume, (-1 * ts_rank(abs(ts_delta(close, 7)), 60))
+    * sign(ts_delta(close, 7)), -1)``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted. Missing
+    volume or incomplete average-volume windows stay ``NaN``.
+    """
+
+    panels = _validate_named_panels(close=close, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    delta_close = ts_delta(panels["close"], 7)
+    true_branch = (-1.0 * ts_rank(delta_close.abs(), 60)) * np.sign(delta_close)
+    result = true_branch.where(adv20_panel < panels["volume"], -1.0)
+    valid = adv20_panel.notna() & panels["volume"].notna()
+    return result.where(valid)
+
+
 def alpha_008(open_price: pd.DataFrame, returns: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#008 from open and return panels.
 
@@ -139,6 +164,25 @@ def alpha_008(open_price: pd.DataFrame, returns: pd.DataFrame) -> pd.DataFrame:
     panels = _validate_named_panels(open=open_price, returns=returns)
     summed_product = ts_sum(panels["open"], 5) * ts_sum(panels["returns"], 5)
     return -1.0 * cs_rank(summed_product - ts_delay(summed_product, 10))
+
+
+def alpha_009(close: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#009 from a close-price panel.
+
+    ``cs_rank(delta if ts_min(delta, 5) > 0 or ts_max(delta, 5) < 0
+    else -delta)`` where ``delta = ts_delta(close, 1)``.
+
+    Incomplete trailing windows stay ``NaN`` instead of taking the else branch.
+    """
+
+    close_panel = validate_panel_data(close, name="close")
+    delta_close = ts_delta(close_panel, 1)
+    trailing_min = ts_min(delta_close, 5)
+    trailing_max = ts_max(delta_close, 5)
+    trend_continuation = trailing_min.gt(0.0) | trailing_max.lt(0.0)
+    inner = delta_close.where(trend_continuation, -1.0 * delta_close)
+    valid = delta_close.notna() & trailing_min.notna() & trailing_max.notna()
+    return cs_rank(inner.where(valid))
 
 
 def alpha_010(close: pd.DataFrame) -> pd.DataFrame:
@@ -203,6 +247,30 @@ def alpha_014(
     )
 
 
+def alpha_017(
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#017 from close and volume panels.
+
+    ``(-1 * cs_rank(ts_rank(close, 10))) * cs_rank(ts_delta(ts_delta(close, 1), 1))
+    * cs_rank(ts_rank(volume / adv20, 5))``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted.
+    """
+
+    panels = _validate_named_panels(close=close, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    volume_ratio = safe_divide(panels["volume"], adv20_panel)
+    return (
+        (-1.0 * cs_rank(ts_rank(panels["close"], 10)))
+        * cs_rank(ts_delta(ts_delta(panels["close"], 1), 1))
+        * cs_rank(ts_rank(volume_ratio, 5))
+    )
+
+
 def alpha_018(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#018 from open and close panels.
 
@@ -214,6 +282,23 @@ def alpha_018(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
     spread = panels["close"] - panels["open"]
     inner = ts_std(spread.abs(), 5) + spread + ts_corr(panels["close"], panels["open"], 10)
     return -1.0 * cs_rank(inner)
+
+
+def alpha_019(close: pd.DataFrame, returns: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#019 from close and return panels.
+
+    ``(-1 * sign((close - ts_delay(close, 7)) + ts_delta(close, 7)))
+    * (1 + cs_rank(1 + ts_sum(returns, 250)))``
+    """
+
+    panels = _validate_named_panels(close=close, returns=returns)
+    signed_move = (panels["close"] - ts_delay(panels["close"], 7)) + ts_delta(
+        panels["close"],
+        7,
+    )
+    return (-1.0 * np.sign(signed_move)) * (
+        1.0 + cs_rank(1.0 + ts_sum(panels["returns"], 250))
+    )
 
 
 def alpha_020(
@@ -235,6 +320,112 @@ def alpha_020(
         * cs_rank(panels["open"] - ts_delay(panels["close"], 1))
         * cs_rank(panels["open"] - ts_delay(panels["low"], 1))
     )
+
+
+def alpha_023(high: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#023 from a high-price panel.
+
+    ``np.where(ts_mean(high, 20) < high, -1 * ts_delta(high, 2), 0)``
+
+    Incomplete trailing windows stay ``NaN`` instead of taking the else branch.
+    """
+
+    high_panel = validate_panel_data(high, name="high")
+    mean_high = ts_mean(high_panel, 20)
+    delta_high = ts_delta(high_panel, 2)
+    result = (-1.0 * delta_high).where(mean_high < high_panel, 0.0)
+    valid = mean_high.notna() & delta_high.notna()
+    return result.where(valid)
+
+
+def alpha_028(
+    close: pd.DataFrame,
+    high: pd.DataFrame,
+    low: pd.DataFrame,
+    volume: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#028 from OHLC and volume panels.
+
+    ``scale((ts_corr(adv20, low, 5) + (high + low) / 2) - close)``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted.
+    """
+
+    panels = _validate_named_panels(close=close, high=high, low=low, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    typical_price = (panels["high"] + panels["low"]) / 2.0
+    inner = ts_corr(adv20_panel, panels["low"], 5) + typical_price - panels["close"]
+    return scale(inner)
+
+
+def alpha_033(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#033 from open and close panels.
+
+    ``cs_rank(-1 * (1 - (open / close)))``
+    """
+
+    panels = _validate_named_panels(open=open_price, close=close)
+    open_over_close = safe_divide(panels["open"], panels["close"])
+    return cs_rank(-1.0 * (1.0 - open_over_close))
+
+
+def alpha_038(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#038 from open and close panels.
+
+    ``(-1 * cs_rank(ts_rank(close, 10))) * cs_rank(close / open)``
+    """
+
+    panels = _validate_named_panels(open=open_price, close=close)
+    return (-1.0 * cs_rank(ts_rank(panels["close"], 10))) * cs_rank(
+        safe_divide(panels["close"], panels["open"])
+    )
+
+
+def alpha_054(
+    open_price: pd.DataFrame,
+    high: pd.DataFrame,
+    low: pd.DataFrame,
+    close: pd.DataFrame,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#054 from open, high, low, and close panels.
+
+    ``(-1 * ((low - close) * (open ** 5))) / ((low - high) * (close ** 5))``
+
+    A zero denominator is replaced with ``NaN``.
+    """
+
+    panels = _validate_named_panels(open=open_price, high=high, low=low, close=close)
+    numerator = -1.0 * ((panels["low"] - panels["close"]) * panels["open"].pow(5.0))
+    denominator = (panels["low"] - panels["high"]) * panels["close"].pow(5.0)
+    return numerator / denominator.replace(0.0, np.nan)
+
+
+def alpha_101(
+    open_price: pd.DataFrame,
+    high: pd.DataFrame,
+    low: pd.DataFrame,
+    close: pd.DataFrame,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#101 from open, high, low, and close panels.
+
+    ``(close - open) / ((high - low) + 0.001)``
+    """
+
+    panels = _validate_named_panels(open=open_price, high=high, low=low, close=close)
+    return (panels["close"] - panels["open"]) / ((panels["high"] - panels["low"]) + 0.001)
+
+
+def _resolve_adv20(
+    volume: pd.DataFrame,
+    adv20: pd.DataFrame | None,
+    *,
+    window: int = 20,
+) -> pd.DataFrame:
+    if adv20 is None:
+        return ts_mean(volume, window)
+    return _validate_named_panels(volume=volume, adv20=adv20)["adv20"]
 
 
 def _validate_named_panels(**panels: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -268,11 +459,21 @@ __all__ = [
     "alpha_004",
     "alpha_005",
     "alpha_006",
+    "alpha_007",
     "alpha_008",
+    "alpha_009",
     "alpha_010",
     "alpha_012",
     "alpha_013",
     "alpha_014",
+    "alpha_017",
     "alpha_018",
+    "alpha_019",
     "alpha_020",
+    "alpha_023",
+    "alpha_028",
+    "alpha_033",
+    "alpha_038",
+    "alpha_054",
+    "alpha_101",
 ]
