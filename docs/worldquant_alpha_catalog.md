@@ -40,9 +40,10 @@ reviewed way.
 | Reusable operator layer | Implemented and tested for core pandas panel operators in `src/features/operators.py`. |
 | `alpha_001`, `alpha_002`, `alpha_003`, `alpha_004`, `alpha_006` | Implemented and tested in `src/features/alphas.py` as classical price-volume research features under `DIAGNOSTIC_ONLY`. |
 | `alpha_005`, `alpha_008`, `alpha_010`, `alpha_013`, `alpha_014`, `alpha_018`, `alpha_020` | Implemented and tested in `src/features/alphas.py` as batch-2 classical price-volume research features under `DIAGNOSTIC_ONLY`. `alpha_005` uses typical-price VWAP `(high + low + close) / 3` on companion synthetic bars. |
-| `alpha_009` | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
+| `alpha_007`, `alpha_009`, `alpha_017`, `alpha_019`, `alpha_023`, `alpha_028`, `alpha_033`, `alpha_038`, `alpha_054`, `alpha_101` | Implemented and tested in `src/features/alphas.py` as batch-3 classical price-volume research features under `DIAGNOSTIC_ONLY`. `alpha_009` in this module is the cross-sectional rank of the same sign-rule inner value as `src/features/worldquant_alphas.py`. |
+| `alpha_009` (unranked inner) | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
 | `alpha_012` | Implemented and tested in `src/features/alphas.py` and `src/features/worldquant_alphas.py` as a volume + close research feature; covered by synthetic OHLCV fixture smoke and diagnostic runner. |
-| Other WorldQuant-style alphas | Not implemented. |
+| Other WorldQuant-style alphas | Remain unimplemented. |
 | WorldQuant-style alpha backtest integration | Implemented for diagnostics in `research/alphas_diagnostic_mvp.py` and `research/multifactor_diagnostic_mvp.py` using the 50-stock diagnostic cohort. |
 | Bulk WorldQuant 101 implementation | Not implemented and still out of scope. |
 
@@ -69,15 +70,19 @@ Priority labels:
 Important priority rules:
 
 - `alpha_009` and `alpha_010` are implemented as research features only.
+  `features.alphas.alpha_009` applies `cs_rank` to the sign-rule inner value;
+  `features.worldquant_alphas.alpha_009` returns that inner value.
 - `alpha_012` is implemented as a research feature only.
 - Batch-2 alphas `alpha_005`, `alpha_008`, `alpha_013`, `alpha_014`,
   `alpha_018`, and `alpha_020` are implemented as research features only.
   `alpha_005` uses typical-price VWAP on companion synthetic bars.
+- Batch-3 alphas `alpha_007`, `alpha_017`, `alpha_019`, `alpha_023`,
+  `alpha_028`, `alpha_033`, `alpha_038`, `alpha_054`, and `alpha_101` are
+  implemented as research features only.
 - Remaining close-only alphas are future `P1` candidates, not automatic
   implementation tasks.
 - Remaining volume + close alphas are future `P2` candidates, not automatic
   implementation tasks.
-- `alpha_101` is not an immediate implementation task; it is `P2` because it requires OHLC support.
 - All VWAP, market cap, and industry-neutral categories are deferred as `P3`.
 - No new formula should be implemented until its data requirements, operator
   coverage, missing-data behavior, and tests are explicitly scoped.
@@ -226,17 +231,17 @@ volume + close + high + low + industry:
 
 | Data requirement category | Alpha references | Future priority | Notes |
 | --- | --- | --- | --- |
-| close only | 1, 9, 10, 19, 24, 29, 34, 46, 49, 51 | P1 | `alpha_009` and `alpha_010` are implemented as research features only; remaining close-only references require separate formula review and tests before implementation. |
-| low only | 4 | P2 | Requires low data support. |
-| high only | 23 | P2 | Requires high data support. |
-| open + close | 8, 18, 33, 37, 38 | P2 | `alpha_008` and `alpha_018` are implemented as research features only; remaining open + close references require separate formula review and tests before implementation. |
-| open + close + high + low | 20, 54, 101 | P2 | `alpha_020` is implemented as a research feature only; remaining OHLC references require separate formula review and tests before implementation. |
-| volume + close | 7, 12, 13, 17, 21, 30, 39, 43, 45 | P2 | `alpha_012` and `alpha_013` are implemented as research features only; remaining volume + close references require separate formula review and tests before implementation. |
+| close only | 1, 9, 10, 19, 24, 29, 34, 46, 49, 51 | P1 | `alpha_001`, `alpha_009`, `alpha_010`, and `alpha_019` are implemented as research features only; remaining close-only references require separate formula review and tests before implementation. |
+| low only | 4 | P2 | `alpha_004` is implemented as a research feature only. |
+| high only | 23 | P2 | `alpha_023` is implemented as a research feature only. |
+| open + close | 8, 18, 33, 37, 38 | P2 | `alpha_008`, `alpha_018`, `alpha_033`, and `alpha_038` are implemented as research features only; remaining open + close references require separate formula review and tests before implementation. |
+| open + close + high + low | 20, 54, 101 | P2 | `alpha_020`, `alpha_054`, and `alpha_101` are implemented as research features only. |
+| volume + close | 7, 12, 13, 17, 21, 30, 39, 43, 45 | P2 | `alpha_007`, `alpha_012`, `alpha_013`, and `alpha_017` are implemented as research features only; remaining volume + close references require separate formula review and tests before implementation. |
 | volume + open + close | 2, 14 | P2 | `alpha_002` and `alpha_014` are implemented as research features only. |
-| volume + open | 3, 6 | P2 | Requires volume and open data support. |
+| volume + open | 3, 6 | P2 | `alpha_003` and `alpha_006` are implemented as research features only. |
 | volume + high | 15, 16, 26, 40, 44 | P2 | Requires volume and high data support. |
 | volume + high + close | 22 | P2 | Requires volume and high data support. |
-| volume + high + low + close | 28, 35, 55, 60, 68, 85 | P2 | Requires volume and OHLC-adjacent data support. |
+| volume + high + low + close | 28, 35, 55, 60, 68, 85 | P2 | `alpha_028` is implemented as a research feature only; remaining references require volume and OHLC-adjacent data support. |
 | volume + close + low | 31, 52 | P2 | Requires volume and low data support. |
 | volume + high + low | 99 | P2 | Requires volume, high, and low data support. |
 | volume + open + close + high + low | 88, 92, 94 | P2 | Requires full OHLCV support. |
@@ -278,7 +283,9 @@ dependent formula is implemented.
 
 - Do not implement all 101 alphas at once.
 - Do not claim these alphas are profitable.
-- Do not connect these alphas to backtesting yet.
+- Keep formulaic alphas as research features. Diagnostic cohort wiring lives in
+  `research/alphas_diagnostic_mvp.py` and
+  `research/multifactor_diagnostic_mvp.py` under `DIAGNOSTIC_ONLY`.
 - Do not treat `alpha_009` as a complete strategy.
 - Do not fetch real data.
 - Remaining VWAP alphas stay deferred until explicit VWAP data support exists;
@@ -300,8 +307,7 @@ Reasonable next documentation or planning stages include:
   uses liquidity eligibility;
 - review `docs/volume_close_alpha_plan.md` before considering any remaining
   volume + close alpha implementation;
-- plan OHLC schema requirements before considering `alpha_101`;
-- review another close-only candidate and list exact formula, operator, and test
+- review another remaining close-only candidate and list exact formula, operator, and test
   requirements before implementation;
 - refresh roadmap documents when they still describe historical pre-`alpha_009`
   or pre-operator states.
