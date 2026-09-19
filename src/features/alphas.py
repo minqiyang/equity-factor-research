@@ -248,6 +248,29 @@ def alpha_014(
     )
 
 
+def alpha_015(high: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#015 from high and volume panels.
+
+    ``-1 * ts_sum(cs_rank(ts_corr(cs_rank(high), cs_rank(volume), 3)), 3)``
+    """
+
+    panels = _validate_named_panels(high=high, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    ranked_corr = cs_rank(ts_corr(cs_rank(panels["high"]), cs_rank(panels["volume"]), 3))
+    return -1.0 * ts_sum(ranked_corr, 3)
+
+
+def alpha_016(high: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#016 from high and volume panels.
+
+    ``-1 * cs_rank(ts_cov(cs_rank(high), cs_rank(volume), 5))``
+    """
+
+    panels = _validate_named_panels(high=high, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    return -1.0 * cs_rank(ts_cov(cs_rank(panels["high"]), cs_rank(panels["volume"]), 5))
+
+
 def alpha_017(
     close: pd.DataFrame,
     volume: pd.DataFrame,
@@ -361,6 +384,23 @@ def alpha_021(
     ).where(valid)
 
 
+def alpha_022(
+    high: pd.DataFrame,
+    volume: pd.DataFrame,
+    close: pd.DataFrame,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#022 from high, volume, and close panels.
+
+    ``(-1 * ts_delta(ts_corr(high, volume, 5), 5)) * cs_rank(ts_std(close, 20))``
+    """
+
+    panels = _validate_named_panels(high=high, volume=volume, close=close)
+    _reject_negative_volume(panels["volume"])
+    return (-1.0 * ts_delta(ts_corr(panels["high"], panels["volume"], 5), 5)) * cs_rank(
+        ts_std(panels["close"], 20)
+    )
+
+
 def alpha_023(high: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#023 from a high-price panel.
 
@@ -398,6 +438,36 @@ def alpha_024(close: pd.DataFrame) -> pd.DataFrame:
         index=close_panel.index,
         columns=close_panel.columns,
     ).where(valid)
+
+
+def alpha_025(
+    high: pd.DataFrame,
+    close: pd.DataFrame,
+    returns: pd.DataFrame,
+    volume: pd.DataFrame,
+    vwap: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#025 from OHLC, return, volume, and VWAP panels.
+
+    ``cs_rank((((-1 * returns) * adv20) * vwap) * (high - close))``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted.
+    """
+
+    panels = _validate_named_panels(
+        high=high,
+        close=close,
+        returns=returns,
+        volume=volume,
+        vwap=vwap,
+    )
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    inner = (((-1.0 * panels["returns"]) * adv20_panel) * panels["vwap"]) * (
+        panels["high"] - panels["close"]
+    )
+    return cs_rank(inner)
 
 
 def alpha_026(high: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
@@ -454,6 +524,36 @@ def alpha_030(close: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
     )
     numerator = (1.0 - cs_rank(sign_sum)) * ts_sum(panels["volume"], 5)
     return safe_divide(numerator, ts_sum(panels["volume"], 20))
+
+
+def alpha_031(
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#031 from close and volume panels.
+
+    ``term1 = cs_rank(cs_rank(decay_linear(-1 * cs_rank(cs_rank(ts_delta(close, 10))), 10)))``
+    ``term2 = cs_rank(-1 * ts_delta(close, 3))``
+    ``term3 = sign(scale(ts_corr(adv20, decay_linear(volume, 20), 12)))``
+    ``term1 + term2 + term3``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted.
+    """
+
+    panels = _validate_named_panels(close=close, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    term1 = cs_rank(
+        cs_rank(
+            decay_linear(-1.0 * cs_rank(cs_rank(ts_delta(panels["close"], 10))), 10)
+        )
+    )
+    term2 = cs_rank(-1.0 * ts_delta(panels["close"], 3))
+    term3 = np.sign(
+        scale(ts_corr(adv20_panel, decay_linear(panels["volume"], 20), 12))
+    )
+    return term1 + term2 + term3
 
 
 def alpha_032(close: pd.DataFrame, vwap: pd.DataFrame) -> pd.DataFrame:
@@ -524,6 +624,63 @@ def alpha_035(
     )
 
 
+def alpha_036(
+    open_price: pd.DataFrame,
+    close: pd.DataFrame,
+    volume: pd.DataFrame,
+    returns: pd.DataFrame,
+    vwap: pd.DataFrame,
+    adv20: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#036 from OHLCV, return, and VWAP panels.
+
+    ``(2.21 * cs_rank(ts_corr(close - open, ts_delay(volume, 1), 15)))
+    + (0.7 * cs_rank(open - close))
+    + (0.73 * cs_rank(ts_rank(ts_delay(-1 * returns, 6), 5)))
+    + cs_rank(abs(ts_corr(vwap, adv20, 6)))
+    + (0.6 * cs_rank((ts_mean(close, 200) - open) * (close - open)))``
+
+    ``adv20`` defaults to ``ts_mean(volume, 20)`` when omitted.
+    """
+
+    panels = _validate_named_panels(
+        open=open_price,
+        close=close,
+        volume=volume,
+        returns=returns,
+        vwap=vwap,
+    )
+    _reject_negative_volume(panels["volume"])
+    adv20_panel = _resolve_adv20(panels["volume"], adv20)
+    close_minus_open = panels["close"] - panels["open"]
+    return (
+        (2.21 * cs_rank(ts_corr(close_minus_open, ts_delay(panels["volume"], 1), 15)))
+        + (0.7 * cs_rank(panels["open"] - panels["close"]))
+        + (0.73 * cs_rank(ts_rank(ts_delay(-1.0 * panels["returns"], 6), 5)))
+        + cs_rank(ts_corr(panels["vwap"], adv20_panel, 6).abs())
+        + (
+            0.6
+            * cs_rank(
+                (ts_mean(panels["close"], 200) - panels["open"]) * close_minus_open
+            )
+        )
+    )
+
+
+def alpha_037(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#037 from open and close panels.
+
+    ``cs_rank(ts_corr(ts_delay(open - close, 1), close, 200))
+    + cs_rank(open - close)``
+    """
+
+    panels = _validate_named_panels(open=open_price, close=close)
+    open_minus_close = panels["open"] - panels["close"]
+    return cs_rank(ts_corr(ts_delay(open_minus_close, 1), panels["close"], 200)) + cs_rank(
+        open_minus_close
+    )
+
+
 def alpha_038(open_price: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#038 from open and close panels.
 
@@ -559,6 +716,45 @@ def alpha_039(
     ) * (1.0 + cs_rank(ts_sum(panels["returns"], 250)))
 
 
+def alpha_040(high: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#040 from high and volume panels.
+
+    ``(-1 * cs_rank(ts_std(high, 10))) * ts_corr(high, volume, 10)``
+    """
+
+    panels = _validate_named_panels(high=high, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    return (-1.0 * cs_rank(ts_std(panels["high"], 10))) * ts_corr(
+        panels["high"],
+        panels["volume"],
+        10,
+    )
+
+
+def alpha_041(high: pd.DataFrame, low: pd.DataFrame, vwap: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#041 from high, low, and VWAP panels.
+
+    ``sqrt((high * low).clip(lower=0)) - vwap``
+    """
+
+    panels = _validate_named_panels(high=high, low=low, vwap=vwap)
+    geometric = np.sqrt((panels["high"] * panels["low"]).clip(lower=0.0))
+    return geometric - panels["vwap"]
+
+
+def alpha_042(close: pd.DataFrame, vwap: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#042 from close and VWAP panels.
+
+    ``safe_divide(cs_rank(vwap - close), cs_rank(vwap + close))``
+    """
+
+    panels = _validate_named_panels(close=close, vwap=vwap)
+    return safe_divide(
+        cs_rank(panels["vwap"] - panels["close"]),
+        cs_rank(panels["vwap"] + panels["close"]),
+    )
+
+
 def alpha_043(
     close: pd.DataFrame,
     volume: pd.DataFrame,
@@ -578,6 +774,17 @@ def alpha_043(
     return ts_rank(volume_ratio, 20) * ts_rank(-1.0 * ts_delta(panels["close"], 7), 8)
 
 
+def alpha_044(high: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#044 from high and volume panels.
+
+    ``-1 * ts_corr(high, cs_rank(volume), 5)``
+    """
+
+    panels = _validate_named_panels(high=high, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    return -1.0 * ts_corr(panels["high"], cs_rank(panels["volume"]), 5)
+
+
 def alpha_045(close: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#045 from close and volume panels.
 
@@ -591,6 +798,35 @@ def alpha_045(close: pd.DataFrame, volume: pd.DataFrame) -> pd.DataFrame:
     close_volume_corr = ts_corr(panels["close"], panels["volume"], 2)
     sum_corr = ts_corr(ts_sum(panels["close"], 5), ts_sum(panels["close"], 20), 2)
     return cs_rank(delayed_mean * close_volume_corr) * cs_rank(sum_corr)
+
+
+def alpha_046(close: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#046 from a close-price panel.
+
+    ``drift = ((delay(close, 20) - delay(close, 10)) / 10)
+    - ((delay(close, 10) - close) / 10)``
+    ``where(drift > 0.25, -1, where(drift < 0, 1, -(close - delay(close, 1))))``
+
+    Incomplete trailing windows stay ``NaN``.
+    """
+
+    close_panel = validate_panel_data(close, name="close")
+    delayed_20 = ts_delay(close_panel, 20)
+    delayed_10 = ts_delay(close_panel, 10)
+    delayed_1 = ts_delay(close_panel, 1)
+    drift = ((delayed_20 - delayed_10) / 10.0) - ((delayed_10 - close_panel) / 10.0)
+    else_branch = -1.0 * (close_panel - delayed_1)
+    result = np.where(
+        drift.gt(0.25).to_numpy(),
+        -1.0,
+        np.where(drift.lt(0.0).to_numpy(), 1.0, else_branch.to_numpy()),
+    )
+    valid = delayed_20.notna() & delayed_10.notna() & delayed_1.notna()
+    return pd.DataFrame(
+        result,
+        index=close_panel.index,
+        columns=close_panel.columns,
+    ).where(valid)
 
 
 def alpha_049(close: pd.DataFrame) -> pd.DataFrame:
@@ -615,6 +851,18 @@ def alpha_049(close: pd.DataFrame) -> pd.DataFrame:
     ).where(valid)
 
 
+def alpha_050(volume: pd.DataFrame, vwap: pd.DataFrame) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#050 from volume and VWAP panels.
+
+    ``-1 * ts_max(cs_rank(ts_corr(cs_rank(volume), cs_rank(vwap), 5)), 5)``
+    """
+
+    panels = _validate_named_panels(volume=volume, vwap=vwap)
+    _reject_negative_volume(panels["volume"])
+    ranked_corr = cs_rank(ts_corr(cs_rank(panels["volume"]), cs_rank(panels["vwap"]), 5))
+    return -1.0 * ts_max(ranked_corr, 5)
+
+
 def alpha_051(close: pd.DataFrame) -> pd.DataFrame:
     """Calculate WorldQuant Alpha#051 from a close-price panel.
 
@@ -635,6 +883,27 @@ def alpha_051(close: pd.DataFrame) -> pd.DataFrame:
         index=close_panel.index,
         columns=close_panel.columns,
     ).where(valid)
+
+
+def alpha_052(
+    low: pd.DataFrame,
+    returns: pd.DataFrame,
+    volume: pd.DataFrame,
+) -> pd.DataFrame:
+    """Calculate WorldQuant Alpha#052 from low, return, and volume panels.
+
+    ``(-1 * ts_delta(ts_min(low, 5), 5))
+    * cs_rank((ts_sum(returns, 240) - ts_sum(returns, 20)) / 220)
+    * ts_rank(volume, 5)``
+    """
+
+    panels = _validate_named_panels(low=low, returns=returns, volume=volume)
+    _reject_negative_volume(panels["volume"])
+    min_delta = -1.0 * ts_delta(ts_min(panels["low"], 5), 5)
+    return_drift = (
+        ts_sum(panels["returns"], 240) - ts_sum(panels["returns"], 20)
+    ) / 220.0
+    return min_delta * cs_rank(return_drift) * ts_rank(panels["volume"], 5)
 
 
 def alpha_053(high: pd.DataFrame, low: pd.DataFrame, close: pd.DataFrame) -> pd.DataFrame:
@@ -783,26 +1052,40 @@ __all__ = [
     "alpha_012",
     "alpha_013",
     "alpha_014",
+    "alpha_015",
+    "alpha_016",
     "alpha_017",
     "alpha_018",
     "alpha_019",
     "alpha_020",
     "alpha_021",
+    "alpha_022",
     "alpha_023",
     "alpha_024",
+    "alpha_025",
     "alpha_026",
     "alpha_028",
     "alpha_030",
+    "alpha_031",
     "alpha_032",
     "alpha_033",
     "alpha_034",
     "alpha_035",
+    "alpha_036",
+    "alpha_037",
     "alpha_038",
     "alpha_039",
+    "alpha_040",
+    "alpha_041",
+    "alpha_042",
     "alpha_043",
+    "alpha_044",
     "alpha_045",
+    "alpha_046",
     "alpha_049",
+    "alpha_050",
     "alpha_051",
+    "alpha_052",
     "alpha_053",
     "alpha_054",
     "alpha_055",
