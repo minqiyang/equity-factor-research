@@ -9,6 +9,17 @@ profitability, or trading readiness.
 
 ### Added
 
+- `src/features/combination.py`: Added `icir_weighted_composite` (Information Ratio weighting)
+  and `correlation_discounted_composite` (collinearity-adjusted factor combination with ridge regularization).
+- `src/features/interaction.py`: Added `factor_product_interaction` (cross-sectional bivariate product),
+  `conditional_factor_rank` (quantile double-sorting), and `factor_quadrant_interaction` (regime quadrant classification).
+- `src/features/neutralize.py`: Added `cross_sectional_demean`, `cross_sectional_neutralize` (OLS
+  regression against single or multiple risk factors with $X^T \epsilon = 0$ orthogonality guarantee),
+  and `cross_sectional_group_neutralize` (industry/sector demeaning) for cross-sectional risk adjustment.
+- `src/backtest/portfolio.py`: Added configurable `weighting_scheme` (`"equal"`, `"rank"`) and dynamic
+  point-in-time `universe_mask` for universe filtering and immediate liquidation upon asset exit.
+- `src/backtest/long_short.py`: Added `run_long_short_backtest` and `LongShortBacktestResult` supporting
+  dollar-neutral quantile/decile portfolios, long-short spread (D10 - D1), turnover, and explicit transaction costs.
 - `src/features/diagnostics.py`: Added `probability_of_backtest_overfitting` implementing
   Combinatorially Symmetric Cross-Validation (CSCV) to evaluate backtest overfitting probability
   and out-of-sample loss probability across multiple strategy/alpha variants.
