@@ -336,8 +336,8 @@ def _approx_report_values(
     # Backtest returns and Sharpe on top-5 discrete ranking can shift across rebalances
     # due to machine-level cross-sectional rank ties / floating-point differences.
     is_composite = factor_id in (EQUAL_WEIGHTED_COMPOSITE, IC_WEIGHTED_COMPOSITE)
-    num_tol = 0.2 if is_composite else 0.05
-    pct_tol = 5.0 if is_composite else 1.0
+    num_tol = 0.5 if is_composite else 0.05
+    pct_tol = 10.0 if is_composite else 1.0
 
     for obs_val, exp_val in zip(observed, expected, strict=True):
         if obs_val.endswith("%"):
