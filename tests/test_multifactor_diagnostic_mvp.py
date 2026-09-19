@@ -461,6 +461,12 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
     assert 0.0 <= pbo_summary["prob_loss"] <= 1.0
     assert pbo_summary["n_combinations"] == 70
     assert pbo_summary["n_splits"] == 8
+    assert pbo_summary["pbo"] == pytest.approx(0.6143, abs=1e-4)
+    assert pbo_summary["prob_loss"] == pytest.approx(0.5000, abs=1e-4)
+    assert pbo_summary["mean_relative_rank"] == pytest.approx(0.4340, abs=1e-4)
+    assert pbo_summary["median_relative_rank"] == pytest.approx(0.4057, abs=1e-4)
+    assert pbo_summary["mean_is_sharpe"] == pytest.approx(0.0871, abs=1e-4)
+    assert pbo_summary["mean_oos_sharpe"] == pytest.approx(0.0059, abs=1e-4)
     for factor_id, expected in OFFICIAL_FOUR_DECIMAL_ROWS.items():
         payload = result["factors"][factor_id]
         ic_summary = payload["ic_summary"]
