@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from backtest.long_short import LongShortBacktestResult, run_long_short_backtest
-from backtest.portfolio import BacktestValidationError
 
 
 def _make_long_short_panels(

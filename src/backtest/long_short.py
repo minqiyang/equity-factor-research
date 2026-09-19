@@ -148,7 +148,6 @@ def run_long_short_backtest(
     equity = pd.Series(np.nan, index=accounting_dates, name="equity")
     equity.iloc[0] = float(initial_capital)
 
-    cost_rate = (float(transaction_cost_bps) + float(slippage_bps)) / 10_000.0
     half_leverage = 0.5 * float(gross_leverage)
 
     current_long = pd.Series(0.0, index=columns)
