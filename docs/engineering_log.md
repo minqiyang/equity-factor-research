@@ -1,5 +1,27 @@
 # Engineering Log
 
+## 2026-09-18 - PR222 remaining dictionary-envelope hash collision
+
+- Reproduced remaining AUDIT-222-002 on candidate
+  `10825d64acae25b16227787112f6210a8ae9cdec` before editing. After sealing
+  `raw_ex = {"items": anchor}`, replacing it with
+  `{**anchor, "json_evidence": "dict"}` without resealing kept snapshot and
+  hash `3cacca983b5617b43ce6deccf4cae30b8a96fe9da051c86e6e81cad9f7abb5ab`
+  while classification changed from `INSUFFICIENT_EVIDENCE` / false to
+  `MATCHED` / true. The sibling-mark encoder produced the same JSON for
+  those two caller dictionaries.
+- Dictionaries now encode as `{"json_evidence": "object", "items": {<caller
+  keys>}}`. Caller `items` and `json_evidence` keys remain inside the
+  envelope. The exact mutation changes digest and snapshot with the declared
+  hash left unchanged; economic acceptance stays false. Callable and both
+  runners cover that sequence. Prior scalar-wrapper and identity-overlap
+  regressions remain.
+- AUDIT-222-FIX-ADV-001 reproduced: `Decimal("2")` revision_id diagnosed
+  `revision_lineage_unresolved` and `json.dumps(item, allow_nan=False)`
+  raised `TypeError`. Selected revision fields now pass through
+  `json_evidence`. Local typed-serialization hole, same family as
+  observation-state encoding.
+
 ## 2026-09-18 - PR222 identity consistency and evidence-hash repair
 
 - Reproduced AUDIT-222-001 and AUDIT-222-002 on failed candidate

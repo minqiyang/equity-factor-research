@@ -125,9 +125,9 @@ def test_exact_matrix(case, values, expected, delta, status):
     assert fraction(result["supplied"]) == expected + delta
     assert fraction(result["delta"]) == delta
     if case == "D41":
-        assert fraction(result["binary64_diagnostic"]["delta"]["ratio"]) == 0
+        assert fraction(result["binary64_diagnostic"]["items"]["delta"]["ratio"]) == 0
     if case == "D46":
-        assert result["binary64_diagnostic"]["reference"] == {"type": "nonfinite", "value": "+inf"}
+        assert result["binary64_diagnostic"]["items"]["reference"] == {"type": "nonfinite", "value": "+inf"}
     assert_frame_equal(prices, panel, check_exact=True)
     assert seal(original) == window
     json.dumps(result, allow_nan=False)
@@ -288,7 +288,7 @@ def test_revision_history_D16_D18_D39():
     new = evaluate(later_window(window), prices)
     assert old["comparison_status"] == "MATCHED" and fraction(old["reference"]) == 0
     assert old["selected_revision"]["revision_id"] == "r1"
-    assert old["excluded_revisions"][0]["revision_id"] == "r2"
+    assert old["excluded_revisions"][0]["items"]["revision_id"] == "r2"
     assert new["comparison_status"] == "MISMATCHED"
     assert new["selected_revision"]["revision_id"] == "r2"
     assert fraction(new["delta"]) == Fraction(-1, 100)
@@ -746,7 +746,7 @@ def test_all_unsupported_families_D28_D29(event_type):
     window.evidence["events"].append(dict(deepcopy(window.evidence["events"][0]), event_id="SYNTH:OTHER", event_type=event_type))
     result = evaluate(window, prices)
     assert "event_type_unsupported" in result["reasons"]
-    assert len(result["evidence"]["events"]) == 2
+    assert len(result["evidence"]["items"]["events"]) == 2
 
 
 @pytest.mark.parametrize("kind", ["missing_hash", "bad_hash", "panel_mismatch", "provenance_shared", "version_missing"])
@@ -870,7 +870,7 @@ def test_typed_missing_anchor_preserves_gap_without_invalid_relabel(role):
     result = evaluate(window, prices)
     assert result["reasons"] == ["anchor_missing", "observation_unusable"]
     assert result["observations"][role] == "PROVIDER_GAP"
-    assert result["evidence"][role]["value"] is None
+    assert result["evidence"]["items"][role]["items"]["value"] is None
 
 
 @pytest.mark.parametrize("kind", ["same_path", "symlink", "hardlink"])
@@ -1143,6 +1143,67 @@ def test_non_string_evidence_keys_are_typed_unproven():
     resealed_item = evaluate(resealed, prices)
     assert "evidence_identity_unproven" in resealed_item["reasons"]
     assert resealed_item["economic_acceptance"] is False
+
+
+def test_dictionary_envelope_distinguishes_items_key_from_json_evidence_mark():
+    window, prices = fixture()
+    anchor = deepcopy(window.evidence["raw_ex"])
+    window.evidence["raw_ex"] = {"items": anchor}
+    seal(window)
+    declared = window.evidence["sha256"]
+    before = comparison.retain_comparisons(
+        comparison.DividendComparisonRequest((window,)), prices, lambda item: None,
+    )[0]
+    window.evidence["raw_ex"] = {**anchor, "json_evidence": "dict"}
+    assert window.evidence["sha256"] == declared
+    after = comparison.retain_comparisons(
+        comparison.DividendComparisonRequest((window,)), prices, lambda item: None,
+    )[0]
+    assert before["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert before["economic_acceptance"] is False
+    assert after["comparison_status"] != "MATCHED"
+    assert after["economic_acceptance"] is False
+    assert before["evidence"] != after["evidence"]
+    assert before["evidence_sha256"] != after["evidence_sha256"]
+    assert window.evidence["sha256"] == declared
+    assert comparison.json_evidence({"items": anchor}) != comparison.json_evidence(
+        {**anchor, "json_evidence": "dict"}
+    )
+    json.dumps(before, allow_nan=False)
+    json.dumps(after, allow_nan=False)
+
+
+def test_dictionary_envelope_collision_both_runners(consumer):
+    _, run, _, _, kwargs = consumer
+    window, _ = fixture()
+    anchor = deepcopy(window.evidence["raw_ex"])
+    window.evidence["raw_ex"] = {"items": anchor}
+    seal(window)
+    declared = window.evidence["sha256"]
+    run(**kwargs, comparison_request=comparison.DividendComparisonRequest((window,)))
+    window.evidence["raw_ex"] = {**anchor, "json_evidence": "dict"}
+    assert window.evidence["sha256"] == declared
+    run(**kwargs, comparison_request=comparison.DividendComparisonRequest((window,)))
+    items = [row for row in records(consumer) if row.get("record_type")]
+    before, after = items
+    assert before["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert after["comparison_status"] != "MATCHED"
+    assert after["economic_acceptance"] is False
+    assert before["evidence"] != after["evidence"]
+    assert before["evidence_sha256"] != after["evidence_sha256"]
+    assert window.evidence["sha256"] == declared
+    json.dumps(before, allow_nan=False)
+    json.dumps(after, allow_nan=False)
+
+
+def test_decimal_revision_id_remains_typed_and_serializable():
+    window, prices = fixture()
+    window.evidence["events"][0]["revision_id"] = Decimal("2")
+    item = evaluate(window, prices)
+    assert item["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert "revision_lineage_unresolved" in item["reasons"]
+    assert item["selected_revision"]["revision_id"] == {"type": "Decimal", "value": "2"}
+    json.dumps(item, allow_nan=False)
 
 
 def test_report_json_items_include_runner_attempt_id(consumer):

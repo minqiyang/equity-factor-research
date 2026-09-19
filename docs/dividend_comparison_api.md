@@ -75,18 +75,20 @@ remain visible and prevent acceptance.
 
 The content hash covers the entire dictionary except the `sha256` field.
 Canonicalization uses `json_evidence`, sorted keys, compact separators, UTF-8,
-and strict JSON. Caller dictionaries carry a `json_evidence` container
-discriminator so they remain distinct from encoded scalars. Integer payloads
-retain type and decimal-string value; finite real payloads retain their exact
-numerator/denominator; Decimal, complex, nonfinite and unsupported values
-retain typed representations. Tuples retain a distinct container encoding
-from lists. Dictionaries with non-string keys retain a typed item list.
-These encodings preserve invalid evidence for diagnosis. A classification-
-changing mutation of retained contents changes the digest and the snapshot.
-A hash binds the caller-declared synthetic fixture contents; its authority
-is synthetic provenance rather than independent vendor certification. Field
-references, actual supplied-panel anchor values, and the root digest are
-checked together.
+and strict JSON. Caller dictionaries encode as
+`{"json_evidence": "object", "items": {<caller keys>}}`, so caller keys
+including nested `items` and `json_evidence` remain inside the envelope.
+Integer payloads retain type and decimal-string value; finite real payloads
+retain their exact numerator/denominator; Decimal, complex, nonfinite and
+unsupported values retain typed representations. Tuples retain a distinct
+container encoding from lists. Dictionaries with non-string keys retain a
+typed item list of `{json_evidence: pair, key, value}` records. These
+encodings preserve invalid evidence for diagnosis. A classification-changing
+mutation of retained contents changes the digest and the snapshot even when
+the declared hash is left unchanged. A hash binds the caller-declared
+synthetic fixture contents; its authority is synthetic provenance rather than
+independent vendor certification. Field references, actual supplied-panel
+anchor values, and the root digest are checked together.
 
 An anchor contains `value`, `status`, `label`, `field_id`, `provenance`,
 `security_id`, `listing_id`, and `availability`. Its label, field, and identity

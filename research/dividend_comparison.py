@@ -113,15 +113,18 @@ def json_evidence(value):
             return {
                 "json_evidence": "dict_items",
                 "items": [
-                    {"key": json_evidence(key), "value": json_evidence(nested)}
+                    {
+                        "json_evidence": "pair",
+                        "key": json_evidence(key),
+                        "value": json_evidence(nested),
+                    }
                     for key, nested in value.items()
                 ],
             }
-        encoded = {key: json_evidence(nested) for key, nested in value.items()}
-        if "json_evidence" in encoded:
-            return {"json_evidence": "dict", "items": encoded}
-        encoded["json_evidence"] = "dict"
-        return encoded
+        return {
+            "json_evidence": "object",
+            "items": {key: json_evidence(nested) for key, nested in value.items()},
+        }
     if isinstance(value, tuple):
         return {"json_evidence": "tuple", "items": [json_evidence(nested) for nested in value]}
     if isinstance(value, list):
@@ -483,7 +486,9 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame, conflicting_it
         elif amount <= 0:
             reasons.add("numeric_domain_invalid")
     if selected is not None:
-        record["selected_revision"] = {key: selected.get(key) for key in ("event_id", "revision_id")}
+        record["selected_revision"] = {
+            key: json_evidence(selected.get(key)) for key in ("event_id", "revision_id")
+        }
         observations["dividend"] = json_evidence(selected.get("status", "MISSING"))
         numbers["dividend"] = _rational(selected.get("amount"))
     record["observations"] = observations

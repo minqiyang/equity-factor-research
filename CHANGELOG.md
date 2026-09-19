@@ -23,6 +23,12 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Synthetic dividend evidence dictionaries encode as
+  `{"json_evidence": "object", "items": {<caller keys>}}`. Nested caller
+  `items` and `json_evidence` keys stay inside the envelope, so
+  classification-changing mutations change digest and snapshot when the
+  declared hash is left unchanged. Selected revision identifiers serialize
+  through `json_evidence`. See `reports/dividend_comparison_attempt.md`.
 - Overlapping synthetic dividend comparison scopes that assign the same
   supplied asset to different permanent identities, or the same identity to
   different assets, now diagnose `identity_unresolved` and keep economic

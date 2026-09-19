@@ -8,6 +8,23 @@ packaging remains blocked by the available build environment. Fresh CRITICAL
 implementation reviews remain with the coordinator. Milestone 3 remains in
 progress; Step 4 retains its private-data owner gate.
 
+## PR222 remaining dictionary-envelope repair
+
+Repair of remaining AUDIT-222-002 on candidate
+`10825d64acae25b16227787112f6210a8ae9cdec`. The scalar-wrapper cases from
+the first repair stayed green. `{"items": anchor}` versus
+`{**anchor, "json_evidence": "dict"}` still produced identical snapshots and
+hashes, and classification changed to `MATCHED` without resealing.
+Dictionaries now encode as `{"json_evidence": "object", "items": {<caller
+keys>}}`. That mutation changes digest and retained representation with the
+declared hash left unchanged. AUDIT-222-FIX-ADV-001 (`Decimal` revision_id
+breaking strict JSON) is a typed-serialization hole and is repaired by
+encoding selected revision fields through `json_evidence`. Coordinator
+report: `coord/pr222_fix2_attempt.md` in the sibling docs tree. Repair QA:
+focused 550 passed; full suite `--basetemp=/tmp/dividend_comparison_runtime_fix2_full`
+3364 passed, 2 skipped, 1 warning; ruff and compileall passed; 34 frozen
+artifacts hash-identical.
+
 ## PR222 identity and evidence-hash repair
 
 Repair of failed candidate `4d4d4f2c8b28dd6883a6155f8c250371ee42a753` against
