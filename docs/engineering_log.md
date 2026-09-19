@@ -1,5 +1,18 @@
 # Engineering Log
 
+## 2026-09-19 - End-to-end multi-factor pipeline integration and long-short backtesting
+
+- Working branch `codex/multifactor-pipeline-integration-20260919` from `ba5a838`.
+- Integrated all newly implemented factor combination, interaction, and neutralization models into `research/multifactor_diagnostic_mvp.py`:
+  - `ICIR_WEIGHTED_COMPOSITE`: Information Ratio-weighted composite of 52 WorldQuant alphas.
+  - `CORRELATION_DISCOUNTED_COMPOSITE`: Collinearity-adjusted composite solving $(C + \alpha I)^{-1} w_{IC}$, achieving mean IC 0.1693, ICIR 1.0880, and Newey-West t 6.2728.
+  - `ALPHA_PRODUCT_INTERACTION`: Cross-sectional non-linear product interaction of Alpha 016 and Alpha 022.
+  - `CONDITIONAL_RANK_INTERACTION`: Double-sorted conditional ranking of Alpha 022 within Alpha 016 quintiles, achieving long-only Sharpe 1.0942 and long-short Sharpe 0.6315.
+  - `NEUTRALIZED_IC_COMPOSITE`: Cross-sectional volatility orthogonalization via `cross_sectional_neutralize`.
+- Integrated dollar-neutral long-short decile spread backtesting (`run_long_short_backtest` from `src/backtest/long_short.py`) across all 59 evaluated factors, tracking D1..D10 decile spreads, long-short Sharpe, turnover, and decile Spearman monotonicity.
+- Updated `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`.
+- Tests: `tests/test_multifactor_diagnostic_mvp.py` (4 passed), `ruff check .` passed.
+
 ## 2026-09-19 - Multi-factor combination and cross-factor interaction models
 
 - Working branch `codex/multi-factor-combination-and-interaction-20260919` from `0bc24d2`.

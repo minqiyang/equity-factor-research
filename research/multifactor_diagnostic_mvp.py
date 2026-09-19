@@ -19,6 +19,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from backtest.long_short import (
+    run_long_short_backtest,
+)
 from backtest.portfolio import (
     BacktestResult,
     capture_backtest_source_provenance,
@@ -79,12 +82,24 @@ from features.alphas import (
     alpha_060,
     alpha_101,
 )
-from features.combination import equal_weighted_composite, ic_weighted_composite
+from features.combination import (
+    correlation_discounted_composite,
+    equal_weighted_composite,
+    ic_weighted_composite,
+    icir_weighted_composite,
+)
 from features.diagnostics import (
     deflated_sharpe_ratio,
     factor_rank_information_coefficient,
     information_coefficient_summary,
     probability_of_backtest_overfitting,
+)
+from features.interaction import (
+    conditional_factor_rank,
+    factor_product_interaction,
+)
+from features.neutralize import (
+    cross_sectional_neutralize,
 )
 from reporting.experiment_log import (
     SYNTHETIC_RESEARCH_CAVEATS,
@@ -163,6 +178,11 @@ ALPHA_060 = "ALPHA_060"
 ALPHA_101 = "ALPHA_101"
 EQUAL_WEIGHTED_COMPOSITE = "EQUAL_WEIGHTED_COMPOSITE"
 IC_WEIGHTED_COMPOSITE = "IC_WEIGHTED_COMPOSITE"
+ICIR_WEIGHTED_COMPOSITE = "ICIR_WEIGHTED_COMPOSITE"
+CORRELATION_DISCOUNTED_COMPOSITE = "CORRELATION_DISCOUNTED_COMPOSITE"
+ALPHA_PRODUCT_INTERACTION = "ALPHA_PRODUCT_INTERACTION"
+CONDITIONAL_RANK_INTERACTION = "CONDITIONAL_RANK_INTERACTION"
+NEUTRALIZED_IC_COMPOSITE = "NEUTRALIZED_IC_COMPOSITE"
 ALPHA_IDS = (
     ALPHA_001,
     ALPHA_002,
@@ -217,7 +237,16 @@ ALPHA_IDS = (
     ALPHA_060,
     ALPHA_101,
 )
-FACTOR_IDS = (*ALPHA_IDS, EQUAL_WEIGHTED_COMPOSITE, IC_WEIGHTED_COMPOSITE)
+FACTOR_IDS = (
+    *ALPHA_IDS,
+    EQUAL_WEIGHTED_COMPOSITE,
+    IC_WEIGHTED_COMPOSITE,
+    ICIR_WEIGHTED_COMPOSITE,
+    CORRELATION_DISCOUNTED_COMPOSITE,
+    ALPHA_PRODUCT_INTERACTION,
+    CONDITIONAL_RANK_INTERACTION,
+    NEUTRALIZED_IC_COMPOSITE,
+)
 ALPHA_WARMUP_PERIODS = 25
 IMPLEMENTED_ALPHA_COUNT = len(ALPHA_IDS)
 
@@ -234,10 +263,12 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 54
+    n_trials: int = 59
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
     pbo_n_splits: int = 8
+    quantiles: int = 10
+    ridge_alpha: float = 0.1
 
 
 def calculate_diagnostic_alpha(
@@ -446,9 +477,33 @@ def run_multifactor_diagnostic_mvp(
     ic_weights = [
         float(factor_results[factor_id]["ic_summary"]["mean_ic"]) for factor_id in ALPHA_IDS
     ]
+    ic_history = pd.DataFrame(
+        {factor_id: factor_results[factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
+    )
+
+    volatility_proxy = panels["returns"].rolling(20, min_periods=5).std().bfill()
+    ic_comp = ic_weighted_composite(ordered_alphas, ic_weights)
+
     composites = {
         EQUAL_WEIGHTED_COMPOSITE: equal_weighted_composite(ordered_alphas),
-        IC_WEIGHTED_COMPOSITE: ic_weighted_composite(ordered_alphas, ic_weights),
+        IC_WEIGHTED_COMPOSITE: ic_comp,
+        ICIR_WEIGHTED_COMPOSITE: icir_weighted_composite(ordered_alphas, ic_history),
+        CORRELATION_DISCOUNTED_COMPOSITE: correlation_discounted_composite(
+            ordered_alphas, ic_weights, ridge_alpha=config.ridge_alpha
+        ),
+        ALPHA_PRODUCT_INTERACTION: factor_product_interaction(
+            alpha_panels[ALPHA_016],
+            alpha_panels[ALPHA_022],
+        ),
+        CONDITIONAL_RANK_INTERACTION: conditional_factor_rank(
+            conditioning_factor=alpha_panels[ALPHA_016],
+            target_factor=alpha_panels[ALPHA_022],
+            n_bins=5,
+        ),
+        NEUTRALIZED_IC_COMPOSITE: cross_sectional_neutralize(
+            ic_comp,
+            volatility_proxy,
+        ),
     }
     for factor_id, factor in composites.items():
         factor_results[factor_id] = _evaluate_factor(
@@ -528,6 +583,19 @@ def _evaluate_factor(
         signal_lag_periods=config.signal_lag_periods,
         periods_per_year=config.periods_per_year,
     )
+    long_short_backtest = run_long_short_backtest(
+        prices,
+        factor,
+        evaluation_start=evaluation_start,
+        evaluation_end=evaluation_end,
+        rebalance_frequency=config.rebalance_frequency,
+        quantiles=config.quantiles,
+        weighting_scheme="equal",
+        transaction_cost_bps=config.transaction_cost_bps,
+        slippage_bps=config.slippage_bps,
+        signal_lag_periods=config.signal_lag_periods,
+        periods_per_year=config.periods_per_year,
+    )
     measured_returns = backtest.returns.iloc[1:]
     return {
         "factor_id": factor_id,
@@ -536,6 +604,7 @@ def _evaluate_factor(
         "monthly_ic": monthly_ic,
         "ic_summary": ic_summary,
         "backtest": backtest,
+        "long_short_backtest": long_short_backtest,
         "dsr": deflated_sharpe_ratio(
             measured_returns,
             n_trials=config.n_trials,
@@ -553,6 +622,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             **payload["ic_summary"],
             "dsr": payload["dsr"],
             **payload["backtest"].metrics,
+            "long_short_metrics": payload["long_short_backtest"].metrics,
         }
         for factor_id, payload in result["factors"].items()
     }
@@ -563,11 +633,13 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         experiment_type="synthetic_alphas_diagnostic",
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock synthetic cohort wired through "
-            "the 52 implemented classical price-volume alphas, an "
-            "equal-weighted z-score composite, and an in-sample IC-weighted "
-            "z-score composite with monthly Rank IC, ICIR, Newey-West t-stat, "
-            "DSR with Euler-Mascheroni mix, and equal-weight monthly "
-            "rebalance backtests at 5 bps slippage."
+            "the 52 implemented classical price-volume alphas, equal-weighted, "
+            "in-sample IC-weighted, ICIR-weighted, and correlation-discounted "
+            "composites, cross-sectional volatility neutralization, and "
+            "cross-factor interaction models (product interaction and conditional rank), "
+            "with monthly Rank IC, ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix, "
+            "equal-weight monthly rebalance backtests at 5 bps slippage, and "
+            "dollar-neutral long-short decile spread backtests."
         ),
         config={
             "manifest_path": _project_relative_path(config.manifest_path),
@@ -581,6 +653,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "forward_holding_periods": config.forward_holding_periods,
             "warmup_periods": config.warmup_periods,
             "ic_weights": result["ic_weights"],
+            "quantiles": config.quantiles,
+            "ridge_alpha": config.ridge_alpha,
         },
         assumptions={
             "data_scope": "synthetic only",
@@ -631,6 +705,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
             "brokerage_integration": False,
+            "long_short_dollar_neutral": True,
+            "long_short_quantiles": config.quantiles,
         },
         outputs={
             "markdown_report": _project_relative_path(result["report_path"]),
@@ -667,10 +743,12 @@ def write_report(*, result: dict[str, Any]) -> None:
     pbo_summary = result["pbo_summary"]
 
     rows = []
+    ls_rows = []
     for factor_id in FACTOR_IDS:
         payload = result["factors"][factor_id]
         ic_summary = payload["ic_summary"]
         metrics = payload["backtest"].metrics
+        ls_metrics = payload["long_short_backtest"].metrics
         rows.append(
             "| "
             + " | ".join(
@@ -685,6 +763,22 @@ def write_report(*, result: dict[str, Any]) -> None:
                     _format_percent(metrics["max_drawdown"]),
                     _format_number(metrics.get("average_turnover", np.nan)),
                     _format_number(metrics.get("total_slippage_cost_impact", np.nan)),
+                ]
+            )
+            + " |"
+        )
+        ls_rows.append(
+            "| "
+            + " | ".join(
+                [
+                    factor_id,
+                    _format_number(ls_metrics["sharpe"]),
+                    _format_percent(ls_metrics["annualized_return"]),
+                    _format_percent(ls_metrics["max_drawdown"]),
+                    _format_percent(ls_metrics["win_rate"]),
+                    _format_number(ls_metrics["decile_spread_mean"]),
+                    _format_number(ls_metrics["monotonicity_spearman"]),
+                    _format_number(ls_metrics["total_turnover"]),
                 ]
             )
             + " |"
@@ -724,16 +818,22 @@ profitability.
    cross-sectional z-scores of those {IMPLEMENTED_ALPHA_COUNT} alphas.
 4. Build `IC_WEIGHTED_COMPOSITE` with the same z-scores and in-sample mean
    monthly Rank IC as static supplied weights.
-5. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
+5. Build `ICIR_WEIGHTED_COMPOSITE` weighted by historical monthly Information Ratio.
+6. Build `CORRELATION_DISCOUNTED_COMPOSITE` solving for collinearity-discounted weights.
+7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
+8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against rolling return volatility.
+9. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
    start at the lag-1 execution close.
-6. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
-   the mean IC.
-7. Run the existing long-only equal-weight monthly backtester with
-   `{config.slippage_bps:.2f}` bps slippage and `{config.top_n}` names.
-8. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
-   `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
-9. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
-   alphas using Combinatorially Symmetric Cross-Validation (CSCV).
+10. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
+    the mean IC.
+11. Run the existing long-only equal-weight monthly backtester with
+    `{config.slippage_bps:.2f}` bps slippage and `{config.top_n}` names.
+12. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
+    and `{config.slippage_bps:.2f}` bps slippage.
+13. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
+    `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
+14. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
+    alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
 
@@ -754,6 +854,7 @@ profitability.
 - PBO splits: `{config.pbo_n_splits}`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
+- Long-short quantiles: `{config.quantiles}`
 
 ## In-sample IC weights
 
@@ -767,13 +868,23 @@ combination rule.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(rows)}
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
-with the Euler-Mascheroni mix. All {IMPLEMENTED_ALPHA_COUNT} alphas and both composites are
+with the Euler-Mascheroni mix. All {IMPLEMENTED_ALPHA_COUNT} alphas and all composites are
 reported; weak or negative diagnostics are retained.
+
+## Long-short decile spread diagnostics
+
+| factor | LS Sharpe | LS Ann Return | LS Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+{chr(10).join(ls_rows)}
+
+Long-short decile spread backtests construct a dollar-neutral portfolio long the top decile
+and short the bottom decile at monthly rebalance frequency with {config.slippage_bps:.2f} bps slippage.
+Monotonicity reports the Spearman rank correlation of mean returns across deciles D1..D10.
 
 ## Overfitting diagnostics (CSCV / PBO)
 
