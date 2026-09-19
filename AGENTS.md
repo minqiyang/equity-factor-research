@@ -27,6 +27,14 @@ completed design or implementation.
   same-PR protected lifecycle through eligible normal merge. A higher-level
   STOP or narrowed request remains a stop. Asking the owner for a second 建PR
   or merge prompt after that completion is a P1 process failure.
+- **Owner-Authorized Autonomous Coordinator Lifecycle**: Under explicit owner
+  authorization for unattended progression, the Coordinator is authorized to
+  autonomously execute the full development and delivery lifecycle: push
+  passing candidate branches, create/publish PRs, manage required reviews and
+  remediations, perform eligible normal merge once all deterministic tests and
+  independent reviews pass with zero open MATERIAL findings (MATERIAL: 0), and
+  advance to the next authorized research milestone without pausing for manual
+  interactive confirmation.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
