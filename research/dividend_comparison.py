@@ -110,9 +110,21 @@ def json_evidence(value):
     """Retain exact scalars and typed invalid/nonfinite observations in JSON."""
     if isinstance(value, dict):
         if any(not isinstance(key, str) for key in value):
-            raise TypeError("evidence keys must be strings")
-        return {key: json_evidence(nested) for key, nested in value.items()}
-    if isinstance(value, (list, tuple)):
+            return {
+                "json_evidence": "dict_items",
+                "items": [
+                    {"key": json_evidence(key), "value": json_evidence(nested)}
+                    for key, nested in value.items()
+                ],
+            }
+        encoded = {key: json_evidence(nested) for key, nested in value.items()}
+        if "json_evidence" in encoded:
+            return {"json_evidence": "dict", "items": encoded}
+        encoded["json_evidence"] = "dict"
+        return encoded
+    if isinstance(value, tuple):
+        return {"json_evidence": "tuple", "items": [json_evidence(nested) for nested in value]}
+    if isinstance(value, list):
         return [json_evidence(nested) for nested in value]
     if value is None or isinstance(value, (str, bool)):
         return value
@@ -170,6 +182,35 @@ def _validate_request(request):
             raise TypeError("window evidence must be a dict or None")
 
 
+def _overlapping_identity_conflicts(windows):
+    """Return item IDs whose overlapping scopes assign contradictory identities."""
+    affected = set()
+    ordered = tuple(windows)
+    for index, left in enumerate(ordered):
+        left_labels = {left.prior, left.ex}
+        left_identity = (left.security_id, left.listing_id)
+        for right in ordered[index + 1:]:
+            if not left_labels.intersection((right.prior, right.ex)):
+                continue
+            right_identity = (right.security_id, right.listing_id)
+            same_asset = left.asset == right.asset
+            same_identity = left_identity == right_identity
+            if same_asset != same_identity:
+                affected.add(left.item_id)
+                affected.add(right.item_id)
+    return affected
+
+
+def _contains_non_string_keys(value):
+    if isinstance(value, dict):
+        return any(not isinstance(key, str) for key in value) or any(
+            _contains_non_string_keys(nested) for nested in value.values()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(_contains_non_string_keys(nested) for nested in value)
+    return False
+
+
 def _availability(record, cutoff, reasons, *, event=False):
     availability = _mapping(_mapping(record).get("availability"))
     times = {key: _timestamp(availability.get(key)) for key in AVAILABILITY_FIELDS}
@@ -204,7 +245,7 @@ def _classify(reference, supplied, diagnostic):
     }
 
 
-def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
+def _compare_window(window: DividendWindow, prices: pd.DataFrame, conflicting_items=frozenset()) -> dict:
     """Diagnose one structurally validated requested window without mutating inputs."""
     evidence = window.evidence
     record = {
@@ -222,7 +263,8 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
     cutoff = _timestamp(window.cutoff)
     prior, ex = _label(window.prior), _label(window.ex)
     if (not _text(evidence.get("vintage_id")) or not _text(evidence.get("provenance"))
-            or evidence.get("sha256") != evidence_sha256(evidence)):
+            or evidence.get("sha256") != evidence_sha256(evidence)
+            or _contains_non_string_keys(evidence)):
         reasons.add("evidence_identity_unproven")
     record["evidence_sha256"] = evidence_sha256(evidence)
     record["vintage_id"] = json_evidence(evidence.get("vintage_id"))
@@ -290,6 +332,8 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
             or (state == "OPEN_IN_VINTAGE" and identity.get("effective_to") is not None)
             or (state == "FINITE" and (end is None or close_e is None or close_e >= end))):
         reasons.add("identity_unresolved")
+    if window.item_id in conflicting_items:
+        reasons.add("identity_unresolved")
     coverage = _mapping(evidence.get("coverage"))
     vintage_cutoff = _timestamp(evidence.get("as_of_cutoff"))
     if vintage_cutoff is None or vintage_cutoff < cutoff:
@@ -306,9 +350,18 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
 
     numbers = {}
     observations = {}
+    bindable = (
+        isinstance(prices.index, pd.DatetimeIndex)
+        and prices.index.tz is None
+        and prices.index.is_unique
+        and prior in prices.index
+        and ex in prices.index
+        and prices.columns.is_unique
+        and window.asset in prices.columns
+    )
     for role in ANCHORS:
         anchor = _mapping(evidence.get(role))
-        observations[role] = anchor.get("status", "MISSING")
+        observations[role] = json_evidence(anchor.get("status", "MISSING"))
         missing_value = "value" not in anchor or (
             anchor.get("value") is None and _text(anchor.get("status"))
             and anchor.get("status") != "OBSERVED"
@@ -340,7 +393,7 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
         elif value is not None and value <= 0:
             reasons.add("numeric_domain_invalid")
         numbers[role] = value
-        if role.startswith("adjusted") and value is not None and "identity_unresolved" not in reasons and prior in prices.index and ex in prices.index and prices.index.is_unique:
+        if role.startswith("adjusted") and value is not None and bindable:
             supplied = _rational(prices.at[_label(expected_label), window.asset])
             if supplied != value:
                 reasons.add("evidence_identity_unproven")
@@ -431,7 +484,7 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
             reasons.add("numeric_domain_invalid")
     if selected is not None:
         record["selected_revision"] = {key: selected.get(key) for key in ("event_id", "revision_id")}
-        observations["dividend"] = selected.get("status", "MISSING")
+        observations["dividend"] = json_evidence(selected.get("status", "MISSING"))
         numbers["dividend"] = _rational(selected.get("amount"))
     record["observations"] = observations
     if reasons:
@@ -452,9 +505,10 @@ def _compare_window(window: DividendWindow, prices: pd.DataFrame) -> dict:
 def retain_comparisons(request, prices, append_item: Callable[[dict], object]) -> list[dict]:
     """Validate scope, then retain each item before evaluating its successor."""
     _validate_request(request)
+    conflicting_items = _overlapping_identity_conflicts(request.windows)
     items = []
     for window in request.windows:
-        item = _compare_window(window, prices)
+        item = _compare_window(window, prices, conflicting_items)
         append_item(item)
         items.append(item)
     return items
@@ -493,7 +547,8 @@ def write_diagnostic_report(report_path, writer, items, attempt_id):
         for item in items:
             content += f"| {item['item_id']} | {item['comparison_status']} | {item['compared']}/1 | {', '.join(item['reasons'])} |\n"
         content += "\nExact evidence, scope, cutoff, revisions and typed observations:\n\n```json\n"
-        content += json.dumps(items, sort_keys=True, indent=2, allow_nan=False) + "\n```\n"
+        payload = [{**item, "attempt_id": attempt_id} for item in items]
+        content += json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n```\n"
         temporary.write_text(base_content + content, encoding="utf-8")
         temporary.replace(report_path)
     except (Exception, KeyboardInterrupt, SystemExit):

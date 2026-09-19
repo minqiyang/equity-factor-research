@@ -23,6 +23,15 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Overlapping synthetic dividend comparison scopes that assign the same
+  supplied asset to different permanent identities, or the same identity to
+  different assets, now diagnose `identity_unresolved` and keep economic
+  acceptance false. Evidence canonicalization distinguishes caller
+  dictionaries from encoded scalars, so classification-changing mutations
+  change the digest and retained snapshot. Invalid observation states and
+  non-string evidence keys remain typed on completed diagnostic items. The
+  opt-in report JSON copies the runner `attempt_id` onto each item. See
+  `reports/dividend_comparison_attempt.md`.
 - Demo v0 All-Attempt Case Logging now writes a start record before
   computation, keeps incomplete and interrupted attempts visible, records
   catchable `KeyboardInterrupt` and `SystemExit` outcomes and re-raises

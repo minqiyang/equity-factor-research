@@ -56,6 +56,31 @@ def seal(window):
     return window
 
 
+def retarget(window, prior, ex, cutoff=None):
+    cutoff = cutoff or ex + "T21:00:01Z"
+    new = replace(deepcopy(window), prior=prior, ex=ex, cutoff=cutoff)
+    evidence = new.evidence
+    evidence["as_of_cutoff"] = cutoff
+    evidence["source_times"]["rows"] = [
+        dict(label=prior, close=prior + "T21:00:00Z"),
+        dict(label=ex, close=ex + "T21:00:00Z"),
+    ]
+    for role in comparison.ANCHORS:
+        label = prior if role.endswith("prior") else ex
+        evidence[role]["label"] = label
+        evidence[role]["availability"] = availability(label + "T21:00:01Z")
+    evidence["events"][0]["ex_date"] = ex
+    for role in comparison.ROLES:
+        evidence["coverage"][role].update({"from": EARLY, "through": cutoff})
+    return new
+
+
+def report_items(text):
+    start = text.index("```json\n") + 8
+    end = text.index("\n```", start)
+    return json.loads(text[start:end])
+
+
 def evaluate(window, prices):
     retained = []
     result = comparison.retain_comparisons(comparison.DividendComparisonRequest((seal(window),)), prices, retained.append)
@@ -542,10 +567,10 @@ def test_fault_boundaries(consumer, monkeypatch, boundary, error_class):
     elif boundary == "compare_second":
         original = comparison._compare_window
 
-        def compare(window, prices, *source):
+        def compare(window, prices, *args, **kwargs):
             if window.item_id == "T001":
                 raise fault
-            return original(window, prices, *source)
+            return original(window, prices, *args, **kwargs)
 
         monkeypatch.setattr(comparison, "_compare_window", compare)
     elif boundary == "prepare":
@@ -917,3 +942,215 @@ def test_coverage_declaration_variants_D34(kind):
     else:
         row["through"] = E+"T21:00:00Z"
     assert evaluate(window, prices)["reasons"] == ["coverage_unproven"]
+
+
+def test_overlapping_conflicting_identities_block_acceptance():
+    first, prices = fixture()
+    second, _ = fixture(security="SYNTH:OTHER", listing="SYNTH:OTHER_LIST", event_id="SYNTH:OTHER_EVENT")
+    second = replace(second, item_id="other")
+    items = comparison.retain_comparisons(request_for(first, second), prices, lambda item: None)
+    assert [item["comparison_status"] for item in items] == ["INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE"]
+    assert all("identity_unresolved" in item["reasons"] for item in items)
+    assert all(item["economic_acceptance"] is False for item in items)
+    assert all(item["compared"] == 0 for item in items)
+
+
+def test_adjacent_windows_sharing_a_close_cannot_split_identity():
+    first, _ = fixture()
+    second, _ = fixture(security="SYNTH:OTHER", listing="SYNTH:OTHER_LIST", event_id="SYNTH:OTHER_EVENT")
+    second = replace(retarget(second, E, "2026-04-03"), item_id="other")
+    panel = pd.DataFrame({first.asset: [100.0, 100.0, 100.0]}, index=pd.DatetimeIndex([P, E, "2026-04-03"]))
+    items = comparison.retain_comparisons(request_for(first, second), panel, lambda item: None)
+    assert all("identity_unresolved" in item["reasons"] for item in items)
+    assert all(item["economic_acceptance"] is False for item in items)
+
+
+def test_overlapping_one_to_one_identity_across_assets():
+    first, prices = fixture()
+    second, panel = fixture("T001", "SYNTH:ORD_A", "SYNTH:LIST_A", "SYNTH:DIV_A_02")
+    with pytest.raises(ValueError, match="duplicate requested item or security/window scope"):
+        comparison.retain_comparisons(
+            request_for(first, second), pd.concat([prices, panel], axis=1), lambda item: None,
+        )
+    second = replace(retarget(second, E, "2026-04-03"), item_id="other")
+    combined = pd.concat([
+        pd.DataFrame({"T000": [100.0, 100.0, 100.0]}, index=pd.DatetimeIndex([P, E, "2026-04-03"])),
+        pd.DataFrame({"T001": [100.0, 100.0, 100.0]}, index=pd.DatetimeIndex([P, E, "2026-04-03"])),
+    ], axis=1)
+    items = comparison.retain_comparisons(request_for(first, second), combined, lambda item: None)
+    assert all("identity_unresolved" in item["reasons"] for item in items)
+    assert all(item["economic_acceptance"] is False for item in items)
+
+
+def test_nonoverlapping_episodes_keep_distinct_identities():
+    first, _ = fixture()
+    second, _ = fixture(security="SYNTH:OTHER", listing="SYNTH:OTHER_LIST", event_id="SYNTH:OTHER_EVENT")
+    second = replace(retarget(second, "2026-04-03", "2026-04-06"), item_id="other")
+    panel = pd.DataFrame(
+        {first.asset: [100.0, 100.0, 100.0, 100.0]},
+        index=pd.DatetimeIndex([P, E, "2026-04-03", "2026-04-06"]),
+    )
+    items = comparison.retain_comparisons(request_for(first, second), panel, lambda item: None)
+    assert [item["comparison_status"] for item in items] == ["MATCHED", "MATCHED"]
+    assert all(item["economic_acceptance"] for item in items)
+
+
+def test_overlapping_identity_conflict_blocks_acceptance_both_runners(consumer):
+    _, run, _, _, kwargs = consumer
+    first, _ = fixture()
+    second, _ = fixture(security="SYNTH:OTHER", listing="SYNTH:OTHER_LIST", event_id="SYNTH:OTHER_EVENT")
+    second = replace(second, item_id="other")
+    run(**kwargs, comparison_request=request_for(first, second))
+    rows = records(consumer)
+    assert rows[0]["status"] == "started" and rows[-1]["status"] == "success"
+    items = [row for row in rows if row.get("record_type")]
+    assert [item["comparison_status"] for item in items] == ["INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE"]
+    assert all("identity_unresolved" in item["reasons"] for item in items)
+    assert all(item["economic_acceptance"] is False for item in items)
+    assert "All requested windows matched: false" in kwargs["report_path"].read_text()
+
+
+def test_nonoverlapping_episodes_both_runners(consumer):
+    _, run, _, _, kwargs = consumer
+    first, _ = fixture()
+    second, _ = fixture(security="SYNTH:OTHER", listing="SYNTH:OTHER_LIST", event_id="SYNTH:OTHER_EVENT")
+    second = replace(retarget(second, "2026-04-03", "2026-04-06"), item_id="other")
+    run(**kwargs, comparison_request=request_for(first, second))
+    items = [row for row in records(consumer) if row.get("record_type")]
+    assert [item["comparison_status"] for item in items] == ["MATCHED", "MATCHED"]
+    assert all(item["economic_acceptance"] for item in items)
+    assert "All requested windows matched: true" in kwargs["report_path"].read_text()
+
+
+def test_json_evidence_distinguishes_caller_containers_from_encoded_scalars():
+    assert comparison.json_evidence(98) != comparison.json_evidence({"type": "int", "value": "98"})
+    assert comparison.json_evidence(np.int64(98)) != comparison.json_evidence({"type": "int64", "value": "98"})
+    assert comparison.json_evidence(Fraction(1, 2)) != comparison.json_evidence(
+        {"numerator": "1", "denominator": "2"}
+    )
+    assert comparison.json_evidence(float("nan")) != comparison.json_evidence(
+        {"type": "nonfinite", "value": "nan"}
+    )
+    assert comparison.json_evidence(float("inf")) != comparison.json_evidence(
+        {"type": "nonfinite", "value": "+inf"}
+    )
+    assert comparison.json_evidence([1]) != comparison.json_evidence((1,))
+    window, prices = fixture()
+    window.evidence["raw_ex"]["value"] = {"type": "int", "value": "98"}
+    before = evaluate(window, prices)
+    window.evidence["raw_ex"]["value"] = 98
+    after = evaluate(window, prices)
+    assert before["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert "numeric_invalid" in before["reasons"]
+    assert after["comparison_status"] == "MATCHED"
+    assert before["evidence"] != after["evidence"]
+    assert before["evidence_sha256"] != after["evidence_sha256"]
+    json.dumps(before, allow_nan=False)
+    json.dumps(after, allow_nan=False)
+
+
+@pytest.mark.parametrize("payload, wrapper, statuses_differ", [
+    (98, {"type": "int", "value": "98"}, True),
+    (Fraction(98), {"numerator": "98", "denominator": "1"}, True),
+    (float("nan"), {"type": "nonfinite", "value": "nan"}, False),
+])
+def test_wrapper_mutations_change_digest_and_retained_representation(payload, wrapper, statuses_differ):
+    window, prices = fixture()
+    window.evidence["raw_ex"]["value"] = wrapper
+    wrapped = evaluate(window, prices)
+    window.evidence["raw_ex"]["value"] = payload
+    scalar = evaluate(window, prices)
+    assert wrapped["evidence_sha256"] != scalar["evidence_sha256"]
+    assert wrapped["evidence"] != scalar["evidence"]
+    if statuses_differ:
+        assert wrapped["comparison_status"] != scalar["comparison_status"]
+
+
+def test_tuple_event_container_changes_digest_and_eligibility():
+    listed, prices = fixture()
+    listed_item = evaluate(listed, prices)
+    window, _ = fixture()
+    window.evidence["events"] = tuple(window.evidence["events"])
+    tupled = evaluate(window, prices)
+    assert listed_item["comparison_status"] == "MATCHED"
+    assert tupled["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert "event_evidence_absent" in tupled["reasons"]
+    assert listed_item["evidence_sha256"] != tupled["evidence_sha256"]
+    assert listed_item["evidence"] != tupled["evidence"]
+
+
+def test_invalid_observation_states_remain_typed_and_serializable():
+    window, prices = fixture()
+    window.evidence["raw_ex"]["status"] = Decimal("2")
+    decimal_item = evaluate(window, prices)
+    assert decimal_item["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert decimal_item["reasons"] == ["observation_unusable"]
+    assert decimal_item["observations"]["raw_ex"] == {"type": "Decimal", "value": "2"}
+    json.dumps(decimal_item, allow_nan=False)
+    window, prices = fixture()
+    window.evidence["raw_ex"]["status"] = float("nan")
+    nan_item = evaluate(window, prices)
+    assert nan_item["reasons"] == ["observation_unusable"]
+    assert nan_item["observations"]["raw_ex"] == {"type": "nonfinite", "value": "nan"}
+    json.dumps(nan_item, allow_nan=False)
+
+
+@pytest.mark.parametrize("status", [Decimal("2"), float("nan")])
+def test_invalid_observation_states_complete_through_both_runners(consumer, status):
+    _, run, _, _, kwargs = consumer
+    window, _ = fixture()
+    window.evidence["raw_ex"]["status"] = status
+    run(**kwargs, comparison_request=request_for(window))
+    rows = records(consumer)
+    assert rows[0]["status"] == "started" and rows[-1]["status"] == "success"
+    item = rows[1]
+    assert item["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert "observation_unusable" in item["reasons"]
+    json.dumps(item, allow_nan=False)
+    payload = report_items(kwargs["report_path"].read_text())
+    json.dumps(payload, allow_nan=False)
+
+
+def test_panel_binding_reason_survives_identity_unresolved():
+    window, prices = fixture()
+    window.evidence["identity"]["mappings"].append(dict(window.evidence["identity"]["mappings"][0], asset="T001"))
+    prices.loc[pd.Timestamp(E), "T000"] = 101
+    result = evaluate(window, prices)
+    assert result["reasons"] == ["evidence_identity_unproven", "identity_unresolved"]
+
+
+def test_tz_aware_panel_is_typed_window_invalid():
+    window, prices = fixture()
+    prices.index = prices.index.tz_localize("UTC")
+    result = evaluate(window, prices)
+    assert "window_invalid" in result["reasons"]
+    assert result["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    json.dumps(result, allow_nan=False)
+
+
+def test_non_string_evidence_keys_are_typed_unproven():
+    window, prices = fixture()
+    seal(window)
+    window.evidence[1] = "x"
+    item = comparison.retain_comparisons(
+        comparison.DividendComparisonRequest((window,)), prices, lambda item: None,
+    )[0]
+    assert item["comparison_status"] == "INSUFFICIENT_EVIDENCE"
+    assert "evidence_identity_unproven" in item["reasons"]
+    json.dumps(item, allow_nan=False)
+    resealed, prices = fixture()
+    resealed.evidence[1] = "x"
+    resealed_item = evaluate(resealed, prices)
+    assert "evidence_identity_unproven" in resealed_item["reasons"]
+    assert resealed_item["economic_acceptance"] is False
+
+
+def test_report_json_items_include_runner_attempt_id(consumer):
+    _, run, _, _, kwargs = consumer
+    window, _ = fixture()
+    run(**kwargs, comparison_request=request_for(window))
+    rows = records(consumer)
+    item = [row for row in rows if row.get("record_type")][0]
+    payload = report_items(kwargs["report_path"].read_text())
+    assert payload[0]["attempt_id"] == item["attempt_id"] == rows[0]["attempt_id"]
+    assert payload[0]["record_type"] == "dividend_comparison_item"

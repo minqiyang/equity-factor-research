@@ -1,5 +1,35 @@
 # Engineering Log
 
+## 2026-09-18 - PR222 identity consistency and evidence-hash repair
+
+- Reproduced AUDIT-222-001 and AUDIT-222-002 on failed candidate
+  `4d4d4f2c8b28dd6883a6155f8c250371ee42a753` before editing. Two windows
+  assigned the same asset and identical prior/ex labels to different
+  `SYNTH:` identities, both `MATCHED`, aggregate acceptance true, including
+  through Demo v0 and M3-01. Integer 98 and the caller dictionary
+  `{"type":"int","value":"98"}` shared snapshot and hash
+  `159b4f7644efc32d3152abae5371d24b4daa1871ed69118ddc26853d8b2398d8`
+  while classification changed from `INSUFFICIENT_EVIDENCE` to `MATCHED`.
+- Overlapping requested scopes now contribute `identity_unresolved` for
+  contradictory asset/identity assignments before each item is appended.
+  Distinct assets (D23) and nonoverlapping sequential episodes keep their
+  prior diagnoses. `json_evidence` marks caller dictionaries and tuples so
+  encoded integers, rationals, nonfinite scalars, and list/tuple containers
+  remain distinct; a classification-changing mutation changes digest and
+  snapshot.
+- Existing-contract advisory holes that had a local repair were closed:
+  observation states serialize through `json_evidence` (AUDIT-222-003);
+  report JSON copies `attempt_id` (GROK-222-ADV-001); adjusted-anchor panel
+  binding runs independently of `identity_unresolved` (GROK-222-ADV-002);
+  non-string evidence keys diagnose `evidence_identity_unproven`
+  (GROK-222-ADV-004). GROK-222-ADV-003 did not raise on a tz-aware panel;
+  the live probe already returned `window_invalid`, and binding now uses
+  the same tz-naive unique-index predicates.
+- Economics, runner diagnostic-completion policy, default `NOT_REQUESTED`
+  bytes, frozen configs/official reports/logs/split golden, and
+  accounting/signal/price/holding paths stay unchanged. Isolated ablation
+  was not required for this bounded repair.
+
 ## 2026-09-18 - Accepted Step 3 synthetic dividend comparison
 
 - Implemented the PR221 accepted synthetic-only convention in

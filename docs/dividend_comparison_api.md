@@ -31,12 +31,18 @@ A request contains `convention`, exactly
 | `evidence` | A dictionary or `None`. `None` and `{}` produce D25 and D26 for the explicit scope. |
 
 Duplicate security/listing/prior/ex scopes are refused even when item IDs
-or cutoffs differ. A later vintage/cutoff comparison uses a separate attempt,
-which retains the earlier result. Malformed containers, empty requests,
-unknown conventions, invalid scope/cutoff encodings, and duplicate scopes
-raise `TypeError` or `ValueError`. Missing identities inside a well-formed
-scope, incomplete fields, unknown bases, invalid numerics, and unknown
-availability produce the matrix's insufficient-evidence diagnoses.
+or cutoffs differ. Overlapping requested scopes that assign the same supplied
+asset to different permanent security/listing identities, or the same
+permanent identity to different assets, receive `identity_unresolved` and
+`economic_acceptance` false for each affected item. Distinct assets and
+nonoverlapping observation episodes keep their per-item diagnoses. A later
+vintage/cutoff comparison uses a separate attempt, which retains the earlier
+result. Malformed containers, empty requests, unknown conventions, invalid
+scope/cutoff encodings, and duplicate scopes raise `TypeError` or
+`ValueError`. Missing identities inside a well-formed scope, incomplete
+fields, unknown bases, invalid numerics, unknown availability, and
+non-string evidence keys produce the matrix's insufficient-evidence
+diagnoses.
 
 `retain_comparisons(request, prices, append_item)` is the bounded comparison
 entry point. It validates request structure, evaluates items in request order,
@@ -69,20 +75,27 @@ remain visible and prevent acceptance.
 
 The content hash covers the entire dictionary except the `sha256` field.
 Canonicalization uses `json_evidence`, sorted keys, compact separators, UTF-8,
-and strict JSON. Integer payloads retain type and decimal-string value;
-finite real payloads retain their exact numerator/denominator; Decimal,
-complex, nonfinite and unsupported values retain typed representations.
-These encodings preserve invalid evidence for diagnosis. A hash binds the
-caller-declared synthetic fixture contents; its authority is synthetic
-provenance rather than independent vendor certification. Field references,
-actual supplied-panel anchor values, and the root digest are checked together.
+and strict JSON. Caller dictionaries carry a `json_evidence` container
+discriminator so they remain distinct from encoded scalars. Integer payloads
+retain type and decimal-string value; finite real payloads retain their exact
+numerator/denominator; Decimal, complex, nonfinite and unsupported values
+retain typed representations. Tuples retain a distinct container encoding
+from lists. Dictionaries with non-string keys retain a typed item list.
+These encodings preserve invalid evidence for diagnosis. A classification-
+changing mutation of retained contents changes the digest and the snapshot.
+A hash binds the caller-declared synthetic fixture contents; its authority
+is synthetic provenance rather than independent vendor certification. Field
+references, actual supplied-panel anchor values, and the root digest are
+checked together.
 
 An anchor contains `value`, `status`, `label`, `field_id`, `provenance`,
 `security_id`, `listing_id`, and `availability`. Its label, field, and identity
 must match its role. Supplied adjusted anchors must equal the actual supplied
 panel cells exactly. Raw anchor literals have independent provenance. Both
 raw anchors and supplied levels require `OBSERVED` status. Other states and
-missing fields remain typed in the item record.
+missing fields remain typed in the item record. Observation states serialize
+through `json_evidence`, so invalid states stay JSON-safe on the completed
+item.
 
 An event row contains `event_id`, `revision_id`, explicit `supersedes` (null
 for the root revision), `event_type="ordinary_cash_dividend"`, `security_id`,
@@ -148,11 +161,14 @@ Each item record uses discriminator `record_type="dividend_comparison_item"`
 and includes the runner's `attempt_id`, `item_id`, full requested `scope`,
 convention, vintage/hash, evidence snapshot, selected/excluded revisions,
 observation states, ordered reasons, `comparison_status`, `requested=1`,
-`compared`, and `economic_acceptance`. Comparable records also retain exact
+`compared`, and `economic_acceptance`. The opt-in report JSON copies that
+`attempt_id` onto each serialized item. Comparable records also retain exact
 returns/delta and typed binary64 diagnostics. Multiple prerequisites retain
 all applicable reasons in the design's order and suppress numeric match
-classification. `economic_acceptance` applies only to the named synthetic
-window. Aggregate all-window acceptance requires every requested item to be
+classification. Adjusted-anchor panel binding runs whenever the supplied
+index and column are bindable; `identity_unresolved` remains an independent
+reason. `economic_acceptance` applies only to the named synthetic window.
+Aggregate all-window acceptance requires every requested item to be
 `MATCHED`; partial coverage and mismatches remain visible.
 
 ## Runner sequence and failures

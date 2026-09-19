@@ -8,6 +8,39 @@ packaging remains blocked by the available build environment. Fresh CRITICAL
 implementation reviews remain with the coordinator. Milestone 3 remains in
 progress; Step 4 retains its private-data owner gate.
 
+## PR222 identity and evidence-hash repair
+
+Repair of failed candidate `4d4d4f2c8b28dd6883a6155f8c250371ee42a753` against
+base `5d673f26eea0174236c601fa822916506894ef20`. AUDIT-222-001 and
+AUDIT-222-002 were reproduced on that exact head before editing. Overlapping
+requested scopes that assign the same supplied asset to different permanent
+identities, or the same identity to different assets, now receive
+`identity_unresolved` and `economic_acceptance` false before each item is
+appended. Distinct assets (D23) and nonoverlapping sequential episodes keep
+their prior diagnoses. `json_evidence` marks caller dictionaries and tuples
+so encoded integers, rationals, nonfinite scalars, and list/tuple containers
+remain distinct. Classification-changing mutations change digest and snapshot.
+
+AUDIT-222-003, GROK-222-ADV-001, GROK-222-ADV-002, and GROK-222-ADV-004 were
+existing-contract holes with local repairs: typed observation serialization,
+report JSON `attempt_id`, independent panel binding, and non-string evidence
+keys as `evidence_identity_unproven`. GROK-222-ADV-003 did not raise on a
+tz-aware panel in live reproduction; binding now uses the same tz-naive
+unique-index predicates as `window_invalid`. Accepted gross/zero-withholding/
+ex-close economics, diagnostic-completion policy, default `NOT_REQUESTED`
+bytes, frozen configs/official reports/logs/split golden, and accounting
+paths are unchanged. Isolated ablation was not required.
+
+Repair QA used interpreter
+`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
+with `PYTHONPATH=src`. Focused suite: 546 passed. Full suite with
+outside-repository `--basetemp`: 3360 passed, 2 skipped, 1 warning. The
+card's in-repository `--basetemp=build/dividend_comparison/runtime_fix_full`
+reproduced the existing 101 ledger/EODHD path-guard failures. Ruff and
+compileall passed. All 34 preserved official artifacts remained
+hash-identical. Coordinator attempt report:
+`coord/pr222_fix_attempt.md` in the sibling docs tree.
+
 ## Scope and source identity
 
 - Work date: 2026-09-18, America/Los_Angeles.
