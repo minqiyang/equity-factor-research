@@ -8,6 +8,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 import features.diagnostics as diagnostics
 from features.diagnostics import (
+    EULER_MASCHERONI,
     deflated_sharpe_ratio,
     factor_correlation_matrix,
     factor_information_coefficient,
@@ -543,6 +544,33 @@ def test_newey_west_mean_tstat_matches_hand_calculated_white_standard_error() ->
     assert observed == pytest.approx(mean / standard_error)
 
 
+def test_newey_west_mean_tstat_matches_hand_calculated_one_lag_bartlett_kernel() -> None:
+    values = pd.Series([1.0, 2.0, 3.0, 4.0])
+    residual = values.to_numpy() - float(values.mean())
+    gamma0 = float(np.dot(residual, residual) / 4.0)
+    gamma1 = float(np.dot(residual[1:], residual[:-1]) / 4.0)
+    hac = gamma0 + 2.0 * (1.0 - 1.0 / 2.0) * gamma1
+    expected = float(values.mean()) / np.sqrt(hac / 4.0)
+
+    observed = newey_west_mean_tstat(values, lags=1)
+
+    assert observed == pytest.approx(expected)
+    assert observed == pytest.approx(4.0)
+
+
+def test_newey_west_mean_tstat_automatic_lag_follows_newey_west_1994_rule() -> None:
+    values = pd.Series([1.0, 2.0, 3.0, 4.0])
+    automatic_lags = int(np.floor(4.0 * (len(values) / 100.0) ** (2.0 / 9.0)))
+
+    assert automatic_lags == 1
+    assert newey_west_mean_tstat(values) == pytest.approx(
+        newey_west_mean_tstat(values, lags=1)
+    )
+    assert newey_west_mean_tstat(values) != pytest.approx(
+        newey_west_mean_tstat(values, lags=0)
+    )
+
+
 def test_information_coefficient_summary_uses_sample_icir() -> None:
     ic = pd.Series([0.2, 0.0, -0.1, 0.3])
 
@@ -559,12 +587,15 @@ def test_information_coefficient_summary_uses_sample_icir() -> None:
     )
 
 
-def test_deflated_sharpe_ratio_is_finite_probability_for_noisy_positive_returns() -> None:
+def test_deflated_sharpe_ratio_matches_euler_mascheroni_paper_mix() -> None:
     returns = pd.Series([0.01, 0.02, -0.005, 0.015, 0.008, 0.012, -0.002, 0.01])
 
     result = deflated_sharpe_ratio(returns, n_trials=3)
 
+    assert result == pytest.approx(0.8492, abs=5e-5)
     assert 0.0 <= result <= 1.0
+    assert EULER_MASCHERONI == pytest.approx(0.5772156649015329)
+    assert result != pytest.approx(0.9703, abs=1e-3)
 
 
 def test_deflated_sharpe_ratio_rejects_single_trial_and_zero_vol() -> None:

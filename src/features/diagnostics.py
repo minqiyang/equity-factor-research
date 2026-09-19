@@ -17,6 +17,7 @@ from scipy.stats import kurtosis, norm, skew
 from features.operators import validate_panel_data
 
 _SUPPORTED_CORRELATION_METHODS = {"pearson", "spearman"}
+EULER_MASCHERONI = float(np.euler_gamma)
 _QUANTILE_SPREAD_COLUMNS = [
     "bottom_quantile_mean_return",
     "top_quantile_mean_return",
@@ -284,10 +285,12 @@ def deflated_sharpe_ratio(
     """Bailey and Lopez de Prado Deflated Sharpe Ratio of a return series.
 
     The statistic is computed on the non-annualized Sharpe of the supplied
-    series. ``n_trials`` is the number of independent trials used to form the
-    expected-maximum Sharpe. The result is a probability in ``[0, 1]``, not a
-    profitability claim. Fewer than three observations, zero volatility, or a
-    non-positive Sharpe variance term return ``NaN``.
+    series. Sample skewness and kurtosis enter only the Sharpe-variance term
+    ``V[SR]``. The expected-maximum mix uses the Euler-Mascheroni constant,
+    not return skewness. ``n_trials`` is the number of independent trials used
+    to form that expected maximum. The result is a probability in ``[0, 1]``,
+    not a profitability claim. Fewer than three observations, zero volatility,
+    or a non-positive Sharpe variance term return ``NaN``.
     """
 
     if isinstance(n_trials, bool) or not isinstance(n_trials, int) or n_trials < 2:
@@ -313,7 +316,7 @@ def deflated_sharpe_ratio(
     z_one = float(norm.ppf(1.0 - 1.0 / n_trials))
     z_two = float(norm.ppf(1.0 - 1.0 / (n_trials * math.e)))
     expected_max = math.sqrt(inner / (count - 1)) * (
-        (1.0 - skewness) * z_one + skewness * z_two
+        (1.0 - EULER_MASCHERONI) * z_one + EULER_MASCHERONI * z_two
     )
     statistic = (sharpe - expected_max) * math.sqrt(count - 1) / math.sqrt(inner)
     if not math.isfinite(statistic):
@@ -494,6 +497,7 @@ def _validate_min_periods(min_periods: int, *, minimum: int = 1) -> None:
 
 
 __all__ = [
+    "EULER_MASCHERONI",
     "deflated_sharpe_ratio",
     "factor_correlation_matrix",
     "factor_information_coefficient",

@@ -23,6 +23,10 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- Walking Skeleton DSR uses the Euler-Mascheroni constant in the
+  Bailey-Lopez de Prado expected-maximum mix. Sample skewness and
+  kurtosis remain only in `V[SR]`. Regenerated diagnostic report DSR
+  values and golden tests follow the paper mix. DIAGNOSTIC_ONLY.
 - Synthetic dividend evidence dictionaries encode as
   `{"json_evidence": "object", "items": {<caller keys>}}`. Nested caller
   `items` and `json_evidence` keys stay inside the envelope, so

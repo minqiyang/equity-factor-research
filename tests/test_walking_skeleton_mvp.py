@@ -17,9 +17,41 @@ from research.walking_skeleton_mvp import (
     MOMENTUM_LOOKBACK_PERIODS,
     REV_1M,
     WalkingSkeletonConfig,
+    _format_number,
+    _format_percent,
     calculate_diagnostic_factor,
     run_walking_skeleton_mvp,
 )
+
+OFFICIAL_FOUR_DECIMAL_ROWS = {
+    MOM_12_1: (
+        "-0.0145",
+        "-0.0919",
+        "-0.5047",
+        "0.1532",
+        "-4.61%",
+        "-0.1206",
+        "-18.66%",
+    ),
+    REV_1M: (
+        "-0.0202",
+        "-0.1678",
+        "-0.7473",
+        "0.1644",
+        "-3.66%",
+        "-0.0878",
+        "-18.16%",
+    ),
+    LOW_VOL_3M: (
+        "-0.0138",
+        "-0.0984",
+        "-0.5056",
+        "0.1394",
+        "-5.91%",
+        "-0.1632",
+        "-18.18%",
+    ),
+}
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -128,3 +160,28 @@ def test_walking_skeleton_mvp_runs_fifty_stock_equal_weight_monthly_backtest(
         measured = backtest.returns.iloc[1:]
         assert len(measured) >= 2
         assert (backtest.holdings.sum(axis=1) <= 1.0 + 1e-12).all()
+
+
+def test_walking_skeleton_official_report_table_matches_default_fixture() -> None:
+    result = run_walking_skeleton_mvp(write_outputs=False)
+
+    assert result["prices"].shape == (756, 50)
+    report_text = (PROJECT_ROOT / "reports" / "walking_skeleton_mvp.md").read_text(
+        encoding="utf-8"
+    )
+    for factor_id, expected in OFFICIAL_FOUR_DECIMAL_ROWS.items():
+        payload = result["factors"][factor_id]
+        ic_summary = payload["ic_summary"]
+        metrics = payload["backtest"].metrics
+        observed = (
+            _format_number(ic_summary["mean_ic"]),
+            _format_number(ic_summary["icir"]),
+            _format_number(ic_summary["newey_west_tstat"]),
+            _format_number(payload["dsr"]),
+            _format_percent(metrics["total_return"]),
+            _format_number(metrics["sharpe_ratio"]),
+            _format_percent(metrics["max_drawdown"]),
+        )
+        assert observed == expected
+        row = "| " + " | ".join((factor_id, *expected)) + " |"
+        assert row in report_text
