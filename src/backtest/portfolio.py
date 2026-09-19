@@ -420,6 +420,8 @@ def run_long_only_backtest(
     rebalance_frequency: str = "ME",
     top_n: int | None = None,
     top_pct: float | None = None,
+    weighting_scheme: Literal["equal", "rank"] = "equal",
+    universe_mask: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
     volume_aware_slippage_mode: str = "diagnostic_only",
@@ -451,6 +453,8 @@ def run_long_only_backtest(
         evaluation_end=evaluation_end,
         top_n=top_n,
         top_pct=top_pct,
+        weighting_scheme=weighting_scheme,
+        universe_mask=universe_mask,
         transaction_cost_bps=transaction_cost_bps,
         slippage_bps=slippage_bps,
         volume_aware_slippage_mode=volume_aware_slippage_mode,
@@ -496,6 +500,8 @@ def run_long_only_backtest(
         signal_lag_periods=signal_lag_periods,
         top_n=top_n,
         top_pct=top_pct,
+        weighting_scheme=weighting_scheme,
+        universe_mask=universe_mask,
     )
     if max_position_weight is not None:
         target_weights = apply_long_only_position_cap(
@@ -623,6 +629,8 @@ def run_long_only_backtest(
             "rebalance_frequency": rebalance_frequency,
             "top_n": top_n,
             "top_pct": top_pct,
+            "weighting_scheme": weighting_scheme,
+            "universe_mask_applied": universe_mask is not None,
             "transaction_cost_bps": transaction_cost_bps,
             "slippage_bps": slippage_bps,
             "signal_lag_periods": signal_lag_periods,
@@ -678,6 +686,8 @@ def _build_target_weights(
     signal_lag_periods: int,
     top_n: int | None,
     top_pct: float | None,
+    weighting_scheme: str = "equal",
+    universe_mask: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     target_weights = pd.DataFrame(
         np.nan,
@@ -694,12 +704,29 @@ def _build_target_weights(
         scores = lagged_signals.loc[date]
         valid_scores = scores[scores.notna()]
 
+        if universe_mask is not None:
+            if date in universe_mask.index:
+                mask_row = universe_mask.loc[date]
+                eligible_assets = mask_row[mask_row.eq(True)].index
+                valid_scores = valid_scores[valid_scores.index.isin(eligible_assets)]
+            else:
+                valid_scores = valid_scores.iloc[0:0]
+
         selected_assets = _select_top_assets(valid_scores, top_n=top_n, top_pct=top_pct)
         if not selected_assets:
             continue
 
-        equal_weight = 1.0 / len(selected_assets)
-        target_weights.loc[date, selected_assets] = equal_weight
+        if weighting_scheme == "equal":
+            equal_weight = 1.0 / len(selected_assets)
+            target_weights.loc[date, selected_assets] = equal_weight
+        elif weighting_scheme == "rank":
+            selected_scores = valid_scores.loc[selected_assets]
+            ranks = selected_scores.rank(ascending=True, method="average")
+            rank_sum = float(ranks.sum())
+            if rank_sum > 0.0:
+                target_weights.loc[date, selected_assets] = ranks / rank_sum
+            else:
+                target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
 
     return target_weights
 
@@ -1260,6 +1287,8 @@ def _validate_backtest_inputs(
     evaluation_end: pd.Timestamp,
     top_n: int | None,
     top_pct: float | None,
+    weighting_scheme: str = "equal",
+    universe_mask: pd.DataFrame | None = None,
     transaction_cost_bps: float,
     slippage_bps: float,
     volume_aware_slippage_mode: str,
@@ -1269,6 +1298,33 @@ def _validate_backtest_inputs(
     benchmark_missing_policy: str,
     periods_per_year: int,
 ) -> None:
+    if weighting_scheme not in {"equal", "rank"}:
+        raise BacktestValidationError(
+            "weighting_scheme_invalid",
+            "weighting_scheme must be either 'equal' or 'rank'",
+        )
+    if universe_mask is not None:
+        if not isinstance(universe_mask, pd.DataFrame):
+            raise BacktestValidationError(
+                "universe_mask_invalid",
+                "universe_mask must be a pandas DataFrame",
+            )
+        if not isinstance(universe_mask.index, pd.DatetimeIndex):
+            raise BacktestValidationError(
+                "universe_mask_invalid",
+                "universe_mask must be indexed by a pandas DatetimeIndex",
+            )
+        if universe_mask.index.has_duplicates:
+            raise BacktestValidationError(
+                "universe_mask_invalid",
+                "universe_mask index must not contain duplicate dates",
+            )
+        if not universe_mask.index.is_monotonic_increasing:
+            raise BacktestValidationError(
+                "universe_mask_invalid",
+                "universe_mask index must be monotonic increasing",
+            )
+
     signal_lag_value = _read_exact_integral_scalar(signal_lag_periods)
     if signal_lag_value is None or signal_lag_value < 1:
         raise BacktestValidationError(

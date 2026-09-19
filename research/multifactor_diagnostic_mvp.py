@@ -229,6 +229,7 @@ class MultifactorDiagnosticConfig:
     manifest_path: Path = DEFAULT_MANIFEST_PATH
     rebalance_frequency: str = "ME"
     top_n: int = 5
+    weighting_scheme: str = "equal"
     transaction_cost_bps: float = 0.0
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
@@ -520,6 +521,7 @@ def _evaluate_factor(
         evaluation_end=evaluation_end,
         rebalance_frequency=config.rebalance_frequency,
         top_n=config.top_n,
+        weighting_scheme=config.weighting_scheme,
         transaction_cost_bps=config.transaction_cost_bps,
         slippage_bps=config.slippage_bps,
         benchmark_prices=accounting_benchmark,
