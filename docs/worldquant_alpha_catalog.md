@@ -38,17 +38,17 @@ reviewed way.
 | Area | Current status |
 | --- | --- |
 | Reusable operator layer | Implemented and tested for core pandas panel operators in `src/features/operators.py`. |
+| `alpha_001`, `alpha_002`, `alpha_003`, `alpha_004`, `alpha_006` | Implemented and tested in `src/features/alphas.py` as classical price-volume research features under `DIAGNOSTIC_ONLY`. |
 | `alpha_009` | Implemented and tested in `src/features/worldquant_alphas.py` as a close-only research feature. |
-| `alpha_012` | Implemented and tested in `src/features/worldquant_alphas.py` as a volume + close research feature; also covered by synthetic OHLCV fixture smoke and local-fixture diagnostics. |
+| `alpha_012` | Implemented and tested in `src/features/alphas.py` and `src/features/worldquant_alphas.py` as a volume + close research feature; covered by synthetic OHLCV fixture smoke and diagnostic runner. |
 | Other WorldQuant-style alphas | Not implemented. |
-| WorldQuant-style alpha backtest integration | Not implemented. |
+| WorldQuant-style alpha backtest integration | Implemented for diagnostics in `research/alphas_diagnostic_mvp.py` using the 50-stock diagnostic cohort. |
 | Bulk WorldQuant 101 implementation | Not implemented and still out of scope. |
 
-`alpha_009` and `alpha_012` are not full strategies, not trading
-recommendations, not connected to dedicated alpha strategy backtests, and not
-evidence of profitability. They only show that reviewed formulas can be
+Implemented alphas are not full strategies, not trading recommendations, and
+not evidence of profitability. They show that reviewed formulas can be
 represented as tested research features with explicit date-alignment and
-missing-data assumptions.
+missing-data assumptions under `DIAGNOSTIC_ONLY`.
 
 ## Priority System
 
