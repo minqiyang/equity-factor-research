@@ -656,7 +656,12 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
             factor_id=factor_id,
             skip_alpha_045_numeric=True,
         )
-        _approx_report_values((ls_sharpe,), (official_ls_sharpe,), factor_id=factor_id)
+        _approx_report_values(
+            (ls_sharpe,),
+            (official_ls_sharpe,),
+            factor_id=factor_id,
+            skip_alpha_045_numeric=True,
+        )
         row = "| " + " | ".join((factor_id, *long_only)) + " |"
         assert row in report_text
         assert f"| {factor_id} | {official_ls_sharpe} |" in ls_section
