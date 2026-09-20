@@ -76,12 +76,24 @@ def test_walk_forward_ml_composite_zero_lookahead(sample_ml_data):
     valid_dates = comp_base.dropna().index
     assert len(valid_dates) > 0
     t = valid_dates[0]
+    t_pos = fwd_ret.index.get_loc(t)
+    horizon_rows = 1 + 10  # execution_lag=1, forward_holding=10
 
-    # Mutate forward returns in future (> t) and within the unclosed horizon (t - 5)
+    # 1. Mutate forward returns in future (>= t) and at unclosed historical dates
     fwd_ret_mutated = fwd_ret.copy()
     fwd_ret_mutated.loc[t:] = 999.0
-    # Also mutate within the open horizon: t - 5 (holding period is 10, so t - 5 is unclosed at t)
-    fwd_ret_mutated.loc[t - pd.Timedelta(days=5):] = 999.0
+
+    # Mutate all dates strictly after past_dates[-1] + horizon_rows
+    past_closed = [
+        d for d in rebalance_dates
+        if d < t and fwd_ret.index.get_loc(pd.Timestamp(d)) + horizon_rows <= t_pos
+    ]
+    assert len(past_closed) >= 3
+    last_closed_date = past_closed[-1]
+
+    # Mutate any unclosed dates between last_closed_date and t
+    unclosed_dates = [d for d in fwd_ret.index if d > last_closed_date]
+    fwd_ret_mutated.loc[unclosed_dates] = 888.0
 
     comp_mutated, _, _ = walk_forward_ml_factor_composite(
         factors,
@@ -93,8 +105,22 @@ def test_walk_forward_ml_composite_zero_lookahead(sample_ml_data):
         random_state=42,
     )
 
-    # Composite at date t MUST be completely unchanged!
+    # Composite at date t MUST be completely unchanged by open or future labels!
     pd.testing.assert_series_equal(comp_base.loc[t], comp_mutated.loc[t])
+
+    # 2. Positive control: mutating the last admitted closed date MUST change predictions
+    fwd_ret_closed_mutated = fwd_ret.copy()
+    fwd_ret_closed_mutated.loc[last_closed_date] = 555.0
+    comp_closed_mutated, _, _ = walk_forward_ml_factor_composite(
+        factors,
+        fwd_ret_closed_mutated,
+        rebalance_dates,
+        model_type="ridge",
+        min_train_periods=3,
+        forward_holding_periods=10,
+        random_state=42,
+    )
+    assert not comp_base.loc[t].equals(comp_closed_mutated.loc[t])
 
 
 @pytest.mark.parametrize("model_type", list(_SUPPORTED_MODELS))

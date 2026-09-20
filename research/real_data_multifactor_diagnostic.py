@@ -2,7 +2,7 @@
 
 This module loads the static blue-chip cohort and SPY.US benchmark from local
 EODHD Parquet files, then reuses the committed 62-trial multi-factor diagnostic
-path (52 classical price-volume alphas plus 10 composites and interactions).
+path (52 classical price-volume alphas plus 12 composites and interactions).
 
 It is DIAGNOSTIC_ONLY. The static cohort is survivorship-biased and is not
 point-in-time universe evidence. Outputs are not profitability, strategy
@@ -777,8 +777,8 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock blue-chip EODHD cohort plus SPY.US "
             "wired through the 52 implemented classical price-volume alphas and "
-            "10 composites/interactions, with lag-1 execution, closed-window "
-            "walk-forward IC weights, frozen smoothing targets, netted gross "
+            "12 composites/interactions, with lag-1 execution, closed-window "
+            "walk-forward IC and ML weights, frozen smoothing targets, netted gross "
             "exposure, solvency guards, across-trial Sharpe variance for DSR, "
             "trial inventory logging, portfolio-weighting comparisons, and PBO."
         ),
@@ -920,6 +920,10 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "walk-forward weights at monthly rebalance dates, admitting an IC "
             "labeled at s only when its execution-aligned forward-return "
             "window has closed by t",
+            "random-forest and gradient-boosting ML composites use causal "
+            "walk-forward training windows at monthly rebalance dates, admitting an "
+            "observation labeled at s only when its execution-aligned forward-return "
+            "window has closed by t; predictions are held on [t, next_t)",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts, not GICS point-in-time sectors",
             "market beta proxy does not backfill leading rolling-beta NaNs",

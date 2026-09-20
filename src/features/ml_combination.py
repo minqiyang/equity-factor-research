@@ -43,7 +43,7 @@ def _instantiate_model(
             max_depth=params.get("max_depth", 4),
             min_samples_leaf=params.get("min_samples_leaf", 2),
             random_state=random_state,
-            n_jobs=-1,
+            n_jobs=params.get("n_jobs", 1),
         )
     if model_type == "gradient_boosting":
         return GradientBoostingRegressor(
