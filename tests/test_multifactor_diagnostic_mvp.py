@@ -60,7 +60,19 @@ from features.alphas import (
     alpha_060,
     alpha_101,
 )
-from features.combination import equal_weighted_composite, ic_weighted_composite
+from features.combination import (
+    correlation_discounted_composite,
+    equal_weighted_composite,
+    ic_weighted_composite,
+    icir_weighted_composite,
+)
+from features.interaction import (
+    conditional_factor_rank,
+    factor_product_interaction,
+)
+from features.neutralize import (
+    cross_sectional_neutralize,
+)
 from research.multifactor_diagnostic_mvp import (
     ALPHA_001,
     ALPHA_002,
@@ -385,7 +397,7 @@ def _approx_report_values(
 
     # Backtest returns and Sharpe on top-5 discrete ranking can shift across rebalances
     # due to machine-level cross-sectional rank ties / floating-point differences.
-    is_composite = factor_id in (EQUAL_WEIGHTED_COMPOSITE, IC_WEIGHTED_COMPOSITE)
+    is_composite = factor_id not in ALPHA_IDS
     num_tol = 0.5 if is_composite else 0.05
     pct_tol = 10.0 if is_composite else 1.0
 
@@ -465,6 +477,36 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
     pd.testing.assert_frame_equal(
         result["factors"][IC_WEIGHTED_COMPOSITE]["factor"],
         ic_weighted_composite(alpha_panels, list(result["ic_weights"].values())),
+    )
+    pd.testing.assert_frame_equal(
+        result["factors"][ICIR_WEIGHTED_COMPOSITE]["factor"],
+        icir_weighted_composite(
+            alpha_panels,
+            pd.DataFrame(
+                {factor_id: result["factors"][factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
+            ),
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        result["factors"][CORRELATION_DISCOUNTED_COMPOSITE]["factor"],
+        correlation_discounted_composite(
+            alpha_panels, list(result["ic_weights"].values()), ridge_alpha=0.1
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        result["factors"][ALPHA_PRODUCT_INTERACTION]["factor"],
+        factor_product_interaction(
+            result["factors"][ALPHA_016]["factor"],
+            result["factors"][ALPHA_022]["factor"],
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        result["factors"][CONDITIONAL_RANK_INTERACTION]["factor"],
+        conditional_factor_rank(
+            result["factors"][ALPHA_016]["factor"],
+            result["factors"][ALPHA_022]["factor"],
+            n_bins=5,
+        ),
     )
 
     report_text = report_path.read_text(encoding="utf-8")
