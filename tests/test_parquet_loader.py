@@ -416,3 +416,117 @@ def test_parquet_loader_module_has_no_remote_data_or_trading_imports() -> None:
     for module_name in imported_modules:
         assert not any(term in module_name for term in forbidden_terms)
     assert parquet_loader.__doc__
+
+
+def test_load_eod_cohort_panels_filters_inclusive_end_date_with_timestamps(tmp_path: Path) -> None:
+    data_dir = tmp_path / "eod"
+    timestamps = ["2024-01-02 16:00:00", "2024-01-03 16:00:00", "2024-01-04 16:00:00"]
+    _write_parquet(data_dir / "AAA.US.parquet", _sample_frame(timestamps))
+
+    panels = load_eod_cohort_panels(
+        data_dir,
+        ["AAA.US"],
+        start_date="2024-01-02",
+        end_date="2024-01-04",
+    )
+
+    expected = pd.DatetimeIndex(["2024-01-02", "2024-01-03", "2024-01-04"], name="date")
+    assert panels["close"].index.equals(expected)
+    assert len(panels["close"]) == 3
+
+
+def test_load_eod_cohort_panels_later_first_symbol_order_preserves_chronological_union_index(
+    tmp_path: Path,
+) -> None:
+    data_dir = tmp_path / "eod"
+    _write_parquet(data_dir / "AAA.US.parquet", _sample_frame(["2024-01-02", "2024-01-03", "2024-01-04"]))
+    _write_parquet(data_dir / "BBB.US.parquet", _sample_frame(["2024-01-03", "2024-01-04", "2024-01-05"]))
+
+    panels = load_eod_cohort_panels(data_dir, ["BBB.US", "AAA.US"])
+
+    expected = pd.DatetimeIndex(["2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05"], name="date")
+    assert panels["close"].index.equals(expected)
+    assert bool(panels["close"].index.is_monotonic_increasing)
+    assert list(panels["close"].columns) == ["BBB.US", "AAA.US"]
+
+
+def test_load_eod_parquet_empty_table_raises_integrity_error(tmp_path: Path) -> None:
+    empty_path = tmp_path / "empty.parquet"
+    empty_frame = pd.DataFrame(
+        columns=["date", "open", "high", "low", "close", "adjusted_close", "volume"]
+    )
+    _write_parquet(empty_path, empty_frame)
+
+    with pytest.raises(DataIntegrityError, match="at least one row"):
+        load_eod_parquet(empty_path)
+
+
+def test_load_eod_parquet_non_finite_volume_raises_integrity_error(tmp_path: Path) -> None:
+    path = tmp_path / "inf_vol.parquet"
+    frame = _sample_frame(["2024-01-02"])
+    frame["volume"] = [np.inf]
+    _write_parquet(path, frame)
+
+    with pytest.raises(DataIntegrityError, match="volume must contain finite numeric values"):
+        load_eod_parquet(path)
+
+
+def test_load_eod_parquet_boolean_volume_raises_integrity_error(tmp_path: Path) -> None:
+    path = tmp_path / "bool_vol.parquet"
+    frame = _sample_frame(["2024-01-02"])
+    frame["volume"] = [True]
+    _write_parquet(path, frame)
+
+    with pytest.raises(DataIntegrityError, match="volume must be numeric; boolean columns are rejected"):
+        load_eod_parquet(path)
+
+
+def test_load_eod_parquet_nat_date_raises_integrity_error(tmp_path: Path) -> None:
+    path = tmp_path / "nat_date.parquet"
+    frame = _sample_frame(["2024-01-02"])
+    frame["date"] = [pd.NaT]
+    _write_parquet(path, frame)
+
+    with pytest.raises(DataIntegrityError, match="missing dates"):
+        load_eod_parquet(path)
+
+
+def test_load_eod_cohort_panels_start_after_end_raises_value_error(tmp_path: Path) -> None:
+    data_dir = tmp_path / "eod"
+    _write_parquet(data_dir / "AAA.US.parquet", _sample_frame(["2024-01-02"]))
+
+    with pytest.raises(ValueError, match="start_date must be on or before end_date"):
+        load_eod_cohort_panels(data_dir, ["AAA.US"], start_date="2024-01-05", end_date="2024-01-02")
+
+
+def test_load_eod_cohort_panels_absolute_inventory_path_raises_value_error(tmp_path: Path) -> None:
+    data_dir = tmp_path / "eod"
+    data_dir.mkdir()
+    inventory_path = tmp_path / "inventory.json"
+    inventory_path.write_text(
+        json.dumps({"stocks": [{"symbol": "AAA.US", "file": "/etc/passwd"}]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="relative to data_dir"):
+        load_eod_cohort_panels(data_dir, ["AAA.US"], inventory_path=inventory_path)
+
+
+def test_load_eod_cohort_panels_duplicate_inventory_symbols_raises_integrity_error(
+    tmp_path: Path,
+) -> None:
+    data_dir = tmp_path / "eod"
+    data_dir.mkdir()
+    inventory_path = tmp_path / "inventory.json"
+    inventory_path.write_text(
+        json.dumps({
+            "stocks": [
+                {"symbol": "AAA.US", "file": "aaa1.parquet"},
+                {"symbol": "AAA.US", "file": "aaa2.parquet"},
+            ]
+        }),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DataIntegrityError, match="duplicate symbol: AAA.US"):
+        load_eod_cohort_panels(data_dir, ["AAA.US"], inventory_path=inventory_path)

@@ -284,7 +284,8 @@ def _parse_dates(values: pd.Series) -> pd.DatetimeIndex:
     index = pd.DatetimeIndex(parsed)
     if index.tz is not None:
         index = pd.DatetimeIndex([timestamp.tz_localize(None) for timestamp in index])
-    return pd.DatetimeIndex(index, name="date")
+    index = index.floor("D")
+    return pd.DatetimeIndex(index, name="date", freq=None)
 
 
 def _validate_unique_sorted_dates(dates: pd.DatetimeIndex) -> None:
@@ -363,7 +364,7 @@ def _align_symbol_panels(
     panels: dict[str, pd.DataFrame] = {}
     for field in _PANEL_FIELDS:
         pieces = [per_symbol[symbol][field].rename(symbol) for symbol in symbols]
-        panel = pd.concat(pieces, axis=1) if pieces else pd.DataFrame()
+        panel = pd.concat(pieces, axis=1, sort=True) if pieces else pd.DataFrame()
         panel = panel.reindex(columns=symbols)
         panel.index = pd.DatetimeIndex(pd.to_datetime(panel.index), name="date", freq=None)
         panels[field] = panel
