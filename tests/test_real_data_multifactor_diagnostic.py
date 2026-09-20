@@ -156,7 +156,7 @@ def test_real_data_config_defaults() -> None:
     assert config.composite_ids == COMPOSITE_IDS
     assert config.data_dir == default_data_dir()
     assert len(ALPHA_IDS) == 52
-    assert len(COMPOSITE_IDS) == 10
+    assert len(COMPOSITE_IDS) == 12
     assert len(FACTOR_IDS) == 62
     assert default_data_dir().name == DEFAULT_SNAPSHOT_DIR_NAME
     assert default_inventory_path().name == DEFAULT_INVENTORY_FILE_NAME
@@ -708,3 +708,39 @@ def test_runner_refuses_early_on_invalid_panels(tmp_path: Path, monkeypatch: pyt
             report_path=tmp_path / "report.md",
             write_outputs=False,
         )
+
+
+def test_runner_evaluates_ml_composites(tmp_path: Path) -> None:
+    from research.real_data_multifactor_diagnostic import (
+        GRADIENT_BOOSTING_COMPOSITE,
+        RANDOM_FOREST_COMPOSITE,
+    )
+
+    config = _reduced_config(
+        tmp_path,
+        alpha_ids=(ALPHA_001, ALPHA_101),
+        composite_ids=(RANDOM_FOREST_COMPOSITE, GRADIENT_BOOSTING_COMPOSITE),
+        include_weighting_comparisons=False,
+    )
+    report_path = tmp_path / "ml_report.md"
+    result = run_real_data_multifactor_diagnostic(
+        config=config,
+        report_path=report_path,
+        write_outputs=True,
+    )
+
+    assert RANDOM_FOREST_COMPOSITE in result["factors"]
+    assert GRADIENT_BOOSTING_COMPOSITE in result["factors"]
+    assert RANDOM_FOREST_COMPOSITE in result["ml_feature_importances"]
+    assert GRADIENT_BOOSTING_COMPOSITE in result["ml_feature_importances"]
+
+    rf_backtest = result["factors"][RANDOM_FOREST_COMPOSITE]["backtest"]
+    assert rf_backtest.metrics["sharpe_ratio"] is not None
+    gb_backtest = result["factors"][GRADIENT_BOOSTING_COMPOSITE]["backtest"]
+    assert gb_backtest.metrics["sharpe_ratio"] is not None
+
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "## Machine learning factor combinations and feature importances" in report_text
+    assert RANDOM_FOREST_COMPOSITE in report_text
+    assert GRADIENT_BOOSTING_COMPOSITE in report_text
+

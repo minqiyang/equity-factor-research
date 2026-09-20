@@ -22,7 +22,7 @@
     "long_short_quantiles": 10,
     "long_short_weighting_scheme": "equal",
     "market_beta_proxy": "60-day rolling return beta against equal-weighted market return with min_periods=20; leading dates without a full minimum window remain NaN",
-    "n_trials_for_dsr": 148,
+    "n_trials_for_dsr": 152,
     "not_point_in_time_universe_evidence": true,
     "price_basis": "split-adjusted OHLC and volume matching true dollar volume; vendor adjusted_close for total return",
     "protected_sample_classification": "historical_evaluation",
@@ -40,14 +40,14 @@
     "transaction_cost_bps": 0.0,
     "transaction_cost_model": "fixed_bps_on_target_weight_turnover; 0.00 bps per unit of drift-adjusted target-weight turnover on post-return portfolio value",
     "trial_family": {
-      "attempt_count": 156,
-      "distinct_trial_count": 148,
-      "finite_sharpe_count": 148,
+      "attempt_count": 160,
+      "distinct_trial_count": 152,
+      "finite_sharpe_count": 152,
       "history_scope": "current estimator version and sample; earlier reports remain superseded evidence outside this run-scoped sensitivity",
-      "n_trials_for_dsr": 148,
+      "n_trials_for_dsr": 152,
       "selection_family": "all factors, weighting schemes, penalties, and both directions evaluated in this run",
       "trial_count_method": "raw distinct count as independent-trial upper-bound sensitivity; effective independence unestimated",
-      "trial_sharpe_variance": 0.0010259168648101462,
+      "trial_sharpe_variance": 0.0010062222498294483,
       "undefined_sharpe_policy": "retain trials and withhold DSR when dispersion is incomplete",
       "variance_basis": "sample variance (ddof=1) of distinct non-annualized net Sharpes"
     },
@@ -146,7 +146,9 @@
       "NEUTRALIZED_IC_COMPOSITE",
       "SECTOR_NEUTRAL_COMPOSITE",
       "MARKET_BETA_NEUTRAL_COMPOSITE",
-      "REGIME_SWITCHING_COMPOSITE"
+      "REGIME_SWITCHING_COMPOSITE",
+      "RANDOM_FOREST_COMPOSITE",
+      "GRADIENT_BOOSTING_COMPOSITE"
     ],
     "data_dir": "<redacted-local-eodhd-snapshot>",
     "end_date": "2026-08-07",
@@ -207,7 +209,7 @@
     },
     "include_weighting_comparisons": true,
     "inventory_path": "<redacted-local-per-stock-coverage-inventory>",
-    "n_trials": 148,
+    "n_trials": 152,
     "periods_per_year": 252,
     "quantiles": 10,
     "rebalance_frequency": "ME",
@@ -284,7 +286,7 @@
       "average_turnover": 0.07131595050643345,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.16590409981821647,
+      "dsr": 0.1725232644203336,
       "episode_hit_rate": 0.6187214611872146,
       "excess_total_return": 3.7515461067565914,
       "ic_std": 0.20468258844777631,
@@ -321,7 +323,7 @@
       "average_turnover": 0.08421327763284639,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.2537839535431863,
+      "dsr": 0.2623128786833183,
       "episode_hit_rate": 0.6107899807321773,
       "excess_total_return": 3.2640780211852896,
       "ic_std": 0.1438960290646533,
@@ -358,7 +360,7 @@
       "average_turnover": 0.08542694162946009,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.19754295845666336,
+      "dsr": 0.20499895811157381,
       "episode_hit_rate": 0.6254752851711026,
       "excess_total_return": 2.1542863319515044,
       "ic_std": 0.1919797335271032,
@@ -395,7 +397,7 @@
       "average_turnover": 0.08490867828984641,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.012536570048162093,
+      "dsr": 0.013431466619612939,
       "episode_hit_rate": 0.5659655831739961,
       "excess_total_return": -1.1362660797110489,
       "ic_std": 0.16158381802497493,
@@ -432,7 +434,7 @@
       "average_turnover": 0.07679325999834107,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.022469528723040543,
+      "dsr": 0.023946354214110437,
       "episode_hit_rate": 0.574468085106383,
       "excess_total_return": -0.7756571788307989,
       "ic_std": 0.15978929483409304,
@@ -469,7 +471,7 @@
       "average_turnover": 0.08426945842965475,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.11918773466628918,
+      "dsr": 0.1246487191707083,
       "episode_hit_rate": 0.5934489402697495,
       "excess_total_return": 2.1823114538151813,
       "ic_std": 0.171000008044894,
@@ -506,7 +508,7 @@
       "average_turnover": 0.0865769918005186,
       "benchmark_total_return": 3.2573738468213334,
       "count": 111.0,
-      "dsr": 0.1421524938959437,
+      "dsr": 0.14826925795510548,
       "episode_hit_rate": 0.601123595505618,
       "excess_total_return": 2.399423561916003,
       "ic_std": 0.15734430815143519,
@@ -543,7 +545,7 @@
       "average_turnover": 0.08041759776883099,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.03623885960652276,
+      "dsr": 0.03841909578849176,
       "episode_hit_rate": 0.591919191919192,
       "excess_total_return": -0.11265329325644835,
       "ic_std": 0.1826597409577528,
@@ -580,7 +582,7 @@
       "average_turnover": 0.0803895346920759,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.10707075733360599,
+      "dsr": 0.11209666611232727,
       "episode_hit_rate": 0.6080808080808081,
       "excess_total_return": 2.0373693711964167,
       "ic_std": 0.179806338294601,
@@ -617,7 +619,7 @@
       "average_turnover": 0.0793164774899418,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.0571835332381694,
+      "dsr": 0.06033693682129471,
       "episode_hit_rate": 0.5860655737704918,
       "excess_total_return": 0.7921574938444635,
       "ic_std": 0.18357618750975999,
@@ -654,7 +656,7 @@
       "average_turnover": 0.07729945443361795,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.010485897147674063,
+      "dsr": 0.011253968922536278,
       "episode_hit_rate": 0.6042105263157894,
       "excess_total_return": -1.3230886318325843,
       "ic_std": 0.17027408277246295,
@@ -691,7 +693,7 @@
       "average_turnover": 0.08015485458853776,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.019799002096250642,
+      "dsr": 0.02112105934513361,
       "episode_hit_rate": 0.565922920892495,
       "excess_total_return": -1.0766896666596137,
       "ic_std": 0.14891169825863948,
@@ -728,7 +730,7 @@
       "average_turnover": 0.08592736846785753,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.23627226537964563,
+      "dsr": 0.24454388111159125,
       "episode_hit_rate": 0.6075471698113207,
       "excess_total_return": 4.592888045283229,
       "ic_std": 0.17616078968067514,
@@ -765,7 +767,7 @@
       "average_turnover": 0.08310668273142412,
       "benchmark_total_return": 3.2573738468213334,
       "count": 112.0,
-      "dsr": 0.012481126936255669,
+      "dsr": 0.013366599180279451,
       "episode_hit_rate": 0.5869074492099323,
       "excess_total_return": -1.370596369085217,
       "ic_std": 0.5390196200091109,
@@ -802,7 +804,7 @@
       "average_turnover": 0.0829622192368193,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.017172972477681236,
+      "dsr": 0.018339929054671075,
       "episode_hit_rate": 0.5851272015655578,
       "excess_total_return": -1.1836783335283858,
       "ic_std": 0.1497744699067736,
@@ -839,7 +841,7 @@
       "average_turnover": 0.08659133183212576,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.1124176283176363,
+      "dsr": 0.11761549472831156,
       "episode_hit_rate": 0.602996254681648,
       "excess_total_return": 1.7429524711786577,
       "ic_std": 0.17525942704467184,
@@ -876,7 +878,7 @@
       "average_turnover": 0.08364161386370332,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.16790971583577802,
+      "dsr": 0.17472710545362552,
       "episode_hit_rate": 0.6019417475728155,
       "excess_total_return": 3.0431623613410164,
       "ic_std": 0.19756465609982746,
@@ -913,7 +915,7 @@
       "average_turnover": 0.0678932726516778,
       "benchmark_total_return": 3.2573738468213334,
       "count": 107.0,
-      "dsr": 0.19646949306604133,
+      "dsr": 0.20395237370930852,
       "episode_hit_rate": 0.6033653846153846,
       "excess_total_return": 5.561920688278703,
       "ic_std": 0.1966179313793588,
@@ -950,7 +952,7 @@
       "average_turnover": 0.08493886324330165,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.10078776118024785,
+      "dsr": 0.1056246973036678,
       "episode_hit_rate": 0.5935114503816794,
       "excess_total_return": 1.6258560998824105,
       "ic_std": 0.18864198893563225,
@@ -987,7 +989,7 @@
       "average_turnover": 0.07218336408930455,
       "benchmark_total_return": 3.2573738468213334,
       "count": 115.0,
-      "dsr": 0.027490790123554553,
+      "dsr": 0.029225352579987193,
       "episode_hit_rate": 0.5904977375565611,
       "excess_total_return": -0.0701348545433298,
       "ic_std": 0.1723648208300114,
@@ -1024,7 +1026,7 @@
       "average_turnover": 0.08367010147005674,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.009269931836501363,
+      "dsr": 0.009958250838660082,
       "episode_hit_rate": 0.5794573643410853,
       "excess_total_return": -1.5251069563063115,
       "ic_std": 0.17284237652029807,
@@ -1061,7 +1063,7 @@
       "average_turnover": 0.0832822942985443,
       "benchmark_total_return": 3.2573738468213334,
       "count": 117.0,
-      "dsr": 0.007035416732244259,
+      "dsr": 0.007577033981483969,
       "episode_hit_rate": 0.5603112840466926,
       "excess_total_return": -1.540397438191392,
       "ic_std": 0.18847325473643858,
@@ -1098,7 +1100,7 @@
       "average_turnover": 0.071035891846902,
       "benchmark_total_return": 3.2573738468213334,
       "count": 110.0,
-      "dsr": 0.040196904571343915,
+      "dsr": 0.042583842752778836,
       "episode_hit_rate": 0.6032110091743119,
       "excess_total_return": 0.2604461558271023,
       "ic_std": 0.19395088314118838,
@@ -1135,7 +1137,7 @@
       "average_turnover": 0.07884099575130156,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.07101201461799453,
+      "dsr": 0.07472213932167265,
       "episode_hit_rate": 0.6136363636363636,
       "excess_total_return": 2.1133810471057446,
       "ic_std": 0.1909460111648757,
@@ -1172,7 +1174,7 @@
       "average_turnover": 0.08554940370532635,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.031995308495813134,
+      "dsr": 0.033967261358588206,
       "episode_hit_rate": 0.5882352941176471,
       "excess_total_return": -0.33795699938255463,
       "ic_std": 0.16698286748464555,
@@ -1209,7 +1211,7 @@
       "average_turnover": 0.08391277786416212,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.040191117544703656,
+      "dsr": 0.04257321206363573,
       "episode_hit_rate": 0.5841392649903289,
       "excess_total_return": 0.11111164475759505,
       "ic_std": 0.179857641895112,
@@ -1246,7 +1248,7 @@
       "average_turnover": 0.08570259428911044,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.04625246204155837,
+      "dsr": 0.04893306332152746,
       "episode_hit_rate": 0.5852272727272727,
       "excess_total_return": 0.5031598666374659,
       "ic_std": 0.1810367980003113,
@@ -1283,7 +1285,7 @@
       "average_turnover": 0.08697106728803292,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.0237319986908047,
+      "dsr": 0.025282614406237563,
       "episode_hit_rate": 0.5719626168224299,
       "excess_total_return": -0.5545769055920053,
       "ic_std": 0.19019185405443267,
@@ -1320,7 +1322,7 @@
       "average_turnover": 0.07449670701573591,
       "benchmark_total_return": 3.2573738468213334,
       "count": 108.0,
-      "dsr": 0.008155510171361532,
+      "dsr": 0.008774479297483031,
       "episode_hit_rate": 0.5820568927789934,
       "excess_total_return": -1.5263146001940395,
       "ic_std": 0.19868141972972994,
@@ -1357,7 +1359,7 @@
       "average_turnover": 0.08341737927584005,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.07397952099304357,
+      "dsr": 0.07778679094812366,
       "episode_hit_rate": 0.6120857699805068,
       "excess_total_return": 2.148357336553821,
       "ic_std": 0.22924264352421816,
@@ -1394,7 +1396,7 @@
       "average_turnover": 0.08510632611386691,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.040771038098145286,
+      "dsr": 0.04320848976679557,
       "episode_hit_rate": 0.5619047619047619,
       "excess_total_return": 0.3306615674278701,
       "ic_std": 0.16973280023690696,
@@ -1431,7 +1433,7 @@
       "average_turnover": 0.08590958029027101,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.05735003757323327,
+      "dsr": 0.06052645758994599,
       "episode_hit_rate": 0.5671077504725898,
       "excess_total_return": 0.6592801445608583,
       "ic_std": 0.20464009375537057,
@@ -1468,7 +1470,7 @@
       "average_turnover": 0.08022827381522704,
       "benchmark_total_return": 3.2573738468213334,
       "count": 110.0,
-      "dsr": 0.01610921131778716,
+      "dsr": 0.017221085093507803,
       "episode_hit_rate": 0.5676767676767677,
       "excess_total_return": -1.1514249665205973,
       "ic_std": 0.19208247214995247,
@@ -1505,7 +1507,7 @@
       "average_turnover": 0.06567893793880314,
       "benchmark_total_return": 3.2573738468213334,
       "count": 110.0,
-      "dsr": 0.08813051262854593,
+      "dsr": 0.09249559463900187,
       "episode_hit_rate": 0.5845771144278606,
       "excess_total_return": 1.6979703144268132,
       "ic_std": 0.2036189478408534,
@@ -1542,7 +1544,7 @@
       "average_turnover": 0.08501620831242124,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.11650447660943675,
+      "dsr": 0.12183012534397991,
       "episode_hit_rate": 0.6240458015267175,
       "excess_total_return": 2.73000001177651,
       "ic_std": 0.21575589126166833,
@@ -1579,7 +1581,7 @@
       "average_turnover": 0.07420113775770022,
       "benchmark_total_return": 3.2573738468213334,
       "count": 107.0,
-      "dsr": 0.008115724377259029,
+      "dsr": 0.008730415431317137,
       "episode_hit_rate": 0.6118421052631579,
       "excess_total_return": -1.5654076161876875,
       "ic_std": 0.1950633029380824,
@@ -1616,7 +1618,7 @@
       "average_turnover": 0.07856402108638466,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.07889054701466408,
+      "dsr": 0.08290663820135519,
       "episode_hit_rate": 0.6141078838174274,
       "excess_total_return": 1.4555765544220831,
       "ic_std": 0.16547239501427677,
@@ -1653,7 +1655,7 @@
       "average_turnover": 0.08090667358083092,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.021334757127821038,
+      "dsr": 0.02274658570974985,
       "episode_hit_rate": 0.5742971887550201,
       "excess_total_return": -0.7377434318704195,
       "ic_std": 0.17965003184068729,
@@ -1690,7 +1692,7 @@
       "average_turnover": 0.025524626598425703,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.2631202129649161,
+      "dsr": 0.27186169541500926,
       "episode_hit_rate": 0.6830985915492958,
       "excess_total_return": 7.728651375264286,
       "ic_std": 0.18545883867845706,
@@ -1727,7 +1729,7 @@
       "average_turnover": 0.08811079587286942,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.18777867261073627,
+      "dsr": 0.19513611559770805,
       "episode_hit_rate": 0.5845588235294118,
       "excess_total_return": 3.3349316662268755,
       "ic_std": 0.18788322192975962,
@@ -1764,7 +1766,7 @@
       "average_turnover": 0.08580124247638753,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.004681379948191532,
+      "dsr": 0.005060160666315616,
       "episode_hit_rate": 0.5519848771266541,
       "excess_total_return": -1.9129617881081362,
       "ic_std": 0.14253436775588976,
@@ -1801,7 +1803,7 @@
       "average_turnover": 0.08170820016134824,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.03026231031865997,
+      "dsr": 0.032120974859285945,
       "episode_hit_rate": 0.5674603174603174,
       "excess_total_return": -0.7886539443892775,
       "ic_std": 0.16280417039603648,
@@ -1838,7 +1840,7 @@
       "average_turnover": 0.06109611899847627,
       "benchmark_total_return": 3.2573738468213334,
       "count": 117.0,
-      "dsr": 0.24503272340129933,
+      "dsr": 0.25348311269200485,
       "episode_hit_rate": 0.6166219839142091,
       "excess_total_return": 6.538158002820535,
       "ic_std": 0.17629061887418238,
@@ -1875,7 +1877,7 @@
       "average_turnover": 0.08013330870689153,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.1856236658199406,
+      "dsr": 0.19289272179178207,
       "episode_hit_rate": 0.5963488843813387,
       "excess_total_return": 4.016385773797443,
       "ic_std": 0.1702448365271167,
@@ -1912,7 +1914,7 @@
       "average_turnover": 0.08305912828739914,
       "benchmark_total_return": 3.2573738468213334,
       "count": 117.0,
-      "dsr": 0.02505462625997462,
+      "dsr": 0.026660681307502623,
       "episode_hit_rate": 0.5725806451612904,
       "excess_total_return": -0.919264104134712,
       "ic_std": 0.3365164408744429,
@@ -1949,7 +1951,7 @@
       "average_turnover": 0.07710219321628274,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.17686545152086308,
+      "dsr": 0.18390760561290553,
       "episode_hit_rate": 0.6139240506329114,
       "excess_total_return": 3.8721100000222863,
       "ic_std": 0.16097919364184562,
@@ -1986,7 +1988,7 @@
       "average_turnover": 0.07563150511945399,
       "benchmark_total_return": 3.2573738468213334,
       "count": 108.0,
-      "dsr": 0.03793592289208398,
+      "dsr": 0.040204296567354976,
       "episode_hit_rate": 0.589247311827957,
       "excess_total_return": 0.03487501627710188,
       "ic_std": 0.21014377738846943,
@@ -2023,7 +2025,7 @@
       "average_turnover": 0.08677054693417732,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.11195880429289162,
+      "dsr": 0.1171294223924455,
       "episode_hit_rate": 0.5839552238805971,
       "excess_total_return": 1.377558547957558,
       "ic_std": 0.20380675630592382,
@@ -2060,7 +2062,7 @@
       "average_turnover": 0.08638156020024951,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.05829766947897788,
+      "dsr": 0.06146560814828638,
       "episode_hit_rate": 0.5778611632270169,
       "excess_total_return": 0.2636788344456775,
       "ic_std": 0.19400835791807058,
@@ -2097,7 +2099,7 @@
       "average_turnover": 0.08670271462106108,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.07030829414249895,
+      "dsr": 0.0739873156683139,
       "episode_hit_rate": 0.5925233644859813,
       "excess_total_return": 0.18653166413651157,
       "ic_std": 0.15862111429497544,
@@ -2134,7 +2136,7 @@
       "average_turnover": 0.08208328002574405,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.06262453243353112,
+      "dsr": 0.06598328386843813,
       "episode_hit_rate": 0.5592885375494071,
       "excess_total_return": 1.458759113102582,
       "ic_std": 0.18906829609338305,
@@ -2171,7 +2173,7 @@
       "average_turnover": 0.08800335574364167,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.012714003932613526,
+      "dsr": 0.013613457390392813,
       "episode_hit_rate": 0.5790441176470589,
       "excess_total_return": -1.2452270049290486,
       "ic_std": 0.22275616386377492,
@@ -2208,7 +2210,7 @@
       "average_turnover": 0.08314588405500326,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.11225206718441827,
+      "dsr": 0.117393837458031,
       "episode_hit_rate": 0.59765625,
       "excess_total_return": 1.8727128591343938,
       "ic_std": 0.14623259095097893,
@@ -2245,7 +2247,7 @@
       "average_turnover": 0.08351505312984782,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.0019475181250193253,
+      "dsr": 0.002119540956339021,
       "episode_hit_rate": 0.5786407766990291,
       "excess_total_return": -2.2960367219637283,
       "ic_std": 0.17152052789811906,
@@ -2282,7 +2284,7 @@
       "average_turnover": 0.08116457214866772,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.02639135359437732,
+      "dsr": 0.028070218465613573,
       "episode_hit_rate": 0.564,
       "excess_total_return": -0.537312309530015,
       "ic_std": 0.16828997087481484,
@@ -2319,7 +2321,7 @@
       "average_turnover": 0.08475990699517814,
       "benchmark_total_return": 3.2573738468213334,
       "count": 118.0,
-      "dsr": 0.08119899332250652,
+      "dsr": 0.08532000220855213,
       "episode_hit_rate": 0.6053639846743295,
       "excess_total_return": 1.2916977965664298,
       "ic_std": 0.1857914472238818,
@@ -2347,6 +2349,43 @@
       "total_volume_aware_slippage_cost_impact": 0.0,
       "tracking_error": 0.1301999711921235
     },
+    "GRADIENT_BOOSTING_COMPOSITE": {
+      "annualized_return": 0.05718512885224536,
+      "annualized_volatility": 0.20850730380905622,
+      "average_holding_count": 3.5623620309050774,
+      "average_holding_period_return": 0.01167184879898318,
+      "average_position_concentration_hhi": 0.347674662053482,
+      "average_turnover": 0.06453052962486285,
+      "benchmark_total_return": 3.2573738468213334,
+      "count": 81.0,
+      "dsr": 0.0011842772754608593,
+      "episode_hit_rate": 0.5539568345323741,
+      "excess_total_return": -2.525789486782946,
+      "ic_std": 0.6506780457760698,
+      "icir": -0.058039317958068874,
+      "long_short_metrics": {
+        "annualized_return": -0.0021879668798586954,
+        "annualized_volatility": 0.038645111922646545,
+        "decile_spread_mean": 0.012996950667534177,
+        "max_drawdown": 0.15848509649365905,
+        "monotonicity_spearman": 0.2727272727272727,
+        "sharpe": -0.056616911454111185,
+        "total_turnover": 14.08540392958928,
+        "win_rate": 0.46496815286624205
+      },
+      "max_drawdown": -0.40162136998276066,
+      "max_position_concentration_hhi": 1.0,
+      "mean_ic": -0.03776490998713221,
+      "newey_west_tstat": -0.5580031386772992,
+      "sharpe_ratio": 0.37168211959712427,
+      "total_return": 0.7315843600383876,
+      "total_slippage_cost_impact": 0.0803826990883987,
+      "total_trading_cost_impact": 0.0803826990883987,
+      "total_transaction_cost_impact": 0.0,
+      "total_turnover": 160.55195770665875,
+      "total_volume_aware_slippage_cost_impact": 0.0,
+      "tracking_error": 0.1457091204396237
+    },
     "ICIR_WEIGHTED_COMPOSITE": {
       "annualized_return": 0.15761957522084358,
       "annualized_volatility": 0.22242330062131743,
@@ -2356,7 +2395,7 @@
       "average_turnover": 0.07988838704905411,
       "benchmark_total_return": 3.2573738468213334,
       "count": 112.0,
-      "dsr": 0.03278945036736811,
+      "dsr": 0.03480612346601779,
       "episode_hit_rate": 0.5772357723577236,
       "excess_total_return": -0.015216578515448553,
       "ic_std": 0.19632973691637254,
@@ -2393,7 +2432,7 @@
       "average_turnover": 0.08301090146127237,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.046393777197771026,
+      "dsr": 0.049063555058838415,
       "episode_hit_rate": 0.580078125,
       "excess_total_return": 0.5918589824620968,
       "ic_std": 0.20284811794971597,
@@ -2430,7 +2469,7 @@
       "average_turnover": 0.08273090511612115,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.07313997474691253,
+      "dsr": 0.07694276713912288,
       "episode_hit_rate": 0.5725490196078431,
       "excess_total_return": 1.1563969855073601,
       "ic_std": 0.17731279195443375,
@@ -2467,7 +2506,7 @@
       "average_turnover": 0.08208439471609166,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.045380333522107054,
+      "dsr": 0.04800050395216776,
       "episode_hit_rate": 0.5770750988142292,
       "excess_total_return": 0.30808267926720756,
       "ic_std": 0.18577549293878592,
@@ -2495,6 +2534,43 @@
       "total_volume_aware_slippage_cost_impact": 0.0,
       "tracking_error": 0.12599495827466997
     },
+    "RANDOM_FOREST_COMPOSITE": {
+      "annualized_return": 0.05658375715658481,
+      "annualized_volatility": 0.20711215484920342,
+      "average_holding_count": 3.5623620309050774,
+      "average_holding_period_return": 0.011598835261446436,
+      "average_position_concentration_hhi": 0.347674285964399,
+      "average_turnover": 0.06403507121422028,
+      "benchmark_total_return": 3.2573738468213334,
+      "count": 81.0,
+      "dsr": 0.0011678455801845504,
+      "episode_hit_rate": 0.5418181818181819,
+      "excess_total_return": -2.535489887248993,
+      "ic_std": 0.6640229200453992,
+      "icir": -0.09187777719128672,
+      "long_short_metrics": {
+        "annualized_return": 0.005902803778795307,
+        "annualized_volatility": 0.04276025046384084,
+        "decile_spread_mean": 0.009662780832731286,
+        "max_drawdown": 0.10292675320011724,
+        "monotonicity_spearman": 0.6242424242424242,
+        "sharpe": 0.1380441815649997,
+        "total_turnover": 14.011091722727237,
+        "win_rate": 0.47770700636942676
+      },
+      "max_drawdown": -0.40162136998276066,
+      "max_position_concentration_hhi": 1.0,
+      "mean_ic": -0.06100894989783878,
+      "newey_west_tstat": -0.8579201677818302,
+      "sharpe_ratio": 0.3700500610843999,
+      "total_return": 0.7218839595723403,
+      "total_slippage_cost_impact": 0.07972937417877962,
+      "total_trading_cost_impact": 0.07972937417877962,
+      "total_transaction_cost_impact": 0.0,
+      "total_turnover": 159.31925718098006,
+      "total_volume_aware_slippage_cost_impact": 0.0,
+      "tracking_error": 0.14556569926364976
+    },
     "REGIME_SWITCHING_COMPOSITE": {
       "annualized_return": 0.20928144753212252,
       "annualized_volatility": 0.22431420203499322,
@@ -2504,7 +2580,7 @@
       "average_turnover": 0.08241957661523884,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.10619501655576152,
+      "dsr": 0.11121378346979438,
       "episode_hit_rate": 0.5807086614173228,
       "excess_total_return": 2.2708378965944975,
       "ic_std": 0.19050210819135077,
@@ -2541,7 +2617,7 @@
       "average_turnover": 0.0814666213826771,
       "benchmark_total_return": 3.2573738468213334,
       "count": 116.0,
-      "dsr": 0.02172744390143807,
+      "dsr": 0.023161414216317913,
       "episode_hit_rate": 0.5717131474103586,
       "excess_total_return": -0.580969814262466,
       "ic_std": 0.1988104542559249,
@@ -2588,7 +2664,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_001",
           "parameters": {
             "periods_per_year": 252,
@@ -2604,7 +2680,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3a8a6bd3e6f9ef6b98dfea1410e6ad8b4f0f28e0efafb971c4c86ebd71239c13"
+        "trial_id": "b2cfee31581b3a2ed0687b96dfff95edbab32da58253b4fea1289414d2fd1eb3"
       },
       {
         "sharpe": 0.01953855996382514,
@@ -2614,7 +2690,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_001",
           "parameters": {
             "periods_per_year": 252,
@@ -2630,7 +2706,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "bb4df0557e386aa0fe0c82c4f9fd67b451879bf5d2d9ad8445b35812ed1ca05d"
+        "trial_id": "46c81eeac453070af8e438f65db2157c4dcb82764845a32da85d456c0875986e"
       },
       {
         "sharpe": 0.07185574822492076,
@@ -2640,7 +2716,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_002",
           "parameters": {
             "periods_per_year": 252,
@@ -2656,7 +2732,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "208e970139ea03b05cad85394cfa4710aed8b4c9d04c161bb327fe4fe9400553"
+        "trial_id": "31a57c5417b98a466ce1a24d023561c456f0245627acf5314c85e0fb8871d960"
       },
       {
         "sharpe": 0.027474812768555283,
@@ -2666,7 +2742,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_002",
           "parameters": {
             "periods_per_year": 252,
@@ -2682,7 +2758,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e3ea67a007342caca1111faca66c2933dc1b51598328d29bb19e0cdebe3349b5"
+        "trial_id": "5e7bd34d6962ee6a4ce943f85ba8dd6c6aaecc153b505b02966dc0a49ec297d8"
       },
       {
         "sharpe": 0.06811126260719932,
@@ -2692,7 +2768,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_003",
           "parameters": {
             "periods_per_year": 252,
@@ -2708,7 +2784,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b542164873fccc441c013783cdf9baf4ff77e4cd8c65281f91e3a0f015b00d2a"
+        "trial_id": "889eaf421d2d673e5bc69ab16da86bed93622d360e9b8f78f192e7a4c096d1b7"
       },
       {
         "sharpe": 0.03150995743266256,
@@ -2718,7 +2794,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_003",
           "parameters": {
             "periods_per_year": 252,
@@ -2734,7 +2810,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "56df3fc22cd2d80b5f3fd7e5361cb63311a0115fdee63c4c90cf682f224adbb3"
+        "trial_id": "13420f5035706d7b3c3dee53ef201a9e91721d3bb2fc714b8a2ca8bca0059b6f"
       },
       {
         "sharpe": 0.04029482514934577,
@@ -2744,7 +2820,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_004",
           "parameters": {
             "periods_per_year": 252,
@@ -2760,7 +2836,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a999e2dd5cd6199f02c7b5064af5e299598354c98a84223c6149ef600988557e"
+        "trial_id": "cd1059f3d1929aa3d83e68c3a0421c12cd22d815aff2590e61180c54a2e73808"
       },
       {
         "sharpe": -0.011386423013042051,
@@ -2770,7 +2846,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_004",
           "parameters": {
             "periods_per_year": 252,
@@ -2786,7 +2862,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "26844bf0275db0ab80101d22d085d652e41deefb8fbdf7401c484f4db237e7d9"
+        "trial_id": "a776d4d74614c75d5a3bd4d7313a3aaf8c2812fd3b31aaf5013b1d2db7501f1e"
       },
       {
         "sharpe": 0.04522752017922398,
@@ -2796,7 +2872,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_005",
           "parameters": {
             "periods_per_year": 252,
@@ -2812,7 +2888,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "291058b510ce6d58bb906c802f342407df9f2491a44193ac658275781c065b14"
+        "trial_id": "7e666a8e883c80f7c508d65c2e3b7956accfdde5984c98011583d5b7d1b0db64"
       },
       {
         "sharpe": -0.0024060188045641716,
@@ -2822,7 +2898,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_005",
           "parameters": {
             "periods_per_year": 252,
@@ -2838,7 +2914,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2ba2cb508989346aa39ef5c428d75e756511c0c63efbc27ec2b3855c8bccad1f"
+        "trial_id": "929f7bb9d1eaf826c74a073cec871be2ac3cadf028bf13fb4fd2fbf84efed1d7"
       },
       {
         "sharpe": 0.061852449498118404,
@@ -2848,7 +2924,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_006",
           "parameters": {
             "periods_per_year": 252,
@@ -2864,7 +2940,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "206779a2775c5560ab247d287787696858442b03355029bbfaf188d93ad4b8bd"
+        "trial_id": "00dd93be968ce0981c089137966f745d86dc99f501efe312b7aa7810ff99c2a8"
       },
       {
         "sharpe": -0.011051690512007807,
@@ -2874,7 +2950,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_006",
           "parameters": {
             "periods_per_year": 252,
@@ -2890,7 +2966,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a28d376111a6bbfac7c2b702ca14aebf5612912a620c4b2f43a6ac37240a823f"
+        "trial_id": "0570dcf111beeceb847cbc16b922e23e84dac0a5cc5fec462a7f661211bef00f"
       },
       {
         "sharpe": 0.063866263051884,
@@ -2900,7 +2976,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_007",
           "parameters": {
             "periods_per_year": 252,
@@ -2916,7 +2992,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "33c2303e2a5a66279d2a9847cb468e9fee97a2a8c3d62fd9001f78c0faf96872"
+        "trial_id": "7177e69d51984183538f63e7ef19b772b6b1126cb7016ebefea3dec1fb5952bd"
       },
       {
         "sharpe": -0.043730121591056104,
@@ -2926,7 +3002,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_007",
           "parameters": {
             "periods_per_year": 252,
@@ -2942,7 +3018,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c9c133aa4c79fc9da6caf220f67c9c6ecd10520721acbd42e502589f8c91d3b3"
+        "trial_id": "61ade3ce73bad17344fab373803abd9d7d8610a313e378033bc149638e0f03e5"
       },
       {
         "sharpe": 0.04923556443221166,
@@ -2952,7 +3028,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_008",
           "parameters": {
             "periods_per_year": 252,
@@ -2968,7 +3044,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5723efd4b89a38a1d682b00db5791bfeced0e51f09a6117975e5ebdb14407337"
+        "trial_id": "07f1eda453b6db4ab5e01ed34e148e686ff563101910f4ee7e6869f5ba1db05a"
       },
       {
         "sharpe": -0.004692091029923334,
@@ -2978,7 +3054,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_008",
           "parameters": {
             "periods_per_year": 252,
@@ -2994,7 +3070,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7a65f06e165f522043d329ba555ee86a7c77f783c3817545e55e3c23086c29de"
+        "trial_id": "573a6e8251dd1a5a5dc49f1e449319f6be3f0add69c8edfab771a5e5bdeed763"
       },
       {
         "sharpe": 0.060411121889860316,
@@ -3004,7 +3080,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_009",
           "parameters": {
             "periods_per_year": 252,
@@ -3020,7 +3096,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "294101415f65bf6cbf655b964f67a71cd7bccb73f358ad584cd93214d38387a5"
+        "trial_id": "f849e5cb6dd0a1ba5a12e112dc2ca3e8ede21cc567f193dbbc2112c6d7c7f49a"
       },
       {
         "sharpe": 0.019648268835851617,
@@ -3030,7 +3106,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_009",
           "parameters": {
             "periods_per_year": 252,
@@ -3046,7 +3122,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "40186d2095cafc31530446ed49fb1cd25d64434a2e2e340958b2a8711aa5dbf5"
+        "trial_id": "7f3fce152dd38881b2131197a50cea097f261c123f28a47259967512310c050e"
       },
       {
         "sharpe": 0.05377430354634932,
@@ -3056,7 +3132,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_010",
           "parameters": {
             "periods_per_year": 252,
@@ -3072,7 +3148,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a379288eb057f0e35a6422b39755f57d5e62421fe1b3fe030fbc97819523f366"
+        "trial_id": "0a9ab26aac86ab87416d11f5039dc721bc574e8745cb6dfd1507db7f2dfba12f"
       },
       {
         "sharpe": 0.011186314277167667,
@@ -3082,7 +3158,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_010",
           "parameters": {
             "periods_per_year": 252,
@@ -3098,7 +3174,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "dc1d8712464e559e355dacf80779da21376d9f8903d1c244778e0b1ea501c34d"
+        "trial_id": "5e2d22c1102fa8d00c8cfac449513000014566c6f4e27d5f8feb7138ddfbf148"
       },
       {
         "sharpe": 0.03898532008501645,
@@ -3108,7 +3184,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_012",
           "parameters": {
             "periods_per_year": 252,
@@ -3124,7 +3200,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d1fe9e55216f479172210293df65be4ed4328f41575879a0cec6a89b2b47c77f"
+        "trial_id": "8eb685eed5ef18ef31115ca3759d43e476006fee974b7ecb11ba1697bf3ddef2"
       },
       {
         "sharpe": -0.013116174337139503,
@@ -3134,7 +3210,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_012",
           "parameters": {
             "periods_per_year": 252,
@@ -3150,7 +3226,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "098177f2e17a5f4c40f3a57d15188322bc4e28386ded9a9926f62608a1b0e387"
+        "trial_id": "e40c4d212a3d0cc94b586bb3580ca67ebbc9f6c26b71c581e62edbd341c04e3d"
       },
       {
         "sharpe": 0.04399681131632128,
@@ -3160,7 +3236,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_013",
           "parameters": {
             "periods_per_year": 252,
@@ -3176,7 +3252,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9ff39c41ed4dedf1c8dd7ee4435897579fa38101578eabb818192d175843d826"
+        "trial_id": "2a5e75a9b7b7e7f829fdc3e17d48461f6636d1885089b6c27134f26b93f0a51d"
       },
       {
         "sharpe": -0.0180055214860652,
@@ -3186,7 +3262,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_013",
           "parameters": {
             "periods_per_year": 252,
@@ -3202,7 +3278,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c85607a7479a1dcb4b828f10f7a84c8d6b0b191f70136a23d3377fa7bd561225"
+        "trial_id": "3be910be131029d3c9345cc155a5d20d53ab21f2f6454feb5007f8504367ea2f"
       },
       {
         "sharpe": 0.07082147874284264,
@@ -3212,7 +3288,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_014",
           "parameters": {
             "periods_per_year": 252,
@@ -3228,7 +3304,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1cf2691e4b5f495aca8fb9963daac8479b1ffe917d44dd038a72a40247dc807b"
+        "trial_id": "890f66e056a3708408e6835667d1e56603338bb87bfa6d7a25ed4dcb3feb1293"
       },
       {
         "sharpe": 0.018447212616612703,
@@ -3238,7 +3314,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_014",
           "parameters": {
             "periods_per_year": 252,
@@ -3254,7 +3330,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "562b59c8172b0c5ff34744dd5533f097f626270350385ac9c41df70bb1be1986"
+        "trial_id": "e4f7200d57e2bf892c0f663dca64f4b00a5f6ae3137d77e29fc3ea7d98b45aa3"
       },
       {
         "sharpe": 0.03996271249476328,
@@ -3264,7 +3340,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_015",
           "parameters": {
             "periods_per_year": 252,
@@ -3280,7 +3356,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "dbb9d0269e08bd6e3d7f4e3aab02a7462109a72960e238b537a8f0faefa0ee5f"
+        "trial_id": "11940f4ecd22656e93223b848e600826e597fc039487052f6547fb9a7bc079af"
       },
       {
         "sharpe": -0.009472133715947685,
@@ -3290,7 +3366,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_015",
           "parameters": {
             "periods_per_year": 252,
@@ -3306,7 +3382,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e3f97e74300b54759d191b9cd0d19f8b7b38b97e10dbb37a5809ee73dcc7884e"
+        "trial_id": "234381be61144c2f8132966cc84ec2d475b85d6cca6fdc4ceb3630b56cac7489"
       },
       {
         "sharpe": 0.04264715974918045,
@@ -3316,7 +3392,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_016",
           "parameters": {
             "periods_per_year": 252,
@@ -3332,7 +3408,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "55c4f9a0f5e151921ec35e3d9968eebf0f05b3417c0bca8f91e3c5f0d4b3fe9a"
+        "trial_id": "b765f1d09b05e95db9058fafb158487e93e3f93496ea9f5955a27bd938117aad"
       },
       {
         "sharpe": -0.01007315106763054,
@@ -3342,7 +3418,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_016",
           "parameters": {
             "periods_per_year": 252,
@@ -3358,7 +3434,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4c0f3528ee2cee6a0c12ee383f1b5dfb97f0853b4049dff879b26fcc1e2fc3d4"
+        "trial_id": "7155516c089c7f7f91e37c386ac4a87c7f33461bc5db0dca03cf9fdcf7cd28e5"
       },
       {
         "sharpe": 0.06096068866873302,
@@ -3368,7 +3444,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_017",
           "parameters": {
             "periods_per_year": 252,
@@ -3384,7 +3460,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ae0f96ec93a6b908f19d3f57442a07b9ca2106cd6f14f6c40909feb6da72bac6"
+        "trial_id": "c0744fad0027499dba415273e910db239a16d2e073b1bf2ed0d84247024fae0b"
       },
       {
         "sharpe": -0.004491716424064884,
@@ -3394,7 +3470,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_017",
           "parameters": {
             "periods_per_year": 252,
@@ -3410,7 +3486,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2707ab54a5b19056b992c567834cf518d9523006edf010d870e10749cb44d061"
+        "trial_id": "435398bb5d0ec6026f47dbef568cd52733c714e00c400771eb3ed18bd91d71e3"
       },
       {
         "sharpe": 0.06603845202833834,
@@ -3420,7 +3496,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_018",
           "parameters": {
             "periods_per_year": 252,
@@ -3436,7 +3512,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "99ba0575e5890ab92ee6070e95863fd339fe848d423428b73467a1e3f7ce14a4"
+        "trial_id": "ab85734fd89d6d4c43bfbb7bb162072c07a06a8a2a27e163b79b3efe0f9c4e64"
       },
       {
         "sharpe": 0.03079735821744862,
@@ -3446,7 +3522,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_018",
           "parameters": {
             "periods_per_year": 252,
@@ -3462,7 +3538,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7188b8d0e87f6d257e27549ad9223b5f3e05932f7a9352a4646467e20314cd71"
+        "trial_id": "e2fbf1083faf4b865a478544ac1a11284638d0c4aaf63f50b9532a1d3c3ac38d"
       },
       {
         "sharpe": 0.06814972821290127,
@@ -3472,7 +3548,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_019",
           "parameters": {
             "periods_per_year": 252,
@@ -3488,7 +3564,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a7b369ccf3a2d9cb2f467703453aaef8362f3ce23bd42a97dadc33af2797c587"
+        "trial_id": "9f1748c086adc53bbf5932101b0c5e8bc03d74a1690f2ebcf75bce916771cc7e"
       },
       {
         "sharpe": 0.030151355556856843,
@@ -3498,7 +3574,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_019",
           "parameters": {
             "periods_per_year": 252,
@@ -3514,7 +3590,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ceb8bf875cb384b356187868a1967de35d0b532a2f6555dfbe06e00f5d35d675"
+        "trial_id": "d8f0076460e31940b1a2a895adc6d7e06ee90b584be8897fcf03d1ef69b925e8"
       },
       {
         "sharpe": 0.0598388489011075,
@@ -3524,7 +3600,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_020",
           "parameters": {
             "periods_per_year": 252,
@@ -3540,7 +3616,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "fb3127b60699d7441a1cae728aeef3576ba648263859b0d46d318becbc234978"
+        "trial_id": "b16f74d9b13dabe714ae782c38c010391f03008b6194c828cebb0aaadd7e07c3"
       },
       {
         "sharpe": -0.005188210221581211,
@@ -3550,7 +3626,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_020",
           "parameters": {
             "periods_per_year": 252,
@@ -3566,7 +3642,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d1c87723b14a19021c22467c91159fe95bc11d69c3addc003d4ddac883fd0f72"
+        "trial_id": "576419fab577c1e87f6ed646ad666aa9ca4700bf73ef50dfde2424f36a5663d8"
       },
       {
         "sharpe": 0.046686286842394384,
@@ -3576,7 +3652,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_021",
           "parameters": {
             "periods_per_year": 252,
@@ -3592,7 +3668,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "05f81327bd892fd35e99f529c78859ca4cc724ce23256a8bb5c83a33cf4ae32c"
+        "trial_id": "af2825bc40b0275df7e147a0bc6cf4182f7ad0ae720ef96ba31001bd3b44af40"
       },
       {
         "sharpe": -0.036504999911140965,
@@ -3602,7 +3678,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_021",
           "parameters": {
             "periods_per_year": 252,
@@ -3618,7 +3694,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "bfb1d07078d9b2efcc8e600170d01601a8d8f46d1cb9991d91e1d1bed0f06731"
+        "trial_id": "58b7fb441d001cb6326b3bb6a8c3d2d23621581bd23c08dc4557d50ae72a3d5a"
       },
       {
         "sharpe": 0.03793718886368928,
@@ -3628,7 +3704,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_022",
           "parameters": {
             "periods_per_year": 252,
@@ -3644,7 +3720,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "bc9ad4610e25a540a853963c41ce401b4ed280a288c3386741f8419cae282f32"
+        "trial_id": "f48fd866a6a152fb4cae31c46623b20472b76065e931f3410993f75da292f578"
       },
       {
         "sharpe": -0.043676474053031294,
@@ -3654,7 +3730,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_022",
           "parameters": {
             "periods_per_year": 252,
@@ -3670,7 +3746,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3a684678784b6c8b04623945b7f72e1991c71582298cc84be8c2f4a30d7e1397"
+        "trial_id": "c2cb4c44ea762a76d6f97ac7e34e1b301da1eb3b1c0ded6a1b6739fb07d6eafe"
       },
       {
         "sharpe": 0.03597150834412487,
@@ -3680,7 +3756,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_023",
           "parameters": {
             "periods_per_year": 252,
@@ -3696,7 +3772,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "53548a8218e7027dcb5543ce19ce8b1730bbb6bbb052d3157f21e0746f6649ce"
+        "trial_id": "ae0a60ce9ca8923e28d107098cc6ba0c11683b569215ca444d89afa2b33c219d"
       },
       {
         "sharpe": -0.032030389225309736,
@@ -3706,7 +3782,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_023",
           "parameters": {
             "periods_per_year": 252,
@@ -3722,7 +3798,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1bbb572e21113181408f184c5853ab81d525fb2086d9d8bc16c9b70417d069dc"
+        "trial_id": "1d6495eadfc5cf77862141b7bb85cb6b1ee0717941782859214c3be84fcf71a6"
       },
       {
         "sharpe": 0.050424503711948586,
@@ -3732,7 +3808,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_024",
           "parameters": {
             "periods_per_year": 252,
@@ -3748,7 +3824,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "86deeedb9e347bf81e04ea0e89717e177f787a14e921dbe46600d247e884cd37"
+        "trial_id": "f8ad5ec684e7fa0cf3b5b87fc72701f29ffcb97aaf0d702e1f1ed226b15efd5e"
       },
       {
         "sharpe": 0.009846251842807267,
@@ -3758,7 +3834,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_024",
           "parameters": {
             "periods_per_year": 252,
@@ -3774,7 +3850,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0ddadec6d052c51c447120fbfc0ac0a6c32aa173a064a8a860efc64a7454197b"
+        "trial_id": "6184b8a81ab3091755c2de8c8285eb63fa3c54c3e85f08dbb1548e4bc4a57f52"
       },
       {
         "sharpe": 0.05586103766571719,
@@ -3784,7 +3860,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_025",
           "parameters": {
             "periods_per_year": 252,
@@ -3800,7 +3876,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "fb539eed49901eba492dc2b92ec5d35500568b3892f45b0e9c43b0a4fc9b56a4"
+        "trial_id": "f53622c9dea1bcee950b4fc90297e4cf09d225e828bf5a46b3bed6dac50b6ae5"
       },
       {
         "sharpe": -0.004388533940375294,
@@ -3810,7 +3886,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_025",
           "parameters": {
             "periods_per_year": 252,
@@ -3826,7 +3902,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5fd784898d8c598c7601f7431a44489a5af5fe1d82623c4761415e9e320fb497"
+        "trial_id": "2ed950ff729f8043e1da48f69afec87aa2fe53fd40ac0099967ab7fd29a05498"
       },
       {
         "sharpe": 0.04815101845465466,
@@ -3836,7 +3912,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_026",
           "parameters": {
             "periods_per_year": 252,
@@ -3852,7 +3928,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "62fe8a5d42ab4179083c3ad1dde5a3fee62be8e694d60cecb0e91e71e1dbe690"
+        "trial_id": "991f4847c2942996d0b430ace74fde4a5c1e4caae5cfa9579ff1c3ad7b75f78b"
       },
       {
         "sharpe": -0.0164368053297947,
@@ -3862,7 +3938,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_026",
           "parameters": {
             "periods_per_year": 252,
@@ -3878,7 +3954,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "77e8c2edd14d8fdd0d7be3169c994fff8ce101abb29c314533ef51e5d604dfcf"
+        "trial_id": "9432b39b8a06758ab4a0e215170e558757b0290dcbc9019c1ef7802b29bccece"
       },
       {
         "sharpe": 0.05035769249503387,
@@ -3888,7 +3964,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_028",
           "parameters": {
             "periods_per_year": 252,
@@ -3904,7 +3980,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9ee37ade35d2a312fc9b0002cf64448b0b0be0e7e3e2a616b3b2b43d18d86bf3"
+        "trial_id": "7802267b13924991227aad1cd861b5088974c9796c707938666b830a48221586"
       },
       {
         "sharpe": 0.0011016598528133287,
@@ -3914,7 +3990,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_028",
           "parameters": {
             "periods_per_year": 252,
@@ -3930,7 +4006,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a3b30baf60cf08bb9f3f476c34a97e2f55c056b60451a2db042c4ed4b09ed8e7"
+        "trial_id": "abd82caaee12507f458eb4330fe2455d56918dba9821bf470bd4f4933c5de1f9"
       },
       {
         "sharpe": 0.05186309814439518,
@@ -3940,7 +4016,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_030",
           "parameters": {
             "periods_per_year": 252,
@@ -3956,7 +4032,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c263610977ebd8c1c1aa59d02af6e88cf6a0c0750c41ad2ff1ef0b3c0ad0a386"
+        "trial_id": "3c1361813f6b7050292140987d89d7105e0413b181ec78ef439c069df0688eac"
       },
       {
         "sharpe": 0.012463653340547557,
@@ -3966,7 +4042,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_030",
           "parameters": {
             "periods_per_year": 252,
@@ -3982,7 +4058,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b2a4f44883a4532b2562899a270812851270911242825e44431efd246aa3314d"
+        "trial_id": "a2a14a91c56bc267cd30434721958f830e4c7a6be589753bca232a12201681bb"
       },
       {
         "sharpe": 0.045807164471817055,
@@ -3992,7 +4068,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_031",
           "parameters": {
             "periods_per_year": 252,
@@ -4008,7 +4084,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5ba15abb070bd680fedd9c103d17f40cf1b1cf904cea33341ccc0a245d77b3ef"
+        "trial_id": "0d8d512b13f8d6aa5bfb98e293dcb3fe483473355a86026fc55cf26151031e08"
       },
       {
         "sharpe": -0.0026508237092684604,
@@ -4018,7 +4094,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_031",
           "parameters": {
             "periods_per_year": 252,
@@ -4034,7 +4110,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1b41807b26a9126879de183fc3839f62fce13faa37a59ef1597a7d2aaad8be24"
+        "trial_id": "8300ba250021f08144bd88437d3014697454c6055767313f1d02d0a4f6cf153e"
       },
       {
         "sharpe": 0.0372418526384279,
@@ -4044,7 +4120,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_032",
           "parameters": {
             "periods_per_year": 252,
@@ -4060,7 +4136,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ca5e25a4dc2ac724f2140c6fae482fc096c3fe0e8d637f8fa16067a2d79bec3c"
+        "trial_id": "77d0dd77b8037699601fd6576b5693072be40bb8ee52349dd165f4b4862dd93b"
       },
       {
         "sharpe": -0.010501241475931889,
@@ -4070,7 +4146,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_032",
           "parameters": {
             "periods_per_year": 252,
@@ -4086,7 +4162,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "22431ce92a1bb7fa657a69fb094c4f17807dec4369e66d7336ac8b9cf4d002b0"
+        "trial_id": "1dece4b0faf2ba232abac8cadc37084d2032d2ba1915dad2d55444357e6bac1a"
       },
       {
         "sharpe": 0.05614411893295382,
@@ -4096,7 +4172,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_033",
           "parameters": {
             "periods_per_year": 252,
@@ -4112,7 +4188,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "dd4b33f60ad9bab9b1105f770d32d2fe014c15551cf0d7a8394fe25e09039435"
+        "trial_id": "c95034d4b79d4b1d5a5bdceccc669c00666f9ffe7abafccfb6aec5a639ccd8f9"
       },
       {
         "sharpe": 0.0033592301415259164,
@@ -4122,7 +4198,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_033",
           "parameters": {
             "periods_per_year": 252,
@@ -4138,7 +4214,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8e92febc2177ddb155b2d8620394b2c8bb39e2650ce861b09ef25a3d6c0bcb0b"
+        "trial_id": "a2871513127b05a9273b6be6109db6d97d7f117d089134d6303f6bfc296153ee"
       },
       {
         "sharpe": 0.05087870545768175,
@@ -4148,7 +4224,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_034",
           "parameters": {
             "periods_per_year": 252,
@@ -4164,7 +4240,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b2a34a89f4207c8cdde5abe9382cf7910d421bec894648f8e6b43a5eff6d1ebf"
+        "trial_id": "49c42b0a0841fd125c498547dbc2a3cc22b874c84750492cc2273604492800d7"
       },
       {
         "sharpe": 0.0002624833453553261,
@@ -4174,7 +4250,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_034",
           "parameters": {
             "periods_per_year": 252,
@@ -4190,7 +4266,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4327fce02d5a4ec671cbcee5fbf9cb636a7ea4da57aec05ec01f3832882285b4"
+        "trial_id": "d30f64ee27932d9ec08155f951cb48bd82015a1009b4028f91b988e70af9e0d1"
       },
       {
         "sharpe": 0.05395767086869024,
@@ -4200,7 +4276,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_035",
           "parameters": {
             "periods_per_year": 252,
@@ -4216,7 +4292,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "845afcc356428ed25468c83061f745f99e37a3f0c7012e856f7e8db0442f76f5"
+        "trial_id": "0143e87573e19a7c98a18336a130a244117903227e7a4fa2ca0e5494f15c2ab9"
       },
       {
         "sharpe": -0.00518863328869407,
@@ -4226,7 +4302,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_035",
           "parameters": {
             "periods_per_year": 252,
@@ -4242,7 +4318,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "25ade2185396678d12f84709bb32a782a00372a08a68fa23155a06fbf1707af5"
+        "trial_id": "4933a876a14a88f1f96c33e55d1342d5cd3e2a336fc3ae5cea200632ced2f97d"
       },
       {
         "sharpe": 0.04238046397439032,
@@ -4252,7 +4328,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_036",
           "parameters": {
             "periods_per_year": 252,
@@ -4268,7 +4344,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a0ea83d1f0927b350e4dadb59cd8bd1157022e762502d732d4a69c14ca21b9a7"
+        "trial_id": "ea7c450f750101f83bee655cfe2676efef8f4a18173ed35ec3ef0fdc8345c5e4"
       },
       {
         "sharpe": -0.010232770046116047,
@@ -4278,7 +4354,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_036",
           "parameters": {
             "periods_per_year": 252,
@@ -4294,7 +4370,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4119454585f93f05cd9b70bf8774bbb90978ff560dabae5ff1efd60794ddd2e9"
+        "trial_id": "76cb290dfbca7852481b158aa27d1ad3b23c3397cd1ef9647661f751bacf0b6b"
       },
       {
         "sharpe": 0.058208432664509584,
@@ -4304,7 +4380,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_037",
           "parameters": {
             "periods_per_year": 252,
@@ -4320,7 +4396,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5babbbdd8122c08dc8efea6916e2446eb576208133913947bc63f2233cc7619f"
+        "trial_id": "ed3460775819c3f6a6c024d312ccd1af1ebca62d4e36f34a02dee46cfbcd564b"
       },
       {
         "sharpe": 0.02051260768817292,
@@ -4330,7 +4406,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_037",
           "parameters": {
             "periods_per_year": 252,
@@ -4346,7 +4422,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1f462e657ef892b8a0afa82095e9ebc1993c944c137c5894329083497fec2477"
+        "trial_id": "7ca850c0378ee11f74a3c81df7e681bce09ca8650dd493083ecebe2c832a329f"
       },
       {
         "sharpe": 0.061365633820367436,
@@ -4356,7 +4432,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_038",
           "parameters": {
             "periods_per_year": 252,
@@ -4372,7 +4448,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ac61e4beb24e4bcc7977cba9455ce7c9375d3d89788acf70f7027403d4666fcc"
+        "trial_id": "0d4f8de499dd2f48f98c7dbcba45701563e1e109db97ce3bf21e0d0490f08cff"
       },
       {
         "sharpe": -0.006406620459085788,
@@ -4382,7 +4458,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_038",
           "parameters": {
             "periods_per_year": 252,
@@ -4398,7 +4474,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c3cfec6bcef8cc1c2e85e3fdc0d68e955500929cdb1e500b1eea085a60003a9f"
+        "trial_id": "9391f69b876201cf2434a11ab5fd01caeb619dd026010ba86eb27756f8f22c51"
       },
       {
         "sharpe": 0.037081605221895554,
@@ -4408,7 +4484,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_039",
           "parameters": {
             "periods_per_year": 252,
@@ -4424,7 +4500,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "89992c11ace774abea33133836623fb9ecbae4da463b7ac12bb43c71ae5b852c"
+        "trial_id": "969f0b417648f81c378929c614665f5e5cfbfcda40ccd1fc0243956c7252c840"
       },
       {
         "sharpe": -0.013222991652892615,
@@ -4434,7 +4510,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_039",
           "parameters": {
             "periods_per_year": 252,
@@ -4450,7 +4526,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0645e872df0a73a09d2c95ad0d8668042945ffa0bf3b443558b31b86419df1ab"
+        "trial_id": "0e5523d4de6ded124a7f3fcd8acc1a17329696db8a951cb8d191f25aadcc8972"
       },
       {
         "sharpe": 0.05697374228114994,
@@ -4460,7 +4536,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_040",
           "parameters": {
             "periods_per_year": 252,
@@ -4476,7 +4552,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5e1a91f42056093243ced32ac5e19b7b76715847600949145f8831ec16921a49"
+        "trial_id": "9cdd90082839ca67dc915b9d0fc45c1c353dce834afcf80768aa083bb70b7aaa"
       },
       {
         "sharpe": 0.0007833773283748463,
@@ -4486,7 +4562,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_040",
           "parameters": {
             "periods_per_year": 252,
@@ -4502,7 +4578,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3793a106d27cd18c371479f441d7fbc09f7f10e6dbc97bb22dbcaf0a4375adbe"
+        "trial_id": "186f24b05e93c98451bfac13555249d585a93534ba89a610ac8993571fdf3729"
       },
       {
         "sharpe": 0.04473190474965629,
@@ -4512,7 +4588,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_041",
           "parameters": {
             "periods_per_year": 252,
@@ -4528,7 +4604,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a6cbc055f3c1b4da7149066af0df4bfac86bb95d0ea42fd5a6c38a1e007291a8"
+        "trial_id": "53799674879c71a9d1541520663418bef9118638595801838d1b8477b48432c4"
       },
       {
         "sharpe": -0.004757816487781454,
@@ -4538,7 +4614,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_041",
           "parameters": {
             "periods_per_year": 252,
@@ -4554,7 +4630,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ed3114641ba2996dfbcf9a694e08f6a1f5a58793b9d6581ef9f0cd4e6914966d"
+        "trial_id": "63e03929f18c7f91bb20b74a2abd3cd9f2a1ec571b299e72a682c08f4054943e"
       },
       {
         "sharpe": 0.07252534879512508,
@@ -4564,7 +4640,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_042",
           "parameters": {
             "periods_per_year": 252,
@@ -4580,7 +4656,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "25f5e476e2747afab1d24acb81db7837d27c55eb0e4a93ac58ba2fb99b81754b"
+        "trial_id": "7ebe9911c3ca9b7a0952cfd185bcfe04963b84b185d37aaea26a4b081a24b356"
       },
       {
         "sharpe": 0.04509757362727016,
@@ -4590,7 +4666,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_042",
           "parameters": {
             "periods_per_year": 252,
@@ -4606,7 +4682,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b4204fee9c4c0af92fb848049aa17a33f62a1b8f6d0144e2aedfd1897c86036e"
+        "trial_id": "243bfe86362e15d55086dbd77ba38fb9b3fe630e9578b304c6af2e354357551b"
       },
       {
         "sharpe": 0.06769007654925858,
@@ -4616,7 +4692,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_043",
           "parameters": {
             "periods_per_year": 252,
@@ -4632,7 +4708,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c82975a55833e8c65b1ff59ee144fb6220a529b794ce1b3c33b0aa9bd18eb53c"
+        "trial_id": "ed4735b55aff6a26b3bc4b8226b8c09486598346bfb5f49e7d7d632382a4a42f"
       },
       {
         "sharpe": 0.007621009802637869,
@@ -4642,7 +4718,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_043",
           "parameters": {
             "periods_per_year": 252,
@@ -4658,7 +4734,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "26d375f11c0afab0747b1bc33c569383ea8baf5f93db435ffb982be7b3783360"
+        "trial_id": "9b9845fdc66c6bd088e48118e2a6167648e8156ccb533c4a780d4142ea13bdbd"
       },
       {
         "sharpe": 0.033193121617357574,
@@ -4668,7 +4744,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_044",
           "parameters": {
             "periods_per_year": 252,
@@ -4684,7 +4760,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a5c1ac54875b8aed9a659c77fd22f9400933f3496310127d0c551eff8ebb8c64"
+        "trial_id": "f73cbee02312a46abfed804b0f7c2973bbb8352e4b75862fb021cfb8404d6bc6"
       },
       {
         "sharpe": -0.030460018702294707,
@@ -4694,7 +4770,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_044",
           "parameters": {
             "periods_per_year": 252,
@@ -4710,7 +4786,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "6f14dc67c05347c7f6b2a761b69b126136a0753181a0f0b828ca148dd1f52796"
+        "trial_id": "5d0d9e066a0f3d959a7644d76c1b744abd16dc5c2079cf42d37d609a963cdd18"
       },
       {
         "sharpe": 0.04715685065712922,
@@ -4720,7 +4796,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_045",
           "parameters": {
             "periods_per_year": 252,
@@ -4736,7 +4812,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "af69fc9937a7f5ff89c19fe9af885950fa3046de76269a4349f8856fe50bbcd3"
+        "trial_id": "e8e585d14b62454b8acb69d198efa04e23df89b1a9f93e10c8360304129a110a"
       },
       {
         "sharpe": -0.005193088685230964,
@@ -4746,7 +4822,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_045",
           "parameters": {
             "periods_per_year": 252,
@@ -4762,7 +4838,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d50c19c89fc5d76dfe1228ce36837103f79c4319532f530b094128830279aaae"
+        "trial_id": "b38f5c40de22a34e9aa318fb17d130c24dcae6617af28256f5bc018577f11962"
       },
       {
         "sharpe": 0.07141859170612228,
@@ -4772,7 +4848,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_046",
           "parameters": {
             "periods_per_year": 252,
@@ -4788,7 +4864,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "301390984e2f0a425b211a89629edc04ce490c6e1bd34f73527e0b8f7bde526f"
+        "trial_id": "38b968ac194b62d98a9b4f6df60e41a42f6a37422c50f009d760e2f8b2d14e33"
       },
       {
         "sharpe": -0.00877378376355401,
@@ -4798,7 +4874,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_046",
           "parameters": {
             "periods_per_year": 252,
@@ -4814,7 +4890,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9af2e41ff3d5193f3d321317838d13b66c148315e1d5666fce278570d88ab464"
+        "trial_id": "59afd46a70143fe12eeef6797aadf1cda1a135c051751b6aafc88093c866fafb"
       },
       {
         "sharpe": 0.06744054073082317,
@@ -4824,7 +4900,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_049",
           "parameters": {
             "periods_per_year": 252,
@@ -4840,7 +4916,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4582efeb82b436bffe819a020e7f6f1fd410a008b23a9b8d1a51e124364f47f2"
+        "trial_id": "52768f9a672f8d49578778ef0e7109386fdd1da221bd85aff4f82c23ac8559a5"
       },
       {
         "sharpe": 0.014746709092753009,
@@ -4850,7 +4926,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_049",
           "parameters": {
             "periods_per_year": 252,
@@ -4866,7 +4942,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e60d9349678873569479bf672ee79726a796b690f5611f39ca5a244dc4c31236"
+        "trial_id": "201dbdb085f9db285fa695f8e13a321221493d5342916a463583831959321f0d"
       },
       {
         "sharpe": 0.04588208068471235,
@@ -4876,7 +4952,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_050",
           "parameters": {
             "periods_per_year": 252,
@@ -4892,7 +4968,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c6cccc6be265057709799331c41a713f23c28f544e550f20dd189c4208dffa9a"
+        "trial_id": "299331aea0e750222706dbe40f9e2658fde9ccf6c88ed8509e2e4b2c9255d52e"
       },
       {
         "sharpe": 0.0006684636287493722,
@@ -4902,7 +4978,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_050",
           "parameters": {
             "periods_per_year": 252,
@@ -4918,7 +4994,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a8f6ede554d0919241d21fcb8e2e85c4410132dad2f73ba69a9efccfdfd07ba4"
+        "trial_id": "c3874f2e3be87d07ba75cd1afd11596aeb977984025c3972e0e4cb4e07f03a05"
       },
       {
         "sharpe": 0.06673898643283638,
@@ -4928,7 +5004,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_051",
           "parameters": {
             "periods_per_year": 252,
@@ -4944,7 +5020,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2d3a27dc4fd562aa94577e219839a6bf98c0118b89896b85c9414cf3e1125535"
+        "trial_id": "d172b3b6b9a0ebf91a47f4e87b8a39174574b545b0ed3ee63d0935165bc022f6"
       },
       {
         "sharpe": 0.006998656099877077,
@@ -4954,7 +5030,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_051",
           "parameters": {
             "periods_per_year": 252,
@@ -4970,7 +5046,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b1552e225da429b18a5ecb3d29b8f38c2a4b74037b0298525807a00f050c65bb"
+        "trial_id": "d1e72d1c3f5057d5af25b342dd697e7ce768ed722c33b518740af9b5c0868cfa"
       },
       {
         "sharpe": 0.049744479399165445,
@@ -4980,7 +5056,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_052",
           "parameters": {
             "periods_per_year": 252,
@@ -4996,7 +5072,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "740ff5ce97ebb7d32494e08acfae82cc02bb3a73589180d07d5616c2b1fa2c5f"
+        "trial_id": "449984d98374295a93ea5a7cddf78c179dd1e640cc8b926d60f0504aa119a8f2"
       },
       {
         "sharpe": 0.0057298712073695105,
@@ -5006,7 +5082,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_052",
           "parameters": {
             "periods_per_year": 252,
@@ -5022,7 +5098,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "34f8b77f1f04a26200b7ff203e9c81adbb2733891506a8235c49eaf23f227d39"
+        "trial_id": "b72787ff09a2860be967c6e64ad34a9947e2af06d0f9184faa510c9a6e37617e"
       },
       {
         "sharpe": 0.060855270298947606,
@@ -5032,7 +5108,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_053",
           "parameters": {
             "periods_per_year": 252,
@@ -5048,7 +5124,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "00da570ee7fd3cb656bb33a1a33524d9221fc54626c9e8c8a6f0ccecf2cb040a"
+        "trial_id": "67f68f07b72b5857dcf11e816f354f063d6b34b77b23a6f914e1b3b91e01002c"
       },
       {
         "sharpe": 0.00990217064888366,
@@ -5058,7 +5134,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_053",
           "parameters": {
             "periods_per_year": 252,
@@ -5074,7 +5150,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a0f2d254704c228c577eda164160e1f05a52ec19023ee3555a0da1856863c09d"
+        "trial_id": "4d59ba727940010f7e998b0ef5d2c4a1fe72bfe8a3ea4c25170cdbc13960d1cb"
       },
       {
         "sharpe": 0.053644293818379964,
@@ -5084,7 +5160,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_054",
           "parameters": {
             "periods_per_year": 252,
@@ -5100,7 +5176,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4f457424ec5cffd50e8ccb2a1f3c6c26d5416601eda7bc98779a454b825ccaff"
+        "trial_id": "8e125e200b6c2032a850703ebc428968a9ecbbff61869ae7bf1266d3798e2837"
       },
       {
         "sharpe": -0.0037558141171907464,
@@ -5110,7 +5186,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_054",
           "parameters": {
             "periods_per_year": 252,
@@ -5126,7 +5202,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3b1b1ef69956a5aa83af5e35d570db43670dc6894bbc2ac2ed3b2971eb382a2c"
+        "trial_id": "b575ff0a6578b75cabeba6b40d5e242c7120949fc250774f9870142b7fc62bf5"
       },
       {
         "sharpe": 0.05573216150558127,
@@ -5136,7 +5212,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_055",
           "parameters": {
             "periods_per_year": 252,
@@ -5152,7 +5228,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7af4db6c686b5bf4df446f1fd8e9520883959c7f4aa2167512b670085deb9f4d"
+        "trial_id": "06ff86ba334fbc3acbdee0ebffc98a83598ff315438a823e669c528923505895"
       },
       {
         "sharpe": -0.015739631209078928,
@@ -5162,7 +5238,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_055",
           "parameters": {
             "periods_per_year": 252,
@@ -5178,7 +5254,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3646e162f8eeee7c2f601511a05f35ce485088abce4f57cf873d57b4a92e8c63"
+        "trial_id": "b08f92c65e4750326add8e26269bd0a00465304efa757ae65e62b836ecc8cf56"
       },
       {
         "sharpe": 0.05446416028910119,
@@ -5188,7 +5264,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_060",
           "parameters": {
             "periods_per_year": 252,
@@ -5204,7 +5280,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "82b55cc2411fdd47864daa4f5a066fa996c1d2699190ae6b248a914234101253"
+        "trial_id": "e08c67f5f79bcc52e4470caa9a76142b9b607c70eb1be60cc1eab0e1e567b0a2"
       },
       {
         "sharpe": -0.0010827437313734054,
@@ -5214,7 +5290,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_060",
           "parameters": {
             "periods_per_year": 252,
@@ -5230,7 +5306,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b967972cf2697ea05b79ded7f34d8797444d2f259a2f955b510d1e837a25e610"
+        "trial_id": "d32e916503e50df03d4e0f980244713af91b65763d391cd9bed62ffef1317ca9"
       },
       {
         "sharpe": 0.040096991997367146,
@@ -5240,7 +5316,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_101",
           "parameters": {
             "periods_per_year": 252,
@@ -5256,7 +5332,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0b06bc5094613dbffef93e8654eb6c8eeff619505e15d6625db406e2e2d5f700"
+        "trial_id": "bbe7b44171071a1c33cbb838106bee489710bc129eb52570ed66d7a3122acad8"
       },
       {
         "sharpe": -0.029191833028386023,
@@ -5266,7 +5342,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_101",
           "parameters": {
             "periods_per_year": 252,
@@ -5282,7 +5358,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ae278f4757c8a1736de14c9071d9d0ef38cbe85edfcd521e552b1ccc27658971"
+        "trial_id": "b066ebaf76da17a1298a3ac47fc5a02cd68fe841c9a94cd338184646f3b52e2b"
       },
       {
         "sharpe": 0.057401259137229176,
@@ -5294,10 +5370,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5359,7 +5437,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5375,7 +5453,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0125100bdb27ede04a54f7a8febb571e5333868107029ce233b02098ee68aa9e"
+        "trial_id": "051b568478715ece8f1646f3541e8e9d16815026f447632edd81d2fcb6a4813f"
       },
       {
         "sharpe": 0.003417801820099099,
@@ -5387,10 +5465,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5452,7 +5532,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5468,7 +5548,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f993f1974cb60b74f1fc39ae95e876a7d8d9c428b07bbeb80ae2799c673f56bd"
+        "trial_id": "923542aac071bb64891902dd17b825e75c8eb11e274d6f9bfc35c517f0f0b565"
       },
       {
         "sharpe": 0.0516793947678122,
@@ -5480,10 +5560,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5545,7 +5627,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5561,7 +5643,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ec4eec10b50e65c054c4628c9c052c049783eb7f4b63709c33f53c8388de8123"
+        "trial_id": "a00ab831be769f7b9f227dd43f0fff45f96eb111331233fe6070bf3ebeae01a2"
       },
       {
         "sharpe": 0.0027457794015127625,
@@ -5573,10 +5655,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5638,7 +5722,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5654,7 +5738,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ec2ddd9a58d6aa9659d07540136e17430f6eac901794e08aac4c1a82aaabb8e5"
+        "trial_id": "fe31b856be11b094db16da2ce41333f75dadecdf7e042a63f565d60e8042fc7a"
       },
       {
         "sharpe": 0.0484557120609871,
@@ -5666,10 +5750,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5731,7 +5817,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ICIR_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5747,7 +5833,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a32599fa48c644ea57090fdefce5e3566fec7a6ecf68750c22b2a67b19ed54b5"
+        "trial_id": "8c1b5aa6ed286d6c9dd1a27d35fa2a3f5414ba044f0180f33283fb86079d7631"
       },
       {
         "sharpe": -0.001119521700373766,
@@ -5759,10 +5845,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5824,7 +5912,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ICIR_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5840,7 +5928,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f85473126a7da2f847279ea2ee86f1271c842ad7583dc723848c8069879cd29d"
+        "trial_id": "b1fa3ddb9f1265e26c71e8d29844d31e1aacda3fee47631ca498db1f31d14949"
       },
       {
         "sharpe": 0.04637542131066413,
@@ -5852,10 +5940,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -5917,7 +6007,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "CORRELATION_DISCOUNTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5933,7 +6023,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "66c858513aef02c8e22829acec1663c866972deb2857a4610a157540c5145ba7"
+        "trial_id": "15587f8335a69199527b2ebbe08324c930c05ee69c46467021fe89a033659c41"
       },
       {
         "sharpe": -0.034621148933353156,
@@ -5945,10 +6035,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6010,7 +6102,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "CORRELATION_DISCOUNTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6026,7 +6118,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "18b6b447a3a9a24e2c0d6c53e6e563afcdc1a0e47b34e3be49b988a2036ea470"
+        "trial_id": "0b57748121ee34776cb6c20da1240cc1c64e592f7f18214b0b495e9288c97126"
       },
       {
         "sharpe": 0.06070618574710017,
@@ -6038,10 +6130,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6103,7 +6197,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_PRODUCT_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6119,7 +6213,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ac6652be99cc69771e0841d1e3b6e8a562c19188e3b2a959d3441955b177b12a"
+        "trial_id": "2498673bfd5e1927e4d0eb7fe59ea84139fdd20620396f12850c65b6747c38b4"
       },
       {
         "sharpe": 0.025891858498610414,
@@ -6131,10 +6225,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6196,7 +6292,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "ALPHA_PRODUCT_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6212,7 +6308,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3e26c01ada7bedc75c3181ff6508fd9e7ef2382a482f8867eb4ef73a3df12727"
+        "trial_id": "d61e1a2a963e3a858853c548c33ebfe9043e4bdda7dd4fa8bcef16ad2c40ed58"
       },
       {
         "sharpe": 0.0272227985384474,
@@ -6224,10 +6320,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6289,7 +6387,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "CONDITIONAL_RANK_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6305,7 +6403,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e2d6fec913b0de6b5da86516af9bb2cf36118db80f2a174471fcb9191d1717cc"
+        "trial_id": "3de3d8249b403c328d4bad3491821a1ebda692f5b1d39e8dd9ddd4994e0370e6"
       },
       {
         "sharpe": -0.06798424813959586,
@@ -6317,10 +6415,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6382,7 +6482,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "CONDITIONAL_RANK_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6398,7 +6498,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "de2f43cc178638fa59f65eb3180f0a901f120bd050e950348749e139d024eca5"
+        "trial_id": "51102e611262da40161ecbea734876818461e69e4724249756edbbff4e16b657"
       },
       {
         "sharpe": 0.05143019079038307,
@@ -6410,10 +6510,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6475,7 +6577,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "NEUTRALIZED_IC_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6491,7 +6593,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9c98dfde57f0b8a3f9999c4f64b97d09007406937b10be568f47da5ef0b67dd5"
+        "trial_id": "4978dec65a9eab448797c7bcffd26ec7b22230424851ceb38bfb9d5d233eff97"
       },
       {
         "sharpe": -0.005532512561335829,
@@ -6503,10 +6605,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6568,7 +6672,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "NEUTRALIZED_IC_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6584,7 +6688,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "09849c95e080e010744d1673c581bfd497a85dd5f33ccaef08267866fcddcc7d"
+        "trial_id": "cc32eb353511030773fc3e8837e60cc3d2ccc835a512e16f1755ddef98a8515f"
       },
       {
         "sharpe": 0.0448945385369549,
@@ -6596,10 +6700,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6661,7 +6767,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6677,7 +6783,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8776e05d9f87bda0426d3378cd9f3e096622baf1bda2357d50d901331ca281d7"
+        "trial_id": "b44c5f2f45f5ba7b17da3e3fda570c2cf742637b142994f1a8318e58c5c95771"
       },
       {
         "sharpe": -0.019467827600699445,
@@ -6689,10 +6795,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6754,7 +6862,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6770,7 +6878,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "14ebdfa377fd4965cf7abe9c15d6840ba9cf39bdfc29b8a2b5cec45391929c0c"
+        "trial_id": "a70c21ac9ace64351e165fea63021586c7047efb6043b82c01f98b93755c77fe"
       },
       {
         "sharpe": 0.05623681530793381,
@@ -6782,10 +6890,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6847,7 +6957,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6863,7 +6973,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "70a7bccdc1d7005185b1b1b5b9d11563c55129d18b6400cdc4972b45dbde15e5"
+        "trial_id": "2700af57ff722df2d0ce53d2418ac3bd601fa5153796af708bfc8e5d37379c97"
       },
       {
         "sharpe": 0.003800496087189528,
@@ -6875,10 +6985,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -6940,7 +7052,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6956,7 +7068,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "377cf53600d7afbdbb37804ebc32f29ec89e2b09ad208bba7dcfc8ba84a130dc"
+        "trial_id": "cd38130f9a1098caef0a8e791c07043d481eb321baafa43aa2c8614d5258b4e8"
       },
       {
         "sharpe": 0.060424664058756454,
@@ -6968,10 +7080,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7033,7 +7147,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "REGIME_SWITCHING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7049,7 +7163,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "539ee0529ccd8ad296affe7e38527fa4ca9e09edd4c7209638bd7a31bd120bc0"
+        "trial_id": "c8792104353b714775e282f931bd673a783638de73ce8193c887294515180024"
       },
       {
         "sharpe": 0.015595023191341525,
@@ -7061,10 +7175,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7126,7 +7242,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "REGIME_SWITCHING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7142,7 +7258,387 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d3e5b0181c69031abb02b512d8bab6728bb906a6fd2d857a0d0e16052413a498"
+        "trial_id": "ce7edfe8f8713a9602c3439c59e40c0a77a1753bfd6427cb55591692d131a01b"
+      },
+      {
+        "sharpe": 0.023306277570974195,
+        "specification": {
+          "direction": "long_only",
+          "estimator_parameters": {
+            "composite_ids": [
+              "ALPHA_PRODUCT_INTERACTION",
+              "CONDITIONAL_RANK_INTERACTION",
+              "CORRELATION_DISCOUNTED_COMPOSITE",
+              "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
+              "ICIR_WEIGHTED_COMPOSITE",
+              "IC_WEIGHTED_COMPOSITE",
+              "MARKET_BETA_NEUTRAL_COMPOSITE",
+              "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
+              "REGIME_SWITCHING_COMPOSITE",
+              "SECTOR_NEUTRAL_COMPOSITE"
+            ],
+            "forward_holding_periods": 21,
+            "parent_alpha_ids": [
+              "ALPHA_001",
+              "ALPHA_002",
+              "ALPHA_003",
+              "ALPHA_004",
+              "ALPHA_005",
+              "ALPHA_006",
+              "ALPHA_007",
+              "ALPHA_008",
+              "ALPHA_009",
+              "ALPHA_010",
+              "ALPHA_012",
+              "ALPHA_013",
+              "ALPHA_014",
+              "ALPHA_015",
+              "ALPHA_016",
+              "ALPHA_017",
+              "ALPHA_018",
+              "ALPHA_019",
+              "ALPHA_020",
+              "ALPHA_021",
+              "ALPHA_022",
+              "ALPHA_023",
+              "ALPHA_024",
+              "ALPHA_025",
+              "ALPHA_026",
+              "ALPHA_028",
+              "ALPHA_030",
+              "ALPHA_031",
+              "ALPHA_032",
+              "ALPHA_033",
+              "ALPHA_034",
+              "ALPHA_035",
+              "ALPHA_036",
+              "ALPHA_037",
+              "ALPHA_038",
+              "ALPHA_039",
+              "ALPHA_040",
+              "ALPHA_041",
+              "ALPHA_042",
+              "ALPHA_043",
+              "ALPHA_044",
+              "ALPHA_045",
+              "ALPHA_046",
+              "ALPHA_049",
+              "ALPHA_050",
+              "ALPHA_051",
+              "ALPHA_052",
+              "ALPHA_053",
+              "ALPHA_054",
+              "ALPHA_055",
+              "ALPHA_060",
+              "ALPHA_101"
+            ],
+            "ridge_alpha": 0.1,
+            "warmup_periods": 25
+          },
+          "estimator_version": "m4_1_ml_combination_v1",
+          "factor_id": "RANDOM_FOREST_COMPOSITE",
+          "parameters": {
+            "periods_per_year": 252,
+            "rebalance_frequency": "ME",
+            "signal_lag_periods": 1,
+            "slippage_bps": 5.0,
+            "top_n": 5,
+            "transaction_cost_bps": 0.0,
+            "turnover_penalty_lambda": 0.0,
+            "volatility_window": 20,
+            "weighting_scheme": "equal"
+          },
+          "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
+        },
+        "status": "completed",
+        "trial_id": "aa885bd30a5fc26b2b6d04a88f19f2267a3e647f1749419e64d29ade037c7363"
+      },
+      {
+        "sharpe": 0.008695966056200865,
+        "specification": {
+          "direction": "long_short",
+          "estimator_parameters": {
+            "composite_ids": [
+              "ALPHA_PRODUCT_INTERACTION",
+              "CONDITIONAL_RANK_INTERACTION",
+              "CORRELATION_DISCOUNTED_COMPOSITE",
+              "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
+              "ICIR_WEIGHTED_COMPOSITE",
+              "IC_WEIGHTED_COMPOSITE",
+              "MARKET_BETA_NEUTRAL_COMPOSITE",
+              "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
+              "REGIME_SWITCHING_COMPOSITE",
+              "SECTOR_NEUTRAL_COMPOSITE"
+            ],
+            "forward_holding_periods": 21,
+            "parent_alpha_ids": [
+              "ALPHA_001",
+              "ALPHA_002",
+              "ALPHA_003",
+              "ALPHA_004",
+              "ALPHA_005",
+              "ALPHA_006",
+              "ALPHA_007",
+              "ALPHA_008",
+              "ALPHA_009",
+              "ALPHA_010",
+              "ALPHA_012",
+              "ALPHA_013",
+              "ALPHA_014",
+              "ALPHA_015",
+              "ALPHA_016",
+              "ALPHA_017",
+              "ALPHA_018",
+              "ALPHA_019",
+              "ALPHA_020",
+              "ALPHA_021",
+              "ALPHA_022",
+              "ALPHA_023",
+              "ALPHA_024",
+              "ALPHA_025",
+              "ALPHA_026",
+              "ALPHA_028",
+              "ALPHA_030",
+              "ALPHA_031",
+              "ALPHA_032",
+              "ALPHA_033",
+              "ALPHA_034",
+              "ALPHA_035",
+              "ALPHA_036",
+              "ALPHA_037",
+              "ALPHA_038",
+              "ALPHA_039",
+              "ALPHA_040",
+              "ALPHA_041",
+              "ALPHA_042",
+              "ALPHA_043",
+              "ALPHA_044",
+              "ALPHA_045",
+              "ALPHA_046",
+              "ALPHA_049",
+              "ALPHA_050",
+              "ALPHA_051",
+              "ALPHA_052",
+              "ALPHA_053",
+              "ALPHA_054",
+              "ALPHA_055",
+              "ALPHA_060",
+              "ALPHA_101"
+            ],
+            "ridge_alpha": 0.1,
+            "warmup_periods": 25
+          },
+          "estimator_version": "m4_1_ml_combination_v1",
+          "factor_id": "RANDOM_FOREST_COMPOSITE",
+          "parameters": {
+            "periods_per_year": 252,
+            "quantiles": 10,
+            "rebalance_frequency": "ME",
+            "signal_lag_periods": 1,
+            "slippage_bps": 5.0,
+            "transaction_cost_bps": 0.0,
+            "turnover_penalty_lambda": 0.0,
+            "volatility_window": 20,
+            "weighting_scheme": "equal"
+          },
+          "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
+        },
+        "status": "completed",
+        "trial_id": "54a9e9fbdf947732016701b5a18e05bf19e1570d01d6f76de9a2126f4f618ca6"
+      },
+      {
+        "sharpe": 0.023409066930333202,
+        "specification": {
+          "direction": "long_only",
+          "estimator_parameters": {
+            "composite_ids": [
+              "ALPHA_PRODUCT_INTERACTION",
+              "CONDITIONAL_RANK_INTERACTION",
+              "CORRELATION_DISCOUNTED_COMPOSITE",
+              "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
+              "ICIR_WEIGHTED_COMPOSITE",
+              "IC_WEIGHTED_COMPOSITE",
+              "MARKET_BETA_NEUTRAL_COMPOSITE",
+              "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
+              "REGIME_SWITCHING_COMPOSITE",
+              "SECTOR_NEUTRAL_COMPOSITE"
+            ],
+            "forward_holding_periods": 21,
+            "parent_alpha_ids": [
+              "ALPHA_001",
+              "ALPHA_002",
+              "ALPHA_003",
+              "ALPHA_004",
+              "ALPHA_005",
+              "ALPHA_006",
+              "ALPHA_007",
+              "ALPHA_008",
+              "ALPHA_009",
+              "ALPHA_010",
+              "ALPHA_012",
+              "ALPHA_013",
+              "ALPHA_014",
+              "ALPHA_015",
+              "ALPHA_016",
+              "ALPHA_017",
+              "ALPHA_018",
+              "ALPHA_019",
+              "ALPHA_020",
+              "ALPHA_021",
+              "ALPHA_022",
+              "ALPHA_023",
+              "ALPHA_024",
+              "ALPHA_025",
+              "ALPHA_026",
+              "ALPHA_028",
+              "ALPHA_030",
+              "ALPHA_031",
+              "ALPHA_032",
+              "ALPHA_033",
+              "ALPHA_034",
+              "ALPHA_035",
+              "ALPHA_036",
+              "ALPHA_037",
+              "ALPHA_038",
+              "ALPHA_039",
+              "ALPHA_040",
+              "ALPHA_041",
+              "ALPHA_042",
+              "ALPHA_043",
+              "ALPHA_044",
+              "ALPHA_045",
+              "ALPHA_046",
+              "ALPHA_049",
+              "ALPHA_050",
+              "ALPHA_051",
+              "ALPHA_052",
+              "ALPHA_053",
+              "ALPHA_054",
+              "ALPHA_055",
+              "ALPHA_060",
+              "ALPHA_101"
+            ],
+            "ridge_alpha": 0.1,
+            "warmup_periods": 25
+          },
+          "estimator_version": "m4_1_ml_combination_v1",
+          "factor_id": "GRADIENT_BOOSTING_COMPOSITE",
+          "parameters": {
+            "periods_per_year": 252,
+            "rebalance_frequency": "ME",
+            "signal_lag_periods": 1,
+            "slippage_bps": 5.0,
+            "top_n": 5,
+            "transaction_cost_bps": 0.0,
+            "turnover_penalty_lambda": 0.0,
+            "volatility_window": 20,
+            "weighting_scheme": "equal"
+          },
+          "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
+        },
+        "status": "completed",
+        "trial_id": "445d8f439b200911c597f7ed22141ef3187777fa3df731d12bbf862025f48000"
+      },
+      {
+        "sharpe": -0.003566530183527202,
+        "specification": {
+          "direction": "long_short",
+          "estimator_parameters": {
+            "composite_ids": [
+              "ALPHA_PRODUCT_INTERACTION",
+              "CONDITIONAL_RANK_INTERACTION",
+              "CORRELATION_DISCOUNTED_COMPOSITE",
+              "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
+              "ICIR_WEIGHTED_COMPOSITE",
+              "IC_WEIGHTED_COMPOSITE",
+              "MARKET_BETA_NEUTRAL_COMPOSITE",
+              "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
+              "REGIME_SWITCHING_COMPOSITE",
+              "SECTOR_NEUTRAL_COMPOSITE"
+            ],
+            "forward_holding_periods": 21,
+            "parent_alpha_ids": [
+              "ALPHA_001",
+              "ALPHA_002",
+              "ALPHA_003",
+              "ALPHA_004",
+              "ALPHA_005",
+              "ALPHA_006",
+              "ALPHA_007",
+              "ALPHA_008",
+              "ALPHA_009",
+              "ALPHA_010",
+              "ALPHA_012",
+              "ALPHA_013",
+              "ALPHA_014",
+              "ALPHA_015",
+              "ALPHA_016",
+              "ALPHA_017",
+              "ALPHA_018",
+              "ALPHA_019",
+              "ALPHA_020",
+              "ALPHA_021",
+              "ALPHA_022",
+              "ALPHA_023",
+              "ALPHA_024",
+              "ALPHA_025",
+              "ALPHA_026",
+              "ALPHA_028",
+              "ALPHA_030",
+              "ALPHA_031",
+              "ALPHA_032",
+              "ALPHA_033",
+              "ALPHA_034",
+              "ALPHA_035",
+              "ALPHA_036",
+              "ALPHA_037",
+              "ALPHA_038",
+              "ALPHA_039",
+              "ALPHA_040",
+              "ALPHA_041",
+              "ALPHA_042",
+              "ALPHA_043",
+              "ALPHA_044",
+              "ALPHA_045",
+              "ALPHA_046",
+              "ALPHA_049",
+              "ALPHA_050",
+              "ALPHA_051",
+              "ALPHA_052",
+              "ALPHA_053",
+              "ALPHA_054",
+              "ALPHA_055",
+              "ALPHA_060",
+              "ALPHA_101"
+            ],
+            "ridge_alpha": 0.1,
+            "warmup_periods": 25
+          },
+          "estimator_version": "m4_1_ml_combination_v1",
+          "factor_id": "GRADIENT_BOOSTING_COMPOSITE",
+          "parameters": {
+            "periods_per_year": 252,
+            "quantiles": 10,
+            "rebalance_frequency": "ME",
+            "signal_lag_periods": 1,
+            "slippage_bps": 5.0,
+            "transaction_cost_bps": 0.0,
+            "turnover_penalty_lambda": 0.0,
+            "volatility_window": 20,
+            "weighting_scheme": "equal"
+          },
+          "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
+        },
+        "status": "completed",
+        "trial_id": "334a2be12bbf7c116c1b3869884d1329b7b6f5d14e715df255a4b969afad6a68"
       },
       {
         "sharpe": 0.0516793947678122,
@@ -7154,10 +7650,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7219,7 +7717,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7235,7 +7733,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ec4eec10b50e65c054c4628c9c052c049783eb7f4b63709c33f53c8388de8123"
+        "trial_id": "a00ab831be769f7b9f227dd43f0fff45f96eb111331233fe6070bf3ebeae01a2"
       },
       {
         "sharpe": 0.0027457794015127625,
@@ -7247,10 +7745,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7312,7 +7812,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7328,7 +7828,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ec2ddd9a58d6aa9659d07540136e17430f6eac901794e08aac4c1a82aaabb8e5"
+        "trial_id": "fe31b856be11b094db16da2ce41333f75dadecdf7e042a63f565d60e8042fc7a"
       },
       {
         "sharpe": 0.05183318215583022,
@@ -7340,10 +7840,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7405,7 +7907,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7421,7 +7923,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "97befc73bf932c89392b0223eae2cc690f77d362ba7a7bddb7a01eef4ad840d7"
+        "trial_id": "7cdccef88b625ae8377c3b6ffe1a0e879084c329de623fcf84dbbda8a0dda376"
       },
       {
         "sharpe": -0.005647497325197908,
@@ -7433,10 +7935,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7498,7 +8002,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7514,7 +8018,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "50109ce08fc41935b140a199450fffa08387cc9f5a64f59ed19deebf0c440a3f"
+        "trial_id": "e9b93eb7670cc2a76f795d66e4379559f90ba6f8fe303168b1ffc0cb308ae610"
       },
       {
         "sharpe": 0.062064296566016405,
@@ -7526,10 +8030,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7591,7 +8097,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7607,7 +8113,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "876ff2592b133ebbef7bc3e319d11d1b3f670e2c1bb26db5947f682b9099d1f3"
+        "trial_id": "a0e907f7737a17803b9f1f8eaadf54c2d9a4bc7f4239be7597a6d9cad3be282c"
       },
       {
         "sharpe": 0.012100104296486603,
@@ -7619,10 +8125,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7684,7 +8192,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7700,7 +8208,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "79af2386a5d95ea75454faa0690577b3b3af8ef47182481715ca1d601bbde7df"
+        "trial_id": "c52f858347d20fb4019dbf27400cae518fdb33440dde8f37c1795e14f57426bf"
       },
       {
         "sharpe": 0.06091731540766787,
@@ -7712,10 +8220,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7777,7 +8287,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7793,7 +8303,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "58c46f368caf6194ceb900672684b9c3f73b24d30c359f15aeac9f4cb3ef5622"
+        "trial_id": "5891f9ea979acc7a88fbb12d037896808ac3dd87addb313e21b938ffaab97bfb"
       },
       {
         "sharpe": -0.00023262044793881636,
@@ -7805,10 +8315,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7870,7 +8382,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7886,7 +8398,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c50144b633fa649a1adc265fc1ed93d8fef55108cf5fbf150d2774ec2e0cc928"
+        "trial_id": "ea2b74fe152265cc10b9ef529e8efafa0ab1835b8b119d000f034d08947c9672"
       },
       {
         "sharpe": 0.05623681530793381,
@@ -7898,10 +8410,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -7963,7 +8477,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7979,7 +8493,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "70a7bccdc1d7005185b1b1b5b9d11563c55129d18b6400cdc4972b45dbde15e5"
+        "trial_id": "2700af57ff722df2d0ce53d2418ac3bd601fa5153796af708bfc8e5d37379c97"
       },
       {
         "sharpe": 0.003800496087189528,
@@ -7991,10 +8505,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8056,7 +8572,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8072,7 +8588,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "377cf53600d7afbdbb37804ebc32f29ec89e2b09ad208bba7dcfc8ba84a130dc"
+        "trial_id": "cd38130f9a1098caef0a8e791c07043d481eb321baafa43aa2c8614d5258b4e8"
       },
       {
         "sharpe": 0.05470909965639213,
@@ -8084,10 +8600,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8149,7 +8667,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8165,7 +8683,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f51c751942e725ccaaddb60e346737c2303b7839d52005a057483e370415d387"
+        "trial_id": "216b994c11dec627b1fd9cf69bd2ee1c82a867b4438a758591d46478e54905b7"
       },
       {
         "sharpe": -0.0033776040406262855,
@@ -8177,10 +8695,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8242,7 +8762,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8258,7 +8778,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "846d5e7dc1f9117f0222234d3acc820145bddbccd73c12fa3e6bc4caf04bd701"
+        "trial_id": "fcdc1b1556ba27954e5f0167fb27b260b1c2af98a31dc235bc0a24cceaa6de86"
       },
       {
         "sharpe": 0.06383089827468517,
@@ -8270,10 +8790,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8335,7 +8857,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8351,7 +8873,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "6b4fde10911ebb5dcfd5162262cefbfdc55340de08258c3f19f68c0c948d7e70"
+        "trial_id": "3ce8360f9924fbd2c130158d6bcd2e036f9a756c215210b9c485af632ab94420"
       },
       {
         "sharpe": 0.01607590531600083,
@@ -8363,10 +8885,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8428,7 +8952,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8444,7 +8968,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f210964630a2a69295a4b5327f318d3a1b9fafb2995fb86fe110c3912aae7d37"
+        "trial_id": "e931ed741f8e20745a160735958b78277280f4795c6122508f6424b733ba1c97"
       },
       {
         "sharpe": 0.06147804142984536,
@@ -8456,10 +8980,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8521,7 +9047,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8537,7 +9063,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "53254ac02fadca2f2ae9375f9b1d0aa28eddd2e2b0711d2b7cce82ee2813ad0e"
+        "trial_id": "465694d0256ba1fa95338a5e0491625bd1c7e84e2d382c77d1d1328b22d9ffef"
       },
       {
         "sharpe": 0.0030839873338296005,
@@ -8549,10 +9075,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8614,7 +9142,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8630,7 +9158,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8fda557cfa58f0979930a73456d8693844722af40800c73a711d801bef36f872"
+        "trial_id": "566e8da66900add0c71cac14cba6a58d96e8226bbbbc4453edb5ce2c0335e578"
       },
       {
         "sharpe": 0.0448945385369549,
@@ -8642,10 +9170,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8707,7 +9237,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8723,7 +9253,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8776e05d9f87bda0426d3378cd9f3e096622baf1bda2357d50d901331ca281d7"
+        "trial_id": "b44c5f2f45f5ba7b17da3e3fda570c2cf742637b142994f1a8318e58c5c95771"
       },
       {
         "sharpe": -0.019467827600699445,
@@ -8735,10 +9265,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8800,7 +9332,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8816,7 +9348,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "14ebdfa377fd4965cf7abe9c15d6840ba9cf39bdfc29b8a2b5cec45391929c0c"
+        "trial_id": "a70c21ac9ace64351e165fea63021586c7047efb6043b82c01f98b93755c77fe"
       },
       {
         "sharpe": 0.04428210438447033,
@@ -8828,10 +9360,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8893,7 +9427,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8909,7 +9443,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1c94cd7b6fccfac8ed525480b257da27896b9f65783cd5e10b4892bd8af7248a"
+        "trial_id": "ccaecc69e5eb17f2ee2405a805c0a98910412e71f223f570c90b92f740fabf53"
       },
       {
         "sharpe": -0.02637796224493162,
@@ -8921,10 +9455,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -8986,7 +9522,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9002,7 +9538,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5fcca8a58f4baef59a2f25a350aceff15018b80d8fb00a4711a34a6c0712c330"
+        "trial_id": "016ef30c7d0f0f092f20a246f4688b5d8074c8b45e16e5018a08d089640f552b"
       },
       {
         "sharpe": 0.053530240156923994,
@@ -9014,10 +9550,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9079,7 +9617,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9095,7 +9633,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7ee375af3d44a3c3a2c9e68571de72d0fb3519a06380b9d52a6d0db6ba35e35f"
+        "trial_id": "c72b1cc32984055ee9be4babee9625ba3a5eddb34e7b5f30fccdddfb17b6dab6"
       },
       {
         "sharpe": -0.010867530799170591,
@@ -9107,10 +9645,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9172,7 +9712,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9188,7 +9728,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c65972a90db7049775cb6334534afa0dbc273db5d6374e55dd2f2b8f0b2cdb44"
+        "trial_id": "09153214c801c8c35297b7ff7cc4b3d44548e7dbb67ec9a48143815e8e73e0a0"
       },
       {
         "sharpe": 0.052400668674280906,
@@ -9200,10 +9740,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9265,7 +9807,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9281,7 +9823,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "203f3a3341ed7c5d6a2bfaac4030868f475bf7302dc787434fbcaf93384d69da"
+        "trial_id": "95c1d9d8d85900e04f07fa19d7b6fa76d2a5471a28cead1281a4dfc23d150625"
       },
       {
         "sharpe": -0.021047575492227005,
@@ -9293,10 +9835,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9358,7 +9902,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9374,7 +9918,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ae73d973078cd776aa416f36a6d3ce3c43f337f37160e71caafd853aff756990"
+        "trial_id": "23ff258b2aba86eae1b315d5f2a05324841f0255681d92a0344279a084c52be8"
       },
       {
         "sharpe": 0.057401259137229176,
@@ -9386,10 +9930,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9451,7 +9997,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9467,7 +10013,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0125100bdb27ede04a54f7a8febb571e5333868107029ce233b02098ee68aa9e"
+        "trial_id": "051b568478715ece8f1646f3541e8e9d16815026f447632edd81d2fcb6a4813f"
       },
       {
         "sharpe": 0.003417801820099099,
@@ -9479,10 +10025,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9544,7 +10092,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9560,7 +10108,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f993f1974cb60b74f1fc39ae95e876a7d8d9c428b07bbeb80ae2799c673f56bd"
+        "trial_id": "923542aac071bb64891902dd17b825e75c8eb11e274d6f9bfc35c517f0f0b565"
       },
       {
         "sharpe": 0.05795012002509549,
@@ -9572,10 +10120,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9637,7 +10187,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9653,7 +10203,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "6340bc5687e1f39fe2b34595630b07ec82ca0e224a9cd7647590a0890fdbf4e0"
+        "trial_id": "07eaaacd749c5793c3fefd21bfe0609dd0d267bbbd448c98ff043c16eccc3184"
       },
       {
         "sharpe": 0.0008223303990937507,
@@ -9665,10 +10215,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9730,7 +10282,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9746,7 +10298,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2f63f9997ce7197a23759c9cdce67eed547c5c5ea9843e361ecf6854b26b367e"
+        "trial_id": "ebc6c46b51c4e889317e4f1e06aaadc7a307bed4c487ecc877e4fdbb4611f661"
       },
       {
         "sharpe": 0.061759322981989696,
@@ -9758,10 +10310,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9823,7 +10377,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9839,7 +10393,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3ba0a10dea419b2a3fe9e7414c8ee099b8f68970730b33fea75f6879393aa6f4"
+        "trial_id": "23bdf78f26399a1bb09f11593ec0e341732065ea3d6016f6fcee408408388896"
       },
       {
         "sharpe": 0.0118337242152924,
@@ -9851,10 +10405,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -9916,7 +10472,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9932,7 +10488,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f414278bece41caec3e8a787559bc7e3cc9980a3c204f2b7fd6d180af6824e9f"
+        "trial_id": "ee5d506660d39a6fff28df37ec730fa20911c9717c141a2a452cb76298928175"
       },
       {
         "sharpe": 0.06042560585459419,
@@ -9944,10 +10500,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -10009,7 +10567,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10025,7 +10583,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f6e5efb7597c0633cf7b857c5cc6213bf7478e8c310b868bc2f6e38d29384d59"
+        "trial_id": "2607ff1c3cde69984d8828bc186b78f605554340fbcd9f50ea1405f67fc33767"
       },
       {
         "sharpe": 0.005725287983609157,
@@ -10037,10 +10595,12 @@
               "CONDITIONAL_RANK_INTERACTION",
               "CORRELATION_DISCOUNTED_COMPOSITE",
               "EQUAL_WEIGHTED_COMPOSITE",
+              "GRADIENT_BOOSTING_COMPOSITE",
               "ICIR_WEIGHTED_COMPOSITE",
               "IC_WEIGHTED_COMPOSITE",
               "MARKET_BETA_NEUTRAL_COMPOSITE",
               "NEUTRALIZED_IC_COMPOSITE",
+              "RANDOM_FOREST_COMPOSITE",
               "REGIME_SWITCHING_COMPOSITE",
               "SECTOR_NEUTRAL_COMPOSITE"
             ],
@@ -10102,7 +10662,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_0_real_data_causal_accounting_v1",
+          "estimator_version": "m4_1_ml_combination_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10118,7 +10678,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "cb27937b42a88dede47bdfab05ef3dcf5d5e7c50ac6384430aaca4696636d492"
+        "trial_id": "9516772aaf0c06146026cfd1cc0efa28427e18b90f526655d62716baf70bca6e"
       }
     ],
     "weighting_comparisons": [

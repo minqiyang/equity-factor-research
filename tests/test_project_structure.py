@@ -7381,6 +7381,7 @@ def test_public_metadata_and_readme_match_implemented_scope() -> None:
         "pandas>=2.1",
         "scipy>=1.11",
         "pyarrow>=14.0",
+        "scikit-learn>=1.4",
     ]
     assert configuration["tool"]["ruff"]["lint"]["select"] == [
         "E4",
