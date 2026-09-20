@@ -1,5 +1,21 @@
 # Engineering Log
 
+## 2026-09-19 - Sector and market beta risk neutralization expansion
+
+- Working root `efr-neutralization-expansion-20260919` on
+  `codex/neutralization-expansion-20260919` from baseline `49ca7f0`.
+- Task `TASK-NEUTRALIZATION-EXPANSION-001` implements Scheme B (Sector & Beta Neutralization).
+- Implemented `SECTOR_NEUTRAL_COMPOSITE` via `cross_sectional_group_neutralize(ic_comp, sector_map)`
+  with 5 balanced cohorts across the 50 assets (`Sector_0` through `Sector_4`, 10 assets each).
+- Implemented `MARKET_BETA_NEUTRAL_COMPOSITE` via `cross_sectional_neutralize(ic_comp, market_beta)`
+  with 60-day trailing rolling market beta ($\text{Cov}(r_i, r_m) / \text{Var}(r_m)$, `min_periods=20`)
+  against the equal-weighted market benchmark. Leading dates without 20 observations remain NaN.
+- Expanded factor count from 59 to 61 factors (`n_trials=61`).
+- Added deterministic unit tests for `build_default_sector_mapping` and `compute_rolling_market_beta`
+  in `tests/test_multifactor_diagnostic_mvp.py`.
+- Pinned official four-decimal values and long-short Sharpe for all 61 factors in
+  `OFFICIAL_FOUR_DECIMAL_ROWS`. Regenerated official markdown report and JSON sidecar.
+
 ## 2026-09-19 - Return-horizon causal walk-forward weights and LS table pins
 
 - Working root `efr-causal-horizon-20260919` on

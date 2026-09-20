@@ -39,17 +39,22 @@ profitability.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
 8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
    return volatility. Leading dates without five observations remain NaN.
-9. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
-   start at the lag-1 execution close.
-10. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
+9. Build `SECTOR_NEUTRAL_COMPOSITE` demeaned within discrete sector cohorts
+   (5 sectors across the 50 assets).
+10. Build `MARKET_BETA_NEUTRAL_COMPOSITE` orthogonalized against trailing 60-day
+    rolling market beta against the equal-weighted market portfolio. Leading
+    dates without 20 observations remain NaN.
+11. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
+    start at the lag-1 execution close.
+12. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
     the mean IC.
-11. Run the existing long-only equal-weight monthly backtester with
+13. Run the existing long-only equal-weight monthly backtester with
     `5.00` bps slippage and `5` names.
-12. Run dollar-neutral long-short decile spread backtests with `10` quantiles
+14. Run dollar-neutral long-short decile spread backtests with `10` quantiles
     and `5.00` bps slippage.
-13. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
-    `n_trials=59` and the Euler-Mascheroni expected-maximum mix.
-14. Compute the Probability of Backtest Overfitting (PBO) across all 52
+15. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
+    `n_trials=61` and the Euler-Mascheroni expected-maximum mix.
+16. Compute the Probability of Backtest Overfitting (PBO) across all 52
     alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
@@ -73,6 +78,8 @@ profitability.
 - Composite IC weights: in-sample mean monthly Rank IC of the 52 implemented alphas
 - Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs labeled strictly before t whose execution-aligned forward-return windows have closed by t (`source_row(s) + 1 + 21 <= source_row(t)`)
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
+- Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
+- Market beta proxy: 60-day rolling return beta against equal-weighted market return, min_periods=20, no backfill
 - Long-short quantiles: `10`
 
 ## In-sample IC weights
@@ -143,65 +150,67 @@ forward-return window has closed by t.
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.0121 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
+| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.0117 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
 | ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0012 | -15.29% | -0.4035 | -27.88% | 0.0838 | 0.0306 |
-| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.1645 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
-| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.0317 | 8.41% | 0.2839 | -23.66% | 0.0871 | 0.0318 |
-| ALPHA_005 | -0.0254 | -0.1645 | -0.8436 | 0.0579 | 15.55% | 0.4512 | -23.13% | 0.0781 | 0.0285 |
-| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.0193 | 3.59% | 0.1589 | -14.41% | 0.0826 | 0.0302 |
+| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.1615 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
+| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.0308 | 8.41% | 0.2839 | -23.66% | 0.0871 | 0.0318 |
+| ALPHA_005 | -0.0254 | -0.1645 | -0.8436 | 0.0564 | 15.55% | 0.4512 | -23.13% | 0.0781 | 0.0285 |
+| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.0187 | 3.59% | 0.1589 | -14.41% | 0.0826 | 0.0302 |
 | ALPHA_007 | 0.0106 | 0.0984 | 0.5324 | 0.0009 | -17.35% | -0.4558 | -25.97% | 0.0799 | 0.0292 |
-| ALPHA_008 | -0.0291 | -0.2172 | -1.3083 | 0.0326 | 8.87% | 0.2920 | -23.31% | 0.0804 | 0.0294 |
-| ALPHA_009 | -0.0194 | -0.1182 | -0.7920 | 0.0521 | 13.74% | 0.4208 | -24.30% | 0.0804 | 0.0294 |
-| ALPHA_010 | -0.0182 | -0.1064 | -0.7266 | 0.0812 | 19.43% | 0.5551 | -23.54% | 0.0815 | 0.0298 |
-| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.0922 | 21.76% | 0.5961 | -18.88% | 0.0821 | 0.0300 |
-| ALPHA_013 | 0.0345 | 0.2377 | 1.6730 | 0.0197 | 3.69% | 0.1639 | -24.01% | 0.0814 | 0.0298 |
-| ALPHA_014 | -0.0063 | -0.0432 | -0.2736 | 0.0102 | -2.02% | 0.0119 | -23.78% | 0.0832 | 0.0304 |
-| ALPHA_015 | 0.0076 | 0.0388 | 0.2525 | 0.0294 | 7.65% | 0.2641 | -24.26% | 0.0805 | 0.0294 |
-| ALPHA_016 | 0.0483 | 0.3418 | 2.4570 | 0.0087 | -3.09% | -0.0222 | -22.16% | 0.0811 | 0.0297 |
-| ALPHA_017 | -0.0478 | -0.4175 | -2.9894 | 0.1998 | 34.36% | 0.8826 | -14.41% | 0.0839 | 0.0307 |
-| ALPHA_018 | -0.0324 | -0.2301 | -2.2995 | 0.0098 | -2.16% | 0.0032 | -20.67% | 0.0859 | 0.0314 |
-| ALPHA_019 | -0.0974 | -0.6117 | -2.9056 | 0.0040 | -6.88% | -0.1828 | -14.82% | 0.0414 | 0.0151 |
-| ALPHA_020 | -0.0315 | -0.2621 | -1.6914 | 0.0408 | 11.10% | 0.3520 | -20.93% | 0.0855 | 0.0312 |
-| ALPHA_021 | -0.0007 | -0.0049 | -0.0286 | 0.0211 | 4.43% | 0.1810 | -22.81% | 0.0581 | 0.0212 |
-| ALPHA_022 | 0.0377 | 0.2971 | 1.9156 | 0.2526 | 40.80% | 0.9852 | -12.59% | 0.0832 | 0.0304 |
-| ALPHA_023 | -0.0152 | -0.0973 | -0.6273 | 0.1395 | 28.34% | 0.7390 | -17.50% | 0.0788 | 0.0288 |
-| ALPHA_024 | -0.0023 | -0.0137 | -0.0780 | 0.0019 | -11.63% | -0.3295 | -24.82% | 0.0529 | 0.0193 |
-| ALPHA_025 | -0.0343 | -0.2524 | -2.1566 | 0.0265 | 6.50% | 0.2379 | -22.81% | 0.0832 | 0.0304 |
-| ALPHA_026 | 0.0420 | 0.2824 | 1.6224 | 0.0784 | 19.19% | 0.5438 | -19.93% | 0.0828 | 0.0302 |
-| ALPHA_028 | 0.0097 | 0.0693 | 0.3415 | 0.0288 | 7.55% | 0.2593 | -30.66% | 0.0827 | 0.0302 |
-| ALPHA_030 | -0.0112 | -0.0723 | -0.4867 | 0.0511 | 13.78% | 0.4145 | -19.70% | 0.0827 | 0.0302 |
-| ALPHA_031 | -0.0105 | -0.0736 | -0.4883 | 0.0490 | 13.34% | 0.4025 | -14.94% | 0.0810 | 0.0296 |
-| ALPHA_032 | -0.0260 | -0.1733 | -0.8504 | 0.0055 | -4.97% | -0.1185 | -22.85% | 0.0586 | 0.0214 |
-| ALPHA_033 | -0.0308 | -0.2051 | -2.0262 | 0.0952 | 22.10% | 0.6057 | -17.06% | 0.0859 | 0.0314 |
-| ALPHA_034 | 0.0010 | 0.0068 | 0.0458 | 0.0753 | 19.40% | 0.5305 | -13.73% | 0.0789 | 0.0288 |
-| ALPHA_035 | -0.0028 | -0.0186 | -0.1299 | 0.0041 | -8.62% | -0.1802 | -19.08% | 0.0844 | 0.0308 |
-| ALPHA_036 | -0.0415 | -0.3506 | -1.6099 | 0.0054 | -5.68% | -0.1249 | -20.28% | 0.0634 | 0.0231 |
-| ALPHA_037 | -0.0212 | -0.1205 | -0.8161 | 0.0096 | -1.80% | -0.0005 | -19.20% | 0.0570 | 0.0208 |
-| ALPHA_038 | -0.0174 | -0.1119 | -0.7676 | 0.0197 | 3.77% | 0.1647 | -20.58% | 0.0838 | 0.0307 |
-| ALPHA_039 | -0.0661 | -0.4513 | -1.9483 | 0.0051 | -5.51% | -0.1338 | -17.86% | 0.0580 | 0.0212 |
-| ALPHA_040 | 0.0107 | 0.0731 | 0.4754 | 0.0309 | 8.01% | 0.2775 | -16.59% | 0.0854 | 0.0312 |
-| ALPHA_041 | -0.0137 | -0.0933 | -0.9037 | 0.0177 | 2.80% | 0.1387 | -23.42% | 0.0831 | 0.0303 |
-| ALPHA_042 | 0.0067 | 0.0418 | 0.3450 | 0.0347 | 9.44% | 0.3074 | -20.44% | 0.0405 | 0.0148 |
+| ALPHA_008 | -0.0291 | -0.2172 | -1.3083 | 0.0317 | 8.87% | 0.2920 | -23.31% | 0.0804 | 0.0294 |
+| ALPHA_009 | -0.0194 | -0.1182 | -0.7920 | 0.0508 | 13.74% | 0.4208 | -24.30% | 0.0804 | 0.0294 |
+| ALPHA_010 | -0.0182 | -0.1064 | -0.7266 | 0.0793 | 19.43% | 0.5551 | -23.54% | 0.0815 | 0.0298 |
+| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.0902 | 21.76% | 0.5961 | -18.88% | 0.0821 | 0.0300 |
+| ALPHA_013 | 0.0345 | 0.2377 | 1.6730 | 0.0191 | 3.69% | 0.1639 | -24.01% | 0.0814 | 0.0298 |
+| ALPHA_014 | -0.0063 | -0.0432 | -0.2736 | 0.0099 | -2.02% | 0.0119 | -23.78% | 0.0832 | 0.0304 |
+| ALPHA_015 | 0.0076 | 0.0388 | 0.2525 | 0.0286 | 7.65% | 0.2641 | -24.26% | 0.0805 | 0.0294 |
+| ALPHA_016 | 0.0483 | 0.3418 | 2.4570 | 0.0084 | -3.09% | -0.0222 | -22.16% | 0.0811 | 0.0297 |
+| ALPHA_017 | -0.0478 | -0.4175 | -2.9894 | 0.1964 | 34.36% | 0.8826 | -14.41% | 0.0839 | 0.0307 |
+| ALPHA_018 | -0.0324 | -0.2301 | -2.2995 | 0.0095 | -2.16% | 0.0032 | -20.67% | 0.0859 | 0.0314 |
+| ALPHA_019 | -0.0974 | -0.6117 | -2.9056 | 0.0039 | -6.88% | -0.1828 | -14.82% | 0.0414 | 0.0151 |
+| ALPHA_020 | -0.0315 | -0.2621 | -1.6914 | 0.0398 | 11.10% | 0.3520 | -20.93% | 0.0855 | 0.0312 |
+| ALPHA_021 | -0.0007 | -0.0049 | -0.0286 | 0.0205 | 4.43% | 0.1810 | -22.81% | 0.0581 | 0.0212 |
+| ALPHA_022 | 0.0377 | 0.2971 | 1.9156 | 0.2486 | 40.80% | 0.9852 | -12.59% | 0.0832 | 0.0304 |
+| ALPHA_023 | -0.0152 | -0.0973 | -0.6273 | 0.1368 | 28.34% | 0.7390 | -17.50% | 0.0788 | 0.0288 |
+| ALPHA_024 | -0.0023 | -0.0137 | -0.0780 | 0.0018 | -11.63% | -0.3295 | -24.82% | 0.0529 | 0.0193 |
+| ALPHA_025 | -0.0343 | -0.2524 | -2.1566 | 0.0258 | 6.50% | 0.2379 | -22.81% | 0.0832 | 0.0304 |
+| ALPHA_026 | 0.0420 | 0.2824 | 1.6224 | 0.0766 | 19.19% | 0.5438 | -19.93% | 0.0828 | 0.0302 |
+| ALPHA_028 | 0.0097 | 0.0693 | 0.3415 | 0.0280 | 7.55% | 0.2593 | -30.66% | 0.0827 | 0.0302 |
+| ALPHA_030 | -0.0112 | -0.0723 | -0.4867 | 0.0498 | 13.78% | 0.4145 | -19.70% | 0.0827 | 0.0302 |
+| ALPHA_031 | -0.0105 | -0.0736 | -0.4883 | 0.0477 | 13.34% | 0.4025 | -14.94% | 0.0810 | 0.0296 |
+| ALPHA_032 | -0.0260 | -0.1733 | -0.8504 | 0.0053 | -4.97% | -0.1185 | -22.85% | 0.0586 | 0.0214 |
+| ALPHA_033 | -0.0308 | -0.2051 | -2.0262 | 0.0931 | 22.10% | 0.6057 | -17.06% | 0.0859 | 0.0314 |
+| ALPHA_034 | 0.0010 | 0.0068 | 0.0458 | 0.0736 | 19.40% | 0.5305 | -13.73% | 0.0789 | 0.0288 |
+| ALPHA_035 | -0.0028 | -0.0186 | -0.1299 | 0.0039 | -8.62% | -0.1802 | -19.08% | 0.0844 | 0.0308 |
+| ALPHA_036 | -0.0415 | -0.3506 | -1.6099 | 0.0052 | -5.68% | -0.1249 | -20.28% | 0.0634 | 0.0231 |
+| ALPHA_037 | -0.0212 | -0.1205 | -0.8161 | 0.0093 | -1.80% | -0.0005 | -19.20% | 0.0570 | 0.0208 |
+| ALPHA_038 | -0.0174 | -0.1119 | -0.7676 | 0.0191 | 3.77% | 0.1647 | -20.58% | 0.0838 | 0.0307 |
+| ALPHA_039 | -0.0661 | -0.4513 | -1.9483 | 0.0050 | -5.51% | -0.1338 | -17.86% | 0.0580 | 0.0212 |
+| ALPHA_040 | 0.0107 | 0.0731 | 0.4754 | 0.0301 | 8.01% | 0.2775 | -16.59% | 0.0854 | 0.0312 |
+| ALPHA_041 | -0.0137 | -0.0933 | -0.9037 | 0.0172 | 2.80% | 0.1387 | -23.42% | 0.0831 | 0.0303 |
+| ALPHA_042 | 0.0067 | 0.0418 | 0.3450 | 0.0337 | 9.44% | 0.3074 | -20.44% | 0.0405 | 0.0148 |
 | ALPHA_043 | 0.0338 | 0.2310 | 1.6466 | 0.0002 | -24.62% | -0.7007 | -32.69% | 0.0811 | 0.0296 |
-| ALPHA_044 | 0.0456 | 0.2998 | 1.7685 | 0.0092 | -2.68% | -0.0112 | -20.08% | 0.0826 | 0.0301 |
-| ALPHA_045 | -0.0006 | -0.0044 | -0.0261 | 0.1407 | 27.64% | 0.7443 | -15.48% | 0.0751 | 0.0274 |
-| ALPHA_046 | -0.0187 | -0.1143 | -0.6428 | 0.0118 | -0.58% | 0.0449 | -19.16% | 0.0681 | 0.0249 |
-| ALPHA_049 | -0.0232 | -0.1703 | -1.3605 | 0.0443 | 12.17% | 0.3746 | -24.35% | 0.0789 | 0.0288 |
-| ALPHA_050 | -0.0171 | -0.1065 | -0.5499 | 0.0098 | -2.13% | 0.0030 | -21.84% | 0.0804 | 0.0293 |
-| ALPHA_051 | 0.0025 | 0.0198 | 0.1748 | 0.0771 | 18.95% | 0.5392 | -20.51% | 0.0828 | 0.0302 |
-| ALPHA_052 | -0.0430 | -0.2931 | -1.4077 | 0.0105 | -1.11% | 0.0181 | -21.46% | 0.0550 | 0.0201 |
-| ALPHA_053 | -0.0096 | -0.0809 | -0.6399 | 0.0080 | -3.94% | -0.0416 | -26.81% | 0.0832 | 0.0304 |
-| ALPHA_054 | 0.0048 | 0.0346 | 0.3353 | 0.0161 | 1.93% | 0.1156 | -25.60% | 0.0860 | 0.0314 |
-| ALPHA_055 | -0.0017 | -0.0114 | -0.0662 | 0.0090 | -2.63% | -0.0151 | -24.90% | 0.0795 | 0.0290 |
-| ALPHA_060 | 0.0103 | 0.0727 | 0.6986 | 0.0099 | -1.97% | 0.0042 | -23.44% | 0.0804 | 0.0293 |
-| ALPHA_101 | 0.0181 | 0.1150 | 1.0473 | 0.0133 | 0.28% | 0.0709 | -29.74% | 0.0816 | 0.0298 |
-| EQUAL_WEIGHTED_COMPOSITE | -0.0138 | -0.0890 | -0.7149 | 0.0081 | -3.65% | -0.0388 | -23.39% | 0.0844 | 0.0308 |
-| IC_WEIGHTED_COMPOSITE | 0.0826 | 0.6074 | 3.5590 | 0.0741 | 18.26% | 0.5280 | -23.03% | 0.0787 | 0.0287 |
+| ALPHA_044 | 0.0456 | 0.2998 | 1.7685 | 0.0089 | -2.68% | -0.0112 | -20.08% | 0.0826 | 0.0301 |
+| ALPHA_045 | -0.0006 | -0.0044 | -0.0261 | 0.1380 | 27.64% | 0.7443 | -15.48% | 0.0751 | 0.0274 |
+| ALPHA_046 | -0.0187 | -0.1143 | -0.6428 | 0.0114 | -0.58% | 0.0449 | -19.16% | 0.0681 | 0.0249 |
+| ALPHA_049 | -0.0232 | -0.1703 | -1.3605 | 0.0432 | 12.17% | 0.3746 | -24.35% | 0.0789 | 0.0288 |
+| ALPHA_050 | -0.0171 | -0.1065 | -0.5499 | 0.0095 | -2.13% | 0.0030 | -21.84% | 0.0804 | 0.0293 |
+| ALPHA_051 | 0.0025 | 0.0198 | 0.1748 | 0.0753 | 18.95% | 0.5392 | -20.51% | 0.0828 | 0.0302 |
+| ALPHA_052 | -0.0430 | -0.2931 | -1.4077 | 0.0102 | -1.11% | 0.0181 | -21.46% | 0.0550 | 0.0201 |
+| ALPHA_053 | -0.0096 | -0.0809 | -0.6399 | 0.0077 | -3.94% | -0.0416 | -26.81% | 0.0832 | 0.0304 |
+| ALPHA_054 | 0.0048 | 0.0346 | 0.3353 | 0.0156 | 1.93% | 0.1156 | -25.60% | 0.0860 | 0.0314 |
+| ALPHA_055 | -0.0017 | -0.0114 | -0.0662 | 0.0087 | -2.63% | -0.0151 | -24.90% | 0.0795 | 0.0290 |
+| ALPHA_060 | 0.0103 | 0.0727 | 0.6986 | 0.0095 | -1.97% | 0.0042 | -23.44% | 0.0804 | 0.0293 |
+| ALPHA_101 | 0.0181 | 0.1150 | 1.0473 | 0.0128 | 0.28% | 0.0709 | -29.74% | 0.0816 | 0.0298 |
+| EQUAL_WEIGHTED_COMPOSITE | -0.0138 | -0.0890 | -0.7149 | 0.0078 | -3.65% | -0.0388 | -23.39% | 0.0844 | 0.0308 |
+| IC_WEIGHTED_COMPOSITE | 0.0826 | 0.6074 | 3.5590 | 0.0724 | 18.26% | 0.5280 | -23.03% | 0.0787 | 0.0287 |
 | ICIR_WEIGHTED_COMPOSITE | -0.0206 | -0.1465 | -0.9043 | 0.0001 | -26.18% | -0.8854 | -36.47% | 0.0688 | 0.0251 |
-| CORRELATION_DISCOUNTED_COMPOSITE | -0.0019 | -0.0129 | -0.0839 | 0.0132 | 0.36% | 0.0693 | -27.49% | 0.0792 | 0.0289 |
-| ALPHA_PRODUCT_INTERACTION | 0.0253 | 0.1600 | 1.0433 | 0.1530 | 28.91% | 0.7745 | -12.31% | 0.0859 | 0.0314 |
-| CONDITIONAL_RANK_INTERACTION | 0.0079 | 0.0618 | 0.3589 | 0.3153 | 44.83% | 1.0942 | -11.25% | 0.0816 | 0.0298 |
-| NEUTRALIZED_IC_COMPOSITE | 0.0810 | 0.5614 | 3.5598 | 0.0405 | 10.93% | 0.3507 | -22.73% | 0.0825 | 0.0302 |
+| CORRELATION_DISCOUNTED_COMPOSITE | -0.0019 | -0.0129 | -0.0839 | 0.0128 | 0.36% | 0.0693 | -27.49% | 0.0792 | 0.0289 |
+| ALPHA_PRODUCT_INTERACTION | 0.0253 | 0.1600 | 1.0433 | 0.1501 | 28.91% | 0.7745 | -12.31% | 0.0859 | 0.0314 |
+| CONDITIONAL_RANK_INTERACTION | 0.0079 | 0.0618 | 0.3589 | 0.3109 | 44.83% | 1.0942 | -11.25% | 0.0816 | 0.0298 |
+| NEUTRALIZED_IC_COMPOSITE | 0.0810 | 0.5614 | 3.5598 | 0.0395 | 10.93% | 0.3507 | -22.73% | 0.0825 | 0.0302 |
+| SECTOR_NEUTRAL_COMPOSITE | 0.0826 | 0.5926 | 3.7039 | 0.0723 | 17.99% | 0.5268 | -23.28% | 0.0820 | 0.0299 |
+| MARKET_BETA_NEUTRAL_COMPOSITE | 0.0769 | 0.5296 | 3.4781 | 0.0868 | 20.73% | 0.5849 | -21.26% | 0.0798 | 0.0291 |
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
@@ -280,6 +289,8 @@ Column groups in the table below:
 | ALPHA_PRODUCT_INTERACTION | 0.1253 | 0.74% | 10.90% | 50.35% | 0.0000 | 0.5394 | 61.6196 |
 | CONDITIONAL_RANK_INTERACTION | 0.6315 | 3.73% | 9.85% | 51.05% | -0.0002 | -0.1879 | 60.1766 |
 | NEUTRALIZED_IC_COMPOSITE | -0.2614 | -1.54% | 17.16% | 48.81% | -0.0007 | 0.1152 | 60.1761 |
+| SECTOR_NEUTRAL_COMPOSITE | 0.1102 | 0.64% | 14.27% | 49.23% | 0.0001 | 0.2970 | 58.9619 |
+| MARKET_BETA_NEUTRAL_COMPOSITE | 0.1851 | 1.07% | 12.36% | 50.21% | -0.0002 | 0.0424 | 59.1114 |
 
 `LS Sharpe`, `LS Ann Return`, `Max DD`, and `Win Rate` summarize the sequential holding-period book. `Decile Spread Mean` is the mean top-minus-bottom quantile return on rebalance dates. Monotonicity is the Spearman rank correlation of mean rebalance-date returns across deciles D1..D10.
 
@@ -308,7 +319,11 @@ Column groups in the table below:
   when `source_row(s) + 1 + 21 <= source_row(t)`. Early rebalances remain missing until the
   minimum realized IC history is available (typed missingness).
 - The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
-  return standard deviation. Leading dates without five observations remain
+  return standard deviation (min_periods=5); market beta proxy for
+  `MARKET_BETA_NEUTRAL_COMPOSITE` is a 60-day rolling covariance over market
+  variance (min_periods=20). Leading dates without sufficient observations remain
   NaN; values are not backfilled from later dates.
+- `SECTOR_NEUTRAL_COMPOSITE` demeans within 5 static balanced cohorts across the
+  50 synthetic assets.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
