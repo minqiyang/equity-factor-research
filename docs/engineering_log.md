@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-09-19 - Portfolio weighting and turnover penalization pipeline integration
+
+- Working root `efr-portfolio-weighting-pipeline-20260919` on `codex/portfolio-weighting-pipeline-20260919`
+  from baseline `24c6660`.
+- Task `TASK-PORTFOLIO-WEIGHTING-PIPELINE-001` wires advanced portfolio weighting and turnover penalization into the multifactor diagnostic pipeline.
+- Exposed `long_short_weighting_scheme`, `turnover_penalty_lambda`, and `volatility_window` in `MultifactorDiagnosticConfig`, defaulting to `"equal"`, `0.0`, and `20`.
+- Propagated weighting and turnover penalty parameters to `run_long_only_backtest` and `run_long_short_backtest` in `_evaluate_factor`.
+- Added `evaluate_portfolio_weighting_comparisons` benchmarking 4 key composite factors (`IC_WEIGHTED_COMPOSITE`, `MARKET_BETA_NEUTRAL_COMPOSITE`, `SECTOR_NEUTRAL_COMPOSITE`, `EQUAL_WEIGHTED_COMPOSITE`) across 4 weighting and inertia schemes (`Equal λ=0.0`, `Inverse-Vol λ=0.0`, `Equal λ=0.5`, `Inverse-Vol λ=0.5`).
+- Verified turnover reduction under $\lambda=0.5$ across both long-only and long-short books with zero degradation of dollar neutrality or simplex constraints.
+- Updated `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json` with comparative metrics table and schema assumptions.
+- Added deterministic unit tests in `tests/test_multifactor_diagnostic_mvp.py` (`test_multifactor_diagnostic_config_weighting_overrides_propagate`, `test_portfolio_weighting_comparisons_produce_expected_records`).
+
 ## 2026-09-19 - Portfolio weighting advisory hardening (ADV-239-1, ADV-239-2)
 
 - Working root `efr-advisory-hardening-239-20260919` on `codex/advisory-hardening-239-20260919`
