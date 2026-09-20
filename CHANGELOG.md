@@ -48,6 +48,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `tests/test_backtest_weighting_and_mask.py` and `tests/test_long_short_backtest.py`: Added causality mutation tests verifying that lagged inverse-volatility weights at rebalance date t are unaffected by future price scaling after t - lag (resolving ADV-239-1).
+- `tests/test_backtest_weighting_and_mask.py` and `tests/test_long_short_backtest.py`: Pinned long-only simplex invariants (non-negativity and unit sum) and long-short exact dollar-neutrality and leg sums (+0.5 long, -0.5 short) under turnover penalization lambda = 0.5 (resolving ADV-239-2).
 - `src/features/combination.py`: Refused out-of-panel IC timestamps before panel start in `_realized_ic_history` (`(positions >= 0) & (positions + horizon_rows <= t_pos)`) with targeted unit test coverage (resolving ADV-236-1).
 - `EXPERIMENT_LOG.md`: Clarified that sector and market beta neutralization apply strictly to cross-sectional factor scores of the in-sample IC-weighted composite, while backtest portfolio holdings remain unconstrained (resolving ADV-237-1).
 - `research/multifactor_diagnostic_mvp.py`: Restored sidecar parity by adding `sector_map` and `market_beta_proxy` to `assumptions` and matching entries to `caveats` in `write_multifactor_experiment_log`, regenerating `reports/experiment_logs/multifactor_diagnostic_mvp.json` (resolving ADV-237-2).
