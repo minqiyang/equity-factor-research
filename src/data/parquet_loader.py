@@ -101,12 +101,21 @@ def load_eod_cohort_panels(
         raise ValueError("start_date must be on or before end_date")
 
     per_symbol: dict[str, pd.DataFrame] = {}
+    resolved_paths: dict[Path, str] = {}
     for symbol in requested:
         path = _resolve_symbol_parquet_path(
             directory,
             symbol,
             inventory_map=inventory_map,
         )
+        canonical = path.resolve()
+        if canonical in resolved_paths:
+            prior_sym = resolved_paths[canonical]
+            raise DataIntegrityError(
+                f"Duplicate underlying file mapping detected: symbols '{prior_sym}' and '{symbol}' "
+                f"both map to the same file: {canonical}"
+            )
+        resolved_paths[canonical] = symbol
         frame = load_eod_parquet(path)
         per_symbol[symbol] = _slice_date_index(frame, start=start, end=end)
 
@@ -128,6 +137,14 @@ def _standardize_eod_frame(raw: pd.DataFrame) -> pd.DataFrame:
     if frame.empty:
         raise DataIntegrityError("Parquet file must contain at least one row")
 
+    if "permanent_id" in frame.columns:
+        perm_ids = frame["permanent_id"].dropna().unique()
+        if len(perm_ids) > 1:
+            raise DataIntegrityError(
+                f"Parquet file contains multiple permanent security IDs: {list(perm_ids)}. "
+                "Cannot stitch distinct securities without explicit episode boundaries."
+            )
+
     dates = _parse_dates(frame["date"])
     _validate_unique_sorted_dates(dates)
 
@@ -139,6 +156,14 @@ def _standardize_eod_frame(raw: pd.DataFrame) -> pd.DataFrame:
         else:
             _validate_non_negative_values(numeric, field_name=column)
         values[column] = numeric.to_numpy(dtype=float)
+
+    _validate_ohlc_relationships(
+        open_=values["open"],
+        high=values["high"],
+        low=values["low"],
+        close=values["close"],
+        dates=dates,
+    )
 
     panel = pd.DataFrame(values, index=dates)
     panel.index.name = "date"
@@ -257,6 +282,10 @@ def _resolve_symbol_parquet_path(
     candidates = [data_dir / f"{symbol}.parquet", data_dir / f"{symbol.lower()}.parquet"]
     for candidate in candidates:
         if candidate.is_file():
+            resolved = candidate.resolve()
+            root = data_dir.resolve()
+            if resolved != root and root not in resolved.parents:
+                raise ValueError("symbol parquet path must stay under data_dir")
             return candidate
     raise FileNotFoundError(data_dir / f"{symbol}.parquet")
 
@@ -273,6 +302,11 @@ def _resolve_under_data_dir(data_dir: Path, relative: str) -> Path:
 
 
 def _parse_dates(values: pd.Series) -> pd.DatetimeIndex:
+    if pd.api.types.is_numeric_dtype(values):
+        raise ValueError(
+            "date column must not contain numeric payloads (e.g. integer YYYYMMDD); "
+            "ISO 8601 strings or datetimes required"
+        )
     try:
         parsed = pd.to_datetime(values, errors="raise")
     except (TypeError, ValueError) as exc:
@@ -293,6 +327,41 @@ def _validate_unique_sorted_dates(dates: pd.DatetimeIndex) -> None:
         raise DataIntegrityError("date must not contain duplicate dates")
     if not bool(dates.is_monotonic_increasing):
         raise DataIntegrityError("date must be sorted in increasing date order")
+
+
+def _validate_ohlc_relationships(
+    *,
+    open_: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    dates: pd.DatetimeIndex,
+) -> None:
+    tol = 1e-8
+    bad_hl = high < low - tol
+    if np.any(bad_hl):
+        bad_date = dates[bad_hl][0]
+        raise DataIntegrityError(f"Invalid bar: high < low on date {bad_date}")
+
+    bad_ho = high < open_ - tol
+    if np.any(bad_ho):
+        bad_date = dates[bad_ho][0]
+        raise DataIntegrityError(f"Invalid bar: high < open on date {bad_date}")
+
+    bad_hc = high < close - tol
+    if np.any(bad_hc):
+        bad_date = dates[bad_hc][0]
+        raise DataIntegrityError(f"Invalid bar: high < close on date {bad_date}")
+
+    bad_lo = low > open_ + tol
+    if np.any(bad_lo):
+        bad_date = dates[bad_lo][0]
+        raise DataIntegrityError(f"Invalid bar: low > open on date {bad_date}")
+
+    bad_lc = low > close + tol
+    if np.any(bad_lc):
+        bad_date = dates[bad_lc][0]
+        raise DataIntegrityError(f"Invalid bar: low > close on date {bad_date}")
 
 
 def _as_numeric_series(values: pd.Series, *, field_name: str) -> pd.Series:

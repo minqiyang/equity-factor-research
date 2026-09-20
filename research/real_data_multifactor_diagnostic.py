@@ -14,10 +14,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 import hashlib
+import json
 import math
 import os
 from pathlib import Path
 from typing import Any
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -85,14 +87,10 @@ DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "real_data_multifactor_diagnost
 DEFAULT_EXPERIMENT_LOG_PATH = (
     PROJECT_ROOT / "reports" / "experiment_logs" / "real_data_multifactor_diagnostic.json"
 )
-FALLBACK_DATA_DIR = Path(
-    "/Users/rhapsoul/Documents/Codex/private_data/eodhd_eod_acquisition/"
-    "snapshot_20260808T005805Z"
-)
-FALLBACK_INVENTORY_PATH = Path(
-    "/Users/rhapsoul/Documents/Codex/private_data/"
-    "efr_exploration_inventory_20260913/per_stock_coverage.json"
-)
+DEFAULT_DATA_DIR_ENV = "EFR_EODHD_DATA_DIR"
+DEFAULT_INVENTORY_PATH_ENV = "EFR_EODHD_INVENTORY_PATH"
+DEFAULT_SNAPSHOT_DIR_NAME = "snapshot_20260808T005805Z"
+DEFAULT_INVENTORY_FILE_NAME = "per_stock_coverage.json"
 DEFAULT_START_DATE = "2016-08-08"
 DEFAULT_END_DATE = "2026-08-07"
 REDACTED_LOCAL_PATH = "<redacted-local-path>"
@@ -117,15 +115,29 @@ ESTIMATOR_VERSION = "m4_0_real_data_causal_accounting_v1"
 def default_data_dir() -> Path:
     """Return the local EODHD snapshot directory, honoring ``EFR_EODHD_DATA_DIR``."""
 
-    raw = os.environ.get("EFR_EODHD_DATA_DIR")
-    return Path(raw) if raw else FALLBACK_DATA_DIR
+    raw = os.environ.get(DEFAULT_DATA_DIR_ENV)
+    if raw:
+        return Path(raw).expanduser().resolve()
+    for parent in PROJECT_ROOT.parents:
+        candidate = parent / "private_data" / "eodhd_eod_acquisition" / DEFAULT_SNAPSHOT_DIR_NAME
+        if candidate.exists():
+            return candidate.resolve()
+    return Path("/private_data/eodhd_eod_acquisition") / DEFAULT_SNAPSHOT_DIR_NAME
 
 
 def default_inventory_path() -> Path:
     """Return the local coverage inventory path, honoring ``EFR_EODHD_INVENTORY_PATH``."""
 
-    raw = os.environ.get("EFR_EODHD_INVENTORY_PATH")
-    return Path(raw) if raw else FALLBACK_INVENTORY_PATH
+    raw = os.environ.get(DEFAULT_INVENTORY_PATH_ENV)
+    if raw:
+        return Path(raw).expanduser().resolve()
+    for parent in PROJECT_ROOT.parents:
+        candidate = (
+            parent / "private_data" / "efr_exploration_inventory_20260913" / DEFAULT_INVENTORY_FILE_NAME
+        )
+        if candidate.exists():
+            return candidate.resolve()
+    return Path("/private_data/efr_exploration_inventory_20260913") / DEFAULT_INVENTORY_FILE_NAME
 
 
 @dataclass(frozen=True)
@@ -193,16 +205,37 @@ def redact_local_path(path: Path | str | None) -> str:
     except OSError:
         resolved = Path(path)
     text = resolved.as_posix()
-    fallback_data = FALLBACK_DATA_DIR.expanduser().as_posix()
-    fallback_inventory = FALLBACK_INVENTORY_PATH.expanduser().as_posix()
-    if text == fallback_data or text.startswith(fallback_data + "/"):
+    if DEFAULT_SNAPSHOT_DIR_NAME in text or "eodhd_eod_acquisition" in text:
         return REDACTED_DATA_DIR
-    if text == fallback_inventory:
+    if DEFAULT_INVENTORY_FILE_NAME in text or "efr_exploration_inventory" in text:
         return REDACTED_INVENTORY_PATH
     try:
         return resolved.relative_to(PROJECT_ROOT).as_posix()
     except ValueError:
         return REDACTED_LOCAL_PATH
+
+
+def evaluate_diagnostic_readiness(
+    panels: dict[str, pd.DataFrame],
+    benchmark: pd.Series,
+    config: RealDataMultifactorDiagnosticConfig,
+) -> str:
+    """Evaluate diagnostic readiness dynamically based on data validation and alignment."""
+
+    if any(panel.empty for panel in panels.values()):
+        return "refused_empty_panels"
+    if benchmark.empty or not benchmark.index.equals(panels["close"].index):
+        return "refused_benchmark_misaligned"
+    for name, panel in panels.items():
+        arr = panel.to_numpy(dtype=float, na_value=0.0)
+        if np.isinf(arr).any():
+            return f"refused_infinite_values_in_{name}"
+    for price_col in ("open", "high", "low", "close"):
+        if (panels[price_col] <= 0).any().any():
+            return f"refused_non_positive_{price_col}"
+    if (panels["volume"] < 0).any().any():
+        return "refused_negative_volume"
+    return "diagnostic_ready_with_low_caveats"
 
 
 def build_adjusted_research_panels(
@@ -211,8 +244,10 @@ def build_adjusted_research_panels(
     """Build split-consistent OHLCV research panels from vendor fields.
 
     Research close is vendor ``adjusted_close``. Open, high, and low are scaled
-    by ``adjusted_close / close``. Volume is scaled by the inverse ratio so that
-    dollar volume ``close * volume`` equals ``adjusted_close * adjusted_volume``.
+    by ``adjusted_close / close`` to reflect split and dividend adjustments on prices.
+    Vendor ``volume`` is already split-adjusted in EODHD data; keeping volume
+    unscaled ensures ``research_close * research_volume`` (i.e. ``adjusted_close * volume``)
+    equals true split-adjusted dollar volume without double-counting split ratios.
     VWAP is typical price on the scaled bars. Missing cells stay missing.
     """
 
@@ -222,7 +257,7 @@ def build_adjusted_research_panels(
     high = field_panels["high"].astype(float) * scale
     low = field_panels["low"].astype(float) * scale
     open_ = field_panels["open"].astype(float) * scale
-    volume = field_panels["volume"].astype(float) / scale
+    volume = field_panels["volume"].astype(float)
     vwap = (high + low + adjusted_close) / 3.0
     returns = adjusted_close.pct_change(fill_method=None)
     return {
@@ -312,6 +347,8 @@ def run_real_data_multifactor_diagnostic(
             "warmup_periods": config.warmup_periods,
             "forward_holding_periods": config.forward_holding_periods,
             "ridge_alpha": config.ridge_alpha,
+            "alpha_ids": list(sorted(config.alpha_ids)),
+            "composite_ids": list(sorted(config.composite_ids)),
         },
     }
 
@@ -337,7 +374,28 @@ def run_real_data_multifactor_diagnostic(
     alpha_panels: dict[str, pd.DataFrame] = {}
     factor_results: dict[str, dict[str, Any]] = {}
     for factor_id in alpha_ids:
-        factor = calculate_diagnostic_alpha(factor_id, panels)
+        try:
+            factor = calculate_diagnostic_alpha(factor_id, panels)
+        except Exception as exc:
+            fail_record = {
+                "trial_id": hashlib.sha256(
+                    json.dumps(
+                        {**trial_context, "factor_id": factor_id, "stage": "feature_calculation"},
+                        sort_keys=True,
+                    ).encode()
+                ).hexdigest(),
+                "attempt_id": uuid.uuid4().hex,
+                "specification": {**trial_context, "factor_id": factor_id, "stage": "feature_calculation"},
+                "status": "failed",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            inventory.append(fail_record)
+            if inventory_path is not None:
+                inventory_path.parent.mkdir(parents=True, exist_ok=True)
+                with inventory_path.open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps(fail_record, sort_keys=True, allow_nan=False) + "\n")
+            raise
         alpha_panels[factor_id] = factor
         factor_results[factor_id] = _evaluate_factor(
             factor_id=factor_id,
@@ -374,20 +432,41 @@ def run_real_data_multifactor_diagnostic(
         config=config,
     )
     for factor_id, factor in composites.items():
-        factor_results[factor_id] = _evaluate_factor(
-            factor_id=factor_id,
-            inventory=inventory,
-            inventory_path=inventory_path,
-            trial_context=trial_context,
-            factor=factor,
-            prices=prices,
-            forward_returns=forward_returns,
-            monthly_eval_dates=monthly_eval_dates,
-            accounting_benchmark=accounting_benchmark,
-            evaluation_start=evaluation_start,
-            evaluation_end=evaluation_end,
-            config=mvp_config,
-        )
+        try:
+            factor_results[factor_id] = _evaluate_factor(
+                factor_id=factor_id,
+                inventory=inventory,
+                inventory_path=inventory_path,
+                trial_context=trial_context,
+                factor=factor,
+                prices=prices,
+                forward_returns=forward_returns,
+                monthly_eval_dates=monthly_eval_dates,
+                accounting_benchmark=accounting_benchmark,
+                evaluation_start=evaluation_start,
+                evaluation_end=evaluation_end,
+                config=mvp_config,
+            )
+        except Exception as exc:
+            fail_record = {
+                "trial_id": hashlib.sha256(
+                    json.dumps(
+                        {**trial_context, "factor_id": factor_id, "stage": "composite_evaluation"},
+                        sort_keys=True,
+                    ).encode()
+                ).hexdigest(),
+                "attempt_id": uuid.uuid4().hex,
+                "specification": {**trial_context, "factor_id": factor_id, "stage": "composite_evaluation"},
+                "status": "failed",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            inventory.append(fail_record)
+            if inventory_path is not None:
+                inventory_path.parent.mkdir(parents=True, exist_ok=True)
+                with inventory_path.open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps(fail_record, sort_keys=True, allow_nan=False) + "\n")
+            raise
 
     alpha_returns = pd.DataFrame(
         {
@@ -454,7 +533,9 @@ def run_real_data_multifactor_diagnostic(
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
         "evidence_ceiling": "DIAGNOSTIC_ONLY",
-        "readiness_decision": READINESS_DECISION,
+        "readiness_decision": evaluate_diagnostic_readiness(
+            panels, accounting_benchmark_full, config
+        ),
         "evaluated_factor_ids": evaluated_ids,
         "alpha_ids": alpha_ids,
         "composite_ids": composite_ids,

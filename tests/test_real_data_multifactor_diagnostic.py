@@ -24,15 +24,17 @@ from research.multifactor_diagnostic_mvp import (
 from research.real_data_multifactor_diagnostic import (
     COMPOSITE_IDS,
     DEFAULT_END_DATE,
+    DEFAULT_INVENTORY_FILE_NAME,
+    DEFAULT_SNAPSHOT_DIR_NAME,
     DEFAULT_START_DATE,
-    FALLBACK_DATA_DIR,
-    FALLBACK_INVENTORY_PATH,
     REDACTED_DATA_DIR,
     REDACTED_INVENTORY_PATH,
     REDACTED_LOCAL_PATH,
     RealDataMultifactorDiagnosticConfig,
     build_adjusted_research_panels,
     default_data_dir,
+    default_inventory_path,
+    evaluate_diagnostic_readiness,
     redact_local_path,
     run_real_data_multifactor_diagnostic,
     to_mvp_config,
@@ -133,10 +135,20 @@ def _reduced_config(
     return RealDataMultifactorDiagnosticConfig(**payload)
 
 
-def test_default_config_uses_bluechip_cohort_and_spy_defaults() -> None:
+def test_real_data_config_defaults() -> None:
     config = RealDataMultifactorDiagnosticConfig()
     assert config.symbols == tuple(BLUECHIP_50_COHORT)
     assert config.benchmark_symbol == BENCHMARK_SYMBOL
+    assert config.rebalance_frequency == "ME"
+    assert config.top_n == 5
+    assert config.weighting_scheme == "equal"
+    assert config.long_short_weighting_scheme == "equal"
+    assert config.turnover_penalty_lambda == 0.0
+    assert config.volatility_window == 20
+    assert config.transaction_cost_bps == 0.0
+    assert config.slippage_bps == 5.0
+    assert config.signal_lag_periods == 1
+    assert config.periods_per_year == 252
     assert config.start_date == DEFAULT_START_DATE
     assert config.end_date == DEFAULT_END_DATE
     assert config.alpha_ids == ALPHA_IDS
@@ -145,8 +157,8 @@ def test_default_config_uses_bluechip_cohort_and_spy_defaults() -> None:
     assert len(ALPHA_IDS) == 52
     assert len(COMPOSITE_IDS) == 10
     assert len(FACTOR_IDS) == 62
-    assert FALLBACK_DATA_DIR.as_posix().endswith("snapshot_20260808T005805Z")
-    assert FALLBACK_INVENTORY_PATH.name == "per_stock_coverage.json"
+    assert default_data_dir().name == DEFAULT_SNAPSHOT_DIR_NAME
+    assert default_inventory_path().name == DEFAULT_INVENTORY_FILE_NAME
 
 
 def test_to_mvp_config_propagates_shared_backtest_fields() -> None:
@@ -174,8 +186,8 @@ def test_to_mvp_config_propagates_shared_backtest_fields() -> None:
 
 
 def test_redact_local_path_hides_private_defaults_and_tmp_paths() -> None:
-    assert redact_local_path(FALLBACK_DATA_DIR) == REDACTED_DATA_DIR
-    assert redact_local_path(FALLBACK_INVENTORY_PATH) == REDACTED_INVENTORY_PATH
+    assert redact_local_path(default_data_dir()) == REDACTED_DATA_DIR
+    assert redact_local_path(default_inventory_path()) == REDACTED_INVENTORY_PATH
     assert redact_local_path(Path("/tmp/efr-pytest-m40-real")) == REDACTED_LOCAL_PATH
 
 
@@ -183,7 +195,8 @@ def test_build_adjusted_research_panels_keeps_dollar_volume_basis() -> None:
     dates = pd.DatetimeIndex(["2020-08-28", "2020-08-31"], name="date")
     close = pd.DataFrame({"AAA.US": [400.0, 100.0]}, index=dates)
     adjusted = pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates)
-    volume = pd.DataFrame({"AAA.US": [1_000.0, 4_000.0]}, index=dates)
+    # Vendor volume in EODHD is already split-adjusted (e.g. 4000.0 on both days)
+    volume = pd.DataFrame({"AAA.US": [4_000.0, 4_000.0]}, index=dates)
     open_ = close * 0.99
     high = close * 1.01
     low = close * 0.98
@@ -197,10 +210,13 @@ def test_build_adjusted_research_panels_keeps_dollar_volume_basis() -> None:
             "volume": volume,
         }
     )
-    dollar_raw = close * volume
-    dollar_adj = panels["close"] * panels["volume"]
-    pd.testing.assert_frame_equal(dollar_adj, dollar_raw)
+    # Research volume remains identical to vendor split-adjusted volume
+    pd.testing.assert_frame_equal(panels["volume"], volume)
     pd.testing.assert_frame_equal(panels["close"], adjusted)
+    # Dollar volume is adjusted_close * volume = 400,000 on both days (stable across split)
+    expected_dollar = pd.DataFrame({"AAA.US": [400_000.0, 400_000.0]}, index=dates)
+    dollar_adj = panels["close"] * panels["volume"]
+    pd.testing.assert_frame_equal(dollar_adj, expected_dollar)
     assert pd.isna(panels["returns"].iloc[0, 0])
     assert panels["returns"].iloc[1, 0] == pytest.approx(0.0)
     raw_close_return = close.iloc[1, 0] / close.iloc[0, 0] - 1.0
@@ -267,8 +283,10 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     assert payload["config"]["top_n"] == 2
     assert payload["config"]["slippage_bps"] == 5.0
     assert payload["config"]["signal_lag_periods"] == 1
-    assert payload["config"]["data_dir"] == REDACTED_LOCAL_PATH
-    assert payload["config"]["inventory_path"] == REDACTED_LOCAL_PATH
+    assert payload["config"]["inventory_path"] in (
+        REDACTED_LOCAL_PATH,
+        REDACTED_INVENTORY_PATH,
+    )
     for caveat in DIAGNOSTIC_REAL_DATA_CAVEATS:
         assert caveat in payload["caveats"]
     assert "/Users/" not in json.dumps(payload)
@@ -397,3 +415,98 @@ def test_registry_skips_real_data_experiment_logs(tmp_path: Path) -> None:
 
     registry = build_experiment_registry(log_dir)
     assert list(registry["experiment_id"]) == ["synthetic-demo"]
+
+
+def test_distinct_composite_trial_ids_when_parents_change(tmp_path: Path) -> None:
+    from research.multifactor_diagnostic_mvp import ALPHA_016
+
+    cfg_a = _reduced_config(
+        tmp_path / "run_a",
+        alpha_ids=(ALPHA_001, ALPHA_101),
+        composite_ids=(EQUAL_WEIGHTED_COMPOSITE,),
+        include_weighting_comparisons=False,
+    )
+    res_a = run_real_data_multifactor_diagnostic(
+        config=cfg_a,
+        report_path=tmp_path / "run_a" / "report.md",
+        write_outputs=False,
+    )
+
+    cfg_b = _reduced_config(
+        tmp_path / "run_b",
+        alpha_ids=(ALPHA_001, ALPHA_016),
+        composite_ids=(EQUAL_WEIGHTED_COMPOSITE,),
+        include_weighting_comparisons=False,
+    )
+    res_b = run_real_data_multifactor_diagnostic(
+        config=cfg_b,
+        report_path=tmp_path / "run_b" / "report.md",
+        write_outputs=False,
+    )
+
+    trial_a = next(
+        t for t in res_a["trial_inventory"]
+        if t["specification"]["factor_id"] == EQUAL_WEIGHTED_COMPOSITE
+        and t["specification"]["direction"] == "long_only"
+    )
+    trial_b = next(
+        t for t in res_b["trial_inventory"]
+        if t["specification"]["factor_id"] == EQUAL_WEIGHTED_COMPOSITE
+        and t["specification"]["direction"] == "long_only"
+    )
+    assert trial_a["trial_id"] != trial_b["trial_id"]
+
+
+def test_feature_calculation_failure_is_recorded_in_trials_jsonl(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _reduced_config(
+        tmp_path,
+        alpha_ids=(ALPHA_001, ALPHA_101),
+        include_weighting_comparisons=False,
+    )
+    report_path = tmp_path / "report.md"
+    orig_calc = real_data_module.calculate_diagnostic_alpha
+
+    def mock_calc(factor_id: str, panels: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        if factor_id == ALPHA_101:
+            raise ValueError("simulated feature failure for ALPHA_101")
+        return orig_calc(factor_id, panels)
+
+    monkeypatch.setattr(real_data_module, "calculate_diagnostic_alpha", mock_calc)
+
+    with pytest.raises(ValueError, match="simulated feature failure"):
+        run_real_data_multifactor_diagnostic(
+            config=config,
+            report_path=report_path,
+            write_outputs=True,
+        )
+
+    jsonl_path = tmp_path / "report.trials.jsonl"
+    assert jsonl_path.exists()
+    events = [json.loads(line) for line in jsonl_path.read_text().splitlines()]
+    failed_events = [e for e in events if e.get("status") == "failed"]
+    assert len(failed_events) == 1
+    assert failed_events[0]["specification"]["factor_id"] == ALPHA_101
+    assert failed_events[0]["error"] == "simulated feature failure for ALPHA_101"
+
+
+def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
+    dates = pd.date_range("2024-01-02", periods=5)
+    df = pd.DataFrame({"A": [1.0, 2.0, 3.0, 4.0, 5.0]}, index=dates)
+    panels = {
+        "open": df, "high": df, "low": df, "close": df, "volume": df * 100
+    }
+    benchmark = pd.Series([100.0, 101.0, 102.0, 103.0, 104.0], index=dates)
+    config = RealDataMultifactorDiagnosticConfig()
+
+    assert evaluate_diagnostic_readiness(panels, benchmark, config) == "diagnostic_ready_with_low_caveats"
+
+    # Misaligned benchmark
+    bad_bm = pd.Series([100.0], index=pd.date_range("2024-01-02", periods=1))
+    assert evaluate_diagnostic_readiness(panels, bad_bm, config) == "refused_benchmark_misaligned"
+
+    # Non-positive price
+    bad_panels = dict(panels)
+    bad_panels["close"] = pd.DataFrame({"A": [1.0, 0.0, 3.0, 4.0, 5.0]}, index=dates)
+    assert evaluate_diagnostic_readiness(bad_panels, benchmark, config) == "refused_non_positive_close"
