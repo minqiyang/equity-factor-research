@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- `src/data/parquet_loader.py`: Added local EODHD Parquet loaders `load_eod_parquet` and `load_eod_cohort_panels` that validate dates, strictly positive prices, non-negative volume, and boolean-disguised numeric columns, then align per-symbol files into wide OHLCV panels.
+- `src/data/bluechip_cohort.py`: Added the static 50-stock liquid blue-chip diagnostic cohort and `SPY.US` benchmark identifier for Milestone 4.0 DIAGNOSTIC_ONLY use.
+- `tests/test_parquet_loader.py`: Added synthetic `tmp_path` Parquet fixtures covering valid loads, inventory mapping, date filters, and integrity refusals.
+
 - `src/features/regime.py`: Added market regime detection (`detect_market_volatility_regime`, `detect_market_trend_regime`) and dynamic factor composite builder `regime_switching_factor_composite` supporting lookahead-free volatility regime identification via historical expanding median comparison and causal factor allocation shifting.
 - `tests/test_regime.py`: Added comprehensive unit tests for market regime detection and dynamic factor allocation, including causality mutation tests, synthetic market dynamics, convex blending, and input validation.
 - `research/multifactor_diagnostic_mvp.py`: Added `REGIME_SWITCHING_COMPOSITE` dynamically blending aggressive `IC_WEIGHTED_COMPOSITE` (in low volatility regime) and defensive `MARKET_BETA_NEUTRAL_COMPOSITE` (in high volatility regime) with lag-1 signal execution, expanding total evaluated factor trials from 61 to 62 (`n_trials=62`).
