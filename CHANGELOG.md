@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added `inverse_volatility` weighting scheme (`weighting_scheme="inverse_volatility"`) weighting selected assets inversely proportional to trailing realized return volatility with lookahead-free lagging and robust missing/zero volatility fallback.
+- `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added turnover penalization / rebalance inertia (`turnover_penalty_lambda` in `[0.0, 1.0)`), smoothly blending raw target weights with pretrade drifted weights to reduce frictional turnover and transaction/slippage drag while strictly preserving long-only non-negativity and long-short dollar neutrality.
 - `research/multifactor_diagnostic_mvp.py`: Added `SECTOR_NEUTRAL_COMPOSITE` (demeaned within 5 balanced sector cohorts across the 50 assets via `cross_sectional_group_neutralize`) and `MARKET_BETA_NEUTRAL_COMPOSITE` (orthogonalized against 60-day trailing rolling market beta via `cross_sectional_neutralize`). Expanded total evaluated factors from 59 to 61 (`n_trials=61`).
 - `research/multifactor_diagnostic_mvp.py`: Added `build_default_sector_mapping` and `compute_rolling_market_beta` helpers with deterministic unit test coverage in `tests/test_multifactor_diagnostic_mvp.py`.
 - `src/features/combination.py`: Added `walk_forward_icir_weighted_composite` and
@@ -45,6 +47,10 @@ profitability, or trading readiness.
   WorldQuant alphas into the consolidated diagnostic report and experiment log.
 
 ### Changed
+
+- `src/features/combination.py`: Refused out-of-panel IC timestamps before panel start in `_realized_ic_history` (`(positions >= 0) & (positions + horizon_rows <= t_pos)`) with targeted unit test coverage (resolving ADV-236-1).
+- `EXPERIMENT_LOG.md`: Clarified that sector and market beta neutralization apply strictly to cross-sectional factor scores of the in-sample IC-weighted composite, while backtest portfolio holdings remain unconstrained (resolving ADV-237-1).
+- `research/multifactor_diagnostic_mvp.py`: Restored sidecar parity by adding `sector_map` and `market_beta_proxy` to `assumptions` and matching entries to `caveats` in `write_multifactor_experiment_log`, regenerating `reports/experiment_logs/multifactor_diagnostic_mvp.json` (resolving ADV-237-2).
 
 - `src/features/combination.py` and `research/multifactor_diagnostic_mvp.py`:
   Walk-forward ICIR and correlation-discounted weights admit an IC labeled at

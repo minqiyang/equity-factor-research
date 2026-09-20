@@ -1,5 +1,38 @@
 # Engineering Log
 
+## 2026-09-19 - Advanced portfolio weighting and turnover penalization
+
+- Working root `efr-portfolio-weighting-20260919` on `codex/portfolio-weighting-20260919`
+  from baseline `61dd24a`.
+- Task `TASK-PORTFOLIO-WEIGHTING-001` implements Option B (Advanced Portfolio Weighting).
+- Implemented `inverse_volatility` weighting scheme in `run_long_only_backtest` and
+  `run_long_short_backtest` (`volatility_window`, `min_volatility_periods`). Realized
+  return volatility is lagged by `signal_lag_periods`, ensuring zero lookahead.
+  Fallback to median valid volatility for missing or non-positive values.
+- Implemented turnover penalization (`turnover_penalty_lambda` in `[0.0, 1.0)`) in
+  `_calculate_bounded_portfolio_path` and `run_long_short_backtest`. Convex combination
+  of raw target weights and pretrade drifted weights reduces turnover without introducing
+  quadratic programming dependencies. Preserves long-only non-negativity and long-short
+  exact dollar neutrality.
+- Added deterministic unit tests in `tests/test_backtest_weighting_and_mask.py` and
+  `tests/test_long_short_backtest.py`.
+
+## 2026-09-19 - Advisory remediation and hardening (PR #238)
+
+- Working root `efr-advisory-hardening-20260919` on `codex/advisory-hardening-20260919`
+  from baseline `b3fcf2e`, merged as PR #238 (`61dd24a`).
+- Addressed ADV-236-1: Refused out-of-panel IC timestamps before panel start in
+  `_realized_ic_history` (`(positions >= 0) & (positions + horizon_rows <= t_pos)`)
+  with targeted unit test coverage in `tests/test_combination.py`.
+- Addressed ADV-237-1: Clarified in `EXPERIMENT_LOG.md` entry `20260919-008-neutralization-expansion`
+  that sector and market beta neutralization apply to cross-sectional factor scores of the
+  in-sample IC-weighted composite, while backtest portfolio holdings remain unconstrained.
+- Addressed ADV-237-2: Added `sector_map` and `market_beta_proxy` to `assumptions` and
+  matching entries to `caveats` in `write_multifactor_experiment_log`, regenerating
+  `reports/experiment_logs/multifactor_diagnostic_mvp.json` for full sidecar parity.
+- Addressed ADV-238-1: Recorded PR #238 remediation and candidate digest in `CHANGELOG.md`
+  and this engineering log.
+
 ## 2026-09-19 - Sector and market beta risk neutralization expansion
 
 - Working root `efr-neutralization-expansion-20260919` on

@@ -420,7 +420,10 @@ def run_long_only_backtest(
     rebalance_frequency: str = "ME",
     top_n: int | None = None,
     top_pct: float | None = None,
-    weighting_scheme: Literal["equal", "rank"] = "equal",
+    weighting_scheme: Literal["equal", "rank", "inverse_volatility"] = "equal",
+    volatility_window: int = 20,
+    min_volatility_periods: int = 5,
+    turnover_penalty_lambda: float = 0.0,
     universe_mask: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
@@ -463,6 +466,9 @@ def run_long_only_backtest(
         missing_price_policy=missing_price_policy,
         benchmark_missing_policy=benchmark_missing_policy,
         periods_per_year=periods_per_year,
+        volatility_window=volatility_window,
+        min_volatility_periods=min_volatility_periods,
+        turnover_penalty_lambda=turnover_penalty_lambda,
     )
 
     start_pos, end_pos, accounting_dates = _resolve_accounting_window(
@@ -502,6 +508,9 @@ def run_long_only_backtest(
         top_pct=top_pct,
         weighting_scheme=weighting_scheme,
         universe_mask=universe_mask,
+        prices=price_data,
+        volatility_window=volatility_window,
+        min_volatility_periods=min_volatility_periods,
     )
     if max_position_weight is not None:
         target_weights = apply_long_only_position_cap(
@@ -538,6 +547,7 @@ def run_long_only_backtest(
         raw_volume_impact=raw_volume_impact,
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
+        turnover_penalty_lambda=float(turnover_penalty_lambda),
     )
 
     benchmark_equity_curve, benchmark_returns = _calculate_benchmark_path(
@@ -630,6 +640,9 @@ def run_long_only_backtest(
             "top_n": top_n,
             "top_pct": top_pct,
             "weighting_scheme": weighting_scheme,
+            "volatility_window": volatility_window,
+            "min_volatility_periods": min_volatility_periods,
+            "turnover_penalty_lambda": turnover_penalty_lambda,
             "universe_mask_applied": universe_mask is not None,
             "transaction_cost_bps": transaction_cost_bps,
             "slippage_bps": slippage_bps,
@@ -688,12 +701,28 @@ def _build_target_weights(
     top_pct: float | None,
     weighting_scheme: str = "equal",
     universe_mask: pd.DataFrame | None = None,
+    prices: pd.DataFrame | None = None,
+    volatility_window: int = 20,
+    min_volatility_periods: int = 5,
 ) -> pd.DataFrame:
     target_weights = pd.DataFrame(
         np.nan,
         index=lagged_signals.index,
         columns=lagged_signals.columns,
     )
+
+    lagged_volatility: pd.DataFrame | None = None
+    if weighting_scheme == "inverse_volatility":
+        if prices is None:
+            raise BacktestValidationError(
+                "prices_required_for_inverse_volatility",
+                "prices must be provided for inverse_volatility weighting",
+            )
+        returns = prices.pct_change()
+        rolling_vol = returns.rolling(
+            volatility_window, min_periods=min_volatility_periods
+        ).std()
+        lagged_volatility = rolling_vol.shift(signal_lag_periods)
 
     for date in rebalance_dates:
         position = lagged_signals.index.get_loc(date)
@@ -727,6 +756,22 @@ def _build_target_weights(
                 target_weights.loc[date, selected_assets] = ranks / rank_sum
             else:
                 target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
+        elif weighting_scheme == "inverse_volatility":
+            assert lagged_volatility is not None
+            selected_vols = lagged_volatility.loc[date, selected_assets]
+            valid_mask = (selected_vols > 0.0) & np.isfinite(selected_vols)
+            valid_vols = selected_vols[valid_mask]
+            if len(valid_vols) == 0:
+                target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
+            else:
+                fallback_vol = float(valid_vols.median())
+                filled_vols = selected_vols.where(valid_mask, fallback_vol)
+                inv_vols = 1.0 / filled_vols
+                inv_sum = float(inv_vols.sum())
+                if inv_sum > 0.0:
+                    target_weights.loc[date, selected_assets] = inv_vols / inv_sum
+                else:
+                    target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
 
     return target_weights
 
@@ -741,6 +786,7 @@ def _calculate_bounded_portfolio_path(
     raw_volume_impact: pd.Series,
     volume_impact_basis: str | None,
     missing_price_policy: str,
+    turnover_penalty_lambda: float = 0.0,
 ) -> tuple[
     pd.DataFrame,
     pd.Series,
@@ -827,7 +873,14 @@ def _calculate_bounded_portfolio_path(
         target = target_weights.loc[date]
         if target.notna().any():
             frozen_target = target.fillna(0.0)
-            signed_trades = frozen_target - pretrade_weights
+            if turnover_penalty_lambda > 0.0 and post_trade_weights.ne(0.0).any():
+                actual_target = (
+                    (1.0 - turnover_penalty_lambda) * frozen_target
+                    + turnover_penalty_lambda * pretrade_weights
+                )
+            else:
+                actual_target = frozen_target
+            signed_trades = actual_target - pretrade_weights
             _validate_execution_price_legs(
                 execution_prices=prices.iloc[position],
                 signed_trade_weights=signed_trades,
@@ -835,7 +888,7 @@ def _calculate_bounded_portfolio_path(
             )
             signed_trade_weights.loc[date] = signed_trades
             trade_weights.loc[date] = signed_trades.abs()
-            next_holdings = frozen_target
+            next_holdings = actual_target
         else:
             next_holdings = pretrade_weights
 
@@ -1297,11 +1350,37 @@ def _validate_backtest_inputs(
     missing_price_policy: str,
     benchmark_missing_policy: str,
     periods_per_year: int,
+    volatility_window: int = 20,
+    min_volatility_periods: int = 5,
+    turnover_penalty_lambda: float = 0.0,
 ) -> None:
-    if weighting_scheme not in {"equal", "rank"}:
+    if weighting_scheme not in {"equal", "rank", "inverse_volatility"}:
         raise BacktestValidationError(
             "weighting_scheme_invalid",
-            "weighting_scheme must be either 'equal' or 'rank'",
+            "weighting_scheme must be 'equal', 'rank', or 'inverse_volatility'",
+        )
+    if not isinstance(volatility_window, int) or volatility_window <= 0:
+        raise BacktestValidationError(
+            "volatility_window_invalid",
+            "volatility_window must be a positive integer",
+        )
+    if (
+        not isinstance(min_volatility_periods, int)
+        or min_volatility_periods <= 0
+        or min_volatility_periods > volatility_window
+    ):
+        raise BacktestValidationError(
+            "min_volatility_periods_invalid",
+            "min_volatility_periods must be positive and <= volatility_window",
+        )
+    if (
+        not isinstance(turnover_penalty_lambda, (int, float))
+        or turnover_penalty_lambda < 0.0
+        or turnover_penalty_lambda >= 1.0
+    ):
+        raise BacktestValidationError(
+            "turnover_penalty_lambda_invalid",
+            "turnover_penalty_lambda must be in [0.0, 1.0)",
         )
     if universe_mask is not None:
         if not isinstance(universe_mask, pd.DataFrame):

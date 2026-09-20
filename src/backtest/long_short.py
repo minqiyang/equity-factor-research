@@ -72,7 +72,10 @@ def run_long_short_backtest(
     evaluation_end: pd.Timestamp | None = None,
     rebalance_frequency: str = "ME",
     quantiles: int = 10,
-    weighting_scheme: Literal["equal", "rank"] = "equal",
+    weighting_scheme: Literal["equal", "rank", "inverse_volatility"] = "equal",
+    volatility_window: int = 20,
+    min_volatility_periods: int = 5,
+    turnover_penalty_lambda: float = 0.0,
     universe_mask: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
@@ -96,6 +99,9 @@ def run_long_short_backtest(
         signals=signals,
         quantiles=quantiles,
         weighting_scheme=weighting_scheme,
+        volatility_window=volatility_window,
+        min_volatility_periods=min_volatility_periods,
+        turnover_penalty_lambda=turnover_penalty_lambda,
         universe_mask=universe_mask,
         transaction_cost_bps=transaction_cost_bps,
         slippage_bps=slippage_bps,
@@ -149,6 +155,15 @@ def run_long_short_backtest(
     equity.iloc[0] = float(initial_capital)
 
     half_leverage = 0.5 * float(gross_leverage)
+
+    lagged_volatility: pd.DataFrame | None = None
+    if weighting_scheme == "inverse_volatility":
+        rolling_vol = (
+            sub_prices.pct_change()
+            .rolling(volatility_window, min_periods=min_volatility_periods)
+            .std()
+        )
+        lagged_volatility = rolling_vol.shift(signal_lag_periods)
 
     current_long = pd.Series(0.0, index=columns)
     current_short = pd.Series(0.0, index=columns)
@@ -210,6 +225,61 @@ def run_long_short_backtest(
                     # Bottom decile: lower score -> higher short weight (rank descending)
                     bottom_ranks = valid_scores[bottom_assets].rank(ascending=False, method="average")
                     target_short[bottom_assets] = half_leverage * (bottom_ranks / bottom_ranks.sum())
+                elif weighting_scheme == "inverse_volatility":
+                    assert lagged_volatility is not None
+                    top_vols = lagged_volatility.loc[date, top_assets]
+                    valid_top_mask = (top_vols > 0.0) & np.isfinite(top_vols)
+                    valid_top_vols = top_vols[valid_top_mask]
+                    if len(valid_top_vols) == 0:
+                        target_long[top_assets] = half_leverage / len(top_assets)
+                    else:
+                        fallback_top = float(valid_top_vols.median())
+                        filled_top = top_vols.where(valid_top_mask, fallback_top)
+                        inv_top = 1.0 / filled_top
+                        inv_top_sum = float(inv_top.sum())
+                        if inv_top_sum > 0.0:
+                            target_long[top_assets] = half_leverage * (inv_top / inv_top_sum)
+                        else:
+                            target_long[top_assets] = half_leverage / len(top_assets)
+
+                    bot_vols = lagged_volatility.loc[date, bottom_assets]
+                    valid_bot_mask = (bot_vols > 0.0) & np.isfinite(bot_vols)
+                    valid_bot_vols = bot_vols[valid_bot_mask]
+                    if len(valid_bot_vols) == 0:
+                        target_short[bottom_assets] = half_leverage / len(bottom_assets)
+                    else:
+                        fallback_bot = float(valid_bot_vols.median())
+                        filled_bot = bot_vols.where(valid_bot_mask, fallback_bot)
+                        inv_bot = 1.0 / filled_bot
+                        inv_bot_sum = float(inv_bot.sum())
+                        if inv_bot_sum > 0.0:
+                            target_short[bottom_assets] = half_leverage * (inv_bot / inv_bot_sum)
+                        else:
+                            target_short[bottom_assets] = half_leverage / len(bottom_assets)
+
+                if turnover_penalty_lambda > 0.0 and (current_long.ne(0.0).any() or current_short.ne(0.0).any()):
+                    drifted_long = current_long * (1.0 + asset_returns)
+                    drifted_short = current_short * (1.0 + asset_returns)
+                    sum_long = float(drifted_long.sum())
+                    sum_short = float(drifted_short.sum())
+                    drifted_long_norm = (
+                        half_leverage * (drifted_long / sum_long)
+                        if sum_long > 1e-8
+                        else drifted_long
+                    )
+                    drifted_short_norm = (
+                        half_leverage * (drifted_short / sum_short)
+                        if sum_short > 1e-8
+                        else drifted_short
+                    )
+                    target_long = (
+                        (1.0 - turnover_penalty_lambda) * target_long
+                        + turnover_penalty_lambda * drifted_long_norm
+                    )
+                    target_short = (
+                        (1.0 - turnover_penalty_lambda) * target_short
+                        + turnover_penalty_lambda * drifted_short_norm
+                    )
 
                 target_net = target_long - target_short
 
@@ -246,6 +316,14 @@ def run_long_short_backtest(
             if abs(net_mult) > 1e-8:
                 drifted_net /= net_mult
             current_net = drifted_net
+            if turnover_penalty_lambda > 0.0:
+                drifted_long = current_long * (1.0 + asset_returns)
+                drifted_short = current_short * (1.0 + asset_returns)
+                if abs(net_mult) > 1e-8:
+                    drifted_long /= net_mult
+                    drifted_short /= net_mult
+                current_long = drifted_long
+                current_short = drifted_short
             row_turnover = 0.0
             row_tx_cost = 0.0
             row_slip_cost = 0.0
@@ -277,6 +355,9 @@ def run_long_short_backtest(
         "rebalance_frequency": rebalance_frequency,
         "quantiles": quantiles,
         "weighting_scheme": weighting_scheme,
+        "volatility_window": volatility_window,
+        "min_volatility_periods": min_volatility_periods,
+        "turnover_penalty_lambda": turnover_penalty_lambda,
         "universe_mask_applied": universe_mask is not None,
         "transaction_cost_bps": transaction_cost_bps,
         "slippage_bps": slippage_bps,
@@ -311,6 +392,9 @@ def _validate_long_short_inputs(
     signals: pd.DataFrame,
     quantiles: int,
     weighting_scheme: str,
+    volatility_window: int = 20,
+    min_volatility_periods: int = 5,
+    turnover_penalty_lambda: float = 0.0,
     universe_mask: pd.DataFrame | None,
     transaction_cost_bps: float,
     slippage_bps: float,
@@ -330,8 +414,22 @@ def _validate_long_short_inputs(
 
     if isinstance(quantiles, bool) or not isinstance(quantiles, int) or quantiles < 2:
         raise ValueError("quantiles must be an integer of at least 2")
-    if weighting_scheme not in {"equal", "rank"}:
-        raise ValueError("weighting_scheme must be 'equal' or 'rank'")
+    if weighting_scheme not in {"equal", "rank", "inverse_volatility"}:
+        raise ValueError("weighting_scheme must be 'equal', 'rank', or 'inverse_volatility'")
+    if not isinstance(volatility_window, int) or volatility_window <= 0:
+        raise ValueError("volatility_window must be a positive integer")
+    if (
+        not isinstance(min_volatility_periods, int)
+        or min_volatility_periods <= 0
+        or min_volatility_periods > volatility_window
+    ):
+        raise ValueError("min_volatility_periods must be positive and <= volatility_window")
+    if (
+        not isinstance(turnover_penalty_lambda, (int, float))
+        or turnover_penalty_lambda < 0.0
+        or turnover_penalty_lambda >= 1.0
+    ):
+        raise ValueError("turnover_penalty_lambda must be in [0.0, 1.0)")
 
     if universe_mask is not None:
         if not isinstance(universe_mask, pd.DataFrame):
