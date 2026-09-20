@@ -213,6 +213,64 @@ def test_long_short_inverse_volatility_weighting() -> None:
         assert result.short_holdings.loc[date].sum() == pytest.approx(0.5, abs=1e-6)
 
 
+def test_long_short_inverse_volatility_causality_mutation() -> None:
+    dates = pd.bdate_range("2025-01-06", periods=25)
+    assets = [f"A{i:02d}" for i in range(20)]
+    price_dict: dict[str, list[float]] = {a: [100.0] for a in assets}
+    for i in range(1, 25):
+        for a in assets:
+            if a in ("A01", "A19"):
+                ret = 0.03 if i % 2 == 1 else -0.03
+            else:
+                ret = 0.003 if i % 2 == 1 else 0.001
+            price_dict[a].append(price_dict[a][-1] * (1.0 + ret))
+
+    prices = pd.DataFrame(price_dict, index=dates)
+    signals = pd.DataFrame(
+        {assets[i]: float(20 - i) for i in range(20)},
+        index=dates,
+    )
+
+    res_base = run_long_short_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        quantiles=10,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+        signal_lag_periods=1,
+        gross_leverage=1.0,
+    )
+
+    # Pick rebalance date t (index 15). Signal/vol cutoff is t-1 (index 14).
+    t = dates[15]
+    base_long_t = res_base.long_holdings.loc[t].copy()
+    base_short_t = res_base.short_holdings.loc[t].copy()
+
+    # Mutate prices on and after t (index >= 15) by 10x
+    prices_mutated = prices.copy()
+    prices_mutated.iloc[15:] = prices_mutated.iloc[15:] * 10.0
+
+    res_mut = run_long_short_backtest(
+        prices_mutated,
+        signals,
+        rebalance_frequency="D",
+        quantiles=10,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+        signal_lag_periods=1,
+        gross_leverage=1.0,
+    )
+
+    mut_long_t = res_mut.long_holdings.loc[t]
+    mut_short_t = res_mut.short_holdings.loc[t]
+    for a in assets:
+        assert mut_long_t[a] == pytest.approx(base_long_t[a], abs=1e-10)
+        assert mut_short_t[a] == pytest.approx(base_short_t[a], abs=1e-10)
+
+
 def test_long_short_turnover_penalty() -> None:
     dates = pd.bdate_range("2025-01-06", periods=15)
     assets = [f"A{i:02d}" for i in range(20)]
@@ -249,6 +307,14 @@ def test_long_short_turnover_penalty() -> None:
 
     assert res_with_penalty.assumptions["turnover_penalty_lambda"] == 0.5
     assert res_with_penalty.turnover.sum() < res_no_penalty.turnover.sum()
+
+    # ADV-239-2: Pin dollar-neutrality and leg sums
+    assert (res_with_penalty.long_holdings >= -1e-10).all().all()
+    assert (res_with_penalty.short_holdings >= -1e-10).all().all()
+    for date in dates[1:]:
+        assert res_with_penalty.net_holdings.loc[date].sum() == pytest.approx(0.0, abs=1e-6)
+        assert res_with_penalty.long_holdings.loc[date].sum() == pytest.approx(0.5, abs=1e-6)
+        assert res_with_penalty.short_holdings.loc[date].sum() == pytest.approx(0.5, abs=1e-6)
 
 
 def test_long_short_volatility_and_turnover_validation() -> None:

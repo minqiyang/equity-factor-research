@@ -310,6 +310,69 @@ def test_inverse_volatility_weighting_scheme() -> None:
         assert result.holdings.loc[date, "CCC"] == pytest.approx(0.0)
 
 
+def test_inverse_volatility_causality_mutation() -> None:
+    dates = pd.bdate_range("2025-01-06", periods=25)
+    aaa_prices = [100.0]
+    bbb_prices = [100.0]
+    for i in range(1, 25):
+        aaa_ret = 0.003 if i % 2 == 1 else 0.001
+        aaa_prices.append(aaa_prices[-1] * (1.0 + aaa_ret))
+        bbb_ret = 0.03 if i % 2 == 1 else -0.03
+        bbb_prices.append(bbb_prices[-1] * (1.0 + bbb_ret))
+
+    prices = pd.DataFrame(
+        {"AAA": aaa_prices, "BBB": bbb_prices, "CCC": [100.0] * 25},
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {"AAA": 10.0, "BBB": 9.0, "CCC": 1.0},
+        index=dates,
+    )
+    prov = capture_backtest_source_provenance(prices, signals)
+
+    res_base = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=prov,
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_n=2,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+        signal_lag_periods=1,
+    )
+
+    # Pick rebalance date t (index 15). Signal/vol cutoff is t-1 (index 14).
+    t = dates[15]
+    base_weights_t = res_base.holdings.loc[t].copy()
+
+    # Mutate prices on and after t (index >= 15) by 10x
+    prices_mutated = prices.copy()
+    prices_mutated.iloc[15:] = prices_mutated.iloc[15:] * 10.0
+    prov_mut = capture_backtest_source_provenance(prices_mutated, signals)
+
+    res_mut = run_long_only_backtest(
+        prices_mutated,
+        signals,
+        source_provenance=prov_mut,
+        evaluation_start=prices_mutated.index[0],
+        evaluation_end=prices_mutated.index[-1],
+        rebalance_frequency="D",
+        top_n=2,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+        signal_lag_periods=1,
+    )
+
+    # Holdings established at close of t must be strictly identical
+    mut_weights_t = res_mut.holdings.loc[t]
+    for asset in ("AAA", "BBB", "CCC"):
+        assert mut_weights_t[asset] == pytest.approx(base_weights_t[asset], abs=1e-10)
+
+
 def test_turnover_penalty_lambda_reduces_turnover() -> None:
     dates = pd.bdate_range("2025-01-06", periods=10)
     prices = pd.DataFrame(
@@ -358,6 +421,11 @@ def test_turnover_penalty_lambda_reduces_turnover() -> None:
     assert res_with_penalty.assumptions["turnover_penalty_lambda"] == 0.5
     # Turnover must be strictly lower with penalty
     assert res_with_penalty.turnover.sum() < res_no_penalty.turnover.sum()
+
+    # ADV-239-2: Pin simplex invariants (non-negativity and unit-sum)
+    assert (res_with_penalty.holdings >= -1e-10).all().all()
+    for date in dates[1:]:
+        assert res_with_penalty.holdings.loc[date].sum() == pytest.approx(1.0, abs=1e-6)
 
 
 def test_weighting_and_turnover_validation_errors() -> None:

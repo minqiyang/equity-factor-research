@@ -1,5 +1,17 @@
 # Engineering Log
 
+## 2026-09-19 - Portfolio weighting advisory hardening (ADV-239-1, ADV-239-2)
+
+- Working root `efr-advisory-hardening-239-20260919` on `codex/advisory-hardening-239-20260919`
+  from baseline `f0e6508`.
+- Task `TASK-PORTFOLIO-WEIGHTING-HARDENING-001` addresses ADV-239-1 and ADV-239-2.
+- ADV-239-1: Added `test_inverse_volatility_causality_mutation` in `tests/test_backtest_weighting_and_mask.py`
+  and `test_long_short_inverse_volatility_causality_mutation` in `tests/test_long_short_backtest.py`
+  proving that 10x price scaling after $t - \text{lag}$ produces strictly identical weights at rebalance date $t$.
+- ADV-239-2: Added assertions to `test_turnover_penalty_lambda_reduces_turnover` and
+  `test_long_short_turnover_penalty` verifying long-only non-negativity and unit-sum, and
+  long-short dollar-neutrality and leg sums ($+0.5$, $-0.5$) under $\lambda = 0.5$.
+
 ## 2026-09-19 - Advanced portfolio weighting and turnover penalization
 
 - Working root `efr-portfolio-weighting-20260919` on `codex/portfolio-weighting-20260919`
