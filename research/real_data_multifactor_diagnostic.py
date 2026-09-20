@@ -221,11 +221,13 @@ def evaluate_diagnostic_readiness(
 ) -> str:
     """Evaluate diagnostic readiness dynamically based on data validation and alignment."""
 
-    if any(panel.empty for panel in panels.values()):
+    if any(panel.empty for panel in panels.values() if isinstance(panel, pd.DataFrame)):
         return "refused_empty_panels"
     if benchmark.empty or not benchmark.index.equals(panels["close"].index):
         return "refused_benchmark_misaligned"
     for name, panel in panels.items():
+        if not isinstance(panel, pd.DataFrame):
+            continue
         arr = panel.to_numpy(dtype=float, na_value=0.0)
         if np.isinf(arr).any():
             return f"refused_infinite_values_in_{name}"
@@ -234,7 +236,19 @@ def evaluate_diagnostic_readiness(
             return f"refused_non_positive_{price_col}"
     if (panels["volume"] < 0).any().any():
         return "refused_negative_volume"
-    if any(panel.isna().any().any() for panel in panels.values()):
+    has_missing = False
+    for name, panel in panels.items():
+        if not isinstance(panel, pd.DataFrame):
+            continue
+        if name == "returns":
+            if panel.iloc[1:].isna().any().any():
+                has_missing = True
+                break
+        else:
+            if panel.isna().any().any():
+                has_missing = True
+                break
+    if has_missing:
         return "diagnostic_ready_with_typed_missingness"
     return "diagnostic_ready_with_low_caveats"
 
@@ -249,7 +263,8 @@ def build_adjusted_research_panels(
     ensures ``research_close * research_volume`` identically matches true
     unadjusted dollar volume ``close * raw_volume`` without distortion from dividends.
     Vendor ``adjusted_close`` is retained for total-return calculations
-    (including dividend distributions).
+    (including dividend distributions) and drives forward return labels,
+    portfolio backtest pricing, and the accounting benchmark.
     VWAP is typical price on the split-adjusted bars. Missing cells stay missing.
     """
 
@@ -260,6 +275,13 @@ def build_adjusted_research_panels(
     if "split_factor" in field_panels:
         cum_split = field_panels["split_factor"].astype(float)
     else:
+        scale = close / adjusted_close
+        scale_pct = scale.pct_change(fill_method=None).dropna()
+        if (scale_pct.abs() > 0.15).any().any():
+            raise DataIntegrityError(
+                "Price / adjusted_close exhibits discontinuities (>15%) without verified split factor evidence. "
+                "Cannot safely reconstruct split-adjusted turnover."
+            )
         cum_split = pd.DataFrame(1.0, index=close.index, columns=close.columns, dtype=float)
 
     split_close = close / cum_split
@@ -270,7 +292,7 @@ def build_adjusted_research_panels(
     dollar_volume = split_close * volume
     vwap = (split_high + split_low + split_close) / 3.0
     returns = adjusted_close.pct_change(fill_method=None)
-    return {
+    result = {
         "open": split_open,
         "high": split_high,
         "low": split_low,
@@ -283,6 +305,9 @@ def build_adjusted_research_panels(
         "returns": returns,
         "split_factor": cum_split,
     }
+    if "permanent_id" in field_panels:
+        result["permanent_id"] = field_panels["permanent_id"]
+    return result
 
 
 def load_real_data_research_panels(
@@ -307,9 +332,14 @@ def load_real_data_research_panels(
     )
     research_panels = build_adjusted_research_panels(field_panels)
     factor_panels = {
-        name: panel.loc[:, list(factor_symbols)] for name, panel in research_panels.items()
+        name: (
+            panel.loc[:, list(factor_symbols)]
+            if isinstance(panel, pd.DataFrame)
+            else panel.reindex(list(factor_symbols))
+        )
+        for name, panel in research_panels.items()
     }
-    benchmark = research_panels["close"][config.benchmark_symbol].rename(
+    benchmark = research_panels["adjusted_close"][config.benchmark_symbol].rename(
         config.benchmark_symbol
     )
     if benchmark.isna().any():
@@ -355,6 +385,8 @@ def run_real_data_multifactor_diagnostic(
     )
     sample_digest = hashlib.sha256()
     for name, panel in sorted(panels.items()):
+        if not isinstance(panel, pd.DataFrame):
+            continue
         sample_digest.update(name.encode())
         sample_digest.update(pd.util.hash_pandas_object(panel, index=True).values.tobytes())
         sample_digest.update(repr(tuple(panel.columns)).encode())
@@ -386,6 +418,12 @@ def run_real_data_multifactor_diagnostic(
         exc: Exception,
         context: dict[str, Any],
     ) -> None:
+        if any(
+            r.get("specification", {}).get("factor_id") == factor_id
+            and r.get("status") == "failed"
+            for r in inventory
+        ):
+            return
         spec = {**context, "factor_id": factor_id, "stage": stage}
         fail_record = {
             "trial_id": hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest(),
@@ -401,7 +439,7 @@ def run_real_data_multifactor_diagnostic(
             with inventory_path.open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps(fail_record, sort_keys=True, allow_nan=False) + "\n")
 
-    prices = panels["close"]
+    prices = panels["adjusted_close"]
     if len(prices.index) <= config.warmup_periods + config.forward_holding_periods:
         raise ValueError("real-data panel is too short for alpha warm-up and labels")
 

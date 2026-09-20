@@ -121,6 +121,16 @@ def load_eod_cohort_panels(
         if splits_df is not None and not splits_df.empty:
             cum_split = compute_cumulative_split_factor(frame.index, splits_df)
             frame["split_factor"] = cum_split
+        elif "split_factor" in frame.columns:
+            pass
+        else:
+            scale = frame["close"] / frame["adjusted_close"]
+            scale_pct = scale.pct_change().dropna()
+            if (scale_pct.abs() > 0.15).any():
+                raise DataIntegrityError(
+                    f"Symbol '{symbol}' exhibits price/adjusted_close discontinuities (>15%) "
+                    "without verified split factor evidence. Cannot safely reconstruct split-adjusted turnover."
+                )
         per_symbol[symbol] = _slice_date_index(frame, start=start, end=end)
 
     return _align_symbol_panels(per_symbol, symbols=requested)
@@ -455,11 +465,11 @@ def _align_symbol_panels(
     per_symbol: dict[str, pd.DataFrame],
     *,
     symbols: list[str],
-) -> dict[str, pd.DataFrame]:
+) -> dict[str, Any]:
     fields = list(_PANEL_FIELDS)
     if any("split_factor" in per_symbol[symbol].columns for symbol in symbols):
         fields.append("split_factor")
-    panels: dict[str, pd.DataFrame] = {}
+    panels: dict[str, Any] = {}
     for field in fields:
         pieces = []
         for symbol in symbols:
@@ -478,6 +488,16 @@ def _align_symbol_panels(
         panel = panel.reindex(columns=symbols)
         panel.index = pd.DatetimeIndex(pd.to_datetime(panel.index), name="date", freq=None)
         panels[field] = panel
+
+    if any("permanent_id" in per_symbol[s].columns for s in symbols):
+        panels["permanent_id"] = pd.Series(
+            {
+                s: per_symbol[s]["permanent_id"].dropna().iloc[0]
+                for s in symbols
+                if "permanent_id" in per_symbol[s].columns
+                and per_symbol[s]["permanent_id"].notna().any()
+            }
+        )
     return panels
 
 
@@ -519,9 +539,9 @@ def load_symbol_splits(data_dir: Path | str, symbol: str) -> pd.DataFrame | None
     directory = Path(data_dir)
     ledger_path = directory / "logs" / "eod_request_ledger.sqlite3"
     if ledger_path.is_file():
-        try:
-            import sqlite3
+        import sqlite3
 
+        try:
             with sqlite3.connect(ledger_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -534,8 +554,9 @@ def load_symbol_splits(data_dir: Path | str, symbol: str) -> pd.DataFrame | None
                     split_file = directory / "normalized" / "splits" / f"{row[0]}.parquet"
                     if split_file.is_file():
                         return pd.read_parquet(split_file, engine="pyarrow")
-        except Exception:
-            pass
+                    raise FileNotFoundError(f"Split file referenced in ledger not found: {split_file}")
+        except sqlite3.Error as exc:
+            raise DataIntegrityError(f"Database error reading split ledger {ledger_path}: {exc}") from exc
 
     for candidate in (
         directory / "normalized" / "splits" / f"{symbol}.parquet",

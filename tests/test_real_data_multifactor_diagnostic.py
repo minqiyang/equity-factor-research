@@ -264,6 +264,70 @@ def test_build_adjusted_research_panels_keeps_dollar_volume_basis() -> None:
     assert panels_comb["returns"].iloc[1, 0] == pytest.approx(100.0 / 90.0 - 1.0)
 
 
+def test_build_adjusted_research_panels_refuses_unverified_split() -> None:
+    dates = pd.DatetimeIndex(["2020-08-28", "2020-08-31"], name="date")
+    close_split = pd.DataFrame({"AAA.US": [400.0, 100.0]}, index=dates)
+    adjusted_split = pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates)
+    volume_split = pd.DataFrame({"AAA.US": [4_000.0, 4_000.0]}, index=dates)
+    with pytest.raises(DataIntegrityError, match="discontinuities"):
+        build_adjusted_research_panels(
+            {
+                "open": close_split,
+                "high": close_split,
+                "low": close_split,
+                "close": close_split,
+                "adjusted_close": adjusted_split,
+                "volume": volume_split,
+            }
+        )
+
+
+def test_runner_uses_adjusted_close_for_prices_forward_returns_and_benchmark(tmp_path: Path) -> None:
+    dates = pd.bdate_range("2020-01-02", periods=160)
+    data_dir = tmp_path / "snapshot"
+    # Write cohort with close != adjusted_close (e.g. 10% dividend discount on adjusted_close)
+    for index, symbol in enumerate(("AAA.US", "BBB.US", "CCC.US")):
+        _write_symbol_parquet(
+            data_dir / "normalized" / f"{symbol}.parquet",
+            dates,
+            seed=20260920 + index,
+            close_scale=1.0,
+            adjusted_scale=0.9,
+        )
+    _write_symbol_parquet(
+        data_dir / "normalized" / f"{BENCHMARK_SYMBOL}.parquet",
+        dates,
+        seed=42,
+        close_scale=1.0,
+        adjusted_scale=0.85,
+    )
+    inventory_path = tmp_path / "per_stock_coverage.json"
+    files = [
+        {"symbol": s, "file": f"normalized/{s}.parquet"}
+        for s in ("AAA.US", "BBB.US", "CCC.US", BENCHMARK_SYMBOL)
+    ]
+    inventory_path.write_text(json.dumps(files), encoding="utf-8")
+    config = RealDataMultifactorDiagnosticConfig(
+        data_dir=data_dir,
+        inventory_path=inventory_path,
+        symbols=("AAA.US", "BBB.US", "CCC.US"),
+        benchmark_symbol=BENCHMARK_SYMBOL,
+        alpha_ids=(ALPHA_001, ALPHA_101),
+        composite_ids=(EQUAL_WEIGHTED_COMPOSITE,),
+        include_weighting_comparisons=False,
+    )
+    result = run_real_data_multifactor_diagnostic(
+        config=config,
+        report_path=tmp_path / "report.md",
+        write_outputs=False,
+    )
+    panels, benchmark, symbols = real_data_module.load_real_data_research_panels(config)
+    pd.testing.assert_frame_equal(result["prices"], panels["adjusted_close"])
+    assert not result["prices"].equals(panels["close"])
+    pd.testing.assert_series_equal(result["accounting_benchmark"], benchmark)
+    assert not result["accounting_benchmark"].equals(panels["close"].get(BENCHMARK_SYMBOL, pd.Series(dtype=float)))
+
+
 def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -> None:
     config = _reduced_config(tmp_path)
     report_path = tmp_path / "real_data_multifactor_diagnostic.md"
@@ -551,7 +615,9 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
     dates = pd.date_range("2024-01-02", periods=5)
     df = pd.DataFrame({"A": [1.0, 2.0, 3.0, 4.0, 5.0]}, index=dates)
     panels = {
-        "open": df, "high": df, "low": df, "close": df, "volume": df * 100
+        "open": df, "high": df, "low": df, "close": df, "volume": df * 100,
+        "returns": df.pct_change(),
+        "permanent_id": pd.Series({"A": "PERM_A"}),
     }
     benchmark = pd.Series([100.0, 101.0, 102.0, 103.0, 104.0], index=dates)
     config = RealDataMultifactorDiagnosticConfig()
@@ -566,6 +632,16 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
         == "diagnostic_ready_with_typed_missingness"
     )
 
+    # Missingness in returns at row 2
+    nan_ret_panels = dict(panels)
+    nan_ret = df.pct_change()
+    nan_ret.iloc[2, 0] = np.nan
+    nan_ret_panels["returns"] = nan_ret
+    assert (
+        evaluate_diagnostic_readiness(nan_ret_panels, benchmark, config)
+        == "diagnostic_ready_with_typed_missingness"
+    )
+
     # Misaligned benchmark
     bad_bm = pd.Series([100.0], index=pd.date_range("2024-01-02", periods=1))
     assert evaluate_diagnostic_readiness(panels, bad_bm, config) == "refused_benchmark_misaligned"
@@ -574,6 +650,45 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
     bad_panels = dict(panels)
     bad_panels["close"] = pd.DataFrame({"A": [1.0, 0.0, 3.0, 4.0, 5.0]}, index=dates)
     assert evaluate_diagnostic_readiness(bad_panels, benchmark, config) == "refused_non_positive_close"
+
+
+def test_record_failure_deduplication(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = _reduced_config(
+        tmp_path,
+        alpha_ids=(ALPHA_001,),
+        composite_ids=(EQUAL_WEIGHTED_COMPOSITE,),
+        include_weighting_comparisons=False,
+    )
+    report_path = tmp_path / "report.md"
+    jsonl_path = tmp_path / "report.trials.jsonl"
+
+    def mock_eval(**kwargs):
+        fail_rec = {
+            "trial_id": "simulated_trial",
+            "attempt_id": "attempt1",
+            "specification": {"factor_id": kwargs["factor_id"]},
+            "status": "failed",
+        }
+        kwargs["inventory"].append(fail_rec)
+        if kwargs.get("inventory_path") is not None:
+            kwargs["inventory_path"].parent.mkdir(parents=True, exist_ok=True)
+            with kwargs["inventory_path"].open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(fail_rec) + "\n")
+        raise RuntimeError("simulated evaluation failure")
+
+    monkeypatch.setattr(real_data_module, "_evaluate_factor", mock_eval)
+
+    with pytest.raises(RuntimeError, match="simulated evaluation failure"):
+        run_real_data_multifactor_diagnostic(
+            config=config,
+            report_path=report_path,
+            write_outputs=True,
+        )
+
+    assert jsonl_path.exists()
+    events = [json.loads(line) for line in jsonl_path.read_text().splitlines()]
+    failed_events = [e for e in events if e.get("specification", {}).get("factor_id") == ALPHA_001 and e.get("status") == "failed"]
+    assert len(failed_events) == 1
 
 
 def test_runner_refuses_early_on_invalid_panels(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
