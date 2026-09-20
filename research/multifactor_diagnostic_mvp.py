@@ -104,6 +104,10 @@ from features.neutralize import (
     cross_sectional_group_neutralize,
     cross_sectional_neutralize,
 )
+from features.regime import (
+    detect_market_volatility_regime,
+    regime_switching_factor_composite,
+)
 from reporting.experiment_log import (
     SYNTHETIC_RESEARCH_CAVEATS,
     resolve_experiment_log_path,
@@ -120,7 +124,11 @@ from research.walking_skeleton_mvp import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST_PATH = (
-    PROJECT_ROOT / "tests" / "fixtures" / "walking_skeleton" / "diagnostic_cohort_v1.json"
+    PROJECT_ROOT
+    / "tests"
+    / "fixtures"
+    / "walking_skeleton"
+    / "diagnostic_cohort_v1.json"
 )
 DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "multifactor_diagnostic_mvp.md"
 DEFAULT_EXPERIMENT_LOG_PATH = (
@@ -188,6 +196,7 @@ CONDITIONAL_RANK_INTERACTION = "CONDITIONAL_RANK_INTERACTION"
 NEUTRALIZED_IC_COMPOSITE = "NEUTRALIZED_IC_COMPOSITE"
 SECTOR_NEUTRAL_COMPOSITE = "SECTOR_NEUTRAL_COMPOSITE"
 MARKET_BETA_NEUTRAL_COMPOSITE = "MARKET_BETA_NEUTRAL_COMPOSITE"
+REGIME_SWITCHING_COMPOSITE = "REGIME_SWITCHING_COMPOSITE"
 ALPHA_IDS = (
     ALPHA_001,
     ALPHA_002,
@@ -253,6 +262,7 @@ FACTOR_IDS = (
     NEUTRALIZED_IC_COMPOSITE,
     SECTOR_NEUTRAL_COMPOSITE,
     MARKET_BETA_NEUTRAL_COMPOSITE,
+    REGIME_SWITCHING_COMPOSITE,
 )
 ALPHA_WARMUP_PERIODS = 25
 IMPLEMENTED_ALPHA_COUNT = len(ALPHA_IDS)
@@ -266,10 +276,26 @@ WEIGHTING_COMPARISON_FACTORS = (
 )
 
 WEIGHTING_COMPARISON_SCHEMES = (
-    {"name": "Equal (λ=0.0)", "weighting_scheme": "equal", "turnover_penalty_lambda": 0.0},
-    {"name": "Inverse-Vol (λ=0.0)", "weighting_scheme": "inverse_volatility", "turnover_penalty_lambda": 0.0},
-    {"name": "Equal (λ=0.5)", "weighting_scheme": "equal", "turnover_penalty_lambda": 0.5},
-    {"name": "Inverse-Vol (λ=0.5)", "weighting_scheme": "inverse_volatility", "turnover_penalty_lambda": 0.5},
+    {
+        "name": "Equal (λ=0.0)",
+        "weighting_scheme": "equal",
+        "turnover_penalty_lambda": 0.0,
+    },
+    {
+        "name": "Inverse-Vol (λ=0.0)",
+        "weighting_scheme": "inverse_volatility",
+        "turnover_penalty_lambda": 0.0,
+    },
+    {
+        "name": "Equal (λ=0.5)",
+        "weighting_scheme": "equal",
+        "turnover_penalty_lambda": 0.5,
+    },
+    {
+        "name": "Inverse-Vol (λ=0.5)",
+        "weighting_scheme": "inverse_volatility",
+        "turnover_penalty_lambda": 0.5,
+    },
 )
 
 
@@ -288,7 +314,7 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 61
+    n_trials: int = 62
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
     pbo_n_splits: int = 8
@@ -526,7 +552,8 @@ def run_multifactor_diagnostic_mvp(
 
     ordered_alphas = [alpha_panels[factor_id] for factor_id in ALPHA_IDS]
     ic_weights = [
-        float(factor_results[factor_id]["ic_summary"]["mean_ic"]) for factor_id in ALPHA_IDS
+        float(factor_results[factor_id]["ic_summary"]["mean_ic"])
+        for factor_id in ALPHA_IDS
     ]
     ic_history = pd.DataFrame(
         {factor_id: factor_results[factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
@@ -534,8 +561,24 @@ def run_multifactor_diagnostic_mvp(
 
     volatility_proxy = panels["returns"].rolling(20, min_periods=5).std()
     sector_map = build_default_sector_mapping(prices.columns)
-    market_beta = compute_rolling_market_beta(panels["returns"], window=60, min_periods=20)
+    market_beta = compute_rolling_market_beta(
+        panels["returns"], window=60, min_periods=20
+    )
     ic_comp = ic_weighted_composite(ordered_alphas, ic_weights)
+    market_returns = panels["returns"].mean(axis=1)
+    volatility_regime = detect_market_volatility_regime(
+        market_returns, window=60, min_periods=20
+    )
+    beta_neutral_comp = cross_sectional_neutralize(
+        ic_comp,
+        market_beta,
+    )
+    regime_comp = regime_switching_factor_composite(
+        ic_comp,
+        beta_neutral_comp,
+        volatility_regime,
+        signal_lag_periods=config.signal_lag_periods,
+    )
 
     composites = {
         EQUAL_WEIGHTED_COMPOSITE: equal_weighted_composite(ordered_alphas),
@@ -572,10 +615,8 @@ def run_multifactor_diagnostic_mvp(
             ic_comp,
             sector_map,
         ),
-        MARKET_BETA_NEUTRAL_COMPOSITE: cross_sectional_neutralize(
-            ic_comp,
-            market_beta,
-        ),
+        MARKET_BETA_NEUTRAL_COMPOSITE: beta_neutral_comp,
+        REGIME_SWITCHING_COMPOSITE: regime_comp,
     }
     for factor_id, factor in composites.items():
         factor_results[factor_id] = _evaluate_factor(
@@ -801,7 +842,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "the 52 implemented classical price-volume alphas, equal-weighted, "
             "in-sample IC-weighted, causal walk-forward ICIR-weighted, and "
             "causal walk-forward correlation-discounted composites, "
-            "cross-sectional volatility, sector, and market beta neutralization, and "
+            "cross-sectional volatility, sector, and market beta neutralization, "
+            "regime-aware dynamic switching composite, and "
             "cross-factor interaction models (product interaction and conditional rank), "
             "with monthly Rank IC, ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix, "
             "equal-weight monthly rebalance backtests at 5 bps slippage, and "
@@ -888,6 +930,10 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
                 "60-day rolling return beta against equal-weighted market return "
                 "with min_periods=20; leading dates without a full minimum window remain NaN"
             ),
+            "volatility_regime_proxy": (
+                "60-day rolling return volatility against expanding historical median "
+                "with min_periods=20; zero lookahead"
+            ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
             "brokerage_integration": False,
@@ -921,6 +967,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts across 50 assets",
             "market beta proxy does not backfill leading rolling-beta NaNs",
+            "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime",
             "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
             "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag",
         ),
@@ -959,7 +1006,11 @@ def write_report(*, result: dict[str, Any]) -> None:
                 [
                     factor_id,
                     _format_number(ic_summary["mean_ic"]),
-                    _format_number(ic_summary["icIR"] if "icIR" in ic_summary else ic_summary["icir"]),
+                    _format_number(
+                        ic_summary["icIR"]
+                        if "icIR" in ic_summary
+                        else ic_summary["icir"]
+                    ),
                     _format_number(ic_summary["newey_west_tstat"]),
                     _format_number(payload["dsr"]),
                     _format_percent(metrics["total_return"]),
@@ -1061,17 +1112,20 @@ profitability.
 10. Build `MARKET_BETA_NEUTRAL_COMPOSITE` orthogonalized against trailing 60-day
     rolling market beta against the equal-weighted market portfolio. Leading
     dates without 20 observations remain NaN.
-11. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
+11. Build `REGIME_SWITCHING_COMPOSITE` dynamically blending `IC_WEIGHTED_COMPOSITE`
+    and `MARKET_BETA_NEUTRAL_COMPOSITE` conditioned on trailing 60-day market
+    volatility regime with lag-1 signal execution.
+12. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
     start at the lag-1 execution close.
-12. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
+13. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
     the mean IC.
-13. Run the existing long-only equal-weight monthly backtester with
+14. Run the existing long-only equal-weight monthly backtester with
     `{config.slippage_bps:.2f}` bps slippage and `{config.top_n}` names.
-14. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
+15. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
     and `{config.slippage_bps:.2f}` bps slippage.
-15. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
+16. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
     `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
-16. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
+17. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
     alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
@@ -1097,6 +1151,7 @@ profitability.
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
 - Market beta proxy: 60-day rolling return beta against equal-weighted market return, min_periods=20, no backfill
+- Volatility regime proxy: 60-day rolling return volatility against expanding historical median, min_periods=20, no lookahead
 - Long-short quantiles: `{config.quantiles}`
 - Long-only weighting scheme: `{config.weighting_scheme}`
 - Long-short weighting scheme: `{config.long_short_weighting_scheme}`
@@ -1119,7 +1174,7 @@ forward-return window has closed by t.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(rows)}
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
@@ -1185,6 +1240,9 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
   NaN; values are not backfilled from later dates.
 - `SECTOR_NEUTRAL_COMPOSITE` demeans within 5 static balanced cohorts across the
   50 synthetic assets.
+- `REGIME_SWITCHING_COMPOSITE` dynamically blends `IC_WEIGHTED_COMPOSITE` and
+  `MARKET_BETA_NEUTRAL_COMPOSITE` using trailing 60-day market volatility regime
+  indicator with lag-1 signal execution.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
 """

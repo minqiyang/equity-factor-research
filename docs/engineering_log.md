@@ -1,5 +1,19 @@
 # Engineering Log
 
+## 2026-09-19 - Milestone 3.9 Regime-aware dynamic factor allocation and composite
+
+- Working root `efr-regime-switching-composite-20260919` on `codex/regime-switching-composite-20260919`
+  from baseline `2274318`.
+- Task `TASK-REGIME-SWITCHING-COMPOSITE-001` implements Milestone 3.9 (Regime-Aware Dynamic Factor Allocation).
+- Implemented `src/features/regime.py` providing lookahead-free market regime detection:
+  - `detect_market_volatility_regime(market_returns, window=60, min_periods=20)`: compares trailing rolling return volatility against expanding historical median strictly through $t$.
+  - `detect_market_trend_regime(market_returns, window=60, min_periods=20)`: trailing cumulative market returns.
+  - `regime_switching_factor_composite(factor_low, factor_high, regime_indicator, signal_lag_periods=1)`: causal convex blending of factor styles based on lagged regime indicator.
+- Added comprehensive unit tests in `tests/test_regime.py` verifying causality mutation resistance (no change to $t$ regime when future returns after $t - \text{lag}$ are mutated), synthetic market dynamics, convex blending, and input validation.
+- Wired `REGIME_SWITCHING_COMPOSITE` into `research/multifactor_diagnostic_mvp.py`, dynamically switching between aggressive `IC_WEIGHTED_COMPOSITE` (low volatility) and defensive `MARKET_BETA_NEUTRAL_COMPOSITE` (high volatility). Expanded evaluated factor trials to 62 (`n_trials=62`).
+- Regenerated `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`. `REGIME_SWITCHING_COMPOSITE` achieved an LS Sharpe of 0.4033 (vs 0.3693 for `IC_WEIGHTED_COMPOSITE` and 0.1851 for `MARKET_BETA_NEUTRAL_COMPOSITE`) and lower LS max drawdown (10.69% vs 12.36%).
+- Pinned `REGIME_SWITCHING_COMPOSITE` in `OFFICIAL_FOUR_DECIMAL_ROWS` and verified pipeline source and factor equality in `tests/test_multifactor_diagnostic_mvp.py`.
+
 ## 2026-09-19 - Portfolio weighting pipeline advisory hardening (ADV-241-1, ADV-241-2, ADV-241-3)
 
 - Working root `efr-advisory-hardening-241-20260919` on `codex/advisory-hardening-241-20260919`
