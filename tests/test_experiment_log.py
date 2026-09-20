@@ -9,6 +9,8 @@ import pytest
 
 from backtest.portfolio import capture_backtest_source_provenance
 from reporting.experiment_log import (
+    DIAGNOSTIC_REAL_DATA_CAVEATS,
+    REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE,
     SYNTHETIC_RESEARCH_CAVEATS,
     resolve_experiment_log_path,
     write_experiment_log,
@@ -67,6 +69,26 @@ def test_write_experiment_log_requires_synthetic_caveats(tmp_path: Path) -> None
             caveats=("synthetic data only",),
             next_action="Stop.",
         )
+
+
+def test_write_experiment_log_accepts_diagnostic_real_data_caveats(tmp_path: Path) -> None:
+    log_path = tmp_path / "real.json"
+    payload = write_experiment_log(
+        log_path=log_path,
+        experiment_id="real-data-multifactor-diagnostic",
+        title="Real Data",
+        experiment_type=REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE,
+        summary="Diagnostic real-data sidecar.",
+        config={"top_n": 5},
+        assumptions={"data_scope": "local EODHD Parquet diagnostic"},
+        outputs={"markdown_report": "reports/real.md"},
+        caveats=DIAGNOSTIC_REAL_DATA_CAVEATS,
+        required_caveats=DIAGNOSTIC_REAL_DATA_CAVEATS,
+        next_action="Keep diagnostic.",
+    )
+    assert payload["experiment_type"] == REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE
+    assert "synthetic data only" not in payload["caveats"]
+    assert "DIAGNOSTIC_ONLY" in payload["caveats"]
 
 
 def test_write_experiment_log_rejects_private_source_provenance(

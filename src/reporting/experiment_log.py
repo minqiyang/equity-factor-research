@@ -24,6 +24,18 @@ SYNTHETIC_RESEARCH_CAVEATS = (
     "no live trading or brokerage integration",
 )
 
+DIAGNOSTIC_REAL_DATA_CAVEATS = (
+    "DIAGNOSTIC_ONLY",
+    "not financial advice",
+    "not a profitability claim",
+    "local user-provided files only; no remote data fetch",
+    "no live trading or brokerage integration",
+    "static survivor cohort is not point-in-time universe evidence",
+    "survivorship-biased diagnostic",
+)
+
+REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE = "real_data_multifactor_diagnostic"
+
 
 def resolve_experiment_log_path(
     report_path: Path,
@@ -57,6 +69,7 @@ def write_experiment_log(
     metrics: Mapping[str, Any] | None = None,
     diagnostics: Mapping[str, Any] | None = None,
     caveats: Sequence[str] = SYNTHETIC_RESEARCH_CAVEATS,
+    required_caveats: Sequence[str] | None = None,
     next_action: str,
 ) -> dict[str, Any]:
     """Write a deterministic JSON experiment log and return its payload."""
@@ -66,7 +79,12 @@ def write_experiment_log(
     _validate_required_text(experiment_type, field_name="experiment_type")
     _validate_required_text(summary, field_name="summary")
     _validate_required_text(next_action, field_name="next_action")
-    _validate_caveats(caveats)
+    required = (
+        SYNTHETIC_RESEARCH_CAVEATS
+        if required_caveats is None
+        else tuple(required_caveats)
+    )
+    _validate_caveats(caveats, required=required)
 
     payload = {
         "schema_version": 1,
@@ -137,14 +155,25 @@ def _validate_required_text(value: str, *, field_name: str) -> None:
         raise ValueError(f"{field_name} must be a non-empty string")
 
 
-def _validate_caveats(caveats: Sequence[str]) -> None:
+def _validate_caveats(
+    caveats: Sequence[str],
+    *,
+    required: Sequence[str] = SYNTHETIC_RESEARCH_CAVEATS,
+) -> None:
     caveat_set = set(caveats)
-    missing = [caveat for caveat in SYNTHETIC_RESEARCH_CAVEATS if caveat not in caveat_set]
+    missing = [caveat for caveat in required if caveat not in caveat_set]
     if missing:
-        raise ValueError(f"synthetic experiment logs must include caveats: {missing}")
+        family = (
+            "synthetic experiment logs"
+            if tuple(required) == SYNTHETIC_RESEARCH_CAVEATS
+            else "experiment logs"
+        )
+        raise ValueError(f"{family} must include caveats: {missing}")
 
 
 __all__ = [
+    "DIAGNOSTIC_REAL_DATA_CAVEATS",
+    "REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE",
     "SYNTHETIC_RESEARCH_CAVEATS",
     "resolve_experiment_log_path",
     "write_experiment_log",

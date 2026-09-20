@@ -14,7 +14,11 @@ from typing import Any
 
 import pandas as pd
 
-from reporting.experiment_log import SYNTHETIC_RESEARCH_CAVEATS
+from reporting.experiment_log import (
+    DIAGNOSTIC_REAL_DATA_CAVEATS,
+    REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE,
+    SYNTHETIC_RESEARCH_CAVEATS,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -76,6 +80,7 @@ def load_experiment_logs(
     log_dir: Path = DEFAULT_EXPERIMENT_LOG_DIR,
     *,
     pattern: str = "*.json",
+    include_real_data: bool = False,
 ) -> list[dict[str, Any]]:
     """Load all experiment logs from ``log_dir`` in deterministic path order."""
 
@@ -85,6 +90,14 @@ def load_experiment_logs(
         raise ValueError(f"no experiment log files found in {log_dir}")
 
     payloads = [load_experiment_log(path) for path in log_paths]
+    if not include_real_data:
+        payloads = [
+            payload
+            for payload in payloads
+            if payload.get("experiment_type") != REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE
+        ]
+        if not payloads:
+            raise ValueError(f"no synthetic experiment log files found in {log_dir}")
     _validate_unique_experiment_ids(payloads)
     return payloads
 
@@ -214,7 +227,10 @@ def _validate_experiment_log(payload: Any, *, log_path: Path) -> None:
     if not isinstance(caveats, list) or not all(isinstance(item, str) for item in caveats):
         raise ValueError(f"{log_path} field 'caveats' must be a list of strings")
 
-    missing_caveats = [caveat for caveat in REQUIRED_CAVEATS if caveat not in caveats]
+    required_caveats = REQUIRED_CAVEATS
+    if payload["experiment_type"] == REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE:
+        required_caveats = DIAGNOSTIC_REAL_DATA_CAVEATS
+    missing_caveats = [caveat for caveat in required_caveats if caveat not in caveats]
     if missing_caveats:
         raise ValueError(f"{log_path} is missing required caveats: {missing_caveats}")
 
