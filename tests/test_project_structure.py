@@ -7380,6 +7380,7 @@ def test_public_metadata_and_readme_match_implemented_scope() -> None:
         "numpy>=1.26",
         "pandas>=2.1",
         "scipy>=1.11",
+        "pyarrow>=14.0",
     ]
     assert configuration["tool"]["ruff"]["lint"]["select"] == [
         "E4",

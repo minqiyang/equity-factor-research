@@ -10047,3 +10047,16 @@ This ablation round completes the implementation and machine verification of sev
   All 62 default factors preserved early scores and both books' holdings under
   separate future-label and future-price perturbations. The refined partial
   sign-reversal and intervening-date disappearance fixtures passed 42 cases.
+
+## 2026-09-20 — Milestone 4.0 Steps 1–2: Parquet adapter and blue-chip cohort
+
+- Working branch `feat/m4-0-real-data-parquet-adapter` from baseline `24592d5`.
+- Implemented `src/data/parquet_loader.py` providing local EODHD daily Parquet loading and wide panel alignment:
+  - `load_eod_parquet(file_path)`: validates OHLCV schema, requires finite strictly positive prices, non-negative volume, and rejects boolean types and unordered/duplicate dates.
+  - `load_eod_cohort_panels(symbols, data_dir, inventory_path, start_date, end_date)`: resolves symbols via JSON inventory or convention, enforces path confinement under data directory, and aligns per-symbol frames into wide union panels while preserving missing dates as NaN (PIT-009).
+- Implemented `src/data/bluechip_cohort.py` defining `BLUECHIP_50_COHORT` (50 verified liquid blue-chip symbols from S&P 500) and `BENCHMARK_SYMBOL = "SPY.US"` under DIAGNOSTIC_ONLY status.
+- Added runtime dependency `pyarrow>=14.0` in `pyproject.toml` and verified dependency structure in `tests/test_project_structure.py`.
+- Added 33 unit tests in `tests/test_parquet_loader.py` covering valid loads, inventory resolution, date filtering, and integrity error handling on synthetic temporary fixtures.
+- Regenerated `docs/repo_map.md` (7 mapped data files, 232 mapped test files).
+- Verification: 33/33 tests passed in `test_parquet_loader.py`, 3759 passed and 2 skipped in full pytest suite, ruff and compileall passed.
+- Implementation report recorded in `coord/reports/m4_0_parquet_adapter_impl.md`.
