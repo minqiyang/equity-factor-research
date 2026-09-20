@@ -1,5 +1,32 @@
 # Engineering Log
 
+## 2026-09-19 - Causal walk-forward composite weights and volatility proxy
+
+- Working root `efr-walk-forward-composite-20260919` on
+  `codex/walk-forward-composite-weights-20260919` from baseline `71f1eb0`.
+- Task `TASK-WALK-FORWARD-COMPOSITE-001` addresses ADV-234-1 and ADV-234-2.
+- `walk_forward_icir_weighted_composite` and
+  `walk_forward_correlation_discounted_composite` in `src/features/combination.py`
+  refresh weights on each monthly rebalance date t. Monthly Rank ICs used for
+  ICIR and expanding-window mean IC have timestamps strictly before t, because
+  the IC at t is measured against execution-aligned forward returns. Factor-value
+  correlation at t uses panels through t inclusive. Weights are held on panel
+  dates in `[t, t+1)`. Factors below `min_ic_periods` receive weight 0.0.
+- Pipeline wiring in `research/multifactor_diagnostic_mvp.py` replaces
+  full-sample `icir_weighted_composite` / `correlation_discounted_composite`
+  calls. `IC_WEIGHTED_COMPOSITE` remains an in-sample static diagnostic.
+- Volatility proxy drops `.bfill()`. Leading rolling-std cells stay NaN.
+  Official `NEUTRALIZED_IC_COMPOSITE` numbers are unchanged because the former
+  fill sat before `evaluation_start` 2021-02-08.
+- Ablation: expanding window only; no rolling-window dual path; no weight-schedule
+  dump; static one-shot helpers retained as public APIs. Degenerate pairwise
+  correlations in short trailing windows already mapped to 0.0; `np.errstate`
+  around `corrcoef` keeps that mapping quiet.
+- Regenerated `reports/multifactor_diagnostic_mvp.md` and
+  `reports/experiment_logs/multifactor_diagnostic_mvp.json`. Walk-forward
+  composites are weaker than the previous full-sample static versions and are
+  retained.
+
 ## 2026-09-19 - End-to-end multi-factor pipeline integration and long-short backtesting
 
 - Working branch `codex/multifactor-pipeline-integration-20260919` from `ba5a838`.

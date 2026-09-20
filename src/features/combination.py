@@ -160,6 +160,127 @@ def correlation_discounted_composite(
     return _weighted_average(standardized, adjusted_weights)
 
 
+def walk_forward_icir_weighted_composite(
+    factors: list[pd.DataFrame],
+    ic_history: pd.DataFrame,
+    rebalance_dates: pd.DatetimeIndex,
+    *,
+    min_ic_periods: int = 5,
+) -> pd.DataFrame:
+    """Average z-scores with expanding-window ICIR weights at each rebalance.
+
+    On rebalance date ``t``, ICIR weights use monthly ICs with timestamps
+    strictly before ``t``. Factors below ``min_ic_periods`` finite ICs, or with
+    zero IC standard deviation, receive weight 0.0. Those weights are held on
+    every panel date in ``[t, t+1)``. Dates before the first rebalance with at
+    least one nonzero ICIR remain ``NaN``.
+
+    Args:
+        factors: Non-empty list of numeric date-indexed asset panels with
+            identical indexes and columns.
+        ic_history: Monthly IC DataFrame (rows=dates, columns=factors in the
+            same order as ``factors``).
+        rebalance_dates: Month-end (or other) dates at which weights refresh.
+        min_ic_periods: Minimum finite IC observations per factor before that
+            factor receives a nonzero ICIR weight (default 5).
+
+    Returns:
+        A DataFrame of walk-forward ICIR-weighted z-score composites.
+    """
+    validated = _validate_factor_list(factors)
+    n_factors = len(validated)
+    _validate_min_ic_periods(min_ic_periods)
+    history = _walk_forward_ic_history(ic_history, n_factors=n_factors)
+    ordered_rebalances = _ordered_rebalance_dates(rebalance_dates)
+    standardized = [cross_sectional_zscore(panel) for panel in validated]
+
+    weights_by_rebalance: dict[pd.Timestamp, np.ndarray] = {}
+    for t in ordered_rebalances:
+        past = history.loc[history.index < t]
+        weights = _expanding_icir_weights(
+            past.to_numpy(dtype=float),
+            n_factors=n_factors,
+            min_ic_periods=min_ic_periods,
+        )
+        if weights is not None:
+            weights_by_rebalance[pd.Timestamp(t)] = weights
+
+    return _weighted_composite_by_rebalance(
+        standardized,
+        ordered_rebalances,
+        weights_by_rebalance,
+    )
+
+
+def walk_forward_correlation_discounted_composite(
+    factors: list[pd.DataFrame],
+    ic_history: pd.DataFrame,
+    rebalance_dates: pd.DatetimeIndex,
+    *,
+    ridge_alpha: float = 0.1,
+    min_ic_periods: int = 1,
+) -> pd.DataFrame:
+    """Combine z-scores with walk-forward collinearity-discounted weights.
+
+    On rebalance date ``t``, the IC vector is the expanding-window mean of
+    monthly ICs with timestamps strictly before ``t``. Pairwise factor-value
+    correlation uses the trailing panels through ``t`` inclusive. Adjusted
+    weights solve ``(C_t + alpha * I)^{-1} * ic_mean_t`` and are held on every
+    panel date in ``[t, t+1)``.
+
+    Args:
+        factors: Non-empty list of numeric date-indexed asset panels with
+            identical indexes and columns.
+        ic_history: Monthly IC DataFrame (rows=dates, columns=factors in the
+            same order as ``factors``).
+        rebalance_dates: Month-end (or other) dates at which weights refresh.
+        ridge_alpha: Non-negative ridge shrinkage parameter (default 0.1).
+        min_ic_periods: Minimum finite IC observations per factor before that
+            factor contributes a nonzero expanding-window mean IC (default 1).
+
+    Returns:
+        A DataFrame of walk-forward correlation-discounted z-score composites.
+    """
+    validated = _validate_factor_list(factors)
+    n_factors = len(validated)
+    _validate_min_ic_periods(min_ic_periods)
+    if not isinstance(ridge_alpha, Real) or isinstance(ridge_alpha, bool) or ridge_alpha < 0.0:
+        raise ValueError("ridge_alpha must be a non-negative float")
+
+    history = _walk_forward_ic_history(ic_history, n_factors=n_factors)
+    ordered_rebalances = _ordered_rebalance_dates(rebalance_dates)
+    standardized = [cross_sectional_zscore(panel) for panel in validated]
+    ridge = float(ridge_alpha) * np.eye(n_factors)
+
+    weights_by_rebalance: dict[pd.Timestamp, np.ndarray] = {}
+    for t in ordered_rebalances:
+        past = history.loc[history.index < t]
+        ic_weights = _expanding_mean_ic_weights(
+            past.to_numpy(dtype=float),
+            n_factors=n_factors,
+            min_ic_periods=min_ic_periods,
+        )
+        if ic_weights is None:
+            continue
+        trailing = [panel.loc[panel.index <= t] for panel in validated]
+        if trailing[0].empty:
+            continue
+        corr_matrix = _compute_factor_correlation(trailing)
+        try:
+            adjusted = np.linalg.solve(corr_matrix + ridge, ic_weights)
+        except np.linalg.LinAlgError:
+            continue
+        if not np.any(adjusted != 0.0):
+            continue
+        weights_by_rebalance[pd.Timestamp(t)] = adjusted
+
+    return _weighted_composite_by_rebalance(
+        standardized,
+        ordered_rebalances,
+        weights_by_rebalance,
+    )
+
+
 def _validate_factor_list(factors: list[pd.DataFrame]) -> list[pd.DataFrame]:
     if not isinstance(factors, list):
         raise TypeError("factors must be a list of DataFrames")
@@ -256,6 +377,102 @@ def _coerce_ic_history(
     return matrix
 
 
+def _validate_min_ic_periods(min_ic_periods: int) -> None:
+    if (
+        isinstance(min_ic_periods, bool)
+        or not isinstance(min_ic_periods, int)
+        or min_ic_periods < 1
+    ):
+        raise ValueError("min_ic_periods must be an integer of at least 1")
+
+
+def _walk_forward_ic_history(ic_history: pd.DataFrame, *, n_factors: int) -> pd.DataFrame:
+    if not isinstance(ic_history, pd.DataFrame):
+        raise TypeError("ic_history must be a pandas DataFrame")
+    if ic_history.shape[1] != n_factors:
+        raise ValueError(
+            f"ic_history DataFrame must have {n_factors} columns, got {ic_history.shape[1]}"
+        )
+    history = ic_history.copy()
+    history.index = pd.DatetimeIndex(history.index)
+    return history.sort_index()
+
+
+def _ordered_rebalance_dates(rebalance_dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    return pd.DatetimeIndex(rebalance_dates).sort_values().unique()
+
+
+def _expanding_mean_ic_weights(
+    ic_matrix: np.ndarray,
+    *,
+    n_factors: int,
+    min_ic_periods: int,
+) -> np.ndarray | None:
+    if ic_matrix.size == 0:
+        return None
+    if ic_matrix.ndim != 2 or ic_matrix.shape[1] != n_factors:
+        raise ValueError(f"ic_history must have shape (n_periods, {n_factors})")
+    weights = np.zeros(n_factors, dtype=float)
+    for position in range(n_factors):
+        finite = ic_matrix[:, position][np.isfinite(ic_matrix[:, position])]
+        if finite.size < min_ic_periods:
+            continue
+        weights[position] = float(np.mean(finite))
+    if not np.any(weights != 0.0):
+        return None
+    return weights
+
+
+def _expanding_icir_weights(
+    ic_matrix: np.ndarray,
+    *,
+    n_factors: int,
+    min_ic_periods: int,
+) -> np.ndarray | None:
+    if ic_matrix.size == 0:
+        return None
+    if ic_matrix.ndim != 2 or ic_matrix.shape[1] != n_factors:
+        raise ValueError(f"ic_history must have shape (n_periods, {n_factors})")
+    weights = np.zeros(n_factors, dtype=float)
+    for position in range(n_factors):
+        finite = ic_matrix[:, position][np.isfinite(ic_matrix[:, position])]
+        if finite.size < min_ic_periods:
+            continue
+        ic_std = float(np.std(finite, ddof=1))
+        if (not np.isfinite(ic_std)) or ic_std <= 1e-12:
+            continue
+        weights[position] = float(np.mean(finite)) / ic_std
+    if not np.any(weights != 0.0):
+        return None
+    return weights
+
+
+def _weighted_composite_by_rebalance(
+    standardized: list[pd.DataFrame],
+    rebalance_dates: pd.DatetimeIndex,
+    weights_by_rebalance: dict[pd.Timestamp, np.ndarray],
+) -> pd.DataFrame:
+    index = standardized[0].index
+    columns = standardized[0].columns
+    output = pd.DataFrame(np.nan, index=index, columns=columns, dtype=float)
+    ordered = pd.DatetimeIndex(rebalance_dates).sort_values().unique()
+    for position, t in enumerate(ordered):
+        weights = weights_by_rebalance.get(pd.Timestamp(t))
+        if weights is None:
+            continue
+        next_t = ordered[position + 1] if position + 1 < len(ordered) else None
+        if next_t is None:
+            members = index[index >= t]
+        else:
+            members = index[(index >= t) & (index < next_t)]
+        if len(members) == 0:
+            continue
+        sliced = [panel.loc[members] for panel in standardized]
+        combined = _weighted_average(sliced, weights)
+        output.loc[members] = combined.to_numpy()
+    return output
+
+
 def _compute_factor_correlation(factors: list[pd.DataFrame]) -> np.ndarray:
     n_factors = len(factors)
     corr = np.eye(n_factors, dtype=float)
@@ -267,7 +484,8 @@ def _compute_factor_correlation(factors: list[pd.DataFrame]) -> np.ndarray:
             if np.sum(valid) < 3:
                 r = 0.0
             else:
-                r = float(np.corrcoef(flat_factors[i][valid], flat_factors[j][valid])[0, 1])
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    r = float(np.corrcoef(flat_factors[i][valid], flat_factors[j][valid])[0, 1])
                 if np.isnan(r):
                     r = 0.0
             corr[i, j] = r
@@ -312,4 +530,6 @@ __all__ = [
     "equal_weighted_composite",
     "ic_weighted_composite",
     "icir_weighted_composite",
+    "walk_forward_correlation_discounted_composite",
+    "walk_forward_icir_weighted_composite",
 ]

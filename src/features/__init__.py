@@ -5,6 +5,8 @@ from features.combination import (
     equal_weighted_composite,
     ic_weighted_composite,
     icir_weighted_composite,
+    walk_forward_correlation_discounted_composite,
+    walk_forward_icir_weighted_composite,
 )
 from features.interaction import (
     conditional_factor_rank,
@@ -28,4 +30,6 @@ __all__ = [
     "factor_quadrant_interaction",
     "ic_weighted_composite",
     "icir_weighted_composite",
+    "walk_forward_correlation_discounted_composite",
+    "walk_forward_icir_weighted_composite",
 ]

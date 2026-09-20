@@ -11,6 +11,8 @@ from features.combination import (
     equal_weighted_composite,
     ic_weighted_composite,
     icir_weighted_composite,
+    walk_forward_correlation_discounted_composite,
+    walk_forward_icir_weighted_composite,
 )
 from features.operators import cross_sectional_zscore
 
@@ -194,6 +196,121 @@ def test_correlation_discounted_composite_rejects_invalid_inputs() -> None:
         correlation_discounted_composite([factor_a], [0.1], ridge_alpha=-0.1)
     with pytest.raises(ValueError, match="shape"):
         correlation_discounted_composite([factor_a], [0.1], factor_correlation=np.ones((2, 2)))
+
+
+def test_walk_forward_icir_holds_weights_between_rebalances_and_ignores_future_ics() -> None:
+    factor_a = _panel({"AAA": [1.0, 3.0, 1.0], "BBB": [3.0, 1.0, 3.0]})
+    factor_b = _panel({"AAA": [10.0, 30.0, 10.0], "BBB": [30.0, 10.0, 30.0]})
+    dates = factor_a.index
+    rebalance_dates = pd.DatetimeIndex([dates[0], dates[1]])
+    ic_history = pd.DataFrame(
+        {
+            "fa": [0.08, 0.10, 0.12, 0.09, 0.11, 0.90],
+            "fb": [0.00, 0.10, 0.05, 0.02, 0.08, -0.90],
+        },
+        index=pd.DatetimeIndex(
+            [
+                "2023-07-31",
+                "2023-08-31",
+                "2023-09-30",
+                "2023-10-31",
+                "2023-11-30",
+                dates[0],
+            ]
+        ),
+    )
+
+    result = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        ic_history,
+        rebalance_dates,
+        min_ic_periods=5,
+    )
+    past_only = ic_history.iloc[:5]
+    expected_first = icir_weighted_composite(
+        [factor_a.iloc[[0]], factor_b.iloc[[0]]],
+        past_only,
+        min_ic_periods=5,
+    )
+    expected_later = icir_weighted_composite(
+        [factor_a.iloc[1:], factor_b.iloc[1:]],
+        ic_history,
+        min_ic_periods=5,
+    )
+    assert_frame_equal(result.iloc[[0]], expected_first)
+    assert_frame_equal(result.iloc[1:], expected_later)
+
+    future_ics = ic_history.copy()
+    future_ics.loc[dates[1]] = [1.0, -1.0]
+    mutated = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        future_ics,
+        pd.DatetimeIndex([dates[0], dates[1]]),
+        min_ic_periods=5,
+    )
+    assert_series_equal(result.loc[dates[0]], mutated.loc[dates[0]], check_names=False)
+
+
+def test_walk_forward_icir_is_nan_until_minimum_history() -> None:
+    factor_a = _panel({"AAA": [1.0, 3.0], "BBB": [3.0, 1.0]})
+    dates = factor_a.index
+    ic_history = pd.DataFrame(
+        {"fa": [0.10, 0.12, 0.08, 0.09]},
+        index=pd.DatetimeIndex(["2023-07-31", "2023-08-31", "2023-09-30", dates[0]]),
+    )
+
+    result = walk_forward_icir_weighted_composite(
+        [factor_a],
+        ic_history,
+        pd.DatetimeIndex([dates[0], dates[1]]),
+        min_ic_periods=5,
+    )
+    assert result.isna().all().all()
+
+
+def test_walk_forward_correlation_uses_trailing_factor_values_only() -> None:
+    factor_a = _panel({"AAA": [1.0, 2.0, 3.0], "BBB": [3.0, 2.0, 1.0]})
+    factor_b = _panel({"AAA": [10.0, 20.0, 30.0], "BBB": [30.0, 20.0, 10.0]})
+    dates = factor_a.index
+    rebalance_dates = pd.DatetimeIndex([dates[1], dates[2]])
+    ic_history = pd.DataFrame(
+        {"fa": [0.20, 0.10], "fb": [0.05, 0.15]},
+        index=pd.DatetimeIndex([dates[0], dates[1]]),
+    )
+
+    result = walk_forward_correlation_discounted_composite(
+        [factor_a, factor_b],
+        ic_history,
+        rebalance_dates,
+        ridge_alpha=0.1,
+        min_ic_periods=1,
+    )
+    expected_mid = correlation_discounted_composite(
+        [factor_a.iloc[[1]], factor_b.iloc[[1]]],
+        list(ic_history.iloc[[0]].mean(axis=0)),
+        factor_correlation=pd.DataFrame(
+            np.corrcoef(
+                [
+                    factor_a.iloc[:2].to_numpy(dtype=float).flatten(),
+                    factor_b.iloc[:2].to_numpy(dtype=float).flatten(),
+                ]
+            )
+        ),
+        ridge_alpha=0.1,
+    )
+    assert_frame_equal(result.iloc[[1]], expected_mid)
+
+    scrambled = factor_a.copy()
+    scrambled.iloc[-1] = 10_000.0
+    mutated = walk_forward_correlation_discounted_composite(
+        [scrambled, factor_b],
+        ic_history,
+        rebalance_dates,
+        ridge_alpha=0.1,
+        min_ic_periods=1,
+    )
+    assert_series_equal(result.loc[dates[1]], mutated.loc[dates[1]], check_names=False)
+    assert result.loc[dates[0]].isna().all()
 
 
 
