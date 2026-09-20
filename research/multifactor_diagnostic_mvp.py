@@ -13,6 +13,7 @@ campaign run.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -100,6 +101,7 @@ from features.interaction import (
     factor_product_interaction,
 )
 from features.neutralize import (
+    cross_sectional_group_neutralize,
     cross_sectional_neutralize,
 )
 from reporting.experiment_log import (
@@ -184,6 +186,8 @@ CORRELATION_DISCOUNTED_COMPOSITE = "CORRELATION_DISCOUNTED_COMPOSITE"
 ALPHA_PRODUCT_INTERACTION = "ALPHA_PRODUCT_INTERACTION"
 CONDITIONAL_RANK_INTERACTION = "CONDITIONAL_RANK_INTERACTION"
 NEUTRALIZED_IC_COMPOSITE = "NEUTRALIZED_IC_COMPOSITE"
+SECTOR_NEUTRAL_COMPOSITE = "SECTOR_NEUTRAL_COMPOSITE"
+MARKET_BETA_NEUTRAL_COMPOSITE = "MARKET_BETA_NEUTRAL_COMPOSITE"
 ALPHA_IDS = (
     ALPHA_001,
     ALPHA_002,
@@ -247,6 +251,8 @@ FACTOR_IDS = (
     ALPHA_PRODUCT_INTERACTION,
     CONDITIONAL_RANK_INTERACTION,
     NEUTRALIZED_IC_COMPOSITE,
+    SECTOR_NEUTRAL_COMPOSITE,
+    MARKET_BETA_NEUTRAL_COMPOSITE,
 )
 ALPHA_WARMUP_PERIODS = 25
 IMPLEMENTED_ALPHA_COUNT = len(ALPHA_IDS)
@@ -264,7 +270,7 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 59
+    n_trials: int = 61
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
     pbo_n_splits: int = 8
@@ -418,6 +424,32 @@ def calculate_diagnostic_alpha(
     raise ValueError(f"unknown diagnostic alpha: {factor_id}")
 
 
+def build_default_sector_mapping(
+    assets: Sequence[str],
+    n_sectors: int = 5,
+) -> dict[str, str]:
+    """Assign assets into deterministic balanced sector cohorts."""
+    sorted_assets = sorted(assets)
+    block_size = max(1, len(sorted_assets) // n_sectors)
+    return {
+        asset: f"Sector_{min(i // block_size, n_sectors - 1)}"
+        for i, asset in enumerate(sorted_assets)
+    }
+
+
+def compute_rolling_market_beta(
+    returns: pd.DataFrame,
+    *,
+    window: int = 60,
+    min_periods: int = 20,
+) -> pd.DataFrame:
+    """Compute rolling market beta for each asset against equal-weighted market return."""
+    market_returns = returns.mean(axis=1)
+    market_var = market_returns.rolling(window, min_periods=min_periods).var()
+    market_cov = returns.rolling(window, min_periods=min_periods).cov(market_returns)
+    return market_cov.div(market_var, axis=0)
+
+
 def run_multifactor_diagnostic_mvp(
     *,
     config: MultifactorDiagnosticConfig = MultifactorDiagnosticConfig(),
@@ -483,6 +515,8 @@ def run_multifactor_diagnostic_mvp(
     )
 
     volatility_proxy = panels["returns"].rolling(20, min_periods=5).std()
+    sector_map = build_default_sector_mapping(prices.columns)
+    market_beta = compute_rolling_market_beta(panels["returns"], window=60, min_periods=20)
     ic_comp = ic_weighted_composite(ordered_alphas, ic_weights)
 
     composites = {
@@ -515,6 +549,14 @@ def run_multifactor_diagnostic_mvp(
         NEUTRALIZED_IC_COMPOSITE: cross_sectional_neutralize(
             ic_comp,
             volatility_proxy,
+        ),
+        SECTOR_NEUTRAL_COMPOSITE: cross_sectional_group_neutralize(
+            ic_comp,
+            sector_map,
+        ),
+        MARKET_BETA_NEUTRAL_COMPOSITE: cross_sectional_neutralize(
+            ic_comp,
+            market_beta,
         ),
     }
     for factor_id, factor in composites.items():
@@ -551,6 +593,8 @@ def run_multifactor_diagnostic_mvp(
         "benchmark": benchmark,
         "factors": factor_results,
         "ic_weights": dict(zip(ALPHA_IDS, ic_weights, strict=True)),
+        "sector_map": sector_map,
+        "market_beta": market_beta,
         "pbo_summary": pbo_summary,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
@@ -648,7 +692,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "the 52 implemented classical price-volume alphas, equal-weighted, "
             "in-sample IC-weighted, causal walk-forward ICIR-weighted, and "
             "causal walk-forward correlation-discounted composites, "
-            "cross-sectional volatility neutralization, and "
+            "cross-sectional volatility, sector, and market beta neutralization, and "
             "cross-factor interaction models (product interaction and conditional rank), "
             "with monthly Rank IC, ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix, "
             "equal-weight monthly rebalance backtests at 5 bps slippage, and "
@@ -866,17 +910,22 @@ profitability.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
 8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
    return volatility. Leading dates without five observations remain NaN.
-9. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
-   start at the lag-1 execution close.
-10. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
+9. Build `SECTOR_NEUTRAL_COMPOSITE` demeaned within discrete sector cohorts
+   (5 sectors across the 50 assets).
+10. Build `MARKET_BETA_NEUTRAL_COMPOSITE` orthogonalized against trailing 60-day
+    rolling market beta against the equal-weighted market portfolio. Leading
+    dates without 20 observations remain NaN.
+11. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
+    start at the lag-1 execution close.
+12. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
     the mean IC.
-11. Run the existing long-only equal-weight monthly backtester with
+13. Run the existing long-only equal-weight monthly backtester with
     `{config.slippage_bps:.2f}` bps slippage and `{config.top_n}` names.
-12. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
+14. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
     and `{config.slippage_bps:.2f}` bps slippage.
-13. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
+15. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
     `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
-14. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
+16. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
     alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
 ## Configuration
@@ -900,6 +949,8 @@ profitability.
 - Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
 - Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs labeled strictly before t whose execution-aligned forward-return windows have closed by t (`{horizon_contract}`)
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
+- Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
+- Market beta proxy: 60-day rolling return beta against equal-weighted market return, min_periods=20, no backfill
 - Long-short quantiles: `{config.quantiles}`
 
 ## In-sample IC weights
@@ -968,8 +1019,12 @@ Column groups in the table below:
   when `{horizon_contract}`. Early rebalances remain missing until the
   minimum realized IC history is available (typed missingness).
 - The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
-  return standard deviation. Leading dates without five observations remain
+  return standard deviation (min_periods=5); market beta proxy for
+  `MARKET_BETA_NEUTRAL_COMPOSITE` is a 60-day rolling covariance over market
+  variance (min_periods=20). Leading dates without sufficient observations remain
   NaN; values are not backfilled from later dates.
+- `SECTOR_NEUTRAL_COMPOSITE` demeans within 5 static balanced cohorts across the
+  50 synthetic assets.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
 """

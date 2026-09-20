@@ -9,6 +9,8 @@ profitability, or trading readiness.
 
 ### Added
 
+- `research/multifactor_diagnostic_mvp.py`: Added `SECTOR_NEUTRAL_COMPOSITE` (demeaned within 5 balanced sector cohorts across the 50 assets via `cross_sectional_group_neutralize`) and `MARKET_BETA_NEUTRAL_COMPOSITE` (orthogonalized against 60-day trailing rolling market beta via `cross_sectional_neutralize`). Expanded total evaluated factors from 59 to 61 (`n_trials=61`).
+- `research/multifactor_diagnostic_mvp.py`: Added `build_default_sector_mapping` and `compute_rolling_market_beta` helpers with deterministic unit test coverage in `tests/test_multifactor_diagnostic_mvp.py`.
 - `src/features/combination.py`: Added `walk_forward_icir_weighted_composite` and
   `walk_forward_correlation_discounted_composite`. On each rebalance date t, ICIR
   and expanding-window mean IC use monthly ICs strictly before t; correlation

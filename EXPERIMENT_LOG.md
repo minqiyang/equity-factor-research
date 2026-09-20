@@ -946,6 +946,84 @@ are rebalance-date one-day bucket diagnostics.
 Keep as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. Do not
 reopen identity, D8, A2, or formal interpretation from this result.
 
+## 20260919-008-neutralization-expansion
+
+### Experiment ID
+
+`20260919-008-neutralization-expansion`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+Cross-sectional risk neutralization can be expanded from return volatility alone to include sector/industry demeaning (`SECTOR_NEUTRAL_COMPOSITE`) and market beta orthogonalization (`MARKET_BETA_NEUTRAL_COMPOSITE`) on the committed 50-stock synthetic diagnostic cohort. Both models will produce pure, risk-adjusted composites with zero net sector bet and zero market directional exposure, expanding the multi-factor diagnostic suite from 59 to 61 factors.
+
+### Data Source
+
+Synthetic local generator from `tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use seed `20260919`. Companion open, low, and volume use `seed + 1`. High is an additional `seed + 1` draw after those panels. VWAP is typical price `(high + low + close) / 3`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`. Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through `2023-11-27` after 25-row alpha warm-up.
+
+### Features / Factors
+
+52 classical price-volume alphas, plus 9 composites and interactions:
+1. `EQUAL_WEIGHTED_COMPOSITE`
+2. `IC_WEIGHTED_COMPOSITE`
+3. `ICIR_WEIGHTED_COMPOSITE` (causal walk-forward)
+4. `CORRELATION_DISCOUNTED_COMPOSITE` (causal walk-forward)
+5. `ALPHA_PRODUCT_INTERACTION`
+6. `CONDITIONAL_RANK_INTERACTION`
+7. `NEUTRALIZED_IC_COMPOSITE` (volatility-neutralized)
+8. `SECTOR_NEUTRAL_COMPOSITE`: `cross_sectional_group_neutralize` on 5 balanced cohorts across 50 assets (10 names each, `Sector_0` to `Sector_4`).
+9. `MARKET_BETA_NEUTRAL_COMPOSITE`: `cross_sectional_neutralize` against 60-day trailing rolling market beta against equal-weighted market return (`min_periods=20`).
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names, `signal_lag_periods=1`, `forward_holding_periods=21`, `n_trials=61` for DSR with Euler-Mascheroni mix, `ridge_alpha=0.1`, ICIR `min_ic_periods=5`, rolling beta `window=60`, `min_periods=20`.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`. New neutralization rows:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | LS Sharpe |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| SECTOR_NEUTRAL_COMPOSITE | 0.0826 | 0.5926 | 3.7039 | 0.0723 | 17.99% | 0.5268 | -23.28% | 0.1102 |
+| MARKET_BETA_NEUTRAL_COMPOSITE | 0.0769 | 0.5296 | 3.4781 | 0.0868 | 20.73% | 0.5849 | -21.26% | 0.1851 |
+
+Both new composites exhibit positive in-sample mean IC (`0.0826` and `0.0769`), statistically significant Newey-West t-stats (`3.7039` and `3.4781`), and positive long-short Sharpe ratios (`0.1102` and `0.1851`). DSR for existing factors adjusted slightly to reflect `n_trials=61` (penalizing for multiple testing across 61 candidate factors).
+
+### Limitations
+
+Static membership, synthetic prices, companion synthetic OHLCV, typical-price VWAP proxy, idealized close-reset execution, and no dataset review. Market beta proxy requires 20 observations before producing non-NaN values. Sector map uses static balanced cohorts.
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY multi-factor risk neutralization suite. Advance to the next research milestone.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
