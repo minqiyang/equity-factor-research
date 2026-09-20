@@ -430,3 +430,29 @@ def test_combination_module_has_no_abstract_class_hierarchy() -> None:
             assert "backtest" not in node.module
             assert "portfolio" not in node.module
             assert "alphas" not in node.module
+
+
+def test_realized_ic_history_refuses_out_of_panel_ic_timestamps_before_panel_start() -> None:
+    from features.combination import _realized_ic_history
+
+    panel_dates = pd.bdate_range("2021-01-10", periods=20)
+    ic_dates = pd.DatetimeIndex(["2021-01-04", "2021-01-12", "2021-01-15"])
+    ic_history = pd.DataFrame(
+        {"f1": [0.1, 0.2, 0.3], "f2": [0.2, 0.3, 0.4]},
+        index=ic_dates,
+    )
+    t = pd.Timestamp("2021-01-20")
+
+    # With horizon_rows=5, 2021-01-04 is before panel_dates[0], so its position is < 0.
+    # It must NOT be admitted.
+    # 2021-01-12 is at index 2; 2 + 5 = 7 <= t_pos (index 8). Admitted.
+    # 2021-01-15 is at index 5; 5 + 5 = 10 > t_pos (index 8). Not admitted.
+    admitted = _realized_ic_history(
+        ic_history,
+        t,
+        panel_index=panel_dates,
+        horizon_rows=5,
+    )
+    assert len(admitted) == 1
+    assert admitted.index[0] == pd.Timestamp("2021-01-12")
+
