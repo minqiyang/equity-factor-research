@@ -140,6 +140,8 @@ from research.multifactor_diagnostic_mvp import (
     MARKET_BETA_NEUTRAL_COMPOSITE,
     NEUTRALIZED_IC_COMPOSITE,
     SECTOR_NEUTRAL_COMPOSITE,
+    WEIGHTING_COMPARISON_FACTORS,
+    WEIGHTING_COMPARISON_SCHEMES,
     MultifactorDiagnosticConfig,
     _format_number,
     _format_percent,
@@ -661,4 +663,65 @@ def test_compute_rolling_market_beta_matches_manual_ols() -> None:
     np.testing.assert_allclose(beta["A1"].iloc[4:].to_numpy(), 6.0, atol=1e-10)
     np.testing.assert_allclose(beta["A2"].iloc[4:].to_numpy(), -3.0, atol=1e-10)
     np.testing.assert_allclose(beta["A3"].iloc[4:].to_numpy(), 0.0, atol=1e-10)
+
+
+def test_multifactor_diagnostic_config_weighting_overrides_propagate(
+    tmp_path: Path,
+) -> None:
+    manifest_path = _short_manifest(tmp_path)
+    config = MultifactorDiagnosticConfig(
+        manifest_path=manifest_path,
+        weighting_scheme="inverse_volatility",
+        long_short_weighting_scheme="inverse_volatility",
+        turnover_penalty_lambda=0.5,
+        volatility_window=10,
+    )
+    result = run_multifactor_diagnostic_mvp(
+        config=config,
+        report_path=tmp_path / "report.md",
+        write_outputs=False,
+    )
+    first_factor = result["factors"][ALPHA_IDS[0]]
+    lo_assumptions = first_factor["backtest"].assumptions
+    ls_assumptions = first_factor["long_short_backtest"].assumptions
+    assert lo_assumptions["weighting_scheme"] == "inverse_volatility"
+    assert lo_assumptions["turnover_penalty_lambda"] == 0.5
+    assert lo_assumptions["volatility_window"] == 10
+    assert ls_assumptions["weighting_scheme"] == "inverse_volatility"
+    assert ls_assumptions["turnover_penalty_lambda"] == 0.5
+    assert ls_assumptions["volatility_window"] == 10
+
+
+def test_portfolio_weighting_comparisons_produce_expected_records(
+    tmp_path: Path,
+) -> None:
+    manifest_path = _short_manifest(tmp_path)
+    report_path = tmp_path / "report.md"
+    config = MultifactorDiagnosticConfig(
+        manifest_path=manifest_path,
+    )
+    result = run_multifactor_diagnostic_mvp(
+        config=config,
+        report_path=report_path,
+        write_outputs=True,
+    )
+    comparisons = result["weighting_comparisons"]
+    assert len(comparisons) == len(WEIGHTING_COMPARISON_FACTORS) * len(WEIGHTING_COMPARISON_SCHEMES)
+    assert len(comparisons) == 16
+    for factor_id in WEIGHTING_COMPARISON_FACTORS:
+        factor_records = [r for r in comparisons if r["factor_id"] == factor_id]
+        assert len(factor_records) == 4
+        # Check turnover reduction under lambda=0.5 compared to lambda=0.0
+        eq_0 = next(r for r in factor_records if r["scheme"] == "Equal (λ=0.0)")
+        eq_5 = next(r for r in factor_records if r["scheme"] == "Equal (λ=0.5)")
+        assert eq_5["lo_turnover"] <= eq_0["lo_turnover"] + 1e-12
+        assert eq_5["ls_turnover"] <= eq_0["ls_turnover"] + 1e-12
+        iv_0 = next(r for r in factor_records if r["scheme"] == "Inverse-Vol (λ=0.0)")
+        iv_5 = next(r for r in factor_records if r["scheme"] == "Inverse-Vol (λ=0.5)")
+        assert iv_5["lo_turnover"] <= iv_0["lo_turnover"] + 1e-12
+        assert iv_5["ls_turnover"] <= iv_0["ls_turnover"] + 1e-12
+
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "## Portfolio weighting and turnover penalization diagnostics" in report_text
+    assert "Inverse-Vol (λ=0.5)" in report_text
 

@@ -258,6 +258,21 @@ ALPHA_WARMUP_PERIODS = 25
 IMPLEMENTED_ALPHA_COUNT = len(ALPHA_IDS)
 
 
+WEIGHTING_COMPARISON_FACTORS = (
+    IC_WEIGHTED_COMPOSITE,
+    MARKET_BETA_NEUTRAL_COMPOSITE,
+    SECTOR_NEUTRAL_COMPOSITE,
+    EQUAL_WEIGHTED_COMPOSITE,
+)
+
+WEIGHTING_COMPARISON_SCHEMES = (
+    {"name": "Equal (λ=0.0)", "weighting_scheme": "equal", "turnover_penalty_lambda": 0.0},
+    {"name": "Inverse-Vol (λ=0.0)", "weighting_scheme": "inverse_volatility", "turnover_penalty_lambda": 0.0},
+    {"name": "Equal (λ=0.5)", "weighting_scheme": "equal", "turnover_penalty_lambda": 0.5},
+    {"name": "Inverse-Vol (λ=0.5)", "weighting_scheme": "inverse_volatility", "turnover_penalty_lambda": 0.5},
+)
+
+
 @dataclass(frozen=True)
 class MultifactorDiagnosticConfig:
     """Frozen diagnostic settings for the implemented-alpha pipeline."""
@@ -266,6 +281,9 @@ class MultifactorDiagnosticConfig:
     rebalance_frequency: str = "ME"
     top_n: int = 5
     weighting_scheme: str = "equal"
+    long_short_weighting_scheme: str = "equal"
+    turnover_penalty_lambda: float = 0.0
+    volatility_window: int = 20
     transaction_cost_bps: float = 0.0
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
@@ -583,6 +601,19 @@ def run_multifactor_diagnostic_mvp(
         n_splits=config.pbo_n_splits,
     )
 
+    factor_panels_dict = {
+        factor_id: factor_results[factor_id]["factor"]
+        for factor_id in WEIGHTING_COMPARISON_FACTORS
+    }
+    weighting_comparisons = evaluate_portfolio_weighting_comparisons(
+        factors=factor_panels_dict,
+        prices=prices,
+        accounting_benchmark=accounting_benchmark,
+        evaluation_start=evaluation_start,
+        evaluation_end=evaluation_end,
+        config=config,
+    )
+
     result = {
         "manifest": manifest,
         "panels": panels,
@@ -596,6 +627,7 @@ def run_multifactor_diagnostic_mvp(
         "sector_map": sector_map,
         "market_beta": market_beta,
         "pbo_summary": pbo_summary,
+        "weighting_comparisons": weighting_comparisons,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
         "evidence_ceiling": manifest["evidence_ceiling"],
@@ -606,6 +638,79 @@ def run_multifactor_diagnostic_mvp(
         if Path(report_path).resolve() == DEFAULT_REPORT_PATH.resolve():
             write_experiment_registry_report()
     return result
+
+
+def evaluate_portfolio_weighting_comparisons(
+    *,
+    factors: dict[str, pd.DataFrame],
+    prices: pd.DataFrame,
+    accounting_benchmark: pd.Series,
+    evaluation_start: pd.Timestamp,
+    evaluation_end: pd.Timestamp,
+    config: MultifactorDiagnosticConfig,
+) -> list[dict[str, Any]]:
+    """Evaluate key composite factors across weighting and turnover penalty schemes."""
+
+    records: list[dict[str, Any]] = []
+    for factor_id in WEIGHTING_COMPARISON_FACTORS:
+        factor = factors[factor_id]
+        source_provenance = capture_backtest_source_provenance(prices, factor)
+        for scheme in WEIGHTING_COMPARISON_SCHEMES:
+            scheme_name = str(scheme["name"])
+            w_scheme = str(scheme["weighting_scheme"])
+            penalty_lambda = float(scheme["turnover_penalty_lambda"])
+
+            lo_bt = run_long_only_backtest(
+                prices,
+                factor,
+                source_provenance=source_provenance,
+                evaluation_start=evaluation_start,
+                evaluation_end=evaluation_end,
+                rebalance_frequency=config.rebalance_frequency,
+                top_n=config.top_n,
+                weighting_scheme=w_scheme,
+                turnover_penalty_lambda=penalty_lambda,
+                volatility_window=config.volatility_window,
+                transaction_cost_bps=config.transaction_cost_bps,
+                slippage_bps=config.slippage_bps,
+                benchmark_prices=accounting_benchmark,
+                signal_lag_periods=config.signal_lag_periods,
+                periods_per_year=config.periods_per_year,
+            )
+            ls_bt = run_long_short_backtest(
+                prices,
+                factor,
+                evaluation_start=evaluation_start,
+                evaluation_end=evaluation_end,
+                rebalance_frequency=config.rebalance_frequency,
+                quantiles=config.quantiles,
+                weighting_scheme=w_scheme,
+                turnover_penalty_lambda=penalty_lambda,
+                volatility_window=config.volatility_window,
+                transaction_cost_bps=config.transaction_cost_bps,
+                slippage_bps=config.slippage_bps,
+                signal_lag_periods=config.signal_lag_periods,
+                periods_per_year=config.periods_per_year,
+            )
+            lo_m = lo_bt.metrics
+            ls_m = ls_bt.metrics
+            records.append(
+                {
+                    "factor_id": factor_id,
+                    "scheme": scheme_name,
+                    "weighting_scheme": w_scheme,
+                    "turnover_penalty_lambda": penalty_lambda,
+                    "lo_sharpe": lo_m["sharpe_ratio"],
+                    "lo_total_return": lo_m["total_return"],
+                    "lo_max_drawdown": lo_m["max_drawdown"],
+                    "lo_turnover": lo_m.get("average_turnover", np.nan),
+                    "ls_sharpe": ls_m["sharpe"],
+                    "ls_annualized_return": ls_m["annualized_return"],
+                    "ls_max_drawdown": ls_m["max_drawdown"],
+                    "ls_turnover": ls_m["total_turnover"],
+                }
+            )
+    return records
 
 
 def _evaluate_factor(
@@ -633,6 +738,8 @@ def _evaluate_factor(
         rebalance_frequency=config.rebalance_frequency,
         top_n=config.top_n,
         weighting_scheme=config.weighting_scheme,
+        turnover_penalty_lambda=config.turnover_penalty_lambda,
+        volatility_window=config.volatility_window,
         transaction_cost_bps=config.transaction_cost_bps,
         slippage_bps=config.slippage_bps,
         benchmark_prices=accounting_benchmark,
@@ -646,7 +753,9 @@ def _evaluate_factor(
         evaluation_end=evaluation_end,
         rebalance_frequency=config.rebalance_frequency,
         quantiles=config.quantiles,
-        weighting_scheme="equal",
+        weighting_scheme=config.long_short_weighting_scheme,
+        turnover_penalty_lambda=config.turnover_penalty_lambda,
+        volatility_window=config.volatility_window,
         transaction_cost_bps=config.transaction_cost_bps,
         slippage_bps=config.slippage_bps,
         signal_lag_periods=config.signal_lag_periods,
@@ -784,6 +893,10 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "brokerage_integration": False,
             "long_short_dollar_neutral": True,
             "long_short_quantiles": config.quantiles,
+            "weighting_scheme": config.weighting_scheme,
+            "long_short_weighting_scheme": config.long_short_weighting_scheme,
+            "turnover_penalty_lambda": config.turnover_penalty_lambda,
+            "volatility_window": config.volatility_window,
         },
         outputs={
             "markdown_report": _project_relative_path(result["report_path"]),
@@ -792,6 +905,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         metrics={
             **factor_metrics,
             "pbo_summary": result["pbo_summary"],
+            "weighting_comparisons": result.get("weighting_comparisons", []),
         },
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
@@ -875,6 +989,27 @@ def write_report(*, result: dict[str, Any]) -> None:
     for factor_id in ALPHA_IDS:
         weight_rows.append(
             f"| {factor_id} | {_format_number(result['ic_weights'][factor_id])} |"
+        )
+
+    comp_rows = []
+    for record in result.get("weighting_comparisons", []):
+        comp_rows.append(
+            "| "
+            + " | ".join(
+                [
+                    str(record["factor_id"]),
+                    str(record["scheme"]),
+                    _format_number(record["lo_sharpe"]),
+                    _format_number(record["lo_turnover"]),
+                    _format_percent(record["lo_total_return"]),
+                    _format_percent(record["lo_max_drawdown"]),
+                    _format_number(record["ls_sharpe"]),
+                    _format_number(record["ls_turnover"]),
+                    _format_percent(record["ls_annualized_return"]),
+                    _format_percent(record["ls_max_drawdown"]),
+                ]
+            )
+            + " |"
         )
 
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in ALPHA_IDS)
@@ -961,6 +1096,10 @@ profitability.
 - Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
 - Market beta proxy: 60-day rolling return beta against equal-weighted market return, min_periods=20, no backfill
 - Long-short quantiles: `{config.quantiles}`
+- Long-only weighting scheme: `{config.weighting_scheme}`
+- Long-short weighting scheme: `{config.long_short_weighting_scheme}`
+- Turnover penalty lambda: `{config.turnover_penalty_lambda:.2f}`
+- Volatility window: `{config.volatility_window}`
 
 ## In-sample IC weights
 
@@ -978,7 +1117,7 @@ forward-return window has closed by t.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(rows)}
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
@@ -998,10 +1137,20 @@ Column groups in the table below:
 - `Total Turnover` is the sequential book's cumulative absolute trade-weight change.
 
 | factor | LS Sharpe | LS Ann Return | Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(ls_rows)}
 
 `LS Sharpe`, `LS Ann Return`, `Max DD`, and `Win Rate` summarize the sequential holding-period book. `Decile Spread Mean` is the mean top-minus-bottom quantile return on rebalance dates. Monotonicity is the Spearman rank correlation of mean rebalance-date returns across deciles D1..D10.
+
+## Portfolio weighting and turnover penalization diagnostics
+
+Comparison of weighting schemes and turnover penalty (λ) across key multi-factor composites:
+
+| factor | scheme | LO Sharpe | LO Turnover | LO Return | LO Max DD | LS Sharpe | LS Turnover | LS Ann Return | LS Max DD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+{chr(10).join(comp_rows)}
+
+Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row). Turnover penalization (λ=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag.
 
 ## Overfitting diagnostics (CSCV / PBO)
 

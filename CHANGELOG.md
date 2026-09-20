@@ -9,6 +9,7 @@ profitability, or trading readiness.
 
 ### Added
 
+- `research/multifactor_diagnostic_mvp.py`: Wired inverse-volatility weighting and turnover penalization parameters (`turnover_penalty_lambda`, `volatility_window`, `long_short_weighting_scheme`) into `MultifactorDiagnosticConfig` and `_evaluate_factor`, and integrated a comparative diagnostic evaluation across key composites in `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`.
 - `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added `inverse_volatility` weighting scheme (`weighting_scheme="inverse_volatility"`) weighting selected assets inversely proportional to trailing realized return volatility with lookahead-free lagging and robust missing/zero volatility fallback.
 - `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added turnover penalization / rebalance inertia (`turnover_penalty_lambda` in `[0.0, 1.0)`), smoothly blending raw target weights with pretrade drifted weights to reduce frictional turnover and transaction/slippage drag while strictly preserving long-only non-negativity and long-short dollar neutrality.
 - `research/multifactor_diagnostic_mvp.py`: Added `SECTOR_NEUTRAL_COMPOSITE` (demeaned within 5 balanced sector cohorts across the 50 assets via `cross_sectional_group_neutralize`) and `MARKET_BETA_NEUTRAL_COMPOSITE` (orthogonalized against 60-day trailing rolling market beta via `cross_sectional_neutralize`). Expanded total evaluated factors from 59 to 61 (`n_trials=61`).

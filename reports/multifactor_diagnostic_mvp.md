@@ -81,6 +81,10 @@ profitability.
 - Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
 - Market beta proxy: 60-day rolling return beta against equal-weighted market return, min_periods=20, no backfill
 - Long-short quantiles: `10`
+- Long-only weighting scheme: `equal`
+- Long-short weighting scheme: `equal`
+- Turnover penalty lambda: `0.00`
+- Volatility window: `20`
 
 ## In-sample IC weights
 
@@ -149,7 +153,7 @@ forward-return window has closed by t.
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.0117 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
 | ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0012 | -15.29% | -0.4035 | -27.88% | 0.0838 | 0.0306 |
 | ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.1615 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
@@ -229,7 +233,7 @@ Column groups in the table below:
 - `Total Turnover` is the sequential book's cumulative absolute trade-weight change.
 
 | factor | LS Sharpe | LS Ann Return | Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ALPHA_001 | 0.7463 | 4.20% | 5.81% | 51.88% | -0.0022 | -0.3818 | 55.1747 |
 | ALPHA_002 | -1.2182 | -7.54% | 21.05% | 47.84% | -0.0008 | -0.0788 | 61.2925 |
 | ALPHA_003 | 0.2884 | 1.67% | 8.04% | 50.63% | -0.0009 | 0.0424 | 61.2879 |
@@ -293,6 +297,31 @@ Column groups in the table below:
 | MARKET_BETA_NEUTRAL_COMPOSITE | 0.1851 | 1.07% | 12.36% | 50.21% | -0.0002 | 0.0424 | 59.1114 |
 
 `LS Sharpe`, `LS Ann Return`, `Max DD`, and `Win Rate` summarize the sequential holding-period book. `Decile Spread Mean` is the mean top-minus-bottom quantile return on rebalance dates. Monotonicity is the Spearman rank correlation of mean rebalance-date returns across deciles D1..D10.
+
+## Portfolio weighting and turnover penalization diagnostics
+
+Comparison of weighting schemes and turnover penalty (λ) across key multi-factor composites:
+
+| factor | scheme | LO Sharpe | LO Turnover | LO Return | LO Max DD | LS Sharpe | LS Turnover | LS Ann Return | LS Max DD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| IC_WEIGHTED_COMPOSITE | Equal (λ=0.0) | 0.5280 | 0.0787 | 18.26% | -23.03% | 0.3693 | 58.6652 | 2.14% | 10.10% |
+| IC_WEIGHTED_COMPOSITE | Inverse-Vol (λ=0.0) | 0.4843 | 0.0797 | 16.45% | -22.35% | 0.3066 | 59.3384 | 1.80% | 9.70% |
+| IC_WEIGHTED_COMPOSITE | Equal (λ=0.5) | 0.6594 | 0.0405 | 20.93% | -17.09% | 0.6698 | 28.0361 | 2.38% | 6.16% |
+| IC_WEIGHTED_COMPOSITE | Inverse-Vol (λ=0.5) | 0.6455 | 0.0405 | 20.43% | -16.85% | 0.6450 | 28.0407 | 2.32% | 5.95% |
+| MARKET_BETA_NEUTRAL_COMPOSITE | Equal (λ=0.0) | 0.5849 | 0.0798 | 20.73% | -21.26% | 0.1851 | 59.1114 | 1.07% | 12.36% |
+| MARKET_BETA_NEUTRAL_COMPOSITE | Inverse-Vol (λ=0.0) | 0.5548 | 0.0806 | 19.45% | -19.78% | 0.1504 | 59.5933 | 0.88% | 10.94% |
+| MARKET_BETA_NEUTRAL_COMPOSITE | Equal (λ=0.5) | 0.6680 | 0.0411 | 21.35% | -17.46% | 0.4825 | 28.2999 | 1.75% | 7.55% |
+| MARKET_BETA_NEUTRAL_COMPOSITE | Inverse-Vol (λ=0.5) | 0.6725 | 0.0410 | 21.54% | -16.48% | 0.4762 | 28.2115 | 1.75% | 6.78% |
+| SECTOR_NEUTRAL_COMPOSITE | Equal (λ=0.0) | 0.5268 | 0.0820 | 17.99% | -23.28% | 0.1102 | 58.9619 | 0.64% | 14.27% |
+| SECTOR_NEUTRAL_COMPOSITE | Inverse-Vol (λ=0.0) | 0.4618 | 0.0828 | 15.43% | -22.95% | 0.0273 | 59.6773 | 0.16% | 13.94% |
+| SECTOR_NEUTRAL_COMPOSITE | Equal (λ=0.5) | 0.7241 | 0.0416 | 23.15% | -18.20% | 0.6962 | 28.3751 | 2.44% | 8.01% |
+| SECTOR_NEUTRAL_COMPOSITE | Inverse-Vol (λ=0.5) | 0.7127 | 0.0417 | 22.84% | -18.18% | 0.6228 | 28.4361 | 2.23% | 8.19% |
+| EQUAL_WEIGHTED_COMPOSITE | Equal (λ=0.0) | -0.0388 | 0.0844 | -3.65% | -23.39% | -0.0963 | 60.6288 | -0.57% | 11.64% |
+| EQUAL_WEIGHTED_COMPOSITE | Inverse-Vol (λ=0.0) | -0.1027 | 0.0846 | -5.94% | -25.15% | -0.0621 | 60.9074 | -0.37% | 12.21% |
+| EQUAL_WEIGHTED_COMPOSITE | Equal (λ=0.5) | 0.1061 | 0.0433 | 1.64% | -18.45% | -0.1261 | 28.8528 | -0.45% | 7.56% |
+| EQUAL_WEIGHTED_COMPOSITE | Inverse-Vol (λ=0.5) | 0.0507 | 0.0432 | -0.13% | -18.76% | -0.1339 | 28.8570 | -0.48% | 7.97% |
+
+Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row). Turnover penalization (λ=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag.
 
 ## Overfitting diagnostics (CSCV / PBO)
 
