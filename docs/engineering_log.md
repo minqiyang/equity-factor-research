@@ -1,5 +1,19 @@
 # Engineering Log
 
+## 2026-09-19 - Portfolio weighting pipeline advisory hardening (ADV-241-1, ADV-241-2, ADV-241-3)
+
+- Working root `efr-advisory-hardening-241-20260919` on `codex/advisory-hardening-241-20260919`
+  from baseline `346c907`.
+- Task `TASK-PORTFOLIO-WEIGHTING-HARDENING-241-001` addresses ADV-241-1, ADV-241-2, and ADV-241-3.
+- ADV-241-1: Defined `OFFICIAL_COMPARISON_ROWS` in `tests/test_multifactor_diagnostic_mvp.py`
+  pinning all 16 committed portfolio weighting comparison rows in
+  `test_multifactor_diagnostic_official_report_table_matches_default_fixture`.
+- ADV-241-2: Added inverse-volatility lag (`rolling(...).std().shift(1)`) and turnover-blend
+  (`lambda=0.5`) contracts to `caveats` in `write_multifactor_experiment_log`, regenerating
+  `reports/experiment_logs/multifactor_diagnostic_mvp.json` for full markdown-JSON sidecar parity.
+- ADV-241-3: Added entry `20260919-009-portfolio-weighting-comparisons` to `EXPERIMENT_LOG.md`
+  recording the 4×4 comparison grid, default equal/`λ=0` official books, and the lagged inverse-vol / blend contracts.
+
 ## 2026-09-19 - Portfolio weighting and turnover penalization pipeline integration
 
 - Working root `efr-portfolio-weighting-pipeline-20260919` on `codex/portfolio-weighting-pipeline-20260919`

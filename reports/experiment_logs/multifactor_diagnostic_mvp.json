@@ -57,7 +57,9 @@
     "ICIR-weighted and correlation-discounted composites use causal walk-forward weights at monthly rebalance dates, admitting an IC labeled at s only when its execution-aligned forward-return window has closed by t",
     "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
     "sector map uses static balanced cohorts across 50 assets",
-    "market beta proxy does not backfill leading rolling-beta NaNs"
+    "market beta proxy does not backfill leading rolling-beta NaNs",
+    "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
+    "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag"
   ],
   "config": {
     "forward_holding_periods": 21,
