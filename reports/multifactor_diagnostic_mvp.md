@@ -28,11 +28,14 @@ profitability.
    monthly Rank IC as static supplied weights.
 5. Build `ICIR_WEIGHTED_COMPOSITE` with causal walk-forward ICIR weights: on
    each monthly rebalance date t, ICIR is estimated from monthly Rank ICs
-   strictly before t (expanding window, minimum 5 observations per factor).
-   Those weights are held until the next rebalance.
+   labeled strictly before t whose execution-aligned forward-return windows
+   have closed by t (`source_row(s) + 1 + 21 <= source_row(t)`). Expanding window,
+   minimum 5 observations per factor. Those weights are held until the next
+   rebalance.
 6. Build `CORRELATION_DISCOUNTED_COMPOSITE` with causal walk-forward
-   collinearity-discounted weights: expanding-window mean monthly Rank IC
-   strictly before t, and pairwise factor-value correlation through t.
+   collinearity-discounted weights: expanding-window mean of those same
+   horizon-complete monthly Rank ICs, and pairwise factor-value correlation
+   through t.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
 8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
    return volatility. Leading dates without five observations remain NaN.
@@ -68,7 +71,7 @@ profitability.
 - PBO splits: `8`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the 52 implemented alphas
-- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs strictly before t
+- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs labeled strictly before t whose execution-aligned forward-return windows have closed by t (`source_row(s) + 1 + 21 <= source_row(t)`)
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Long-short quantiles: `10`
 
@@ -132,7 +135,9 @@ profitability.
 These IC-weighted composite weights are in-sample diagnostics. They are not
 an out-of-sample combination rule. `ICIR_WEIGHTED_COMPOSITE` and
 `CORRELATION_DISCOUNTED_COMPOSITE` replace full-sample static weights with
-causal walk-forward weights at each monthly rebalance.
+causal walk-forward weights at each monthly rebalance. An IC labeled at date
+s enters the information set at rebalance date t when its execution-aligned
+forward-return window has closed by t.
 
 ## Factor diagnostics
 
@@ -192,8 +197,8 @@ causal walk-forward weights at each monthly rebalance.
 | ALPHA_101 | 0.0181 | 0.1150 | 1.0473 | 0.0133 | 0.28% | 0.0709 | -29.74% | 0.0816 | 0.0298 |
 | EQUAL_WEIGHTED_COMPOSITE | -0.0138 | -0.0890 | -0.7149 | 0.0081 | -3.65% | -0.0388 | -23.39% | 0.0844 | 0.0308 |
 | IC_WEIGHTED_COMPOSITE | 0.0826 | 0.6074 | 3.5590 | 0.0741 | 18.26% | 0.5280 | -23.03% | 0.0787 | 0.0287 |
-| ICIR_WEIGHTED_COMPOSITE | -0.0131 | -0.0910 | -0.5403 | 0.0011 | -14.44% | -0.4302 | -25.03% | 0.0688 | 0.0251 |
-| CORRELATION_DISCOUNTED_COMPOSITE | 0.0028 | 0.0190 | 0.1221 | 0.0118 | -0.56% | 0.0435 | -28.79% | 0.0798 | 0.0291 |
+| ICIR_WEIGHTED_COMPOSITE | -0.0206 | -0.1465 | -0.9043 | 0.0001 | -26.18% | -0.8854 | -36.47% | 0.0688 | 0.0251 |
+| CORRELATION_DISCOUNTED_COMPOSITE | -0.0019 | -0.0129 | -0.0839 | 0.0132 | 0.36% | 0.0693 | -27.49% | 0.0792 | 0.0289 |
 | ALPHA_PRODUCT_INTERACTION | 0.0253 | 0.1600 | 1.0433 | 0.1530 | 28.91% | 0.7745 | -12.31% | 0.0859 | 0.0314 |
 | CONDITIONAL_RANK_INTERACTION | 0.0079 | 0.0618 | 0.3589 | 0.3153 | 44.83% | 1.0942 | -11.25% | 0.0816 | 0.0298 |
 | NEUTRALIZED_IC_COMPOSITE | 0.0810 | 0.5614 | 3.5598 | 0.0405 | 10.93% | 0.3507 | -22.73% | 0.0825 | 0.0302 |
@@ -205,7 +210,16 @@ reported; weak or negative diagnostics are retained.
 
 ## Long-short decile spread diagnostics
 
-| factor | LS Sharpe | LS Ann Return | LS Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
+Long-short decile spread backtests construct a dollar-neutral portfolio long the top decile
+and short the bottom decile at monthly rebalance frequency with 5.00 bps slippage.
+
+Column groups in the table below:
+
+- Sequential holding-period book metrics: `LS Sharpe`, `LS Ann Return`, `Max DD`, `Win Rate`. These use the lag-1 dollar-neutral long-short book return on every accounting date after the first bar.
+- Rebalance-date one-day bucket diagnostics: `Decile Spread Mean`, `Monotonicity`. These use equal-weight quantile returns on month-end rebalance dates only.
+- `Total Turnover` is the sequential book's cumulative absolute trade-weight change.
+
+| factor | LS Sharpe | LS Ann Return | Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ALPHA_001 | 0.7463 | 4.20% | 5.81% | 51.88% | -0.0022 | -0.3818 | 55.1747 |
 | ALPHA_002 | -1.2182 | -7.54% | 21.05% | 47.84% | -0.0008 | -0.0788 | 61.2925 |
@@ -261,15 +275,13 @@ reported; weak or negative diagnostics are retained.
 | ALPHA_101 | -0.4183 | -2.56% | 14.98% | 49.93% | 0.0015 | 0.5394 | 60.3938 |
 | EQUAL_WEIGHTED_COMPOSITE | -0.0963 | -0.57% | 11.64% | 51.05% | -0.0025 | -0.1879 | 60.6288 |
 | IC_WEIGHTED_COMPOSITE | 0.3693 | 2.14% | 10.10% | 51.74% | -0.0002 | 0.1394 | 58.6652 |
-| ICIR_WEIGHTED_COMPOSITE | -0.2539 | -1.34% | 13.28% | 46.67% | -0.0001 | -0.0909 | 49.6725 |
-| CORRELATION_DISCOUNTED_COMPOSITE | 0.0645 | 0.36% | 12.35% | 49.40% | 0.0004 | 0.4667 | 57.7076 |
+| ICIR_WEIGHTED_COMPOSITE | -0.6002 | -3.19% | 15.17% | 48.03% | -0.0009 | -0.1273 | 49.1052 |
+| CORRELATION_DISCOUNTED_COMPOSITE | 0.2465 | 1.35% | 9.15% | 49.70% | 0.0008 | -0.0909 | 57.4634 |
 | ALPHA_PRODUCT_INTERACTION | 0.1253 | 0.74% | 10.90% | 50.35% | 0.0000 | 0.5394 | 61.6196 |
 | CONDITIONAL_RANK_INTERACTION | 0.6315 | 3.73% | 9.85% | 51.05% | -0.0002 | -0.1879 | 60.1766 |
 | NEUTRALIZED_IC_COMPOSITE | -0.2614 | -1.54% | 17.16% | 48.81% | -0.0007 | 0.1152 | 60.1761 |
 
-Long-short decile spread backtests construct a dollar-neutral portfolio long the top decile
-and short the bottom decile at monthly rebalance frequency with 5.00 bps slippage.
-Monotonicity reports the Spearman rank correlation of mean returns across deciles D1..D10.
+`LS Sharpe`, `LS Ann Return`, `Max DD`, and `Win Rate` summarize the sequential holding-period book. `Decile Spread Mean` is the mean top-minus-bottom quantile return on rebalance dates. Monotonicity is the Spearman rank correlation of mean rebalance-date returns across deciles D1..D10.
 
 ## Overfitting diagnostics (CSCV / PBO)
 
@@ -292,8 +304,9 @@ Monotonicity reports the Spearman rank correlation of mean returns across decile
 - 5 bps slippage is a fixed diagnostic assumption, not a market-impact model.
 - IC-weighted composite uses in-sample mean monthly Rank IC weights.
 - ICIR-weighted and correlation-discounted composites use causal walk-forward
-  weights at monthly rebalance dates. Early rebalances remain missing until
-  the minimum IC history is available (typed missingness).
+  weights at monthly rebalance dates. An IC labeled at s is admitted at t
+  when `source_row(s) + 1 + 21 <= source_row(t)`. Early rebalances remain missing until the
+  minimum realized IC history is available (typed missingness).
 - The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
   return standard deviation. Leading dates without five observations remain
   NaN; values are not backfilled from later dates.

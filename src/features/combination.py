@@ -166,14 +166,22 @@ def walk_forward_icir_weighted_composite(
     rebalance_dates: pd.DatetimeIndex,
     *,
     min_ic_periods: int = 5,
+    execution_lag_periods: int = 0,
+    forward_holding_periods: int = 0,
 ) -> pd.DataFrame:
     """Average z-scores with expanding-window ICIR weights at each rebalance.
 
     On rebalance date ``t``, ICIR weights use monthly ICs with timestamps
-    strictly before ``t``. Factors below ``min_ic_periods`` finite ICs, or with
-    zero IC standard deviation, receive weight 0.0. Those weights are held on
-    every panel date in ``[t, t+1)``. Dates before the first rebalance with at
-    least one nonzero ICIR remain ``NaN``.
+    strictly before ``t`` whose execution-aligned forward-return windows have
+    closed by ``t``:
+
+    ``source_row(s) + execution_lag_periods + forward_holding_periods
+    <= source_row(t)``.
+
+    Factors below ``min_ic_periods`` finite ICs, or with zero IC standard
+    deviation, receive weight 0.0. Those weights are held on every panel date
+    in ``[t, t+1)``. Dates before the first rebalance with at least one
+    nonzero ICIR remain ``NaN``.
 
     Args:
         factors: Non-empty list of numeric date-indexed asset panels with
@@ -183,6 +191,10 @@ def walk_forward_icir_weighted_composite(
         rebalance_dates: Month-end (or other) dates at which weights refresh.
         min_ic_periods: Minimum finite IC observations per factor before that
             factor receives a nonzero ICIR weight (default 5).
+        execution_lag_periods: Source-row lag from the IC label date to the
+            execution close used in the IC return window (default 0).
+        forward_holding_periods: Source-row holding length of that IC return
+            window after the execution close (default 0).
 
     Returns:
         A DataFrame of walk-forward ICIR-weighted z-score composites.
@@ -190,13 +202,20 @@ def walk_forward_icir_weighted_composite(
     validated = _validate_factor_list(factors)
     n_factors = len(validated)
     _validate_min_ic_periods(min_ic_periods)
+    horizon_rows = _horizon_rows(execution_lag_periods, forward_holding_periods)
     history = _walk_forward_ic_history(ic_history, n_factors=n_factors)
     ordered_rebalances = _ordered_rebalance_dates(rebalance_dates)
     standardized = [cross_sectional_zscore(panel) for panel in validated]
+    panel_index = validated[0].index
 
     weights_by_rebalance: dict[pd.Timestamp, np.ndarray] = {}
     for t in ordered_rebalances:
-        past = history.loc[history.index < t]
+        past = _realized_ic_history(
+            history,
+            t,
+            panel_index=panel_index,
+            horizon_rows=horizon_rows,
+        )
         weights = _expanding_icir_weights(
             past.to_numpy(dtype=float),
             n_factors=n_factors,
@@ -219,14 +238,21 @@ def walk_forward_correlation_discounted_composite(
     *,
     ridge_alpha: float = 0.1,
     min_ic_periods: int = 1,
+    execution_lag_periods: int = 0,
+    forward_holding_periods: int = 0,
 ) -> pd.DataFrame:
     """Combine z-scores with walk-forward collinearity-discounted weights.
 
     On rebalance date ``t``, the IC vector is the expanding-window mean of
-    monthly ICs with timestamps strictly before ``t``. Pairwise factor-value
-    correlation uses the trailing panels through ``t`` inclusive. Adjusted
-    weights solve ``(C_t + alpha * I)^{-1} * ic_mean_t`` and are held on every
-    panel date in ``[t, t+1)``.
+    monthly ICs with timestamps strictly before ``t`` whose execution-aligned
+    forward-return windows have closed by ``t``:
+
+    ``source_row(s) + execution_lag_periods + forward_holding_periods
+    <= source_row(t)``.
+
+    Pairwise factor-value correlation uses the trailing panels through ``t``
+    inclusive. Adjusted weights solve ``(C_t + alpha * I)^{-1} * ic_mean_t``
+    and are held on every panel date in ``[t, t+1)``.
 
     Args:
         factors: Non-empty list of numeric date-indexed asset panels with
@@ -237,6 +263,10 @@ def walk_forward_correlation_discounted_composite(
         ridge_alpha: Non-negative ridge shrinkage parameter (default 0.1).
         min_ic_periods: Minimum finite IC observations per factor before that
             factor contributes a nonzero expanding-window mean IC (default 1).
+        execution_lag_periods: Source-row lag from the IC label date to the
+            execution close used in the IC return window (default 0).
+        forward_holding_periods: Source-row holding length of that IC return
+            window after the execution close (default 0).
 
     Returns:
         A DataFrame of walk-forward correlation-discounted z-score composites.
@@ -244,17 +274,24 @@ def walk_forward_correlation_discounted_composite(
     validated = _validate_factor_list(factors)
     n_factors = len(validated)
     _validate_min_ic_periods(min_ic_periods)
+    horizon_rows = _horizon_rows(execution_lag_periods, forward_holding_periods)
     if not isinstance(ridge_alpha, Real) or isinstance(ridge_alpha, bool) or ridge_alpha < 0.0:
         raise ValueError("ridge_alpha must be a non-negative float")
 
     history = _walk_forward_ic_history(ic_history, n_factors=n_factors)
     ordered_rebalances = _ordered_rebalance_dates(rebalance_dates)
     standardized = [cross_sectional_zscore(panel) for panel in validated]
+    panel_index = validated[0].index
     ridge = float(ridge_alpha) * np.eye(n_factors)
 
     weights_by_rebalance: dict[pd.Timestamp, np.ndarray] = {}
     for t in ordered_rebalances:
-        past = history.loc[history.index < t]
+        past = _realized_ic_history(
+            history,
+            t,
+            panel_index=panel_index,
+            horizon_rows=horizon_rows,
+        )
         ic_weights = _expanding_mean_ic_weights(
             past.to_numpy(dtype=float),
             n_factors=n_factors,
@@ -400,6 +437,50 @@ def _walk_forward_ic_history(ic_history: pd.DataFrame, *, n_factors: int) -> pd.
 
 def _ordered_rebalance_dates(rebalance_dates: pd.DatetimeIndex) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(rebalance_dates).sort_values().unique()
+
+
+def _horizon_rows(execution_lag_periods: int, forward_holding_periods: int) -> int:
+    for name, value in (
+        ("execution_lag_periods", execution_lag_periods),
+        ("forward_holding_periods", forward_holding_periods),
+    ):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{name} must be an integer of at least 0")
+    return execution_lag_periods + forward_holding_periods
+
+
+def _realized_ic_history(
+    history: pd.DataFrame,
+    t: pd.Timestamp,
+    *,
+    panel_index: pd.DatetimeIndex,
+    horizon_rows: int,
+) -> pd.DataFrame:
+    """Keep ICs labeled before t whose forward windows have closed by t."""
+
+    past = history.loc[history.index < t]
+    if past.empty or horizon_rows <= 0:
+        return past
+
+    t_ts = pd.Timestamp(t)
+    t_indexer = panel_index.get_indexer([t_ts])[0]
+    if t_indexer >= 0:
+        t_pos = int(t_indexer)
+    else:
+        t_pos = int(panel_index.searchsorted(t_ts, side="left")) - 1
+    if t_pos < 0:
+        return past.iloc[0:0]
+
+    positions = panel_index.get_indexer(past.index)
+    missing = positions < 0
+    if np.any(missing):
+        positions = positions.copy()
+        positions[missing] = panel_index.searchsorted(
+            pd.DatetimeIndex(past.index[missing]),
+            side="right",
+        ) - 1
+    admitted = (positions < 0) | (positions + horizon_rows <= t_pos)
+    return past.iloc[admitted]
 
 
 def _expanding_mean_ic_weights(

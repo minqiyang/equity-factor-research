@@ -44,6 +44,25 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `src/features/combination.py` and `research/multifactor_diagnostic_mvp.py`:
+  Walk-forward ICIR and correlation-discounted weights admit an IC labeled at
+  date s into the information set at rebalance date t when
+  `source_row(s) + execution_lag_periods + forward_holding_periods <=
+  source_row(t)`. On the official fixture that threshold is 22 source rows
+  (`signal_lag_periods=1`, `forward_holding_periods=21`). Regenerated
+  `reports/multifactor_diagnostic_mvp.md` and
+  `reports/experiment_logs/multifactor_diagnostic_mvp.json`. Official
+  horizon-complete walk-forward pins: ICIR mean IC `-0.0206`, ICIR `-0.1465`,
+  Newey-West t `-0.9043`, DSR `0.0001`, total return `-26.18%`, Sharpe
+  `-0.8854`, max drawdown `-36.47%`, LS Sharpe `-0.6002`; correlation-discounted
+  mean IC `-0.0019`, ICIR `-0.0129`, Newey-West t `-0.0839`, DSR `0.0132`,
+  total return `0.36%`, Sharpe `0.0693`, max drawdown `-27.49%`, LS Sharpe
+  `0.2465`.
+- Official long-short table labels sequential holding-period book metrics
+  (`LS Sharpe`, `LS Ann Return`, `Max DD`, `Win Rate`) separately from
+  rebalance-date one-day bucket diagnostics (`Decile Spread Mean`,
+  `Monotonicity`). `tests/test_multifactor_diagnostic_mvp.py` pins official
+  long-short Sharpe for all 59 factors in `OFFICIAL_FOUR_DECIMAL_ROWS`.
 - `research/multifactor_diagnostic_mvp.py`: `ICIR_WEIGHTED_COMPOSITE` and
   `CORRELATION_DISCOUNTED_COMPOSITE` use causal walk-forward weights at monthly
   rebalance dates instead of full-sample static weights. Regenerated
