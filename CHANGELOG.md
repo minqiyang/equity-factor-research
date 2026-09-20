@@ -49,6 +49,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `tests/test_multifactor_diagnostic_mvp.py`: Pinned all 16 committed portfolio weighting comparison rows in `OFFICIAL_COMPARISON_ROWS` within `test_multifactor_diagnostic_official_report_table_matches_default_fixture` (resolving ADV-241-1).
+- `research/multifactor_diagnostic_mvp.py`: Added inverse-volatility lag and turnover penalization contracts to `caveats` in `write_multifactor_experiment_log`, regenerating `reports/experiment_logs/multifactor_diagnostic_mvp.json` for full markdown-JSON sidecar parity (resolving ADV-241-2).
+- `EXPERIMENT_LOG.md`: Added `20260919-009-portfolio-weighting-comparisons` recording the 4×4 comparison grid, default equal/`λ=0` official books, and the lagged inverse-vol / blend contracts (resolving ADV-241-3).
 - `tests/test_backtest_weighting_and_mask.py` and `tests/test_long_short_backtest.py`: Added causality mutation tests verifying that lagged inverse-volatility weights at rebalance date t are unaffected by future price scaling after t - lag (resolving ADV-239-1).
 - `tests/test_backtest_weighting_and_mask.py` and `tests/test_long_short_backtest.py`: Pinned long-only simplex invariants (non-negativity and unit sum) and long-short exact dollar-neutrality and leg sums (+0.5 long, -0.5 short) under turnover penalization lambda = 0.5 (resolving ADV-239-2).
 - `src/features/combination.py`: Refused out-of-panel IC timestamps before panel start in `_realized_ic_history` (`(positions >= 0) & (positions + horizon_rows <= t_pos)`) with targeted unit test coverage (resolving ADV-236-1).

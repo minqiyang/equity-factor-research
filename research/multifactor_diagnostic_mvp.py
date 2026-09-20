@@ -921,6 +921,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts across 50 assets",
             "market beta proxy does not backfill leading rolling-beta NaNs",
+            "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
+            "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag",
         ),
         next_action=(
             "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite "

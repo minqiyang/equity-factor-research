@@ -222,6 +222,24 @@ OFFICIAL_FOUR_DECIMAL_ROWS = {
     SECTOR_NEUTRAL_COMPOSITE: ("0.0826", "0.5926", "3.7039", "0.0723", "17.99%", "0.5268", "-23.28%", "0.1102"),
     MARKET_BETA_NEUTRAL_COMPOSITE: ("0.0769", "0.5296", "3.4781", "0.0868", "20.73%", "0.5849", "-21.26%", "0.1851"),
 }
+OFFICIAL_COMPARISON_ROWS = {
+    (IC_WEIGHTED_COMPOSITE, "Equal (λ=0.0)"): ("0.5280", "0.0787", "18.26%", "-23.03%", "0.3693", "58.6652", "2.14%", "10.10%"),
+    (IC_WEIGHTED_COMPOSITE, "Inverse-Vol (λ=0.0)"): ("0.4843", "0.0797", "16.45%", "-22.35%", "0.3066", "59.3384", "1.80%", "9.70%"),
+    (IC_WEIGHTED_COMPOSITE, "Equal (λ=0.5)"): ("0.6594", "0.0405", "20.93%", "-17.09%", "0.6698", "28.0361", "2.38%", "6.16%"),
+    (IC_WEIGHTED_COMPOSITE, "Inverse-Vol (λ=0.5)"): ("0.6455", "0.0405", "20.43%", "-16.85%", "0.6450", "28.0407", "2.32%", "5.95%"),
+    (MARKET_BETA_NEUTRAL_COMPOSITE, "Equal (λ=0.0)"): ("0.5849", "0.0798", "20.73%", "-21.26%", "0.1851", "59.1114", "1.07%", "12.36%"),
+    (MARKET_BETA_NEUTRAL_COMPOSITE, "Inverse-Vol (λ=0.0)"): ("0.5548", "0.0806", "19.45%", "-19.78%", "0.1504", "59.5933", "0.88%", "10.94%"),
+    (MARKET_BETA_NEUTRAL_COMPOSITE, "Equal (λ=0.5)"): ("0.6680", "0.0411", "21.35%", "-17.46%", "0.4825", "28.2999", "1.75%", "7.55%"),
+    (MARKET_BETA_NEUTRAL_COMPOSITE, "Inverse-Vol (λ=0.5)"): ("0.6725", "0.0410", "21.54%", "-16.48%", "0.4762", "28.2115", "1.75%", "6.78%"),
+    (SECTOR_NEUTRAL_COMPOSITE, "Equal (λ=0.0)"): ("0.5268", "0.0820", "17.99%", "-23.28%", "0.1102", "58.9619", "0.64%", "14.27%"),
+    (SECTOR_NEUTRAL_COMPOSITE, "Inverse-Vol (λ=0.0)"): ("0.4618", "0.0828", "15.43%", "-22.95%", "0.0273", "59.6773", "0.16%", "13.94%"),
+    (SECTOR_NEUTRAL_COMPOSITE, "Equal (λ=0.5)"): ("0.7241", "0.0416", "23.15%", "-18.20%", "0.6962", "28.3751", "2.44%", "8.01%"),
+    (SECTOR_NEUTRAL_COMPOSITE, "Inverse-Vol (λ=0.5)"): ("0.7127", "0.0417", "22.84%", "-18.18%", "0.6228", "28.4361", "2.23%", "8.19%"),
+    (EQUAL_WEIGHTED_COMPOSITE, "Equal (λ=0.0)"): ("-0.0388", "0.0844", "-3.65%", "-23.39%", "-0.0963", "60.6288", "-0.57%", "11.64%"),
+    (EQUAL_WEIGHTED_COMPOSITE, "Inverse-Vol (λ=0.0)"): ("-0.1027", "0.0846", "-5.94%", "-25.15%", "-0.0621", "60.9074", "-0.37%", "12.21%"),
+    (EQUAL_WEIGHTED_COMPOSITE, "Equal (λ=0.5)"): ("0.1061", "0.0433", "1.64%", "-18.45%", "-0.1261", "28.8528", "-0.45%", "7.56%"),
+    (EQUAL_WEIGHTED_COMPOSITE, "Inverse-Vol (λ=0.5)"): ("0.0507", "0.0432", "-0.13%", "-18.76%", "-0.1339", "28.8570", "-0.48%", "7.97%"),
+}
 ALPHA_FEATURE_HELPERS = {
     ALPHA_001: lambda panels: alpha_001(panels["close"], panels["returns"]),
     ALPHA_002: lambda panels: alpha_002(panels["open"], panels["close"], panels["volume"]),
@@ -629,6 +647,13 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
         row = "| " + " | ".join((factor_id, *long_only)) + " |"
         assert row in report_text
         assert f"| {factor_id} | {official_ls_sharpe} |" in ls_section
+
+    comp_section = report_text.split(
+        "## Portfolio weighting and turnover penalization diagnostics", 1
+    )[1].split("## Overfitting diagnostics (CSCV / PBO)", 1)[0]
+    for (factor_id, scheme_name), expected_cells in OFFICIAL_COMPARISON_ROWS.items():
+        row_str = "| " + " | ".join((factor_id, scheme_name, *expected_cells)) + " |"
+        assert row_str in comp_section
 
 
 def test_build_default_sector_mapping_partitions_assets_equally() -> None:
