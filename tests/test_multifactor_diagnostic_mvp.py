@@ -508,6 +508,13 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
             n_bins=5,
         ),
     )
+    pd.testing.assert_frame_equal(
+        result["factors"][NEUTRALIZED_IC_COMPOSITE]["factor"],
+        cross_sectional_neutralize(
+            result["factors"][IC_WEIGHTED_COMPOSITE]["factor"],
+            result["panels"]["returns"].rolling(20, min_periods=5).std().bfill(),
+        ),
+    )
 
     report_text = report_path.read_text(encoding="utf-8")
     assert "DIAGNOSTIC_ONLY" in report_text
