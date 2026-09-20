@@ -9,6 +9,10 @@ profitability, or trading readiness.
 
 ### Added
 
+- `src/features/regime.py`: Added market regime detection (`detect_market_volatility_regime`, `detect_market_trend_regime`) and dynamic factor composite builder `regime_switching_factor_composite` supporting lookahead-free volatility regime identification via historical expanding median comparison and causal factor allocation shifting.
+- `tests/test_regime.py`: Added comprehensive unit tests for market regime detection and dynamic factor allocation, including causality mutation tests, synthetic market dynamics, convex blending, and input validation.
+- `research/multifactor_diagnostic_mvp.py`: Added `REGIME_SWITCHING_COMPOSITE` dynamically blending aggressive `IC_WEIGHTED_COMPOSITE` (in low volatility regime) and defensive `MARKET_BETA_NEUTRAL_COMPOSITE` (in high volatility regime) with lag-1 signal execution, expanding total evaluated factor trials from 61 to 62 (`n_trials=62`).
+- `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`: Regenerated evidence report and JSON experiment log with official 4-decimal rows and long-short decile spread metrics for `REGIME_SWITCHING_COMPOSITE`.
 - `research/multifactor_diagnostic_mvp.py`: Wired inverse-volatility weighting and turnover penalization parameters (`turnover_penalty_lambda`, `volatility_window`, `long_short_weighting_scheme`) into `MultifactorDiagnosticConfig` and `_evaluate_factor`, and integrated a comparative diagnostic evaluation across key composites in `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`.
 - `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added `inverse_volatility` weighting scheme (`weighting_scheme="inverse_volatility"`) weighting selected assets inversely proportional to trailing realized return volatility with lookahead-free lagging and robust missing/zero volatility fallback.
 - `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Added turnover penalization / rebalance inertia (`turnover_penalty_lambda` in `[0.0, 1.0)`), smoothly blending raw target weights with pretrade drifted weights to reduce frictional turnover and transaction/slippage drag while strictly preserving long-only non-negativity and long-short dollar neutrality.
@@ -49,6 +53,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `docs/repo_map.md`: Regenerated repository map reflecting the additions of `src/features/regime.py` and `tests/test_regime.py` (16 mapped feature files, 230 mapped test files).
+- `research/multifactor_diagnostic_mvp.py`: Documented lag-1 execution (`regime.shift(signal_lag_periods)`) and leading NaN fallback to `IC_WEIGHTED_COMPOSITE` in `write_report` limitations and `write_multifactor_experiment_log` assumptions and caveats, resolving ADV-243-1 and ADV-243-2.
 - `tests/test_multifactor_diagnostic_mvp.py`: Pinned all 16 committed portfolio weighting comparison rows in `OFFICIAL_COMPARISON_ROWS` within `test_multifactor_diagnostic_official_report_table_matches_default_fixture` (resolving ADV-241-1).
 - `research/multifactor_diagnostic_mvp.py`: Added inverse-volatility lag and turnover penalization contracts to `caveats` in `write_multifactor_experiment_log`, regenerating `reports/experiment_logs/multifactor_diagnostic_mvp.json` for full markdown-JSON sidecar parity (resolving ADV-241-2).
 - `EXPERIMENT_LOG.md`: Added `20260919-009-portfolio-weighting-comparisons` recording the 4×4 comparison grid, default equal/`λ=0` official books, and the lagged inverse-vol / blend contracts (resolving ADV-241-3).

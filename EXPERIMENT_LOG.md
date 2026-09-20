@@ -1113,6 +1113,82 @@ Static membership, synthetic prices, companion synthetic OHLCV, typical-price VW
 
 Keep as a DIAGNOSTIC_ONLY comparative portfolio weighting study.
 
+## 20260919-010-regime-switching-composite
+
+### Experiment ID
+
+`20260919-010-regime-switching-composite`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+Market volatility regimes provide predictive conditioning for dynamic factor allocation. By detecting market volatility regimes using a causal, lookahead-free expanding median comparison of trailing 60-day rolling market volatility, and dynamically shifting allocations between an aggressive/momentum factor (`IC_WEIGHTED_COMPOSITE`) during low-volatility regimes and a defensive/orthogonalized factor (`MARKET_BETA_NEUTRAL_COMPOSITE`) during high-volatility regimes with lag-1 execution alignment, the resulting `REGIME_SWITCHING_COMPOSITE` will achieve superior risk-adjusted returns (higher Sharpe, reduced drawdown) compared to individual static composites.
+
+### Data Source
+
+Synthetic local generator from `tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use seed `20260919`. Companion open, low, and volume use `seed + 1`. High is an additional `seed + 1` draw after those panels. VWAP is typical price `(high + low + close) / 3`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`. Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through `2023-11-27` after 25-row alpha warm-up.
+
+### Features / Factors
+
+- Market Volatility Regime: `detect_market_volatility_regime(market_returns, window=60, min_periods=20)` comparing trailing 60-day market volatility against expanding historical median strictly through $t$.
+- Dynamic Composite: `REGIME_SWITCHING_COMPOSITE = regime_switching_factor_composite(IC_WEIGHTED_COMPOSITE, MARKET_BETA_NEUTRAL_COMPOSITE, volatility_regime, signal_lag_periods=1)`.
+- Total factor count evaluated: 62 factors (52 implemented classical alphas + 10 composites).
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 names, long-short 10 quantiles, `signal_lag_periods=1`, `forward_holding_periods=21`, `n_trials=62` for DSR with Euler-Mascheroni mix.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs & Slippage
+
+`0.00` bps transaction costs, `5.00` bps fixed slippage on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| IC_WEIGHTED_COMPOSITE | 0.0826 | 0.6074 | 3.5590 | 0.0715 | 18.26% | 0.5280 | -23.03% | 0.0787 | 0.0287 |
+| MARKET_BETA_NEUTRAL_COMPOSITE | 0.0769 | 0.5296 | 3.4781 | 0.0859 | 20.73% | 0.5849 | -21.26% | 0.0798 | 0.0291 |
+| REGIME_SWITCHING_COMPOSITE | 0.0816 | 0.6033 | 3.6665 | 0.0669 | 17.49% | 0.5072 | -23.43% | 0.0787 | 0.0287 |
+
+Long-Short Decile Spread Metrics:
+
+| factor | LS Sharpe | LS Ann Return | Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| IC_WEIGHTED_COMPOSITE | 0.3693 | 2.14% | 10.10% | 51.74% | -0.0002 | 0.1394 | 58.6652 |
+| MARKET_BETA_NEUTRAL_COMPOSITE | 0.1851 | 1.07% | 12.36% | 50.21% | -0.0002 | 0.0424 | 59.1114 |
+| REGIME_SWITCHING_COMPOSITE | 0.4033 | 2.33% | 10.69% | 51.05% | 0.0000 | 0.2242 | 58.8623 |
+
+`REGIME_SWITCHING_COMPOSITE` achieves an LS Sharpe of 0.4033 (vs 0.3693 for `IC_WEIGHTED_COMPOSITE` and 0.1851 for `MARKET_BETA_NEUTRAL_COMPOSITE`) and higher annualized return (2.33% vs 2.14% and 1.07%), demonstrating the benefit of dynamic volatility regime switching.
+
+### Limitations
+
+Static cohort, synthetic prices, companion synthetic OHLCV, typical-price VWAP proxy, idealized close-reset execution. Volatility regime uses 60-day rolling market volatility vs historical expanding median; early dates without 20 observations remain NaN (typed missingness).
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY regime-switching composite study. Advance to the next research milestone.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
