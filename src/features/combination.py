@@ -160,6 +160,37 @@ def correlation_discounted_composite(
     return _weighted_average(standardized, adjusted_weights)
 
 
+def walk_forward_ic_weighted_composite(
+    factors: list[pd.DataFrame],
+    ic_history: pd.DataFrame,
+    rebalance_dates: pd.DatetimeIndex,
+    *,
+    min_ic_periods: int = 1,
+    execution_lag_periods: int = 1,
+    forward_holding_periods: int = 21,
+) -> pd.DataFrame:
+    """Weight z-scores by expanding mean IC from fully realized label windows."""
+    validated = _validate_factor_list(factors)
+    _validate_min_ic_periods(min_ic_periods)
+    horizon_rows = _horizon_rows(execution_lag_periods, forward_holding_periods)
+    history = _walk_forward_ic_history(ic_history, n_factors=len(validated))
+    rebalances = _ordered_rebalance_dates(rebalance_dates)
+    weights_by_rebalance = {}
+    for date in rebalances:
+        past = _realized_ic_history(
+            history, date, panel_index=validated[0].index, horizon_rows=horizon_rows
+        )
+        weights = _expanding_mean_ic_weights(
+            past.to_numpy(dtype=float), n_factors=len(validated), min_ic_periods=min_ic_periods
+        )
+        if weights is not None:
+            weights_by_rebalance[date] = weights
+    return _weighted_composite_by_rebalance(
+        [cross_sectional_zscore(panel) for panel in validated],
+        rebalances, weights_by_rebalance,
+    )
+
+
 def walk_forward_icir_weighted_composite(
     factors: list[pd.DataFrame],
     ic_history: pd.DataFrame,
@@ -613,4 +644,5 @@ __all__ = [
     "icir_weighted_composite",
     "walk_forward_correlation_discounted_composite",
     "walk_forward_icir_weighted_composite",
+    "walk_forward_ic_weighted_composite",
 ]

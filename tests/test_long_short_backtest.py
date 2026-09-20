@@ -306,7 +306,10 @@ def test_long_short_turnover_penalty() -> None:
     )
 
     assert res_with_penalty.assumptions["turnover_penalty_lambda"] == 0.5
-    assert res_with_penalty.turnover.sum() < res_no_penalty.turnover.sum()
+    # Exact cancellation falls back to the fresh target to preserve gross one.
+    pd.testing.assert_frame_equal(res_with_penalty.net_holdings, res_no_penalty.net_holdings)
+    np.testing.assert_allclose(res_with_penalty.net_holdings.abs().sum(axis=1).iloc[1:], 1.0)
+    assert res_with_penalty.turnover.sum() == pytest.approx(res_no_penalty.turnover.sum())
 
     # ADV-239-2: Pin dollar-neutrality and leg sums
     assert (res_with_penalty.long_holdings >= -1e-10).all().all()

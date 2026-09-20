@@ -8,6 +8,7 @@ and defensive/neutralized factor styles.
 
 from __future__ import annotations
 
+from numbers import Integral
 import numpy as np
 import pandas as pd
 
@@ -88,7 +89,7 @@ def regime_switching_factor_composite(
 ) -> pd.DataFrame:
     """Dynamically blend two factor panels based on a lagged regime indicator.
 
-    To eliminate lookahead bias, the regime_indicator is lagged by `signal_lag_periods`
+    The caller supplies causal parent panels. The regime_indicator is lagged by `signal_lag_periods`
     (default 1) so the regime state evaluated at close of t - lag governs factor
     weights established at t.
 
@@ -96,7 +97,12 @@ def regime_switching_factor_composite(
     When lagged regime_indicator is 1.0, factor_high_regime is selected.
     For continuous indicators in (0.0, 1.0), convex combination is applied:
     (1 - lambda) * factor_low + lambda * factor_high.
+    Binary states require the selected parent. Fractional states require both
+    parents. Missing parent cells remain unavailable; observed constant rows
+    have zero standardized scores. Missing regime states select the low parent.
     """
+    if isinstance(signal_lag_periods, (bool, np.bool_)) or not isinstance(signal_lag_periods, Integral) or signal_lag_periods < 1:
+        raise ValueError("signal_lag_periods must be a non-boolean integer of at least 1")
     if not isinstance(factor_low_regime, pd.DataFrame) or not isinstance(
         factor_high_regime, pd.DataFrame
     ):
@@ -110,14 +116,27 @@ def regime_switching_factor_composite(
             "factor_low_regime and factor_high_regime must have identical index and columns"
         )
 
+    if (
+        not isinstance(factor_low_regime.index, pd.DatetimeIndex)
+        or factor_low_regime.index.has_duplicates
+        or not factor_low_regime.index.is_monotonic_increasing
+        or factor_low_regime.columns.has_duplicates
+        or not regime_indicator.index.equals(factor_low_regime.index)
+    ):
+        raise ValueError("regime and factor dates must be aligned, unique, and increasing")
+    observed_regime = regime_indicator.dropna()
+    if not pd.api.types.is_numeric_dtype(observed_regime.dtype) or not np.isfinite(observed_regime).all() or not observed_regime.between(0.0, 1.0).all():
+        raise ValueError("observed regime values must be finite and in [0, 1]")
+
     lagged_regime = regime_indicator.shift(signal_lag_periods)
     aligned_regime = lagged_regime.reindex(factor_low_regime.index)
 
     def _zscore(df: pd.DataFrame) -> pd.DataFrame:
         mean = df.mean(axis=1)
-        std = df.std(axis=1).replace(0.0, np.nan)
+        std = df.std(axis=1)
+        std = std.mask(std.eq(0.0) | df.count(axis=1).eq(1), 1.0)
         z = df.sub(mean, axis=0).div(std, axis=0)
-        return z.fillna(0.0)
+        return z
 
     z_low = _zscore(factor_low_regime)
     z_high = _zscore(factor_high_regime)
@@ -132,4 +151,6 @@ def regime_switching_factor_composite(
 
     regime_weights = regime_weights.fillna(0.0)
     composite = (1.0 - regime_weights) * z_low + regime_weights * z_high
+    composite = composite.where(regime_weights.ne(0.0), z_low)
+    composite = composite.where(regime_weights.ne(1.0), z_high)
     return composite

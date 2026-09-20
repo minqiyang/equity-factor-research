@@ -45,13 +45,17 @@ profitability.
 - Benchmark: synthetic equal-weight diagnostic-cohort benchmark
 - Timing contract: `after_close_signal_next_observed_close_v1`
 
+DSR uses across-trial sample variance of non-annualized Sharpes:
+`5.6640977858977774e-06`. The raw family count supplies an
+independent-trial sensitivity calculation for this diagnostic run.
+
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MOM_12_1 | -0.0145 | -0.0919 | -0.5047 | 0.1532 | -4.61% | -0.1206 | -18.66% | 0.0287 | 0.0072 |
-| REV_1M | -0.0202 | -0.1678 | -0.7473 | 0.1644 | -3.66% | -0.0878 | -18.16% | 0.0809 | 0.0203 |
-| LOW_VOL_3M | -0.0138 | -0.0984 | -0.5056 | 0.1394 | -5.91% | -0.1632 | -18.18% | 0.0631 | 0.0159 |
+| MOM_12_1 | -0.0145 | -0.0919 | -0.5047 | 0.4147 | -4.61% | -0.1206 | -18.66% | 0.0287 | 0.0072 |
+| REV_1M | -0.0202 | -0.1678 | -0.7473 | 0.4328 | -3.66% | -0.0878 | -18.16% | 0.0809 | 0.0203 |
+| LOW_VOL_3M | -0.0138 | -0.0984 | -0.5056 | 0.3915 | -5.91% | -0.1632 | -18.18% | 0.0631 | 0.0159 |
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns. All three factors are reported; weak or

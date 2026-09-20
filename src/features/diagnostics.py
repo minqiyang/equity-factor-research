@@ -281,20 +281,25 @@ def deflated_sharpe_ratio(
     returns: pd.Series,
     *,
     n_trials: int,
+    trial_sharpe_variance: float,
 ) -> float:
     """Bailey and Lopez de Prado Deflated Sharpe Ratio of a return series.
 
     The statistic is computed on the non-annualized Sharpe of the supplied
-    series. Sample skewness and kurtosis enter only the Sharpe-variance term
-    ``V[SR]``. The expected-maximum mix uses the Euler-Mascheroni constant,
-    not return skewness. ``n_trials`` is the number of independent trials used
-    to form that expected maximum. The result is a probability in ``[0, 1]``,
-    not a profitability claim. Fewer than three observations, zero volatility,
+    series. ``trial_sharpe_variance`` is the across-trial sample variance of
+    estimated non-annualized Sharpes (Proposition 1, Bailey and Lopez de Prado,
+    2014). It scales the expected-maximum Euler-Mascheroni mixture.
+    Candidate skewness and kurtosis determine the candidate's sampling error.
+    ``n_trials`` declares an independent trial count or an explicitly disclosed
+    raw-count sensitivity bound. The result is a probability in ``[0, 1]``.
+    Fewer than three observations, zero volatility,
     or a non-positive Sharpe variance term return ``NaN``.
     """
 
     if isinstance(n_trials, bool) or not isinstance(n_trials, int) or n_trials < 2:
         raise ValueError("n_trials must be an integer of at least 2")
+    if isinstance(trial_sharpe_variance, (bool, np.bool_)) or not isinstance(trial_sharpe_variance, (int, float, np.integer, np.floating)) or not math.isfinite(trial_sharpe_variance) or trial_sharpe_variance < 0.0:
+        raise ValueError("trial_sharpe_variance must be finite and non-negative")
 
     clean = _finite_series(returns, name="returns")
     count = int(clean.size)
@@ -315,7 +320,7 @@ def deflated_sharpe_ratio(
 
     z_one = float(norm.ppf(1.0 - 1.0 / n_trials))
     z_two = float(norm.ppf(1.0 - 1.0 / (n_trials * math.e)))
-    expected_max = math.sqrt(inner / (count - 1)) * (
+    expected_max = math.sqrt(trial_sharpe_variance) * (
         (1.0 - EULER_MASCHERONI) * z_one + EULER_MASCHERONI * z_two
     )
     statistic = (sharpe - expected_max) * math.sqrt(count - 1) / math.sqrt(inner)

@@ -48,16 +48,20 @@ profitability.
 - Timing contract: `after_close_signal_next_observed_close_v1`
 - DSR expected-maximum mix: Euler-Mascheroni constant `np.euler_gamma`
 
+DSR uses across-trial sample variance of non-annualized Sharpes:
+`0.000715723872638918`. The raw family count supplies an
+independent-trial sensitivity calculation for this diagnostic run.
+
 ## Factor diagnostics
 
 | factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.1123 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
-| ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0235 | -15.29% | -0.4035 | -27.88% | 0.0838 | 0.0306 |
-| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.5251 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
-| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.2068 | 8.41% | 0.2839 | -23.66% | 0.0871 | 0.0318 |
-| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.1514 | 3.59% | 0.1589 | -14.41% | 0.0826 | 0.0302 |
-| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.3865 | 21.76% | 0.5961 | -18.88% | 0.0821 | 0.0300 |
+| ALPHA_001 | -0.0083 | -0.0541 | -0.3019 | 0.1968 | -0.40% | 0.0505 | -23.34% | 0.0724 | 0.0264 |
+| ALPHA_002 | -0.0028 | -0.0189 | -0.1163 | 0.0519 | -15.29% | -0.4035 | -27.88% | 0.0838 | 0.0306 |
+| ALPHA_003 | -0.0383 | -0.2358 | -1.1060 | 0.6651 | 31.28% | 0.8040 | -16.56% | 0.0832 | 0.0304 |
+| ALPHA_004 | -0.0181 | -0.1301 | -1.0225 | 0.3240 | 8.41% | 0.2839 | -23.66% | 0.0871 | 0.0318 |
+| ALPHA_006 | -0.0036 | -0.0292 | -0.1833 | 0.2519 | 3.59% | 0.1589 | -14.41% | 0.0826 | 0.0302 |
+| ALPHA_012 | -0.0069 | -0.0548 | -0.3888 | 0.5295 | 21.76% | 0.5961 | -18.88% | 0.0821 | 0.0300 |
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula

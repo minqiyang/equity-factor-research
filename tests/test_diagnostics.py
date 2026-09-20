@@ -591,9 +591,9 @@ def test_information_coefficient_summary_uses_sample_icir() -> None:
 def test_deflated_sharpe_ratio_matches_euler_mascheroni_paper_mix() -> None:
     returns = pd.Series([0.01, 0.02, -0.005, 0.015, 0.008, 0.012, -0.002, 0.01])
 
-    result = deflated_sharpe_ratio(returns, n_trials=3)
+    result = deflated_sharpe_ratio(returns, n_trials=3, trial_sharpe_variance=0.1)
 
-    assert result == pytest.approx(0.8492, abs=5e-5)
+    assert result == pytest.approx(0.9174678008480222, abs=1e-12)
     assert 0.0 <= result <= 1.0
     assert EULER_MASCHERONI == pytest.approx(0.5772156649015329)
     assert result != pytest.approx(0.9703, abs=1e-3)
@@ -601,9 +601,9 @@ def test_deflated_sharpe_ratio_matches_euler_mascheroni_paper_mix() -> None:
 
 def test_deflated_sharpe_ratio_rejects_single_trial_and_zero_vol() -> None:
     with pytest.raises(ValueError, match="at least 2"):
-        deflated_sharpe_ratio(pd.Series([0.01, 0.02, 0.03]), n_trials=1)
+        deflated_sharpe_ratio(pd.Series([0.01, 0.02, 0.03]), n_trials=1, trial_sharpe_variance=0.1)
 
-    assert np.isnan(deflated_sharpe_ratio(pd.Series([0.01, 0.01, 0.01]), n_trials=3))
+    assert np.isnan(deflated_sharpe_ratio(pd.Series([0.01, 0.01, 0.01]), n_trials=3, trial_sharpe_variance=0.1))
 
 
 def test_diagnostics_module_has_no_backtest_alpha_reporting_or_real_data_imports() -> None:

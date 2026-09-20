@@ -511,12 +511,9 @@ def run_long_only_backtest(
         prices=price_data,
         volatility_window=volatility_window,
         min_volatility_periods=min_volatility_periods,
+        turnover_penalty_lambda=turnover_penalty_lambda,
+        max_position_weight=max_position_weight,
     )
-    if max_position_weight is not None:
-        target_weights = apply_long_only_position_cap(
-            target_weights.fillna(0.0),
-            max_position_weight=max_position_weight,
-        ).where(target_weights.notna())
 
     raw_volume_impact, volume_impact_basis = _prepare_volume_aware_slippage_input(
         accounting_dates=accounting_dates,
@@ -547,7 +544,6 @@ def run_long_only_backtest(
         raw_volume_impact=raw_volume_impact,
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
-        turnover_penalty_lambda=float(turnover_penalty_lambda),
     )
 
     benchmark_equity_curve, benchmark_returns = _calculate_benchmark_path(
@@ -704,6 +700,8 @@ def _build_target_weights(
     prices: pd.DataFrame | None = None,
     volatility_window: int = 20,
     min_volatility_periods: int = 5,
+    turnover_penalty_lambda: float = 0.0,
+    max_position_weight: float | None = None,
 ) -> pd.DataFrame:
     target_weights = pd.DataFrame(
         np.nan,
@@ -718,12 +716,18 @@ def _build_target_weights(
                 "prices_required_for_inverse_volatility",
                 "prices must be provided for inverse_volatility weighting",
             )
-        returns = prices.pct_change()
+        returns = prices.pct_change(fill_method=None)
         rolling_vol = returns.rolling(
             volatility_window, min_periods=min_volatility_periods
         ).std()
         lagged_volatility = rolling_vol.shift(signal_lag_periods)
 
+    previous_target = pd.Series(0.0, index=lagged_signals.columns)
+    # Validate the cap even when every scheduled target is cash.
+    if max_position_weight is not None:
+        apply_long_only_position_cap(
+            target_weights.fillna(0.0), max_position_weight=max_position_weight
+        )
     for date in rebalance_dates:
         position = lagged_signals.index.get_loc(date)
         if date == initialization_anchor or position < signal_lag_periods:
@@ -743,6 +747,7 @@ def _build_target_weights(
 
         selected_assets = _select_top_assets(valid_scores, top_n=top_n, top_pct=top_pct)
         if not selected_assets:
+            previous_target = target_weights.loc[date].copy()
             continue
 
         if weighting_scheme == "equal":
@@ -773,6 +778,19 @@ def _build_target_weights(
                 else:
                     target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
 
+        if turnover_penalty_lambda > 0.0 and previous_target.ne(0.0).any():
+            target_weights.loc[date] = (
+                (1.0 - turnover_penalty_lambda) * target_weights.loc[date]
+                + turnover_penalty_lambda * previous_target
+            )
+        # Decision-time exclusions also apply to the retained target component.
+        target_weights.loc[date, ~target_weights.columns.isin(valid_scores.index)] = 0.0
+        if max_position_weight is not None:
+            target_weights.loc[[date]] = apply_long_only_position_cap(
+                target_weights.loc[[date]], max_position_weight=max_position_weight
+            )
+        previous_target = target_weights.loc[date].copy()
+
     return target_weights
 
 
@@ -786,7 +804,6 @@ def _calculate_bounded_portfolio_path(
     raw_volume_impact: pd.Series,
     volume_impact_basis: str | None,
     missing_price_policy: str,
-    turnover_penalty_lambda: float = 0.0,
 ) -> tuple[
     pd.DataFrame,
     pd.Series,
@@ -872,14 +889,7 @@ def _calculate_bounded_portfolio_path(
 
         target = target_weights.loc[date]
         if target.notna().any():
-            frozen_target = target.fillna(0.0)
-            if turnover_penalty_lambda > 0.0 and post_trade_weights.ne(0.0).any():
-                actual_target = (
-                    (1.0 - turnover_penalty_lambda) * frozen_target
-                    + turnover_penalty_lambda * pretrade_weights
-                )
-            else:
-                actual_target = frozen_target
+            actual_target = target.fillna(0.0)
             signed_trades = actual_target - pretrade_weights
             _validate_execution_price_legs(
                 execution_prices=prices.iloc[position],
@@ -1374,7 +1384,7 @@ def _validate_backtest_inputs(
             "min_volatility_periods must be positive and <= volatility_window",
         )
     if (
-        not isinstance(turnover_penalty_lambda, (int, float))
+        _read_finite_real_scalar(turnover_penalty_lambda) is None
         or turnover_penalty_lambda < 0.0
         or turnover_penalty_lambda >= 1.0
     ):

@@ -1,13 +1,9 @@
 """Point-in-time constituent membership table loader and universe mask builder.
 
-This module provides survivorship-bias-free universe construction and dynamic
-constituent masking for research factor panels and portfolio backtests. It reads
-local constituent intervals or event records, validates point-in-time integrity,
-prevents ticker reuse mis-stitching (PIT-005), and generates strictly causal
-(lookahead-free) membership masks.
-
-It does not connect to brokers, fetch remote vendor data, place orders, or make
-profitability claims.
+Membership intervals describe effective dates. Permanent security IDs preserve
+identity across repeated ticker episodes (PIT-005). Repeated symbols without IDs
+are refused. Availability/announcement evidence remains a caller responsibility;
+effective dates alone establish membership timing only.
 """
 
 from __future__ import annotations
@@ -41,10 +37,13 @@ def load_constituent_intervals_csv(
     symbol_column: str = "symbol",
     start_date_column: str = "start_date",
     end_date_column: str = "end_date",
+    permanent_id_column: str = "permanent_id",
 ) -> ValidatedConstituentIntervals:
     """Load and validate point-in-time constituent membership intervals from a local CSV.
 
     The CSV must contain symbol, start_date, and end_date columns.
+    Repeated ticker episodes require permanent_id on every record. When provided,
+    permanent IDs become membership-mask asset columns and must match price IDs.
     end_date may be empty / NaN to indicate an ongoing/active membership.
     Intervals for the same symbol must not overlap. Start date must be less than
     or equal to end date.
@@ -93,6 +92,9 @@ def load_constituent_intervals_csv(
         }
     )
 
+    if permanent_id_column in raw:
+        df["permanent_id"] = _parse_symbols(raw[permanent_id_column], field_name=permanent_id_column)
+
     # Validate each interval: start_date <= end_date
     for _, row in df.iterrows():
         if pd.notna(row["end_date"]) and row["start_date"] > row["end_date"]:
@@ -101,8 +103,9 @@ def load_constituent_intervals_csv(
                 f"after end_date ({row['end_date']})"
             )
 
-    # Validate non-overlapping intervals per symbol (fail-closed ticker reuse check PIT-005)
+    # Validate interval overlap separately from permanent identity.
     _validate_no_overlapping_intervals(df)
+    _membership_identity_column(df)
 
     # Sort deterministically
     df = df.sort_values(by=["symbol", "start_date"]).reset_index(drop=True)
@@ -140,7 +143,8 @@ def build_membership_mask(
         dates: DatetimeIndex of trading/rebalance dates to evaluate. Must be sorted
             and monotonic increasing.
         assets: Optional list of assets/symbols to include as columns. If None,
-            uses all unique symbols present in the intervals table.
+            uses permanent IDs when supplied, otherwise single-episode symbols.
+            Price panels must use these same identifiers.
         inclusive_exit: If True, end_date is inclusive (t <= end_date).
             If False (default), end_date is exclusive (t < end_date), meaning
             an asset removed on date t is not eligible for selection on date t.
@@ -163,15 +167,21 @@ def build_membership_mask(
     if not dates.is_monotonic_increasing:
         raise ValueError("dates must be monotonic increasing")
 
-    all_symbols = sorted(table["symbol"].unique())
+    _validate_no_overlapping_intervals(table)
+    identity_column = _membership_identity_column(table)
+    all_symbols = sorted(table[identity_column].unique())
     target_assets = list(assets) if assets is not None else all_symbols
     if not target_assets:
         raise ValueError("assets list must not be empty")
 
+    if identity_column == "permanent_id":
+        ticker_aliases = set(table["symbol"]) - set(all_symbols)
+        if ticker_aliases.intersection(target_assets):
+            raise ValueError("PIT-005: assets must use permanent IDs for identity-backed intervals")
     mask = pd.DataFrame(False, index=dates, columns=target_assets, dtype=bool)
 
     # Group intervals by symbol
-    grouped = table.groupby("symbol")
+    grouped = table.groupby(identity_column)
     for symbol in target_assets:
         if symbol not in grouped.groups:
             continue
@@ -206,3 +216,17 @@ def _validate_no_overlapping_intervals(df: pd.DataFrame) -> None:
                         f"interval starts at {start} before previous interval ended at {prev_end}"
                     )
             prev_end = pd.Timestamp.max if pd.isna(end) else end
+
+
+def _membership_identity_column(table: pd.DataFrame) -> str:
+    """Require identity evidence at both CSV and direct-frame mask boundaries."""
+    if "permanent_id" in table:
+        ids = table["permanent_id"]
+        if ids.isna().any() or ids.astype(str).str.strip().eq("").any():
+            raise ValueError("PIT-005: permanent_id must be present for every interval")
+        # An identity can reenter under the same ticker or an updated alias.
+        _validate_no_overlapping_intervals(table.assign(symbol=ids))
+        return "permanent_id"
+    if table["symbol"].duplicated().any():
+        raise ValueError("PIT-005: repeated ticker episodes require permanent_id")
+    return "symbol"
