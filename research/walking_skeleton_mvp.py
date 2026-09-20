@@ -211,23 +211,32 @@ def run_walking_skeleton_mvp(
             signal_lag_periods=config.signal_lag_periods,
             periods_per_year=config.periods_per_year,
         )
-        measured_returns = backtest.returns.iloc[1:]
         factor_results[factor_id] = {
             "factor": factor,
             "daily_ic": daily_ic,
             "monthly_ic": monthly_ic,
             "ic_summary": ic_summary,
             "backtest": backtest,
-            "dsr": deflated_sharpe_ratio(
-                measured_returns,
-                n_trials=config.n_trials,
-            ),
+            "dsr": float("nan"),
         }
+
+    family_sharpes = [
+        payload["backtest"].returns.iloc[1:].mean() / payload["backtest"].returns.iloc[1:].std(ddof=1)
+        for payload in factor_results.values()
+    ]
+    trial_variance = float(np.var(family_sharpes, ddof=1))
+    for payload in factor_results.values():
+        if np.isfinite(trial_variance):
+            payload["dsr"] = deflated_sharpe_ratio(
+                payload["backtest"].returns.iloc[1:], n_trials=config.n_trials,
+                trial_sharpe_variance=trial_variance,
+            )
 
     result = {
         "manifest": manifest,
         "prices": prices,
         "config": config,
+        "trial_sharpe_variance": trial_variance,
         "evaluation_start": evaluation_start,
         "evaluation_end": evaluation_end,
         "benchmark": benchmark,
@@ -320,6 +329,8 @@ def write_skeleton_experiment_log(*, result: dict[str, Any]) -> dict[str, object
                 "zero_cost_or_slippage_is_diagnostic"
             ],
             "n_trials_for_dsr": config.n_trials,
+            "trial_sharpe_variance": result["trial_sharpe_variance"],
+            "dsr_trial_scope": "current evaluated factor family; raw-count independence sensitivity",
             "live_trading": False,
             "brokerage_integration": False,
         },
@@ -420,6 +431,10 @@ profitability.
 - Zero cost or slippage diagnostic: `{first_backtest.assumptions["zero_cost_or_slippage_is_diagnostic"]}`
 - Benchmark: synthetic equal-weight diagnostic-cohort benchmark
 - Timing contract: `{first_backtest.timing_metadata["timing_contract"]}`
+
+DSR uses across-trial sample variance of non-annualized Sharpes:
+`{result["trial_sharpe_variance"]}`. The raw family count supplies an
+independent-trial sensitivity calculation for this diagnostic run.
 
 ## Factor diagnostics
 

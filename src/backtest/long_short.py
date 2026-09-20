@@ -23,6 +23,12 @@ from scipy.stats import spearmanr
 from backtest.portfolio import (
     BacktestValidationError,
     _get_rebalance_dates,
+    _read_positive_price,
+    _calculate_held_asset_returns,
+    _validate_execution_price_legs,
+    _validate_pretrade_gross,
+    _validate_postcost_net_equity,
+    _validate_bounded_signal_values,
     _read_exact_integral_scalar,
     _read_finite_real_scalar,
 )
@@ -82,6 +88,7 @@ def run_long_short_backtest(
     initial_capital: float = 1.0,
     signal_lag_periods: int = 1,
     gross_leverage: float = 1.0,
+    max_position_weight: float | None = None,
     periods_per_year: int = 252,
 ) -> LongShortBacktestResult:
     """Run a dollar-neutral long-short quantile spread backtest.
@@ -111,6 +118,11 @@ def run_long_short_backtest(
         periods_per_year=periods_per_year,
     )
 
+    if max_position_weight is not None:
+        cap = _read_finite_real_scalar(max_position_weight)
+        if cap is None or cap <= 0.0 or cap > 1.0:
+            raise ValueError("max_position_weight must be in (0, 1]")
+
     eval_start = prices.index[0] if evaluation_start is None else pd.Timestamp(evaluation_start)
     eval_end = prices.index[-1] if evaluation_end is None else pd.Timestamp(evaluation_end)
 
@@ -130,7 +142,7 @@ def run_long_short_backtest(
     accounting_dates = prices.index[start_pos : end_pos + 1]
 
     sub_prices = prices.loc[accounting_dates]
-    sub_signals = signals.loc[accounting_dates]
+    sub_signals = _validate_bounded_signal_values(signals.loc[accounting_dates])
     lagged_signals = sub_signals.shift(signal_lag_periods)
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
 
@@ -159,7 +171,7 @@ def run_long_short_backtest(
     lagged_volatility: pd.DataFrame | None = None
     if weighting_scheme == "inverse_volatility":
         rolling_vol = (
-            sub_prices.pct_change()
+            sub_prices.pct_change(fill_method=None)
             .rolling(volatility_window, min_periods=min_volatility_periods)
             .std()
         )
@@ -167,46 +179,66 @@ def run_long_short_backtest(
 
     current_long = pd.Series(0.0, index=columns)
     current_short = pd.Series(0.0, index=columns)
+    previous_target = pd.Series(0.0, index=columns)
     current_net = pd.Series(0.0, index=columns)
 
     for i in range(1, n_dates):
         date = accounting_dates[i]
         prev_date = accounting_dates[i - 1]
 
-        # Asset returns from prev_date to date
-        p_prev = sub_prices.loc[prev_date].to_numpy(dtype=float)
-        p_curr = sub_prices.loc[date].to_numpy(dtype=float)
-        asset_returns = pd.Series(p_curr / p_prev - 1.0, index=columns)
-
-        # Portfolio return earned on held positions
-        period_gross = float((current_net * asset_returns).sum())
+        # Validate held endpoints before valuation, drift, or any liquidation.
+        held_returns = _calculate_held_asset_returns(
+            previous_prices=sub_prices.loc[prev_date],
+            current_prices=sub_prices.loc[date],
+            previous_holdings=current_net,
+            previous_date=prev_date,
+            current_date=date,
+            missing_price_policy="raise",
+        )
+        with np.errstate(over="ignore", invalid="ignore"):
+            weighted = (current_net * held_returns).to_numpy(dtype=float)
+            period_gross = float(np.sum(weighted))
+            gross_multiplier = 1.0 + period_gross
+        _validate_pretrade_gross(
+            gross_return=period_gross, gross_multiplier=gross_multiplier, date=date
+        )
         gross_returns.loc[date] = period_gross
+        pretrade_net = current_net * (1.0 + held_returns) / gross_multiplier
+        # These quantile returns describe the incoming interval diagnostically.
+        # Executable P&L above uses exclusively previously held positions.
+        diagnostic_previous = pd.Series(
+            [_read_positive_price(value) for value in sub_prices.loc[prev_date]], index=columns, dtype=float
+        )
+        diagnostic_current = pd.Series(
+            [_read_positive_price(value) for value in sub_prices.loc[date]], index=columns, dtype=float
+        )
+        asset_returns = diagnostic_current / diagnostic_previous - 1.0
 
         # Calculate decile returns for diagnostic tracking
         if date in rebalance_dates:
             scores = lagged_signals.loc[date]
             valid_scores = scores[scores.notna()]
-            if universe_mask is not None and date in universe_mask.index:
-                mask_row = universe_mask.loc[date]
-                valid_scores = valid_scores[valid_scores.index.isin(mask_row[mask_row.eq(True)].index)]
+            if universe_mask is not None:
+                if date in universe_mask.index:
+                    mask_row = universe_mask.loc[date]
+                    valid_scores = valid_scores[valid_scores.index.isin(mask_row[mask_row.eq(True)].index)]
+                else:
+                    valid_scores = valid_scores.iloc[0:0]
 
             if len(valid_scores) >= quantiles:
                 ranks = valid_scores.rank(ascending=True, method="first")
-                try:
-                    quantile_bins = pd.qcut(ranks, q=quantiles, labels=q_labels)
-                    for q_lbl in q_labels:
-                        q_assets = valid_scores.index[quantile_bins == q_lbl]
-                        if len(q_assets) > 0:
-                            decile_returns.loc[date, q_lbl] = float(asset_returns[q_assets].mean())
+                quantile_bins = pd.qcut(ranks, q=quantiles, labels=q_labels)
+                for q_lbl in q_labels:
+                    q_assets = valid_scores.index[quantile_bins == q_lbl]
+                    if len(q_assets) > 0:
+                        decile_returns.loc[date, q_lbl] = float(asset_returns[q_assets].mean())
 
-                    d_top = q_labels[-1]
-                    d_bottom = q_labels[0]
-                    if pd.notna(decile_returns.loc[date, d_top]) and pd.notna(decile_returns.loc[date, d_bottom]):
-                        spread_returns.loc[date] = (
-                            decile_returns.loc[date, d_top] - decile_returns.loc[date, d_bottom]
-                        )
-                except ValueError:
-                    pass
+                d_top = q_labels[-1]
+                d_bottom = q_labels[0]
+                if pd.notna(decile_returns.loc[date, d_top]) and pd.notna(decile_returns.loc[date, d_bottom]):
+                    spread_returns.loc[date] = (
+                        decile_returns.loc[date, d_top] - decile_returns.loc[date, d_bottom]
+                    )
 
                 # Build target long and short weights
                 top_assets = valid_scores.index[quantile_bins == q_labels[-1]]
@@ -257,77 +289,62 @@ def run_long_short_backtest(
                         else:
                             target_short[bottom_assets] = half_leverage / len(bottom_assets)
 
-                if turnover_penalty_lambda > 0.0 and (current_long.ne(0.0).any() or current_short.ne(0.0).any()):
-                    drifted_long = current_long * (1.0 + asset_returns)
-                    drifted_short = current_short * (1.0 + asset_returns)
-                    sum_long = float(drifted_long.sum())
-                    sum_short = float(drifted_short.sum())
-                    drifted_long_norm = (
-                        half_leverage * (drifted_long / sum_long)
-                        if sum_long > 1e-8
-                        else drifted_long
+                fresh_target = target_long - target_short
+                target_net = fresh_target.copy()
+                if turnover_penalty_lambda > 0.0 and previous_target.ne(0.0).any():
+                    target_net = (
+                        (1.0 - turnover_penalty_lambda) * fresh_target
+                        + turnover_penalty_lambda * previous_target
                     )
-                    drifted_short_norm = (
-                        half_leverage * (drifted_short / sum_short)
-                        if sum_short > 1e-8
-                        else drifted_short
+                target_net.loc[~target_net.index.isin(valid_scores.index)] = 0.0
+                # Net opposing positions first, then normalize the disjoint legs.
+                # A degenerate blend uses the feasible fresh decision-time target.
+                positive = target_net.clip(lower=0.0)
+                negative = -target_net.clip(upper=0.0)
+                if positive.sum() <= 1e-12 or negative.sum() <= 1e-12:
+                    target_net = fresh_target
+                    positive = target_net.clip(lower=0.0)
+                    negative = -target_net.clip(upper=0.0)
+                target_net = (
+                    half_leverage * positive / positive.sum()
+                    - half_leverage * negative / negative.sum()
+                )
+                if (
+                    not np.isfinite(target_net).all()
+                    or abs(float(target_net.sum())) > 1e-5
+                    or abs(float(target_net.abs().sum()) - gross_leverage) > 1e-5
+                ):
+                    raise BacktestValidationError(
+                        "target_exposure_invalid", "invested target must be net zero with configured gross", date=date
                     )
-                    target_long = (
-                        (1.0 - turnover_penalty_lambda) * target_long
-                        + turnover_penalty_lambda * drifted_long_norm
+                if max_position_weight is not None and (target_net.abs() > max_position_weight + 1e-12).any():
+                    raise BacktestValidationError(
+                        "position_cap_infeasible", "final signed target exceeds max_position_weight", date=date
                     )
-                    target_short = (
-                        (1.0 - turnover_penalty_lambda) * target_short
-                        + turnover_penalty_lambda * drifted_short_norm
-                    )
-
-                target_net = target_long - target_short
-
-                # Turnover: absolute changes from drifted pretrade net weights
-                drifted_net = current_net * (1.0 + asset_returns)
-                net_mult = 1.0 + period_gross
-                if abs(net_mult) > 1e-8:
-                    drifted_net /= net_mult
-
-                trades = (target_net - drifted_net).abs()
-                row_turnover = float(trades.sum())
-
-                row_tx_cost = row_turnover * (float(transaction_cost_bps) / 10_000.0)
-                row_slip_cost = row_turnover * (float(slippage_bps) / 10_000.0)
-                row_total_cost = row_tx_cost + row_slip_cost
-
-                current_long = target_long
-                current_short = target_short
-                current_net = target_net
             else:
-                # Ineligible: liquidate to cash
-                row_turnover = float(current_net.abs().sum())
-                row_tx_cost = row_turnover * (float(transaction_cost_bps) / 10_000.0)
-                row_slip_cost = row_turnover * (float(slippage_bps) / 10_000.0)
-                row_total_cost = row_tx_cost + row_slip_cost
+                target_net = pd.Series(0.0, index=columns)
 
-                current_long = pd.Series(0.0, index=columns)
-                current_short = pd.Series(0.0, index=columns)
-                current_net = pd.Series(0.0, index=columns)
+            # The frozen target reference stays independent of execution prices.
+            previous_target = target_net.copy()
+            signed_trades = target_net - pretrade_net
+            _validate_execution_price_legs(
+                execution_prices=sub_prices.loc[date],
+                signed_trade_weights=signed_trades,
+                date=date,
+            )
+            row_turnover = float(signed_trades.abs().sum())
+            row_tx_cost = row_turnover * (float(transaction_cost_bps) / 10_000.0) * gross_multiplier
+            row_slip_cost = row_turnover * (float(slippage_bps) / 10_000.0) * gross_multiplier
+            row_total_cost = row_tx_cost + row_slip_cost
+            current_net = target_net
         else:
-            # Non-rebalance date: drift weights
-            drifted_net = current_net * (1.0 + asset_returns)
-            net_mult = 1.0 + period_gross
-            if abs(net_mult) > 1e-8:
-                drifted_net /= net_mult
-            current_net = drifted_net
-            if turnover_penalty_lambda > 0.0:
-                drifted_long = current_long * (1.0 + asset_returns)
-                drifted_short = current_short * (1.0 + asset_returns)
-                if abs(net_mult) > 1e-8:
-                    drifted_long /= net_mult
-                    drifted_short /= net_mult
-                current_long = drifted_long
-                current_short = drifted_short
+            current_net = pretrade_net
             row_turnover = 0.0
             row_tx_cost = 0.0
             row_slip_cost = 0.0
             row_total_cost = 0.0
+        current_long = current_net.clip(lower=0.0)
+        current_short = -current_net.clip(upper=0.0)
 
         period_net = period_gross - row_total_cost
         net_returns.loc[date] = period_net
@@ -336,7 +353,12 @@ def run_long_short_backtest(
         slip_costs.loc[date] = row_slip_cost
         total_costs.loc[date] = row_total_cost
 
-        equity.loc[date] = float(equity.iloc[i - 1]) * (1.0 + period_net)
+        equity_candidate = float(equity.iloc[i - 1]) * (1.0 + period_net)
+        _validate_postcost_net_equity(
+            net_return=period_net, net_multiplier=1.0 + period_net,
+            equity_candidate=equity_candidate, date=date,
+        )
+        equity.loc[date] = equity_candidate
         long_holdings.loc[date] = current_long
         short_holdings.loc[date] = current_short
         net_holdings.loc[date] = current_net
@@ -363,6 +385,12 @@ def run_long_short_backtest(
         "slippage_bps": slippage_bps,
         "signal_lag_periods": signal_lag_periods,
         "gross_leverage": gross_leverage,
+        "max_position_weight": max_position_weight,
+        "smoothing_reference": "previous_frozen_target",
+        "degenerate_blend_policy": "fresh_target",
+        "missing_universe_row_policy": "empty",
+        "cost_basis": "turnover_on_post_return_value_scaled_to_beginning_period",
+        "decile_return_scope": "incoming_interval_diagnostic_only",
         "periods_per_year": periods_per_year,
         "dollar_neutral": True,
         "timing_contract": "after_close_signal_next_observed_close_v1",
@@ -412,6 +440,9 @@ def _validate_long_short_inputs(
     if not prices.index.equals(signals.index) or not prices.columns.equals(signals.columns):
         raise BacktestValidationError("source_axes_invalid", "price and signal axes must match exactly")
 
+    if prices.index.has_duplicates or prices.columns.has_duplicates or not prices.index.is_monotonic_increasing:
+        raise BacktestValidationError("source_axes_invalid", "source axes must be unique and dates increasing")
+
     if isinstance(quantiles, bool) or not isinstance(quantiles, int) or quantiles < 2:
         raise ValueError("quantiles must be an integer of at least 2")
     if weighting_scheme not in {"equal", "rank", "inverse_volatility"}:
@@ -425,7 +456,7 @@ def _validate_long_short_inputs(
     ):
         raise ValueError("min_volatility_periods must be positive and <= volatility_window")
     if (
-        not isinstance(turnover_penalty_lambda, (int, float))
+        _read_finite_real_scalar(turnover_penalty_lambda) is None
         or turnover_penalty_lambda < 0.0
         or turnover_penalty_lambda >= 1.0
     ):
@@ -436,6 +467,8 @@ def _validate_long_short_inputs(
             raise TypeError("universe_mask must be a DataFrame")
         if not isinstance(universe_mask.index, pd.DatetimeIndex):
             raise TypeError("universe_mask must use a DatetimeIndex")
+        if universe_mask.index.has_duplicates or universe_mask.columns.has_duplicates or not universe_mask.index.is_monotonic_increasing:
+            raise ValueError("universe_mask axes must be unique and dates increasing")
 
     tc = _read_finite_real_scalar(transaction_cost_bps)
     if tc is None or tc < 0.0:

@@ -10018,3 +10018,32 @@ This ablation round completes the implementation and machine verification of sev
   Writer responsibility ends at that handoff. Fresh exact-head QA, two-seat
   CRITICAL review, binding acceptance and Step 3 implementation remain
   separate gates; this worker performed no publication or self-acceptance.
+
+## 2026-09-20 — Milestone 3.10 causality and accounting remediation
+
+- Owner scope covers audit M01–M11 on the assigned hardening branch. A clean
+  detached worktree preserved the original checkout's untracked audit evidence
+  and lockfile.
+- Executable IC and regime families now use horizon-complete expanding weights.
+  Both books freeze smoothing references at decision time. Signed exposure,
+  final eligibility/caps, held-price refusal, solvency, and cost/liquidation
+  bases have deterministic synthetic regression coverage.
+- Constituent stitching preserves permanent IDs and refuses ambiguous ticker
+  reuse. Regime APIs validate lag/axes/range and preserve parent missingness.
+  DSR accepts explicit trial dispersion; the multifactor runner inventories
+  attempted configurations and persists append-only attempt events.
+- Superseded report bytes remain at baseline `25825b422add80ad8fc0e39f0c19f8c943da5548`.
+  Current synthetic reports and numerical pins reflect the repaired methods.
+- The ablation retained a redundant-handler removal after 18 exact-result
+  comparisons. Removing held-price refusal reproduced silent zero-return
+  valuation; that necessary guard remains.
+- `coord/reports/m3_10_hardening_report.md` records the implementation matrix,
+  accounting/statistical assumptions, trial inventory, validation, limitations,
+  and Coordinator acceptance gate.
+- Final validation on the assigned branch passed 3,726 tests with two platform
+  precision skips and 23 constant-input correlation warnings. Ruff, compilation,
+  whitespace checks, and the isolated offline source/wheel build passed. The
+  first full run's sole stale-map failure was corrected by regeneration.
+  All 62 default factors preserved early scores and both books' holdings under
+  separate future-label and future-price perturbations. The refined partial
+  sign-reversal and intervening-date disappearance fixtures passed 42 cases.

@@ -12,11 +12,11 @@ from data.constituent_table import (
 def test_load_constituent_intervals_csv_valid(tmp_path: Path) -> None:
     csv_file = tmp_path / "sp500_constituents.csv"
     csv_file.write_text(
-        "symbol,start_date,end_date\n"
-        "AAPL,2020-01-01,\n"
-        "MSFT,2020-01-01,\n"
-        "XYZ,2020-01-01,2021-06-30\n"
-        "XYZ,2022-01-01,2023-01-01\n",
+        "symbol,start_date,end_date,permanent_id\n"
+        "AAPL,2020-01-01,,SEC_A\n"
+        "MSFT,2020-01-01,,SEC_M\n"
+        "XYZ,2020-01-01,2021-06-30,SEC_X\n"
+        "XYZ,2022-01-01,2023-01-01,SEC_X\n",
         encoding="utf-8",
     )
 

@@ -1,7 +1,7 @@
 """End-to-end WorldQuant alpha and multi-factor diagnostic pipeline.
 
 This module wires the 52 implemented classical price-volume alphas plus
-equal-weighted, in-sample IC-weighted, and causal walk-forward ICIR-weighted
+equal-weighted, causal expanding-IC-weighted, and causal walk-forward ICIR-weighted
 and correlation-discounted composites through the committed 50-stock static
 diagnostic cohort, a small IC/ICIR/Newey-West/DSR summary, and the existing
 equal-weight monthly long-only backtester with 5 bps slippage.
@@ -15,6 +15,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+import hashlib
+import json
+import math
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -86,7 +90,7 @@ from features.alphas import (
 )
 from features.combination import (
     equal_weighted_composite,
-    ic_weighted_composite,
+    walk_forward_ic_weighted_composite,
     walk_forward_correlation_discounted_composite,
     walk_forward_icir_weighted_composite,
 )
@@ -314,7 +318,7 @@ class MultifactorDiagnosticConfig:
     slippage_bps: float = 5.0
     signal_lag_periods: int = 1
     periods_per_year: int = 252
-    n_trials: int = 62
+    n_trials: int | None = None
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
     pbo_n_splits: int = 8
@@ -494,6 +498,66 @@ def compute_rolling_market_beta(
     return market_cov.div(market_var, axis=0)
 
 
+def _run_recorded_trial(
+    *, factor_id: str, direction: str, inventory: list[dict[str, Any]],
+    inventory_path: Path | None, trial_context: dict[str, Any], **kwargs: Any,
+) -> Any:
+    """Retain each attempted book and deduplicate semantic trials for inference."""
+    parameters = {key: value for key, value in kwargs.items()
+                  if isinstance(value, (str, int, float, bool)) or value is None}
+    specification = {
+        **trial_context, "factor_id": factor_id, "direction": direction,
+        "parameters": parameters,
+    }
+    trial_id = hashlib.sha256(json.dumps(specification, sort_keys=True).encode()).hexdigest()
+    record = {
+        "trial_id": trial_id, "attempt_id": uuid.uuid4().hex,
+        "specification": specification, "status": "started",
+    }
+    inventory.append(record)
+
+    def retain() -> None:
+        if inventory_path is not None:
+            inventory_path.parent.mkdir(parents=True, exist_ok=True)
+            with inventory_path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
+
+    retain()
+    try:
+        runner = run_long_only_backtest if direction == "long_only" else run_long_short_backtest
+        backtest = runner(**kwargs)
+        returns = backtest.returns.iloc[1:]
+        std = float(returns.std(ddof=1))
+        sharpe = float(returns.mean() / std) if std > 0.0 else math.nan
+        record.update(status="completed", sharpe=sharpe if math.isfinite(sharpe) else None)
+    except Exception as exc:
+        record.update(status="failed", error_type=type(exc).__name__, error=str(exc))
+        retain()
+        raise
+    retain()
+    return backtest
+
+
+def _trial_family_summary(inventory: list[dict[str, Any]], *, n_trials: int | None) -> dict[str, Any]:
+    unique = {record["trial_id"]: record for record in inventory}
+    count = len(unique)
+    if n_trials is not None and (isinstance(n_trials, bool) or not isinstance(n_trials, int) or n_trials < count):
+        raise ValueError("n_trials override must be an integer at least the distinct evaluated trial count")
+    sharpes = [record["sharpe"] for record in unique.values()
+               if record["status"] == "completed" and record["sharpe"] is not None]
+    variance = float(np.var(sharpes, ddof=1)) if len(sharpes) == count and count >= 2 else None
+    return {
+        "attempt_count": len(inventory), "distinct_trial_count": count,
+        "finite_sharpe_count": len(sharpes), "n_trials_for_dsr": n_trials or count,
+        "trial_sharpe_variance": variance,
+        "variance_basis": "sample variance (ddof=1) of distinct non-annualized net Sharpes",
+        "selection_family": "all factors, weighting schemes, penalties, and both directions evaluated in this run",
+        "trial_count_method": "raw distinct count as independent-trial upper-bound sensitivity; effective independence unestimated",
+        "history_scope": "current estimator version and sample; earlier reports remain superseded evidence outside this run-scoped sensitivity",
+        "undefined_sharpe_policy": "retain trials and withhold DSR when dispersion is incomplete",
+    }
+
+
 def run_multifactor_diagnostic_mvp(
     *,
     config: MultifactorDiagnosticConfig = MultifactorDiagnosticConfig(),
@@ -514,6 +578,22 @@ def run_multifactor_diagnostic_mvp(
     )
 
     manifest, panels = load_diagnostic_cohort_ohlcv(config.manifest_path)
+    inventory: list[dict[str, Any]] = []
+    inventory_path = Path(experiment_log_path).with_suffix(".trials.jsonl") if write_outputs else None
+    sample_digest = hashlib.sha256()
+    for name, panel in sorted(panels.items()):
+        sample_digest.update(name.encode())
+        sample_digest.update(pd.util.hash_pandas_object(panel, index=True).values.tobytes())
+        sample_digest.update(repr(tuple(panel.columns)).encode())
+    trial_context = {
+        "estimator_version": "m3_10_causal_accounting_v1",
+        "sample_sha256": sample_digest.hexdigest(),
+        "estimator_parameters": {
+            "warmup_periods": config.warmup_periods,
+            "forward_holding_periods": config.forward_holding_periods,
+            "ridge_alpha": config.ridge_alpha,
+        },
+    }
     prices = panels["close"]
     starting_price = float(manifest["generation"]["starting_price"])
     if len(prices.index) <= config.warmup_periods + config.forward_holding_periods:
@@ -540,6 +620,7 @@ def run_multifactor_diagnostic_mvp(
         alpha_panels[factor_id] = factor
         factor_results[factor_id] = _evaluate_factor(
             factor_id=factor_id,
+            inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
             factor=factor,
             prices=prices,
             forward_returns=forward_returns,
@@ -564,7 +645,11 @@ def run_multifactor_diagnostic_mvp(
     market_beta = compute_rolling_market_beta(
         panels["returns"], window=60, min_periods=20
     )
-    ic_comp = ic_weighted_composite(ordered_alphas, ic_weights)
+    ic_comp = walk_forward_ic_weighted_composite(
+        ordered_alphas, ic_history, monthly_eval_dates,
+        execution_lag_periods=config.signal_lag_periods,
+        forward_holding_periods=config.forward_holding_periods,
+    )
     market_returns = panels["returns"].mean(axis=1)
     volatility_regime = detect_market_volatility_regime(
         market_returns, window=60, min_periods=20
@@ -621,6 +706,7 @@ def run_multifactor_diagnostic_mvp(
     for factor_id, factor in composites.items():
         factor_results[factor_id] = _evaluate_factor(
             factor_id=factor_id,
+            inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
             factor=factor,
             prices=prices,
             forward_returns=forward_returns,
@@ -647,6 +733,7 @@ def run_multifactor_diagnostic_mvp(
         for factor_id in WEIGHTING_COMPARISON_FACTORS
     }
     weighting_comparisons = evaluate_portfolio_weighting_comparisons(
+        inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
         factors=factor_panels_dict,
         prices=prices,
         accounting_benchmark=accounting_benchmark,
@@ -654,6 +741,16 @@ def run_multifactor_diagnostic_mvp(
         evaluation_end=evaluation_end,
         config=config,
     )
+
+    trial_family = _trial_family_summary(inventory, n_trials=config.n_trials)
+    for payload in factor_results.values():
+        variance = trial_family["trial_sharpe_variance"]
+        payload["dsr"] = (
+            deflated_sharpe_ratio(
+                payload["backtest"].returns.iloc[1:],
+                n_trials=trial_family["n_trials_for_dsr"], trial_sharpe_variance=variance,
+            ) if variance is not None else math.nan
+        )
 
     result = {
         "manifest": manifest,
@@ -669,6 +766,8 @@ def run_multifactor_diagnostic_mvp(
         "market_beta": market_beta,
         "pbo_summary": pbo_summary,
         "weighting_comparisons": weighting_comparisons,
+        "trial_inventory": tuple(inventory), "trial_family": trial_family,
+        "trial_inventory_path": inventory_path,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
         "evidence_ceiling": manifest["evidence_ceiling"],
@@ -689,9 +788,14 @@ def evaluate_portfolio_weighting_comparisons(
     evaluation_start: pd.Timestamp,
     evaluation_end: pd.Timestamp,
     config: MultifactorDiagnosticConfig,
+    inventory: list[dict[str, Any]] | None = None,
+    inventory_path: Path | None = None,
+    trial_context: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Evaluate key composite factors across weighting and turnover penalty schemes."""
 
+    inventory = [] if inventory is None else inventory
+    trial_context = {} if trial_context is None else trial_context
     records: list[dict[str, Any]] = []
     for factor_id in WEIGHTING_COMPARISON_FACTORS:
         factor = factors[factor_id]
@@ -701,9 +805,10 @@ def evaluate_portfolio_weighting_comparisons(
             w_scheme = str(scheme["weighting_scheme"])
             penalty_lambda = float(scheme["turnover_penalty_lambda"])
 
-            lo_bt = run_long_only_backtest(
-                prices,
-                factor,
+            lo_bt = _run_recorded_trial(
+                factor_id=factor_id, direction="long_only",
+                inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
+                prices=prices, signals=factor,
                 source_provenance=source_provenance,
                 evaluation_start=evaluation_start,
                 evaluation_end=evaluation_end,
@@ -718,9 +823,10 @@ def evaluate_portfolio_weighting_comparisons(
                 signal_lag_periods=config.signal_lag_periods,
                 periods_per_year=config.periods_per_year,
             )
-            ls_bt = run_long_short_backtest(
-                prices,
-                factor,
+            ls_bt = _run_recorded_trial(
+                factor_id=factor_id, direction="long_short",
+                inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
+                prices=prices, signals=factor,
                 evaluation_start=evaluation_start,
                 evaluation_end=evaluation_end,
                 rebalance_frequency=config.rebalance_frequency,
@@ -757,6 +863,9 @@ def evaluate_portfolio_weighting_comparisons(
 def _evaluate_factor(
     *,
     factor_id: str,
+    inventory: list[dict[str, Any]],
+    inventory_path: Path | None,
+    trial_context: dict[str, Any],
     factor: pd.DataFrame,
     prices: pd.DataFrame,
     forward_returns: pd.DataFrame,
@@ -770,9 +879,10 @@ def _evaluate_factor(
     monthly_ic = daily_ic.reindex(monthly_eval_dates)
     ic_summary = information_coefficient_summary(monthly_ic)
     source_provenance = capture_backtest_source_provenance(prices, factor)
-    backtest = run_long_only_backtest(
-        prices,
-        factor,
+    backtest = _run_recorded_trial(
+        factor_id=factor_id, direction="long_only",
+        inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
+        prices=prices, signals=factor,
         source_provenance=source_provenance,
         evaluation_start=evaluation_start,
         evaluation_end=evaluation_end,
@@ -787,9 +897,10 @@ def _evaluate_factor(
         signal_lag_periods=config.signal_lag_periods,
         periods_per_year=config.periods_per_year,
     )
-    long_short_backtest = run_long_short_backtest(
-        prices,
-        factor,
+    long_short_backtest = _run_recorded_trial(
+        factor_id=factor_id, direction="long_short",
+        inventory=inventory, inventory_path=inventory_path, trial_context=trial_context,
+        prices=prices, signals=factor,
         evaluation_start=evaluation_start,
         evaluation_end=evaluation_end,
         rebalance_frequency=config.rebalance_frequency,
@@ -802,7 +913,6 @@ def _evaluate_factor(
         signal_lag_periods=config.signal_lag_periods,
         periods_per_year=config.periods_per_year,
     )
-    measured_returns = backtest.returns.iloc[1:]
     return {
         "factor_id": factor_id,
         "factor": factor,
@@ -811,10 +921,7 @@ def _evaluate_factor(
         "ic_summary": ic_summary,
         "backtest": backtest,
         "long_short_backtest": long_short_backtest,
-        "dsr": deflated_sharpe_ratio(
-            measured_returns,
-            n_trials=config.n_trials,
-        ),
+        "dsr": math.nan,
     }
 
 
@@ -840,7 +947,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock synthetic cohort wired through "
             "the 52 implemented classical price-volume alphas, equal-weighted, "
-            "in-sample IC-weighted, causal walk-forward ICIR-weighted, and "
+            "causal expanding-IC-weighted, causal walk-forward ICIR-weighted, and "
             "causal walk-forward correlation-discounted composites, "
             "cross-sectional volatility, sector, and market beta neutralization, "
             "regime-aware dynamic switching composite, and "
@@ -857,7 +964,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "slippage_bps": config.slippage_bps,
             "signal_lag_periods": config.signal_lag_periods,
             "periods_per_year": config.periods_per_year,
-            "n_trials": config.n_trials,
+            "n_trials": result["trial_family"]["n_trials_for_dsr"],
             "forward_holding_periods": config.forward_holding_periods,
             "warmup_periods": config.warmup_periods,
             "ic_weights": result["ic_weights"],
@@ -905,10 +1012,11 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "zero_cost_or_slippage_is_diagnostic": first_backtest.assumptions[
                 "zero_cost_or_slippage_is_diagnostic"
             ],
-            "n_trials_for_dsr": config.n_trials,
+            "n_trials_for_dsr": result["trial_family"]["n_trials_for_dsr"],
+            "trial_family": result["trial_family"],
             "dsr_expected_max_mix": "euler_mascheroni",
             "composite_ic_weights": (
-                "in-sample mean monthly Rank IC of the 52 implemented alphas"
+                "expanding mean monthly Rank IC from fully realized windows of the 52 implemented alphas"
             ),
             "composite_walk_forward_weights": (
                 "ICIR-weighted and correlation-discounted composites refresh "
@@ -948,11 +1056,13 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         outputs={
             "markdown_report": _project_relative_path(result["report_path"]),
             "experiment_log": _project_relative_path(result["experiment_log_path"]),
+            "trial_attempt_events": _project_relative_path(result["trial_inventory_path"]),
         },
         metrics={
             **factor_metrics,
             "pbo_summary": result["pbo_summary"],
             "weighting_comparisons": result.get("weighting_comparisons", []),
+            "trial_inventory": [{key: value for key, value in record.items() if key != "attempt_id"} for record in result["trial_inventory"]],
         },
         caveats=(
             *SYNTHETIC_RESEARCH_CAVEATS,
@@ -960,7 +1070,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "static survivor cohort is not point-in-time universe evidence",
             "not a 14-trial campaign run",
             "not evidence of real-world strategy performance",
-            "IC-weighted composite uses in-sample mean monthly Rank IC weights",
+            "IC-weighted composite uses causal expanding mean monthly Rank IC weights",
             "ICIR-weighted and correlation-discounted composites use causal "
             "walk-forward weights at monthly rebalance dates, admitting an IC "
             "labeled at s only when its execution-aligned forward-return "
@@ -970,7 +1080,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "market beta proxy does not backfill leading rolling-beta NaNs",
             "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime with signal_lag_periods=1 execution (regime.shift(1)); leading NaN regime defaults to IC-weighted composite",
             "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
-            "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag",
+            "turnover penalization (lambda=0.5) blends previous frozen targets with fresh decision-time targets; final eligibility and net exposure constraints apply",
         ),
         next_action=(
             "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite "
@@ -1093,8 +1203,8 @@ profitability.
 2. Compute classical price-volume alphas {alpha_names}.
 3. Build `EQUAL_WEIGHTED_COMPOSITE` as the equal-weight average of
    cross-sectional z-scores of those {IMPLEMENTED_ALPHA_COUNT} alphas.
-4. Build `IC_WEIGHTED_COMPOSITE` with the same z-scores and in-sample mean
-   monthly Rank IC as static supplied weights.
+4. Build `IC_WEIGHTED_COMPOSITE` with expanding mean monthly Rank IC weights
+   from fully realized windows (`{horizon_contract}`), refreshed monthly.
 5. Build `ICIR_WEIGHTED_COMPOSITE` with causal walk-forward ICIR weights: on
    each monthly rebalance date t, ICIR is estimated from monthly Rank ICs
    labeled strictly before t whose execution-aligned forward-return windows
@@ -1125,7 +1235,7 @@ profitability.
 15. Run dollar-neutral long-short decile spread backtests with `{config.quantiles}` quantiles
     and `{config.slippage_bps:.2f}` bps slippage.
 16. Compute the Deflated Sharpe Ratio of daily measured strategy returns with
-    `n_trials={config.n_trials}` and the Euler-Mascheroni expected-maximum mix.
+    `n_trials={result["trial_family"]["n_trials_for_dsr"]}` and the Euler-Mascheroni expected-maximum mix.
 17. Compute the Probability of Backtest Overfitting (PBO) across all {IMPLEMENTED_ALPHA_COUNT}
     alphas using Combinatorially Symmetric Cross-Validation (CSCV).
 
@@ -1147,7 +1257,7 @@ profitability.
 - DSR expected-maximum mix: Euler-Mascheroni constant `np.euler_gamma`
 - PBO splits: `{config.pbo_n_splits}`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
-- Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
+- Composite IC weights: causal expanding mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
 - Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs labeled strictly before t whose execution-aligned forward-return windows have closed by t (`{horizon_contract}`)
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Sector map: 5 balanced cohorts across 50 assets (10 assets per sector)
@@ -1159,18 +1269,16 @@ profitability.
 - Turnover penalty lambda: `{config.turnover_penalty_lambda:.2f}`
 - Volatility window: `{config.volatility_window}`
 
-## In-sample IC weights
+## In-sample IC summaries (descriptive only)
 
 | factor | mean monthly Rank IC |
 | --- | --- |
 {chr(10).join(weight_rows)}
 
-These IC-weighted composite weights are in-sample diagnostics. They are not
-an out-of-sample combination rule. `ICIR_WEIGHTED_COMPOSITE` and
-`CORRELATION_DISCOUNTED_COMPOSITE` replace full-sample static weights with
-causal walk-forward weights at each monthly rebalance. An IC labeled at date
-s enters the information set at rebalance date t when its execution-aligned
-forward-return window has closed by t.
+This table retains full-sample descriptive IC summaries. Executable IC,
+ICIR, correlation, neutralized, and regime composites use causal walk-forward
+parents. An IC labeled at s enters the information set at t when its
+execution-aligned forward-return window has closed by t.
 
 ## Factor diagnostics
 
@@ -1180,7 +1288,16 @@ forward-return window has closed by t.
 
 IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
-with the Euler-Mascheroni mix. All {IMPLEMENTED_ALPHA_COUNT} alphas and all composites are
+with the Euler-Mascheroni mix and across-trial Sharpe variance
+`{result["trial_family"]["trial_sharpe_variance"]}`. This run evaluated
+{result["trial_family"]["attempt_count"]} books and
+{result["trial_family"]["distinct_trial_count"]} distinct configurations across
+factors, weighting, penalties, and both directions. Reproductions share a
+semantic trial ID; append-only attempt events retain failures and repeated runs.
+DSR uses the raw distinct count as an independent-trial upper-bound sensitivity.
+Effective independence and total historical search remain unestimated. Missing
+trial Sharpe dispersion withholds DSR. PBO covers the alpha-only long-only
+family. All {IMPLEMENTED_ALPHA_COUNT} alphas and all composites are
 reported; weak or negative diagnostics are retained.
 
 ## Long-short decile spread diagnostics
@@ -1208,7 +1325,7 @@ Comparison of weighting schemes and turnover penalty (λ) across key multi-facto
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(comp_rows)}
 
-Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row). Turnover penalization (λ=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag.
+Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row). Turnover penalization (λ=0.5) blends previous frozen targets with fresh decision-time targets; final eligibility and net exposure constraints apply.
 
 ## Overfitting diagnostics (CSCV / PBO)
 
@@ -1229,7 +1346,7 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 - Static 50-name membership is survivorship-biased by construction.
 - Close-only lag-1 execution is idealized research accounting, not brokerage.
 - 5 bps slippage is a fixed diagnostic assumption, not a market-impact model.
-- IC-weighted composite uses in-sample mean monthly Rank IC weights.
+- IC-weighted composite uses causal expanding mean monthly Rank IC weights.
 - ICIR-weighted and correlation-discounted composites use causal walk-forward
   weights at monthly rebalance dates. An IC labeled at s is admitted at t
   when `{horizon_contract}`. Early rebalances remain missing until the
