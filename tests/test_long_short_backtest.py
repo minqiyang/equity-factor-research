@@ -161,3 +161,111 @@ def test_long_short_validation_errors() -> None:
     # negative costs
     with pytest.raises(ValueError, match="transaction_cost_bps"):
         run_long_short_backtest(prices, signals, transaction_cost_bps=-1.0)
+
+
+def test_long_short_inverse_volatility_weighting() -> None:
+    dates = pd.bdate_range("2025-01-06", periods=25)
+    assets = [f"A{i:02d}" for i in range(20)]
+    # A00 is top decile, very low volatility
+    # A01 is top decile, high volatility
+    # A18 is bottom decile, very low volatility
+    # A19 is bottom decile, high volatility
+    price_dict: dict[str, list[float]] = {}
+    for a in assets:
+        price_dict[a] = [100.0]
+    for i in range(1, 25):
+        for a in assets:
+            if a in ("A01", "A19"):
+                ret = 0.03 if i % 2 == 1 else -0.03
+            else:
+                ret = 0.003 if i % 2 == 1 else 0.001
+            price_dict[a].append(price_dict[a][-1] * (1.0 + ret))
+
+    prices = pd.DataFrame(price_dict, index=dates)
+    signals = pd.DataFrame(
+        {assets[i]: float(20 - i) for i in range(20)},
+        index=dates,
+    )
+
+    result = run_long_short_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        quantiles=10,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+        gross_leverage=1.0,
+    )
+
+    assert result.assumptions["weighting_scheme"] == "inverse_volatility"
+    assert result.assumptions["volatility_window"] == 10
+    assert result.assumptions["min_volatility_periods"] == 5
+
+    for date in prices.index[10:]:
+        # Dollar neutrality
+        assert result.net_holdings.loc[date].sum() == pytest.approx(0.0, abs=1e-6)
+        # Top decile: A00 has lower vol than A01 -> A00 weight > A01 weight
+        assert result.long_holdings.loc[date, "A00"] > result.long_holdings.loc[date, "A01"]
+        assert result.long_holdings.loc[date].sum() == pytest.approx(0.5, abs=1e-6)
+        # Bottom decile: A18 has lower vol than A19 -> A18 short weight > A19 short weight
+        assert result.short_holdings.loc[date, "A18"] > result.short_holdings.loc[date, "A19"]
+        assert result.short_holdings.loc[date].sum() == pytest.approx(0.5, abs=1e-6)
+
+
+def test_long_short_turnover_penalty() -> None:
+    dates = pd.bdate_range("2025-01-06", periods=15)
+    assets = [f"A{i:02d}" for i in range(20)]
+    prices = pd.DataFrame(
+        {a: [100.0 + j * 0.2 for j in range(15)] for a in assets},
+        index=dates,
+    )
+    # Signals alternate deciles between even and odd days
+    signal_data = {}
+    for i, a in enumerate(assets):
+        signal_data[a] = [
+            float(20 - i) if j % 2 == 0 else float(i + 1)
+            for j in range(15)
+        ]
+    signals = pd.DataFrame(signal_data, index=dates)
+
+    res_no_penalty = run_long_short_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        quantiles=10,
+        weighting_scheme="equal",
+        turnover_penalty_lambda=0.0,
+    )
+
+    res_with_penalty = run_long_short_backtest(
+        prices,
+        signals,
+        rebalance_frequency="D",
+        quantiles=10,
+        weighting_scheme="equal",
+        turnover_penalty_lambda=0.5,
+    )
+
+    assert res_with_penalty.assumptions["turnover_penalty_lambda"] == 0.5
+    assert res_with_penalty.turnover.sum() < res_no_penalty.turnover.sum()
+
+
+def test_long_short_volatility_and_turnover_validation() -> None:
+    prices, signals = _make_long_short_panels(n_assets=10)
+
+    # Invalid turnover_penalty_lambda
+    with pytest.raises(ValueError, match="turnover_penalty_lambda"):
+        run_long_short_backtest(prices, signals, turnover_penalty_lambda=-0.1)
+
+    with pytest.raises(ValueError, match="turnover_penalty_lambda"):
+        run_long_short_backtest(prices, signals, turnover_penalty_lambda=1.0)
+
+    # Invalid volatility_window
+    with pytest.raises(ValueError, match="volatility_window"):
+        run_long_short_backtest(prices, signals, volatility_window=0)
+
+    # Invalid min_volatility_periods
+    with pytest.raises(ValueError, match="min_volatility_periods"):
+        run_long_short_backtest(prices, signals, volatility_window=10, min_volatility_periods=15)
+

@@ -252,3 +252,170 @@ def test_universe_mask_validation_errors() -> None:
             top_n=1,
             universe_mask=bad_index_mask,
         )
+
+
+def test_inverse_volatility_weighting_scheme() -> None:
+    # 25 days: AAA has low volatility (~0.001), BBB has high volatility (~0.03)
+    dates = pd.bdate_range("2025-01-06", periods=25)
+    aaa_prices = [100.0]
+    bbb_prices = [100.0]
+    for i in range(1, 25):
+        aaa_ret = 0.003 if i % 2 == 1 else 0.001
+        aaa_prices.append(aaa_prices[-1] * (1.0 + aaa_ret))
+        bbb_ret = 0.03 if i % 2 == 1 else -0.03
+        bbb_prices.append(bbb_prices[-1] * (1.0 + bbb_ret))
+
+    prices = pd.DataFrame(
+        {
+            "AAA": aaa_prices,
+            "BBB": bbb_prices,
+            "CCC": [100.0] * 25,
+        },
+        index=dates,
+    )
+    # Top 2 are AAA and BBB
+    signals = pd.DataFrame(
+        {
+            "AAA": 10.0,
+            "BBB": 9.0,
+            "CCC": 1.0,
+        },
+        index=dates,
+    )
+    prov = capture_backtest_source_provenance(prices, signals)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=prov,
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_n=2,
+        weighting_scheme="inverse_volatility",
+        volatility_window=10,
+        min_volatility_periods=5,
+    )
+
+    assert result.assumptions["weighting_scheme"] == "inverse_volatility"
+    assert result.assumptions["volatility_window"] == 10
+    assert result.assumptions["min_volatility_periods"] == 5
+
+    # After warmup (position >= 6): AAA has lower vol than BBB, so AAA weight > BBB weight
+    for date in prices.index[10:]:
+        w_aaa = result.holdings.loc[date, "AAA"]
+        w_bbb = result.holdings.loc[date, "BBB"]
+        assert w_aaa > w_bbb
+        assert w_aaa + w_bbb == pytest.approx(1.0, abs=1e-6)
+        assert result.holdings.loc[date, "CCC"] == pytest.approx(0.0)
+
+
+def test_turnover_penalty_lambda_reduces_turnover() -> None:
+    dates = pd.bdate_range("2025-01-06", periods=10)
+    prices = pd.DataFrame(
+        {
+            "AAA": [100.0 + i * 0.5 for i in range(10)],
+            "BBB": [100.0 + i * 0.5 for i in range(10)],
+        },
+        index=dates,
+    )
+    # Signals alternate top asset between AAA and BBB every day
+    signals = pd.DataFrame(
+        {
+            "AAA": [10.0 if i % 2 == 0 else 1.0 for i in range(10)],
+            "BBB": [1.0 if i % 2 == 0 else 10.0 for i in range(10)],
+        },
+        index=dates,
+    )
+    prov = capture_backtest_source_provenance(prices, signals)
+
+    # Without turnover penalty (lambda = 0.0)
+    res_no_penalty = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=prov,
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_n=1,
+        weighting_scheme="equal",
+        turnover_penalty_lambda=0.0,
+    )
+
+    # With turnover penalty (lambda = 0.5)
+    res_with_penalty = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=prov,
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_n=1,
+        weighting_scheme="equal",
+        turnover_penalty_lambda=0.5,
+    )
+
+    assert res_with_penalty.assumptions["turnover_penalty_lambda"] == 0.5
+    # Turnover must be strictly lower with penalty
+    assert res_with_penalty.turnover.sum() < res_no_penalty.turnover.sum()
+
+
+def test_weighting_and_turnover_validation_errors() -> None:
+    prices, signals = _make_test_panels()
+    prov = capture_backtest_source_provenance(prices, signals)
+
+    # Invalid weighting_scheme
+    with pytest.raises(BacktestValidationError, match="weighting_scheme_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=prov,
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            weighting_scheme="unsupported",  # type: ignore[arg-type]
+        )
+
+    # Invalid turnover_penalty_lambda
+    with pytest.raises(BacktestValidationError, match="turnover_penalty_lambda_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=prov,
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            turnover_penalty_lambda=-0.1,
+        )
+
+    with pytest.raises(BacktestValidationError, match="turnover_penalty_lambda_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=prov,
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            turnover_penalty_lambda=1.0,
+        )
+
+    # Invalid volatility_window
+    with pytest.raises(BacktestValidationError, match="volatility_window_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=prov,
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            volatility_window=0,
+        )
+
+    # Invalid min_volatility_periods
+    with pytest.raises(BacktestValidationError, match="min_volatility_periods_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=prov,
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            volatility_window=10,
+            min_volatility_periods=15,
+        )
+
