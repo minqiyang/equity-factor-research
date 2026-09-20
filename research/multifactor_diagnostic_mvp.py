@@ -772,6 +772,13 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
                 "20-day rolling return standard deviation with min_periods=5; "
                 "leading dates without a full minimum window remain NaN"
             ),
+            "sector_map": (
+                "5 balanced cohorts across 50 assets (10 assets per sector)"
+            ),
+            "market_beta_proxy": (
+                "60-day rolling return beta against equal-weighted market return "
+                "with min_periods=20; leading dates without a full minimum window remain NaN"
+            ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
             "brokerage_integration": False,
@@ -798,6 +805,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "labeled at s only when its execution-aligned forward-return "
             "window has closed by t",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
+            "sector map uses static balanced cohorts across 50 assets",
+            "market beta proxy does not backfill leading rolling-beta NaNs",
         ),
         next_action=(
             "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite "

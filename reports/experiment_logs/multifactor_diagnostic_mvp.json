@@ -19,9 +19,11 @@
     "live_trading": false,
     "long_short_dollar_neutral": true,
     "long_short_quantiles": 10,
+    "market_beta_proxy": "60-day rolling return beta against equal-weighted market return with min_periods=20; leading dates without a full minimum window remain NaN",
     "n_trials_for_dsr": 61,
     "not_point_in_time_universe_evidence": true,
     "rebalance_frequency": "ME",
+    "sector_map": "5 balanced cohorts across 50 assets (10 assets per sector)",
     "selected_assets_per_rebalance": 5,
     "slippage_bps": 5.0,
     "slippage_model": "fixed_bps_on_target_weight_turnover; 5.00 bps per unit of drift-adjusted target-weight turnover on post-return portfolio value",
@@ -49,7 +51,9 @@
     "not evidence of real-world strategy performance",
     "IC-weighted composite uses in-sample mean monthly Rank IC weights",
     "ICIR-weighted and correlation-discounted composites use causal walk-forward weights at monthly rebalance dates, admitting an IC labeled at s only when its execution-aligned forward-return window has closed by t",
-    "volatility proxy does not backfill leading rolling-standard-deviation NaNs"
+    "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
+    "sector map uses static balanced cohorts across 50 assets",
+    "market beta proxy does not backfill leading rolling-beta NaNs"
   ],
   "config": {
     "forward_holding_periods": 21,

@@ -958,7 +958,7 @@ reopen identity, D8, A2, or formal interpretation from this result.
 
 ### Hypothesis
 
-Cross-sectional risk neutralization can be expanded from return volatility alone to include sector/industry demeaning (`SECTOR_NEUTRAL_COMPOSITE`) and market beta orthogonalization (`MARKET_BETA_NEUTRAL_COMPOSITE`) on the committed 50-stock synthetic diagnostic cohort. Both models will produce pure, risk-adjusted composites with zero net sector bet and zero market directional exposure, expanding the multi-factor diagnostic suite from 59 to 61 factors.
+Cross-sectional risk neutralization can be expanded from return volatility alone to include sector/industry demeaning (`SECTOR_NEUTRAL_COMPOSITE`) and market beta orthogonalization (`MARKET_BETA_NEUTRAL_COMPOSITE`) on the committed 50-stock synthetic diagnostic cohort. Both models will produce pure, risk-adjusted composites with zero net sector bet and zero market directional exposure at the cross-sectional factor score level, expanding the multi-factor diagnostic suite from 59 to 61 factors.
 
 ### Data Source
 
@@ -1018,7 +1018,7 @@ Both new composites exhibit positive in-sample mean IC (`0.0826` and `0.0769`), 
 
 ### Limitations
 
-Static membership, synthetic prices, companion synthetic OHLCV, typical-price VWAP proxy, idealized close-reset execution, and no dataset review. Market beta proxy requires 20 observations before producing non-NaN values. Sector map uses static balanced cohorts.
+Static membership, synthetic prices, companion synthetic OHLCV, typical-price VWAP proxy, idealized close-reset execution, and no dataset review. Market beta proxy requires 20 observations before producing non-NaN values. Sector map uses static balanced cohorts. Neutralization applies strictly to cross-sectional factor scores of the in-sample IC-weighted composite; backtest portfolio holdings remain unconstrained on sector and beta (top-N and decile quantile selection without sector-exposure or beta-neutral constraints).
 
 ### Next Action
 

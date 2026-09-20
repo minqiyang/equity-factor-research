@@ -479,7 +479,7 @@ def _realized_ic_history(
             pd.DatetimeIndex(past.index[missing]),
             side="right",
         ) - 1
-    admitted = (positions < 0) | (positions + horizon_rows <= t_pos)
+    admitted = (positions >= 0) & (positions + horizon_rows <= t_pos)
     return past.iloc[admitted]
 
 
