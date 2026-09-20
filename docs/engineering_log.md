@@ -10061,3 +10061,16 @@ This ablation round completes the implementation and machine verification of sev
 - Independent formal review by `GROK_REVIEW` on clean detached worktree: `PASS (MATERIAL: 0)` in `coord/reports/m4_0_parquet_adapter_review.md`.
 - Addressed advisories ADV-M40-1 (calendar-day midnight flooring for timestamped daily bars), ADV-M40-2 (explicit `sort=True` in panel concat), ADV-M40-3 (cohort wording precision), and ADV-M40-4 (dedicated edge-case unit tests).
 - Implementation report recorded in `coord/reports/m4_0_parquet_adapter_impl.md`.
+
+## 2026-09-20 — Milestone 4.0 Step 4: real-data multi-factor diagnostic runner
+
+- Working branch `feat/m4-0-real-data-diagnostic-runner` from baseline `01a2607` (`main` after PR #245).
+- Implemented `research/real_data_multifactor_diagnostic.py` wiring `BLUECHIP_50_COHORT` and `SPY.US` through `load_eod_cohort_panels` into the committed 62-trial diagnostic path (52 classical price-volume alphas plus 10 composites/interactions).
+- Research prices use vendor `adjusted_close`; OHLC is scaled by `adjusted_close / close` and volume by the inverse ratio so dollar volume stays on a matching price/volume basis. `SPY.US` adjusted close is the long-only accounting benchmark. A separate cash-dividend overlay is refused (PIT-007).
+- Reused M01-M11 causal parents: lag-1 execution, closed-window walk-forward IC weights, decision-time frozen smoothing targets, netted gross exposure, solvency guards, across-trial Sharpe variance for DSR, and append-only trial inventory logging.
+- Official outputs: `reports/real_data_multifactor_diagnostic.md`, `reports/experiment_logs/real_data_multifactor_diagnostic.json`, and `reports/experiment_logs/real_data_multifactor_diagnostic.trials.jsonl`. Tracked records redact private absolute paths.
+- Added `tests/test_real_data_multifactor_diagnostic.py` on synthetic temporary Parquet fixtures so CI does not require local private data.
+- `src/reporting/experiment_log.py` accepts `DIAGNOSTIC_REAL_DATA_CAVEATS`. The synthetic experiment registry skips `real_data_multifactor_diagnostic` logs.
+- Experiment log entry `20260920-001-real-data-multifactor-diagnostic`. Evidence ceiling remains `DIAGNOSTIC_ONLY`. Readiness decision `diagnostic_ready_with_low_caveats`. Survivorship bias remains explicit.
+- Official run on the local 50-stock window `2016-08-08` through `2026-08-07` (2,514 source rows) completed 156 books / 148 distinct trials with zero failed attempts. Tracked outputs redact private paths.
+- Verification: focused real-data tests 10 passed; full `pytest tests/ -q --basetemp=/tmp/efr-pytest-m40-real` 3779 passed, 2 skipped; `ruff check .` clean; `compileall` of `src tests research lean` clean; `python scripts/repo_map.py` regenerated (`research` 25 files, `tests` 233 files).

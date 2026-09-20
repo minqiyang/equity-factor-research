@@ -1189,6 +1189,141 @@ Static cohort, synthetic prices, companion synthetic OHLCV, typical-price VWAP p
 
 Keep as a DIAGNOSTIC_ONLY regime-switching composite study. Advance to the next research milestone.
 
+## 20260920-001-real-data-multifactor-diagnostic
+
+### Experiment ID
+
+`20260920-001-real-data-multifactor-diagnostic`
+
+### Date
+
+`2026-09-20`
+
+### Hypothesis
+
+The committed 62-trial multi-factor diagnostic path (52 classical price-volume
+alphas plus 10 composites and interactions) can run on the local EODHD 50-stock
+blue-chip cohort plus `SPY.US` under `DIAGNOSTIC_ONLY` status, preserving
+M01-M11 causality and accounting invariants.
+
+### Data Source
+
+Local EODHD daily Parquet snapshot identified as
+`eodhd_eod_acquisition_snapshot_20260808T005805Z` with relative coverage
+inventory `per_stock_coverage.json`. Private-manifest IDs and actual file
+digests remain in the private inventory. Tracked records use redacted
+placeholders `<redacted-local-eodhd-snapshot>` and
+`<redacted-local-per-stock-coverage-inventory>`. No private absolute path and
+no unapproved digest are recorded here.
+
+`canonicalization_id`: not allocated for this diagnostic-scope snapshot.
+`environment_id`: local research workstation; not a locked evidence
+environment. `environment_lock_sha256`: not publication-approved.
+
+Vendor: EODHD. Schema: daily OHLCV Parquet with `date`, `open`, `high`, `low`,
+`close`, `adjusted_close`, `volume`. Research close is vendor
+`adjusted_close`. Open, high, and low are scaled by `adjusted_close / close`.
+Volume is scaled by the inverse ratio so dollar volume stays on a matching
+price/volume basis. VWAP is typical price on those scaled bars. No silent
+fill. License documents remain private. Readiness audit decision:
+`diagnostic_ready_with_low_caveats` in
+`reports/real_data_readiness_audit_bluechip50.md`.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name liquid blue-chip diagnostic cohort `BLUECHIP_50_COHORT`.
+Survivorship-biased by construction (current-membership snapshot). Not
+point-in-time membership evidence. `SPY.US` is the accounting benchmark and is
+excluded from the factor universe.
+
+### Date Range
+
+Requested source window `2016-08-08` through `2026-08-07` (2,514 trading days).
+Evaluation begins after 25-row alpha warm-up. The 2025-05-01 through
+2026-05-31 interval remains `historical_evaluation` and is not a pristine
+holdout.
+
+### Features / Factors
+
+52 implemented classical price-volume alphas plus 10 composites/interactions:
+`EQUAL_WEIGHTED_COMPOSITE`, `IC_WEIGHTED_COMPOSITE`,
+`ICIR_WEIGHTED_COMPOSITE`, `CORRELATION_DISCOUNTED_COMPOSITE`,
+`ALPHA_PRODUCT_INTERACTION`, `CONDITIONAL_RANK_INTERACTION`,
+`NEUTRALIZED_IC_COMPOSITE`, `SECTOR_NEUTRAL_COMPOSITE`,
+`MARKET_BETA_NEUTRAL_COMPOSITE`, `REGIME_SWITCHING_COMPOSITE`.
+
+Signal lag: 1 observed source row. Walk-forward IC weights admit a label at
+`s` on rebalance `t` only when
+`source_row(s) + signal_lag_periods + forward_holding_periods <= source_row(t)`.
+Turnover smoothing uses decision-time frozen targets. `known_at <= decision_time`.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+long-short 10 quantiles, `signal_lag_periods=1`, `forward_holding_periods=21`,
+`ridge_alpha=0.1`, DSR with Euler-Mascheroni mix and across-trial Sharpe
+variance, PBO `n_splits=8`. Official books use `weighting_scheme="equal"` and
+`turnover_penalty_lambda=0.0`. A 4×4 weighting comparison grid is also
+recorded.
+
+### Benchmark
+
+`SPY.US` vendor adjusted close as the long-only accounting comparator.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Rebalance Frequency
+
+Month-end last observed source row. Execution timing
+`after_close_signal_next_observed_close_v1`.
+
+### Performance Metrics
+
+Named diagnostic metrics are recorded in
+`reports/real_data_multifactor_diagnostic.md` and
+`reports/experiment_logs/real_data_multifactor_diagnostic.json`. Trial
+attempts are appended to
+`reports/experiment_logs/real_data_multifactor_diagnostic.trials.jsonl`.
+Status: computed. These values remain `DIAGNOSTIC_ONLY` workflow diagnostics.
+
+### Sample Split
+
+No purged train/validation/test split. The full requested window is an
+exploratory diagnostic sample. Protected-sample classification:
+`historical_evaluation`. Access-record identifier: not allocated for this
+diagnostic-scope run.
+
+### Result Summary
+
+The runner completed the 62-trial diagnostic path on the local blue-chip
+cohort. Weak and negative diagnostics are retained. This is not a
+profitability claim, not `RESEARCH_PASS`, and not formal interpretation.
+
+### Limitations
+
+Static survivor membership; vendor-adjusted series without independent
+event-level dividend/split reconciliation; typical-price VWAP proxy;
+idealized close-reset execution; 5 bps slippage assumption; static balanced
+sector cohorts rather than GICS point-in-time sectors; DSR uses raw distinct
+trial count as an independence sensitivity. A separate cash-dividend overlay
+is refused (PIT-007).
+
+### Next Action
+
+Keep as a `DIAGNOSTIC_ONLY` real-data pipeline check. Do not grant formal
+interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

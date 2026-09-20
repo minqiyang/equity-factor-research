@@ -9,6 +9,9 @@ profitability, or trading readiness.
 
 ### Added
 
+- `research/real_data_multifactor_diagnostic.py`: Added the Milestone 4.0 local EODHD 50-stock multi-factor diagnostic runner. It loads `BLUECHIP_50_COHORT` plus `SPY.US` through `load_eod_cohort_panels`, evaluates all 62 factor trials with lag-1 execution, closed-window walk-forward IC weights, DSR across-trial variance, trial inventory logging, portfolio-weighting comparisons, and PBO, and writes `reports/real_data_multifactor_diagnostic.md` plus JSON/JSONL sidecars. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+- `tests/test_real_data_multifactor_diagnostic.py`: Added synthetic `tmp_path` Parquet fixtures covering configuration propagation, `SPY.US` benchmark handling, trial recording, and report structure without private data.
+
 - `src/data/parquet_loader.py`: Added local EODHD Parquet loaders `load_eod_parquet` and `load_eod_cohort_panels` that validate dates, strictly positive prices, non-negative volume, and boolean-disguised numeric columns, then align per-symbol files into wide OHLCV panels.
 - `src/data/bluechip_cohort.py`: Added the static 50-stock liquid blue-chip diagnostic cohort and `SPY.US` benchmark identifier for Milestone 4.0 DIAGNOSTIC_ONLY use.
 - `tests/test_parquet_loader.py`: Added synthetic `tmp_path` Parquet fixtures covering valid loads, inventory mapping, date filters, and integrity refusals.
@@ -57,6 +60,11 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `src/reporting/experiment_log.py`: Added `DIAGNOSTIC_REAL_DATA_CAVEATS` and optional `required_caveats` so local real-data diagnostic sidecars are not forced to claim synthetic-only scope.
+- `src/reporting/experiment_registry.py`: The synthetic registry skips `real_data_multifactor_diagnostic` logs.
+- `research/multifactor_diagnostic_mvp.py`: Portfolio-weighting comparisons skip missing factor keys so a reduced diagnostic can evaluate a subset of the 4×4 grid.
+- `EXPERIMENT_LOG.md`: Added `20260920-001-real-data-multifactor-diagnostic`.
+- `docs/repo_map.md`: Regenerated map counts (`research` 25 files, `tests` 233 files).
 - `docs/repo_map.md`: Regenerated repository map reflecting the additions of `src/features/regime.py` and `tests/test_regime.py` (16 mapped feature files, 230 mapped test files).
 - `research/multifactor_diagnostic_mvp.py`: Documented lag-1 execution (`regime.shift(signal_lag_periods)`) and leading NaN fallback to `IC_WEIGHTED_COMPOSITE` in `write_report` limitations and `write_multifactor_experiment_log` assumptions and caveats, resolving ADV-243-1 and ADV-243-2.
 - `tests/test_multifactor_diagnostic_mvp.py`: Pinned all 16 committed portfolio weighting comparison rows in `OFFICIAL_COMPARISON_ROWS` within `test_multifactor_diagnostic_official_report_table_matches_default_fixture` (resolving ADV-241-1).

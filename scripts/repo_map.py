@@ -53,7 +53,7 @@ MAJOR_DIRS = [
         "src/reporting",
         "Experiment log and registry helpers; plotting helpers are placeholder-only future work.",
     ),
-    ("research", "Synthetic and committed-fixture demo workflows."),
+    ("research", "Synthetic, committed-fixture, and local real-data diagnostic workflows."),
     ("tests", "Deterministic tests for research logic and guardrails."),
     ("tests/fixtures", "Tiny committed synthetic fixtures only."),
     ("lean", "LEAN-adjacent planning/scaffold files under no-trading guardrails."),

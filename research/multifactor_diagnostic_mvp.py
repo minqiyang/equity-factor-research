@@ -798,6 +798,8 @@ def evaluate_portfolio_weighting_comparisons(
     trial_context = {} if trial_context is None else trial_context
     records: list[dict[str, Any]] = []
     for factor_id in WEIGHTING_COMPARISON_FACTORS:
+        if factor_id not in factors:
+            continue
         factor = factors[factor_id]
         source_provenance = capture_backtest_source_provenance(prices, factor)
         for scheme in WEIGHTING_COMPARISON_SCHEMES:
