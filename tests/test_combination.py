@@ -14,7 +14,9 @@ from features.combination import (
     walk_forward_correlation_discounted_composite,
     walk_forward_icir_weighted_composite,
 )
+from features.diagnostics import factor_rank_information_coefficient
 from features.operators import cross_sectional_zscore
+from research.walking_skeleton_mvp import execution_aligned_forward_returns
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -312,6 +314,112 @@ def test_walk_forward_correlation_uses_trailing_factor_values_only() -> None:
     assert_series_equal(result.loc[dates[1]], mutated.loc[dates[1]], check_names=False)
     assert result.loc[dates[0]].isna().all()
 
+
+def test_walk_forward_weights_ignore_prices_after_t_inside_open_ic_window() -> None:
+    n_dates = 36
+    dates = pd.bdate_range("2021-01-04", periods=n_dates)
+    columns = ["A", "B", "C", "D"]
+    rng = np.random.default_rng(20260919)
+    prices = pd.DataFrame(
+        100.0 + np.cumsum(rng.normal(0.0, 1.0, size=(n_dates, 4)), axis=0),
+        index=dates,
+        columns=columns,
+    )
+    factor_a = pd.DataFrame(rng.normal(size=(n_dates, 4)), index=dates, columns=columns)
+    factor_b = pd.DataFrame(rng.normal(size=(n_dates, 4)), index=dates, columns=columns)
+    execution_lag = 1
+    holding = 5
+    horizon = execution_lag + holding
+    ic_positions = [0, 2, 4, 6, 8, 12]
+    rebalance_positions = [14, 24]
+    t = dates[rebalance_positions[0]]
+    open_ic_date = dates[12]
+    assert ic_positions[-1] + horizon > rebalance_positions[0]
+    assert ic_positions[-2] + horizon <= rebalance_positions[0]
+
+    def ic_history_from_prices(price_panel: pd.DataFrame) -> pd.DataFrame:
+        forward = execution_aligned_forward_returns(
+            price_panel,
+            holding_periods=holding,
+            execution_lag=execution_lag,
+        )
+        return pd.DataFrame(
+            {
+                "fa": factor_rank_information_coefficient(factor_a, forward).iloc[ic_positions],
+                "fb": factor_rank_information_coefficient(factor_b, forward).iloc[ic_positions],
+            },
+            index=dates[ic_positions],
+        )
+
+    history = ic_history_from_prices(prices)
+    rebalance_dates = pd.DatetimeIndex(dates[rebalance_positions])
+    icir = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        history,
+        rebalance_dates,
+        min_ic_periods=5,
+        execution_lag_periods=execution_lag,
+        forward_holding_periods=holding,
+    )
+    corr = walk_forward_correlation_discounted_composite(
+        [factor_a, factor_b],
+        history,
+        rebalance_dates,
+        ridge_alpha=0.1,
+        min_ic_periods=1,
+        execution_lag_periods=execution_lag,
+        forward_holding_periods=holding,
+    )
+
+    mutated_prices = prices.copy()
+    scale = np.array([0.25, 3.0, 0.40, 2.50])
+    mutated_prices.loc[mutated_prices.index > t] = (
+        mutated_prices.loc[mutated_prices.index > t].to_numpy() * scale
+    )
+    mutated_history = ic_history_from_prices(mutated_prices)
+    assert not np.allclose(
+        mutated_history.loc[open_ic_date].to_numpy(dtype=float),
+        history.loc[open_ic_date].to_numpy(dtype=float),
+        equal_nan=True,
+    )
+
+    mutated_icir = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        mutated_history,
+        rebalance_dates,
+        min_ic_periods=5,
+        execution_lag_periods=execution_lag,
+        forward_holding_periods=holding,
+    )
+    mutated_corr = walk_forward_correlation_discounted_composite(
+        [factor_a, factor_b],
+        mutated_history,
+        rebalance_dates,
+        ridge_alpha=0.1,
+        min_ic_periods=1,
+        execution_lag_periods=execution_lag,
+        forward_holding_periods=holding,
+    )
+    assert_series_equal(icir.loc[t], mutated_icir.loc[t], check_names=False)
+    assert_series_equal(corr.loc[t], mutated_corr.loc[t], check_names=False)
+
+    unfiltered = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        history,
+        rebalance_dates,
+        min_ic_periods=5,
+    )
+    unfiltered_mutated = walk_forward_icir_weighted_composite(
+        [factor_a, factor_b],
+        mutated_history,
+        rebalance_dates,
+        min_ic_periods=5,
+    )
+    assert not np.allclose(
+        unfiltered.loc[t].to_numpy(dtype=float),
+        unfiltered_mutated.loc[t].to_numpy(dtype=float),
+        equal_nan=True,
+    )
 
 
 def test_combination_module_has_no_abstract_class_hierarchy() -> None:

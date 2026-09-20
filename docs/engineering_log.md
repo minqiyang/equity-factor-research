@@ -1,5 +1,25 @@
 # Engineering Log
 
+## 2026-09-19 - Return-horizon causal walk-forward weights and LS table pins
+
+- Working root `efr-causal-horizon-20260919` on
+  `codex/causal-horizon-ls-pins-20260919` from baseline `d0c979a`.
+- Task `TASK-CAUSAL-HORIZON-LS-PINS-001` addresses ADV-235-1, ADV-234-3, and
+  ADV-234-4.
+- Walk-forward ICIR and correlation-discounted helpers admit monthly Rank ICs
+  at rebalance date t when
+  `source_row(s) + execution_lag_periods + forward_holding_periods <=
+  source_row(t)`. The pipeline supplies `signal_lag_periods=1` and
+  `forward_holding_periods=21`. Pairwise factor-value correlation still uses
+  trailing panels through t inclusive.
+- Official long-short table labels sequential holding-period book metrics
+  separately from rebalance-date one-day bucket diagnostics. Official LS
+  Sharpe values for all 59 factors are pinned in
+  `OFFICIAL_FOUR_DECIMAL_ROWS` with the established composite tolerance.
+- Ablation: horizon filtering lives in the walk-forward helpers; the pipeline
+  passes lag and holding from config. Long-short metric construction is
+  unchanged. Static one-shot combination helpers stay public.
+
 ## 2026-09-19 - Causal walk-forward composite weights and volatility proxy
 
 - Working root `efr-walk-forward-composite-20260919` on

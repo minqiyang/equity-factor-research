@@ -847,6 +847,105 @@ factor before that factor receives nonzero weight. This is not a 14-trial run.
 Keep as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. Do not
 reopen identity, D8, A2, or formal interpretation from this result.
 
+## 20260919-007-causal-horizon-ls-pins
+
+### Experiment ID
+
+`20260919-007-causal-horizon-ls-pins`
+
+### Date
+
+`2026-09-19`
+
+### Hypothesis
+
+Walk-forward ICIR and correlation-discounted weights that admit a monthly
+Rank IC at rebalance date t only after its execution-aligned forward-return
+window has closed (`source_row(s) + 1 + 21 <= source_row(t)`) can replace
+label-date-only `history.index < t` cuts on the same 50-stock diagnostic
+cohort. Official long-short Sharpe values can be pinned, and the LS table
+can label sequential holding-period book metrics separately from
+rebalance-date one-day bucket diagnostics.
+
+### Data Source
+
+Synthetic local generator from
+`tests/fixtures/walking_skeleton/diagnostic_cohort_v1.json`. Close prices use
+seed `20260919`. Companion open, low, and volume use `seed + 1`. High is an
+additional `seed + 1` draw after those panels. VWAP is typical price
+`(high + low + close) / 3`. No vendor, private path, or real market data.
+
+### Dataset Review Decision
+
+`dataset_manifest_reviewed = false`. `formal_interpretation_eligible = false`.
+Evidence ceiling `DIAGNOSTIC_ONLY`. No dataset-review decision ID.
+
+### Universe
+
+Static 50-name diagnostic slots `D50_01` through `D50_50`. Survivorship-biased
+by construction. Not point-in-time membership evidence.
+
+### Date Range
+
+Source `2021-01-04` through `2023-11-27`. Evaluation `2021-02-08` through
+`2023-11-27` after 25-row alpha warm-up.
+
+### Features / Factors
+
+Same 52 implemented alphas as `20260919-006-walk-forward-composite-weights`,
+plus the same seven composites and interactions. On each monthly rebalance
+date t, expanding-window ICIR and mean IC use monthly Rank ICs labeled
+strictly before t whose execution-aligned windows have closed by t.
+Correlation uses trailing factor values through t.
+
+### Parameters
+
+Monthly last-row rebalance (`ME`), long-only top 5 equal-weight names,
+`signal_lag_periods=1`, `forward_holding_periods=21`, `n_trials=59` for DSR
+with Euler-Mascheroni mix, `ridge_alpha=0.1`, ICIR `min_ic_periods=5`.
+
+### Benchmark
+
+Synthetic equal-weight 50-name diagnostic-cohort price path. Cost-free.
+
+### Transaction Costs
+
+`0.00` bps. Zero-cost remainder is diagnostic.
+
+### Slippage Model
+
+Fixed `5.00` bps on drift-adjusted target-weight turnover.
+
+### Metrics
+
+Recorded in `reports/multifactor_diagnostic_mvp.md` and
+`reports/experiment_logs/multifactor_diagnostic_mvp.json`. Individual alpha,
+equal-weighted, in-sample IC-weighted, interaction, and neutralized-IC rows
+match `20260919-006`. Horizon-complete walk-forward composites:
+
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | LS Sharpe |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ICIR_WEIGHTED_COMPOSITE | -0.0206 | -0.1465 | -0.9043 | 0.0001 | -26.18% | -0.8854 | -36.47% | -0.6002 |
+| CORRELATION_DISCOUNTED_COMPOSITE | -0.0019 | -0.0129 | -0.0839 | 0.0132 | 0.36% | 0.0693 | -27.49% | 0.2465 |
+
+These walk-forward composites remain weaker than the previous label-date-only
+walk-forward versions. Weak and negative diagnostics are retained. Values are
+`DIAGNOSTIC_ONLY` synthetic diagnostics.
+
+### Limitations
+
+Static membership, synthetic prices, companion synthetic OHLCV, typical-price
+VWAP proxy, in-sample IC-weighted composite, idealized close-reset execution,
+and no dataset review. Walk-forward ICIR requires five realized monthly ICs
+per factor before that factor receives nonzero weight. Long-short Sharpe is
+a sequential holding-period book metric; decile-spread mean and monotonicity
+are rebalance-date one-day bucket diagnostics.
+
+### Next Action
+
+Keep as a DIAGNOSTIC_ONLY implemented-alpha and composite wiring check. Do not
+reopen identity, D8, A2, or formal interpretation from this result.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

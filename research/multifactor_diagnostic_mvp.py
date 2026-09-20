@@ -492,12 +492,16 @@ def run_multifactor_diagnostic_mvp(
             ordered_alphas,
             ic_history,
             monthly_eval_dates,
+            execution_lag_periods=config.signal_lag_periods,
+            forward_holding_periods=config.forward_holding_periods,
         ),
         CORRELATION_DISCOUNTED_COMPOSITE: walk_forward_correlation_discounted_composite(
             ordered_alphas,
             ic_history,
             monthly_eval_dates,
             ridge_alpha=config.ridge_alpha,
+            execution_lag_periods=config.signal_lag_periods,
+            forward_holding_periods=config.forward_holding_periods,
         ),
         ALPHA_PRODUCT_INTERACTION: factor_product_interaction(
             alpha_panels[ALPHA_016],
@@ -714,8 +718,11 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "composite_walk_forward_weights": (
                 "ICIR-weighted and correlation-discounted composites refresh "
                 "weights on each monthly rebalance date t using monthly Rank "
-                "ICs strictly before t; correlation-discounted also uses "
-                "trailing factor-value correlation through t"
+                "ICs labeled strictly before t whose execution-aligned "
+                "forward-return windows have closed by t "
+                "(source_row(s) + signal_lag_periods + forward_holding_periods "
+                "<= source_row(t)); correlation-discounted also uses trailing "
+                "factor-value correlation through t"
             ),
             "volatility_proxy": (
                 "20-day rolling return standard deviation with min_periods=5; "
@@ -743,7 +750,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "not evidence of real-world strategy performance",
             "IC-weighted composite uses in-sample mean monthly Rank IC weights",
             "ICIR-weighted and correlation-discounted composites use causal "
-            "walk-forward weights at monthly rebalance dates",
+            "walk-forward weights at monthly rebalance dates, admitting an IC "
+            "labeled at s only when its execution-aligned forward-return "
+            "window has closed by t",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
         ),
         next_action=(
@@ -763,6 +772,10 @@ def write_report(*, result: dict[str, Any]) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     first_backtest: BacktestResult = result["factors"][ALPHA_IDS[0]]["backtest"]
     pbo_summary = result["pbo_summary"]
+    horizon_contract = (
+        f"source_row(s) + {config.signal_lag_periods} + "
+        f"{config.forward_holding_periods} <= source_row(t)"
+    )
 
     rows = []
     ls_rows = []
@@ -842,11 +855,14 @@ profitability.
    monthly Rank IC as static supplied weights.
 5. Build `ICIR_WEIGHTED_COMPOSITE` with causal walk-forward ICIR weights: on
    each monthly rebalance date t, ICIR is estimated from monthly Rank ICs
-   strictly before t (expanding window, minimum 5 observations per factor).
-   Those weights are held until the next rebalance.
+   labeled strictly before t whose execution-aligned forward-return windows
+   have closed by t (`{horizon_contract}`). Expanding window,
+   minimum 5 observations per factor. Those weights are held until the next
+   rebalance.
 6. Build `CORRELATION_DISCOUNTED_COMPOSITE` with causal walk-forward
-   collinearity-discounted weights: expanding-window mean monthly Rank IC
-   strictly before t, and pairwise factor-value correlation through t.
+   collinearity-discounted weights: expanding-window mean of those same
+   horizon-complete monthly Rank ICs, and pairwise factor-value correlation
+   through t.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
 8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
    return volatility. Leading dates without five observations remain NaN.
@@ -882,7 +898,7 @@ profitability.
 - PBO splits: `{config.pbo_n_splits}`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
-- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs strictly before t
+- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs labeled strictly before t whose execution-aligned forward-return windows have closed by t (`{horizon_contract}`)
 - Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Long-short quantiles: `{config.quantiles}`
 
@@ -895,7 +911,9 @@ profitability.
 These IC-weighted composite weights are in-sample diagnostics. They are not
 an out-of-sample combination rule. `ICIR_WEIGHTED_COMPOSITE` and
 `CORRELATION_DISCOUNTED_COMPOSITE` replace full-sample static weights with
-causal walk-forward weights at each monthly rebalance.
+causal walk-forward weights at each monthly rebalance. An IC labeled at date
+s enters the information set at rebalance date t when its execution-aligned
+forward-return window has closed by t.
 
 ## Factor diagnostics
 
@@ -910,13 +928,20 @@ reported; weak or negative diagnostics are retained.
 
 ## Long-short decile spread diagnostics
 
-| factor | LS Sharpe | LS Ann Return | LS Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
+Long-short decile spread backtests construct a dollar-neutral portfolio long the top decile
+and short the bottom decile at monthly rebalance frequency with {config.slippage_bps:.2f} bps slippage.
+
+Column groups in the table below:
+
+- Sequential holding-period book metrics: `LS Sharpe`, `LS Ann Return`, `Max DD`, `Win Rate`. These use the lag-1 dollar-neutral long-short book return on every accounting date after the first bar.
+- Rebalance-date one-day bucket diagnostics: `Decile Spread Mean`, `Monotonicity`. These use equal-weight quantile returns on month-end rebalance dates only.
+- `Total Turnover` is the sequential book's cumulative absolute trade-weight change.
+
+| factor | LS Sharpe | LS Ann Return | Max DD | Win Rate | Decile Spread Mean | Monotonicity | Total Turnover |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(ls_rows)}
 
-Long-short decile spread backtests construct a dollar-neutral portfolio long the top decile
-and short the bottom decile at monthly rebalance frequency with {config.slippage_bps:.2f} bps slippage.
-Monotonicity reports the Spearman rank correlation of mean returns across deciles D1..D10.
+`LS Sharpe`, `LS Ann Return`, `Max DD`, and `Win Rate` summarize the sequential holding-period book. `Decile Spread Mean` is the mean top-minus-bottom quantile return on rebalance dates. Monotonicity is the Spearman rank correlation of mean rebalance-date returns across deciles D1..D10.
 
 ## Overfitting diagnostics (CSCV / PBO)
 
@@ -939,8 +964,9 @@ Monotonicity reports the Spearman rank correlation of mean returns across decile
 - 5 bps slippage is a fixed diagnostic assumption, not a market-impact model.
 - IC-weighted composite uses in-sample mean monthly Rank IC weights.
 - ICIR-weighted and correlation-discounted composites use causal walk-forward
-  weights at monthly rebalance dates. Early rebalances remain missing until
-  the minimum IC history is available (typed missingness).
+  weights at monthly rebalance dates. An IC labeled at s is admitted at t
+  when `{horizon_contract}`. Early rebalances remain missing until the
+  minimum realized IC history is available (typed missingness).
 - The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
   return standard deviation. Leading dates without five observations remain
   NaN; values are not backfilled from later dates.
