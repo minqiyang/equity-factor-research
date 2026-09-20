@@ -9,6 +9,14 @@ profitability, or trading readiness.
 
 ### Added
 
+- `research/multifactor_diagnostic_mvp.py`: Wired advanced multi-factor combinations
+  (`ICIR_WEIGHTED_COMPOSITE`, `CORRELATION_DISCOUNTED_COMPOSITE`), cross-factor interactions
+  (`ALPHA_PRODUCT_INTERACTION`, `CONDITIONAL_RANK_INTERACTION`), and cross-sectional volatility
+  neutralization (`NEUTRALIZED_IC_COMPOSITE`) into the diagnostic cohort pipeline.
+- `research/multifactor_diagnostic_mvp.py`: Integrated dollar-neutral long-short decile spread
+  backtesting (`run_long_short_backtest`) across all 59 evaluated factors, reporting long-short
+  Sharpe, annualized returns, drawdowns, win rate, decile spreads, and Spearman monotonicity
+  in `reports/multifactor_diagnostic_mvp.md` and `reports/experiment_logs/multifactor_diagnostic_mvp.json`.
 - `src/features/combination.py`: Added `icir_weighted_composite` (Information Ratio weighting)
   and `correlation_discounted_composite` (collinearity-adjusted factor combination with ridge regularization).
 - `src/features/interaction.py`: Added `factor_product_interaction` (cross-sectional bivariate product),
