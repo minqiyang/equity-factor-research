@@ -24,22 +24,26 @@ import data.parquet_loader as parquet_loader
 def _sample_frame(
     dates: list[str],
     *,
-    open_: float = 100.0,
-    high: float = 101.0,
-    low: float = 99.0,
+    open_: float | None = None,
+    high: float | None = None,
+    low: float | None = None,
     close: float = 100.5,
-    adjusted_close: float = 100.4,
+    adjusted_close: float | None = None,
     volume: float = 1_000.0,
     **overrides: object,
 ) -> pd.DataFrame:
     count = len(dates)
+    val_open = close * 0.999 if open_ is None else open_
+    val_high = max(close, val_open) * 1.005 if high is None else high
+    val_low = min(close, val_open) * 0.995 if low is None else low
+    adj = close if adjusted_close is None else adjusted_close
     data: dict[str, object] = {
         "date": pd.to_datetime(dates),
-        "open": np.full(count, open_, dtype=float),
-        "high": np.full(count, high, dtype=float),
-        "low": np.full(count, low, dtype=float),
+        "open": np.full(count, val_open, dtype=float),
+        "high": np.full(count, val_high, dtype=float),
+        "low": np.full(count, val_low, dtype=float),
         "close": np.full(count, close, dtype=float),
-        "adjusted_close": np.full(count, adjusted_close, dtype=float),
+        "adjusted_close": np.full(count, adj, dtype=float),
         "volume": np.full(count, volume, dtype=float),
     }
     data.update(overrides)
@@ -530,3 +534,180 @@ def test_load_eod_cohort_panels_duplicate_inventory_symbols_raises_integrity_err
 
     with pytest.raises(DataIntegrityError, match="duplicate symbol: AAA.US"):
         load_eod_cohort_panels(data_dir, ["AAA.US"], inventory_path=inventory_path)
+
+
+def test_parquet_with_multiple_permanent_ids_is_refused(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", "SEC_B"],
+    )
+    path = _write_parquet(tmp_path / "mixed.parquet", frame)
+    with pytest.raises(DataIntegrityError, match="multiple permanent security IDs"):
+        load_eod_parquet(path)
+
+
+def test_parquet_with_single_permanent_id_is_accepted(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", "SEC_A"],
+    )
+    path = _write_parquet(tmp_path / "single_perm.parquet", frame)
+    loaded = load_eod_parquet(path)
+    assert len(loaded) == 2
+
+
+def test_duplicate_file_mapping_across_symbols_is_refused(tmp_path: Path) -> None:
+    data_dir = tmp_path / "eod"
+    data_dir.mkdir()
+    frame = _sample_frame(["2024-01-02", "2024-01-03"])
+    _write_parquet(data_dir / "stock.parquet", frame)
+    inventory_path = tmp_path / "inventory.json"
+    inventory_path.write_text(
+        json.dumps({
+            "stocks": [
+                {"symbol": "AAA.US", "file": "stock.parquet"},
+                {"symbol": "BBB.US", "file": "stock.parquet"},
+            ]
+        }),
+        encoding="utf-8",
+    )
+    with pytest.raises(DataIntegrityError, match="Duplicate underlying file mapping detected"):
+        load_eod_cohort_panels(data_dir, ["AAA.US", "BBB.US"], inventory_path=inventory_path)
+
+
+def test_invalid_ohlc_relationships_are_refused(tmp_path: Path) -> None:
+    # 1. high < low
+    f1 = _sample_frame(["2024-01-02"], open_=100.0, high=98.0, low=99.0, close=100.0)
+    p1 = _write_parquet(tmp_path / "bad_hl.parquet", f1)
+    with pytest.raises(DataIntegrityError, match="high < low"):
+        load_eod_parquet(p1)
+
+    # 2. high < open
+    f2 = _sample_frame(["2024-01-02"], open_=101.0, high=100.0, low=99.0, close=99.5)
+    p2 = _write_parquet(tmp_path / "bad_ho.parquet", f2)
+    with pytest.raises(DataIntegrityError, match="high < open"):
+        load_eod_parquet(p2)
+
+    # 3. high < close
+    f3 = _sample_frame(["2024-01-02"], open_=99.5, high=100.0, low=99.0, close=101.0)
+    p3 = _write_parquet(tmp_path / "bad_hc.parquet", f3)
+    with pytest.raises(DataIntegrityError, match="high < close"):
+        load_eod_parquet(p3)
+
+    # 4. low > open
+    f4 = _sample_frame(["2024-01-02"], open_=99.0, high=102.0, low=100.0, close=101.0)
+    p4 = _write_parquet(tmp_path / "bad_lo.parquet", f4)
+    with pytest.raises(DataIntegrityError, match="low > open"):
+        load_eod_parquet(p4)
+
+    # 5. low > close
+    f5 = _sample_frame(["2024-01-02"], open_=101.5, high=102.0, low=101.0, close=100.5)
+    p5 = _write_parquet(tmp_path / "bad_lc.parquet", f5)
+    with pytest.raises(DataIntegrityError, match="low > close"):
+        load_eod_parquet(p5)
+
+
+def test_numeric_date_payload_is_refused(tmp_path: Path) -> None:
+    frame = pd.DataFrame({
+        "date": [20240102, 20240103],
+        "open": [100.0, 100.0],
+        "high": [101.0, 101.0],
+        "low": [99.0, 99.0],
+        "close": [100.0, 100.0],
+        "adjusted_close": [100.0, 100.0],
+        "volume": [1000.0, 1000.0],
+    })
+    path = _write_parquet(tmp_path / "numeric_date.parquet", frame)
+    with pytest.raises(ValueError, match="date column must not contain numeric payloads"):
+        load_eod_parquet(path)
+
+
+def test_parquet_with_mixed_null_permanent_ids_is_refused(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", None],
+    )
+    path = _write_parquet(tmp_path / "mixed_perm.parquet", frame)
+    with pytest.raises(DataIntegrityError, match="mixed null and non-null permanent security IDs"):
+        load_eod_parquet(path)
+
+
+def test_parquet_with_multiple_symbols_or_mixed_null_is_refused(tmp_path: Path) -> None:
+    f1 = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        symbol=["AAA.US", "BBB.US"],
+    )
+    p1 = _write_parquet(tmp_path / "multi_sym.parquet", f1)
+    with pytest.raises(DataIntegrityError, match="multiple symbols"):
+        load_eod_parquet(p1)
+
+    f2 = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        symbol=["AAA.US", None],
+    )
+    p2 = _write_parquet(tmp_path / "mixed_sym.parquet", f2)
+    with pytest.raises(DataIntegrityError, match="mixed null and non-null symbols"):
+        load_eod_parquet(p2)
+
+
+def test_parquet_retains_single_permanent_id_and_symbol(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", "SEC_A"],
+        symbol=["AAA.US", "AAA.US"],
+    )
+    path = _write_parquet(tmp_path / "valid_id_sym.parquet", frame)
+    loaded = load_eod_parquet(path)
+    assert (loaded["permanent_id"] == "SEC_A").all()
+    assert (loaded["symbol"] == "AAA.US").all()
+
+
+def test_compute_cumulative_split_factor() -> None:
+    from src.data.parquet_loader import compute_cumulative_split_factor
+
+    dates = pd.DatetimeIndex(["2020-08-28", "2020-08-31", "2020-09-01"], name="date")
+    # 1. Empty splits
+    f_empty = compute_cumulative_split_factor(dates, None)
+    assert (f_empty == 1.0).all()
+
+    # 2. 4:1 split on 2020-08-31
+    splits_1 = pd.DataFrame({"date": ["2020-08-31"], "ratio": [4.0]})
+    f_1 = compute_cumulative_split_factor(dates, splits_1)
+    assert f_1.iloc[0] == 4.0
+    assert f_1.iloc[1] == 1.0
+    assert f_1.iloc[2] == 1.0
+
+    # 3. Two splits: 2:1 on 2020-08-31 and 3:1 on 2020-09-01
+    splits_2 = pd.DataFrame({"date": ["2020-08-31", "2020-09-01"], "ratio": [2.0, 3.0]})
+    f_2 = compute_cumulative_split_factor(dates, splits_2)
+    assert f_2.iloc[0] == 6.0
+    assert f_2.iloc[1] == 3.0
+    assert f_2.iloc[2] == 1.0
+
+
+def test_load_eod_cohort_panels_loads_splits(tmp_path: Path) -> None:
+    from src.data.parquet_loader import load_eod_cohort_panels
+
+    data_dir = tmp_path / "eod"
+    data_dir.mkdir()
+    splits_dir = data_dir / "splits"
+    splits_dir.mkdir()
+
+    eod_frame = _sample_frame(
+        ["2020-08-28", "2020-08-31"],
+        open_=400.0,
+        high=400.0,
+        low=400.0,
+        close=400.0,
+        adjusted_close=100.0,
+        volume=4000.0,
+    )
+    _write_parquet(data_dir / "AAA.US.parquet", eod_frame)
+
+    splits_frame = pd.DataFrame({"date": ["2020-08-31"], "ratio": [4.0]})
+    _write_parquet(splits_dir / "AAA.US.parquet", splits_frame)
+
+    panels = load_eod_cohort_panels(data_dir, ["AAA.US"])
+    assert "split_factor" in panels
+    assert panels["split_factor"].loc["2020-08-28", "AAA.US"] == 4.0
+    assert panels["split_factor"].loc["2020-08-31", "AAA.US"] == 1.0

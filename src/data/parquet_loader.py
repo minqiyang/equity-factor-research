@@ -101,13 +101,36 @@ def load_eod_cohort_panels(
         raise ValueError("start_date must be on or before end_date")
 
     per_symbol: dict[str, pd.DataFrame] = {}
+    resolved_paths: dict[Path, str] = {}
     for symbol in requested:
         path = _resolve_symbol_parquet_path(
             directory,
             symbol,
             inventory_map=inventory_map,
         )
+        canonical = path.resolve()
+        if canonical in resolved_paths:
+            prior_sym = resolved_paths[canonical]
+            raise DataIntegrityError(
+                f"Duplicate underlying file mapping detected: symbols '{prior_sym}' and '{symbol}' "
+                f"both map to the same file: {canonical}"
+            )
+        resolved_paths[canonical] = symbol
         frame = load_eod_parquet(path)
+        splits_df = load_symbol_splits(directory, symbol)
+        if splits_df is not None and not splits_df.empty:
+            cum_split = compute_cumulative_split_factor(frame.index, splits_df)
+            frame["split_factor"] = cum_split
+        elif "split_factor" in frame.columns:
+            pass
+        else:
+            scale = frame["close"] / frame["adjusted_close"]
+            scale_pct = scale.pct_change().dropna()
+            if (scale_pct.abs() > 0.15).any():
+                raise DataIntegrityError(
+                    f"Symbol '{symbol}' exhibits price/adjusted_close discontinuities (>15%) "
+                    "without verified split factor evidence. Cannot safely reconstruct split-adjusted turnover."
+                )
         per_symbol[symbol] = _slice_date_index(frame, start=start, end=end)
 
     return _align_symbol_panels(per_symbol, symbols=requested)
@@ -128,6 +151,30 @@ def _standardize_eod_frame(raw: pd.DataFrame) -> pd.DataFrame:
     if frame.empty:
         raise DataIntegrityError("Parquet file must contain at least one row")
 
+    if "permanent_id" in frame.columns:
+        perm_series = frame["permanent_id"]
+        if perm_series.isna().any() and perm_series.notna().any():
+            raise DataIntegrityError(
+                "Parquet file contains mixed null and non-null permanent security IDs. "
+                "Cannot stitch distinct securities without explicit episode boundaries."
+            )
+        perm_ids = perm_series.dropna().unique()
+        if len(perm_ids) > 1:
+            raise DataIntegrityError(
+                f"Parquet file contains multiple permanent security IDs: {list(perm_ids)}. "
+                "Cannot stitch distinct securities without explicit episode boundaries."
+            )
+
+    if "symbol" in frame.columns:
+        sym_series = frame["symbol"]
+        if sym_series.isna().any() and sym_series.notna().any():
+            raise DataIntegrityError("Parquet file contains mixed null and non-null symbols.")
+        symbols_found = sym_series.dropna().unique()
+        if len(symbols_found) > 1:
+            raise DataIntegrityError(
+                f"Parquet file contains multiple symbols: {list(symbols_found)}."
+            )
+
     dates = _parse_dates(frame["date"])
     _validate_unique_sorted_dates(dates)
 
@@ -140,9 +187,23 @@ def _standardize_eod_frame(raw: pd.DataFrame) -> pd.DataFrame:
             _validate_non_negative_values(numeric, field_name=column)
         values[column] = numeric.to_numpy(dtype=float)
 
+    _validate_ohlc_relationships(
+        open_=values["open"],
+        high=values["high"],
+        low=values["low"],
+        close=values["close"],
+        dates=dates,
+    )
+
     panel = pd.DataFrame(values, index=dates)
     panel.index.name = "date"
-    return panel.loc[:, list(_PANEL_FIELDS)]
+    if "permanent_id" in frame.columns and frame["permanent_id"].notna().any():
+        panel["permanent_id"] = str(frame["permanent_id"].dropna().iloc[0])
+    if "symbol" in frame.columns and frame["symbol"].notna().any():
+        panel["symbol"] = str(frame["symbol"].dropna().iloc[0])
+    if "split_factor" in frame.columns:
+        panel["split_factor"] = frame["split_factor"].astype(float).to_numpy()
+    return panel
 
 
 def _validate_local_parquet_path(file_path: Path | str) -> Path:
@@ -257,6 +318,10 @@ def _resolve_symbol_parquet_path(
     candidates = [data_dir / f"{symbol}.parquet", data_dir / f"{symbol.lower()}.parquet"]
     for candidate in candidates:
         if candidate.is_file():
+            resolved = candidate.resolve()
+            root = data_dir.resolve()
+            if resolved != root and root not in resolved.parents:
+                raise ValueError("symbol parquet path must stay under data_dir")
             return candidate
     raise FileNotFoundError(data_dir / f"{symbol}.parquet")
 
@@ -273,6 +338,11 @@ def _resolve_under_data_dir(data_dir: Path, relative: str) -> Path:
 
 
 def _parse_dates(values: pd.Series) -> pd.DatetimeIndex:
+    if pd.api.types.is_numeric_dtype(values):
+        raise ValueError(
+            "date column must not contain numeric payloads (e.g. integer YYYYMMDD); "
+            "ISO 8601 strings or datetimes required"
+        )
     try:
         parsed = pd.to_datetime(values, errors="raise")
     except (TypeError, ValueError) as exc:
@@ -293,6 +363,41 @@ def _validate_unique_sorted_dates(dates: pd.DatetimeIndex) -> None:
         raise DataIntegrityError("date must not contain duplicate dates")
     if not bool(dates.is_monotonic_increasing):
         raise DataIntegrityError("date must be sorted in increasing date order")
+
+
+def _validate_ohlc_relationships(
+    *,
+    open_: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    dates: pd.DatetimeIndex,
+) -> None:
+    tol = 1e-8
+    bad_hl = high < low - tol
+    if np.any(bad_hl):
+        bad_date = dates[bad_hl][0]
+        raise DataIntegrityError(f"Invalid bar: high < low on date {bad_date}")
+
+    bad_ho = high < open_ - tol
+    if np.any(bad_ho):
+        bad_date = dates[bad_ho][0]
+        raise DataIntegrityError(f"Invalid bar: high < open on date {bad_date}")
+
+    bad_hc = high < close - tol
+    if np.any(bad_hc):
+        bad_date = dates[bad_hc][0]
+        raise DataIntegrityError(f"Invalid bar: high < close on date {bad_date}")
+
+    bad_lo = low > open_ + tol
+    if np.any(bad_lo):
+        bad_date = dates[bad_lo][0]
+        raise DataIntegrityError(f"Invalid bar: low > open on date {bad_date}")
+
+    bad_lc = low > close + tol
+    if np.any(bad_lc):
+        bad_date = dates[bad_lc][0]
+        raise DataIntegrityError(f"Invalid bar: low > close on date {bad_date}")
 
 
 def _as_numeric_series(values: pd.Series, *, field_name: str) -> pd.Series:
@@ -360,15 +465,108 @@ def _align_symbol_panels(
     per_symbol: dict[str, pd.DataFrame],
     *,
     symbols: list[str],
-) -> dict[str, pd.DataFrame]:
-    panels: dict[str, pd.DataFrame] = {}
-    for field in _PANEL_FIELDS:
-        pieces = [per_symbol[symbol][field].rename(symbol) for symbol in symbols]
+) -> dict[str, Any]:
+    fields = list(_PANEL_FIELDS)
+    if any("split_factor" in per_symbol[symbol].columns for symbol in symbols):
+        fields.append("split_factor")
+    panels: dict[str, Any] = {}
+    for field in fields:
+        pieces = []
+        for symbol in symbols:
+            s_frame = per_symbol[symbol]
+            if field in s_frame.columns:
+                series = s_frame[field].rename(symbol)
+            else:
+                series = pd.Series(
+                    1.0 if field == "split_factor" else np.nan,
+                    index=s_frame.index,
+                    name=symbol,
+                    dtype=float,
+                )
+            pieces.append(series)
         panel = pd.concat(pieces, axis=1, sort=True) if pieces else pd.DataFrame()
         panel = panel.reindex(columns=symbols)
         panel.index = pd.DatetimeIndex(pd.to_datetime(panel.index), name="date", freq=None)
         panels[field] = panel
+
+    if any("permanent_id" in per_symbol[s].columns for s in symbols):
+        panels["permanent_id"] = pd.Series(
+            {
+                s: per_symbol[s]["permanent_id"].dropna().iloc[0]
+                for s in symbols
+                if "permanent_id" in per_symbol[s].columns
+                and per_symbol[s]["permanent_id"].notna().any()
+            }
+        )
     return panels
+
+
+def compute_cumulative_split_factor(
+    dates: pd.DatetimeIndex,
+    splits_df: pd.DataFrame | None,
+) -> pd.Series:
+    """Compute cumulative split adjustment factor backwards from the end of the date range.
+
+    For dates strictly before a split event, cumulative_split_factor incorporates
+    the split ratio (e.g. 4.0 for a 4:1 split).
+    On or after the split event, the factor is 1.0 (or product of subsequent splits).
+    """
+    factor = pd.Series(1.0, index=dates, dtype=float)
+    if splits_df is None or splits_df.empty:
+        return factor
+
+    if "date" not in splits_df.columns or "ratio" not in splits_df.columns:
+        raise ValueError("splits_df must contain 'date' and 'ratio' columns")
+
+    splits = splits_df.copy()
+    splits["date"] = pd.to_datetime(splits["date"])
+    splits = splits.dropna(subset=["date", "ratio"])
+    splits = splits.sort_values("date")
+
+    for _, row in splits.iterrows():
+        s_date = row["date"]
+        ratio = float(row["ratio"])
+        if ratio <= 0.0 or not np.isfinite(ratio):
+            raise DataIntegrityError(f"Invalid split ratio: {ratio}")
+        mask = dates < s_date
+        factor.loc[mask] *= ratio
+
+    return factor
+
+
+def load_symbol_splits(data_dir: Path | str, symbol: str) -> pd.DataFrame | None:
+    """Load split events for a symbol from local files or request ledger if available."""
+    directory = Path(data_dir)
+    ledger_path = directory / "logs" / "eod_request_ledger.sqlite3"
+    if ledger_path.is_file():
+        import sqlite3
+
+        try:
+            with sqlite3.connect(ledger_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT request_id FROM request WHERE (endpoint_kind = 'SPLITS' OR endpoint_role = 'SPLITS') "
+                    "AND provider_symbol = ? LIMIT 1",
+                    (symbol,),
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    split_file = directory / "normalized" / "splits" / f"{row[0]}.parquet"
+                    if split_file.is_file():
+                        return pd.read_parquet(split_file, engine="pyarrow")
+                    raise FileNotFoundError(f"Split file referenced in ledger not found: {split_file}")
+        except sqlite3.Error as exc:
+            raise DataIntegrityError(f"Database error reading split ledger {ledger_path}: {exc}") from exc
+
+    for candidate in (
+        directory / "normalized" / "splits" / f"{symbol}.parquet",
+        directory / "splits" / f"{symbol}.parquet",
+        directory / f"{symbol}_splits.parquet",
+    ):
+        if candidate.is_file():
+            return pd.read_parquet(candidate, engine="pyarrow")
+
+    return None
 
 
 def _duplicates(values: list[str]) -> list[str]:
@@ -383,6 +581,8 @@ def _duplicates(values: list[str]) -> list[str]:
 
 __all__ = [
     "DataIntegrityError",
+    "compute_cumulative_split_factor",
     "load_eod_cohort_panels",
     "load_eod_parquet",
+    "load_symbol_splits",
 ]

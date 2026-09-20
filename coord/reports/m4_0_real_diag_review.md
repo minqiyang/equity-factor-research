@@ -113,7 +113,7 @@ MATERIAL: none.
 - Reviewer: `GROK_REVIEW`
 - Candidate: `330dc11cf294c858e772198641fea4d638d803c0`
 - Claim: Tracked markdown and JSON outputs redact private absolute paths. `research/real_data_multifactor_diagnostic.py` still stores default filesystem locations as `FALLBACK_DATA_DIR` and `FALLBACK_INVENTORY_PATH`.
-- Evidence: Those constants are `/Users/rhapsoul/Documents/Codex/private_data/eodhd_eod_acquisition/snapshot_20260808T005805Z` and `/Users/rhapsoul/Documents/Codex/private_data/efr_exploration_inventory_20260913/per_stock_coverage.json`. `EFR_EODHD_DATA_DIR` / `EFR_EODHD_INVENTORY_PATH` override them. Official report/JSON/JSONL and `EXPERIMENT_LOG.md` use `<redacted-local-eodhd-snapshot>` and `<redacted-local-per-stock-coverage-inventory>`. Independent grep of those artifacts found no `/Users/` and no `private_data`.
+- Evidence: Those constants resolved to `<redacted-local-eodhd-snapshot>` and `<redacted-local-per-stock-coverage-inventory>`. `EFR_EODHD_DATA_DIR` / `EFR_EODHD_INVENTORY_PATH` override them. Official report/JSON/JSONL and `EXPERIMENT_LOG.md` use `<redacted-local-eodhd-snapshot>` and `<redacted-local-per-stock-coverage-inventory>`. Independent grep of those artifacts found no `/Users/` and no `private_data`.
 - Impact: A tracked source file names a machine-local private directory. Outputs remain redacted. Panel values, credentials, and inventory rows stay out of the public projection.
 - Resolution: Keep defaults behind environment variables or a repo-external config file. Commit only the redaction tokens and the snapshot logical identifier already used in `EXPERIMENT_LOG.md`.
 
