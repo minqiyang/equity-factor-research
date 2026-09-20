@@ -23,6 +23,7 @@ dependencies = [
     "pandas>=2.1",
     "scipy>=1.11",
     "pyarrow>=14.0",
+    "scikit-learn>=1.4",
 ]
 
 [project.urls]

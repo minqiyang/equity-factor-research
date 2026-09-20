@@ -2,7 +2,7 @@
 
 This module loads the static blue-chip cohort and SPY.US benchmark from local
 EODHD Parquet files, then reuses the committed 62-trial multi-factor diagnostic
-path (52 classical price-volume alphas plus 10 composites and interactions).
+path (52 classical price-volume alphas plus 12 composites and interactions).
 
 It is DIAGNOSTIC_ONLY. The static cohort is survivorship-biased and is not
 point-in-time universe evidence. Outputs are not profitability, strategy
@@ -76,6 +76,7 @@ from research.multifactor_diagnostic_mvp import (
     compute_rolling_market_beta,
     evaluate_portfolio_weighting_comparisons,
 )
+from features.ml_combination import walk_forward_ml_factor_composite
 from research.walking_skeleton_mvp import (
     execution_aligned_forward_returns,
     month_end_dates,
@@ -96,6 +97,10 @@ DEFAULT_END_DATE = "2026-08-07"
 REDACTED_LOCAL_PATH = "<redacted-local-path>"
 REDACTED_DATA_DIR = "<redacted-local-eodhd-snapshot>"
 REDACTED_INVENTORY_PATH = "<redacted-local-per-stock-coverage-inventory>"
+
+RANDOM_FOREST_COMPOSITE = "RANDOM_FOREST_COMPOSITE"
+GRADIENT_BOOSTING_COMPOSITE = "GRADIENT_BOOSTING_COMPOSITE"
+
 COMPOSITE_IDS = (
     EQUAL_WEIGHTED_COMPOSITE,
     IC_WEIGHTED_COMPOSITE,
@@ -107,8 +112,10 @@ COMPOSITE_IDS = (
     SECTOR_NEUTRAL_COMPOSITE,
     MARKET_BETA_NEUTRAL_COMPOSITE,
     REGIME_SWITCHING_COMPOSITE,
+    RANDOM_FOREST_COMPOSITE,
+    GRADIENT_BOOSTING_COMPOSITE,
 )
-ESTIMATOR_VERSION = "m4_0_real_data_causal_accounting_v1"
+ESTIMATOR_VERSION = "m4_1_ml_combination_v1"
 
 
 def default_data_dir() -> Path:
@@ -505,7 +512,7 @@ def run_real_data_multifactor_diagnostic(
         {factor_id: factor_results[factor_id]["monthly_ic"] for factor_id in alpha_ids}
     )
     try:
-        composites = _build_composites(
+        composites, ml_feature_importances = _build_composites(
             composite_ids=composite_ids,
             alpha_ids=alpha_ids,
             alpha_panels=alpha_panels,
@@ -514,6 +521,7 @@ def run_real_data_multifactor_diagnostic(
             monthly_eval_dates=monthly_eval_dates,
             panels=panels,
             prices=prices,
+            forward_returns=forward_returns,
             config=config,
         )
     except Exception as exc:
@@ -619,6 +627,7 @@ def run_real_data_multifactor_diagnostic(
         "evaluated_factor_ids": evaluated_ids,
         "alpha_ids": alpha_ids,
         "composite_ids": composite_ids,
+        "ml_feature_importances": ml_feature_importances,
     }
     if write_outputs:
         write_real_data_report(result=result)
@@ -636,10 +645,11 @@ def _build_composites(
     monthly_eval_dates: pd.DatetimeIndex,
     panels: dict[str, pd.DataFrame],
     prices: pd.DataFrame,
+    forward_returns: pd.DataFrame,
     config: RealDataMultifactorDiagnosticConfig,
-) -> dict[str, pd.DataFrame]:
+) -> tuple[dict[str, pd.DataFrame], dict[str, pd.DataFrame]]:
     if not composite_ids:
-        return {}
+        return {}, {}
     if not ordered_alphas:
         raise ValueError("composites require at least one evaluated alpha")
 
@@ -710,7 +720,38 @@ def _build_composites(
             target_factor=alpha_panels[ALPHA_022],
             n_bins=5,
         )
-    return {factor_id: available[factor_id] for factor_id in composite_ids}
+
+    ml_importances: dict[str, pd.DataFrame] = {}
+    if RANDOM_FOREST_COMPOSITE in requested:
+        rf_comp, rf_imp, _ = walk_forward_ml_factor_composite(
+            ordered_alphas,
+            forward_returns,
+            monthly_eval_dates,
+            factor_names=list(alpha_ids),
+            model_type="random_forest",
+            execution_lag_periods=config.signal_lag_periods,
+            forward_holding_periods=config.forward_holding_periods,
+            random_state=42,
+        )
+        available[RANDOM_FOREST_COMPOSITE] = rf_comp
+        ml_importances[RANDOM_FOREST_COMPOSITE] = rf_imp
+
+    if GRADIENT_BOOSTING_COMPOSITE in requested:
+        gb_comp, gb_imp, _ = walk_forward_ml_factor_composite(
+            ordered_alphas,
+            forward_returns,
+            monthly_eval_dates,
+            factor_names=list(alpha_ids),
+            model_type="gradient_boosting",
+            execution_lag_periods=config.signal_lag_periods,
+            forward_holding_periods=config.forward_holding_periods,
+            random_state=42,
+        )
+        available[GRADIENT_BOOSTING_COMPOSITE] = gb_comp
+        ml_importances[GRADIENT_BOOSTING_COMPOSITE] = gb_imp
+
+    selected = {factor_id: available[factor_id] for factor_id in composite_ids}
+    return selected, ml_importances
 
 
 def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, object]:
@@ -736,8 +777,8 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock blue-chip EODHD cohort plus SPY.US "
             "wired through the 52 implemented classical price-volume alphas and "
-            "10 composites/interactions, with lag-1 execution, closed-window "
-            "walk-forward IC weights, frozen smoothing targets, netted gross "
+            "12 composites/interactions, with lag-1 execution, closed-window "
+            "walk-forward IC and ML weights, frozen smoothing targets, netted gross "
             "exposure, solvency guards, across-trial Sharpe variance for DSR, "
             "trial inventory logging, portfolio-weighting comparisons, and PBO."
         ),
@@ -879,6 +920,10 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "walk-forward weights at monthly rebalance dates, admitting an IC "
             "labeled at s only when its execution-aligned forward-return "
             "window has closed by t",
+            "random-forest and gradient-boosting ML composites use causal "
+            "walk-forward training windows at monthly rebalance dates, admitting an "
+            "observation labeled at s only when its execution-aligned forward-return "
+            "window has closed by t; predictions are held on [t, next_t)",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts, not GICS point-in-time sectors",
             "market beta proxy does not backfill leading rolling-beta NaNs",
@@ -980,6 +1025,28 @@ def write_real_data_report(*, result: dict[str, Any]) -> None:
         )
     if not comp_rows:
         comp_rows = ["| (none) |  |  |  |  |  |  |  |  |  |"]
+
+    ml_section = ""
+    ml_importances = result.get("ml_feature_importances", {})
+    if ml_importances:
+        ml_table_rows = []
+        for comp_name, imp_frame in ml_importances.items():
+            if imp_frame is not None and not imp_frame.empty:
+                mean_s = imp_frame.mean(axis=0).sort_values(ascending=False)
+                top_3 = [f"`{idx}` ({val:.1%})" for idx, val in mean_s.head(3).items()]
+                ml_table_rows.append(f"| `{comp_name}` | {', '.join(top_3)} | {len(imp_frame)} |")
+        if ml_table_rows:
+            ml_section = f"""
+## Machine learning factor combinations and feature importances
+
+Walk-forward non-linear factor combinations (Random Forest, Gradient Boosting)
+learn empirical mappings from the classical alphas to forward returns using
+expanding training windows with strictly closed forward-return labels (zero lookahead).
+
+| composite | top features (mean importance) | evaluated rebalance count |
+| --- | --- | --- |
+{chr(10).join(ml_table_rows)}
+"""
 
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in result["alpha_ids"])
     composite_names = ", ".join(f"`{factor_id}`" for factor_id in result["composite_ids"])
@@ -1129,7 +1196,7 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 - Median OOS Relative Rank: `{_format_number(pbo_summary["median_relative_rank"])}`
 - Mean IS Sharpe: `{_format_number(pbo_summary["mean_is_sharpe"])}`
 - Mean OOS Sharpe: `{_format_number(pbo_summary["mean_oos_sharpe"])}`
-
+{ml_section}
 ## Limitations
 
 - Local EODHD files only; no vendor API, credentials, or remote fetch.

@@ -13,6 +13,7 @@ from features.interaction import (
     factor_product_interaction,
     factor_quadrant_interaction,
 )
+from features.ml_combination import walk_forward_ml_factor_composite
 from features.neutralize import (
     cross_sectional_demean,
     cross_sectional_group_neutralize,
@@ -32,4 +33,5 @@ __all__ = [
     "icir_weighted_composite",
     "walk_forward_correlation_discounted_composite",
     "walk_forward_icir_weighted_composite",
+    "walk_forward_ml_factor_composite",
 ]
