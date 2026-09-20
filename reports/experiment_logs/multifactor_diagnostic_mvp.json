@@ -38,7 +38,7 @@
     "turnover_penalty_lambda": 0.0,
     "universe": "50-stock static survivor diagnostic cohort",
     "volatility_proxy": "20-day rolling return standard deviation with min_periods=5; leading dates without a full minimum window remain NaN",
-    "volatility_regime_proxy": "60-day rolling return volatility against expanding historical median with min_periods=20; zero lookahead",
+    "volatility_regime_proxy": "60-day rolling return volatility against expanding historical median with min_periods=20; zero lookahead; composite applies signal_lag_periods=1 (regime.shift(1))",
     "volatility_window": 20,
     "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
     "weighting_scheme": "equal",
@@ -59,7 +59,7 @@
     "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
     "sector map uses static balanced cohorts across 50 assets",
     "market beta proxy does not backfill leading rolling-beta NaNs",
-    "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime",
+    "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime with signal_lag_periods=1 execution (regime.shift(1)); leading NaN regime defaults to IC-weighted composite",
     "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
     "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag"
   ],

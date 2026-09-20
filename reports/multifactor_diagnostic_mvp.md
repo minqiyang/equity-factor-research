@@ -362,6 +362,7 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
   50 synthetic assets.
 - `REGIME_SWITCHING_COMPOSITE` dynamically blends `IC_WEIGHTED_COMPOSITE` and
   `MARKET_BETA_NEUTRAL_COMPOSITE` using trailing 60-day market volatility regime
-  indicator with lag-1 signal execution.
+  indicator with lag-1 signal execution (`regime.shift(signal_lag_periods)`);
+  leading dates with NaN regime default to `IC_WEIGHTED_COMPOSITE`.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.

@@ -53,6 +53,8 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `docs/repo_map.md`: Regenerated repository map reflecting the additions of `src/features/regime.py` and `tests/test_regime.py` (16 mapped feature files, 230 mapped test files).
+- `research/multifactor_diagnostic_mvp.py`: Documented lag-1 execution (`regime.shift(signal_lag_periods)`) and leading NaN fallback to `IC_WEIGHTED_COMPOSITE` in `write_report` limitations and `write_multifactor_experiment_log` assumptions and caveats, resolving ADV-243-1 and ADV-243-2.
 - `tests/test_multifactor_diagnostic_mvp.py`: Pinned all 16 committed portfolio weighting comparison rows in `OFFICIAL_COMPARISON_ROWS` within `test_multifactor_diagnostic_official_report_table_matches_default_fixture` (resolving ADV-241-1).
 - `research/multifactor_diagnostic_mvp.py`: Added inverse-volatility lag and turnover penalization contracts to `caveats` in `write_multifactor_experiment_log`, regenerating `reports/experiment_logs/multifactor_diagnostic_mvp.json` for full markdown-JSON sidecar parity (resolving ADV-241-2).
 - `EXPERIMENT_LOG.md`: Added `20260919-009-portfolio-weighting-comparisons` recording the 4×4 comparison grid, default equal/`λ=0` official books, and the lagged inverse-vol / blend contracts (resolving ADV-241-3).

@@ -932,7 +932,8 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             ),
             "volatility_regime_proxy": (
                 "60-day rolling return volatility against expanding historical median "
-                "with min_periods=20; zero lookahead"
+                "with min_periods=20; zero lookahead; composite applies signal_lag_periods=1 "
+                "(regime.shift(1))"
             ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
@@ -967,7 +968,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts across 50 assets",
             "market beta proxy does not backfill leading rolling-beta NaNs",
-            "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime",
+            "regime-switching composite switches between IC-weighted and market-beta-neutral composites based on causal trailing 60-day volatility regime with signal_lag_periods=1 execution (regime.shift(1)); leading NaN regime defaults to IC-weighted composite",
             "inverse-volatility weighting applies lagged 20-day return volatility (shift 1 source row)",
             "turnover penalization (lambda=0.5) blends drifted pre-trade holdings with target weights to reduce turnover drag",
         ),
@@ -1242,7 +1243,8 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
   50 synthetic assets.
 - `REGIME_SWITCHING_COMPOSITE` dynamically blends `IC_WEIGHTED_COMPOSITE` and
   `MARKET_BETA_NEUTRAL_COMPOSITE` using trailing 60-day market volatility regime
-  indicator with lag-1 signal execution.
+  indicator with lag-1 signal execution (`regime.shift(signal_lag_periods)`);
+  leading dates with NaN regime default to `IC_WEIGHTED_COMPOSITE`.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
 """
