@@ -620,3 +620,94 @@ def test_numeric_date_payload_is_refused(tmp_path: Path) -> None:
     path = _write_parquet(tmp_path / "numeric_date.parquet", frame)
     with pytest.raises(ValueError, match="date column must not contain numeric payloads"):
         load_eod_parquet(path)
+
+
+def test_parquet_with_mixed_null_permanent_ids_is_refused(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", None],
+    )
+    path = _write_parquet(tmp_path / "mixed_perm.parquet", frame)
+    with pytest.raises(DataIntegrityError, match="mixed null and non-null permanent security IDs"):
+        load_eod_parquet(path)
+
+
+def test_parquet_with_multiple_symbols_or_mixed_null_is_refused(tmp_path: Path) -> None:
+    f1 = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        symbol=["AAA.US", "BBB.US"],
+    )
+    p1 = _write_parquet(tmp_path / "multi_sym.parquet", f1)
+    with pytest.raises(DataIntegrityError, match="multiple symbols"):
+        load_eod_parquet(p1)
+
+    f2 = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        symbol=["AAA.US", None],
+    )
+    p2 = _write_parquet(tmp_path / "mixed_sym.parquet", f2)
+    with pytest.raises(DataIntegrityError, match="mixed null and non-null symbols"):
+        load_eod_parquet(p2)
+
+
+def test_parquet_retains_single_permanent_id_and_symbol(tmp_path: Path) -> None:
+    frame = _sample_frame(
+        ["2024-01-02", "2024-01-03"],
+        permanent_id=["SEC_A", "SEC_A"],
+        symbol=["AAA.US", "AAA.US"],
+    )
+    path = _write_parquet(tmp_path / "valid_id_sym.parquet", frame)
+    loaded = load_eod_parquet(path)
+    assert (loaded["permanent_id"] == "SEC_A").all()
+    assert (loaded["symbol"] == "AAA.US").all()
+
+
+def test_compute_cumulative_split_factor() -> None:
+    from src.data.parquet_loader import compute_cumulative_split_factor
+
+    dates = pd.DatetimeIndex(["2020-08-28", "2020-08-31", "2020-09-01"], name="date")
+    # 1. Empty splits
+    f_empty = compute_cumulative_split_factor(dates, None)
+    assert (f_empty == 1.0).all()
+
+    # 2. 4:1 split on 2020-08-31
+    splits_1 = pd.DataFrame({"date": ["2020-08-31"], "ratio": [4.0]})
+    f_1 = compute_cumulative_split_factor(dates, splits_1)
+    assert f_1.iloc[0] == 4.0
+    assert f_1.iloc[1] == 1.0
+    assert f_1.iloc[2] == 1.0
+
+    # 3. Two splits: 2:1 on 2020-08-31 and 3:1 on 2020-09-01
+    splits_2 = pd.DataFrame({"date": ["2020-08-31", "2020-09-01"], "ratio": [2.0, 3.0]})
+    f_2 = compute_cumulative_split_factor(dates, splits_2)
+    assert f_2.iloc[0] == 6.0
+    assert f_2.iloc[1] == 3.0
+    assert f_2.iloc[2] == 1.0
+
+
+def test_load_eod_cohort_panels_loads_splits(tmp_path: Path) -> None:
+    from src.data.parquet_loader import load_eod_cohort_panels
+
+    data_dir = tmp_path / "eod"
+    data_dir.mkdir()
+    splits_dir = data_dir / "splits"
+    splits_dir.mkdir()
+
+    eod_frame = _sample_frame(
+        ["2020-08-28", "2020-08-31"],
+        open_=400.0,
+        high=400.0,
+        low=400.0,
+        close=400.0,
+        adjusted_close=100.0,
+        volume=4000.0,
+    )
+    _write_parquet(data_dir / "AAA.US.parquet", eod_frame)
+
+    splits_frame = pd.DataFrame({"date": ["2020-08-31"], "ratio": [4.0]})
+    _write_parquet(splits_dir / "AAA.US.parquet", splits_frame)
+
+    panels = load_eod_cohort_panels(data_dir, ["AAA.US"])
+    assert "split_factor" in panels
+    assert panels["split_factor"].loc["2020-08-28", "AAA.US"] == 4.0
+    assert panels["split_factor"].loc["2020-08-31", "AAA.US"] == 1.0

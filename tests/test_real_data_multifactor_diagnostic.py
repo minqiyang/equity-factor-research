@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from data.bluechip_cohort import BENCHMARK_SYMBOL, BLUECHIP_50_COHORT
+from data.parquet_loader import DataIntegrityError
 from reporting.experiment_log import (
     DIAGNOSTIC_REAL_DATA_CAVEATS,
     REAL_DATA_MULTIFACTOR_EXPERIMENT_TYPE,
@@ -193,34 +194,74 @@ def test_redact_local_path_hides_private_defaults_and_tmp_paths() -> None:
 
 def test_build_adjusted_research_panels_keeps_dollar_volume_basis() -> None:
     dates = pd.DatetimeIndex(["2020-08-28", "2020-08-31"], name="date")
-    close = pd.DataFrame({"AAA.US": [400.0, 100.0]}, index=dates)
-    adjusted = pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates)
-    # Vendor volume in EODHD is already split-adjusted (e.g. 4000.0 on both days)
-    volume = pd.DataFrame({"AAA.US": [4_000.0, 4_000.0]}, index=dates)
-    open_ = close * 0.99
-    high = close * 1.01
-    low = close * 0.98
-    panels = build_adjusted_research_panels(
+    # 1. Split-only action (4:1 split)
+    close_split = pd.DataFrame({"AAA.US": [400.0, 100.0]}, index=dates)
+    split_factor = pd.DataFrame({"AAA.US": [4.0, 1.0]}, index=dates)
+    adjusted_split = pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates)
+    volume_split = pd.DataFrame({"AAA.US": [4_000.0, 4_000.0]}, index=dates)
+    panels_split = build_adjusted_research_panels(
         {
-            "open": open_,
-            "high": high,
-            "low": low,
-            "close": close,
-            "adjusted_close": adjusted,
-            "volume": volume,
+            "open": close_split * 0.99,
+            "high": close_split * 1.01,
+            "low": close_split * 0.98,
+            "close": close_split,
+            "adjusted_close": adjusted_split,
+            "volume": volume_split,
+            "split_factor": split_factor,
         }
     )
-    # Research volume remains identical to vendor split-adjusted volume
-    pd.testing.assert_frame_equal(panels["volume"], volume)
-    pd.testing.assert_frame_equal(panels["close"], adjusted)
-    # Dollar volume is adjusted_close * volume = 400,000 on both days (stable across split)
+    # Research close is split-adjusted close (100.0 on both days)
+    pd.testing.assert_frame_equal(panels_split["close"], pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates))
+    # Dollar volume is split_close * volume = 400,000 on both days (matches unadjusted close * raw_volume)
     expected_dollar = pd.DataFrame({"AAA.US": [400_000.0, 400_000.0]}, index=dates)
-    dollar_adj = panels["close"] * panels["volume"]
-    pd.testing.assert_frame_equal(dollar_adj, expected_dollar)
-    assert pd.isna(panels["returns"].iloc[0, 0])
-    assert panels["returns"].iloc[1, 0] == pytest.approx(0.0)
-    raw_close_return = close.iloc[1, 0] / close.iloc[0, 0] - 1.0
-    assert raw_close_return == pytest.approx(-0.75)
+    pd.testing.assert_frame_equal(panels_split["dollar_volume"], expected_dollar)
+    raw_vol = panels_split["raw_volume"]
+    pd.testing.assert_frame_equal(close_split * raw_vol, expected_dollar)
+    assert pd.isna(panels_split["returns"].iloc[0, 0])
+    assert panels_split["returns"].iloc[1, 0] == pytest.approx(0.0)
+
+    # 2. Dividend-only action (10% dividend back-adjustment, no split)
+    close_div = pd.DataFrame({"AAA.US": [100.0, 100.0]}, index=dates)
+    adjusted_div = pd.DataFrame({"AAA.US": [90.0, 100.0]}, index=dates)
+    volume_div = pd.DataFrame({"AAA.US": [1_000.0, 1_000.0]}, index=dates)
+    panels_div = build_adjusted_research_panels(
+        {
+            "open": close_div,
+            "high": close_div,
+            "low": close_div,
+            "close": close_div,
+            "adjusted_close": adjusted_div,
+            "volume": volume_div,
+        }
+    )
+    # Dollar volume remains 100,000 on both days (not deflated to 90,000 by dividend)
+    expected_dollar_div = pd.DataFrame({"AAA.US": [100_000.0, 100_000.0]}, index=dates)
+    pd.testing.assert_frame_equal(panels_div["dollar_volume"], expected_dollar_div)
+    pd.testing.assert_frame_equal(panels_div["close"] * panels_div["volume"], expected_dollar_div)
+    # Returns reflect the total return from adjusted_close (100 / 90 - 1 = +11.11%)
+    assert panels_div["returns"].iloc[1, 0] == pytest.approx(100.0 / 90.0 - 1.0)
+
+    # 3. Combined 4:1 split + 10% dividend action
+    close_comb = pd.DataFrame({"AAA.US": [400.0, 100.0]}, index=dates)
+    split_factor_comb = pd.DataFrame({"AAA.US": [4.0, 1.0]}, index=dates)
+    adjusted_comb = pd.DataFrame({"AAA.US": [90.0, 100.0]}, index=dates)
+    volume_comb = pd.DataFrame({"AAA.US": [4_000.0, 4_000.0]}, index=dates)
+    panels_comb = build_adjusted_research_panels(
+        {
+            "open": close_comb,
+            "high": close_comb,
+            "low": close_comb,
+            "close": close_comb,
+            "adjusted_close": adjusted_comb,
+            "volume": volume_comb,
+            "split_factor": split_factor_comb,
+        }
+    )
+    # Dollar volume is 400,000 on both days (matches true split-adjusted turnover, not 360,000)
+    pd.testing.assert_frame_equal(panels_comb["dollar_volume"], expected_dollar)
+    pd.testing.assert_frame_equal(panels_comb["close"] * panels_comb["volume"], expected_dollar)
+    pd.testing.assert_frame_equal(close_comb * panels_comb["raw_volume"], expected_dollar)
+    assert panels_comb["returns"].iloc[1, 0] == pytest.approx(100.0 / 90.0 - 1.0)
 
 
 def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -> None:
@@ -233,7 +274,10 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     )
 
     assert result["evidence_ceiling"] == "DIAGNOSTIC_ONLY"
-    assert result["readiness_decision"] == "diagnostic_ready_with_low_caveats"
+    assert result["readiness_decision"] in (
+        "diagnostic_ready_with_low_caveats",
+        "diagnostic_ready_with_typed_missingness",
+    )
     assert result["config"].top_n == 2
     assert result["config"].slippage_bps == 5.0
     assert result["config"].signal_lag_periods == 1
@@ -456,6 +500,18 @@ def test_distinct_composite_trial_ids_when_parents_change(tmp_path: Path) -> Non
     )
     assert trial_a["trial_id"] != trial_b["trial_id"]
 
+    alpha_001_a = next(
+        t for t in res_a["trial_inventory"]
+        if t["specification"]["factor_id"] == ALPHA_001
+        and t["specification"]["direction"] == "long_only"
+    )
+    alpha_001_b = next(
+        t for t in res_b["trial_inventory"]
+        if t["specification"]["factor_id"] == ALPHA_001
+        and t["specification"]["direction"] == "long_only"
+    )
+    assert alpha_001_a["trial_id"] == alpha_001_b["trial_id"]
+
 
 def test_feature_calculation_failure_is_recorded_in_trials_jsonl(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -502,6 +558,14 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
 
     assert evaluate_diagnostic_readiness(panels, benchmark, config) == "diagnostic_ready_with_low_caveats"
 
+    # Typed missingness (NaN in panel)
+    nan_panels = dict(panels)
+    nan_panels["close"] = pd.DataFrame({"A": [1.0, np.nan, 3.0, 4.0, 5.0]}, index=dates)
+    assert (
+        evaluate_diagnostic_readiness(nan_panels, benchmark, config)
+        == "diagnostic_ready_with_typed_missingness"
+    )
+
     # Misaligned benchmark
     bad_bm = pd.Series([100.0], index=pd.date_range("2024-01-02", periods=1))
     assert evaluate_diagnostic_readiness(panels, bad_bm, config) == "refused_benchmark_misaligned"
@@ -510,3 +574,22 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
     bad_panels = dict(panels)
     bad_panels["close"] = pd.DataFrame({"A": [1.0, 0.0, 3.0, 4.0, 5.0]}, index=dates)
     assert evaluate_diagnostic_readiness(bad_panels, benchmark, config) == "refused_non_positive_close"
+
+
+def test_runner_refuses_early_on_invalid_panels(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = _reduced_config(tmp_path)
+    orig_load = real_data_module.load_real_data_research_panels
+
+    def mock_load(cfg):
+        panels, bm, syms = orig_load(cfg)
+        panels["close"].iloc[0, 0] = -1.0
+        return panels, bm, syms
+
+    monkeypatch.setattr(real_data_module, "load_real_data_research_panels", mock_load)
+
+    with pytest.raises(DataIntegrityError, match="Diagnostic dataset refused: refused_non_positive_close"):
+        run_real_data_multifactor_diagnostic(
+            config=config,
+            report_path=tmp_path / "report.md",
+            write_outputs=False,
+        )
