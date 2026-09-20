@@ -26,10 +26,16 @@ profitability.
    cross-sectional z-scores of those 52 alphas.
 4. Build `IC_WEIGHTED_COMPOSITE` with the same z-scores and in-sample mean
    monthly Rank IC as static supplied weights.
-5. Build `ICIR_WEIGHTED_COMPOSITE` weighted by historical monthly Information Ratio.
-6. Build `CORRELATION_DISCOUNTED_COMPOSITE` solving for collinearity-discounted weights.
+5. Build `ICIR_WEIGHTED_COMPOSITE` with causal walk-forward ICIR weights: on
+   each monthly rebalance date t, ICIR is estimated from monthly Rank ICs
+   strictly before t (expanding window, minimum 5 observations per factor).
+   Those weights are held until the next rebalance.
+6. Build `CORRELATION_DISCOUNTED_COMPOSITE` with causal walk-forward
+   collinearity-discounted weights: expanding-window mean monthly Rank IC
+   strictly before t, and pairwise factor-value correlation through t.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
-8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against rolling return volatility.
+8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
+   return volatility. Leading dates without five observations remain NaN.
 9. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
    start at the lag-1 execution close.
 10. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
@@ -62,6 +68,8 @@ profitability.
 - PBO splits: `8`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the 52 implemented alphas
+- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs strictly before t
+- Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Long-short quantiles: `10`
 
 ## In-sample IC weights
@@ -121,8 +129,10 @@ profitability.
 | ALPHA_060 | 0.0103 |
 | ALPHA_101 | 0.0181 |
 
-These weights are in-sample diagnostics. They are not an out-of-sample
-combination rule.
+These IC-weighted composite weights are in-sample diagnostics. They are not
+an out-of-sample combination rule. `ICIR_WEIGHTED_COMPOSITE` and
+`CORRELATION_DISCOUNTED_COMPOSITE` replace full-sample static weights with
+causal walk-forward weights at each monthly rebalance.
 
 ## Factor diagnostics
 
@@ -182,8 +192,8 @@ combination rule.
 | ALPHA_101 | 0.0181 | 0.1150 | 1.0473 | 0.0133 | 0.28% | 0.0709 | -29.74% | 0.0816 | 0.0298 |
 | EQUAL_WEIGHTED_COMPOSITE | -0.0138 | -0.0890 | -0.7149 | 0.0081 | -3.65% | -0.0388 | -23.39% | 0.0844 | 0.0308 |
 | IC_WEIGHTED_COMPOSITE | 0.0826 | 0.6074 | 3.5590 | 0.0741 | 18.26% | 0.5280 | -23.03% | 0.0787 | 0.0287 |
-| ICIR_WEIGHTED_COMPOSITE | 0.0819 | 0.6063 | 3.5552 | 0.0533 | 14.26% | 0.4283 | -26.32% | 0.0798 | 0.0291 |
-| CORRELATION_DISCOUNTED_COMPOSITE | 0.1693 | 1.0880 | 6.2728 | 0.0268 | 6.74% | 0.2404 | -21.99% | 0.0821 | 0.0300 |
+| ICIR_WEIGHTED_COMPOSITE | -0.0131 | -0.0910 | -0.5403 | 0.0011 | -14.44% | -0.4302 | -25.03% | 0.0688 | 0.0251 |
+| CORRELATION_DISCOUNTED_COMPOSITE | 0.0028 | 0.0190 | 0.1221 | 0.0118 | -0.56% | 0.0435 | -28.79% | 0.0798 | 0.0291 |
 | ALPHA_PRODUCT_INTERACTION | 0.0253 | 0.1600 | 1.0433 | 0.1530 | 28.91% | 0.7745 | -12.31% | 0.0859 | 0.0314 |
 | CONDITIONAL_RANK_INTERACTION | 0.0079 | 0.0618 | 0.3589 | 0.3153 | 44.83% | 1.0942 | -11.25% | 0.0816 | 0.0298 |
 | NEUTRALIZED_IC_COMPOSITE | 0.0810 | 0.5614 | 3.5598 | 0.0405 | 10.93% | 0.3507 | -22.73% | 0.0825 | 0.0302 |
@@ -251,8 +261,8 @@ reported; weak or negative diagnostics are retained.
 | ALPHA_101 | -0.4183 | -2.56% | 14.98% | 49.93% | 0.0015 | 0.5394 | 60.3938 |
 | EQUAL_WEIGHTED_COMPOSITE | -0.0963 | -0.57% | 11.64% | 51.05% | -0.0025 | -0.1879 | 60.6288 |
 | IC_WEIGHTED_COMPOSITE | 0.3693 | 2.14% | 10.10% | 51.74% | -0.0002 | 0.1394 | 58.6652 |
-| ICIR_WEIGHTED_COMPOSITE | 0.1548 | 0.91% | 14.58% | 51.19% | -0.0003 | 0.0545 | 58.5144 |
-| CORRELATION_DISCOUNTED_COMPOSITE | 0.0607 | 0.37% | 16.60% | 51.46% | -0.0005 | -0.5152 | 59.9242 |
+| ICIR_WEIGHTED_COMPOSITE | -0.2539 | -1.34% | 13.28% | 46.67% | -0.0001 | -0.0909 | 49.6725 |
+| CORRELATION_DISCOUNTED_COMPOSITE | 0.0645 | 0.36% | 12.35% | 49.40% | 0.0004 | 0.4667 | 57.7076 |
 | ALPHA_PRODUCT_INTERACTION | 0.1253 | 0.74% | 10.90% | 50.35% | 0.0000 | 0.5394 | 61.6196 |
 | CONDITIONAL_RANK_INTERACTION | 0.6315 | 3.73% | 9.85% | 51.05% | -0.0002 | -0.1879 | 60.1766 |
 | NEUTRALIZED_IC_COMPOSITE | -0.2614 | -1.54% | 17.16% | 48.81% | -0.0007 | 0.1152 | 60.1761 |
@@ -281,5 +291,11 @@ Monotonicity reports the Spearman rank correlation of mean returns across decile
 - Close-only lag-1 execution is idealized research accounting, not brokerage.
 - 5 bps slippage is a fixed diagnostic assumption, not a market-impact model.
 - IC-weighted composite uses in-sample mean monthly Rank IC weights.
+- ICIR-weighted and correlation-discounted composites use causal walk-forward
+  weights at monthly rebalance dates. Early rebalances remain missing until
+  the minimum IC history is available (typed missingness).
+- The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
+  return standard deviation. Leading dates without five observations remain
+  NaN; values are not backfilled from later dates.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.

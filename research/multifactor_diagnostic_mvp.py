@@ -1,9 +1,10 @@
 """End-to-end WorldQuant alpha and multi-factor diagnostic pipeline.
 
 This module wires the 52 implemented classical price-volume alphas plus
-equal-weighted and in-sample IC-weighted composites through the committed
-50-stock static diagnostic cohort, a small IC/ICIR/Newey-West/DSR summary, and
-the existing equal-weight monthly long-only backtester with 5 bps slippage.
+equal-weighted, in-sample IC-weighted, and causal walk-forward ICIR-weighted
+and correlation-discounted composites through the committed 50-stock static
+diagnostic cohort, a small IC/ICIR/Newey-West/DSR summary, and the existing
+equal-weight monthly long-only backtester with 5 bps slippage.
 
 It is DIAGNOSTIC_ONLY. The static cohort is not point-in-time universe
 evidence. Outputs are not profitability, strategy validation, or a 14-trial
@@ -83,10 +84,10 @@ from features.alphas import (
     alpha_101,
 )
 from features.combination import (
-    correlation_discounted_composite,
     equal_weighted_composite,
     ic_weighted_composite,
-    icir_weighted_composite,
+    walk_forward_correlation_discounted_composite,
+    walk_forward_icir_weighted_composite,
 )
 from features.diagnostics import (
     deflated_sharpe_ratio,
@@ -481,15 +482,22 @@ def run_multifactor_diagnostic_mvp(
         {factor_id: factor_results[factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
     )
 
-    volatility_proxy = panels["returns"].rolling(20, min_periods=5).std().bfill()
+    volatility_proxy = panels["returns"].rolling(20, min_periods=5).std()
     ic_comp = ic_weighted_composite(ordered_alphas, ic_weights)
 
     composites = {
         EQUAL_WEIGHTED_COMPOSITE: equal_weighted_composite(ordered_alphas),
         IC_WEIGHTED_COMPOSITE: ic_comp,
-        ICIR_WEIGHTED_COMPOSITE: icir_weighted_composite(ordered_alphas, ic_history),
-        CORRELATION_DISCOUNTED_COMPOSITE: correlation_discounted_composite(
-            ordered_alphas, ic_weights, ridge_alpha=config.ridge_alpha
+        ICIR_WEIGHTED_COMPOSITE: walk_forward_icir_weighted_composite(
+            ordered_alphas,
+            ic_history,
+            monthly_eval_dates,
+        ),
+        CORRELATION_DISCOUNTED_COMPOSITE: walk_forward_correlation_discounted_composite(
+            ordered_alphas,
+            ic_history,
+            monthly_eval_dates,
+            ridge_alpha=config.ridge_alpha,
         ),
         ALPHA_PRODUCT_INTERACTION: factor_product_interaction(
             alpha_panels[ALPHA_016],
@@ -634,8 +642,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         summary=(
             "DIAGNOSTIC_ONLY static 50-stock synthetic cohort wired through "
             "the 52 implemented classical price-volume alphas, equal-weighted, "
-            "in-sample IC-weighted, ICIR-weighted, and correlation-discounted "
-            "composites, cross-sectional volatility neutralization, and "
+            "in-sample IC-weighted, causal walk-forward ICIR-weighted, and "
+            "causal walk-forward correlation-discounted composites, "
+            "cross-sectional volatility neutralization, and "
             "cross-factor interaction models (product interaction and conditional rank), "
             "with monthly Rank IC, ICIR, Newey-West t-stat, DSR with Euler-Mascheroni mix, "
             "equal-weight monthly rebalance backtests at 5 bps slippage, and "
@@ -702,6 +711,16 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "composite_ic_weights": (
                 "in-sample mean monthly Rank IC of the 52 implemented alphas"
             ),
+            "composite_walk_forward_weights": (
+                "ICIR-weighted and correlation-discounted composites refresh "
+                "weights on each monthly rebalance date t using monthly Rank "
+                "ICs strictly before t; correlation-discounted also uses "
+                "trailing factor-value correlation through t"
+            ),
+            "volatility_proxy": (
+                "20-day rolling return standard deviation with min_periods=5; "
+                "leading dates without a full minimum window remain NaN"
+            ),
             "vwap_definition": "typical price (high + low + close) / 3 on companion synthetic bars",
             "live_trading": False,
             "brokerage_integration": False,
@@ -723,6 +742,9 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
             "not a 14-trial campaign run",
             "not evidence of real-world strategy performance",
             "IC-weighted composite uses in-sample mean monthly Rank IC weights",
+            "ICIR-weighted and correlation-discounted composites use causal "
+            "walk-forward weights at monthly rebalance dates",
+            "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
         ),
         next_action=(
             "Keep this as a DIAGNOSTIC_ONLY implemented-alpha and composite "
@@ -818,10 +840,16 @@ profitability.
    cross-sectional z-scores of those {IMPLEMENTED_ALPHA_COUNT} alphas.
 4. Build `IC_WEIGHTED_COMPOSITE` with the same z-scores and in-sample mean
    monthly Rank IC as static supplied weights.
-5. Build `ICIR_WEIGHTED_COMPOSITE` weighted by historical monthly Information Ratio.
-6. Build `CORRELATION_DISCOUNTED_COMPOSITE` solving for collinearity-discounted weights.
+5. Build `ICIR_WEIGHTED_COMPOSITE` with causal walk-forward ICIR weights: on
+   each monthly rebalance date t, ICIR is estimated from monthly Rank ICs
+   strictly before t (expanding window, minimum 5 observations per factor).
+   Those weights are held until the next rebalance.
+6. Build `CORRELATION_DISCOUNTED_COMPOSITE` with causal walk-forward
+   collinearity-discounted weights: expanding-window mean monthly Rank IC
+   strictly before t, and pairwise factor-value correlation through t.
 7. Build `ALPHA_PRODUCT_INTERACTION` and `CONDITIONAL_RANK_INTERACTION` cross-factor models.
-8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against rolling return volatility.
+8. Build `NEUTRALIZED_IC_COMPOSITE` orthogonalized against trailing rolling
+   return volatility. Leading dates without five observations remain NaN.
 9. Measure monthly Spearman Rank IC versus 21-source-row forward returns that
    start at the lag-1 execution close.
 10. Summarize mean IC, ICIR (`mean / sample std`), and the Newey-West t-stat of
@@ -854,6 +882,8 @@ profitability.
 - PBO splits: `{config.pbo_n_splits}`
 - VWAP: typical price `(high + low + close) / 3` on companion synthetic bars
 - Composite IC weights: in-sample mean monthly Rank IC of the {IMPLEMENTED_ALPHA_COUNT} implemented alphas
+- Walk-forward ICIR and correlation weights: expanding window at each monthly rebalance; monthly ICs strictly before t
+- Volatility proxy: 20-day rolling return standard deviation, min_periods=5, no backfill
 - Long-short quantiles: `{config.quantiles}`
 
 ## In-sample IC weights
@@ -862,8 +892,10 @@ profitability.
 | --- | --- |
 {chr(10).join(weight_rows)}
 
-These weights are in-sample diagnostics. They are not an out-of-sample
-combination rule.
+These IC-weighted composite weights are in-sample diagnostics. They are not
+an out-of-sample combination rule. `ICIR_WEIGHTED_COMPOSITE` and
+`CORRELATION_DISCOUNTED_COMPOSITE` replace full-sample static weights with
+causal walk-forward weights at each monthly rebalance.
 
 ## Factor diagnostics
 
@@ -906,6 +938,12 @@ Monotonicity reports the Spearman rank correlation of mean returns across decile
 - Close-only lag-1 execution is idealized research accounting, not brokerage.
 - 5 bps slippage is a fixed diagnostic assumption, not a market-impact model.
 - IC-weighted composite uses in-sample mean monthly Rank IC weights.
+- ICIR-weighted and correlation-discounted composites use causal walk-forward
+  weights at monthly rebalance dates. Early rebalances remain missing until
+  the minimum IC history is available (typed missingness).
+- The volatility proxy for `NEUTRALIZED_IC_COMPOSITE` is a trailing rolling
+  return standard deviation. Leading dates without five observations remain
+  NaN; values are not backfilled from later dates.
 - This does not execute, replace, or reopen the refused 14-trial run.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
 """

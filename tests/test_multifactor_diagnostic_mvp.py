@@ -61,10 +61,10 @@ from features.alphas import (
     alpha_101,
 )
 from features.combination import (
-    correlation_discounted_composite,
     equal_weighted_composite,
     ic_weighted_composite,
-    icir_weighted_composite,
+    walk_forward_correlation_discounted_composite,
+    walk_forward_icir_weighted_composite,
 )
 from features.interaction import (
     conditional_factor_rank,
@@ -143,6 +143,7 @@ from research.multifactor_diagnostic_mvp import (
     calculate_diagnostic_alpha,
     run_multifactor_diagnostic_mvp,
 )
+from research.walking_skeleton_mvp import month_end_dates
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -223,22 +224,22 @@ OFFICIAL_FOUR_DECIMAL_ROWS = {
         "-23.03%",
     ),
     ICIR_WEIGHTED_COMPOSITE: (
-        "0.0819",
-        "0.6063",
-        "3.5552",
-        "0.0533",
-        "14.26%",
-        "0.4283",
-        "-26.32%",
+        "-0.0131",
+        "-0.0910",
+        "-0.5403",
+        "0.0011",
+        "-14.44%",
+        "-0.4302",
+        "-25.03%",
     ),
     CORRELATION_DISCOUNTED_COMPOSITE: (
-        "0.1693",
-        "1.0880",
-        "6.2728",
-        "0.0268",
-        "6.74%",
-        "0.2404",
-        "-21.99%",
+        "0.0028",
+        "0.0190",
+        "0.1221",
+        "0.0118",
+        "-0.56%",
+        "0.0435",
+        "-28.79%",
     ),
     ALPHA_PRODUCT_INTERACTION: (
         "0.0253",
@@ -478,19 +479,29 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
         result["factors"][IC_WEIGHTED_COMPOSITE]["factor"],
         ic_weighted_composite(alpha_panels, list(result["ic_weights"].values())),
     )
+    monthly_dates = month_end_dates(result["prices"].index)
+    monthly_eval_dates = monthly_dates[
+        (monthly_dates >= result["evaluation_start"])
+        & (monthly_dates <= result["evaluation_end"])
+    ]
+    ic_history = pd.DataFrame(
+        {factor_id: result["factors"][factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
+    )
     pd.testing.assert_frame_equal(
         result["factors"][ICIR_WEIGHTED_COMPOSITE]["factor"],
-        icir_weighted_composite(
+        walk_forward_icir_weighted_composite(
             alpha_panels,
-            pd.DataFrame(
-                {factor_id: result["factors"][factor_id]["monthly_ic"] for factor_id in ALPHA_IDS}
-            ),
+            ic_history,
+            monthly_eval_dates,
         ),
     )
     pd.testing.assert_frame_equal(
         result["factors"][CORRELATION_DISCOUNTED_COMPOSITE]["factor"],
-        correlation_discounted_composite(
-            alpha_panels, list(result["ic_weights"].values()), ridge_alpha=0.1
+        walk_forward_correlation_discounted_composite(
+            alpha_panels,
+            ic_history,
+            monthly_eval_dates,
+            ridge_alpha=0.1,
         ),
     )
     pd.testing.assert_frame_equal(
@@ -508,12 +519,33 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
             n_bins=5,
         ),
     )
+    volatility_proxy = result["panels"]["returns"].rolling(20, min_periods=5).std()
+    assert volatility_proxy.iloc[:4].isna().all().all()
     pd.testing.assert_frame_equal(
         result["factors"][NEUTRALIZED_IC_COMPOSITE]["factor"],
         cross_sectional_neutralize(
             result["factors"][IC_WEIGHTED_COMPOSITE]["factor"],
-            result["panels"]["returns"].rolling(20, min_periods=5).std().bfill(),
+            volatility_proxy,
         ),
+    )
+    pipeline_source = PIPELINE_SOURCE.read_text(encoding="utf-8")
+    assert ".bfill()" not in pipeline_source
+
+    later_ic = ic_history.copy()
+    later_ic.iloc[-1] = 1.0
+    causal_icir = walk_forward_icir_weighted_composite(
+        alpha_panels,
+        later_ic,
+        monthly_eval_dates,
+    )
+    first_ready = monthly_eval_dates[5]
+    next_ready = monthly_eval_dates[6]
+    interval = (result["prices"].index >= first_ready) & (
+        result["prices"].index < next_ready
+    )
+    pd.testing.assert_frame_equal(
+        result["factors"][ICIR_WEIGHTED_COMPOSITE]["factor"].loc[interval],
+        causal_icir.loc[interval],
     )
 
     report_text = report_path.read_text(encoding="utf-8")
@@ -521,6 +553,7 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
     assert "not point-in-time universe evidence" in report_text
     assert "Euler-Mascheroni" in report_text
     assert "in-sample mean monthly Rank IC" in report_text
+    assert "walk-forward" in report_text
     assert "5.00" in report_text
     assert "Long-short decile spread diagnostics" in report_text
     assert "Monotonicity" in report_text
@@ -560,6 +593,7 @@ def test_multifactor_diagnostic_official_report_table_matches_default_fixture() 
     report_text = OFFICIAL_REPORT_PATH.read_text(encoding="utf-8")
     assert "DIAGNOSTIC_ONLY" in report_text
     assert "Euler-Mascheroni" in report_text
+    assert "walk-forward" in report_text
     assert "Probability of Backtest Overfitting" in report_text
     assert "Long-short decile spread diagnostics" in report_text
     assert "Monotonicity" in report_text

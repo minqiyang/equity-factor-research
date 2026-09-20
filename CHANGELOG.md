@@ -9,6 +9,11 @@ profitability, or trading readiness.
 
 ### Added
 
+- `src/features/combination.py`: Added `walk_forward_icir_weighted_composite` and
+  `walk_forward_correlation_discounted_composite`. On each rebalance date t, ICIR
+  and expanding-window mean IC use monthly ICs strictly before t; correlation
+  uses trailing factor values through t. Weights are held until the next
+  rebalance. Factors below the minimum IC history receive weight 0.0.
 - `research/multifactor_diagnostic_mvp.py`: Wired advanced multi-factor combinations
   (`ICIR_WEIGHTED_COMPOSITE`, `CORRELATION_DISCOUNTED_COMPOSITE`), cross-factor interactions
   (`ALPHA_PRODUCT_INTERACTION`, `CONDITIONAL_RANK_INTERACTION`), and cross-sectional volatility
@@ -39,6 +44,17 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `research/multifactor_diagnostic_mvp.py`: `ICIR_WEIGHTED_COMPOSITE` and
+  `CORRELATION_DISCOUNTED_COMPOSITE` use causal walk-forward weights at monthly
+  rebalance dates instead of full-sample static weights. Regenerated
+  `reports/multifactor_diagnostic_mvp.md` and
+  `reports/experiment_logs/multifactor_diagnostic_mvp.json`. Official walk-forward
+  pins: ICIR mean IC `-0.0131`, ICIR `-0.0910`, Newey-West t `-0.5403`, DSR
+  `0.0011`, total return `-14.44%`, Sharpe `-0.4302`, max drawdown `-25.03%`;
+  correlation-discounted mean IC `0.0028`, ICIR `0.0190`, Newey-West t `0.1221`,
+  DSR `0.0118`, total return `-0.56%`, Sharpe `0.0435`, max drawdown `-28.79%`.
+  Individual alphas, equal-weighted and in-sample IC-weighted composites, and
+  `NEUTRALIZED_IC_COMPOSITE` keep their prior official numbers.
 - `AGENTS.md` has a first-class Ablation section: after every completed design
   or implementation, run an ablation experiment and keep the simplest code that
   still meets current requirements.
@@ -53,6 +69,10 @@ profitability, or trading readiness.
 
 ### Fixed
 
+- `NEUTRALIZED_IC_COMPOSITE` volatility proxy is
+  `panels["returns"].rolling(20, min_periods=5).std()` with leading incomplete
+  windows left as NaN. The previous `.bfill()` copied a later date's standard
+  deviation onto 2021-01-04 through 2021-01-08.
 - Walking Skeleton DSR uses the Euler-Mascheroni constant in the
   Bailey-Lopez de Prado expected-maximum mix. Sample skewness and
   kurtosis remain only in `V[SR]`. Regenerated diagnostic report DSR
