@@ -7,7 +7,7 @@ Base: `431cdd2a32e1a5d94f1d0f139005750ee64b2da4` (Stage A, PR #250).
 
 Stage B and Stage C are feasible and complementary. The implemented solution combines native rolling ranks, faster scalar-preserving validation and accounting output storage, and two exhaustive CI lanes. Local validation passes all 3,917 collected cases: 3,915 passed and two platform-specific precision skips. All 3,819 original cases remain present. The longest diagnostic test fell from a freshly measured 218.774 seconds to 79.844 seconds, a 2.74× speedup. The diagnostics lane completes in 135.04 seconds locally.
 
-The calibrated hosted estimate is approximately 7.2 minutes plus gate scheduling. The 5–8 minute GitHub target remains a hosted acceptance gate. This report records an implemented and locally validated candidate; a new hosted run has yet to measure its actual wall time.
+Hosted CI confirms the target: [run 35630871052](https://github.com/minqiyang/equity-factor-research/actions/runs/35630871052), on PR #251 head `b08c3eba6b5b0ccd70631b1233147a9e2086cea2`, completed successfully in **4m06s** from run creation to completion. All 3,917 hosted cases passed with zero skips. The observed result beats the eight-minute upper target and the earlier 7.2-minute forecast. Independent review remains a merge gate.
 
 The implementation ran in the isolated worktree `/private/tmp/efr-ci-stage-bc-431cdd2`, preserving the delivery root's unrelated untracked coordination files. The user brief explicitly assigns GPT direct verification and implementation. Changes affect accounting internals, so acceptance requires fresh independent review under the repository's CRITICAL lane. `structural: false`: public interfaces, research semantics, canonical data, and authority boundaries retain their existing contracts. This producer's validation constitutes implementation evidence.
 
@@ -116,7 +116,7 @@ The observed diagnostics lane is close to its two-worker work bound. Its final f
 
 The earlier design measured a 141-second official case in a different local execution period. This assessment uses the fresh 218.774-second baseline to avoid silently mixing local load conditions. Profiling and some independent validations overlapped on this host; measurements are indicative, and the same-process ablation below supplies the most controlled comparison.
 
-A simple calibration uses the unchanged official case: `646.495 / 218.774 = 2.955` hosted seconds per current local second. Applying it to the final diagnostics lane gives approximately `135.04 * 2.955 = 399.0` seconds. Adding the measured 34.95-second job overhead gives approximately **434 seconds, or 7m14s**, before the small gate job and queue variation. The modeled longest case is approximately 236 seconds. Core is expected to finish earlier. This extrapolation supports implementing B+C for the target; the next hosted run determines acceptance.
+A simple calibration uses the unchanged official case: `646.495 / 218.774 = 2.955` hosted seconds per current local second. Applying it to the final diagnostics lane gives approximately `135.04 * 2.955 = 399.0` seconds. Adding the measured 34.95-second job overhead gives approximately **434 seconds, or 7m14s**, before the small gate job and queue variation. The modeled longest case is approximately 236 seconds. Core is expected to finish earlier. This extrapolation supports implementing B+C for the target; the hosted measurement below establishes the observed result for this candidate.
 
 ## Ablation and retained necessities
 
@@ -131,9 +131,32 @@ The original source files were preserved before edits. Six isolated book variant
 | Restore long-only pandas output writes | 0.8094 s | 1.19× | Exact |
 | Restore original long-short loop/output writes | 1.0703 s | 1.57× | Exact |
 
-The long-short experiment treats its output buffers, clipping and rebalance-only diagnostic work as one loop change. Their individual shares remain unmeasured. Every retained runtime change contributes measurable savings. The simpler original loops preserve behavior but lose required performance margin. Native rolling rank independently removes the Python callback for supported tie rules; its fallback remains necessary for the other accepted rules.
+The long-short experiment treats its output buffers, clipping and rebalance-only diagnostic work as one loop change. Their individual shares remain unmeasured. Every retained runtime change contributes measurable savings. The simpler original loops preserve behavior and increase runtime; the selected changes retain measurable latency headroom. Native rolling rank independently removes the Python callback for supported tie rules; its fallback remains necessary for the other accepted rules.
 
 The selected design omits fixture caches, a custom scheduler, dynamic worker sizing, a new numerical dependency and extra matrix dimensions. The required gate, native thread caps, scalar fallback, input validation, provenance checks, economic guards and exhaustive tests remain necessary. This bounded ablation covers the changed CI/runtime path; it records no whole-project ablation completion claim.
+
+## Hosted verification
+
+[PR #251](https://github.com/minqiyang/equity-factor-research/pull/251) produced successful [run 35630871052](https://github.com/minqiyang/equity-factor-research/actions/runs/35630871052) for head `b08c3eba6b5b0ccd70631b1233147a9e2086cea2`.
+
+| Hosted measurement | Result |
+| --- | ---: |
+| Run creation to completion | **246 s (4m06s)** |
+| First lane start to required-gate completion | 241 s (4m01s) |
+| Core job | 144 s (2m24s), PASS |
+| Diagnostics job | 236 s (3m56s), PASS |
+| Required `Python validation` gate | 3 s, PASS |
+| Core pytest | 3,792 passed in 92.34 s |
+| Diagnostics pytest | 125 passed in 194.52 s |
+| Hosted test union | 3,917 unique cases, zero failures/skips/duplicates |
+| Diagnostic summed work W | 372.049 s |
+| Longest diagnostic L | 113.15 s |
+| Diagnostic maximum RSS | 466,516 KiB |
+| Diagnostic process-tree CPU utilization | 192% |
+
+The run was created at 17:15:41 UTC, lanes started at 17:15:46 UTC, and the required gate completed at 17:19:47 UTC. Thus the end-to-end total includes five seconds before the lanes started and the final gate. Relative to the recorded Stage A 20m04s job, this workflow result represents approximately **4.9× lower elapsed time**. Diagnostic work falls from 2,054.822 to 372.049 seconds, and the longest case falls from 646.495 to 113.15 seconds. Hosted runner variability limits attribution of the full observed difference to individual changes; the isolated local ablations establish each change's contribution.
+
+The hosted result is stronger than the conservative cross-run calibration. It preserves every test and all tracked-input checks. The target is measured on this run; later head changes still require their own required CI and eligible reviews.
 
 ## Evidence and handoff
 
@@ -146,5 +169,6 @@ Raw local evidence is under `/private/tmp/efr-ci-stage-bc-evidence/`:
 - `compare_books.py`, `book-equivalence.json`: 24-case exact public-result comparison.
 - `ablation.py`, `ablation.json`, `baseline_*.py`: reproducible isolated removals and original sources.
 - `build.log`, `dist/`: packaging evidence.
+- `hosted-run.json`, `hosted-jobs.json`, `hosted-core/`, `hosted-diagnostics/` and hosted job logs: downloaded completed-run evidence.
 
-The durable report and engineering log retain the measurements and limitations. The next acceptance gate is coordinator verification, a hosted CI run on the published candidate, and two eligible fresh independent reviews of that exact candidate. Hosted acceptance should record both lane durations, required-gate outcome, total workflow wall time, environment evidence and unchanged tracked inputs. Target acceptance uses total CI elapsed time, with runner queue delays reported separately. Any accounting/refusal mismatch blocks acceptance and requires a scoped repair followed by relevant validation. Forward recovery follows the repository's ordinary protected change process.
+The durable report and engineering log retain the measurements and limitations. The remaining acceptance gate is coordinator verification and two eligible fresh independent reviews of the final candidate, followed by its ordinary protected lifecycle. The coordinator owns the delivery root after the implementation handoff. Hosted target acceptance records total CI elapsed time, with runner queue delays reported separately. Any accounting/refusal mismatch blocks acceptance and requires a scoped repair followed by relevant validation. Forward recovery follows the repository's ordinary protected change process.

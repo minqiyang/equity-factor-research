@@ -60,6 +60,9 @@ profitability, or trading readiness.
 
 ### Changed
 
+- `.github/workflows/ci.yml`: Stage B/C stratified test execution splits tests into parallel `core` (~3,790 unit tests, lint, compileall, build) and `diagnostics` (125 simulation/hardening tests) matrix lanes under two-worker worksteal, gating merge eligibility behind aggregate required check `Python validation`.
+- `src/features/operators.py`: Native rolling rank acceleration in `ts_rank` via pandas `Rolling.rank(pct=True)` for `average`, `min`, and `max` tie methods while preserving fallback semantics and research invariants.
+- `src/backtest/portfolio.py` and `src/backtest/long_short.py`: Vectorized signal validation, pre-allocated accounting output arrays, and array-backed held-return computation across both backtest engines with exact output equivalence.
 - `.github/workflows/ci.yml`: Stage A bounded scheduling uses `pytest-xdist` with `-n 2 --dist worksteal --max-worker-restart=0`, clamps native BLAS/OpenMP/MKL threads to 1, hashes `pyproject.toml` for the pip cache, prefers binary wheels, and uploads fail-closed validation evidence. The required check name remains `Python validation`.
 - `pyproject.toml`: Added `pytest-xdist>=3.5.0` to the `dev` extra. Pytest `addopts` remains serial `-ra`.
 - `tests/test_ml_combination.py`: Parametrizes supported ML models with `sorted(_SUPPORTED_MODELS)` so xdist workers collect the same node IDs.
