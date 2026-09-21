@@ -28,10 +28,15 @@ defaults:
     shell: bash
 
 jobs:
-  validation:
-    name: Python validation
+  test-lanes:
+    name: Tests (${{ matrix.lane }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane: [core, diagnostics]
     # Campaign and repository tests use committed synthetic fixtures only.
     # This job is not result-bearing and does not read a private panel.
 
@@ -62,23 +67,39 @@ jobs:
           python -m threadpoolctl -i numpy scipy sklearn > "$RUNNER_TEMP/ci-evidence/threadpools.json"
 
       - name: Lint repository
+        if: matrix.lane == 'core'
         run: python -m ruff check .
 
       - name: Compile source, tests, and research scripts
+        if: matrix.lane == 'core'
         run: python -m compileall src tests research
 
       - name: Compile LEAN scaffold files
+        if: matrix.lane == 'core'
         run: python -m compileall lean
 
       - name: Build distribution
+        if: matrix.lane == 'core'
         run: python -m build
 
       - name: Run tests
+        env:
+          CI_LANE: ${{ matrix.lane }}
         run: |
+          case "$CI_LANE" in
+            core)
+              selection=(tests --ignore=tests/test_multifactor_diagnostic_mvp.py --ignore=tests/test_m3_10_hardening.py)
+              ;;
+            diagnostics)
+              selection=(tests/test_multifactor_diagnostic_mvp.py tests/test_m3_10_hardening.py)
+              ;;
+            *) exit 2 ;;
+          esac
           /usr/bin/time -v -o "$RUNNER_TEMP/ci-evidence/pytest-resource.txt" \
             python -m pytest -q -n 2 --dist worksteal \
             --max-worker-restart=0 --durations=50 --durations-min=0.1 \
             --junitxml="$RUNNER_TEMP/ci-evidence/pytest.xml" \
+            "${selection[@]}" \
             2>&1 | tee "$RUNNER_TEMP/ci-evidence/pytest.log"
 
       - name: Verify tracked inputs stayed unchanged
@@ -89,7 +110,19 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-evidence-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-evidence/
           retention-days: 14
           if-no-files-found: warn
+
+  validation:
+    name: Python validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test-lanes]
+    if: ${{ always() }}
+    steps:
+      - name: Require every test lane to pass
+        env:
+          LANES_RESULT: ${{ needs.test-lanes.result }}
+        run: test "$LANES_RESULT" = success

@@ -150,21 +150,21 @@ def run_long_short_backtest(
     columns = sub_prices.columns
 
     # Allocate output containers
-    long_holdings = pd.DataFrame(0.0, index=accounting_dates, columns=columns)
-    short_holdings = pd.DataFrame(0.0, index=accounting_dates, columns=columns)
-    net_holdings = pd.DataFrame(0.0, index=accounting_dates, columns=columns)
+    long_values = np.zeros((n_dates, len(columns)), dtype=float)
+    short_values = np.zeros((n_dates, len(columns)), dtype=float)
+    net_values = np.zeros((n_dates, len(columns)), dtype=float)
 
     q_labels = [f"D{i+1}" for i in range(quantiles)]
     decile_returns = pd.DataFrame(np.nan, index=accounting_dates, columns=q_labels)
     spread_returns = pd.Series(0.0, index=accounting_dates, name="spread_return")
-    gross_returns = pd.Series(0.0, index=accounting_dates, name="gross_return")
-    net_returns = pd.Series(0.0, index=accounting_dates, name="return")
-    turnover = pd.Series(0.0, index=accounting_dates, name="turnover")
-    tx_costs = pd.Series(0.0, index=accounting_dates, name="transaction_cost_impact")
-    slip_costs = pd.Series(0.0, index=accounting_dates, name="slippage_impact")
-    total_costs = pd.Series(0.0, index=accounting_dates, name="total_trading_cost_impact")
-    equity = pd.Series(np.nan, index=accounting_dates, name="equity")
-    equity.iloc[0] = float(initial_capital)
+    gross_returns = np.full(n_dates, 0.0, dtype=float)
+    net_returns = np.full(n_dates, 0.0, dtype=float)
+    turnover = np.full(n_dates, 0.0, dtype=float)
+    tx_costs = np.full(n_dates, 0.0, dtype=float)
+    slip_costs = np.full(n_dates, 0.0, dtype=float)
+    total_costs = np.full(n_dates, 0.0, dtype=float)
+    equity = np.full(n_dates, np.nan, dtype=float)
+    equity[0] = float(initial_capital)
 
     half_leverage = 0.5 * float(gross_leverage)
 
@@ -177,8 +177,6 @@ def run_long_short_backtest(
         )
         lagged_volatility = rolling_vol.shift(signal_lag_periods)
 
-    current_long = pd.Series(0.0, index=columns)
-    current_short = pd.Series(0.0, index=columns)
     previous_target = pd.Series(0.0, index=columns)
     current_net = pd.Series(0.0, index=columns)
 
@@ -186,10 +184,13 @@ def run_long_short_backtest(
         date = accounting_dates[i]
         prev_date = accounting_dates[i - 1]
 
+        previous_prices = sub_prices.iloc[i - 1]
+        current_prices = sub_prices.iloc[i]
+
         # Validate held endpoints before valuation, drift, or any liquidation.
         held_returns = _calculate_held_asset_returns(
-            previous_prices=sub_prices.loc[prev_date],
-            current_prices=sub_prices.loc[date],
+            previous_prices=previous_prices,
+            current_prices=current_prices,
             previous_holdings=current_net,
             previous_date=prev_date,
             current_date=date,
@@ -202,20 +203,20 @@ def run_long_short_backtest(
         _validate_pretrade_gross(
             gross_return=period_gross, gross_multiplier=gross_multiplier, date=date
         )
-        gross_returns.loc[date] = period_gross
+        gross_returns[i] = period_gross
         pretrade_net = current_net * (1.0 + held_returns) / gross_multiplier
-        # These quantile returns describe the incoming interval diagnostically.
-        # Executable P&L above uses exclusively previously held positions.
-        diagnostic_previous = pd.Series(
-            [_read_positive_price(value) for value in sub_prices.loc[prev_date]], index=columns, dtype=float
-        )
-        diagnostic_current = pd.Series(
-            [_read_positive_price(value) for value in sub_prices.loc[date]], index=columns, dtype=float
-        )
-        asset_returns = diagnostic_current / diagnostic_previous - 1.0
-
         # Calculate decile returns for diagnostic tracking
         if date in rebalance_dates:
+            # These quantile returns describe the incoming interval diagnostically.
+            # Executable P&L above uses exclusively previously held positions.
+            diagnostic_previous = pd.Series(
+                [_read_positive_price(value) for value in previous_prices], index=columns, dtype=float
+            )
+            diagnostic_current = pd.Series(
+                [_read_positive_price(value) for value in current_prices], index=columns, dtype=float
+            )
+            asset_returns = diagnostic_current / diagnostic_previous - 1.0
+
             scores = lagged_signals.loc[date]
             valid_scores = scores[scores.notna()]
             if universe_mask is not None:
@@ -328,7 +329,7 @@ def run_long_short_backtest(
             previous_target = target_net.copy()
             signed_trades = target_net - pretrade_net
             _validate_execution_price_legs(
-                execution_prices=sub_prices.loc[date],
+                execution_prices=current_prices,
                 signed_trade_weights=signed_trades,
                 date=date,
             )
@@ -343,25 +344,34 @@ def run_long_short_backtest(
             row_tx_cost = 0.0
             row_slip_cost = 0.0
             row_total_cost = 0.0
-        current_long = current_net.clip(lower=0.0)
-        current_short = -current_net.clip(upper=0.0)
 
         period_net = period_gross - row_total_cost
-        net_returns.loc[date] = period_net
-        turnover.loc[date] = row_turnover
-        tx_costs.loc[date] = row_tx_cost
-        slip_costs.loc[date] = row_slip_cost
-        total_costs.loc[date] = row_total_cost
+        net_returns[i] = period_net
+        turnover[i] = row_turnover
+        tx_costs[i] = row_tx_cost
+        slip_costs[i] = row_slip_cost
+        total_costs[i] = row_total_cost
 
-        equity_candidate = float(equity.iloc[i - 1]) * (1.0 + period_net)
+        equity_candidate = float(equity[i - 1]) * (1.0 + period_net)
         _validate_postcost_net_equity(
             net_return=period_net, net_multiplier=1.0 + period_net,
             equity_candidate=equity_candidate, date=date,
         )
-        equity.loc[date] = equity_candidate
-        long_holdings.loc[date] = current_long
-        short_holdings.loc[date] = current_short
-        net_holdings.loc[date] = current_net
+        equity[i] = equity_candidate
+        net_values[i] = current_net.to_numpy(dtype=float)
+        long_values[i] = np.where(net_values[i] < 0.0, 0.0, net_values[i])
+        short_values[i] = -np.where(net_values[i] > 0.0, 0.0, net_values[i])
+
+    long_holdings = pd.DataFrame(long_values, index=accounting_dates, columns=columns)
+    short_holdings = pd.DataFrame(short_values, index=accounting_dates, columns=columns)
+    net_holdings = pd.DataFrame(net_values, index=accounting_dates, columns=columns)
+    gross_returns = pd.Series(gross_returns, index=accounting_dates, name="gross_return")
+    net_returns = pd.Series(net_returns, index=accounting_dates, name="return")
+    turnover = pd.Series(turnover, index=accounting_dates, name="turnover")
+    tx_costs = pd.Series(tx_costs, index=accounting_dates, name="transaction_cost_impact")
+    slip_costs = pd.Series(slip_costs, index=accounting_dates, name="slippage_impact")
+    total_costs = pd.Series(total_costs, index=accounting_dates, name="total_trading_cost_impact")
+    equity = pd.Series(equity, index=accounting_dates, name="equity")
 
     # Summary metrics
     metrics = _calculate_long_short_metrics(

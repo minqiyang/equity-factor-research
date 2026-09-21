@@ -42,6 +42,61 @@ def _panel(values: dict[str, list[float]], *, start: str = "2024-01-01") -> pd.D
     return pd.DataFrame(values, index=dates)
 
 
+@pytest.mark.parametrize("method", ["average", "min", "max", "first", "dense"])
+@pytest.mark.parametrize("ascending", [True, False])
+@pytest.mark.parametrize("window", [1, 2, 5, 20, 40])
+def test_ts_rank_matches_series_oracle_and_preserves_causal_prefix(
+    method: str, ascending: bool, window: int,
+) -> None:
+    rng = np.random.default_rng(781)
+    values = rng.integers(-3, 4, size=(32, 4)).astype(float)
+    values[4:8, 0] = np.nan
+    values[:, 1] = np.nan
+    values[:, 2] = 2.0
+    values[0, 3] = np.finfo(float).max
+    values[1, 3] = -np.finfo(float).max
+    data = pd.DataFrame(
+        values,
+        index=pd.date_range("2024-01-01", periods=32, tz="UTC", name="date"),
+        columns=pd.Index([1, "1", "constant", "extremes"], name="asset"),
+    )
+    original = data.copy(deep=True)
+    expected = data.rolling(window, min_periods=window).apply(
+        lambda row: row.rank(method=method, ascending=ascending, pct=True).iloc[-1],
+        raw=False,
+    )
+    actual = ts_rank(data, window, method=method, ascending=ascending)
+    assert_frame_equal(actual, expected, check_exact=True)
+    assert_frame_equal(data, original, check_exact=True)
+    changed = data.copy(deep=True)
+    changed.iloc[24:] = rng.normal(size=(8, 4))
+    assert_frame_equal(
+        actual.iloc[:24],
+        ts_rank(changed, window, method=method, ascending=ascending).iloc[:24],
+        check_exact=True,
+    )
+
+
+@pytest.mark.parametrize("shape", [(3, 0), (0, 3), (0, 0)])
+def test_ts_rank_refuses_empty_axes(shape: tuple[int, int]) -> None:
+    data = pd.DataFrame(
+        np.empty(shape), index=pd.date_range("2024-01-01", periods=shape[0])
+    )
+    with pytest.raises(ValueError, match="data must not be empty"):
+        ts_rank(data, 2)
+
+
+@pytest.mark.parametrize("axis", ["index", "columns"])
+def test_ts_rank_refuses_duplicate_axes(axis: str) -> None:
+    data = _panel({"AAA": [1.0, 2.0], "BBB": [3.0, 4.0]})
+    if axis == "index":
+        data.index = pd.DatetimeIndex([data.index[0], data.index[0]])
+    else:
+        data.columns = ["AAA", "AAA"]
+    with pytest.raises(ValueError, match="duplicate"):
+        ts_rank(data, 2)
+
+
 def test_validate_panel_data_returns_float_copy_and_preserves_missing_values() -> None:
     data = _panel({"AAA": [1, 2, np.nan], "BBB": [4, 5, 6]})
 
