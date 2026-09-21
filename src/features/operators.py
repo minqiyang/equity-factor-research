@@ -331,6 +331,12 @@ def ts_rank(
     _validate_positive_integer(window, "window")
     panel = validate_panel_data(data)
 
+    # pandas implements these tie rules in its native rolling kernel.
+    if method in ("average", "min", "max"):
+        return panel.rolling(window=window, min_periods=window).rank(
+            method=method, ascending=ascending, pct=True
+        )
+
     def rank_current(window_values: pd.Series) -> float:
         ranks = window_values.rank(method=method, ascending=ascending, pct=True)
         return float(ranks.iloc[-1])

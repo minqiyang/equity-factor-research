@@ -59,6 +59,98 @@ def _run(
     )
 
 
+@pytest.mark.parametrize("shape", [(3, 0), (0, 3), (0, 0), (3, 3)])
+def test_bounded_signal_validation_preserves_empty_and_named_axes(shape) -> None:
+    frame = pd.DataFrame(
+        np.zeros(shape),
+        index=pd.date_range("2024-01-01", periods=shape[0], name="date"),
+        columns=pd.Index(["A"] * shape[1], name="asset"),
+    )
+    actual = portfolio_module._validate_bounded_signal_values(frame)
+    pd.testing.assert_frame_equal(actual, frame, check_exact=True)
+
+
+def test_bounded_signal_validation_preserves_mixed_scalar_values() -> None:
+    dates = pd.date_range("2024-01-01", periods=3, name="date")
+    frame = pd.DataFrame({
+        "integer": pd.Series([2**63 + 1, 2**63 + 3, 0], index=dates, dtype="uint64"),
+        "float": [1.25, -0.0, np.nan],
+        "object": pd.Series([np.int16(7), np.float32(2.5), Fraction(1, 2)], index=dates, dtype=object),
+        "nullable": pd.Series([1, 2, 3], index=dates, dtype="Int64"),
+    }, index=dates)
+    original = frame.copy(deep=True)
+    # The reference reads each scalar with the original positional accessor.
+    expected = pd.DataFrame(
+        [[float(frame.iat[row, col]) for col in range(frame.shape[1])]
+         for row in range(frame.shape[0])], index=dates, columns=frame.columns,
+    )
+    actual = portfolio_module._validate_bounded_signal_values(frame)
+    pd.testing.assert_frame_equal(actual, expected, check_exact=True)
+    assert np.signbit(actual.loc[dates[1], "float"])
+    pd.testing.assert_frame_equal(frame, original, check_exact=True)
+
+
+@pytest.mark.parametrize("invalid", [True, np.bool_(False), "2", 1 + 0j, pd.NA, np.inf, -np.inf])
+def test_bounded_signal_validation_retains_first_invalid_cell(invalid) -> None:
+    dates = pd.date_range("2024-01-01", periods=3)
+    frame = pd.DataFrame([[1.0, invalid], [invalid, 2.0], [3.0, 4.0]],
+                         index=dates, columns=[1, "1"], dtype=object)
+    with pytest.raises(BacktestValidationError) as caught:
+        portfolio_module._validate_bounded_signal_values(frame)
+    assert caught.value.reason == "signal_value_invalid"
+    assert caught.value.date == dates[0]
+    assert caught.value.asset == "1"
+
+
+@pytest.mark.parametrize("policy", ["raise", "zero_return"])
+@pytest.mark.parametrize("bad_value", [np.nan, np.inf, -np.inf, 0.0, -1.0])
+@pytest.mark.parametrize("endpoint", ["previous", "current"])
+def test_held_return_native_path_matches_scalar_path(policy, bad_value, endpoint) -> None:
+    dates = pd.date_range("2024-01-01", periods=2)
+    assets = pd.Index([1, "1", "unheld", "tiny"], name="asset")
+    previous = pd.Series([100.0, 200.0, 0.0, 1e-300], index=assets)
+    current = pd.Series([101.0, 198.0, np.inf, 1e-299], index=assets)
+    holdings = pd.Series([0.5, -0.5, 0.0, 0.1], index=assets)
+    (previous if endpoint == "previous" else current).iloc[1] = bad_value
+
+    def execute(as_object):
+        try:
+            return portfolio_module._calculate_held_asset_returns(
+                previous_prices=previous.astype(object) if as_object else previous,
+                current_prices=current.astype(object) if as_object else current,
+                previous_holdings=holdings,
+                previous_date=dates[0], current_date=dates[1], missing_price_policy=policy,
+            )
+        except BacktestValidationError as exc:
+            return exc.reason, exc.date, exc.asset
+
+    expected = execute(True)
+    actual = execute(False)
+    if isinstance(expected, pd.Series):
+        pd.testing.assert_series_equal(actual, expected, check_exact=True)
+    else:
+        assert actual == expected
+
+
+@pytest.mark.parametrize("dtype", ["int64", "uint64", "float16", "float32", "float64", "longdouble"])
+def test_held_return_native_dtypes_match_scalar_path(dtype) -> None:
+    assets = pd.Index(["held", "unheld"], name="asset")
+    previous = pd.Series([10, 0], index=assets, dtype=dtype)
+    current = pd.Series([11, 0], index=assets, dtype=dtype)
+    kwargs = dict(
+        previous_holdings=pd.Series([1.0, 0.0], index=assets),
+        previous_date=pd.Timestamp("2024-01-01"),
+        current_date=pd.Timestamp("2024-01-02"), missing_price_policy="raise",
+    )
+    actual = portfolio_module._calculate_held_asset_returns(
+        previous_prices=previous, current_prices=current, **kwargs,
+    )
+    expected = portfolio_module._calculate_held_asset_returns(
+        previous_prices=previous.astype(object), current_prices=current.astype(object), **kwargs,
+    )
+    pd.testing.assert_series_equal(actual, expected, check_exact=True)
+
+
 def test_timing_001_hand_calculated_reference_case() -> None:
     dates = pd.bdate_range("2025-01-06", periods=4)
     prices = pd.DataFrame(

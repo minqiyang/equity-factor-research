@@ -10092,3 +10092,14 @@ This ablation round completes the implementation and machine verification of sev
   - Reviewer 2 (Grok 4.6 Extra High): Verdict PASS (MATERIAL: 0); full 2-worker suite passed 3,817 in 264.06s with 3,819 unique node IDs; recorded ADV-CIA-1 (conformance pin coverage). Report at `coord/reports/ci_acceleration_grok_review.md`.
 - Remediated R1-A01: corrected 420s vs 1,144.64s floor comparison and nominal 1.94x speedup / 0.515 elapsed ratio phrasing in `coord/reports/ci_acceleration_impl_report.md`.
 - Remediated ADV-CIA-1: extended `tests/test_campaign_conformance.py::test_ci_runs_only_committed_synthetic_campaign_fixtures` to assert job name `Python validation`, the six thread clamping env keys (`OMP_NUM_THREADS="1"`, etc.), `-n 2 --dist worksteal`, and `--max-worker-restart=0`.
+
+## 2026-09-21 — CI Stage B/C runtime and lane acceleration
+
+- Delivery branch `feat/ci-stage-bc-acceleration`, base `431cdd2` (Stage A).
+- Profiled the complete synthetic diagnostic. The two book engines consume approximately 86% of instrumented pipeline time; native rolling rank alone addresses approximately 7.5%.
+- Implemented native rolling ranks with the existing tie-rule fallback, scalar-preserving signal traversal, a guarded numeric held-return path, and array output buffers for both accounting engines. Long-short bucket diagnostics execute on rebalance dates. Existing timing, arithmetic, costs, provenance and refusal guards retain their contracts.
+- Split CI into exhaustive core and diagnostics lanes with two bounded xdist workers each. The required `Python validation` job accepts only successful lane completion and retains failure/cancellation/skipped-result protection.
+- Local Python 3.11 verification: core 3,790 passed and two inherited platform precision skips in 39.74 seconds; diagnostics 125 passed in 135.04 seconds. Collection union has 3,917 unique cases, retaining all 3,819 original cases and adding 98 regression cases. Ruff, compilation, actionlint, packaging and whitespace checks pass. All 20 packaged ledger JSON/hash files match source. Tracked fixtures and reports remain unchanged. Repository-map regeneration produced identical content.
+- Fresh official-test call time falls from 218.774 to 79.844 seconds. Twenty-four preserved-baseline book configurations match all public fields exactly, including signed zeros. Isolated ablations retain the measured optimizations; median pair-of-books time falls from 2.0527 to 0.6818 seconds.
+- Stage C alone has a hosted diagnostics work floor of 17m07s. The combined candidate projects approximately seven minutes using fresh local calibration. The hosted 5–8 minute target and independent exact-candidate review remain acceptance gates.
+- Assessment, implementation, ablation, evidence locations and limits: `coord/reports/ci_acceleration_stage_bc_impl.md`.

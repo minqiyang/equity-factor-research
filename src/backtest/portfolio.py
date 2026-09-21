@@ -822,27 +822,19 @@ def _calculate_bounded_portfolio_path(
 
     index = prices.index
     columns = prices.columns
-    holdings = pd.DataFrame(0.0, index=index, columns=columns)
-    gross_returns = pd.Series(0.0, index=index, name="gross_return")
-    signed_trade_weights = pd.DataFrame(0.0, index=index, columns=columns)
-    trade_weights = pd.DataFrame(0.0, index=index, columns=columns)
-    resolved_asset_returns = pd.DataFrame(0.0, index=index, columns=columns)
-    turnover = pd.Series(0.0, index=index, name="turnover")
-    transaction_costs = pd.Series(
-        0.0,
-        index=index,
-        name="transaction_cost_impact",
-    )
-    slippage_costs = pd.Series(0.0, index=index, name="slippage_impact")
-    volume_aware_costs = pd.Series(
-        0.0,
-        index=index,
-        name="volume_aware_slippage_impact",
-    )
-    total_costs = pd.Series(0.0, index=index, name="total_trading_cost_impact")
-    net_returns = pd.Series(0.0, index=index, name="return")
-    equity_curve = pd.Series(np.nan, index=index, name="equity")
-    equity_curve.iloc[0] = initial_capital
+    holdings = np.zeros(prices.shape, dtype=float)
+    gross_returns = np.full(len(index), 0.0, dtype=float)
+    signed_trade_weights = np.zeros(prices.shape, dtype=float)
+    trade_weights = np.zeros(prices.shape, dtype=float)
+    resolved_asset_returns = np.zeros(prices.shape, dtype=float)
+    turnover = np.full(len(index), 0.0, dtype=float)
+    transaction_costs = np.full(len(index), 0.0, dtype=float)
+    slippage_costs = np.full(len(index), 0.0, dtype=float)
+    volume_aware_costs = np.full(len(index), 0.0, dtype=float)
+    total_costs = np.full(len(index), 0.0, dtype=float)
+    net_returns = np.full(len(index), 0.0, dtype=float)
+    equity_curve = np.full(len(index), np.nan, dtype=float)
+    equity_curve[0] = initial_capital
     post_trade_weights = pd.Series(0.0, index=columns, dtype=float)
 
     if raw_volume_impact.iloc[0] != 0.0:
@@ -863,7 +855,7 @@ def _calculate_bounded_portfolio_path(
             current_date=date,
             missing_price_policy=missing_price_policy,
         )
-        resolved_asset_returns.loc[date] = period_returns
+        resolved_asset_returns[position] = period_returns.to_numpy(dtype=float)
 
         with np.errstate(over="ignore", invalid="ignore"):
             weighted_asset_returns = post_trade_weights * period_returns
@@ -877,7 +869,7 @@ def _calculate_bounded_portfolio_path(
             gross_multiplier=gross_multiplier,
             date=date,
         )
-        gross_returns.loc[date] = gross_return
+        gross_returns[position] = gross_return
 
         with np.errstate(over="ignore", invalid="ignore"):
             grown_weights = post_trade_weights * (1.0 + period_returns)
@@ -896,14 +888,15 @@ def _calculate_bounded_portfolio_path(
                 signed_trade_weights=signed_trades,
                 date=date,
             )
-            signed_trade_weights.loc[date] = signed_trades
-            trade_weights.loc[date] = signed_trades.abs()
+            signed_trade_weights[position] = signed_trades.to_numpy(dtype=float)
+            trade_weights[position] = signed_trades.abs().to_numpy(dtype=float)
+            row_turnover = float(signed_trades.abs().sum())
             next_holdings = actual_target
         else:
+            row_turnover = 0.0
             next_holdings = pretrade_weights
 
-        row_turnover = float(trade_weights.loc[date].sum())
-        turnover.loc[date] = row_turnover
+        turnover[position] = row_turnover
         with np.errstate(over="ignore", invalid="ignore"):
             fixed_transaction_cost = (
                 row_turnover * (transaction_cost_bps / 10_000.0) * gross_multiplier
@@ -921,42 +914,42 @@ def _calculate_bounded_portfolio_path(
                 "applied impact must be zero when turnover is zero",
                 date=date,
             )
-        transaction_costs.loc[date] = fixed_transaction_cost
-        slippage_costs.loc[date] = fixed_slippage_cost
-        volume_aware_costs.loc[date] = volume_cost
+        transaction_costs[position] = fixed_transaction_cost
+        slippage_costs[position] = fixed_slippage_cost
+        volume_aware_costs[position] = volume_cost
         row_total_cost = (
             fixed_transaction_cost + fixed_slippage_cost + volume_cost
         )
-        total_costs.loc[date] = row_total_cost
+        total_costs[position] = row_total_cost
 
         with np.errstate(over="ignore", invalid="ignore"):
             net_return = gross_return - row_total_cost
             net_multiplier = 1.0 + net_return
-            equity_candidate = float(equity_curve.iloc[position - 1]) * net_multiplier
+            equity_candidate = float(equity_curve[position - 1]) * net_multiplier
         _validate_postcost_net_equity(
             net_return=net_return,
             net_multiplier=net_multiplier,
             equity_candidate=equity_candidate,
             date=date,
         )
-        net_returns.loc[date] = net_return
-        equity_curve.loc[date] = equity_candidate
-        holdings.loc[date] = next_holdings
+        net_returns[position] = net_return
+        equity_curve[position] = equity_candidate
+        holdings[position] = next_holdings.to_numpy(dtype=float)
         post_trade_weights = next_holdings
 
     return (
-        holdings,
-        gross_returns,
-        signed_trade_weights,
-        trade_weights,
-        resolved_asset_returns,
-        turnover,
-        transaction_costs,
-        slippage_costs,
-        volume_aware_costs,
-        total_costs,
-        net_returns,
-        equity_curve,
+        pd.DataFrame(holdings, index=index, columns=columns),
+        pd.Series(gross_returns, index=index, name="gross_return"),
+        pd.DataFrame(signed_trade_weights, index=index, columns=columns),
+        pd.DataFrame(trade_weights, index=index, columns=columns),
+        pd.DataFrame(resolved_asset_returns, index=index, columns=columns),
+        pd.Series(turnover, index=index, name="turnover"),
+        pd.Series(transaction_costs, index=index, name="transaction_cost_impact"),
+        pd.Series(slippage_costs, index=index, name="slippage_impact"),
+        pd.Series(volume_aware_costs, index=index, name="volume_aware_slippage_impact"),
+        pd.Series(total_costs, index=index, name="total_trading_cost_impact"),
+        pd.Series(net_returns, index=index, name="return"),
+        pd.Series(equity_curve, index=index, name="equity"),
     )
 
 
@@ -970,6 +963,37 @@ def _calculate_held_asset_returns(
     missing_price_policy: str,
 ) -> pd.Series:
     """Calculate only economically relevant held-asset returns."""
+
+    if (
+        previous_prices.index.equals(previous_holdings.index)
+        and current_prices.index.equals(previous_holdings.index)
+        and previous_holdings.index.is_unique
+        and previous_holdings.dtype == np.dtype(float)
+        and previous_prices.dtype.kind in "fiu"
+        and current_prices.dtype.kind in "fiu"
+        and isinstance(previous_prices.dtype, np.dtype)
+        and isinstance(current_prices.dtype, np.dtype)
+    ):
+        held = previous_holdings.to_numpy() != 0.0
+        positions = np.flatnonzero(held)
+        with np.errstate(over="ignore", invalid="ignore"):
+            previous = previous_prices.to_numpy(dtype=float)[positions]
+            current = current_prices.to_numpy(dtype=float)[positions]
+        previous_valid = np.isfinite(previous) & (previous > 0.0)
+        current_valid = np.isfinite(current) & (current > 0.0)
+        valid = previous_valid & current_valid
+        if missing_price_policy != "zero_return" and not valid.all():
+            first = int(np.flatnonzero(~valid)[0])
+            raise BacktestValidationError(
+                "incoming_price_invalid",
+                "held prior/current close endpoints must be finite positive real values",
+                date=previous_date if not previous_valid[first] else current_date,
+                asset=previous_holdings.index[positions[first]],
+            )
+        values = np.zeros(len(previous_holdings), dtype=float)
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            values[positions[valid]] = current[valid] / previous[valid] - 1.0
+        return pd.Series(values, index=previous_holdings.index, dtype=float)
 
     period_returns = pd.Series(0.0, index=previous_holdings.index, dtype=float)
     for asset in previous_holdings.index[previous_holdings.ne(0.0)]:
@@ -2036,15 +2060,13 @@ def _losslessly_recover_expected_real(
 def _validate_bounded_signal_values(
     bounded_signals: pd.DataFrame,
 ) -> pd.DataFrame:
-    clean = pd.DataFrame(
-        np.nan,
-        index=bounded_signals.index,
-        columns=bounded_signals.columns,
-        dtype=float,
+    clean_values = np.full(bounded_signals.shape, np.nan, dtype=float)
+    # Column arrays retain scalar types; row traversal retains refusal order.
+    rows = zip(
+        *(bounded_signals.iloc[:, column].array for column in range(len(bounded_signals.columns)))
     )
-    for row_position, date in enumerate(bounded_signals.index):
-        for column_position, asset in enumerate(bounded_signals.columns):
-            value = bounded_signals.iat[row_position, column_position]
+    for row_position, (date, row) in enumerate(zip(bounded_signals.index, rows)):
+        for column_position, (asset, value) in enumerate(zip(bounded_signals.columns, row)):
             if isinstance(value, float | np.floating) and np.isnan(value):
                 continue
             if not _is_finite_real_scalar(value):
@@ -2054,8 +2076,10 @@ def _validate_bounded_signal_values(
                     date=date,
                     asset=asset,
                 )
-            clean.iat[row_position, column_position] = float(value)
-    return clean
+            clean_values[row_position, column_position] = float(value)
+    return pd.DataFrame(
+        clean_values, index=bounded_signals.index, columns=bounded_signals.columns,
+    )
 
 
 def _prepare_volume_aware_slippage_input(
