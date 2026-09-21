@@ -63,6 +63,7 @@ profitability, or trading readiness.
 - `.github/workflows/ci.yml`: Stage A bounded scheduling uses `pytest-xdist` with `-n 2 --dist worksteal --max-worker-restart=0`, clamps native BLAS/OpenMP/MKL threads to 1, hashes `pyproject.toml` for the pip cache, prefers binary wheels, and uploads fail-closed validation evidence. The required check name remains `Python validation`.
 - `pyproject.toml`: Added `pytest-xdist>=3.5.0` to the `dev` extra. Pytest `addopts` remains serial `-ra`.
 - `tests/test_ml_combination.py`: Parametrizes supported ML models with `sorted(_SUPPORTED_MODELS)` so xdist workers collect the same node IDs.
+- `tests/test_campaign_conformance.py`: Extended CI workflow conformance pin to assert required job name `Python validation`, the six native-thread clamping environment variables, `-n 2 --dist worksteal`, and `--max-worker-restart=0`.
 - `src/reporting/experiment_log.py`: Added `DIAGNOSTIC_REAL_DATA_CAVEATS` and optional `required_caveats` so local real-data diagnostic sidecars are not forced to claim synthetic-only scope.
 - `src/reporting/experiment_registry.py`: The synthetic registry skips `real_data_multifactor_diagnostic` logs.
 - `research/multifactor_diagnostic_mvp.py`: Portfolio-weighting comparisons skip missing factor keys so a reduced diagnostic can evaluate a subset of the 4×4 grid.

@@ -250,8 +250,20 @@ def test_campaign_source_contains_no_hex_digest_literals() -> None:
 def test_ci_runs_only_committed_synthetic_campaign_fixtures() -> None:
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
     lowered = workflow.lower()
+    assert "name: python validation" in lowered
     assert "python -m pytest -q" in workflow
     assert workflow.count("python -m pytest -q") == 1
+    assert "-n 2 --dist worksteal" in workflow
+    assert "--max-worker-restart=0" in workflow
+    for env_var in (
+        'OMP_NUM_THREADS: "1"',
+        'OPENBLAS_NUM_THREADS: "1"',
+        'MKL_NUM_THREADS: "1"',
+        'BLIS_NUM_THREADS: "1"',
+        'VECLIB_MAXIMUM_THREADS: "1"',
+        'NUMEXPR_NUM_THREADS: "1"',
+    ):
+        assert env_var in workflow
     assert "python_files=test_campaign_*.py" not in workflow
     assert "committed synthetic fixtures" in lowered
     assert "not result-bearing" in lowered

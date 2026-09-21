@@ -21,7 +21,7 @@ a test-critical-path problem.
 The card's performance model for serial work `S = 2,289.27 s` gives a
 two-worker floor of 1,144.64 s and a four-worker floor of 572.32 s. An
 eight-minute job with 60 s reserved for setup leaves 420 s for tests, which
-already exceeds the two-worker work floor. The longest recorded test
+falls well below this ideal two-worker work floor. The longest recorded test
 (`test_multifactor_diagnostic_official_report_table_matches_default_fixture`,
 141.10 s serial / 146.55 s in this local parallel run) is an independent
 lower bound. Stage A therefore ships bounded scheduling and collection
@@ -160,8 +160,8 @@ The two skips are the existing ARM `longdouble` cases in
 existing constant-input Spearman warnings. Worker restarts were disabled;
 the run completed without a crash.
 
-Local parallel wall clock 268.59 s is 1.94x the design-card serial 521.23 s
-on this machine class. The longest call in this run is 146.55 s
+Local parallel wall clock 268.59 s represents a nominal 1.94x speedup over the design-card serial 521.23 s
+(elapsed-time ratio 0.515) on this machine class. The longest call in this run is 146.55 s
 (`test_multifactor_diagnostic_official_report_table_matches_default_fixture`).
 Controller `/usr/bin/time -l` maximum RSS is 747,618,304 bytes. That figure
 is the timed parent process, not the aggregate of controller plus workers.
