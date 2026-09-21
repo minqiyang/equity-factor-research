@@ -819,6 +819,9 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "alpha_ids": list(result["alpha_ids"]),
             "composite_ids": list(result["composite_ids"]),
             "include_weighting_comparisons": config.include_weighting_comparisons,
+            "pbo_n_splits": config.pbo_n_splits,
+            "pbo_holding_periods": config.pbo_holding_periods,
+            "pbo_embargo_periods": config.pbo_embargo_periods,
         },
         assumptions={
             "data_scope": "local EODHD Parquet diagnostic",
@@ -940,7 +943,7 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "walk-forward training windows at monthly rebalance dates, admitting an "
             "observation labeled at s only when its execution-aligned forward-return "
             "window has closed by t; predictions are held on [t, next_t)",
-            "CPCV cross-validation purges training samples overlapping with the 21-bar forward-return window and applies a 5-bar post-test embargo",
+            "CPCV cross-validation on one-period strategy P&L purges training samples overlapping with the 21-bar forward-return window and applies a 5-bar post-test embargo",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts, not GICS point-in-time sectors",
             "market beta proxy does not backfill leading rolling-beta NaNs",
@@ -1070,6 +1073,8 @@ expanding training windows with strictly closed forward-return labels (zero look
     if cpcv_summary:
         cpcv_section = f"""
 ### Combinatorial Purged Cross-Validation (CPCV)
+
+CPCV evaluates backtest overfitting on the one-period strategy return series with a declared 21-bar forward-dependence horizon and 5-bar post-test embargo window.
 
 - Purged & Embargoed PBO: `{_format_number(cpcv_summary["pbo"])}`
 - Out-of-Sample Probability of Loss: `{_format_number(cpcv_summary["prob_loss"])}`

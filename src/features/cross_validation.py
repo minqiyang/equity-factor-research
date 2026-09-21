@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import itertools
 import math
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any, Iterator, Mapping
 
 import numpy as np
 import pandas as pd
@@ -63,17 +63,27 @@ class PurgedGroupTimeSeriesSplit(BaseCrossValidator):
         embargo_pct: float = 0.0,
         samples_info: pd.Series | pd.DataFrame | Mapping[Any, Any] | None = None,
     ) -> None:
-        if not isinstance(n_splits, int) or n_splits < 2:
+        if isinstance(n_splits, bool) or not isinstance(n_splits, int) or n_splits < 2:
             raise ValueError(f"n_splits must be an integer >= 2, got {n_splits}")
-        if not isinstance(n_test_groups, int) or n_test_groups < 1 or n_test_groups >= n_splits:
+        if (
+            isinstance(n_test_groups, bool)
+            or not isinstance(n_test_groups, int)
+            or n_test_groups < 1
+            or n_test_groups >= n_splits
+        ):
             raise ValueError(
                 f"n_test_groups must be an integer in [1, n_splits - 1], got {n_test_groups} with n_splits={n_splits}"
             )
-        if not isinstance(holding_periods, int) or holding_periods < 0:
+        if isinstance(holding_periods, bool) or not isinstance(holding_periods, int) or holding_periods < 0:
             raise ValueError(f"holding_periods must be a non-negative integer, got {holding_periods}")
-        if not isinstance(embargo_periods, int) or embargo_periods < 0:
+        if isinstance(embargo_periods, bool) or not isinstance(embargo_periods, int) or embargo_periods < 0:
             raise ValueError(f"embargo_periods must be a non-negative integer, got {embargo_periods}")
-        if not isinstance(embargo_pct, (int, float)) or embargo_pct < 0.0 or embargo_pct >= 1.0:
+        if (
+            isinstance(embargo_pct, bool)
+            or not isinstance(embargo_pct, (int, float))
+            or embargo_pct < 0.0
+            or embargo_pct >= 1.0
+        ):
             raise ValueError(f"embargo_pct must be a float in [0.0, 1.0), got {embargo_pct}")
 
         self.n_splits = n_splits
@@ -90,47 +100,38 @@ class PurgedGroupTimeSeriesSplit(BaseCrossValidator):
         groups: Any = None,
     ) -> int:
         """Return the number of splitting iterations C(n_splits, n_test_groups)."""
+        if groups is not None:
+            unique_groups = len(np.unique(groups))
+            if unique_groups != self.n_splits:
+                raise ValueError(
+                    f"Number of unique groups ({unique_groups}) does not match n_splits ({self.n_splits})"
+                )
         return math.comb(self.n_splits, self.n_test_groups)
 
-    def split(
+    def split_details(
         self,
         X: Any,
         y: Any = None,
         groups: Any = None,
-    ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
-        """Generate indices to split data into training and test set with purging and embargo.
-
-        Args:
-            X: Array-like or DataFrame of shape (n_samples, n_features).
-            y: Optional target array.
-            groups: Optional group labels. If None, samples are partitioned into
-                n_splits contiguous equal-sized temporal blocks.
-
-        Yields:
-            (train_indices, test_indices) arrays of integers.
-        """
-        n_samples = len(X)
+    ) -> Iterator[tuple[np.ndarray, np.ndarray, int, int]]:
+        """Yield (train_indices, test_indices, purge_count, embargo_count)."""
+        X_arr = np.asarray(X)
+        n_samples = len(X_arr)
         if n_samples < self.n_splits:
-            raise ValueError(
-                f"Cannot split {n_samples} samples into {self.n_splits} groups (requires n_samples >= n_splits)"
-            )
+            raise ValueError(f"n_samples ({n_samples}) must be >= n_splits ({self.n_splits})")
 
         indices = np.arange(n_samples)
-
-        # Determine sample start and end bounds
         sample_starts = np.arange(n_samples, dtype=int)
         sample_ends = sample_starts + self.holding_periods
 
         if self.samples_info is not None:
             if isinstance(self.samples_info, (pd.Series, pd.DataFrame)):
-                info_values = self.samples_info.values.flatten()
+                info_values = self.samples_info.to_numpy()
+            elif isinstance(self.samples_info, Mapping):
+                info_values = np.array([self.samples_info.get(i, i) for i in range(n_samples)])
             else:
-                info_values = np.array([self.samples_info[i] for i in range(n_samples)])
-            if len(info_values) != n_samples:
-                raise ValueError(
-                    f"samples_info length ({len(info_values)}) does not match sample count ({n_samples})"
-                )
-            # If info contains integer offsets or timestamps
+                info_values = np.asarray(self.samples_info)
+
             if np.issubdtype(info_values.dtype, np.integer):
                 sample_ends = info_values.astype(int)
 
@@ -147,14 +148,11 @@ class PurgedGroupTimeSeriesSplit(BaseCrossValidator):
 
         embargo_count = max(self.embargo_periods, int(math.ceil(self.embargo_pct * n_samples)))
 
-        # Combinatorial evaluation over all C(n_splits, n_test_groups)
         all_group_indices = list(range(len(group_splits)))
         for test_group_comb in itertools.combinations(all_group_indices, self.n_test_groups):
-            test_group_set = set(test_group_comb)
             test_indices_list = [group_splits[g] for g in test_group_comb]
             test_indices = np.sort(np.concatenate(test_indices_list))
 
-            # Determine test intervals [test_start, test_end] for each test group
             test_intervals: list[tuple[int, int]] = []
             for g in test_group_comb:
                 g_idx = group_splits[g]
@@ -164,24 +162,43 @@ class PurgedGroupTimeSeriesSplit(BaseCrossValidator):
                 g_end = int(sample_ends[g_idx[-1]])
                 test_intervals.append((g_start, g_end))
 
-            # Start with all non-test samples
-            train_mask = np.ones(n_samples, dtype=bool)
-            train_mask[test_indices] = False
+            non_test_mask = np.ones(n_samples, dtype=bool)
+            non_test_mask[test_indices] = False
 
             # 1. Purge: remove training samples whose label window overlaps with any test group
+            overlap_mask = np.zeros(n_samples, dtype=bool)
             for t_start, t_end in test_intervals:
-                # Sample i overlaps with [t_start, t_end] if:
-                # sample_starts[i] <= t_end and sample_ends[i] >= t_start
                 overlap = (sample_starts <= t_end) & (sample_ends >= t_start)
-                train_mask[overlap] = False
+                overlap_mask |= overlap
+
+            purged_mask = non_test_mask & overlap_mask
 
             # 2. Embargo: remove training samples immediately following each test group
+            embargo_mask = np.zeros(n_samples, dtype=bool)
             if embargo_count > 0:
                 for _, t_end in test_intervals:
-                    embargo_window = (sample_starts > t_end) & (sample_starts <= t_end + embargo_count)
-                    train_mask[embargo_window] = False
+                    in_embargo = (sample_starts > t_end) & (sample_starts <= t_end + embargo_count)
+                    embargo_mask |= in_embargo
 
+            # Non-test rows that were not already purged, but fall in post-test embargo
+            effective_embargo_mask = (non_test_mask & ~purged_mask) & embargo_mask
+
+            train_mask = non_test_mask & ~purged_mask & ~effective_embargo_mask
             train_indices = indices[train_mask]
+
+            purge_count = int(np.sum(purged_mask))
+            embargo_count_val = int(np.sum(effective_embargo_mask))
+
+            yield train_indices, test_indices, purge_count, embargo_count_val
+
+    def split(
+        self,
+        X: Any,
+        y: Any = None,
+        groups: Any = None,
+    ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+        """Generate indices to split data into training and test set."""
+        for train_indices, test_indices, _, _ in self.split_details(X, y=y, groups=groups):
             yield train_indices, test_indices
 
 
@@ -265,10 +282,10 @@ def combinatorial_purged_cross_validation_pbo(
             f"returns_matrix has {n_rows} rows; requires at least 2 * n_splits = {2 * n_splits} rows"
         )
 
-    if not isinstance(holding_periods, int) or holding_periods < 0:
+    if isinstance(holding_periods, bool) or not isinstance(holding_periods, int) or holding_periods < 0:
         raise ValueError(f"holding_periods must be an integer >= 0, got {holding_periods}")
 
-    if not isinstance(embargo_periods, int) or embargo_periods < 0:
+    if isinstance(embargo_periods, bool) or not isinstance(embargo_periods, int) or embargo_periods < 0:
         raise ValueError(f"embargo_periods must be an integer >= 0, got {embargo_periods}")
 
     rf = float(risk_free_rate)
@@ -300,13 +317,9 @@ def combinatorial_purged_cross_validation_pbo(
     purged_counts: list[int] = []
     embargoed_counts: list[int] = []
 
-    for train_idx, test_idx in cv.split(values):
-        nominal_train_count = n_rows - len(test_idx)
-        actual_train_count = len(train_idx)
-        excluded_count = nominal_train_count - actual_train_count
-
-        purged_counts.append(excluded_count)
-        embargoed_counts.append(min(excluded_count, embargo_periods))
+    for train_idx, test_idx, n_purged, n_embargoed in cv.split_details(values):
+        purged_counts.append(n_purged)
+        embargoed_counts.append(n_embargoed)
 
         if len(train_idx) < 2:
             raise ValueError(
@@ -315,7 +328,6 @@ def combinatorial_purged_cross_validation_pbo(
 
         # In-sample statistics
         is_data = values[train_idx]
-        is_n = len(is_data)
         is_mean = is_data.mean(axis=0)
         is_var = is_data.var(axis=0, ddof=1)
         is_std = np.sqrt(np.maximum(is_var, 0.0))
@@ -327,7 +339,6 @@ def combinatorial_purged_cross_validation_pbo(
 
         # Out-of-sample statistics
         oos_data = values[test_idx]
-        oos_n = len(oos_data)
         oos_mean = oos_data.mean(axis=0)
         oos_var = oos_data.var(axis=0, ddof=1)
         oos_std = np.sqrt(np.maximum(oos_var, 0.0))

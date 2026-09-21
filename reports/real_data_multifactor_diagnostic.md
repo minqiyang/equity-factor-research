@@ -339,13 +339,15 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 
 ### Combinatorial Purged Cross-Validation (CPCV)
 
+CPCV evaluates backtest overfitting on the one-period strategy return series with a declared 21-bar forward-dependence horizon and 5-bar post-test embargo window.
+
 - Purged & Embargoed PBO: `0.5286`
 - Out-of-Sample Probability of Loss: `0.0000`
 - Combinations: `70` (from `8` splits)
 - Forward Holding Horizon: `21` bars
 - Post-Test Embargo Window: `5` bars
-- Mean Purged Samples per Split: `94.0000`
-- Mean Embargoed Samples per Split: `5.0000`
+- Mean Purged Samples per Split: `84.0000`
+- Mean Embargoed Samples per Split: `10.0000`
 - Mean OOS Relative Rank: `0.4485`
 - Median OOS Relative Rank: `0.4906`
 - Mean IS Sharpe: `0.0854`

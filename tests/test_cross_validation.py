@@ -197,3 +197,75 @@ def test_cpcv_pbo_validates_inputs() -> None:
 
     with pytest.raises(ValueError, match="embargo_periods must be an integer >= 0"):
         combinatorial_purged_cross_validation_pbo(valid_df, embargo_periods=-1)
+
+    with pytest.raises(ValueError, match="holding_periods must be an integer >= 0"):
+        combinatorial_purged_cross_validation_pbo(valid_df, holding_periods=True)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="embargo_periods must be an integer >= 0"):
+        combinatorial_purged_cross_validation_pbo(valid_df, embargo_periods=True)  # type: ignore[arg-type]
+
+
+def test_purged_split_combined_holding_and_embargo_boundaries() -> None:
+    # 100 samples, 5 groups: [0..19], [20..39], [40..59], [60..79], [80..99]
+    n_samples = 100
+    X = np.arange(n_samples).reshape(-1, 1)
+    holding_periods = 5
+    embargo_periods = 4
+
+    cv = PurgedGroupTimeSeriesSplit(
+        n_splits=5,
+        n_test_groups=1,
+        holding_periods=holding_periods,
+        embargo_periods=embargo_periods,
+    )
+
+    splits = list(cv.split(X))
+
+    # Fold 1: test group is [20..39]
+    train_idx, test_idx = splits[1]
+    np.testing.assert_array_equal(test_idx, np.arange(20, 40))
+
+    # Pre-test purge: samples [15..19] overlap with test start (20)
+    for p in range(15, 20):
+        assert p not in train_idx, f"Pre-test sample {p} should be purged"
+
+    # Post-test label overlap purge: test block ends at 39 with label extending to 39 + 5 = 44.
+    # Samples [40..44] overlap with the test block forward labels and are purged
+    for p in range(40, 45):
+        assert p not in train_idx, f"Post-test overlapping sample {p} should be purged"
+
+    # Post-label embargo: samples in (44, 44 + 4] = [45..48] are embargoed
+    for e in range(45, 49):
+        assert e not in train_idx, f"Post-label sample {e} should be embargoed"
+
+    # Retained in train: [0..14] and [49..99]
+    expected_train = sorted(list(range(0, 15)) + list(range(49, 100)))
+    np.testing.assert_array_equal(train_idx, expected_train)
+
+
+def test_purged_split_rejects_bool_horizons() -> None:
+    with pytest.raises(ValueError, match="holding_periods must be a non-negative integer"):
+        PurgedGroupTimeSeriesSplit(holding_periods=True)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="embargo_periods must be a non-negative integer"):
+        PurgedGroupTimeSeriesSplit(embargo_periods=True)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="n_splits must be an integer >= 2"):
+        PurgedGroupTimeSeriesSplit(n_splits=True)  # type: ignore[arg-type]
+
+
+def test_cpcv_pbo_decomposes_purge_and_embargo_counts() -> None:
+    rng = np.random.default_rng(123)
+    df = pd.DataFrame(rng.normal(size=(200, 3)), columns=["a", "b", "c"])
+
+    result = combinatorial_purged_cross_validation_pbo(
+        df,
+        n_splits=4,
+        holding_periods=5,
+        embargo_periods=3,
+    )
+
+    assert result["mean_purged_samples"] > 0.0
+    assert result["mean_embargoed_samples"] > 0.0
+    # Both mean counts are strictly positive and distinct quantities
+    assert result["mean_purged_samples"] != result["mean_embargoed_samples"]

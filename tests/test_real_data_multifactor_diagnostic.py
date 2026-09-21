@@ -158,6 +158,8 @@ def test_real_data_config_defaults() -> None:
     assert len(ALPHA_IDS) == 52
     assert len(COMPOSITE_IDS) == 12
     assert len(FACTOR_IDS) == 62
+    assert config.pbo_holding_periods == 21
+    assert config.pbo_embargo_periods == 5
     assert default_data_dir().name == DEFAULT_SNAPSHOT_DIR_NAME
     assert default_inventory_path().name == DEFAULT_INVENTORY_FILE_NAME
 
@@ -411,6 +413,10 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     assert result["trial_family"]["attempt_count"] >= 6
     assert result["trial_family"]["distinct_trial_count"] >= 6
     assert "pbo" in result["pbo_summary"]
+    assert result["cpcv_summary"] is not None
+    assert result["cpcv_summary"]["holding_periods"] == 21
+    assert result["cpcv_summary"]["embargo_periods"] == 5
+    assert 0.0 <= result["cpcv_summary"]["pbo"] <= 1.0
     assert len(result["weighting_comparisons"]) == 4
 
 
