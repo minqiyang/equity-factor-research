@@ -702,3 +702,21 @@ def test_probability_of_backtest_overfitting_symmetric_noise() -> None:
     assert result["n_combinations"] == 70  # C(8, 4) = 70
     assert 0.0 <= result["prob_loss"] <= 1.0
     assert 0.0 <= result["mean_relative_rank"] <= 1.0
+
+
+def test_probability_of_backtest_overfitting_purged_and_embargoed() -> None:
+    rng = np.random.default_rng(42)
+    data = {f"strat_{i}": rng.normal(loc=0.01, scale=0.03, size=120) for i in range(5)}
+    df = pd.DataFrame(data)
+
+    result = probability_of_backtest_overfitting(
+        df,
+        n_splits=4,
+        holding_periods=5,
+        embargo_periods=2,
+    )
+
+    assert result["holding_periods"] == 5
+    assert result["embargo_periods"] == 2
+    assert result["mean_purged_samples"] > 0.0
+    assert 0.0 <= result["pbo"] <= 1.0
