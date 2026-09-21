@@ -123,7 +123,7 @@ def test_walk_forward_ml_composite_zero_lookahead(sample_ml_data):
     assert not comp_base.loc[t].equals(comp_closed_mutated.loc[t])
 
 
-@pytest.mark.parametrize("model_type", list(_SUPPORTED_MODELS))
+@pytest.mark.parametrize("model_type", sorted(_SUPPORTED_MODELS))
 def test_walk_forward_ml_composite_all_supported_models(sample_ml_data, model_type):
     factors, fwd_ret, rebalance_dates = sample_ml_data
     comp, imp, meta = walk_forward_ml_factor_composite(

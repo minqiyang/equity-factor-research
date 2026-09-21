@@ -2,19 +2,36 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  BLIS_NUM_THREADS: "1"
+  VECLIB_MAXIMUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   validation:
     name: Python validation
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     # Campaign and repository tests use committed synthetic fixtures only.
     # This job is not result-bearing and does not read a private panel.
 
@@ -27,14 +44,22 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install --prefer-binary -e ".[dev]"
 
-      - name: Run tests
-        run: python -m pytest -q
+      - name: Record validation environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/ci-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/ci-evidence/checkout-sha.txt"
+          python --version > "$RUNNER_TEMP/ci-evidence/python.txt"
+          python -m pip freeze --all > "$RUNNER_TEMP/ci-evidence/dependencies.txt"
+          nproc > "$RUNNER_TEMP/ci-evidence/cpus.txt"
+          free -m > "$RUNNER_TEMP/ci-evidence/memory-start.txt"
+          python -m threadpoolctl -i numpy scipy sklearn > "$RUNNER_TEMP/ci-evidence/threadpools.json"
 
       - name: Lint repository
         run: python -m ruff check .
@@ -47,3 +72,24 @@ jobs:
 
       - name: Build distribution
         run: python -m build
+
+      - name: Run tests
+        run: |
+          /usr/bin/time -v -o "$RUNNER_TEMP/ci-evidence/pytest-resource.txt" \
+            python -m pytest -q -n 2 --dist worksteal \
+            --max-worker-restart=0 --durations=50 --durations-min=0.1 \
+            --junitxml="$RUNNER_TEMP/ci-evidence/pytest.xml" \
+            2>&1 | tee "$RUNNER_TEMP/ci-evidence/pytest.log"
+
+      - name: Verify tracked inputs stayed unchanged
+        if: ${{ always() }}
+        run: git diff --exit-code HEAD -- .
+
+      - name: Upload validation evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-evidence/
+          retention-days: 14
+          if-no-files-found: warn
