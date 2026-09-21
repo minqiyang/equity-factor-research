@@ -10074,3 +10074,16 @@ This ablation round completes the implementation and machine verification of sev
 - Experiment log entry `20260920-001-real-data-multifactor-diagnostic`. Evidence ceiling remains `DIAGNOSTIC_ONLY`. Readiness decision `diagnostic_ready_with_low_caveats`. Survivorship bias remains explicit.
 - Official run on the local 50-stock window `2016-08-08` through `2026-08-07` (2,514 source rows) completed 156 books / 148 distinct trials with zero failed attempts. Tracked outputs redact private paths.
 - Verification: focused real-data tests 10 passed; full `pytest tests/ -q --basetemp=/tmp/efr-pytest-m40-real` 3779 passed, 2 skipped; `ruff check .` clean; `compileall` of `src tests research lean` clean; `python scripts/repo_map.py` regenerated (`research` 25 files, `tests` 233 files).
+
+## 2026-09-21 — Stage A CI acceleration: bounded pytest-xdist scheduling
+
+- Working branch `feat/ci-acceleration-and-optimization` from design baseline `3bb32dfd316bdd2a831fbe62ab961e62a0cf7689`.
+- Added `pytest-xdist>=3.5.0` to the `dev` extra. `[tool.pytest.ini_options]` remains `testpaths = ["tests"]`, `pythonpath = ["src"]`, and `addopts = "-ra"`. Local `python -m pytest -q` stays the serial reference.
+- Sorted `tests/test_ml_combination.py` parametrization over `_SUPPORTED_MODELS` so independent xdist workers collect the same node IDs under hash randomization. Production `_SUPPORTED_MODELS` remains a set.
+- Replaced `.github/workflows/ci.yml` with the Stage A single-job workflow: required check name `Python validation`, job ID `validation`, two-worker `--dist worksteal`, `--max-worker-restart=0`, native thread limits, explicit `cache-dependency-path: pyproject.toml`, `--prefer-binary` install, fail-closed evidence upload, PR concurrency cancel-in-progress, and `merge_group` eligibility.
+- Retained the existing campaign-safety comments required by `test_ci_runs_only_committed_synthetic_campaign_fixtures` (`committed synthetic fixtures`, `not result-bearing`, `private panel`).
+- Stage B runtime-kernel work and Stage C multi-job lanes remain unactivated. GitHub 5–8 minute wall-clock acceptance remains a same-runner measurement after publication.
+- Local verification on CPython 3.12.13 / pytest 9.1.1 / xdist 3.8.0 with native threads clamped to 1: `ruff check .` clean; `compileall` of `src tests research lean` clean; `python -m build --outdir /tmp/efr-ci-accel-dist` produced sdist and wheel each containing 20 ledger schema files; actionlint 1.7.12 accepted the workflow; three workflow shell bodies passed `bash -n`.
+- Key parallel suites (`test_ml_combination.py`, `test_campaign_conformance.py`, `test_campaign_runner.py`, `test_project_structure.py`, `test_real_data_multifactor_diagnostic.py`, `test_cross_validation.py`, `test_lean_smoke_test_scope.py`): 164 passed in 7.33 s.
+- Full two-worker worksteal: 3,817 passed, 2 skipped, 23 warnings in 268.59 s; JUnit 3,819 unique node IDs, 0 duplicates. ML collection order is identical under `PYTHONHASHSEED` 1, 2, and 3. `git diff --check` clean. Tracked fixtures and reports unchanged.
+- Implementation report: `coord/reports/ci_acceleration_impl_report.md`.
