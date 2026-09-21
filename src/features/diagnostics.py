@@ -494,10 +494,13 @@ def probability_of_backtest_overfitting(
     *,
     n_splits: int = 16,
     risk_free_rate: float = 0.0,
-) -> dict[str, float | int]:
+    holding_periods: int = 0,
+    embargo_periods: int = 0,
+) -> dict[str, Any]:
     """Bailey, Borwein, Lopez de Prado, and Zhu Probability of Backtest Overfitting (PBO).
 
-    Computes PBO using Combinatorially Symmetric Cross-Validation (CSCV).
+    Computes PBO using Combinatorially Symmetric Cross-Validation (CSCV) or
+    Combinatorial Purged Cross-Validation (CPCV) when holding_periods or embargo_periods > 0.
     The input matrix of returns represents N strategy variants observed across T periods.
     The T periods are split into S contiguous non-overlapping blocks. For each
     combination of S/2 in-sample (IS) blocks, the best performing strategy is
@@ -533,6 +536,17 @@ def probability_of_backtest_overfitting(
         for dtype in returns_matrix.dtypes
     ):
         raise TypeError("returns_matrix must contain numeric non-boolean values")
+
+    if holding_periods > 0 or embargo_periods > 0:
+        from features.cross_validation import combinatorial_purged_cross_validation_pbo
+
+        return combinatorial_purged_cross_validation_pbo(
+            returns_matrix,
+            n_splits=n_splits,
+            holding_periods=holding_periods,
+            embargo_periods=embargo_periods,
+            risk_free_rate=risk_free_rate,
+        )
 
     values = returns_matrix.to_numpy(dtype=float)
     if not np.isfinite(values).all():

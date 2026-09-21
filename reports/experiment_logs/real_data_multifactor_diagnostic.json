@@ -73,6 +73,7 @@
     "IC-weighted composite uses causal expanding mean monthly Rank IC weights",
     "ICIR-weighted and correlation-discounted composites use causal walk-forward weights at monthly rebalance dates, admitting an IC labeled at s only when its execution-aligned forward-return window has closed by t",
     "random-forest and gradient-boosting ML composites use causal walk-forward training windows at monthly rebalance dates, admitting an observation labeled at s only when its execution-aligned forward-return window has closed by t; predictions are held on [t, next_t)",
+    "CPCV cross-validation purges training samples overlapping with the 21-bar forward-return window and applies a 5-bar post-test embargo",
     "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
     "sector map uses static balanced cohorts, not GICS point-in-time sectors",
     "market beta proxy does not backfill leading rolling-beta NaNs",
@@ -2646,6 +2647,93 @@
       "total_volume_aware_slippage_cost_impact": 0.0,
       "tracking_error": 0.1307025508201646
     },
+    "cpcv_summary": {
+      "embargo_periods": 5,
+      "holding_periods": 21,
+      "mean_embargoed_samples": 5.0,
+      "mean_is_sharpe": 0.08544018059718986,
+      "mean_oos_sharpe": 0.05141898316332559,
+      "mean_purged_samples": 94.0,
+      "mean_relative_rank": 0.44851752021563346,
+      "median_relative_rank": 0.49056603773584906,
+      "n_combinations": 70,
+      "n_splits": 8,
+      "n_test_splits": 4,
+      "oos_sharpe_distribution": [
+        0.05490230088133163,
+        0.035191087831135226,
+        0.03540432462892268,
+        0.03221547118642415,
+        0.04532257770476718,
+        0.047750067007530844,
+        0.06750853253116884,
+        0.058585897509960794,
+        0.09468497098541824,
+        0.05086207925825841,
+        0.03230371778250988,
+        0.03300474260101503,
+        0.06082939287178241,
+        0.03845697455046818,
+        0.05022078941351345,
+        0.04339511400654927,
+        0.06158272152745914,
+        0.04629418375395884,
+        0.07610883569014867,
+        0.05611542318242957,
+        0.035633638090768985,
+        0.03749502898300056,
+        0.039502865280159366,
+        0.040120546508943374,
+        0.0502950512490878,
+        0.06333174977524388,
+        0.03624398629413577,
+        0.08245772170873109,
+        0.04257881194330429,
+        0.07008100487137535,
+        0.06976282019273386,
+        0.04942393579516058,
+        0.07524373070828137,
+        0.05666082833856273,
+        0.05158891322466808,
+        0.04541491055197816,
+        0.05580802102017698,
+        0.05282726243368858,
+        0.06697402948983089,
+        0.0394562174267672,
+        0.02657249001792318,
+        0.02644733358921637,
+        0.04076407686561945,
+        0.06356191084365219,
+        0.047756765896165024,
+        0.06164578607359494,
+        0.01934015898435665,
+        0.06685645375078636,
+        0.05424272310348694,
+        0.09333727011103905,
+        0.043238538790290645,
+        0.03807734825965752,
+        0.059171953843651565,
+        0.024113809523468283,
+        0.062309676821031175,
+        0.0522497970385284,
+        0.039792580289691445,
+        0.06380528894826805,
+        0.034070883414128804,
+        0.07503203373707404,
+        0.0711092092554972,
+        0.028162969235280593,
+        0.05262622604352756,
+        0.03210425315557319,
+        0.05615955476401926,
+        0.031056712380144968,
+        0.08187769587297068,
+        0.058220354783518814,
+        0.06859462945692867,
+        0.04539005779234843
+      ],
+      "pbo": 0.5285714285714286,
+      "prob_loss": 0.0
+    },
     "pbo_summary": {
       "mean_is_sharpe": 0.08778773118370847,
       "mean_oos_sharpe": 0.050649658853829486,
@@ -2665,7 +2753,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_001",
           "parameters": {
             "periods_per_year": 252,
@@ -2681,7 +2769,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b2cfee31581b3a2ed0687b96dfff95edbab32da58253b4fea1289414d2fd1eb3"
+        "trial_id": "434f10c84f1d39270f6b36ad7181d0b0b93b61762d138a1e9cca10fefb585074"
       },
       {
         "sharpe": 0.01953855996382514,
@@ -2691,7 +2779,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_001",
           "parameters": {
             "periods_per_year": 252,
@@ -2707,7 +2795,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "46c81eeac453070af8e438f65db2157c4dcb82764845a32da85d456c0875986e"
+        "trial_id": "ee3795d9f01553fdc03e62e57e47f01f660574476fc18ad671ed73e5f97f7dc0"
       },
       {
         "sharpe": 0.07185574822492076,
@@ -2717,7 +2805,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_002",
           "parameters": {
             "periods_per_year": 252,
@@ -2733,7 +2821,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "31a57c5417b98a466ce1a24d023561c456f0245627acf5314c85e0fb8871d960"
+        "trial_id": "7e71702ec7ad8ae3cd3bf65a41b663a17631f7037bcebf70eaa540d9aa58ea50"
       },
       {
         "sharpe": 0.027474812768555283,
@@ -2743,7 +2831,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_002",
           "parameters": {
             "periods_per_year": 252,
@@ -2759,7 +2847,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5e7bd34d6962ee6a4ce943f85ba8dd6c6aaecc153b505b02966dc0a49ec297d8"
+        "trial_id": "34071e942043090a313625a9c59842fcb9dc97b8fbc69a7c684bd3ef8bb676bc"
       },
       {
         "sharpe": 0.06811126260719932,
@@ -2769,7 +2857,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_003",
           "parameters": {
             "periods_per_year": 252,
@@ -2785,7 +2873,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "889eaf421d2d673e5bc69ab16da86bed93622d360e9b8f78f192e7a4c096d1b7"
+        "trial_id": "07109796d70b5733621872b51173ec8d182884fb2e33f60a5a84311fee55789e"
       },
       {
         "sharpe": 0.03150995743266256,
@@ -2795,7 +2883,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_003",
           "parameters": {
             "periods_per_year": 252,
@@ -2811,7 +2899,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "13420f5035706d7b3c3dee53ef201a9e91721d3bb2fc714b8a2ca8bca0059b6f"
+        "trial_id": "a51307507bc37705c760b6a12e04f37d3bfa1f9470af049d2a4949172ac94ef2"
       },
       {
         "sharpe": 0.04029482514934577,
@@ -2821,7 +2909,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_004",
           "parameters": {
             "periods_per_year": 252,
@@ -2837,7 +2925,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "cd1059f3d1929aa3d83e68c3a0421c12cd22d815aff2590e61180c54a2e73808"
+        "trial_id": "5f7744af1ab40d93fadb58f571c063076bbdbbaa93058c19e388a912a13dfeee"
       },
       {
         "sharpe": -0.011386423013042051,
@@ -2847,7 +2935,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_004",
           "parameters": {
             "periods_per_year": 252,
@@ -2863,7 +2951,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a776d4d74614c75d5a3bd4d7313a3aaf8c2812fd3b31aaf5013b1d2db7501f1e"
+        "trial_id": "905e384e92160606a3640b1ed42c23ad8dae6ade7e621f21c434d8778fcca1a2"
       },
       {
         "sharpe": 0.04522752017922398,
@@ -2873,7 +2961,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_005",
           "parameters": {
             "periods_per_year": 252,
@@ -2889,7 +2977,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7e666a8e883c80f7c508d65c2e3b7956accfdde5984c98011583d5b7d1b0db64"
+        "trial_id": "87e9a46f5c21a14c35b40c3180c2f149d8a1fafeaefd11f00f82fe8183303634"
       },
       {
         "sharpe": -0.0024060188045641716,
@@ -2899,7 +2987,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_005",
           "parameters": {
             "periods_per_year": 252,
@@ -2915,7 +3003,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "929f7bb9d1eaf826c74a073cec871be2ac3cadf028bf13fb4fd2fbf84efed1d7"
+        "trial_id": "694b49589497e904a35b58b087ed8143bf7c9ac426bc06abac193b72ec62dfb8"
       },
       {
         "sharpe": 0.061852449498118404,
@@ -2925,7 +3013,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_006",
           "parameters": {
             "periods_per_year": 252,
@@ -2941,7 +3029,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "00dd93be968ce0981c089137966f745d86dc99f501efe312b7aa7810ff99c2a8"
+        "trial_id": "5a7ac4ed4955a6d7c764a9d3a4928d018741f9c3502c06d7600666828508e1cc"
       },
       {
         "sharpe": -0.011051690512007807,
@@ -2951,7 +3039,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_006",
           "parameters": {
             "periods_per_year": 252,
@@ -2967,7 +3055,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0570dcf111beeceb847cbc16b922e23e84dac0a5cc5fec462a7f661211bef00f"
+        "trial_id": "0d8d68cb8058c3ff033200c3d520ba55f3460755bdbd0865b5c81e7fcc89f13e"
       },
       {
         "sharpe": 0.063866263051884,
@@ -2977,7 +3065,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_007",
           "parameters": {
             "periods_per_year": 252,
@@ -2993,7 +3081,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7177e69d51984183538f63e7ef19b772b6b1126cb7016ebefea3dec1fb5952bd"
+        "trial_id": "01551d9cea4fbf6232279a767be718ae9358cbb5c3636f510270f6b38d63e119"
       },
       {
         "sharpe": -0.043730121591056104,
@@ -3003,7 +3091,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_007",
           "parameters": {
             "periods_per_year": 252,
@@ -3019,7 +3107,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "61ade3ce73bad17344fab373803abd9d7d8610a313e378033bc149638e0f03e5"
+        "trial_id": "490f1b1b014eeb96d8aa6362026b9f693303978bb447aa4fa8de84d8bf2eab82"
       },
       {
         "sharpe": 0.04923556443221166,
@@ -3029,7 +3117,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_008",
           "parameters": {
             "periods_per_year": 252,
@@ -3045,7 +3133,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "07f1eda453b6db4ab5e01ed34e148e686ff563101910f4ee7e6869f5ba1db05a"
+        "trial_id": "1f44a8cdaac06f72803295903c9dade8726448fff48de49d52ca582fda537c97"
       },
       {
         "sharpe": -0.004692091029923334,
@@ -3055,7 +3143,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_008",
           "parameters": {
             "periods_per_year": 252,
@@ -3071,7 +3159,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "573a6e8251dd1a5a5dc49f1e449319f6be3f0add69c8edfab771a5e5bdeed763"
+        "trial_id": "1abe1f1ee3b5d249bb3507aaed8d9e255116cf8a5cbe5545b9405d203c8fedca"
       },
       {
         "sharpe": 0.060411121889860316,
@@ -3081,7 +3169,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_009",
           "parameters": {
             "periods_per_year": 252,
@@ -3097,7 +3185,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f849e5cb6dd0a1ba5a12e112dc2ca3e8ede21cc567f193dbbc2112c6d7c7f49a"
+        "trial_id": "cab7d6702faca3cd00d724ad75c8fd716eea2d823223c03ec398a93acfa4ef49"
       },
       {
         "sharpe": 0.019648268835851617,
@@ -3107,7 +3195,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_009",
           "parameters": {
             "periods_per_year": 252,
@@ -3123,7 +3211,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7f3fce152dd38881b2131197a50cea097f261c123f28a47259967512310c050e"
+        "trial_id": "63e4525d118c33dce6fa6e348cfae895ac681070b8510b63306854c0468de7f6"
       },
       {
         "sharpe": 0.05377430354634932,
@@ -3133,7 +3221,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_010",
           "parameters": {
             "periods_per_year": 252,
@@ -3149,7 +3237,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0a9ab26aac86ab87416d11f5039dc721bc574e8745cb6dfd1507db7f2dfba12f"
+        "trial_id": "d10ecad64fce06a72cf88a22133f061e1f7c74fe6135b10caa0b8730f9e92b7f"
       },
       {
         "sharpe": 0.011186314277167667,
@@ -3159,7 +3247,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_010",
           "parameters": {
             "periods_per_year": 252,
@@ -3175,7 +3263,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5e2d22c1102fa8d00c8cfac449513000014566c6f4e27d5f8feb7138ddfbf148"
+        "trial_id": "02dd50984cd397c791d737940a33457ff72c633378a6604fa0073d000b8ad441"
       },
       {
         "sharpe": 0.03898532008501645,
@@ -3185,7 +3273,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_012",
           "parameters": {
             "periods_per_year": 252,
@@ -3201,7 +3289,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8eb685eed5ef18ef31115ca3759d43e476006fee974b7ecb11ba1697bf3ddef2"
+        "trial_id": "b4d45167d4de22e3ab3e7026386606f6180f074513a79160d63842b4d1a2350e"
       },
       {
         "sharpe": -0.013116174337139503,
@@ -3211,7 +3299,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_012",
           "parameters": {
             "periods_per_year": 252,
@@ -3227,7 +3315,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e40c4d212a3d0cc94b586bb3580ca67ebbc9f6c26b71c581e62edbd341c04e3d"
+        "trial_id": "e3eee0f619d45fc8cc7b469be20c500b120a62fc2a4d8664a4fd01f97673dcb9"
       },
       {
         "sharpe": 0.04399681131632128,
@@ -3237,7 +3325,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_013",
           "parameters": {
             "periods_per_year": 252,
@@ -3253,7 +3341,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2a5e75a9b7b7e7f829fdc3e17d48461f6636d1885089b6c27134f26b93f0a51d"
+        "trial_id": "cda36515245102fb33c717959cda54fa1fe4fc1fad88c88cd84ec9d13d1cac71"
       },
       {
         "sharpe": -0.0180055214860652,
@@ -3263,7 +3351,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_013",
           "parameters": {
             "periods_per_year": 252,
@@ -3279,7 +3367,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3be910be131029d3c9345cc155a5d20d53ab21f2f6454feb5007f8504367ea2f"
+        "trial_id": "bc2fe1e6e0855b520b6b89a62b03ad8653ff44522a00543579e5716081c7cb77"
       },
       {
         "sharpe": 0.07082147874284264,
@@ -3289,7 +3377,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_014",
           "parameters": {
             "periods_per_year": 252,
@@ -3305,7 +3393,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "890f66e056a3708408e6835667d1e56603338bb87bfa6d7a25ed4dcb3feb1293"
+        "trial_id": "b6d19c3a0468bcc606eb60ab8262651ba36f8cfe1aa0cae0acc992a5db0a1ac8"
       },
       {
         "sharpe": 0.018447212616612703,
@@ -3315,7 +3403,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_014",
           "parameters": {
             "periods_per_year": 252,
@@ -3331,7 +3419,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e4f7200d57e2bf892c0f663dca64f4b00a5f6ae3137d77e29fc3ea7d98b45aa3"
+        "trial_id": "99f1e7533d118824afb028f49a618566552e34e49b19b87f3b6722e495186ae3"
       },
       {
         "sharpe": 0.03996271249476328,
@@ -3341,7 +3429,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_015",
           "parameters": {
             "periods_per_year": 252,
@@ -3357,7 +3445,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "11940f4ecd22656e93223b848e600826e597fc039487052f6547fb9a7bc079af"
+        "trial_id": "b11804e3dbb89cb67c1edf2e751da144c22519e6c81dc4ab02025c48732f6a8e"
       },
       {
         "sharpe": -0.009472133715947685,
@@ -3367,7 +3455,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_015",
           "parameters": {
             "periods_per_year": 252,
@@ -3383,7 +3471,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "234381be61144c2f8132966cc84ec2d475b85d6cca6fdc4ceb3630b56cac7489"
+        "trial_id": "7034a30f49bc3c16f615b47f193ceb364959a4a3bb2f4beeb33c09e6525c50ff"
       },
       {
         "sharpe": 0.04264715974918045,
@@ -3393,7 +3481,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_016",
           "parameters": {
             "periods_per_year": 252,
@@ -3409,7 +3497,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b765f1d09b05e95db9058fafb158487e93e3f93496ea9f5955a27bd938117aad"
+        "trial_id": "52cdac25fc262e47366c47a7bc23b8fc144cd2777f9134538c66fc3bb940c0d9"
       },
       {
         "sharpe": -0.01007315106763054,
@@ -3419,7 +3507,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_016",
           "parameters": {
             "periods_per_year": 252,
@@ -3435,7 +3523,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7155516c089c7f7f91e37c386ac4a87c7f33461bc5db0dca03cf9fdcf7cd28e5"
+        "trial_id": "e3bdc5f61038ab534ad55ea4f391831f909005606094814638a72a4c0e84a4d8"
       },
       {
         "sharpe": 0.06096068866873302,
@@ -3445,7 +3533,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_017",
           "parameters": {
             "periods_per_year": 252,
@@ -3461,7 +3549,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c0744fad0027499dba415273e910db239a16d2e073b1bf2ed0d84247024fae0b"
+        "trial_id": "0b1a18eee0ad7fbaacfc5b3638e0aed1de047bd305880a43df235f38ac2aeb84"
       },
       {
         "sharpe": -0.004491716424064884,
@@ -3471,7 +3559,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_017",
           "parameters": {
             "periods_per_year": 252,
@@ -3487,7 +3575,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "435398bb5d0ec6026f47dbef568cd52733c714e00c400771eb3ed18bd91d71e3"
+        "trial_id": "1f864a319973b87fcf49349e5b7554b27af22620a1559c364b170f72dd7a4d5e"
       },
       {
         "sharpe": 0.06603845202833834,
@@ -3497,7 +3585,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_018",
           "parameters": {
             "periods_per_year": 252,
@@ -3513,7 +3601,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ab85734fd89d6d4c43bfbb7bb162072c07a06a8a2a27e163b79b3efe0f9c4e64"
+        "trial_id": "91b567548b5a620b8851ed716c62af192947cae3efc2fc2093ad3cb65a6c5ee4"
       },
       {
         "sharpe": 0.03079735821744862,
@@ -3523,7 +3611,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_018",
           "parameters": {
             "periods_per_year": 252,
@@ -3539,7 +3627,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e2fbf1083faf4b865a478544ac1a11284638d0c4aaf63f50b9532a1d3c3ac38d"
+        "trial_id": "51394812dba7b6d2609a743afdce83afc41167e98ca64019044e9af489deb49b"
       },
       {
         "sharpe": 0.06814972821290127,
@@ -3549,7 +3637,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_019",
           "parameters": {
             "periods_per_year": 252,
@@ -3565,7 +3653,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9f1748c086adc53bbf5932101b0c5e8bc03d74a1690f2ebcf75bce916771cc7e"
+        "trial_id": "402481e53532a437a3ecb5d16824e4fbb6430b1a11c4d77f839356fe6b0a31e9"
       },
       {
         "sharpe": 0.030151355556856843,
@@ -3575,7 +3663,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_019",
           "parameters": {
             "periods_per_year": 252,
@@ -3591,7 +3679,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d8f0076460e31940b1a2a895adc6d7e06ee90b584be8897fcf03d1ef69b925e8"
+        "trial_id": "1fa99197506ec2897653120d146cace8c7efe249e3db15eb4132b8317d4eb8f5"
       },
       {
         "sharpe": 0.0598388489011075,
@@ -3601,7 +3689,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_020",
           "parameters": {
             "periods_per_year": 252,
@@ -3617,7 +3705,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b16f74d9b13dabe714ae782c38c010391f03008b6194c828cebb0aaadd7e07c3"
+        "trial_id": "944385562ec660f575c2c0aeb9af06f811e5c941796f35125b2143a1603cd833"
       },
       {
         "sharpe": -0.005188210221581211,
@@ -3627,7 +3715,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_020",
           "parameters": {
             "periods_per_year": 252,
@@ -3643,7 +3731,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "576419fab577c1e87f6ed646ad666aa9ca4700bf73ef50dfde2424f36a5663d8"
+        "trial_id": "0b626464e6b879e3a054a1bfd56f1c7f2ce6e090b58815569fc11a5317ebdbda"
       },
       {
         "sharpe": 0.046686286842394384,
@@ -3653,7 +3741,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_021",
           "parameters": {
             "periods_per_year": 252,
@@ -3669,7 +3757,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "af2825bc40b0275df7e147a0bc6cf4182f7ad0ae720ef96ba31001bd3b44af40"
+        "trial_id": "38b8104f3708846dadee10214153bbcc250d670a5e16d6a2f991e0fb61a458b0"
       },
       {
         "sharpe": -0.036504999911140965,
@@ -3679,7 +3767,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_021",
           "parameters": {
             "periods_per_year": 252,
@@ -3695,7 +3783,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "58b7fb441d001cb6326b3bb6a8c3d2d23621581bd23c08dc4557d50ae72a3d5a"
+        "trial_id": "2a053001e61ff127127729c783232c210fcdb1072eda945517655ef83275128c"
       },
       {
         "sharpe": 0.03793718886368928,
@@ -3705,7 +3793,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_022",
           "parameters": {
             "periods_per_year": 252,
@@ -3721,7 +3809,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f48fd866a6a152fb4cae31c46623b20472b76065e931f3410993f75da292f578"
+        "trial_id": "51cac8e560869d025347f07bc06ee0851a464318409903fe1360fa6ae149b675"
       },
       {
         "sharpe": -0.043676474053031294,
@@ -3731,7 +3819,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_022",
           "parameters": {
             "periods_per_year": 252,
@@ -3747,7 +3835,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c2cb4c44ea762a76d6f97ac7e34e1b301da1eb3b1c0ded6a1b6739fb07d6eafe"
+        "trial_id": "6d1feccb71239895e3addcc831685281c24032f3d3299594b555f326f7cf9682"
       },
       {
         "sharpe": 0.03597150834412487,
@@ -3757,7 +3845,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_023",
           "parameters": {
             "periods_per_year": 252,
@@ -3773,7 +3861,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ae0a60ce9ca8923e28d107098cc6ba0c11683b569215ca444d89afa2b33c219d"
+        "trial_id": "a173bef536bac383abe58a9ef0cdb71e45df5898d399a79c05a626e80fad64c9"
       },
       {
         "sharpe": -0.032030389225309736,
@@ -3783,7 +3871,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_023",
           "parameters": {
             "periods_per_year": 252,
@@ -3799,7 +3887,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1d6495eadfc5cf77862141b7bb85cb6b1ee0717941782859214c3be84fcf71a6"
+        "trial_id": "33fa3a0b095d0c8c180b786a5a2330856deeb8ff0bc40af4328561de4dcbb4db"
       },
       {
         "sharpe": 0.050424503711948586,
@@ -3809,7 +3897,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_024",
           "parameters": {
             "periods_per_year": 252,
@@ -3825,7 +3913,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f8ad5ec684e7fa0cf3b5b87fc72701f29ffcb97aaf0d702e1f1ed226b15efd5e"
+        "trial_id": "dc698fc0c87fe4944efc0e42bc03a3d806b0d99d940fe872cb16abefc499bb2e"
       },
       {
         "sharpe": 0.009846251842807267,
@@ -3835,7 +3923,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_024",
           "parameters": {
             "periods_per_year": 252,
@@ -3851,7 +3939,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "6184b8a81ab3091755c2de8c8285eb63fa3c54c3e85f08dbb1548e4bc4a57f52"
+        "trial_id": "4e1d806509016fd8623b49b0939bf54ffd9f1f413d7008db18dbc3b587c87904"
       },
       {
         "sharpe": 0.05586103766571719,
@@ -3861,7 +3949,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_025",
           "parameters": {
             "periods_per_year": 252,
@@ -3877,7 +3965,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f53622c9dea1bcee950b4fc90297e4cf09d225e828bf5a46b3bed6dac50b6ae5"
+        "trial_id": "52b22e0af2db65876e90430ea1f12e2e284404c910fbbf770fa3dce47605eef2"
       },
       {
         "sharpe": -0.004388533940375294,
@@ -3887,7 +3975,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_025",
           "parameters": {
             "periods_per_year": 252,
@@ -3903,7 +3991,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2ed950ff729f8043e1da48f69afec87aa2fe53fd40ac0099967ab7fd29a05498"
+        "trial_id": "4eca480c8fbc5e0af55efd194b3f98a2d5fa1c4787451e7ffa5075fcfcc531a9"
       },
       {
         "sharpe": 0.04815101845465466,
@@ -3913,7 +4001,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_026",
           "parameters": {
             "periods_per_year": 252,
@@ -3929,7 +4017,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "991f4847c2942996d0b430ace74fde4a5c1e4caae5cfa9579ff1c3ad7b75f78b"
+        "trial_id": "4f0c5b93f9c7bc3e1f4c236c05b2881ebc6befed868fe1be6c4334ae2ef7070d"
       },
       {
         "sharpe": -0.0164368053297947,
@@ -3939,7 +4027,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_026",
           "parameters": {
             "periods_per_year": 252,
@@ -3955,7 +4043,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9432b39b8a06758ab4a0e215170e558757b0290dcbc9019c1ef7802b29bccece"
+        "trial_id": "0202b62af7e946f92c97e930c50adf5e80834696001909bba86126bf6f078f74"
       },
       {
         "sharpe": 0.05035769249503387,
@@ -3965,7 +4053,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_028",
           "parameters": {
             "periods_per_year": 252,
@@ -3981,7 +4069,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7802267b13924991227aad1cd861b5088974c9796c707938666b830a48221586"
+        "trial_id": "2ec16a187cdbe96209bfc6146ad013ea4b7113f99e52ff27febb9a53ad79ba8c"
       },
       {
         "sharpe": 0.0011016598528133287,
@@ -3991,7 +4079,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_028",
           "parameters": {
             "periods_per_year": 252,
@@ -4007,7 +4095,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "abd82caaee12507f458eb4330fe2455d56918dba9821bf470bd4f4933c5de1f9"
+        "trial_id": "36b631ee1640399e9ede5c8ea2a8fe0e41efdb0d71d77680313d944e1a8ba76c"
       },
       {
         "sharpe": 0.05186309814439518,
@@ -4017,7 +4105,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_030",
           "parameters": {
             "periods_per_year": 252,
@@ -4033,7 +4121,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3c1361813f6b7050292140987d89d7105e0413b181ec78ef439c069df0688eac"
+        "trial_id": "a46eeaabbec59a5da597e91a322dca23f0a8ef71dfc575d827298e40efd1b9f5"
       },
       {
         "sharpe": 0.012463653340547557,
@@ -4043,7 +4131,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_030",
           "parameters": {
             "periods_per_year": 252,
@@ -4059,7 +4147,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a2a14a91c56bc267cd30434721958f830e4c7a6be589753bca232a12201681bb"
+        "trial_id": "be068430a7a6287b1f31bda0f2e900c5f3bd6d433803eea68bc68414fe8ff262"
       },
       {
         "sharpe": 0.045807164471817055,
@@ -4069,7 +4157,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_031",
           "parameters": {
             "periods_per_year": 252,
@@ -4085,7 +4173,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0d8d512b13f8d6aa5bfb98e293dcb3fe483473355a86026fc55cf26151031e08"
+        "trial_id": "6fa9cc7c9e08b1bc59b314eae5240c0a3ec051d45e7b7e7dc47034ecb6f0d2fb"
       },
       {
         "sharpe": -0.0026508237092684604,
@@ -4095,7 +4183,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_031",
           "parameters": {
             "periods_per_year": 252,
@@ -4111,7 +4199,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8300ba250021f08144bd88437d3014697454c6055767313f1d02d0a4f6cf153e"
+        "trial_id": "fa5990a8af8885e56b45eb8efedce18fe87d834ab79a5af83150f183ae07ddfa"
       },
       {
         "sharpe": 0.0372418526384279,
@@ -4121,7 +4209,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_032",
           "parameters": {
             "periods_per_year": 252,
@@ -4137,7 +4225,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "77d0dd77b8037699601fd6576b5693072be40bb8ee52349dd165f4b4862dd93b"
+        "trial_id": "bedd0c54b8753ab9b87549e452939e0e2cf0dfaa9c10373ee65f4df1a9dbec1a"
       },
       {
         "sharpe": -0.010501241475931889,
@@ -4147,7 +4235,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_032",
           "parameters": {
             "periods_per_year": 252,
@@ -4163,7 +4251,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "1dece4b0faf2ba232abac8cadc37084d2032d2ba1915dad2d55444357e6bac1a"
+        "trial_id": "be3ce274589332057350872551b1970e3590caa4f28699147f5b3cc5761a8430"
       },
       {
         "sharpe": 0.05614411893295382,
@@ -4173,7 +4261,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_033",
           "parameters": {
             "periods_per_year": 252,
@@ -4189,7 +4277,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c95034d4b79d4b1d5a5bdceccc669c00666f9ffe7abafccfb6aec5a639ccd8f9"
+        "trial_id": "eba2954eb9b92ee5f088a6b46d7132d55de369e8d5f4f9873a4ad075990c55d9"
       },
       {
         "sharpe": 0.0033592301415259164,
@@ -4199,7 +4287,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_033",
           "parameters": {
             "periods_per_year": 252,
@@ -4215,7 +4303,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a2871513127b05a9273b6be6109db6d97d7f117d089134d6303f6bfc296153ee"
+        "trial_id": "1ceb442c2297efbb75b305928174487ab428dd4a5b3a1f02a0d0363473cf1d5f"
       },
       {
         "sharpe": 0.05087870545768175,
@@ -4225,7 +4313,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_034",
           "parameters": {
             "periods_per_year": 252,
@@ -4241,7 +4329,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "49c42b0a0841fd125c498547dbc2a3cc22b874c84750492cc2273604492800d7"
+        "trial_id": "a16360a20ca4eb6459d99e3b559f417fa946527f7680131a86bf23d0039dff09"
       },
       {
         "sharpe": 0.0002624833453553261,
@@ -4251,7 +4339,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_034",
           "parameters": {
             "periods_per_year": 252,
@@ -4267,7 +4355,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d30f64ee27932d9ec08155f951cb48bd82015a1009b4028f91b988e70af9e0d1"
+        "trial_id": "88ab64a2012c72935b5c4512e4500e8397022fd149ca5b0ad31e79ecb293a782"
       },
       {
         "sharpe": 0.05395767086869024,
@@ -4277,7 +4365,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_035",
           "parameters": {
             "periods_per_year": 252,
@@ -4293,7 +4381,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0143e87573e19a7c98a18336a130a244117903227e7a4fa2ca0e5494f15c2ab9"
+        "trial_id": "fa5b4c3f7f63eb5d5cc74e6049c3b11967ee37802738bac38ed58ede2291f8f7"
       },
       {
         "sharpe": -0.00518863328869407,
@@ -4303,7 +4391,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_035",
           "parameters": {
             "periods_per_year": 252,
@@ -4319,7 +4407,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4933a876a14a88f1f96c33e55d1342d5cd3e2a336fc3ae5cea200632ced2f97d"
+        "trial_id": "4b558b07ad20c3f1ec155c9b18e420c68c938f33265bf11108c2b40017c0b8b8"
       },
       {
         "sharpe": 0.04238046397439032,
@@ -4329,7 +4417,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_036",
           "parameters": {
             "periods_per_year": 252,
@@ -4345,7 +4433,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ea7c450f750101f83bee655cfe2676efef8f4a18173ed35ec3ef0fdc8345c5e4"
+        "trial_id": "697b0c18a6bae2feb3a5aadec82d898ee8eed59af11240b3a9ff62e4b666914b"
       },
       {
         "sharpe": -0.010232770046116047,
@@ -4355,7 +4443,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_036",
           "parameters": {
             "periods_per_year": 252,
@@ -4371,7 +4459,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "76cb290dfbca7852481b158aa27d1ad3b23c3397cd1ef9647661f751bacf0b6b"
+        "trial_id": "97e63e5a63dc00117726320f649fc8e0b71c21efce270896527fde1b57d9442d"
       },
       {
         "sharpe": 0.058208432664509584,
@@ -4381,7 +4469,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_037",
           "parameters": {
             "periods_per_year": 252,
@@ -4397,7 +4485,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ed3460775819c3f6a6c024d312ccd1af1ebca62d4e36f34a02dee46cfbcd564b"
+        "trial_id": "0ec588a207b4c022e5a9437ed722165f0a14da0b44d9f63b9d8c2c299ce2355f"
       },
       {
         "sharpe": 0.02051260768817292,
@@ -4407,7 +4495,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_037",
           "parameters": {
             "periods_per_year": 252,
@@ -4423,7 +4511,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7ca850c0378ee11f74a3c81df7e681bce09ca8650dd493083ecebe2c832a329f"
+        "trial_id": "b0bc41267113f749677d3308c73929601613960a6cc5ab3c4ae4c8469369c472"
       },
       {
         "sharpe": 0.061365633820367436,
@@ -4433,7 +4521,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_038",
           "parameters": {
             "periods_per_year": 252,
@@ -4449,7 +4537,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0d4f8de499dd2f48f98c7dbcba45701563e1e109db97ce3bf21e0d0490f08cff"
+        "trial_id": "4617991ab935d0e0314cb82301556ef3518e3e8625e98b87e81c228540a82bb4"
       },
       {
         "sharpe": -0.006406620459085788,
@@ -4459,7 +4547,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_038",
           "parameters": {
             "periods_per_year": 252,
@@ -4475,7 +4563,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9391f69b876201cf2434a11ab5fd01caeb619dd026010ba86eb27756f8f22c51"
+        "trial_id": "765b7a354480cbc9da9c9d6641af7d6b216abfdc5a4c506c62fbd12b68f2bc19"
       },
       {
         "sharpe": 0.037081605221895554,
@@ -4485,7 +4573,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_039",
           "parameters": {
             "periods_per_year": 252,
@@ -4501,7 +4589,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "969f0b417648f81c378929c614665f5e5cfbfcda40ccd1fc0243956c7252c840"
+        "trial_id": "b6e8abf2af22f700ff056a4274d428136de3d7e8d00d8d3e2f1edd9d802f03fa"
       },
       {
         "sharpe": -0.013222991652892615,
@@ -4511,7 +4599,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_039",
           "parameters": {
             "periods_per_year": 252,
@@ -4527,7 +4615,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0e5523d4de6ded124a7f3fcd8acc1a17329696db8a951cb8d191f25aadcc8972"
+        "trial_id": "193020d1e218e6b2933244b476d1a63a004f3c3522f76bfc78483e587c6510db"
       },
       {
         "sharpe": 0.05697374228114994,
@@ -4537,7 +4625,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_040",
           "parameters": {
             "periods_per_year": 252,
@@ -4553,7 +4641,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9cdd90082839ca67dc915b9d0fc45c1c353dce834afcf80768aa083bb70b7aaa"
+        "trial_id": "7bbbb4ab74993a777bc28f7dd6b7c731c5b016429b9ace2c8e8761a3f3cefb13"
       },
       {
         "sharpe": 0.0007833773283748463,
@@ -4563,7 +4651,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_040",
           "parameters": {
             "periods_per_year": 252,
@@ -4579,7 +4667,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "186f24b05e93c98451bfac13555249d585a93534ba89a610ac8993571fdf3729"
+        "trial_id": "a6d5e804c754840884836bbddbaf425a73704fe8bdd7883a3f355b6e9ccebd19"
       },
       {
         "sharpe": 0.04473190474965629,
@@ -4589,7 +4677,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_041",
           "parameters": {
             "periods_per_year": 252,
@@ -4605,7 +4693,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "53799674879c71a9d1541520663418bef9118638595801838d1b8477b48432c4"
+        "trial_id": "6999fcd8bbeca04006613d4c8fe455532616bf146dbd5ef84977f83737251730"
       },
       {
         "sharpe": -0.004757816487781454,
@@ -4615,7 +4703,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_041",
           "parameters": {
             "periods_per_year": 252,
@@ -4631,7 +4719,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "63e03929f18c7f91bb20b74a2abd3cd9f2a1ec571b299e72a682c08f4054943e"
+        "trial_id": "81f733fe9155a0b6be04dc7cd0f25c727e759db7aa2a35949b5988d52b559983"
       },
       {
         "sharpe": 0.07252534879512508,
@@ -4641,7 +4729,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_042",
           "parameters": {
             "periods_per_year": 252,
@@ -4657,7 +4745,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7ebe9911c3ca9b7a0952cfd185bcfe04963b84b185d37aaea26a4b081a24b356"
+        "trial_id": "c83ca58bc47e5e5e2904487dc11c96d531822337c0ed32675e5c8edebe6c9d54"
       },
       {
         "sharpe": 0.04509757362727016,
@@ -4667,7 +4755,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_042",
           "parameters": {
             "periods_per_year": 252,
@@ -4683,7 +4771,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "243bfe86362e15d55086dbd77ba38fb9b3fe630e9578b304c6af2e354357551b"
+        "trial_id": "28eb1815995180b4ede55167b46ffa9391edc74da15a7d51891bd61fccaa78b4"
       },
       {
         "sharpe": 0.06769007654925858,
@@ -4693,7 +4781,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_043",
           "parameters": {
             "periods_per_year": 252,
@@ -4709,7 +4797,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ed4735b55aff6a26b3bc4b8226b8c09486598346bfb5f49e7d7d632382a4a42f"
+        "trial_id": "40065bfddcbf3f8abc1af838d9cee3e4cc7aeb0e714a6bfc0cf34ee46e6f32dd"
       },
       {
         "sharpe": 0.007621009802637869,
@@ -4719,7 +4807,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_043",
           "parameters": {
             "periods_per_year": 252,
@@ -4735,7 +4823,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9b9845fdc66c6bd088e48118e2a6167648e8156ccb533c4a780d4142ea13bdbd"
+        "trial_id": "24ddf0b9af2dcef313f902638d0560b2d8fab9f1484be8b73c2b94f392dc7011"
       },
       {
         "sharpe": 0.033193121617357574,
@@ -4745,7 +4833,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_044",
           "parameters": {
             "periods_per_year": 252,
@@ -4761,7 +4849,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "f73cbee02312a46abfed804b0f7c2973bbb8352e4b75862fb021cfb8404d6bc6"
+        "trial_id": "26e673fb5989038f27e53b9563de8ef1dd6ec9962a8e79a74567db9765819053"
       },
       {
         "sharpe": -0.030460018702294707,
@@ -4771,7 +4859,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_044",
           "parameters": {
             "periods_per_year": 252,
@@ -4787,7 +4875,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5d0d9e066a0f3d959a7644d76c1b744abd16dc5c2079cf42d37d609a963cdd18"
+        "trial_id": "c68530f173c2462723ec1e97eb7b2721c1247a987a7b47b0bd92c2bad5595b30"
       },
       {
         "sharpe": 0.04715685065712922,
@@ -4797,7 +4885,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_045",
           "parameters": {
             "periods_per_year": 252,
@@ -4813,7 +4901,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e8e585d14b62454b8acb69d198efa04e23df89b1a9f93e10c8360304129a110a"
+        "trial_id": "0ddb48166ba8773f9e1997c28c30e005b7cb6d7d525cd64de95d66c6416b399c"
       },
       {
         "sharpe": -0.005193088685230964,
@@ -4823,7 +4911,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_045",
           "parameters": {
             "periods_per_year": 252,
@@ -4839,7 +4927,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b38f5c40de22a34e9aa318fb17d130c24dcae6617af28256f5bc018577f11962"
+        "trial_id": "220de0a7a243a15df0458d1c67a1975d0ae96de3e6b0c124914ab89d267cc08a"
       },
       {
         "sharpe": 0.07141859170612228,
@@ -4849,7 +4937,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_046",
           "parameters": {
             "periods_per_year": 252,
@@ -4865,7 +4953,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "38b968ac194b62d98a9b4f6df60e41a42f6a37422c50f009d760e2f8b2d14e33"
+        "trial_id": "23d0c8d648e24e7897a4df6e8d083051d886cebee2862fc67b9c314da865d933"
       },
       {
         "sharpe": -0.00877378376355401,
@@ -4875,7 +4963,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_046",
           "parameters": {
             "periods_per_year": 252,
@@ -4891,7 +4979,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "59afd46a70143fe12eeef6797aadf1cda1a135c051751b6aafc88093c866fafb"
+        "trial_id": "cbfe80fe05965e75056f451538bf1e7fb75f21f5d51a0dd95fb5a38c40582c8e"
       },
       {
         "sharpe": 0.06744054073082317,
@@ -4901,7 +4989,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_049",
           "parameters": {
             "periods_per_year": 252,
@@ -4917,7 +5005,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "52768f9a672f8d49578778ef0e7109386fdd1da221bd85aff4f82c23ac8559a5"
+        "trial_id": "24082e346669b924c65dce87ccfdc1aec4ebadf45e0be4fc378dd5b636e075c4"
       },
       {
         "sharpe": 0.014746709092753009,
@@ -4927,7 +5015,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_049",
           "parameters": {
             "periods_per_year": 252,
@@ -4943,7 +5031,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "201dbdb085f9db285fa695f8e13a321221493d5342916a463583831959321f0d"
+        "trial_id": "ec10b89d61e070d4ae98b4b9e78b6a9227a69c9856a4c10d0a88e5bfd338d474"
       },
       {
         "sharpe": 0.04588208068471235,
@@ -4953,7 +5041,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_050",
           "parameters": {
             "periods_per_year": 252,
@@ -4969,7 +5057,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "299331aea0e750222706dbe40f9e2658fde9ccf6c88ed8509e2e4b2c9255d52e"
+        "trial_id": "f947af75cb3be4711d8946bdd1f562fe82f17ec89e878060f91ac18e1f13a58a"
       },
       {
         "sharpe": 0.0006684636287493722,
@@ -4979,7 +5067,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_050",
           "parameters": {
             "periods_per_year": 252,
@@ -4995,7 +5083,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c3874f2e3be87d07ba75cd1afd11596aeb977984025c3972e0e4cb4e07f03a05"
+        "trial_id": "cefe057def854094ebc5c00363dd3cb8cc048a6a949d6ccfa0bca4da3ea01b72"
       },
       {
         "sharpe": 0.06673898643283638,
@@ -5005,7 +5093,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_051",
           "parameters": {
             "periods_per_year": 252,
@@ -5021,7 +5109,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d172b3b6b9a0ebf91a47f4e87b8a39174574b545b0ed3ee63d0935165bc022f6"
+        "trial_id": "16a59c5351ff8e9b3750348513dbdb3d7997558cb299fac26d4cc9ba1e32f1ee"
       },
       {
         "sharpe": 0.006998656099877077,
@@ -5031,7 +5119,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_051",
           "parameters": {
             "periods_per_year": 252,
@@ -5047,7 +5135,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d1e72d1c3f5057d5af25b342dd697e7ce768ed722c33b518740af9b5c0868cfa"
+        "trial_id": "ec56eb57eed0bf85218c83ec77f905ffbe14f665c8337cfc91e9c8490ee73f7d"
       },
       {
         "sharpe": 0.049744479399165445,
@@ -5057,7 +5145,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_052",
           "parameters": {
             "periods_per_year": 252,
@@ -5073,7 +5161,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "449984d98374295a93ea5a7cddf78c179dd1e640cc8b926d60f0504aa119a8f2"
+        "trial_id": "c9b766f6fd7be5908f9be56213d639547d0b3485f19679f197df1d7e698c5358"
       },
       {
         "sharpe": 0.0057298712073695105,
@@ -5083,7 +5171,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_052",
           "parameters": {
             "periods_per_year": 252,
@@ -5099,7 +5187,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b72787ff09a2860be967c6e64ad34a9947e2af06d0f9184faa510c9a6e37617e"
+        "trial_id": "a8e29e58bc173b2660519af34519a440e1b019df9630c1b3f90ceb1dd65b78ff"
       },
       {
         "sharpe": 0.060855270298947606,
@@ -5109,7 +5197,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_053",
           "parameters": {
             "periods_per_year": 252,
@@ -5125,7 +5213,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "67f68f07b72b5857dcf11e816f354f063d6b34b77b23a6f914e1b3b91e01002c"
+        "trial_id": "8c07ccc15e1eb64bb1d875e5f30831d572eb35927b45b97424709afba32ad15e"
       },
       {
         "sharpe": 0.00990217064888366,
@@ -5135,7 +5223,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_053",
           "parameters": {
             "periods_per_year": 252,
@@ -5151,7 +5239,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4d59ba727940010f7e998b0ef5d2c4a1fe72bfe8a3ea4c25170cdbc13960d1cb"
+        "trial_id": "951af702c2ff7d2ed8aa628ffb8da8c7606c0537e902088f8ecd368e644c2397"
       },
       {
         "sharpe": 0.053644293818379964,
@@ -5161,7 +5249,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_054",
           "parameters": {
             "periods_per_year": 252,
@@ -5177,7 +5265,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8e125e200b6c2032a850703ebc428968a9ecbbff61869ae7bf1266d3798e2837"
+        "trial_id": "745057fb8c17fabf2f2560f512d666fad53a03f0713a5157961e3587929be43e"
       },
       {
         "sharpe": -0.0037558141171907464,
@@ -5187,7 +5275,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_054",
           "parameters": {
             "periods_per_year": 252,
@@ -5203,7 +5291,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b575ff0a6578b75cabeba6b40d5e242c7120949fc250774f9870142b7fc62bf5"
+        "trial_id": "d4b3eab713f6cee9b15c3a78f167e367c2855d66a7789b63528b96048862a3dd"
       },
       {
         "sharpe": 0.05573216150558127,
@@ -5213,7 +5301,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_055",
           "parameters": {
             "periods_per_year": 252,
@@ -5229,7 +5317,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "06ff86ba334fbc3acbdee0ebffc98a83598ff315438a823e669c528923505895"
+        "trial_id": "d8972be362016205843b35152d1b88f043ba83c14d8e1ced74a63ae768bf4439"
       },
       {
         "sharpe": -0.015739631209078928,
@@ -5239,7 +5327,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_055",
           "parameters": {
             "periods_per_year": 252,
@@ -5255,7 +5343,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b08f92c65e4750326add8e26269bd0a00465304efa757ae65e62b836ecc8cf56"
+        "trial_id": "ee85e8ec9ed1e11b1685c0b558fe111750bee9490114e809c4e003232ce219d2"
       },
       {
         "sharpe": 0.05446416028910119,
@@ -5265,7 +5353,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_060",
           "parameters": {
             "periods_per_year": 252,
@@ -5281,7 +5369,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e08c67f5f79bcc52e4470caa9a76142b9b607c70eb1be60cc1eab0e1e567b0a2"
+        "trial_id": "6eb5d5a2f2cead013790dbc6da46aeed24b304a03007dfe24dd21eaf4e686089"
       },
       {
         "sharpe": -0.0010827437313734054,
@@ -5291,7 +5379,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_060",
           "parameters": {
             "periods_per_year": 252,
@@ -5307,7 +5395,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d32e916503e50df03d4e0f980244713af91b65763d391cd9bed62ffef1317ca9"
+        "trial_id": "29f8cb6ab98940a76968283457264fb9ce3f2ff44ec12e093df1dbcb8953e61e"
       },
       {
         "sharpe": 0.040096991997367146,
@@ -5317,7 +5405,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_101",
           "parameters": {
             "periods_per_year": 252,
@@ -5333,7 +5421,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "bbe7b44171071a1c33cbb838106bee489710bc129eb52570ed66d7a3122acad8"
+        "trial_id": "f57a284f252b188ecade4dff52fed1e7b9f43ee18f29c591d03492eaf07a0d69"
       },
       {
         "sharpe": -0.029191833028386023,
@@ -5343,7 +5431,7 @@
             "forward_holding_periods": 21,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_101",
           "parameters": {
             "periods_per_year": 252,
@@ -5359,7 +5447,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b066ebaf76da17a1298a3ac47fc5a02cd68fe841c9a94cd338184646f3b52e2b"
+        "trial_id": "49376683b548af5c54286b15b540cc1c1158b31ebc4915e870d2998d35e2d9e0"
       },
       {
         "sharpe": 0.057401259137229176,
@@ -5438,7 +5526,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5454,7 +5542,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "051b568478715ece8f1646f3541e8e9d16815026f447632edd81d2fcb6a4813f"
+        "trial_id": "01e015785a3bf00ec802945d930495eb25c1e59d8cee9ba33246f67374450059"
       },
       {
         "sharpe": 0.003417801820099099,
@@ -5533,7 +5621,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5549,7 +5637,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "923542aac071bb64891902dd17b825e75c8eb11e274d6f9bfc35c517f0f0b565"
+        "trial_id": "f2674d5a9743e7f71be3f41b2183ef37bc719fa24582ee16b7166ca854a4f704"
       },
       {
         "sharpe": 0.0516793947678122,
@@ -5628,7 +5716,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5644,7 +5732,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a00ab831be769f7b9f227dd43f0fff45f96eb111331233fe6070bf3ebeae01a2"
+        "trial_id": "0c8d7c1d419841eb324512b9406753975d4dba3adcb20ba8c164ae4b2159ab6b"
       },
       {
         "sharpe": 0.0027457794015127625,
@@ -5723,7 +5811,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5739,7 +5827,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "fe31b856be11b094db16da2ce41333f75dadecdf7e042a63f565d60e8042fc7a"
+        "trial_id": "d5d9ca8d583f840650a41aa762e9d9408258c7cb615236293eeca186d6ce1a08"
       },
       {
         "sharpe": 0.0484557120609871,
@@ -5818,7 +5906,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ICIR_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5834,7 +5922,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "8c1b5aa6ed286d6c9dd1a27d35fa2a3f5414ba044f0180f33283fb86079d7631"
+        "trial_id": "7c7e11bdb876eb3f13f8fb273b8692b0c3130ad82af644a99a3fd7ea59d6b16f"
       },
       {
         "sharpe": -0.001119521700373766,
@@ -5913,7 +6001,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ICIR_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -5929,7 +6017,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b1fa3ddb9f1265e26c71e8d29844d31e1aacda3fee47631ca498db1f31d14949"
+        "trial_id": "b02c0cf58bd963af520965b9d274045b3d40ceb8062b487a6156c26004d15833"
       },
       {
         "sharpe": 0.04637542131066413,
@@ -6008,7 +6096,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "CORRELATION_DISCOUNTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6024,7 +6112,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "15587f8335a69199527b2ebbe08324c930c05ee69c46467021fe89a033659c41"
+        "trial_id": "aaf20e793fc67ffc8c0a33df33d680bc07b69d27eb860f02153dd3999d711a9d"
       },
       {
         "sharpe": -0.034621148933353156,
@@ -6103,7 +6191,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "CORRELATION_DISCOUNTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6119,7 +6207,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "0b57748121ee34776cb6c20da1240cc1c64e592f7f18214b0b495e9288c97126"
+        "trial_id": "6c2b6ffc522a2ef3756c7ce09ea88a3cb6b3916a9326ea755dcffe13f0bf897d"
       },
       {
         "sharpe": 0.06070618574710017,
@@ -6198,7 +6286,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_PRODUCT_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6214,7 +6302,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2498673bfd5e1927e4d0eb7fe59ea84139fdd20620396f12850c65b6747c38b4"
+        "trial_id": "449a737ea8ea4d85e3633924e7133d80788f528d522d83dbcf2bfe5c8913adb9"
       },
       {
         "sharpe": 0.025891858498610414,
@@ -6293,7 +6381,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "ALPHA_PRODUCT_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6309,7 +6397,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "d61e1a2a963e3a858853c548c33ebfe9043e4bdda7dd4fa8bcef16ad2c40ed58"
+        "trial_id": "3380316c3c86b5e74ae3a70d39ee10e54277805b556897f048bd56eb779979c7"
       },
       {
         "sharpe": 0.0272227985384474,
@@ -6388,7 +6476,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "CONDITIONAL_RANK_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6404,7 +6492,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3de3d8249b403c328d4bad3491821a1ebda692f5b1d39e8dd9ddd4994e0370e6"
+        "trial_id": "420ab9d072e3a5842b6fef99251acd55a7f8d8b8ca8219e52e2c344e17b01607"
       },
       {
         "sharpe": -0.06798424813959586,
@@ -6483,7 +6571,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "CONDITIONAL_RANK_INTERACTION",
           "parameters": {
             "periods_per_year": 252,
@@ -6499,7 +6587,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "51102e611262da40161ecbea734876818461e69e4724249756edbbff4e16b657"
+        "trial_id": "54c9a794d3024a68d3b02fc84efb8deab8c53f6e73bc08a260947d89c84376a2"
       },
       {
         "sharpe": 0.05143019079038307,
@@ -6578,7 +6666,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "NEUTRALIZED_IC_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6594,7 +6682,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "4978dec65a9eab448797c7bcffd26ec7b22230424851ceb38bfb9d5d233eff97"
+        "trial_id": "5e3abb32d07d2d884754218d8e856045525e428accec482ecf5d1ca9e4cf0eaf"
       },
       {
         "sharpe": -0.005532512561335829,
@@ -6673,7 +6761,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "NEUTRALIZED_IC_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6689,7 +6777,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "cc32eb353511030773fc3e8837e60cc3d2ccc835a512e16f1755ddef98a8515f"
+        "trial_id": "08c5c625bd176487f45ef638443db679e93b1190c76815a6bad576747d89d730"
       },
       {
         "sharpe": 0.0448945385369549,
@@ -6768,7 +6856,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6784,7 +6872,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b44c5f2f45f5ba7b17da3e3fda570c2cf742637b142994f1a8318e58c5c95771"
+        "trial_id": "64d7d98bc89c1e5c5cd0f4deb54135ffe86344c63ba41c8f1cea4c3f21d87d94"
       },
       {
         "sharpe": -0.019467827600699445,
@@ -6863,7 +6951,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6879,7 +6967,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a70c21ac9ace64351e165fea63021586c7047efb6043b82c01f98b93755c77fe"
+        "trial_id": "d4c1372b950fa3492ec76aa86deb73470f5e8a497ed4dc5c7e11be75eaa67010"
       },
       {
         "sharpe": 0.05623681530793381,
@@ -6958,7 +7046,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -6974,7 +7062,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2700af57ff722df2d0ce53d2418ac3bd601fa5153796af708bfc8e5d37379c97"
+        "trial_id": "1bc587e40143e4bed753ac57e8ffc63a4f135709ee36e4510926f587597308d1"
       },
       {
         "sharpe": 0.003800496087189528,
@@ -7053,7 +7141,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7069,7 +7157,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "cd38130f9a1098caef0a8e791c07043d481eb321baafa43aa2c8614d5258b4e8"
+        "trial_id": "aa3f5a6983b7c95333adecf82d070b2251f0ce694d6720da1d4453f699c04732"
       },
       {
         "sharpe": 0.060424664058756454,
@@ -7148,7 +7236,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "REGIME_SWITCHING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7164,7 +7252,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c8792104353b714775e282f931bd673a783638de73ce8193c887294515180024"
+        "trial_id": "6bf744af2307988a8ea0f76bb3f3bcc4f1adcbf156b255b43e375a5e52318e5d"
       },
       {
         "sharpe": 0.015595023191341525,
@@ -7243,7 +7331,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "REGIME_SWITCHING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7259,7 +7347,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ce7edfe8f8713a9602c3439c59e40c0a77a1753bfd6427cb55591692d131a01b"
+        "trial_id": "a5327825b4c44176a558971e3320b33d5f7f435fde826855c793bf40e71ce915"
       },
       {
         "sharpe": 0.023306277570974195,
@@ -7338,7 +7426,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "RANDOM_FOREST_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7354,7 +7442,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "aa885bd30a5fc26b2b6d04a88f19f2267a3e647f1749419e64d29ade037c7363"
+        "trial_id": "655c6596acfe44e310c16a1ea127486c95cf6f538341b1fda2b57e7bc93cb203"
       },
       {
         "sharpe": 0.008695966056200865,
@@ -7433,7 +7521,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "RANDOM_FOREST_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7449,7 +7537,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "54a9e9fbdf947732016701b5a18e05bf19e1570d01d6f76de9a2126f4f618ca6"
+        "trial_id": "dbf1c988ff8573e9e6e4d4fdbcaf06d8cd8bbac330f01f8c57b22eac3712408a"
       },
       {
         "sharpe": 0.023409066930333202,
@@ -7528,7 +7616,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "GRADIENT_BOOSTING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7544,7 +7632,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "445d8f439b200911c597f7ed22141ef3187777fa3df731d12bbf862025f48000"
+        "trial_id": "95055220b88adb0d3096c7f86672bcf90c636458e505a047c7fa9376874ced72"
       },
       {
         "sharpe": -0.003566530183527202,
@@ -7623,7 +7711,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "GRADIENT_BOOSTING_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7639,7 +7727,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "334a2be12bbf7c116c1b3869884d1329b7b6f5d14e715df255a4b969afad6a68"
+        "trial_id": "1ccaf35bf10f26b28fef766c01c2b6933db42cd7d1472666776a18ce29d755bd"
       },
       {
         "sharpe": 0.0516793947678122,
@@ -7718,7 +7806,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7734,7 +7822,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a00ab831be769f7b9f227dd43f0fff45f96eb111331233fe6070bf3ebeae01a2"
+        "trial_id": "0c8d7c1d419841eb324512b9406753975d4dba3adcb20ba8c164ae4b2159ab6b"
       },
       {
         "sharpe": 0.0027457794015127625,
@@ -7813,7 +7901,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7829,7 +7917,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "fe31b856be11b094db16da2ce41333f75dadecdf7e042a63f565d60e8042fc7a"
+        "trial_id": "d5d9ca8d583f840650a41aa762e9d9408258c7cb615236293eeca186d6ce1a08"
       },
       {
         "sharpe": 0.05183318215583022,
@@ -7908,7 +7996,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -7924,7 +8012,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "7cdccef88b625ae8377c3b6ffe1a0e879084c329de623fcf84dbbda8a0dda376"
+        "trial_id": "0bf0810927cb9769a483908d9fe46992c19b25a5a8bd76b16b96dc13236962c6"
       },
       {
         "sharpe": -0.005647497325197908,
@@ -8003,7 +8091,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8019,7 +8107,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e9b93eb7670cc2a76f795d66e4379559f90ba6f8fe303168b1ffc0cb308ae610"
+        "trial_id": "12e63c09ebd8f907109e6d4f5c0c50882b40cf0e0851f3d1cd457b9ef91ca8c1"
       },
       {
         "sharpe": 0.062064296566016405,
@@ -8098,7 +8186,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8114,7 +8202,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a0e907f7737a17803b9f1f8eaadf54c2d9a4bc7f4239be7597a6d9cad3be282c"
+        "trial_id": "4942ba3dfc2d01edfa34a220d8870125f8d4f26b051c5da672fd71d3dabc8659"
       },
       {
         "sharpe": 0.012100104296486603,
@@ -8193,7 +8281,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8209,7 +8297,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c52f858347d20fb4019dbf27400cae518fdb33440dde8f37c1795e14f57426bf"
+        "trial_id": "601b7bf162a6218b3091b352b4b9af38c7b7ebfd7a64c83bc11d722a223e0d02"
       },
       {
         "sharpe": 0.06091731540766787,
@@ -8288,7 +8376,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8304,7 +8392,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "5891f9ea979acc7a88fbb12d037896808ac3dd87addb313e21b938ffaab97bfb"
+        "trial_id": "27a432a29711c6906f5148661b9276661fcd972b3b0fa806af2fb649515dcfc1"
       },
       {
         "sharpe": -0.00023262044793881636,
@@ -8383,7 +8471,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "IC_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8399,7 +8487,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ea2b74fe152265cc10b9ef529e8efafa0ab1835b8b119d000f034d08947c9672"
+        "trial_id": "d69e26645ef802bc0c2a4c6e493c28f8b7ba98db0c1f5e7bca1a4d58bf2ed522"
       },
       {
         "sharpe": 0.05623681530793381,
@@ -8478,7 +8566,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8494,7 +8582,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2700af57ff722df2d0ce53d2418ac3bd601fa5153796af708bfc8e5d37379c97"
+        "trial_id": "1bc587e40143e4bed753ac57e8ffc63a4f135709ee36e4510926f587597308d1"
       },
       {
         "sharpe": 0.003800496087189528,
@@ -8573,7 +8661,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8589,7 +8677,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "cd38130f9a1098caef0a8e791c07043d481eb321baafa43aa2c8614d5258b4e8"
+        "trial_id": "aa3f5a6983b7c95333adecf82d070b2251f0ce694d6720da1d4453f699c04732"
       },
       {
         "sharpe": 0.05470909965639213,
@@ -8668,7 +8756,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8684,7 +8772,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "216b994c11dec627b1fd9cf69bd2ee1c82a867b4438a758591d46478e54905b7"
+        "trial_id": "480bc6021ca89db656cc14ff5a4cf17ea26174f3635e5930b8ec1b57e0759a11"
       },
       {
         "sharpe": -0.0033776040406262855,
@@ -8763,7 +8851,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8779,7 +8867,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "fcdc1b1556ba27954e5f0167fb27b260b1c2af98a31dc235bc0a24cceaa6de86"
+        "trial_id": "e173bc91ccbeddf7a3ff2cf1e8f104903d8dfbbe22e63506be0fcac4fcd20349"
       },
       {
         "sharpe": 0.06383089827468517,
@@ -8858,7 +8946,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8874,7 +8962,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "3ce8360f9924fbd2c130158d6bcd2e036f9a756c215210b9c485af632ab94420"
+        "trial_id": "f581738fdc54cdcde8a03cea32d042f32230c34eb47b53850f40e4c6aac11c1d"
       },
       {
         "sharpe": 0.01607590531600083,
@@ -8953,7 +9041,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -8969,7 +9057,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "e931ed741f8e20745a160735958b78277280f4795c6122508f6424b733ba1c97"
+        "trial_id": "512e6fbb648697f5a54e28ac86fdef742f265bc2e9d5a86d5217e16feadbf638"
       },
       {
         "sharpe": 0.06147804142984536,
@@ -9048,7 +9136,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9064,7 +9152,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "465694d0256ba1fa95338a5e0491625bd1c7e84e2d382c77d1d1328b22d9ffef"
+        "trial_id": "f257df564d9522b38061ea8468998f9c5140152e75af0f3bf908410f9b46a488"
       },
       {
         "sharpe": 0.0030839873338296005,
@@ -9143,7 +9231,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "MARKET_BETA_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9159,7 +9247,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "566e8da66900add0c71cac14cba6a58d96e8226bbbbc4453edb5ce2c0335e578"
+        "trial_id": "9a00c2ef76a3d9f298aa4a888b9416fc9ad639c9bd00ff4fdfe8e689c9b1271d"
       },
       {
         "sharpe": 0.0448945385369549,
@@ -9238,7 +9326,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9254,7 +9342,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "b44c5f2f45f5ba7b17da3e3fda570c2cf742637b142994f1a8318e58c5c95771"
+        "trial_id": "64d7d98bc89c1e5c5cd0f4deb54135ffe86344c63ba41c8f1cea4c3f21d87d94"
       },
       {
         "sharpe": -0.019467827600699445,
@@ -9333,7 +9421,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9349,7 +9437,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "a70c21ac9ace64351e165fea63021586c7047efb6043b82c01f98b93755c77fe"
+        "trial_id": "d4c1372b950fa3492ec76aa86deb73470f5e8a497ed4dc5c7e11be75eaa67010"
       },
       {
         "sharpe": 0.04428210438447033,
@@ -9428,7 +9516,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9444,7 +9532,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ccaecc69e5eb17f2ee2405a805c0a98910412e71f223f570c90b92f740fabf53"
+        "trial_id": "ae1f8b49c9ad5b00b1babc894170f4d0f6a5a33afaa2d2c86e9db3e0864b6ca7"
       },
       {
         "sharpe": -0.02637796224493162,
@@ -9523,7 +9611,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9539,7 +9627,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "016ef30c7d0f0f092f20a246f4688b5d8074c8b45e16e5018a08d089640f552b"
+        "trial_id": "ec664f22b4d3b52e47546912edaf5d974d7d7d62b36a955cd0b0f96b36b863b5"
       },
       {
         "sharpe": 0.053530240156923994,
@@ -9618,7 +9706,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9634,7 +9722,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "c72b1cc32984055ee9be4babee9625ba3a5eddb34e7b5f30fccdddfb17b6dab6"
+        "trial_id": "a6628bd1fe747fb3b40e9286bf24701b26ac82f3f8026cd30f042fc3c017c56d"
       },
       {
         "sharpe": -0.010867530799170591,
@@ -9713,7 +9801,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9729,7 +9817,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "09153214c801c8c35297b7ff7cc4b3d44548e7dbb67ec9a48143815e8e73e0a0"
+        "trial_id": "993cade02182d36c80a6b1e049fcc47dfba7a970f459082470855d483439c821"
       },
       {
         "sharpe": 0.052400668674280906,
@@ -9808,7 +9896,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9824,7 +9912,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "95c1d9d8d85900e04f07fa19d7b6fa76d2a5471a28cead1281a4dfc23d150625"
+        "trial_id": "5edffb49e1a6b50a27ea7a96cd6236aa108ecdf5854a585715bd879c076e8c30"
       },
       {
         "sharpe": -0.021047575492227005,
@@ -9903,7 +9991,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "SECTOR_NEUTRAL_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -9919,7 +10007,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "23ff258b2aba86eae1b315d5f2a05324841f0255681d92a0344279a084c52be8"
+        "trial_id": "ffc2e9c6b0ae1094d7da045f73ced6a08a86dc3ec0f06c1ca6c5ce530f2f63f8"
       },
       {
         "sharpe": 0.057401259137229176,
@@ -9998,7 +10086,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10014,7 +10102,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "051b568478715ece8f1646f3541e8e9d16815026f447632edd81d2fcb6a4813f"
+        "trial_id": "01e015785a3bf00ec802945d930495eb25c1e59d8cee9ba33246f67374450059"
       },
       {
         "sharpe": 0.003417801820099099,
@@ -10093,7 +10181,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10109,7 +10197,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "923542aac071bb64891902dd17b825e75c8eb11e274d6f9bfc35c517f0f0b565"
+        "trial_id": "f2674d5a9743e7f71be3f41b2183ef37bc719fa24582ee16b7166ca854a4f704"
       },
       {
         "sharpe": 0.05795012002509549,
@@ -10188,7 +10276,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10204,7 +10292,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "07eaaacd749c5793c3fefd21bfe0609dd0d267bbbd448c98ff043c16eccc3184"
+        "trial_id": "cb82095885f437b5caafd00d336a38120e9579c8f463b45be1b9ffa6c40151a4"
       },
       {
         "sharpe": 0.0008223303990937507,
@@ -10283,7 +10371,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10299,7 +10387,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ebc6c46b51c4e889317e4f1e06aaadc7a307bed4c487ecc877e4fdbb4611f661"
+        "trial_id": "9aad9e86b09566d8e1cc8114e2ad58378a891a65f7ba071a95d569373f130226"
       },
       {
         "sharpe": 0.061759322981989696,
@@ -10378,7 +10466,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10394,7 +10482,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "23bdf78f26399a1bb09f11593ec0e341732065ea3d6016f6fcee408408388896"
+        "trial_id": "04b06f17d77720669580e16e5ef96e06ce07b15b084bd24d502b8ae0086bbb39"
       },
       {
         "sharpe": 0.0118337242152924,
@@ -10473,7 +10561,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10489,7 +10577,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "ee5d506660d39a6fff28df37ec730fa20911c9717c141a2a452cb76298928175"
+        "trial_id": "31564229779b7863a45ec1a504a86d55d0b3e1409ffbc9b59135248bf9146136"
       },
       {
         "sharpe": 0.06042560585459419,
@@ -10568,7 +10656,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10584,7 +10672,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "2607ff1c3cde69984d8828bc186b78f605554340fbcd9f50ea1405f67fc33767"
+        "trial_id": "d019adc51000b76e02a614264471850d4bffbcd852404c0fd9a04b0dffdbedf0"
       },
       {
         "sharpe": 0.005725287983609157,
@@ -10663,7 +10751,7 @@
             "ridge_alpha": 0.1,
             "warmup_periods": 25
           },
-          "estimator_version": "m4_1_ml_combination_v1",
+          "estimator_version": "m4_2_purged_cpcv_v1",
           "factor_id": "EQUAL_WEIGHTED_COMPOSITE",
           "parameters": {
             "periods_per_year": 252,
@@ -10679,7 +10767,7 @@
           "sample_sha256": "a145f9ea9794747460884354d6b010203fe80bfe0b48c8fea2326d9bdc010808"
         },
         "status": "completed",
-        "trial_id": "9516772aaf0c06146026cfd1cc0efa28427e18b90f526655d62716baf70bca6e"
+        "trial_id": "36b0685d76a6d818a62db80f7ab8c7c3ee07d3fec43e77fff650101f4d5c1614"
       }
     ],
     "weighting_comparisons": [

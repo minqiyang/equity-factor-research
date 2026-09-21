@@ -76,6 +76,7 @@ from research.multifactor_diagnostic_mvp import (
     compute_rolling_market_beta,
     evaluate_portfolio_weighting_comparisons,
 )
+from features.cross_validation import combinatorial_purged_cross_validation_pbo
 from features.ml_combination import walk_forward_ml_factor_composite
 from research.walking_skeleton_mvp import (
     execution_aligned_forward_returns,
@@ -115,7 +116,7 @@ COMPOSITE_IDS = (
     RANDOM_FOREST_COMPOSITE,
     GRADIENT_BOOSTING_COMPOSITE,
 )
-ESTIMATOR_VERSION = "m4_1_ml_combination_v1"
+ESTIMATOR_VERSION = "m4_2_purged_cpcv_v1"
 
 
 def default_data_dir() -> Path:
@@ -170,6 +171,8 @@ class RealDataMultifactorDiagnosticConfig:
     forward_holding_periods: int = FORWARD_HOLDING_PERIODS
     warmup_periods: int = ALPHA_WARMUP_PERIODS
     pbo_n_splits: int = 8
+    pbo_holding_periods: int = FORWARD_HOLDING_PERIODS
+    pbo_embargo_periods: int = 5
     quantiles: int = 10
     ridge_alpha: float = 0.1
     alpha_ids: tuple[str, ...] = ALPHA_IDS
@@ -568,6 +571,17 @@ def run_real_data_multifactor_diagnostic(
         alpha_returns,
         n_splits=config.pbo_n_splits,
     )
+    cpcv_summary: dict[str, Any] | None = None
+    try:
+        cpcv_summary = combinatorial_purged_cross_validation_pbo(
+            alpha_returns,
+            n_splits=config.pbo_n_splits,
+            holding_periods=config.pbo_holding_periods,
+            embargo_periods=config.pbo_embargo_periods,
+        )
+    except ValueError:
+        # Sample size or split geometry insufficient for purged and embargoed evaluation
+        cpcv_summary = None
 
     weighting_comparisons: list[dict[str, Any]] = []
     if config.include_weighting_comparisons:
@@ -616,6 +630,7 @@ def run_real_data_multifactor_diagnostic(
         "ic_weights": ic_weights,
         "sector_map": build_default_sector_mapping(prices.columns),
         "pbo_summary": pbo_summary,
+        "cpcv_summary": cpcv_summary,
         "weighting_comparisons": weighting_comparisons,
         "trial_inventory": tuple(inventory),
         "trial_family": trial_family,
@@ -905,6 +920,7 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
         metrics={
             **factor_metrics,
             "pbo_summary": result["pbo_summary"],
+            "cpcv_summary": result.get("cpcv_summary"),
             "weighting_comparisons": result.get("weighting_comparisons", []),
             "trial_inventory": [
                 {key: value for key, value in record.items() if key != "attempt_id"}
@@ -924,6 +940,7 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "walk-forward training windows at monthly rebalance dates, admitting an "
             "observation labeled at s only when its execution-aligned forward-return "
             "window has closed by t; predictions are held on [t, next_t)",
+            "CPCV cross-validation purges training samples overlapping with the 21-bar forward-return window and applies a 5-bar post-test embargo",
             "volatility proxy does not backfill leading rolling-standard-deviation NaNs",
             "sector map uses static balanced cohorts, not GICS point-in-time sectors",
             "market beta proxy does not backfill leading rolling-beta NaNs",
@@ -949,6 +966,7 @@ def write_real_data_report(*, result: dict[str, Any]) -> None:
     first_factor_id = result["alpha_ids"][0]
     first_backtest: BacktestResult = result["factors"][first_factor_id]["backtest"]
     pbo_summary = result["pbo_summary"]
+    cpcv_summary = result.get("cpcv_summary")
     horizon_contract = (
         f"source_row(s) + {config.signal_lag_periods} + "
         f"{config.forward_holding_periods} <= source_row(t)"
@@ -1046,6 +1064,24 @@ expanding training windows with strictly closed forward-return labels (zero look
 | composite | top features (mean importance) | evaluated rebalance count |
 | --- | --- | --- |
 {chr(10).join(ml_table_rows)}
+"""
+
+    cpcv_section = ""
+    if cpcv_summary:
+        cpcv_section = f"""
+### Combinatorial Purged Cross-Validation (CPCV)
+
+- Purged & Embargoed PBO: `{_format_number(cpcv_summary["pbo"])}`
+- Out-of-Sample Probability of Loss: `{_format_number(cpcv_summary["prob_loss"])}`
+- Combinations: `{cpcv_summary["n_combinations"]}` (from `{cpcv_summary["n_splits"]}` splits)
+- Forward Holding Horizon: `{cpcv_summary["holding_periods"]}` bars
+- Post-Test Embargo Window: `{cpcv_summary["embargo_periods"]}` bars
+- Mean Purged Samples per Split: `{_format_number(cpcv_summary["mean_purged_samples"])}`
+- Mean Embargoed Samples per Split: `{_format_number(cpcv_summary["mean_embargoed_samples"])}`
+- Mean OOS Relative Rank: `{_format_number(cpcv_summary["mean_relative_rank"])}`
+- Median OOS Relative Rank: `{_format_number(cpcv_summary["median_relative_rank"])}`
+- Mean IS Sharpe: `{_format_number(cpcv_summary["mean_is_sharpe"])}`
+- Mean OOS Sharpe: `{_format_number(cpcv_summary["mean_oos_sharpe"])}`
 """
 
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in result["alpha_ids"])
@@ -1189,6 +1225,8 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 
 ## Overfitting diagnostics (CSCV / PBO)
 
+### Classical CSCV (unpurged)
+
 - Probability of Backtest Overfitting (PBO): `{_format_number(pbo_summary["pbo"])}`
 - Out-of-Sample Probability of Loss: `{_format_number(pbo_summary["prob_loss"])}`
 - Combinations: `{pbo_summary["n_combinations"]}` (from `{pbo_summary["n_splits"]}` splits)
@@ -1196,6 +1234,7 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 - Median OOS Relative Rank: `{_format_number(pbo_summary["median_relative_rank"])}`
 - Mean IS Sharpe: `{_format_number(pbo_summary["mean_is_sharpe"])}`
 - Mean OOS Sharpe: `{_format_number(pbo_summary["mean_oos_sharpe"])}`
+{cpcv_section}
 {ml_section}
 ## Limitations
 

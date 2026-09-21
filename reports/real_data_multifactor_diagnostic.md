@@ -327,6 +327,8 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 
 ## Overfitting diagnostics (CSCV / PBO)
 
+### Classical CSCV (unpurged)
+
 - Probability of Backtest Overfitting (PBO): `0.5286`
 - Out-of-Sample Probability of Loss: `0.0000`
 - Combinations: `70` (from `8` splits)
@@ -334,6 +336,21 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 - Median OOS Relative Rank: `0.4906`
 - Mean IS Sharpe: `0.0878`
 - Mean OOS Sharpe: `0.0506`
+
+### Combinatorial Purged Cross-Validation (CPCV)
+
+- Purged & Embargoed PBO: `0.5286`
+- Out-of-Sample Probability of Loss: `0.0000`
+- Combinations: `70` (from `8` splits)
+- Forward Holding Horizon: `21` bars
+- Post-Test Embargo Window: `5` bars
+- Mean Purged Samples per Split: `94.0000`
+- Mean Embargoed Samples per Split: `5.0000`
+- Mean OOS Relative Rank: `0.4485`
+- Median OOS Relative Rank: `0.4906`
+- Mean IS Sharpe: `0.0854`
+- Mean OOS Sharpe: `0.0514`
+
 
 ## Machine learning factor combinations and feature importances
 
