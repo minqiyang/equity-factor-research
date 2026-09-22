@@ -1119,7 +1119,11 @@ transaction_costs = F / E_previous
 slippage_costs = C / E_previous
 ```
 
-Cash plus signed holdings reconciles to equity. Held quantities persist between
+Funding calculations retain an immutable snapshot of unscaled quoted buys.
+Closing cash plus signed holdings must reconcile to post-cost equity within
+$0.000001 absolute difference; an excess discrepancy raises
+`impact_accounting_invalid`. Large-notional paths can refuse when accumulated
+floating-point discrepancy exceeds this absolute limit. Held quantities persist between
 market trades. Terminal redemption contributes zero market turnover and zero
 impact fee; later ordinary reinvestment follows the impact policy. Target
 position caps and long-short neutrality describe frozen targets. Partial fills

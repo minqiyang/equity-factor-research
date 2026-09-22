@@ -101,7 +101,7 @@ The benchmark holds equal initial dollars of every predeclared security, with ze
 | synthetic_cohort | long_short | throttle | 50,000,000 | success | -1.521732 | -0.015435 | -0.041371 | 8.758596 | 0.100000 | 954217.523393 |  |
 | synthetic_cohort | long_short | throttle | 100,000,000 | success | -1.604857 | -0.012300 | -0.038237 | 8.828292 | 0.100000 | 1524757.459407 |  |
 | synthetic_cohort | long_short | throttle | 500,000,000 | success | -1.397326 | -0.002415 | -0.028351 | 8.846364 | 0.100000 | 7283050.005484 |  |
-| synthetic_cohort | long_short | throttle | 1,000,000,000 | success | -1.399762 | -0.001208 | -0.027144 | 8.846364 | 0.100000 | 14630922.701981 |  |
+| synthetic_cohort | long_short | throttle | 1,000,000,000 | refused | unavailable | unavailable | unavailable | unavailable | unavailable | unavailable | impact_accounting_invalid |
 | synthetic_cohort | long_short | penalize | 1,000,000 | success | -1.288990 | -0.025005 | -0.050941 | 14.122870 | 0.194843 | 0.000000 |  |
 | synthetic_cohort | long_short | penalize | 10,000,000 | success | -3.906940 | -0.278102 | -0.304038 | 540.347093 | 1.888992 | 0.000000 |  |
 | synthetic_cohort | long_short | penalize | 50,000,000 | success | -4.273802 | -0.833633 | -0.859569 | 2171.943056 | 7.696317 | 0.000000 |  |

@@ -10235,3 +10235,39 @@ This ablation round completes the implementation and machine verification of sev
   CPython 3.12.13 is the supplied local environment. Hosted Python 3.11 CI and
   the owner-directed fresh independent GPT-6 Astra High Fast review remain pending
   at producer delivery to coordinator `w3:pE8`.
+
+
+## 2026-09-22 — M45-R1 All-Buy Funding Remediation
+
+- Independent review of `fa63cfae90b6543e94b861df2277ecdfab9b9460` reproduced a
+  P1 self-financing defect missed by the initial tests. An all-True pandas buy
+  selection aliased the executed-trade buffer; actual-fill scaling then caused
+  final outlay to apply the funding scale twice. The initial producer QA's
+  cash-conservation coverage omitted this selection boundary.
+- Runtime and regression fix commit: `de37dd053c6302e0d630469d7796ab7eee9e8a36`.
+  Buy values now own an explicit copy. A post-trade guard requires finite cash
+  plus signed positions to match post-cost equity within $0.000001. The
+  existing input-balance guard remains before trade quotation.
+- Durable verification rule: arrays retained across financial-state mutation
+  require explicit ownership, and all-buy/single-security funding cases must
+  verify actual-fill fees, cash debits, and final cash-plus-position equality.
+  The original eight reviewer regressions fail before repair and pass after it.
+  Twenty added regression cases bring the three impact suites to 133 tests.
+- Seventeen isolated negative ablations fail as expected; the intact package
+  passes 133 tests. The new copy and post-trade reconciliation removals each
+  expose their own counterexample. Necessary accounting controls remain intact.
+- Full core lane: 4,136 passed and two inherited platform precision skips.
+  Diagnostics: 125 passed. Their disjoint union contains 4,263 collected cases,
+  with 4,261 passing. Baseline capture remains byte-identical with fingerprint
+  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+  Ruff, compileall, build, package-content comparison and map checks pass.
+- Capacity replay records 61 successes, 35 refusals and 37 negative-return books.
+  The $1B synthetic long-short throttle path now refuses a measured
+  $0.0000011920928955078125 post-trade discrepancy. The requested absolute limit
+  remains $0.000001. All prior outcomes remain in Git and the append-only log;
+  the current cases, brackets and Markdown match a separate replay exactly.
+- Current source/artifact hashes and full logs are recorded in
+  `coord/reports/m4_5_evidence/validation.json` and
+  `/private/tmp/efr-m4-5-remediation-evidence`. The implementation report identifies
+  the remediation SHA and the changed numerical boundary. Independent closure
+  of M45-R1 and hosted CI remain pending at producer handoff.

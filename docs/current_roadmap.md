@@ -56,7 +56,9 @@ The program follows five primary milestones:
   and generated capacity curves in both engines. Its card is
   `coord/card_m4_5_market_impact_capacity.md`; reproduce its generated report with
   `PYTHONPATH=src:. python -m research.market_impact_capacity_demo`. The 96-case
-  grid retains 62 successful books, 34 refusals, and 38 negative-return books.
+  grid retains 61 successful books, 35 refusals, and 37 negative-return books.
+  M45-R1 remediation isolates buy funding buffers and adds a $0.000001 absolute
+  post-trade balance limit; exact-head independent re-review remains pending.
   This grid contains zero observed positive-to-nonpositive capacity brackets.
   M4.5 independent review and hosted CI remain pending. Empirical calibration,
   actual strategy capacity, and formal real-data promotion remain open gates.
