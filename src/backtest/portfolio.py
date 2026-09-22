@@ -17,6 +17,10 @@ from typing import Any, Literal, Mapping
 import numpy as np
 import pandas as pd
 
+from backtest.market_impact import (
+    MarketLiquidity, SquareRootImpactModel, execute_impact_step,
+    resolve_impact_liquidity, impact_assumptions, impact_result_fields,
+)
 from backtest.metrics import calculate_basic_metrics, calculate_holding_episode_metrics
 from data.constituent_table import (
     ValidatedConstituentIntervals, _source_close_column, _validate_source_close_index,
@@ -250,6 +254,12 @@ class BacktestResult:
     cash_balance: pd.Series
     terminal_cashflows: pd.DataFrame
     terminal_event_log: tuple[dict[str, Any], ...]
+    slippage_cost_series: pd.Series
+    realized_slippage_bps: pd.Series
+    trade_participation_rates: pd.DataFrame
+    executed_trade_values: pd.DataFrame
+    pending_trade_shares: pd.DataFrame
+    cancelled_trade_shares: pd.DataFrame
 
 
 def capture_backtest_source_provenance(
@@ -527,6 +537,10 @@ def run_long_only_backtest(
     terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    impact_model: SquareRootImpactModel | None = None,
+    impact_volumes: pd.DataFrame | None = None,
+    impact_price_basis: str | None = None,
+    impact_volume_basis: str | None = None,
     volume_aware_slippage_mode: str = "diagnostic_only",
     volume_aware_slippage_impact: pd.Series | None = None,
     volume_aware_slippage_metadata: Mapping[str, Any] | None = None,
@@ -545,8 +559,9 @@ def run_long_only_backtest(
     uses only ``signals[a[j - signal_lag_periods]]`` and a target established at
     its close first earns the return ending on the next observed row.
 
-    This is idealized close-reset accounting, not order, fill, auction,
-    brokerage, LEAN-parity, or live-trading behavior.
+    The default path uses idealized close target resets. An active impact model
+    retains cash-funded dollar positions and liquidity-deferred shares. Both
+    paths provide simulated daily-close research accounting.
     """
 
     _validate_backtest_inputs(
@@ -604,6 +619,15 @@ def run_long_only_backtest(
         dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
         terminal_events=prepared_events,
     )
+    impact_liquidity = resolve_impact_liquidity(
+        prices, model=impact_model, volumes=impact_volumes,
+        price_basis=impact_price_basis, volume_basis=impact_volume_basis,
+        evaluation_end=evaluation_end, signal_lag_periods=signal_lag_periods,
+        slippage_bps=slippage_bps, missing_price_policy=missing_price_policy,
+        precomputed_impact=(volume_aware_slippage_mode != "diagnostic_only"
+                            or volume_aware_slippage_impact is not None
+                            or volume_aware_slippage_metadata is not None),
+    )
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
     lagged_signals = signal_data.shift(signal_lag_periods)
 
@@ -645,6 +669,8 @@ def run_long_only_backtest(
         equity_curve,
         terminal_cashflows,
         terminal_event_log,
+        impact_fields,
+        impact_cash,
     ) = _calculate_bounded_portfolio_path(
         prices=price_data,
         target_weights=target_weights,
@@ -655,6 +681,8 @@ def run_long_only_backtest(
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
         terminal_events=prepared_events,
+        impact_model=impact_model, impact_liquidity=impact_liquidity,
+        universe_mask=universe_mask,
     )
 
     benchmark_equity_curve, benchmark_returns = _calculate_benchmark_path(
@@ -716,11 +744,20 @@ def run_long_only_backtest(
             recovered_price_columns or recovered_signal_columns
         ),
     )
+    if impact_model is not None:
+        timing_metadata.update(
+            execution_time="observed_source_row_close_partial_fill",
+            timing_ledger_scope="scheduled_frozen_target_attempts",
+            actual_execution_trace="executed_trade_values_including_deferred_retries",
+            execution_price_failure_policy="raise_impact_execution_price_invalid_on_nonzero_market_request",
+        )
     timing_ledger = _build_timing_ledger(
         accounting_dates=accounting_dates,
         rebalance_dates=rebalance_dates,
         target_weights=target_weights,
         signal_lag_periods=signal_lag_periods,
+        execution_phase=("observed_source_row_close_frozen_target_attempt"
+                         if impact_model is not None else _LEDGER_PHASE_EXECUTION),
     )
 
     return BacktestResult(
@@ -742,7 +779,8 @@ def run_long_only_backtest(
         benchmark_returns=benchmark_returns,
         timing_metadata=timing_metadata,
         timing_ledger=timing_ledger,
-        cash_balance=(equity_curve * (1.0 - holdings.sum(axis=1))).rename("cash_balance"),
+        cash_balance=(impact_cash if impact_model is not None else equity_curve * (1.0 - holdings.sum(axis=1))).rename("cash_balance"),
+        **impact_fields,
         terminal_cashflows=terminal_cashflows,
         terminal_event_log=terminal_event_log,
         assumptions={
@@ -808,6 +846,8 @@ def run_long_only_backtest(
                 else {}
             ),
             **volume_aware_assumptions,
+            **impact_assumptions(impact_model, price_basis=impact_price_basis,
+                                 volume_basis=impact_volume_basis),
         },
     )
 
@@ -930,6 +970,9 @@ def _calculate_bounded_portfolio_path(
     volume_impact_basis: str | None,
     missing_price_policy: str,
     terminal_events: dict[pd.Timestamp, tuple[dict[str, Any], ...]] | None = None,
+    impact_model: SquareRootImpactModel | None = None,
+    impact_liquidity: MarketLiquidity | None = None,
+    universe_mask: pd.DataFrame | None = None,
 ) -> tuple[
     pd.DataFrame,
     pd.Series,
@@ -945,6 +988,8 @@ def _calculate_bounded_portfolio_path(
     pd.Series,
     pd.DataFrame,
     tuple[dict[str, Any], ...],
+    dict[str, Any],
+    pd.Series,
 ]:
     """Advance bounded accounting rows in the contract's normative order."""
 
@@ -963,6 +1008,13 @@ def _calculate_bounded_portfolio_path(
     net_returns = np.full(len(index), 0.0, dtype=float)
     equity_curve = np.full(len(index), np.nan, dtype=float)
     equity_curve[0] = initial_capital
+    executed_values = np.zeros(prices.shape)
+    participation = np.zeros(prices.shape)
+    pending_values = np.zeros(prices.shape)
+    cancelled_values = np.zeros(prices.shape)
+    cash_values = np.full(len(index), initial_capital)
+    impact_dollars = np.zeros(len(index))
+    pending = pd.Series(0.0, index=columns)
     post_trade_weights = pd.Series(0.0, index=columns, dtype=float)
     terminal_events = terminal_events or {}
     terminal_cashflows = np.zeros(prices.shape, dtype=float)
@@ -1032,42 +1084,77 @@ def _calculate_bounded_portfolio_path(
             pretrade_weights.loc[list(terminal_returns)] = 0.0
             settled.update(terminal_returns)
 
-        target = target_weights.loc[date]
-        if target.notna().any():
-            actual_target = target.fillna(0.0)
-            _validate_terminal_target(actual_target, settled, date=date)
-            signed_trades = actual_target - pretrade_weights
-            _validate_execution_price_legs(
+        if impact_model is not None:
+            target = target_weights.loc[date]
+            actual_target = target.fillna(0.0) if target.notna().any() else None
+            if actual_target is not None:
+                _validate_terminal_target(actual_target, settled, date=date)
+            previous_equity = float(equity_curve[position - 1])
+            equity_before = previous_equity * gross_multiplier
+            step = execute_impact_step(
+                model=impact_model, liquidity=impact_liquidity, date=date,
                 execution_prices=prices.iloc[position],
-                signed_trade_weights=signed_trades,
-                date=date,
+                position_values=pretrade_weights * equity_before,
+                cash=cash_values[position - 1] + float(terminal_cashflows[position].sum()),
+                equity_before=equity_before, target_weights=actual_target,
+                pending_shares=pending,
+                eligible=universe_mask.reindex(index=[date], columns=columns).iloc[0] if universe_mask is not None else None,
+                settled=settled, transaction_cost_bps=transaction_cost_bps, allow_short=False,
             )
-            signed_trade_weights[position] = signed_trades.to_numpy(dtype=float)
-            trade_weights[position] = signed_trades.abs().to_numpy(dtype=float)
-            row_turnover = float(signed_trades.abs().sum())
-            next_holdings = actual_target
+            pending = step.pending_trade_shares
+            executed_values[position] = step.executed_trade_values.to_numpy()
+            participation[position] = step.participation_rates.to_numpy()
+            pending_values[position] = pending.to_numpy()
+            cancelled_values[position] = step.cancelled_trade_shares.to_numpy()
+            cash_values[position] = step.cash
+            impact_dollars[position] = step.slippage_cost
+            signed_trade_weights[position] = executed_values[position] / equity_before
+            trade_weights[position] = np.abs(signed_trade_weights[position])
+            turnover[position] = float(trade_weights[position].sum())
+            fixed_transaction_cost = step.commission / previous_equity
+            fixed_slippage_cost = step.slippage_cost / previous_equity
+            volume_cost = 0.0
+            impact_equity = equity_before - step.commission - step.slippage_cost
+            next_holdings = step.position_values / impact_equity
         else:
-            row_turnover = 0.0
-            next_holdings = pretrade_weights
+            target = target_weights.loc[date]
+            if target.notna().any():
+                actual_target = target.fillna(0.0)
+                _validate_terminal_target(actual_target, settled, date=date)
+                signed_trades = actual_target - pretrade_weights
+                _validate_execution_price_legs(
+                    execution_prices=prices.iloc[position],
+                    signed_trade_weights=signed_trades,
+                    date=date,
+                )
+                signed_trade_weights[position] = signed_trades.to_numpy(dtype=float)
+                trade_weights[position] = signed_trades.abs().to_numpy(dtype=float)
+                row_turnover = float(signed_trades.abs().sum())
+                next_holdings = actual_target
+            else:
+                row_turnover = 0.0
+                next_holdings = pretrade_weights
 
-        turnover[position] = row_turnover
-        with np.errstate(over="ignore", invalid="ignore"):
-            fixed_transaction_cost = (
-                row_turnover * (transaction_cost_bps / 10_000.0) * gross_multiplier
-            )
-            fixed_slippage_cost = (
-                row_turnover * (slippage_bps / 10_000.0) * gross_multiplier
-            )
-            volume_cost = float(raw_volume_impact.loc[date])
-            if volume_impact_basis == "post_return_portfolio_value":
-                volume_cost *= gross_multiplier
+            turnover[position] = row_turnover
+            with np.errstate(over="ignore", invalid="ignore"):
+                fixed_transaction_cost = (
+                    row_turnover * (transaction_cost_bps / 10_000.0) * gross_multiplier
+                )
+                fixed_slippage_cost = (
+                    row_turnover * (slippage_bps / 10_000.0) * gross_multiplier
+                )
+                volume_cost = float(raw_volume_impact.loc[date])
+                if volume_impact_basis == "post_return_portfolio_value":
+                    volume_cost *= gross_multiplier
 
-        if row_turnover == 0.0 and volume_cost != 0.0:
-            raise BacktestValidationError(
-                "volume_aware_slippage_invalid",
-                "applied impact must be zero when turnover is zero",
-                date=date,
-            )
+            if row_turnover == 0.0 and volume_cost != 0.0:
+                raise BacktestValidationError(
+                    "volume_aware_slippage_invalid",
+                    "applied impact must be zero when turnover is zero",
+                    date=date,
+                )
+            executed_values[position] = signed_trade_weights[position] * equity_curve[position - 1] * gross_multiplier
+            participation[position, executed_values[position] != 0] = np.nan
         transaction_costs[position] = fixed_transaction_cost
         slippage_costs[position] = fixed_slippage_cost
         volume_aware_costs[position] = volume_cost
@@ -1080,6 +1167,10 @@ def _calculate_bounded_portfolio_path(
             net_return = gross_return - row_total_cost
             net_multiplier = 1.0 + net_return
             equity_candidate = float(equity_curve[position - 1]) * net_multiplier
+        if impact_model is not None:
+            equity_candidate = impact_equity
+            net_return = equity_candidate / equity_curve[position - 1] - 1.0
+            net_multiplier = 1.0 + net_return
         _validate_postcost_net_equity(
             net_return=net_return,
             net_multiplier=net_multiplier,
@@ -1106,6 +1197,12 @@ def _calculate_bounded_portfolio_path(
         pd.Series(equity_curve, index=index, name="equity"),
         pd.DataFrame(terminal_cashflows, index=index, columns=columns),
         tuple(terminal_event_log),
+        impact_result_fields(index=index, columns=columns, equity=equity_curve,
+                             slippage_returns=slippage_costs + volume_aware_costs,
+                             executed=executed_values, participation=participation,
+                             pending=pending_values, cancelled=cancelled_values,
+                             slippage_dollars=impact_dollars if impact_model is not None else None),
+        pd.Series(cash_values, index=index),
     )
 
 
@@ -1461,6 +1558,7 @@ def _build_timing_ledger(
     rebalance_dates: pd.DatetimeIndex,
     target_weights: pd.DataFrame,
     signal_lag_periods: int,
+    execution_phase: str = _LEDGER_PHASE_EXECUTION,
 ) -> tuple[TimingLedgerRow, ...]:
     ledger_dates = pd.DatetimeIndex(
         [accounting_dates[0], *rebalance_dates.to_list()]
@@ -1512,7 +1610,7 @@ def _build_timing_ledger(
                     _LEDGER_PHASE_SIGNAL_AVAILABILITY if executed else None
                 ),
                 decision_phase=_LEDGER_PHASE_DECISION if executed else None,
-                execution_phase=_LEDGER_PHASE_EXECUTION if executed else None,
+                execution_phase=execution_phase if executed else None,
                 incoming_return_start=incoming_start,
                 incoming_return_end=incoming_end,
                 first_holding_return_start=first_holding_start,

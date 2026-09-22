@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-21 for the M4.4 synthetic PIT membership and terminal-cash implementation candidate.
+Updated: 2026-09-22 for the M4.5 synthetic market-impact and capacity implementation candidate.
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -50,13 +50,18 @@ The program follows five primary milestones:
 
 ## Program Position
 
-- Current M4 implementation checkpoint: M4.3 merged at `37437df` (PR #252).
-  M4.4 implements optional availability-aware permanent-ID membership and
-  evidenced immediate cash settlement in both engines. Its synthetic comparison
-  command is `python -m research.pit_universe_delisting_demo`; the implementation
-  card is `coord/card_m4_4_pit_universe_delisting.md`. Independent review and
-  hosted CI for this candidate remain pending. Formal universe evidence,
-  delayed recoveries, and private-data promotion remain separate gates.
+- Current M4 implementation checkpoint: M4.4 merged at `fe851ba` (PR #253)
+  with both independent-review findings closed. M4.5 implements optional causal
+  square-root impact, participation policies, self-financing cash accounting,
+  and generated capacity curves in both engines. Its card is
+  `coord/card_m4_5_market_impact_capacity.md`; reproduce its generated report with
+  `PYTHONPATH=src:. python -m research.market_impact_capacity_demo`. The 96-case
+  grid retains 61 successful books, 35 refusals, and 37 negative-return books.
+  M45-R1 remediation isolates buy funding buffers and adds a $0.000001 absolute
+  post-trade balance limit; exact-head independent re-review remains pending.
+  This grid contains zero observed positive-to-nonpositive capacity brackets.
+  M4.5 independent review and hosted CI remain pending. Empirical calibration,
+  actual strategy capacity, and formal real-data promotion remain open gates.
 - The following earlier program-position entries preserve the Stage 2/M3
   checkpoint and historical research evidence.
 - Last externally verified protected baseline:
@@ -309,3 +314,18 @@ out of scope for this repository.
 Authority and execution remain in [AGENTS.md](../AGENTS.md) and the
 [controller](codex_long_running_controller.md). The latest checkpoint is in
 the [handoff](current_handoff.md).
+
+
+## M4.5 Impact and Capacity Limitations
+
+The optional model uses lagged complete daily windows and declared compatible
+price/volume bases. Its eta and excess-participation penalty are scenario
+coefficients. Benchmark-relative capacity remains unresolved on the generated
+AUM grid. Empirical estimation requires separately authorized data and evidence.
+
+Partial fills, cash-funded buys, and price drift can change actual exposures
+relative to target position caps and long-short neutrality. Residual share queues
+remain visible at the final row. The target timing ledger records scheduled
+attempts; actual dollar trades record retries on every accounting row. Borrow
+fees, short recalls, intraday execution, corporate-action conversion of pending
+shares, and vendor basis verification remain explicitly deferred research work.

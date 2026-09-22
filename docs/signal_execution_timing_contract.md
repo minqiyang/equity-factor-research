@@ -1061,3 +1061,88 @@ The synthetic command `python -m research.pit_universe_delisting_demo` records
 static/PIT comparisons, identity reuse, cash settlement, and retained missing-
 evidence refusals. Delayed recoveries, unpriced receivables, stock or mixed
 consideration, and formal real-data lineage promotion remain open evidence gates.
+
+## M4.5 Optional Daily Market Impact and Self-Financing Cash
+
+Both engines accept `impact_model`, `impact_volumes`, `impact_price_basis`, and
+`impact_volume_basis`. The default `impact_model=None` preserves every existing
+result field exactly. An active `SquareRootImpactModel` requires strict held
+prices, matching `raw` or matching `split_adjusted` bases, and zero legacy
+`slippage_bps`. The long-only precomputed impact overlay remains exclusive of
+this model. Commission remains additive. Supplied volume axes must exactly
+match the unique, ordered full-source price axes.
+
+At execution row `t`, dollar ADV is the mean of `price * volume` over W complete
+source rows ending at `t-L`; daily volatility is the sample standard deviation
+of W simple one-row price returns ending at `t-L`. Here W is `lookback >= 2`
+and L is the engine's positive `signal_lag_periods`. Full-source warm-up rows
+before evaluation supply historical estimates. Values after the bounded end
+remain outside estimation. Every nonzero request requires finite ADV at or
+above `min_adv` and finite nonnegative volatility. Zero requests consume zero
+liquidity and cost. Actual fills additionally require a positive current price
+and observed current volume. Current volume supplies a feasibility veto; it
+never determines target ranking or quoted size.
+
+For absolute requested dollars Q, lagged ADV A, participation p=Q/A, fixed bps b,
+and daily volatility sigma, base slippage dollars are
+`C = Q * (b/10000 + eta * sigma * sqrt(p))`. The `raise` policy refuses requests
+above `max_participation_rate * A`. The `throttle` policy clips ordinary traded
+dollars to that amount and carries the remainder as signed shares. The
+`penalize` policy adds total dollar cost
+`A * penalty_bps/10000 * max(p/max_participation_rate - 1, 0)^2`.
+All coefficients are declared scenarios; the model's costs represent average
+execution cost. Empirical calibration remains a separate evidence gate.
+
+The row order is gross held-asset return, evidenced terminal cash settlement,
+frozen target or deferred-share request, participation policy, sells, cash-funded
+buys, and cost payment. A scheduled target requests `target * E_pre - H`, where
+H is the vector of post-return dollar holdings and E_pre is pretrade equity.
+A new target cancels the previous queue. On other rows, deferred signed shares
+use the current price; settled identities cancel before quote validation.
+Known ineligibility allows only exposure reduction. Long-only sells are bounded
+by the remaining long position; arithmetic excess shares are cancellations.
+
+Existing cash plus sale proceeds pays sell commission and slippage first. A
+shared buy scale in [0,1], determined by 64-step monotone bisection, reserves
+cash for buy dollars, commission, and recomputed nonlinear impact. Funding
+shortfalls become cancellations. Liquidity shortfalls remain deferred shares.
+With actual signed market dollars X, commission F, and slippage C:
+
+```text
+E_pre  = E_previous * (1 + gross_return)
+E_next = E_pre - F - C
+K_next = K_pre - sum(X) - F - C
+H_next = H + X
+w_next = H_next / E_next
+turnover = sum(abs(X)) / E_pre
+transaction_costs = F / E_previous
+slippage_costs = C / E_previous
+```
+
+Funding calculations retain an immutable snapshot of unscaled quoted buys.
+Closing cash plus signed holdings must reconcile to post-cost equity within
+$0.000001 absolute difference; an excess discrepancy raises
+`impact_accounting_invalid`. Large-notional paths can refuse when accumulated
+floating-point discrepancy exceeds this absolute limit. Held quantities persist between
+market trades. Terminal redemption contributes zero market turnover and zero
+impact fee; later ordinary reinvestment follows the impact policy. Target
+position caps and long-short neutrality describe frozen targets. Partial fills
+and drift can produce different actual exposures. Both engines retain their
+existing refusal of a one-row bounded evaluation.
+
+The six additive audit fields are dollar `slippage_cost_series`, dollar-weighted
+`realized_slippage_bps`, `trade_participation_rates`, signed
+`executed_trade_values`, `pending_trade_shares`, and `cancelled_trade_shares`.
+Zero-trade rates are zero. Legacy traded cells have unavailable participation.
+Cancellations aggregate signed shares per row and asset; opposing cancellations
+can offset in that aggregate. Final deferred shares remain explicit unfinished
+simulation state. The long-only timing ledger labels scheduled frozen target
+attempts; its separate actual-trade matrix includes all deferred retries.
+
+The generated capacity report retains every engine, AUM, and policy attempt,
+including failures and refusals. Its benchmark holds equal initial dollars in
+the predeclared cohort at zero benchmark cost. Adjacent positive-to-nonpositive
+benchmark-excess brackets are reported without interpolation. Refused endpoints
+remain unavailable. Borrow fees, recalls, intraday execution, corporate-action
+conversion of pending shares, source basis verification, and empirical capacity
+remain open research work.

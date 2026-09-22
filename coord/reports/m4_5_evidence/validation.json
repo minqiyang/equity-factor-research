@@ -1,0 +1,537 @@
+{
+  "date": "2026-09-22",
+  "base_commit": "fe851ba0a69be1416db265bee4375433ab45d52d",
+  "accepted_plan_commit": "bd7a2c0ac8d4c3ce4d7f1bc7603b1e0da8869695",
+  "candidate_identity": "Git commit containing this manifest; immutable source and output hashes below",
+  "environment": {
+    "python": "3.12.13",
+    "dependencies": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "scipy": "1.18.1",
+      "pytest": "9.1.1",
+      "pytest-xdist": "3.8.0",
+      "ruff": "0.16.8"
+    },
+    "native_thread_limits": 1,
+    "pytest_workers": 2,
+    "pytest_distribution": "worksteal",
+    "worker_restarts": 0
+  },
+  "baseline": {
+    "sha256": "5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4",
+    "candidate_sha256": "5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4",
+    "comparison": "byte_identical",
+    "factors": 62,
+    "books": 124,
+    "new_fields_excluded": 6,
+    "baseline_seconds": 50.719677,
+    "candidate_seconds": 55.92875195801025
+  },
+  "lanes": {
+    "core": {
+      "counts": {
+        "passed": 4136,
+        "skipped": 2,
+        "failed": 0,
+        "error": 0
+      },
+      "collected": 4138,
+      "log_sha256": "7d89834cb367229773a4bb37f0fdc8a65be95d119be3ee25baa2522ccc52a747",
+      "junit_sha256": "65f9eb3722c65aa2ac00201b6055f83f0908f0519f0e9e7b0d44d5c92187726c"
+    },
+    "diagnostics": {
+      "counts": {
+        "passed": 125,
+        "skipped": 0,
+        "failed": 0,
+        "error": 0
+      },
+      "collected": 125,
+      "log_sha256": "177f60b895c34e9198afba60a560ab0f1edd744ffd3036806e80c30d08d2d660",
+      "junit_sha256": "3623451230b0e3e548981596bf3eb5fa3a2e788031fbbd1a218a7eb57b2eb574"
+    }
+  },
+  "unique_collected": 4263,
+  "passed": 4261,
+  "platform_skips": 2,
+  "source_sha256": {
+    "src/backtest/market_impact.py": "e4ac84a0bec60387f5afaa5e71d73c8c1654d1fb99fdf089462d8cfd62360474",
+    "src/backtest/portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+    "src/backtest/long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d",
+    "research/market_impact_capacity_demo.py": "8364afb2060da16190224945fab2942ae49108209403da19159f74e9c4333599",
+    "tests/test_market_impact.py": "0c8cb75cbc22e8665334e71e778c2a747e8ced7571da5c9d4dd567c306deeba5",
+    "tests/test_market_impact_engines.py": "80425a20c9e25381a258ceaa3eea4fa6e1c6fb1cf70497183e49da3ef3489d99",
+    "tests/test_market_impact_capacity_demo.py": "453aed667763a4c9c8ecdf92f956a35830f63073a686e0f594b6df6b2e9eddcf",
+    "scripts/repo_map.py": "43c333ad3dd1a28c80d1facef63ce0412039c62fb15cdceb20416815e50eccdc",
+    "docs/signal_execution_timing_contract.md": "eecbe50bb44d56a875b9d23a20e302d6a933a4e3cb65d5903fd1a86e3927df0d",
+    "coord/card_m4_5_market_impact_capacity.md": "4ac91f942017d5e544faefa506aa90129b415638da057a1dd5eaa5371abd1b32",
+    "coord/reports/m4_5_evidence/capture_baseline.py": "fe97582659043bae1c9c8359c928c3030deb95752268828e224392471dcbf815",
+    "coord/reports/m4_5_evidence/ablate.py": "42b619b5d9ca6daefa991068234f076bcdff89d86423e47287ce86b6543daf27"
+  },
+  "output_sha256": {
+    "reports/market_impact_capacity_demo.md": "b211382340cf1d5b4639088b124c8d23058716141464c9c7fbe3c4b6fb5a48c8",
+    "reports/market_impact_capacity_demo.json": "3998f8ce3768d90f196510f38288f8c620e40dc9a43520c9ae6a5a4b07b3cab5",
+    "reports/market_impact_capacity_demo_attempts.jsonl": "bb3643937ba6e010053b7410a49a86c063f6ffce3c078b88842eef8cd1faa4cb"
+  },
+  "ablation": {
+    "production_sources_preserved": true,
+    "baseline_sources": {
+      "market_impact.py": "e4ac84a0bec60387f5afaa5e71d73c8c1654d1fb99fdf089462d8cfd62360474",
+      "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+      "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+    },
+    "cases": [
+      {
+        "name": "baseline",
+        "expected_exit": 0,
+        "observed_exit": 0,
+        "seconds": 3.307124292012304,
+        "selected_tests": "tests/test_market_impact.py tests/test_market_impact_engines.py tests/test_market_impact_capacity_demo.py",
+        "log_sha256": "f64aeb9a129e0399c4a96650a672978e8a2d73d5f85905abc09499bdeb00236e",
+        "source_sha256": {
+          "market_impact.py": "e4ac84a0bec60387f5afaa5e71d73c8c1654d1fb99fdf089462d8cfd62360474",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": []
+      },
+      {
+        "name": "lag",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6150452499859966,
+        "selected_tests": "tests/test_market_impact.py::test_lagged_full_windows_ddof_one_and_future_prefix",
+        "log_sha256": "3a62aa56ef2c96aebf23aaaf15ff31f1d320839ed12d65cb85bda7732ca7a863",
+        "source_sha256": {
+          "market_impact.py": "810065706dacb018e2db4572681afc9d39630c693312666c1aaf9abc141d4363",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": ".shift(signal_lag_periods)",
+            "after": ".shift(0)"
+          }
+        ]
+      },
+      {
+        "name": "basis",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6338549579959363,
+        "selected_tests": "tests/test_market_impact.py::test_basis_guard",
+        "log_sha256": "341b1b5103426abe383a9579786cb01b666707b5aa91acb8af5d8e6c7e6920fe",
+        "source_sha256": {
+          "market_impact.py": "6c8c2d5654ababa72a56568c1537df1399fac603d82413a3ab035050b4471eb2",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if price_basis not in (\"raw\", \"split_adjusted\") or price_basis != volume_basis:",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "adv_minimum",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6375386660220101,
+        "selected_tests": "tests/test_market_impact.py::test_active_trade_adv_guard_and_zero_trade_skip",
+        "log_sha256": "93f81835fd50a8f2da280c3934aafd7896f57b138e843751d5ac98de8fb54402",
+        "source_sha256": {
+          "market_impact.py": "c6f15cb88eacd4323f849da3f7cf7d0bc74ec1e0bf83cb205e4bfc476c11d5c6",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if not _finite_real(value) or value < model.min_adv:",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "volatility_ddof",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6141295420238748,
+        "selected_tests": "tests/test_market_impact.py::test_lagged_full_windows_ddof_one_and_future_prefix",
+        "log_sha256": "29c680482e9b4e1783dcfe317095b2806e5faeabd3ce9847a5703cf75841abfa",
+        "source_sha256": {
+          "market_impact.py": "affea11e24d2ea53862608a20e28bae37ba47d94c9d472a92f2cb634ea085bc0",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": ".std(ddof=1)",
+            "after": ".std(ddof=0)"
+          }
+        ]
+      },
+      {
+        "name": "raise_cap",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6203877500374801,
+        "selected_tests": "tests/test_market_impact.py::test_modes_and_quadratic_total_penalty",
+        "log_sha256": "067806174fa61498681ea10ee085dfd3a8c4636e9a4958ec0c14759d6687d824",
+        "source_sha256": {
+          "market_impact.py": "6c9107dfbc328207f5fa56b766b4bc62cb58ea6f2f8e8006905fd768cbbd47e1",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if model.mode == \"raise\" and np.any(q > caps):",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "throttle_cap",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6138596669770777,
+        "selected_tests": "tests/test_market_impact.py::test_modes_and_quadratic_total_penalty",
+        "log_sha256": "1d07b8b3e23f4df31424c03147621f897309f1c5db0e10e9f4ba980532dc7031",
+        "source_sha256": {
+          "market_impact.py": "ac6895a9b738f91ff1459fa7cb83843ef62778610ca6f1c644789052b8eb5657",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if model.mode == \"throttle\":",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "penalize_policy",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6290090419934131,
+        "selected_tests": "tests/test_market_impact.py::test_modes_and_quadratic_total_penalty",
+        "log_sha256": "6b1cbb8c5b8259c4919fa8d85a72072b3079961bb6b9f79450f53ca003007ddc",
+        "source_sha256": {
+          "market_impact.py": "10d9f209c5b0a66b5ee6081ebeba68961e5ccc90af3a93027390a1bbe3d1e104",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if model.mode == \"penalize\":",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "eta_coefficient",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6259109580423683,
+        "selected_tests": "tests/test_market_impact.py::test_scalar_square_root_oracle",
+        "log_sha256": "536ebf9c95088a5631c1eff61fa87aa0e5b0edc7271153770ebb6f741a37c57b",
+        "source_sha256": {
+          "market_impact.py": "b7de747327465ef87ff593147e5c8630f698e63616252b4da0643b1859257a58",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "model.eta * sigma * np.sqrt(participation)",
+            "after": "0.0 * sigma"
+          }
+        ]
+      },
+      {
+        "name": "fixed_coefficient",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6278649579617195,
+        "selected_tests": "tests/test_market_impact.py::test_scalar_square_root_oracle",
+        "log_sha256": "1cd67d9a95f9f2c226f12fdcdde83d44f7530244aaf94d0dd89b10e13e273c09",
+        "source_sha256": {
+          "market_impact.py": "fcd28172dbe7d9bb7606fb44a0fef3c9ec1cb52e9ea5187b014947f73041515b",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "model.fixed_bps / 10000.0",
+            "after": "0.0"
+          }
+        ]
+      },
+      {
+        "name": "penalty_coefficient",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6169295419822447,
+        "selected_tests": "tests/test_market_impact.py::test_modes_and_quadratic_total_penalty",
+        "log_sha256": "d14575e553584ba4f20903dd49f8bee367e1d1786cd39bafb5cb2c62727d8960",
+        "source_sha256": {
+          "market_impact.py": "f8b0a9b4e0920702bad27a845301d989ad6028587e7d708bc3bad1b09fd3eb16",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "model.penalty_bps / 10000.0",
+            "after": "0.0"
+          }
+        ]
+      },
+      {
+        "name": "cash_funding",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.622347249998711,
+        "selected_tests": "tests/test_market_impact.py::test_initial_cash_funding_independent_root_and_cost_accounting",
+        "log_sha256": "854d99a2e9f24b3dbdb5d36f437fdc8b24b333f6562ec72fb9530804598ad109",
+        "source_sha256": {
+          "market_impact.py": "8db3c0a929a55920cfd605d5d4eacf1eddaf3b18bb9554fb54cd99a30c44e8be",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if buy_outlay(scale)[0] > available:",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "cash_balance_guard",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6268442909931764,
+        "selected_tests": "tests/test_market_impact.py::test_cash_and_position_input_balance_refused",
+        "log_sha256": "18e8e67e15a7cd1941f09cfe0ea212bf1def37c5caf2cd2f7adf26de581b284d",
+        "source_sha256": {
+          "market_impact.py": "cd0f28b8d380559ec02ace9d450959015a8a9214135f46db4fe9d71ae77b7c5d",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if not math.isclose(balance, equity_before, rel_tol=1e-12, abs_tol=1e-12):",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "execution_volume",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6243525419849902,
+        "selected_tests": "tests/test_market_impact.py::test_zero_current_volume_refuses_actual_fills",
+        "log_sha256": "6da763b5567f08bfdc5f0c4541726d2ff0533c07accecd496b5436c91473ae71",
+        "source_sha256": {
+          "market_impact.py": "44437df89b9700a4d2b3a1699a7ae9f7aaf3f8fc841206352e9439052d415724",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "if observed_volume.isna().any() or observed_volume.le(0).any():",
+            "after": "if False:"
+          }
+        ]
+      },
+      {
+        "name": "terminal_exemption",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.7136912919813767,
+        "selected_tests": "tests/test_market_impact_engines.py::test_terminal_cash_exemption_and_pending_cancellation",
+        "log_sha256": "7a63a8eda7c344431cbe118d9c0fc128a7994601e6f1b2afe901f1745303993b",
+        "source_sha256": {
+          "market_impact.py": "e4ac84a0bec60387f5afaa5e71d73c8c1654d1fb99fdf089462d8cfd62360474",
+          "portfolio.py": "3da8666baa02ff233d24d424a2bc0f062206b4e9b00012d6a08c2ec60e1184d1",
+          "long_short.py": "d092a4c4fd2a44d757eb8a745a58bb7f9bdb7e5df88c2931d1bdd40aa7423fdd"
+        },
+        "edits": [
+          {
+            "file": "portfolio.py",
+            "before": "pretrade_weights.loc[list(terminal_returns)] = 0.0",
+            "after": "pretrade_weights.loc[list(terminal_returns)] = pretrade_weights.loc[list(terminal_returns)]"
+          },
+          {
+            "file": "long_short.py",
+            "before": "pretrade_net.loc[list(terminal_returns)] = 0.0",
+            "after": "pretrade_net.loc[list(terminal_returns)] = pretrade_net.loc[list(terminal_returns)]"
+          }
+        ]
+      },
+      {
+        "name": "long_only_sell_bound",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.9827475409838371,
+        "selected_tests": "tests/test_market_impact_capacity_demo.py::test_changing_price_cohort_throttle_remains_long_only",
+        "log_sha256": "fadb2203c393c7c22fb95299cd3dd85873bdec6e93c41932585c2f634f7424ca",
+        "source_sha256": {
+          "market_impact.py": "e4ac84a0bec60387f5afaa5e71d73c8c1654d1fb99fdf089462d8cfd62360474",
+          "portfolio.py": "372688b447f5d4d638ee7cbc649b17f014fa512a490bbde3b8fefd0aa760b26a",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "portfolio.py",
+            "before": "allow_short=False",
+            "after": "allow_short=True"
+          }
+        ]
+      },
+      {
+        "name": "unscaled_buy_copy",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.7121752920211293,
+        "selected_tests": "tests/test_market_impact.py::test_all_buy_cash_and_cost_reconciliation",
+        "log_sha256": "6e5701a70895a98c30b5044f09188bb2c4568b9924b2dbf52eee03e895381e92",
+        "source_sha256": {
+          "market_impact.py": "7bc0f02adc70f761913b67a33ba59e72cb37f8dfdf003f795b65770f0cde3d71",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "executed.loc[buys].to_numpy(dtype=float, copy=True)",
+            "after": "executed.loc[buys].to_numpy(dtype=float)"
+          }
+        ]
+      },
+      {
+        "name": "post_trade_balance_guard",
+        "expected_exit": 1,
+        "observed_exit": 1,
+        "seconds": 0.6185300830402412,
+        "selected_tests": "tests/test_market_impact.py::test_post_trade_balance_guard_refuses_absolute_mismatch",
+        "log_sha256": "a3dfccdc169bb0ade1dd5696a8a3ba80ced8e6c031c701d01f8bcad57832ecfb",
+        "source_sha256": {
+          "market_impact.py": "5d29f11ca0badd4dbeef1ed14155c3be8e56c38e38a851a1129854ecb79f9734",
+          "portfolio.py": "690562487971c2393e483720bd12e5db93a39a46f35770596d0ab0ccfb01ea62",
+          "long_short.py": "f8289ad0cba37fce18eed4463217660f801ddaf582bc5eb34fe949790b78cb8d"
+        },
+        "edits": [
+          {
+            "file": "market_impact.py",
+            "before": "or abs(post_trade_balance - equity_after) > 1e-6",
+            "after": "or False"
+          }
+        ]
+      }
+    ]
+  },
+  "other_checks": {
+    "ruff": "PASS",
+    "compileall": "PASS",
+    "build": "PASS",
+    "wheel_ledger_schema_files": 20,
+    "repo_map_freshness": "PASS",
+    "whitespace": "PASS"
+  },
+  "capacity": {
+    "declared_cases": 96,
+    "successful": 61,
+    "refused": 35,
+    "negative_net_return_books": 37,
+    "positive_to_nonpositive_brackets": 0,
+    "adjacent_intervals": {
+      "no_observed_crossing": 49,
+      "unavailable": 31
+    },
+    "retained_attempt_events": 768,
+    "historical_failed_outcomes": 5,
+    "evidence_ceiling": "DIAGNOSTIC_ONLY",
+    "canonical_replay_comparison": "cases_brackets_and_markdown_identical",
+    "changed_from_reviewed_candidate": {
+      "cases_identical": false,
+      "brackets_identical": false,
+      "markdown_identical": false,
+      "changed_cases": [
+        {
+          "case_id": "synthetic_cohort_long_short_throttle_1e+09",
+          "before": "success",
+          "after": "refused",
+          "reason": "impact_accounting_invalid"
+        }
+      ]
+    },
+    "strict_dollar_guard_evidence": {
+      "case": [
+        {
+          "case_id": "synthetic_cohort_long_short_throttle_1e+09",
+          "scope": "synthetic_cohort",
+          "engine": "long_short",
+          "mode": "throttle",
+          "aum": 1000000000.0,
+          "status": "refused",
+          "reason": "impact_accounting_invalid",
+          "error_type": "MarketImpactValidationError"
+        }
+      ],
+      "balance_evidence": [
+        {
+          "equity_before": 1000387749.7880049,
+          "balance": 1000387749.788006,
+          "equity_after": 1000380625.2152636,
+          "cash_after": 1034486866.6972353,
+          "commission": 3765.562839172833,
+          "slippage": 3359.009902178171,
+          "post_trade_balance": 1000380625.2152648,
+          "date": "2024-02-22T00:00:00",
+          "post_trade_gap": 1.1920928955078125e-06
+        }
+      ]
+    }
+  },
+  "local_evidence_root": "/private/tmp/efr-m4-5-remediation-evidence",
+  "local_log_sha256": {
+    "core.txt": "7d89834cb367229773a4bb37f0fdc8a65be95d119be3ee25baa2522ccc52a747",
+    "diagnostics.txt": "177f60b895c34e9198afba60a560ab0f1edd744ffd3036806e80c30d08d2d660",
+    "focused.txt": "250243e3b848c339be72fd2afe485f6415ee2aea564809e843b01c2976c46759",
+    "build.txt": "d3580338d6f02bcbd5fa11cb61755e2802193b39d77de3af8b5c22bd18ddd7fa",
+    "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "compileall.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ablation.txt": "a8502cf4944c64564443afca7fa93871a52e6b7be704ae5d39382e6382dc4a33",
+    "capture.txt": "241d14f6fc8f758ea902ceb7b6b9d44279f28d7733de40d130c40ebaa83325ba",
+    "capacity.txt": "4d491206ac1130de9875c8ec848b29c91a0453c5eb1cd3418b4ec469ebaac264",
+    "capacity-canonical.txt": "433a92f0fa0eb162f9210a39c0b585c719a3e77d25dd1463583b144cbefb6c87",
+    "capacity-comparison.json": "4d491206ac1130de9875c8ec848b29c91a0453c5eb1cd3418b4ec469ebaac264",
+    "large-aum-balance.txt": "dd247c2250a062ebada857b5c7dac9f5795656e98d24ca73797b285cfcb69263",
+    "reviewer-regressions-before.txt": "23c9d2cef7034f62ed4ecea7782743d7f68e0d9913eb2717ce83a599d843951e",
+    "reviewer-regressions-after.txt": "4d5ca5958085b097f82c1a58a2c1ab5aea31a1944a5be67d9464b39eb01ccbfe"
+  },
+  "remediation": {
+    "finding": "M45-R1",
+    "reviewed_candidate": "fa63cfae90b6543e94b861df2277ecdfab9b9460",
+    "implementation_commit": "de37dd053c6302e0d630469d7796ab7eee9e8a36",
+    "original_validation_sha256": "d14ddacb9f4ad33d4e172aca504c28865df6cdc653dc92ef5367c7467e1b5f83",
+    "independent_closure": "pending_re_review",
+    "reviewer_regressions_before": 8,
+    "reviewer_regressions_after": 8,
+    "new_regression_cases": 20,
+    "post_trade_absolute_tolerance_dollars": 1e-06
+  }
+}
