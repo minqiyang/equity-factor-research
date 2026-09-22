@@ -118,6 +118,8 @@ from reporting.experiment_log import (
     write_experiment_log,
 )
 from reporting.experiment_registry import write_experiment_registry_report
+from features.multiple_testing import return_test_statistics
+from research.multiple_testing_diagnostics import render_multiple_testing, summarize_multiple_testing
 from research.walking_skeleton_mvp import (
     FORWARD_HOLDING_PERIODS,
     build_equal_weight_benchmark,
@@ -530,6 +532,9 @@ def _run_recorded_trial(
         std = float(returns.std(ddof=1))
         sharpe = float(returns.mean() / std) if std > 0.0 else math.nan
         record.update(status="completed", sharpe=sharpe if math.isfinite(sharpe) else None)
+        record["return_test"] = return_test_statistics(
+            returns, periods_per_year=kwargs.get("periods_per_year", 252),
+        )
     except Exception as exc:
         record.update(status="failed", error_type=type(exc).__name__, error=str(exc))
         retain()
@@ -743,6 +748,7 @@ def run_multifactor_diagnostic_mvp(
     )
 
     trial_family = _trial_family_summary(inventory, n_trials=config.n_trials)
+    multiple_testing = summarize_multiple_testing(inventory, family_size=config.n_trials)
     for payload in factor_results.values():
         variance = trial_family["trial_sharpe_variance"]
         payload["dsr"] = (
@@ -767,6 +773,7 @@ def run_multifactor_diagnostic_mvp(
         "pbo_summary": pbo_summary,
         "weighting_comparisons": weighting_comparisons,
         "trial_inventory": tuple(inventory), "trial_family": trial_family,
+        "multiple_testing": multiple_testing,
         "trial_inventory_path": inventory_path,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
@@ -1062,6 +1069,7 @@ def write_multifactor_experiment_log(*, result: dict[str, Any]) -> dict[str, obj
         },
         metrics={
             **factor_metrics,
+            "multiple_testing": result["multiple_testing"],
             "pbo_summary": result["pbo_summary"],
             "weighting_comparisons": result.get("weighting_comparisons", []),
             "trial_inventory": [{key: value for key, value in record.items() if key != "attempt_id"} for record in result["trial_inventory"]],
@@ -1301,6 +1309,8 @@ Effective independence and total historical search remain unestimated. Missing
 trial Sharpe dispersion withholds DSR. PBO covers the alpha-only long-only
 family. All {IMPLEMENTED_ALPHA_COUNT} alphas and all composites are
 reported; weak or negative diagnostics are retained.
+
+{render_multiple_testing(result["multiple_testing"])}
 
 ## Long-short decile spread diagnostics
 

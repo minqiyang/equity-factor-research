@@ -1,5 +1,34 @@
 # Engineering Log
 
+## 2026-09-21 - M4.3 observed-family multiple-testing diagnostics
+
+- Selected multiple-testing diagnostics after comparing dynamic PIT membership,
+  impact/capacity, and style-risk attribution. The accepted implementation card
+  is `coord/card_m4_3_multiple_testing_dsr.md`; baseline is `8fb9050` and branch
+  is `feat/m4-3-multiple-testing-dsr`.
+- Added Bonferroni, Holm, BH, and BY adjustments across every semantic book
+  trial, including both directions and weighting/penalty variants. Failed,
+  incomplete, degenerate, and conflicting attempts retain family slots.
+- Primary reports use two-sided HAC BY at 5% with explicit asymptotic marginal
+  assumptions. Separate IID Student-t corrections imply signed Sharpe haircuts
+  and sample-dependent Bonferroni hurdles. The empirical-population Harvey-Liu
+  simulator remains deferred. Existing DSR and PBO retain their implementations.
+- Both synthetic and local-data runners produce the shared section and complete
+  experiment-log metrics. The new default synthetic report retains 148 distinct
+  trials from 156 attempts and records zero HAC-BY rejections. Local-data runner
+  validation used generated synthetic Parquet fixtures.
+- Preserved baseline comparison matches 124 books and 1,674 captured fields,
+  including returns, holdings, costs, metrics, DSR, PBO, and weighting summaries.
+  Added 81 deterministic cases and extended both runner integration tests.
+- Isolated ablation retained constant-series and conflicting-attempt guards and
+  removed a redundant final maximum-array pass. The full synthetic summary
+  remains identical after simplification.
+- Detailed numerical oracles, full-lane QA, source hashes, ablation results,
+  limitations, and review handoff are recorded in
+  `coord/reports/m4_3_multiple_testing_impl.md`. Two independent GPT-6 Astra
+  implementation reviews form the next acceptance gate under the owner's
+  24-hour GPT-only mandate.
+
 ## 2026-09-19 - Milestone 3.9 Regime-aware dynamic factor allocation and composite
 
 - Working root `efr-regime-switching-composite-20260919` on `codex/regime-switching-composite-20260919`
