@@ -11,6 +11,11 @@ The owner's current directive authorizes autonomous implementation and one fresh
 independent GPT-6 Astra extra-high Fast review of the frozen candidate. The
 coordinator records acceptance and the explicit single-seat override.
 
+Execution checkpoint: the coordinator accepted this card after plan commit
+`4932ce815041954f267f42370fdfd186c2f674cd`, copied it to the canonical root,
+and authorized implementation under the owner's immediate-execution directive.
+The frozen candidate and implementation report supply the next review input.
+
 ## Objective and baseline
 
 Deliver a synthetic end-to-end thread from an identity-backed constituent table

@@ -9,8 +9,10 @@ effective dates alone establish membership timing only.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from data.csv_loader import (
@@ -94,6 +96,17 @@ def load_constituent_intervals_csv(
 
     if permanent_id_column in raw:
         df["permanent_id"] = _parse_symbols(raw[permanent_id_column], field_name=permanent_id_column)
+    if {"start_known_at", "end_known_at"}.intersection(raw.columns):
+        # The optional PIT interface checks raw timestamps at full precision.
+        df["start_date"] = _source_close_column(raw[start_date_column], field=start_date_column)
+        df["end_date"] = _source_close_column(
+            raw[end_date_column].mask(is_open_ended), field=end_date_column, allow_missing=True,
+        )
+    for column in ("start_known_at", "end_known_at"):
+        if column in raw:
+            df[column] = _source_close_column(
+                raw[column], field=column, allow_missing=column == "end_known_at",
+            )
 
     # Validate each interval: start_date <= end_date
     for _, row in df.iterrows():
@@ -198,6 +211,92 @@ def build_membership_mask(
             mask.loc[condition, symbol] = True
 
     return mask
+
+
+def _source_close_column(
+    values: pd.Series, *, field: str, allow_missing: bool = False,
+) -> pd.Series:
+    """Parse declared daily close labels while preserving availability precision."""
+    parsed = []
+    for value in values:
+        if pd.isna(value) or (isinstance(value, str) and not value.strip()):
+            if not allow_missing:
+                raise ValueError(f"{field} requires a source-close label on every row")
+            parsed.append(pd.NaT)
+            continue
+        if not isinstance(value, (str, date, datetime, pd.Timestamp, np.datetime64)):
+            raise ValueError(f"{field} requires date labels")
+        try:
+            stamp = pd.Timestamp(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{field} contains an invalid date label") from exc
+        if pd.isna(stamp) or stamp.tz is not None or stamp != stamp.normalize():
+            raise ValueError(f"{field} requires timezone-naive daily source-close labels")
+        parsed.append(stamp)
+    return pd.Series(parsed, index=values.index, dtype="datetime64[ns]")
+
+
+def _validate_source_close_index(dates: pd.DatetimeIndex) -> None:
+    if not isinstance(dates, pd.DatetimeIndex):
+        raise TypeError("dates must be a pandas DatetimeIndex")
+    if (dates.empty or dates.hasnans or dates.has_duplicates
+            or not dates.is_monotonic_increasing or dates.tz is not None
+            or not dates.equals(dates.normalize())):
+        raise ValueError("dates require unique increasing timezone-naive daily source-close labels")
+
+
+def build_pit_membership_mask(
+    intervals: ValidatedConstituentIntervals | pd.DataFrame,
+    dates: pd.DatetimeIndex,
+    assets: list[str],
+    *,
+    signal_lag_periods: int = 1,
+) -> pd.DataFrame:
+    """Query execution-date membership using the schedule known at the lagged close.
+
+    Availability values are caller-declared source-close labels. An entry or
+    closure influences a target only after its corresponding known-at cutoff.
+    Permanent-ID columns preserve identity across ticker reassignments.
+    """
+    _validate_source_close_index(dates)
+    if (isinstance(signal_lag_periods, (bool, np.bool_))
+            or not isinstance(signal_lag_periods, (int, np.integer))
+            or signal_lag_periods < 1):
+        raise ValueError("signal_lag_periods must be a positive non-boolean integer")
+    table = intervals.data if isinstance(intervals, ValidatedConstituentIntervals) else intervals
+    if not isinstance(table, pd.DataFrame):
+        raise TypeError("intervals must be a validated table or DataFrame")
+    required = {"symbol", "permanent_id", "start_date", "end_date", "start_known_at", "end_known_at"}
+    if not table.columns.is_unique or not required.issubset(table.columns):
+        raise ValueError("PIT membership requires unique columns and complete identity/availability fields")
+    table = table.copy()
+    for column in ("symbol", "permanent_id"):
+        if not all(isinstance(value, str) and value and value == value.strip() for value in table[column]):
+            raise ValueError(f"PIT-005: {column} must contain complete exact string IDs")
+    for column in ("start_date", "end_date", "start_known_at", "end_known_at"):
+        table[column] = _source_close_column(table[column], field=column, allow_missing=column.startswith("end_"))
+    if (table["end_date"].notna() & (table["end_date"] <= table["start_date"])).any():
+        raise ValueError("PIT membership intervals require start_date < end_date")
+    if not table["end_date"].isna().equals(table["end_known_at"].isna()):
+        raise ValueError("end_date and end_known_at must be jointly finite or jointly open")
+    _validate_no_overlapping_intervals(table)
+    _membership_identity_column(table)
+    if (not isinstance(assets, list) or not assets
+            or not all(isinstance(asset, str) and asset and asset == asset.strip() for asset in assets)
+            or len(set(assets)) != len(assets)):
+        raise ValueError("PIT-005: assets require unique nonempty permanent-ID strings")
+    if not set(assets).issubset(set(table["permanent_id"])):
+        raise ValueError("PIT-005: every price asset must match a permanent ID in the interval table")
+    cutoff = pd.Series(dates, index=dates).shift(signal_lag_periods)
+    result = pd.DataFrame(False, index=dates, columns=assets)
+    for row in table.itertuples(index=False):
+        if row.permanent_id not in result:
+            continue
+        eligible = (dates >= row.start_date) & (cutoff >= row.start_known_at)
+        if pd.notna(row.end_date):
+            eligible &= ~((dates >= row.end_date) & (cutoff >= row.end_known_at))
+        result.loc[:, row.permanent_id] |= eligible.to_numpy(dtype=bool)
+    return result
 
 
 def _validate_no_overlapping_intervals(df: pd.DataFrame) -> None:

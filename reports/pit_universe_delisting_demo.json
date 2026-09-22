@@ -1,0 +1,805 @@
+{
+  "assumptions": {
+    "availability_basis": "caller-declared daily source-close labels",
+    "benchmark": "static-roster synthetic control; benchmark-relative alpha unestimated",
+    "cash_basis": "residual of existing postcost target-weight convention",
+    "evidence_ceiling": "DIAGNOSTIC_ONLY",
+    "terminal_settlement_fee": 0,
+    "universe": "predeclared synthetic permanent-ID roster and known membership schedule"
+  },
+  "caveats": [
+    "synthetic data only",
+    "not financial advice",
+    "not a profitability claim",
+    "no real data fetching",
+    "no live trading or brokerage integration"
+  ],
+  "config": {
+    "initial_capital": 1000,
+    "periods": 12,
+    "rebalance_frequency": "D",
+    "signal_lag_periods": 1,
+    "slippage_bps": 5,
+    "transaction_cost_bps": 10
+  },
+  "diagnostics": {
+    "eligibility": [
+      {
+        "decision_cutoff": null,
+        "eligible_ids": [],
+        "execution_date": "2024-01-01T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-01T00:00:00",
+        "eligible_ids": [
+          "SEC_OLD",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-02T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-02T00:00:00",
+        "eligible_ids": [
+          "SEC_OLD",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-03T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-03T00:00:00",
+        "eligible_ids": [
+          "SEC_OLD",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-04T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-04T00:00:00",
+        "eligible_ids": [
+          "SEC_OLD",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-05T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-05T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-08T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-08T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-09T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-09T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-10T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-10T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-11T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-11T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-12T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-12T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-15T00:00:00"
+      },
+      {
+        "decision_cutoff": "2024-01-15T00:00:00",
+        "eligible_ids": [
+          "SEC_NEW",
+          "SEC_REF"
+        ],
+        "execution_date": "2024-01-16T00:00:00"
+      }
+    ],
+    "evidence_ceiling": "DIAGNOSTIC_ONLY",
+    "membership": [
+      {
+        "end_date": "2024-01-08T00:00:00",
+        "end_known_at": "2024-01-04T00:00:00",
+        "permanent_id": "SEC_OLD",
+        "start_date": "2024-01-01T00:00:00",
+        "start_known_at": "2024-01-01T00:00:00",
+        "symbol": "REUSED"
+      },
+      {
+        "end_date": null,
+        "end_known_at": null,
+        "permanent_id": "SEC_NEW",
+        "start_date": "2024-01-08T00:00:00",
+        "start_known_at": "2024-01-04T00:00:00",
+        "symbol": "REUSED"
+      },
+      {
+        "end_date": null,
+        "end_known_at": null,
+        "permanent_id": "SEC_REF",
+        "start_date": "2024-01-01T00:00:00",
+        "start_known_at": "2024-01-01T00:00:00",
+        "symbol": "REFERENCE"
+      }
+    ],
+    "terminal_events": [
+      {
+        "effective_date": "2024-01-08T00:00:00",
+        "event_id": "synthetic-old-final-cash",
+        "known_at": "2024-01-04T00:00:00",
+        "permanent_id": "SEC_OLD",
+        "reference_date": "2024-01-05T00:00:00",
+        "return_basis": "prior_observed_close_to_cash",
+        "terminal_return": -0.6
+      }
+    ]
+  },
+  "experiment_id": "m4_4_pit_universe_delisting_synthetic",
+  "experiment_type": "pit_universe_delisting_synthetic",
+  "metrics": {
+    "cases": [
+      {
+        "case_id": "long_only_static_roster",
+        "expected_refusal": false,
+        "final_equity": 1102.9651922230876,
+        "path": [
+          {
+            "cash": 1000.0,
+            "date": "2024-01-01T00:00:00",
+            "equity": 1000.0,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-02T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-03T00:00:00",
+            "equity": 1008.485,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-04T00:00:00",
+            "equity": 1018.5698500000002,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-05T00:00:00",
+            "equity": 1028.7555485,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-08T00:00:00",
+            "equity": 1039.0431039850002,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-09T00:00:00",
+            "equity": 1049.4335350248502,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-10T00:00:00",
+            "equity": 1059.9278703750988,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-11T00:00:00",
+            "equity": 1070.5271490788498,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-12T00:00:00",
+            "equity": 1081.232420569638,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-15T00:00:00",
+            "equity": 1092.0447447753343,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-16T00:00:00",
+            "equity": 1102.9651922230876,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          }
+        ],
+        "status": "success",
+        "terminal_cashflows": 0.0,
+        "terminal_event_log": [
+          {
+            "cashflow": 0.0,
+            "effective_date": "2024-01-08T00:00:00",
+            "event_id": "synthetic-old-final-cash",
+            "incoming_weight": 0.0,
+            "known_at": "2024-01-04T00:00:00",
+            "permanent_id": "SEC_OLD",
+            "reference_date": "2024-01-05T00:00:00",
+            "return_basis": "prior_observed_close_to_cash",
+            "terminal_return": -0.6
+          }
+        ]
+      },
+      {
+        "case_id": "long_only_pit_membership",
+        "expected_refusal": false,
+        "final_equity": 423.33519142781427,
+        "path": [
+          {
+            "cash": 1000.0,
+            "date": "2024-01-01T00:00:00",
+            "equity": 1000.0,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-02T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 1.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-03T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 1.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-04T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 1.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-05T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 1.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-08T00:00:00",
+            "equity": 398.80089999999996,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 399.40000000000003
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-09T00:00:00",
+            "equity": 402.78890899999993,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-10T00:00:00",
+            "equity": 406.81679808999996,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-11T00:00:00",
+            "equity": 410.88496607089996,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-12T00:00:00",
+            "equity": 414.9938157316089,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-15T00:00:00",
+            "equity": 419.143753888925,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 0.0,
+            "date": "2024-01-16T00:00:00",
+            "equity": 423.33519142781427,
+            "holdings": {
+              "SEC_NEW": 1.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          }
+        ],
+        "status": "success",
+        "terminal_cashflows": 399.40000000000003,
+        "terminal_event_log": [
+          {
+            "cashflow": 399.40000000000003,
+            "effective_date": "2024-01-08T00:00:00",
+            "event_id": "synthetic-old-final-cash",
+            "incoming_weight": 1.0,
+            "known_at": "2024-01-04T00:00:00",
+            "permanent_id": "SEC_OLD",
+            "reference_date": "2024-01-05T00:00:00",
+            "return_basis": "prior_observed_close_to_cash",
+            "terminal_return": -0.6
+          }
+        ]
+      },
+      {
+        "case_id": "long_only_missing_terminal_evidence",
+        "error_type": "BacktestValidationError",
+        "expected_refusal": true,
+        "reason": "incoming_price_invalid",
+        "status": "refused"
+      },
+      {
+        "case_id": "long_short_static_roster",
+        "expected_refusal": false,
+        "final_equity": 1205.5071038899428,
+        "path": [
+          {
+            "cash": 1000.0,
+            "date": "2024-01-01T00:00:00",
+            "equity": 1000.0,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 998.5,
+            "date": "2024-01-02T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": -0.25,
+              "SEC_REF": -0.25
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1003.48501125,
+            "date": "2024-01-03T00:00:00",
+            "equity": 1003.48501125,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": -0.25,
+              "SEC_REF": -0.25
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1008.4949101686658,
+            "date": "2024-01-04T00:00:00",
+            "equity": 1008.4949101686658,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": -0.25,
+              "SEC_REF": -0.25
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1013.5298210076828,
+            "date": "2024-01-05T00:00:00",
+            "equity": 1013.5298210076828,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": -0.25,
+              "SEC_REF": -0.25
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1170.018825371269,
+            "date": "2024-01-08T00:00:00",
+            "equity": 1170.018825371269,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": -101.35298210076829
+          },
+          {
+            "cash": 1175.860144356935,
+            "date": "2024-01-09T00:00:00",
+            "equity": 1175.860144356935,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1181.730626127637,
+            "date": "2024-01-10T00:00:00",
+            "equity": 1181.730626127637,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1187.630416278579,
+            "date": "2024-01-11T00:00:00",
+            "equity": 1187.630416278579,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1193.55966113185,
+            "date": "2024-01-12T00:00:00",
+            "equity": 1193.55966113185,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1199.5185077400506,
+            "date": "2024-01-15T00:00:00",
+            "equity": 1199.5185077400506,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 1205.5071038899428,
+            "date": "2024-01-16T00:00:00",
+            "equity": 1205.5071038899428,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          }
+        ],
+        "status": "success",
+        "terminal_cashflows": -101.35298210076829,
+        "terminal_event_log": [
+          {
+            "cashflow": -101.35298210076829,
+            "effective_date": "2024-01-08T00:00:00",
+            "event_id": "synthetic-old-final-cash",
+            "incoming_weight": -0.25,
+            "known_at": "2024-01-04T00:00:00",
+            "permanent_id": "SEC_OLD",
+            "reference_date": "2024-01-05T00:00:00",
+            "return_basis": "prior_observed_close_to_cash",
+            "terminal_return": -0.6
+          }
+        ]
+      },
+      {
+        "case_id": "long_short_pit_membership",
+        "expected_refusal": false,
+        "final_equity": 719.3785244133717,
+        "path": [
+          {
+            "cash": 1000.0,
+            "date": "2024-01-01T00:00:00",
+            "equity": 1000.0,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.0,
+              "SEC_REF": 0.0
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 998.5,
+            "date": "2024-01-02T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.5,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 998.5,
+            "date": "2024-01-03T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.5,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 998.5,
+            "date": "2024-01-04T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.5,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 998.5,
+            "date": "2024-01-05T00:00:00",
+            "equity": 998.5,
+            "holdings": {
+              "SEC_NEW": 0.0,
+              "SEC_OLD": 0.5,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 698.201125,
+            "date": "2024-01-08T00:00:00",
+            "equity": 698.201125,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 199.70000000000002
+          },
+          {
+            "cash": 701.6868941165625,
+            "date": "2024-01-09T00:00:00",
+            "equity": 701.6868941165625,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 705.1900659354394,
+            "date": "2024-01-10T00:00:00",
+            "equity": 705.1900659354394,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 708.710727339622,
+            "date": "2024-01-11T00:00:00",
+            "equity": 708.710727339622,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 712.248965645865,
+            "date": "2024-01-12T00:00:00",
+            "equity": 712.248965645865,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 715.804868606852,
+            "date": "2024-01-15T00:00:00",
+            "equity": 715.804868606852,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          },
+          {
+            "cash": 719.3785244133717,
+            "date": "2024-01-16T00:00:00",
+            "equity": 719.3785244133717,
+            "holdings": {
+              "SEC_NEW": 0.5,
+              "SEC_OLD": 0.0,
+              "SEC_REF": -0.5
+            },
+            "terminal_cashflow": 0.0
+          }
+        ],
+        "status": "success",
+        "terminal_cashflows": 199.70000000000002,
+        "terminal_event_log": [
+          {
+            "cashflow": 199.70000000000002,
+            "effective_date": "2024-01-08T00:00:00",
+            "event_id": "synthetic-old-final-cash",
+            "incoming_weight": 0.5,
+            "known_at": "2024-01-04T00:00:00",
+            "permanent_id": "SEC_OLD",
+            "reference_date": "2024-01-05T00:00:00",
+            "return_basis": "prior_observed_close_to_cash",
+            "terminal_return": -0.6
+          }
+        ]
+      },
+      {
+        "case_id": "long_short_missing_terminal_evidence",
+        "error_type": "BacktestValidationError",
+        "expected_refusal": true,
+        "reason": "incoming_price_invalid",
+        "status": "refused"
+      }
+    ]
+  },
+  "next_action": "Review synthetic accounting conformance and retain separate gates for private data and delayed recoveries.",
+  "outputs": {
+    "attempt_log": "pit_universe_delisting_demo_attempts.jsonl",
+    "experiment_log": "pit_universe_delisting_demo.json",
+    "markdown_report": "pit_universe_delisting_demo.md"
+  },
+  "schema_version": 1,
+  "summary": "Four complete synthetic books and two retained missing-terminal-evidence refusals.",
+  "title": "PIT universe and terminal cash synthetic comparison"
+}

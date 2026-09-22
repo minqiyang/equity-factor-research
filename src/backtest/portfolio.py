@@ -18,6 +18,10 @@ import numpy as np
 import pandas as pd
 
 from backtest.metrics import calculate_basic_metrics, calculate_holding_episode_metrics
+from data.constituent_table import (
+    ValidatedConstituentIntervals, _source_close_column, _validate_source_close_index,
+    build_pit_membership_mask,
+)
 from risk.constraints import apply_long_only_position_cap
 
 
@@ -243,6 +247,9 @@ class BacktestResult:
     timing_metadata: dict[str, Any]
     timing_ledger: tuple[TimingLedgerRow, ...]
     assumptions: dict[str, Any]
+    cash_balance: pd.Series
+    terminal_cashflows: pd.DataFrame
+    terminal_event_log: tuple[dict[str, Any], ...]
 
 
 def capture_backtest_source_provenance(
@@ -410,6 +417,97 @@ def _prepare_tracked_mutation_column(
             )
 
 
+def _prepare_terminal_events(
+    events: pd.DataFrame | None, dates: pd.DatetimeIndex, assets: pd.Index,
+) -> dict[pd.Timestamp, tuple[dict[str, Any], ...]]:
+    """Validate a declared prior-close-to-cash event for each permanent security."""
+    if events is None:
+        return {}
+    fields = {"event_id", "permanent_id", "effective_date", "known_at", "reference_date", "terminal_return", "return_basis"}
+    if not isinstance(events, pd.DataFrame) or not events.columns.is_unique or set(events.columns) != fields:
+        raise BacktestValidationError("terminal_events_invalid", "terminal events require the exact cash-settlement fields")
+    _validate_source_close_index(dates)
+    if not assets.is_unique or not all(isinstance(asset, str) and asset and asset == asset.strip() for asset in assets):
+        raise BacktestValidationError("terminal_events_invalid", "terminal-event price columns require permanent-ID strings")
+    clean = events.copy()
+    for name in ("event_id", "permanent_id"):
+        if not all(isinstance(value, str) and value and value == value.strip() for value in clean[name]):
+            raise BacktestValidationError("terminal_events_invalid", f"{name} requires complete exact string IDs")
+        if clean[name].duplicated().any():
+            raise BacktestValidationError("terminal_events_invalid", f"{name} must be unique")
+    for name in ("effective_date", "known_at", "reference_date"):
+        clean[name] = _source_close_column(clean[name], field=name)
+    grouped: dict[pd.Timestamp, list[dict[str, Any]]] = {}
+    for record in clean.sort_values(["effective_date", "permanent_id"]).to_dict("records"):
+        date = record["effective_date"]
+        asset = record["permanent_id"]
+        value = _read_finite_real_scalar(record["terminal_return"])
+        if asset not in assets or date not in dates:
+            raise BacktestValidationError("terminal_events_invalid", "event asset and effective date must match the source panel")
+        position = dates.get_loc(date)
+        if position == 0 or record["reference_date"] != dates[position - 1]:
+            raise BacktestValidationError("terminal_events_invalid", "terminal reference must be the preceding observed source row")
+        if record["known_at"] > date:
+            raise BacktestValidationError("terminal_events_invalid", "cash settlement terms must be known by the effective close")
+        if (value is None or value < -1.0 or not isinstance(record["return_basis"], str)
+                or record["return_basis"] != "prior_observed_close_to_cash"):
+            raise BacktestValidationError("terminal_events_invalid", "terminal return requires a finite complete-window return >= -1 and explicit cash basis")
+        record["terminal_return"] = value
+        grouped.setdefault(date, []).append(record)
+    return {date: tuple(records) for date, records in grouped.items()}
+
+
+def _resolve_pit_universe(
+    *, constituent_intervals: ValidatedConstituentIntervals | pd.DataFrame | None,
+    universe_mask: pd.DataFrame | None, dates: pd.DatetimeIndex, assets: pd.Index,
+    signal_lag_periods: int, terminal_events: dict[pd.Timestamp, tuple[dict[str, Any], ...]],
+) -> pd.DataFrame | None:
+    """Freeze known membership and terminal schedules at each decision cutoff."""
+    if constituent_intervals is not None and universe_mask is not None:
+        raise BacktestValidationError("universe_input_ambiguous", "supply constituent_intervals or universe_mask")
+    if constituent_intervals is None and not terminal_events:
+        return universe_mask
+    if constituent_intervals is not None:
+        mask = build_pit_membership_mask(constituent_intervals, dates, list(assets), signal_lag_periods=signal_lag_periods)
+    elif universe_mask is not None:
+        mask = universe_mask.reindex(index=dates, columns=assets).eq(True).fillna(False)
+    else:
+        mask = pd.DataFrame(True, index=dates, columns=assets)
+    cutoffs = pd.Series(dates, index=dates).shift(signal_lag_periods)
+    for effective, records in terminal_events.items():
+        for record in records:
+            unavailable = (dates >= effective) & (cutoffs >= record["known_at"])
+            mask.loc[unavailable, record["permanent_id"]] = False
+    return mask
+
+
+def _terminal_settlement(
+    *, records: tuple[dict[str, Any], ...], previous_holdings: pd.Series,
+    previous_equity: float,
+) -> tuple[pd.Series, tuple[dict[str, Any], ...]]:
+    """Record signed cash proceeds from long redemption or short liability settlement."""
+    cashflows = pd.Series(0.0, index=previous_holdings.index)
+    log = []
+    for record in records:
+        asset = record["permanent_id"]
+        weight = float(previous_holdings.loc[asset])
+        amount = previous_equity * weight * (1.0 + record["terminal_return"])
+        if not math.isfinite(amount):
+            raise BacktestValidationError("terminal_cashflow_invalid", "terminal proceeds must be finite")
+        cashflows.loc[asset] = amount
+        log.append({
+            **{key: value.isoformat() if isinstance(value, pd.Timestamp) else value for key, value in record.items()},
+            "incoming_weight": weight, "cashflow": amount,
+        })
+    return cashflows, tuple(log)
+
+
+def _validate_terminal_target(target: pd.Series, settled: set[str], *, date: pd.Timestamp) -> None:
+    for asset in target.index[target.fillna(0.0).ne(0.0)]:
+        if asset in settled:
+            raise BacktestValidationError("terminal_target_invalid", "frozen target requires an already settled security", date=date, asset=asset)
+
+
 def run_long_only_backtest(
     prices: pd.DataFrame,
     signals: pd.DataFrame,
@@ -425,6 +523,8 @@ def run_long_only_backtest(
     min_volatility_periods: int = 5,
     turnover_penalty_lambda: float = 0.0,
     universe_mask: pd.DataFrame | None = None,
+    constituent_intervals: ValidatedConstituentIntervals | pd.DataFrame | None = None,
+    terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
     volume_aware_slippage_mode: str = "diagnostic_only",
@@ -496,6 +596,14 @@ def run_long_only_backtest(
         )
     )
     signal_data = _validate_bounded_signal_values(bounded_signal_values)
+    if (constituent_intervals is not None or terminal_events is not None) and missing_price_policy != "raise":
+        raise BacktestValidationError("pit_missing_price_policy_invalid", "PIT membership and terminal accounting require strict held-price validation")
+    prepared_events = _prepare_terminal_events(terminal_events, prices.index, prices.columns)
+    universe_mask = _resolve_pit_universe(
+        constituent_intervals=constituent_intervals, universe_mask=universe_mask,
+        dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
+        terminal_events=prepared_events,
+    )
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
     lagged_signals = signal_data.shift(signal_lag_periods)
 
@@ -535,6 +643,8 @@ def run_long_only_backtest(
         total_trading_costs,
         net_returns,
         equity_curve,
+        terminal_cashflows,
+        terminal_event_log,
     ) = _calculate_bounded_portfolio_path(
         prices=price_data,
         target_weights=target_weights,
@@ -544,6 +654,7 @@ def run_long_only_backtest(
         raw_volume_impact=raw_volume_impact,
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
+        terminal_events=prepared_events,
     )
 
     benchmark_equity_curve, benchmark_returns = _calculate_benchmark_path(
@@ -631,6 +742,9 @@ def run_long_only_backtest(
         benchmark_returns=benchmark_returns,
         timing_metadata=timing_metadata,
         timing_ledger=timing_ledger,
+        cash_balance=(equity_curve * (1.0 - holdings.sum(axis=1))).rename("cash_balance"),
+        terminal_cashflows=terminal_cashflows,
+        terminal_event_log=terminal_event_log,
         assumptions={
             "rebalance_frequency": rebalance_frequency,
             "top_n": top_n,
@@ -640,6 +754,17 @@ def run_long_only_backtest(
             "min_volatility_periods": min_volatility_periods,
             "turnover_penalty_lambda": turnover_penalty_lambda,
             "universe_mask_applied": universe_mask is not None,
+            **({
+                "membership_contract": "known_schedule_at_lagged_source_close_v1",
+                "formal_universe_evidence_eligible": False,
+            } if constituent_intervals is not None else {}),
+            **({
+                "terminal_settlement_contract": "prior_observed_close_to_cash_v1",
+                "formal_terminal_evidence_eligible": False,
+                "terminal_settlement_fee": 0.0,
+                "terminal_redemption_turnover": "excluded_from_ordinary_market_turnover",
+                "cash_model": "residual_of_postcost_target_weight_accounting",
+            } if terminal_events is not None else {}),
             "transaction_cost_bps": transaction_cost_bps,
             "slippage_bps": slippage_bps,
             "signal_lag_periods": signal_lag_periods,
@@ -804,6 +929,7 @@ def _calculate_bounded_portfolio_path(
     raw_volume_impact: pd.Series,
     volume_impact_basis: str | None,
     missing_price_policy: str,
+    terminal_events: dict[pd.Timestamp, tuple[dict[str, Any], ...]] | None = None,
 ) -> tuple[
     pd.DataFrame,
     pd.Series,
@@ -817,6 +943,8 @@ def _calculate_bounded_portfolio_path(
     pd.Series,
     pd.Series,
     pd.Series,
+    pd.DataFrame,
+    tuple[dict[str, Any], ...],
 ]:
     """Advance bounded accounting rows in the contract's normative order."""
 
@@ -836,6 +964,11 @@ def _calculate_bounded_portfolio_path(
     equity_curve = np.full(len(index), np.nan, dtype=float)
     equity_curve[0] = initial_capital
     post_trade_weights = pd.Series(0.0, index=columns, dtype=float)
+    terminal_events = terminal_events or {}
+    terminal_cashflows = np.zeros(prices.shape, dtype=float)
+    terminal_event_log: list[dict[str, Any]] = []
+    settled = {record["permanent_id"] for event_date, records in terminal_events.items()
+               if event_date <= index[0] for record in records}
 
     if raw_volume_impact.iloc[0] != 0.0:
         raise BacktestValidationError(
@@ -847,6 +980,8 @@ def _calculate_bounded_portfolio_path(
     for position in range(1, len(index)):
         date = index[position]
         previous_date = index[position - 1]
+        events_today = terminal_events.get(date, ())
+        terminal_returns = {record["permanent_id"]: record["terminal_return"] for record in events_today}
         period_returns = _calculate_held_asset_returns(
             previous_prices=prices.iloc[position - 1],
             current_prices=prices.iloc[position],
@@ -854,6 +989,7 @@ def _calculate_bounded_portfolio_path(
             previous_date=previous_date,
             current_date=date,
             missing_price_policy=missing_price_policy,
+            terminal_returns=terminal_returns or None,
         )
         resolved_asset_returns[position] = period_returns.to_numpy(dtype=float)
 
@@ -879,9 +1015,20 @@ def _calculate_bounded_portfolio_path(
             else post_trade_weights.copy()
         )
 
+        if events_today:
+            flows, event_log = _terminal_settlement(
+                records=events_today, previous_holdings=post_trade_weights,
+                previous_equity=float(equity_curve[position - 1]),
+            )
+            terminal_cashflows[position] = flows.to_numpy(dtype=float)
+            terminal_event_log.extend(event_log)
+            pretrade_weights.loc[list(terminal_returns)] = 0.0
+            settled.update(terminal_returns)
+
         target = target_weights.loc[date]
         if target.notna().any():
             actual_target = target.fillna(0.0)
+            _validate_terminal_target(actual_target, settled, date=date)
             signed_trades = actual_target - pretrade_weights
             _validate_execution_price_legs(
                 execution_prices=prices.iloc[position],
@@ -950,6 +1097,8 @@ def _calculate_bounded_portfolio_path(
         pd.Series(total_costs, index=index, name="total_trading_cost_impact"),
         pd.Series(net_returns, index=index, name="return"),
         pd.Series(equity_curve, index=index, name="equity"),
+        pd.DataFrame(terminal_cashflows, index=index, columns=columns),
+        tuple(terminal_event_log),
     )
 
 
@@ -961,11 +1110,13 @@ def _calculate_held_asset_returns(
     previous_date: pd.Timestamp,
     current_date: pd.Timestamp,
     missing_price_policy: str,
+    terminal_returns: dict[str, float] | None = None,
 ) -> pd.Series:
     """Calculate only economically relevant held-asset returns."""
 
     if (
-        previous_prices.index.equals(previous_holdings.index)
+        terminal_returns is None
+        and previous_prices.index.equals(previous_holdings.index)
         and current_prices.index.equals(previous_holdings.index)
         and previous_holdings.index.is_unique
         and previous_holdings.dtype == np.dtype(float)
@@ -998,8 +1149,9 @@ def _calculate_held_asset_returns(
     period_returns = pd.Series(0.0, index=previous_holdings.index, dtype=float)
     for asset in previous_holdings.index[previous_holdings.ne(0.0)]:
         previous_price = _read_positive_price(previous_prices.loc[asset])
-        current_price = _read_positive_price(current_prices.loc[asset])
-        if previous_price is None or current_price is None:
+        is_terminal = terminal_returns is not None and asset in terminal_returns
+        current_price = None if is_terminal else _read_positive_price(current_prices.loc[asset])
+        if previous_price is None or (not is_terminal and current_price is None):
             if missing_price_policy == "zero_return":
                 period_returns.loc[asset] = 0.0
                 continue
@@ -1013,7 +1165,7 @@ def _calculate_held_asset_returns(
                 asset=asset,
             )
         with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
-            period_returns.loc[asset] = current_price / previous_price - 1.0
+            period_returns.loc[asset] = terminal_returns[asset] if is_terminal else current_price / previous_price - 1.0
     return period_returns
 
 
