@@ -120,6 +120,22 @@ VARIANTS = [
         TEST_DEMO + "::test_changing_price_cohort_throttle_remains_long_only",
         [("portfolio.py", "allow_short=False", "allow_short=True")],
     ),
+    (
+        "unscaled_buy_copy",
+        TEST_UNIT + "::test_all_buy_cash_and_cost_reconciliation",
+        [
+            (
+                MODEL,
+                "executed.loc[buys].to_numpy(dtype=float, copy=True)",
+                "executed.loc[buys].to_numpy(dtype=float)",
+            )
+        ],
+    ),
+    (
+        "post_trade_balance_guard",
+        TEST_UNIT + "::test_post_trade_balance_guard_refuses_absolute_mismatch",
+        [(MODEL, "or abs(post_trade_balance - equity_after) > 1e-6", "or False")],
+    ),
 ]
 
 

@@ -415,7 +415,9 @@ def execute_impact_step(
         raise MarketImpactValidationError(
             "impact_cash_insufficient", "cash and sale proceeds must cover sell costs"
         )
-    buy_values = executed.loc[buys].to_numpy(dtype=float)
+    # An all-True pandas selection can share its buffer with executed.
+    # Funding quotes retain the unscaled values while actual fills are updated.
+    buy_values = executed.loc[buys].to_numpy(dtype=float, copy=True)
     buy_adv = a.loc[buys].to_numpy(dtype=float)
     buy_sigma = sigma.loc[buys].to_numpy(dtype=float)
 
@@ -476,6 +478,15 @@ def execute_impact_step(
         raise MarketImpactValidationError(
             "impact_accounting_invalid",
             "position and share arithmetic must remain finite",
+        )
+    post_trade_balance = cash_after + float(positions_after.sum())
+    if (
+        not math.isfinite(post_trade_balance)
+        or abs(post_trade_balance - equity_after) > 1e-6
+    ):
+        raise MarketImpactValidationError(
+            "impact_accounting_invalid",
+            "cash plus signed positions must reconcile to pretrade equity",
         )
     return MarketImpactExecution(
         positions_after,

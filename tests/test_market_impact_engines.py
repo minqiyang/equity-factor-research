@@ -424,3 +424,55 @@ def test_impact_timing_ledger_describes_target_attempts_and_separate_retries():
     }
     assert phases == {"observed_source_row_close_frozen_target_attempt"}
     assert book.executed_trade_values.iloc[2].abs().sum() > 0
+
+
+@pytest.mark.parametrize("terminal_row_only", [True, False])
+@pytest.mark.parametrize("asset_count", [1, 2])
+def test_public_long_only_all_assets_cash_reconciliation(
+    terminal_row_only, asset_count
+):
+    """M45-R1: a fully invested all-buy book funds its fees exactly once."""
+    dates = pd.bdate_range("2024-01-01", periods=6)
+    columns = ["A", "B"][:asset_count]
+    prices = pd.DataFrame(10.0, index=dates, columns=columns)
+    signals = pd.DataFrame(
+        [list(range(asset_count, 0, -1))] * len(dates), index=dates, columns=columns
+    )
+    book = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=capture_backtest_source_provenance(prices, signals),
+        top_n=asset_count,
+        initial_capital=100.0,
+        evaluation_start=dates[3],
+        evaluation_end=dates[4] if terminal_row_only else dates[5],
+        rebalance_frequency="D",
+        impact_model=SquareRootImpactModel(
+            min_adv=1, eta=0, fixed_bps=100, max_participation_rate=1, lookback=2
+        ),
+        impact_volumes=prices * 10,
+        impact_price_basis="raw",
+        impact_volume_basis="raw",
+    )
+    expected_equity = 100 / 1.01
+    assert book.equity_curve.loc[dates[4]] == pytest.approx(expected_equity, abs=1e-12)
+    assert book.cash_balance.loc[dates[4]] == pytest.approx(0, abs=1e-12)
+    assert book.slippage_cost_series.loc[dates[4]] == pytest.approx(
+        expected_equity * 0.01, rel=1e-13
+    )
+    np.testing.assert_allclose(
+        book.executed_trade_values.loc[dates[4]],
+        expected_equity / asset_count,
+        rtol=1e-13,
+    )
+    np.testing.assert_allclose(
+        book.cash_balance + book.holdings.mul(book.equity_curve, axis=0).sum(axis=1),
+        book.equity_curve,
+        rtol=1e-13,
+    )
+    if not terminal_row_only:
+        assert book.equity_curve.loc[dates[5]] == pytest.approx(
+            expected_equity, abs=1e-12
+        )
+        assert book.cash_balance.loc[dates[5]] == pytest.approx(0, abs=1e-12)
+        assert book.slippage_cost_series.loc[dates[5]] == pytest.approx(0, abs=1e-12)

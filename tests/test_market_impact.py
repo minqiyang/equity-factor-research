@@ -381,7 +381,13 @@ def test_complete_liquidity_window_rejects_invalid_cells_without_flooring():
     assert replace(SquareRootImpactModel(), eta=0).eta == 0
 
 
-def test_cash_and_position_input_balance_refused():
+def test_cash_and_position_input_balance_refused(monkeypatch):
+    def unexpected_quote(*args, **kwargs):
+        pytest.fail("input balance must be validated before quoting trades")
+
+    monkeypatch.setattr(
+        "backtest.market_impact.calculate_market_impact", unexpected_quote
+    )
     with pytest.raises(MarketImpactValidationError, match="impact_accounting_invalid"):
         step(position=(50.0, 0.0), cash=100.0, equity=100.0)
 
@@ -418,3 +424,106 @@ def test_massive_trade_throttled_and_boolean_trade_refused():
             pd.Series([0.02]),
             model=SquareRootImpactModel(min_adv=1),
         )
+
+
+@pytest.mark.parametrize("mode", ["raise", "throttle", "penalize"])
+@pytest.mark.parametrize(
+    "commission_bps,fixed_bps,eta,sigma",
+    [(0, 100, 0, 0), (100, 0, 0, 0), (0, 0, 0.5, 0.02)],
+    ids=["fixed", "commission", "square_root"],
+)
+def test_all_buy_cash_and_cost_reconciliation(
+    mode, commission_bps, fixed_bps, eta, sigma
+):
+    """M45-R1: every asset is bought, so the selection can alias its source."""
+    model = SquareRootImpactModel(
+        min_adv=1,
+        eta=eta,
+        fixed_bps=fixed_bps,
+        max_participation_rate=1,
+        mode=mode,
+        lookback=2,
+    )
+    result = step(
+        model=model, target=(0.5, 0.5), sigma=(sigma, sigma), fee=commission_bps
+    )
+
+    def costs(total_buys):
+        # Two equal fills, each with $1,000 ADV and the declared daily sigma.
+        return total_buys * (
+            fixed_bps / 10000 + eta * sigma * np.sqrt(total_buys / 2 / 1000)
+        )
+
+    expected_buys = brentq(
+        lambda q: q + q * commission_bps / 10000 + costs(q) - 100, 0, 100
+    )
+    np.testing.assert_allclose(
+        result.executed_trade_values, expected_buys / 2, rtol=1e-13
+    )
+    assert 0 < expected_buys < 100
+    assert result.commission == pytest.approx(
+        expected_buys * commission_bps / 10000, rel=1e-13
+    )
+    assert result.slippage_cost == pytest.approx(costs(expected_buys), rel=1e-13)
+    actual_buys = float(result.executed_trade_values.sum())
+    actual_fees = result.commission + result.slippage_cost
+    assert result.cash == pytest.approx(100 - actual_buys - actual_fees, abs=1e-12)
+    assert result.cash == pytest.approx(0, abs=1e-12)
+    assert result.cash + result.position_values.sum() == pytest.approx(
+        100 - actual_fees, rel=1e-13
+    )
+    np.testing.assert_allclose(
+        result.cancelled_trade_shares, (50 - expected_buys / 2) / 10, atol=1e-13
+    )
+    assert result.pending_trade_shares.eq(0).all()
+
+
+@pytest.mark.parametrize("mode", ["throttle", "penalize"])
+def test_all_buy_funding_after_binding_participation_policy(mode):
+    model = SquareRootImpactModel(
+        min_adv=1,
+        eta=0.5,
+        fixed_bps=10,
+        max_participation_rate=0.06,
+        mode=mode,
+        penalty_bps=20,
+    )
+    result = step(model=model, target=(1.0, 1.0), fee=10)
+
+    def cost_per_asset(q):
+        penalty = 1000 * 0.002 * max(q / 60 - 1, 0) ** 2 if mode == "penalize" else 0.0
+        return q * (0.001 + 0.5 * 0.02 * np.sqrt(q / 1000)) + penalty
+
+    expected = brentq(
+        lambda q: 2 * q + 2 * q * 0.001 + 2 * cost_per_asset(q) - 100, 0, 50
+    )
+    np.testing.assert_allclose(result.executed_trade_values, expected, rtol=1e-13)
+    assert result.slippage_cost == pytest.approx(
+        2 * cost_per_asset(expected), rel=1e-13
+    )
+    assert result.commission == pytest.approx(2 * expected * 0.001, rel=1e-13)
+    assert result.cash == pytest.approx(0, abs=1e-12)
+    assert result.position_values.sum() + result.cash == pytest.approx(
+        100 - result.commission - result.slippage_cost, rel=1e-13
+    )
+    np.testing.assert_allclose(
+        result.pending_trade_shares, 4 if mode == "throttle" else 0
+    )
+
+
+@pytest.mark.parametrize("discrepancy", [2.0**-19, -(2.0**-19)])
+def test_post_trade_balance_guard_refuses_absolute_mismatch(discrepancy):
+    """Large balances can meet the input relative tolerance and fail the output dollar limit."""
+    equity = float(2**30)
+    with pytest.raises(
+        MarketImpactValidationError,
+        match="cash plus signed positions must reconcile to pretrade equity",
+    ):
+        step(target=None, cash=equity + discrepancy, equity=equity)
+
+
+@pytest.mark.parametrize("discrepancy", [2.0**-20, -(2.0**-20), 0.0])
+def test_post_trade_balance_guard_accepts_within_absolute_tolerance(discrepancy):
+    equity = float(2**30)
+    result = step(target=None, cash=equity + discrepancy, equity=equity)
+    assert abs(result.cash + result.position_values.sum() - equity) <= 1e-6
