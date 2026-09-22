@@ -10271,3 +10271,65 @@ This ablation round completes the implementation and machine verification of sev
   `/private/tmp/efr-m4-5-remediation-evidence`. The implementation report identifies
   the remediation SHA and the changed numerical boundary. Independent closure
   of M45-R1 and hosted CI remain pending at producer handoff.
+
+## 2026-09-22 — M4.6 causal multi-factor risk attribution candidate
+
+- Binding card `738caf5` precedes runtime changes from merged base `b60e109`.
+  The producer implements one risk module, optional sidecars in both engines,
+  a synthetic all-attempt demo, 70 deterministic tests, and isolated ablation.
+- Five winsorized standardized styles plus Market use immediately prior observed
+  exposures and actual holdings. OLS/WLS fits require full rank. Gross return
+  equals factor plus specific contributions; engine costs reconcile net return.
+  Active-risk covariance and residual variance use strictly earlier fits.
+- The 62-factor/124-book baseline preserves exact bytes for both the historic
+  comparison schema and every M4.5 result field. The latter includes 3,038
+  existing fields, raw buffer hashes, ordered axes and dtypes. The historic
+  fingerprint remains `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+- The synthetic demo retains eight successful negative-net-return books and two
+  expected refusals. Maximum one-period reconstruction error is
+  `3.469446951953614e-18`. The appended attempt log retains both generated runs.
+  All inputs and availability assertions are synthetic.
+- Final core QA passes 4,206 tests with two inherited platform precision skips;
+  diagnostics passes 125. Their verified disjoint union has 4,331 passes and two
+  skips. Ruff, compileall, baseline replay, repo-map checks, and diff checks pass.
+  Initial fixture errors and the initial 4,205-pass core run remain in evidence.
+- The initial ablation exposes an exact mathematical equivalence: changing
+  equal-window historical volatility ddof cancels during cross-sectional
+  standardization. The final run records that equivalent result, 52 expected
+  negative removals, and a passing intact baseline. Every production source hash
+  stays unchanged. The sample-volatility definition remains the declared
+  convention; removal of the volatility calculation fails its independent oracle.
+- Typed refusals cover enabled terminal-event attribution, missing cross-section
+  coverage, rank deficiency, and invalid covariance. Empirical calibration,
+  residual correlations, changing regression universes, industry factors and
+  geometric linking remain in the roadmap backlog. The implementation report
+  and `coord/reports/m4_6_evidence/validation.json` contain producer evidence.
+  The frozen candidate transfers write responsibility to the coordinator for
+  independent single-seat GPT-6 Astra High Fast review and hosted CI.
+
+## 2026-09-22 — M46-R1 singular covariance remediation
+
+- Review of `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` identified a P2 material
+  numerical mismatch: PSD tolerance accepted tiny negative covariance roundoff,
+  while a zero-tolerance quadratic-form check refused a valid hedged portfolio.
+- Code candidate `cfec56d016be17937a2496280e2a53d6722a0c0e` aligns aggregate
+  factor/active variance acceptance to -1e-14, then clamps each aggregate to zero.
+  Signed Euler contributions remain unchanged; the bounded aggregate correction
+  and final addition rounding are explicit in the function contract and tests.
+- Numerical boundary verification pairs every tolerated PSD boundary with a
+  downstream quadratic-form counterexample, including null-space exposure,
+  zero total risk, positive specific risk, and material levered negativity.
+  The exact reviewer fixture is retained. Five new counterexamples fail before
+  repair; the complete final risk suite passes 79 tests. Two initial oracle
+  precision errors and their corrected checks remain visible in the evidence.
+- Final core lane: 4,215 passed and two inherited precision skips. Diagnostics:
+  125 passed. Parsed JUnit IDs establish a disjoint total of 4,340 passes and two
+  skips. Ruff, compileall, and both exact 124-book baseline comparisons pass.
+- All original 52 negative ablations still fail as expected. Three independent
+  removals prove the necessity of the aligned tolerance and the two scalar
+  clamps. The intact package and existing volatility-ddof equivalence pass;
+  every original production source and archived log hash is verified.
+- `coord/reports/m4_6_evidence/remediation_r1/validation.json` records code hashes,
+  baseline fingerprints and new QA; the implementation report records the code
+  commit and preserved evidence. Independent M46-R1 closure remains pending
+  coordinator re-review of the frozen evidence commit.

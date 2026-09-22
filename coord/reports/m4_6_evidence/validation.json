@@ -1,0 +1,84 @@
+{
+  "base_commit": "b60e109c6959e059dea6c19c3573dd5e861a2ac2",
+  "card_commit": "738caf5",
+  "environment": {
+    "python": "3.12.13",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scipy": "1.18.1"
+  },
+  "lanes": {
+    "core": {
+      "collected": 4208,
+      "unique_ids": 4208,
+      "passed": 4206,
+      "skipped": 2,
+      "failed": 0
+    },
+    "diagnostics": {
+      "collected": 125,
+      "unique_ids": 125,
+      "passed": 125,
+      "skipped": 0,
+      "failed": 0
+    }
+  },
+  "disjoint": true,
+  "total_passed": 4331,
+  "total_skipped": 2,
+  "baseline": {
+    "legacy": {
+      "books": 124,
+      "existing_fields": 2294,
+      "pandas_fields": 1798,
+      "byte_equal": true,
+      "uncompressed_sha256": "5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4"
+    },
+    "all_fields": {
+      "books": 124,
+      "existing_fields": 3038,
+      "pandas_fields": 2542,
+      "byte_equal": true,
+      "uncompressed_sha256": "878cfc0315ac0fa64ed120205f1c73eb1572c71822c1ea8111c229ab4e17c7d1"
+    }
+  },
+  "ablation": {
+    "isolated_cases": 54,
+    "negative_removals": 52,
+    "expected_equivalence": "volatility_ddof_equivalence",
+    "all_outcomes_expected": true,
+    "production_sources_preserved": true
+  },
+  "checks": {
+    "ruff": "pass",
+    "compileall": "pass",
+    "git_diff_check": "pass after preserving raw pytest whitespace in compressed evidence",
+    "final_map_test": "1 passed",
+    "archived_ablation_logs": "all original log SHA-256 values match decompressed members"
+  },
+  "independent_review": "pending_coordinator_dispatch",
+  "hosted_ci": "pending",
+  "source_sha256": {
+    "src/backtest/risk_attribution.py": "ec20828dae4838509feb7ea14beb24e206eefc8de70fb1b14e83cc1a3b43f9af",
+    "src/backtest/portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+    "src/backtest/long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4",
+    "tests/test_risk_attribution.py": "d4b5ec9745b1dca681c9049252b11cd56e0abca00059596f58469e91a1747535",
+    "research/risk_attribution_demo.py": "7c6537507f51c0186e753ca0063a13ea3cad0547c1c5bf8814b1d5c7c89cf73a",
+    "coord/reports/m4_6_evidence/ablate.py": "32b58946f4872a0b14c1f6bb1cec4579d0f3ad45c2ae2312c20f54fda179a870",
+    "coord/reports/m4_6_evidence/capture_baseline.py": "d1484713d9c6c65f7331476cfcb2373e08abce8b413aa8e85f65a8af58a8fbe2"
+  },
+  "commands": {
+    "core": "PYTHONPATH=src:. python -m pytest -q -n 2 --dist worksteal --max-worker-restart=0 tests --ignore=tests/test_multifactor_diagnostic_mvp.py --ignore=tests/test_m3_10_hardening.py",
+    "diagnostics": "PYTHONPATH=src:. python -m pytest -q -n 2 --dist worksteal --max-worker-restart=0 tests/test_multifactor_diagnostic_mvp.py tests/test_m3_10_hardening.py",
+    "ablation": "PYTHONPATH=src:. python coord/reports/m4_6_evidence/ablate.py /tmp/m4-6-ablation-replay",
+    "ruff": "python -m ruff check .",
+    "compileall": "python -m compileall -q src tests research lean coord/reports/m4_6_evidence",
+    "demo": "PYTHONPATH=src:. python -m research.risk_attribution_demo"
+  },
+  "native_thread_limits": {
+    "OPENBLAS_NUM_THREADS": 1,
+    "OMP_NUM_THREADS": 1,
+    "MKL_NUM_THREADS": 1,
+    "VECLIB_MAXIMUM_THREADS": 1
+  }
+}

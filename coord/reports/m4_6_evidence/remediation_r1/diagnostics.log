@@ -1,0 +1,12 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [ 57%]
+.....................................................                    [100%]
+=============================== warnings summary ===============================
+tests/test_m3_10_hardening.py: 20 warnings
+  /private/tmp/efr-m4-6-risk-attribution/src/backtest/long_short.py:684: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+    sr, _ = spearmanr(indices, decile_means.to_numpy(dtype=float))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+125 passed, 20 warnings in 96.73s (0:01:36)

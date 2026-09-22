@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-22 for the M4.5 synthetic market-impact and capacity implementation candidate.
+Updated: 2026-09-22 for the M4.6 synthetic multi-factor risk attribution candidate.
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -50,18 +50,15 @@ The program follows five primary milestones:
 
 ## Program Position
 
-- Current M4 implementation checkpoint: M4.4 merged at `fe851ba` (PR #253)
-  with both independent-review findings closed. M4.5 implements optional causal
-  square-root impact, participation policies, self-financing cash accounting,
-  and generated capacity curves in both engines. Its card is
-  `coord/card_m4_5_market_impact_capacity.md`; reproduce its generated report with
-  `PYTHONPATH=src:. python -m research.market_impact_capacity_demo`. The 96-case
-  grid retains 61 successful books, 35 refusals, and 37 negative-return books.
-  M45-R1 remediation isolates buy funding buffers and adds a $0.000001 absolute
-  post-trade balance limit; exact-head independent re-review remains pending.
-  This grid contains zero observed positive-to-nonpositive capacity brackets.
-  M4.5 independent review and hosted CI remain pending. Empirical calibration,
-  actual strategy capacity, and formal real-data promotion remain open gates.
+- Current M4 implementation checkpoint: M4.5 is merged at `b60e109`.
+  M4.6 adds optional five-style plus Market return attribution and causal rolling
+  active-risk forecasts in both engines. The binding card is
+  `coord/card_m4_6_risk_attribution.md`; reproduce the synthetic report with
+  `PYTHONPATH=src:. python -m research.risk_attribution_demo`. Eight books and
+  two expected refusals retain all attempted cases; all eight books have
+  negative compounded net returns. Independent review and hosted CI remain
+  pending at producer handoff. The implementation report records baseline
+  equality and local verification in `coord/reports/m4_6_risk_attribution_impl.md`.
 - The following earlier program-position entries preserve the Stage 2/M3
   checkpoint and historical research evidence.
 - Last externally verified protected baseline:
@@ -185,6 +182,7 @@ research validity:
 | Dividend/split event-level reconciliation | Adjustments | Documented adjustments not reconciled against independent raw events | Use vendor-provided adjusted series as exploratory input with documented uncertainty; strictly forbid adding cash dividends on top of total-return series. Demo v0 and the M3-01 demo compute held returns from the supplied price series only and refuse a separate cash-dividend overlay. M3-08 checks each supplied event date against the declared source index and preserves prices. Both official reports state that event-level reconciliation was not performed because no independent event table was supplied. Full economic reconciliation against independent raw events remains deferred. | Milestone 3/4 corporate action pipeline | Safe to defer event-level reconciliation for demo; cannot claim audited point-in-time adjustment; M3-04 overlay refusal and M3-08 event-date membership are implemented |
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Demo v0 uses one price-only factor; M3-01 adds three artificial synthetic panels | Demo v0 remains the single-factor official slice. M3-01 combines artificial quality, reversal, and momentum fixtures through existing helpers. Remaining zoo expansion stays deferred. | Optional factor-family expansion after the current Milestone 3 scope | Safe to defer remaining zoo expansion; M3-01 three-factor synthetic backtest is implemented |
 | Full 37-event ledger schema runtime coverage | Audit Ledger | Only epoch, registration, and first checkpoints implemented | Use existing SQLite Path A/B or lightweight run logger with explicit diagnostic ceiling | Milestone 4 formal ledger completion | Safe to defer for Demo v0 |
+| Multi-factor risk calibration and coverage | Risk attribution | Estimated covariance and omitted residual correlations affect active-risk forecasts | M4.6 implements causal OLS/WLS style attribution and sample rolling covariance on complete synthetic panels. Rank deficiency and enabled terminal-event coverage refuse explicitly. Specific covariance is diagonal; geometric return linking, industries, dynamic regression universes, and empirical calibration remain open. | Expanded risk-model scope or formal empirical risk claims | Implemented diagnostic layer; independent review pending |
 | Advanced multiple-testing statistics | Statistics | Multiplicity and adaptive research affect inference | Existing DSR uses run-family Sharpe dispersion. M4.3 adds Bonferroni, Holm, BH and BY over all semantic book trials, primary HAC BY diagnostics, and explicitly conditional IID Sharpe haircuts. Undefined and conflicting trials retain family slots. Historical search completeness, finite-sample HAC calibration, and empirical-population Harvey-Liu simulation remain open. | Stronger formal research claims and accepted historical-family evidence | Implemented diagnostic layer; DIAGNOSTIC_ONLY; formal promotion limits remain |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities. M4.4 requires identity-backed interval tables and exact permanent-ID axes in its optional PIT path; synthetic ticker-reassignment tests preserve separate security returns. External identity evidence remains caller-supplied. | Never deferrable | **BLOCKING (Cannot Defer)**; optional runtime enforcement implemented |

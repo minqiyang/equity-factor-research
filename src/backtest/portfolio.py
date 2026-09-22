@@ -17,6 +17,9 @@ from typing import Any, Literal, Mapping
 import numpy as np
 import pandas as pd
 
+from backtest.risk_attribution import (
+    CrossSectionalRiskModel, PortfolioRiskAttribution, attribute_backtest,
+)
 from backtest.market_impact import (
     MarketLiquidity, SquareRootImpactModel, execute_impact_step,
     resolve_impact_liquidity, impact_assumptions, impact_result_fields,
@@ -260,6 +263,7 @@ class BacktestResult:
     executed_trade_values: pd.DataFrame
     pending_trade_shares: pd.DataFrame
     cancelled_trade_shares: pd.DataFrame
+    risk_attribution: PortfolioRiskAttribution | None = None
 
 
 def capture_backtest_source_provenance(
@@ -537,6 +541,7 @@ def run_long_only_backtest(
     terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    risk_model: CrossSectionalRiskModel | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_volumes: pd.DataFrame | None = None,
     impact_price_basis: str | None = None,
@@ -761,6 +766,12 @@ def run_long_only_backtest(
     )
 
     return BacktestResult(
+        risk_attribution=attribute_backtest(
+            risk_model, prices=price_data, holdings=holdings,
+            gross_returns=gross_returns, net_returns=net_returns,
+            trading_costs=total_trading_costs, periods_per_year=periods_per_year,
+            terminal_events=terminal_events, missing_price_policy=missing_price_policy,
+        ),
         equity_curve=equity_curve.rename("equity"),
         returns=net_returns.rename("return"),
         gross_returns=gross_returns.rename("gross_return"),
