@@ -76,6 +76,7 @@ from research.multifactor_diagnostic_mvp import (
     compute_rolling_market_beta,
     evaluate_portfolio_weighting_comparisons,
 )
+from research.multiple_testing_diagnostics import render_multiple_testing, summarize_multiple_testing
 from features.cross_validation import combinatorial_purged_cross_validation_pbo
 from features.ml_combination import walk_forward_ml_factor_composite
 from research.walking_skeleton_mvp import (
@@ -604,6 +605,7 @@ def run_real_data_multifactor_diagnostic(
             )
 
     trial_family = _trial_family_summary(inventory, n_trials=config.n_trials)
+    multiple_testing = summarize_multiple_testing(inventory, family_size=config.n_trials)
     for payload in factor_results.values():
         variance = trial_family["trial_sharpe_variance"]
         payload["dsr"] = (
@@ -634,6 +636,7 @@ def run_real_data_multifactor_diagnostic(
         "weighting_comparisons": weighting_comparisons,
         "trial_inventory": tuple(inventory),
         "trial_family": trial_family,
+        "multiple_testing": multiple_testing,
         "trial_inventory_path": inventory_path,
         "report_path": report_path,
         "experiment_log_path": experiment_log_path,
@@ -922,6 +925,7 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
         },
         metrics={
             **factor_metrics,
+            "multiple_testing": result["multiple_testing"],
             "pbo_summary": result["pbo_summary"],
             "cpcv_summary": result.get("cpcv_summary"),
             "weighting_comparisons": result.get("weighting_comparisons", []),
@@ -1200,6 +1204,8 @@ DSR uses the raw distinct count as an independent-trial upper-bound sensitivity.
 Effective independence and total historical search remain unestimated. Missing
 trial Sharpe dispersion withholds DSR. PBO covers the alpha-only long-only
 family. Weak or negative diagnostics are retained.
+
+{render_multiple_testing(result["multiple_testing"])}
 
 ## Long-short quantile spread diagnostics
 

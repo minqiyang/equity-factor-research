@@ -412,6 +412,14 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     assert all("trial_id" in record for record in completed)
     assert result["trial_family"]["attempt_count"] >= 6
     assert result["trial_family"]["distinct_trial_count"] >= 6
+    summary = result["multiple_testing"]
+    assert summary["distinct_trial_count"] == result["trial_family"]["distinct_trial_count"]
+    assert summary["attempt_count"] == result["trial_family"]["attempt_count"]
+    assert payload["metrics"]["multiple_testing"] == summary
+    assert "## Multiple-testing diagnostics" in report_text
+    assert {row["specification"]["direction"] for row in summary["rows"]} == {"long_only", "long_short"}
+    assert all("return_test" in record for record in completed)
+    json.dumps(summary, allow_nan=False)
     assert "pbo" in result["pbo_summary"]
     assert result["cpcv_summary"] is not None
     assert result["cpcv_summary"]["holding_periods"] == 21

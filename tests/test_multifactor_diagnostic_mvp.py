@@ -1172,6 +1172,15 @@ def test_multifactor_diagnostic_mvp_runs_fifty_stock_equal_weight_monthly_backte
     assert result["trial_family"]["attempt_count"] == 156
     assert result["trial_family"]["distinct_trial_count"] == 148
     assert result["trial_family"]["n_trials_for_dsr"] == 148
+    summary = result["multiple_testing"]
+    assert summary["family_size"] == summary["distinct_trial_count"] == 148
+    assert summary["attempt_count"] == 156
+    assert {row["specification"]["direction"] for row in summary["rows"]} == {"long_only", "long_short"}
+    assert all("return_test" in record for record in result["trial_inventory"])
+    assert "## Multiple-testing diagnostics" in report_path.read_text()
+    experiment = json.loads(Path(result["experiment_log_path"]).read_text())
+    assert experiment["metrics"]["multiple_testing"] == summary
+    json.dumps(summary, allow_nan=False)
     assert list(result["ic_weights"]) == list(ALPHA_IDS)
     alpha_panels = [result["factors"][factor_id]["factor"] for factor_id in ALPHA_IDS]
     pd.testing.assert_frame_equal(

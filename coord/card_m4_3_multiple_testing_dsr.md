@@ -5,6 +5,10 @@ Baseline: `8fb9050fbc6cacdb3ae6ef5f71a20615d450b5af`.
 Branch: `feat/m4-3-multiple-testing-dsr`.
 Working root: `/private/tmp/efr-m4-3-multiple-testing-dsr`.
 Implementation report: `coord/reports/m4_3_multiple_testing_impl.md`.
+Owner/coordinator acceptance: PASS, MATERIAL: 0 on plan commit
+`c8f37732b5d1ac48cb7aba9f4f591ead1b28b1fc`. The subsequent explicit instruction
+authorized immediate execution with preliminary plan review waived for this
+non-structural candidate; two independent implementation reviews remain required.
 Lane: CRITICAL, because inferential claims affect research validity.
 Structural: false; this additive diagnostic feature preserves existing accounting,
 selection, timing, and external protocol contracts.
