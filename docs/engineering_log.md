@@ -10199,3 +10199,39 @@ This ablation round completes the implementation and machine verification of sev
 - Assessment, implementation, ablation, evidence locations and limits: `coord/reports/ci_acceleration_stage_bc_impl.md`.
 - Formal independent review by Grok 4.6 Extra High on clean detached worktree: Verdict PASS (MATERIAL: 0). Independent local QA: core lane 3,790 passed, 2 skipped in 38.66s; diagnostics lane 125 passed in 134.83s; 3,917 unique cases across disjoint lanes. Report recorded in `coord/reports/ci_acceleration_stage_bc_grok_review.md`.
 - Hosted CI verification: second consecutive hosted run `35631677129` on candidate `ccaf59c` passed all 3,917 cases and `Python validation` in 5m29s (core 2m12s, diagnostics 5m26s, gate 3s), confirming reproducible sub-6-minute CI performance across multiple runs and addressing ADV-BC-1.
+
+## 2026-09-22 — M4.5 Optional Market Impact and Capacity Candidate
+
+- Implemented accepted plan `bd7a2c0` on branch `feat/m4-5-market-impact-capacity`
+  from verified M4.4 base `fe851ba0a69be1416db265bee4375433ab45d52d`. The directive's
+  expanded base-hash typo was resolved with live Git and coordinator/owner confirmation.
+- Added a shared square-root impact model, complete lagged ADV/volatility,
+  matching price/volume basis guards, and explicit raise/throttle/penalize policies.
+  Both engines expose dollar costs, actual trades, participation, deferred shares,
+  cancellations, and self-financing cash under the optional model. Existing
+  default-path fields retain exact baseline equality across 124 books and M4.3/M4.4 summaries.
+- Preserved baseline/candidate fingerprint:
+  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+  The candidate retains the M4.4 terminal evidence and fee-exemption boundaries.
+- Generated 96 declared capacity scenarios: 62 successes, 34 refusals, and
+  38 negative net returns. The grid has zero observed positive-to-nonpositive
+  benchmark-excess brackets. Empirical capacity remains unmeasured.
+- The first demo run exposed small negative long-only holdings from floating-point
+  completion of deferred sells. Actual long-only sells now respect remaining
+  position value; excess shares are recorded cancellations. The append-only log
+  retains all five initial failures, and regression/ablation tests retain their cause.
+- Added 113 deterministic tests. Full CI selections pass locally: core 4,116
+  passed and two inherited longdouble precision skips in 28.02 seconds;
+  diagnostics 125 passed in 90.21 seconds. The disjoint union contains 4,243 cases.
+  Ruff, compilation, distribution build, package-schema checks, map freshness,
+  and whitespace checks pass. The initial stale-map failure was closed by
+  regeneration and a complete core rerun.
+- Fifteen isolated negative ablations each fail their independent counterexample;
+  the intact copied package passes all 113 new tests. Production source hashes
+  remain unchanged. Necessary causal, cost, cash, liquidity, and terminal controls
+  are retained. The supported no-removal outcome covers M4.5.
+- Updated the timing/accounting supplement, roadmap limitations, generated map,
+  and evidence report at `coord/reports/m4_5_market_impact_capacity_impl.md`.
+  CPython 3.12.13 is the supplied local environment. Hosted Python 3.11 CI and
+  the owner-directed fresh independent GPT-6 Astra High Fast review remain pending
+  at producer delivery to coordinator `w3:pE8`.

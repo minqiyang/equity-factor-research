@@ -20,6 +20,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
+from backtest.market_impact import (
+    SquareRootImpactModel, execute_impact_step,
+    resolve_impact_liquidity, impact_assumptions, impact_result_fields,
+)
 from backtest.portfolio import (
     BacktestValidationError,
     _get_rebalance_dates,
@@ -76,6 +80,12 @@ class LongShortBacktestResult:
     cash_balance: pd.Series
     terminal_cashflows: pd.DataFrame
     terminal_event_log: tuple[dict[str, Any], ...]
+    slippage_cost_series: pd.Series
+    realized_slippage_bps: pd.Series
+    trade_participation_rates: pd.DataFrame
+    executed_trade_values: pd.DataFrame
+    pending_trade_shares: pd.DataFrame
+    cancelled_trade_shares: pd.DataFrame
 
 
 def run_long_short_backtest(
@@ -95,6 +105,10 @@ def run_long_short_backtest(
     terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    impact_model: SquareRootImpactModel | None = None,
+    impact_volumes: pd.DataFrame | None = None,
+    impact_price_basis: str | None = None,
+    impact_volume_basis: str | None = None,
     initial_capital: float = 1.0,
     signal_lag_periods: int = 1,
     gross_leverage: float = 1.0,
@@ -104,8 +118,10 @@ def run_long_short_backtest(
     """Run a dollar-neutral long-short quantile spread backtest.
 
     Constructs long positions in top quantile (highest factor scores) and short
-    positions in bottom quantile (lowest factor scores). Net exposure is zero
-    (dollar neutral) and gross exposure sums to gross_leverage (default 1.0).
+    positions in bottom quantile (lowest factor scores). Frozen targets have
+    zero net exposure and gross exposure equal to gross_leverage (default 1.0).
+    Impact-model fills preserve cash-funded positions; partial fills and drift
+    can produce different realized exposures.
 
     Signals are lagged by signal_lag_periods (default 1), enforcing the
     after-close/next-observed-close lookahead-free research contract.
@@ -159,6 +175,12 @@ def run_long_short_backtest(
         dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
         terminal_events=prepared_events,
     )
+    impact_liquidity = resolve_impact_liquidity(
+        prices, model=impact_model, volumes=impact_volumes,
+        price_basis=impact_price_basis, volume_basis=impact_volume_basis,
+        evaluation_end=eval_end, signal_lag_periods=signal_lag_periods,
+        slippage_bps=slippage_bps,
+    )
     lagged_signals = sub_signals.shift(signal_lag_periods)
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
 
@@ -182,6 +204,13 @@ def run_long_short_backtest(
     equity = np.full(n_dates, np.nan, dtype=float)
     equity[0] = float(initial_capital)
 
+    executed_values = np.zeros(sub_prices.shape)
+    participation = np.zeros(sub_prices.shape)
+    pending_values = np.zeros(sub_prices.shape)
+    cancelled_values = np.zeros(sub_prices.shape)
+    cash_values = np.full(n_dates, float(initial_capital))
+    impact_dollars = np.zeros(len(accounting_dates))
+    pending = pd.Series(0.0, index=columns)
     half_leverage = 0.5 * float(gross_leverage)
 
     lagged_volatility: pd.DataFrame | None = None
@@ -244,6 +273,7 @@ def run_long_short_backtest(
             terminal_event_log.extend(event_log)
             pretrade_net.loc[list(terminal_returns)] = 0.0
             settled.update(terminal_returns)
+        actual_target = None
         # Calculate decile returns for diagnostic tracking
         if date in rebalance_dates:
             # These quantile returns describe the incoming interval diagnostically.
@@ -370,6 +400,36 @@ def run_long_short_backtest(
             # The frozen target reference stays independent of execution prices.
             previous_target = target_net.copy()
             _validate_terminal_target(target_net, settled, date=date)
+            actual_target = target_net
+        current_net = pretrade_net
+        row_turnover = row_tx_cost = row_slip_cost = row_total_cost = 0.0
+        if impact_model is not None:
+            previous_equity = float(equity[i - 1])
+            equity_before = previous_equity * gross_multiplier
+            step = execute_impact_step(
+                model=impact_model, liquidity=impact_liquidity, date=date,
+                execution_prices=current_prices,
+                position_values=pretrade_net * equity_before,
+                cash=cash_values[i - 1] + float(terminal_cashflows[i].sum()),
+                equity_before=equity_before, target_weights=actual_target,
+                pending_shares=pending,
+                eligible=universe_mask.reindex(index=[date], columns=columns).iloc[0] if universe_mask is not None else None,
+                settled=settled, transaction_cost_bps=transaction_cost_bps,
+            )
+            pending = step.pending_trade_shares
+            executed_values[i] = step.executed_trade_values.to_numpy()
+            participation[i] = step.participation_rates.to_numpy()
+            pending_values[i] = pending.to_numpy()
+            cancelled_values[i] = step.cancelled_trade_shares.to_numpy()
+            cash_values[i] = step.cash
+            impact_dollars[i] = step.slippage_cost
+            row_turnover = float(step.executed_trade_values.abs().sum()) / equity_before
+            row_tx_cost = step.commission / previous_equity
+            row_slip_cost = step.slippage_cost / previous_equity
+            row_total_cost = row_tx_cost + row_slip_cost
+            impact_equity = equity_before - step.commission - step.slippage_cost
+            current_net = step.position_values / impact_equity
+        elif actual_target is not None:
             signed_trades = target_net - pretrade_net
             _validate_execution_price_legs(
                 execution_prices=current_prices,
@@ -381,14 +441,12 @@ def run_long_short_backtest(
             row_slip_cost = row_turnover * (float(slippage_bps) / 10_000.0) * gross_multiplier
             row_total_cost = row_tx_cost + row_slip_cost
             current_net = target_net
-        else:
-            current_net = pretrade_net
-            row_turnover = 0.0
-            row_tx_cost = 0.0
-            row_slip_cost = 0.0
-            row_total_cost = 0.0
+            executed_values[i] = signed_trades.to_numpy() * equity[i - 1] * gross_multiplier
+            participation[i, executed_values[i] != 0] = np.nan
 
         period_net = period_gross - row_total_cost
+        if impact_model is not None:
+            period_net = impact_equity / equity[i - 1] - 1.0
         net_returns[i] = period_net
         turnover[i] = row_turnover
         tx_costs[i] = row_tx_cost
@@ -396,6 +454,8 @@ def run_long_short_backtest(
         total_costs[i] = row_total_cost
 
         equity_candidate = float(equity[i - 1]) * (1.0 + period_net)
+        if impact_model is not None:
+            equity_candidate = impact_equity
         _validate_postcost_net_equity(
             net_return=period_net, net_multiplier=1.0 + period_net,
             equity_candidate=equity_candidate, date=date,
@@ -459,6 +519,10 @@ def run_long_short_backtest(
             "terminal_exposure_policy": "surviving_positions_drift_until_next_scheduled_reset",
         } if terminal_events is not None else {}),
         "timing_contract": "after_close_signal_next_observed_close_v1",
+        **impact_assumptions(impact_model, price_basis=impact_price_basis,
+                             volume_basis=impact_volume_basis),
+        **({"dollar_neutral": False, "target_dollar_neutral": True}
+           if impact_model is not None else {}),
     }
 
     return LongShortBacktestResult(
@@ -476,7 +540,12 @@ def run_long_short_backtest(
         total_trading_costs=total_costs,
         metrics=metrics,
         assumptions=assumptions,
-        cash_balance=(equity * (1.0 - net_holdings.sum(axis=1))).rename("cash_balance"),
+        cash_balance=(pd.Series(cash_values, index=accounting_dates) if impact_model is not None else equity * (1.0 - net_holdings.sum(axis=1))).rename("cash_balance"),
+        **impact_result_fields(index=accounting_dates, columns=columns, equity=equity.to_numpy(),
+                               slippage_returns=slip_costs, executed=executed_values,
+                               participation=participation, pending=pending_values,
+                               cancelled=cancelled_values,
+                               slippage_dollars=impact_dollars if impact_model is not None else None),
         terminal_cashflows=pd.DataFrame(terminal_cashflows, index=accounting_dates, columns=columns),
         terminal_event_log=tuple(terminal_event_log),
     )

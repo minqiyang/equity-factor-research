@@ -14,12 +14,12 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/campaign/` | Frozen dataset-independent computations for bounded research campaigns. | 21 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 19 mapped files |
-| `src/backtest/` | Simulated long-only backtester and metrics helpers. | 5 mapped files |
+| `src/backtest/` | Simulated long-only backtester and metrics helpers. | 6 mapped files |
 | `src/data/` | Strict local CSV and Parquet loaders, blue-chip cohort spec, and metadata review helpers. | 7 mapped files |
 | `src/ledger/` | Fail-closed Stage 4B schema-registry helpers and Path A/B sqlite3 runtime; caller-supplied DB path outside the repository. | 23 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
-| `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 27 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 239 mapped files |
+| `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 28 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 242 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 117 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |
@@ -60,6 +60,8 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 - `docs/troubleshooting_log.md` (present): Failures, recovery steps, and prevention notes.
 - `EXPERIMENT_LOG.md` (present): Research experiment records; not for workflow-only changes.
 - `pyproject.toml` (present): Package metadata and test dependencies.
+- `src/backtest/market_impact.py` (present): Causal daily liquidity, square-root impact, participation policies, and self-financing simulated fills.
+- `research/market_impact_capacity_demo.py` (present): Generated AUM scenarios with retained refusals, net-return capacity tables, and attempt evidence.
 
 ## Test And Validation Commands
 

@@ -174,6 +174,8 @@ IMPORTANT_FILES = [
     ("docs/troubleshooting_log.md", "Failures, recovery steps, and prevention notes."),
     ("EXPERIMENT_LOG.md", "Research experiment records; not for workflow-only changes."),
     ("pyproject.toml", "Package metadata and test dependencies."),
+    ("src/backtest/market_impact.py", "Causal daily liquidity, square-root impact, participation policies, and self-financing simulated fills."),
+    ("research/market_impact_capacity_demo.py", "Generated AUM scenarios with retained refusals, net-return capacity tables, and attempt evidence."),
 ]
 
 LOCAL_VALIDATION_COMMANDS = [
