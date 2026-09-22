@@ -1,0 +1,52 @@
+..................................................................FF.    [100%]
+=================================== FAILURES ===================================
+_______ test_engine_future_prefix_and_missing_unheld_refusal[long_only] ________
+
+engine = 'long_only'
+
+    @pytest.mark.parametrize('engine', ['long_only', 'long_short'])
+    def test_engine_future_prefix_and_missing_unheld_refusal(engine):
+        inputs = market_inputs()
+        prices, _, _, signals = inputs
+        model = CrossSectionalRiskModel(market_exposures(inputs), covariance_window=5, min_covariance_observations=2)
+        full = engine_book(engine, prices, signals, model)
+        prefix = engine_book(engine, prices, signals, model, evaluation_end=prices.index[24])
+        attr = full.risk_attribution
+        before = prefix.risk_attribution
+        assert_frame_equal(attr.factor_contributions.loc[before.factor_contributions.index], before.factor_contributions)
+        assert_frame_equal(attr.risk.loc[before.risk.index], before.risk)
+        broken = prices.copy()
+        # The initialization interval holds cash, while the full regression needs every endpoint.
+        broken.iloc[7, 0] = np.nan
+>       with pytest.raises((RiskAttributionError, ValueError)):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE any of (RiskAttributionError, ValueError)
+
+tests/test_risk_attribution.py:502: Failed
+_______ test_engine_future_prefix_and_missing_unheld_refusal[long_short] _______
+
+engine = 'long_short'
+
+    @pytest.mark.parametrize('engine', ['long_only', 'long_short'])
+    def test_engine_future_prefix_and_missing_unheld_refusal(engine):
+        inputs = market_inputs()
+        prices, _, _, signals = inputs
+        model = CrossSectionalRiskModel(market_exposures(inputs), covariance_window=5, min_covariance_observations=2)
+        full = engine_book(engine, prices, signals, model)
+        prefix = engine_book(engine, prices, signals, model, evaluation_end=prices.index[24])
+        attr = full.risk_attribution
+        before = prefix.risk_attribution
+        assert_frame_equal(attr.factor_contributions.loc[before.factor_contributions.index], before.factor_contributions)
+        assert_frame_equal(attr.risk.loc[before.risk.index], before.risk)
+        broken = prices.copy()
+        # The initialization interval holds cash, while the full regression needs every endpoint.
+        broken.iloc[7, 0] = np.nan
+>       with pytest.raises((RiskAttributionError, ValueError)):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE any of (RiskAttributionError, ValueError)
+
+tests/test_risk_attribution.py:502: Failed
+=========================== short test summary info ============================
+FAILED tests/test_risk_attribution.py::test_engine_future_prefix_and_missing_unheld_refusal[long_only]
+FAILED tests/test_risk_attribution.py::test_engine_future_prefix_and_missing_unheld_refusal[long_short]
+2 failed, 67 passed in 3.78s

@@ -20,6 +20,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
+from backtest.risk_attribution import (
+    CrossSectionalRiskModel, PortfolioRiskAttribution, attribute_backtest,
+)
 from backtest.market_impact import (
     SquareRootImpactModel, execute_impact_step,
     resolve_impact_liquidity, impact_assumptions, impact_result_fields,
@@ -86,6 +89,7 @@ class LongShortBacktestResult:
     executed_trade_values: pd.DataFrame
     pending_trade_shares: pd.DataFrame
     cancelled_trade_shares: pd.DataFrame
+    risk_attribution: PortfolioRiskAttribution | None = None
 
 
 def run_long_short_backtest(
@@ -105,6 +109,7 @@ def run_long_short_backtest(
     terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    risk_model: CrossSectionalRiskModel | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_volumes: pd.DataFrame | None = None,
     impact_price_basis: str | None = None,
@@ -526,6 +531,12 @@ def run_long_short_backtest(
     }
 
     return LongShortBacktestResult(
+        risk_attribution=attribute_backtest(
+            risk_model, prices=sub_prices, holdings=net_holdings,
+            gross_returns=gross_returns, net_returns=net_returns,
+            trading_costs=total_costs, periods_per_year=periods_per_year,
+            terminal_events=terminal_events, missing_price_policy="raise",
+        ),
         equity_curve=equity,
         returns=net_returns,
         gross_returns=gross_returns,

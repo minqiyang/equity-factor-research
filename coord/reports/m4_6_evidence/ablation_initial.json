@@ -1,0 +1,1044 @@
+{
+  "production_sources_preserved": true,
+  "baseline_sources": {
+    "risk_attribution.py": "ec20828dae4838509feb7ea14beb24e206eefc8de70fb1b14e83cc1a3b43f9af",
+    "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+    "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+  },
+  "cases": [
+    {
+      "name": "baseline",
+      "expected_exit": 0,
+      "observed_exit": 0,
+      "seconds": 3.792121749953367,
+      "selected_tests": "tests/test_risk_attribution.py",
+      "log_sha256": "7daaa0d6e94b85f518f96c19aec69e1c900607a6f47e7c24d445c23b528fe861",
+      "source_sha256": {
+        "risk_attribution.py": "ec20828dae4838509feb7ea14beb24e206eefc8de70fb1b14e83cc1a3b43f9af",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": []
+    },
+    {
+      "name": "guard_axes",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.624045540986117,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[axes]",
+      "log_sha256": "e4d8767b85ba07df0fa58f0a8325d1d3ffc8851a61cf52d5041a74c0ae6624f7",
+      "source_sha256": {
+        "risk_attribution.py": "8228bfcc354864d1191bca9e3efe5bb37ff5b9e672dc52062aaac6b0f7cefd88",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"axes\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_dates",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6154455410433002,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[dates]",
+      "log_sha256": "cf09ca113442bb6774d6b1b3a3f253542565e003bcbdd91995548e1e5f5112bb",
+      "source_sha256": {
+        "risk_attribution.py": "4a68466b62290198fafe5d5b334f5fc81546ebd928f98d11b5e287aeb4ab000e",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"dates\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_numeric",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6403419999987818,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[numeric]",
+      "log_sha256": "035c18d54446ffdf5c3d45b8f03090d7d6bf9f7b6966d6ff2914ac6e82e641fe",
+      "source_sha256": {
+        "risk_attribution.py": "a48ea7b7380f31d4c29df27626c5c95bc6fd890da033a7bd32b9f57d91af7d31",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"numeric\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_nonfinite",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.62734254199313,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[nonfinite]",
+      "log_sha256": "39d6571c0f97891711e622efd4f0041b4342f58aed5489ab339aef48e382a436",
+      "source_sha256": {
+        "risk_attribution.py": "995b036e6f076794832c82587e5f954c30994ae796e18a3a87566a125f448782",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"nonfinite\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_styles",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6264561250573024,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[styles]",
+      "log_sha256": "09548cabdc9873db3cb5e2de988f7cf22c34f132d69e5d4084299d1f37262001",
+      "source_sha256": {
+        "risk_attribution.py": "27428d29ebddb50f63458bd0df0493d1d0992dde30aadf62795f360cc45d7f14",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"styles\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_configuration",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6284508750541136,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[configuration]",
+      "log_sha256": "acffdf05fe5626f132d29f0aae892744485bcc21b987d7f666c8f51238e41ad4",
+      "source_sha256": {
+        "risk_attribution.py": "04aa0d3b816e0e779be029d7175dad23fd93fc9df52d027758b822e5d478db80",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"configuration\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_alignment",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6254658329999074,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[alignment]",
+      "log_sha256": "77048b2e4bbcc96dd5275546e31b94947e1f67b1769f5436dfc3047af8b4e88e",
+      "source_sha256": {
+        "risk_attribution.py": "f3de5ff295446b9a1b85c2e3a844f65f6b3a6d6ae00c7b0562526bd3ba1440f8",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"alignment\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_positive_inputs",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6230246250052005,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[positive_inputs]",
+      "log_sha256": "d906118e4bd05d486a159ce9122f0e7b3e165bf69269db22bc59f86a7a297961",
+      "source_sha256": {
+        "risk_attribution.py": "0b6e15bc8c662ebd1e507dc65cb9ccf2bde71db2ba4ad5f8ce8d186b32540d8c",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"positive_inputs\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_availability",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.7090430830139667,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[availability]",
+      "log_sha256": "b5f022ed0193f77c9906273c2ef46809e73abee624eed57734dd0beccf511c03",
+      "source_sha256": {
+        "risk_attribution.py": "4e3737d829168b84c367a3a2c2f90de5b5d04a3e2176698db1ab87e324467e4f",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"availability\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_exposure_unavailable",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.62773962499341,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[exposure_unavailable]",
+      "log_sha256": "f4184660a06124081858d9cb7855022f1960aca998065c82795ec2aa839429b9",
+      "source_sha256": {
+        "risk_attribution.py": "5b888566362d7543a97c4f999ee2ddd546cfaa2d5d537dca92c52a92f7ba3eea",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"exposure_unavailable\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_causality",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6216363330022432,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[causality]",
+      "log_sha256": "beced88edc51674fc055a12a188199dd5d32f9a137de9f734adf2e6e4b30b9ce",
+      "source_sha256": {
+        "risk_attribution.py": "118488abcd9c6cba6feaf82a8e59a066f2f81cc25689de8a932a2a494662bee5",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"causality\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_regression_weights",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6260446659871377,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[regression_weights]",
+      "log_sha256": "151172157dee52e50e1f0c3e5856560591ce66b22bef52cf178c5755b15e645f",
+      "source_sha256": {
+        "risk_attribution.py": "6dd7f86a3524ebfe85cec1ddf2345ce2af015a1f274a5877a8047846fd7d1bee",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"regression_weights\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_partial_missing",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6176728330319747,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[partial_missing]",
+      "log_sha256": "104708966603709e1eacbbbd9bf5124584ba5c8df4920868c08427a37d78ce0f",
+      "source_sha256": {
+        "risk_attribution.py": "1075883a991e188f9b7689fc88cc0b4370abf903dccc3cfa7af81055af156a49",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"partial_missing\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_costs",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6351566249504685,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[costs]",
+      "log_sha256": "be870f32fd369cc57b5089f8293dbaef88c00bcf328aa37efd8910b3e9435bce",
+      "source_sha256": {
+        "risk_attribution.py": "a9534a413ecbc6308fbb9da4c40c33196d4edef2ffb5c6121aa26e7b4c0d99d8",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"costs\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_return_identity",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6270802920334972,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[return_identity]",
+      "log_sha256": "26173be6e6313543de51286e28200acee96174f7ed16391193ee8d2957e3803a",
+      "source_sha256": {
+        "risk_attribution.py": "66d4c178cdd070c3534be875107f88396ec0f4cd2dbc65d8fbb405b81ebe7236",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"return_identity\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_risk_numerical",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.623797915992327,
+      "selected_tests": "tests/test_risk_attribution.py::test_public_guard_counterexamples[risk_numerical]",
+      "log_sha256": "735b78384bfe4584e661ca449f1fb4676e2e870c2825995d4eb1e1ea1def3ad0",
+      "source_sha256": {
+        "risk_attribution.py": "80fef252a8ba8c3ba506847fb30fb20738ee243f1eefb659c28861f15bf91208",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"risk_numerical\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_basis",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6201443750178441,
+      "selected_tests": "tests/test_risk_attribution.py::test_basis_guard",
+      "log_sha256": "e1d8106b6e9fa2c8f8db6a6414816844d19bd7d252303220eb82ee468e60a77f",
+      "source_sha256": {
+        "risk_attribution.py": "1ca350489962228b639f2196e967ff106b8a4e48fc2fab0221bd4cd7f7a586ed",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"basis\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_rank_deficient",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6250307080335915,
+      "selected_tests": "tests/test_risk_attribution.py::test_collinearity_refused[duplicate]",
+      "log_sha256": "5ab53e2a52e548af80a05b1ec74dc4d43c6ee8d6bb045c86976eeec55ff4c251",
+      "source_sha256": {
+        "risk_attribution.py": "c69ae97cb322456b7c8a414254b0b625a5e0f368e69683e41f46fa2e9f053cb1",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"rank_deficient\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_sample_size",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6230566250160336,
+      "selected_tests": "tests/test_risk_attribution.py::test_descriptor_missing_and_sparse_guards",
+      "log_sha256": "5c90a8863bcb6e0eae2d6a870633838440bfbdd4676e9bba055278d8fd612662",
+      "source_sha256": {
+        "risk_attribution.py": "a26330927db82ca162897d14f21f1847c8f88ec50dd939171830beb2718c8b22",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"sample_size\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_specific_variance",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6158145000226796,
+      "selected_tests": "tests/test_risk_attribution.py::test_invalid_covariance_refused[negative_specific]",
+      "log_sha256": "ecbf0a466080c296034185a0a491f34f65d8c95350e6f697eabec0ea1bea3cb2",
+      "source_sha256": {
+        "risk_attribution.py": "0f0a98b619b6b8263548e8f87039197e53d77ebfb3790138e11c7232c893e037",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"specific_variance\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_covariance_psd",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6134194170008413,
+      "selected_tests": "tests/test_risk_attribution.py::test_invalid_covariance_refused[indefinite]",
+      "log_sha256": "2bee4b4fa8300bcccb668431c92567864d38ff43d26cb5adf4e9ce8c8e14e035",
+      "source_sha256": {
+        "risk_attribution.py": "50c9440f63554e44715c8b4f75d85cc3b3656b14ad751cd75a207a17f06b0232",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"covariance_psd\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_covariance_symmetry",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6169458330259658,
+      "selected_tests": "tests/test_risk_attribution.py::test_invalid_covariance_refused[asymmetric]",
+      "log_sha256": "0bea31605be2df421a3d1526f11adb51278786c55f2103048af1ad74ebdef1f2",
+      "source_sha256": {
+        "risk_attribution.py": "1044b09a50121163d5aa8599e024317e14a0d41d71583ae368774b2aa6fd26bd",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"covariance_symmetry\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_integration_scope",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6301694170106202,
+      "selected_tests": "tests/test_risk_attribution.py::test_integration_scope_and_identity_guard",
+      "log_sha256": "ff8b6b5123e84ff517a5d657f3c1422ee50305ce9eb933bdaf28cba199a9ea13",
+      "source_sha256": {
+        "risk_attribution.py": "730d82fe0ac7cb4d0190a3ea35420b7d862a9e45c0062246a4b4802e72f162d6",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"integration_scope\":"
+        }
+      ]
+    },
+    {
+      "name": "guard_engine_identity",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6234532499802299,
+      "selected_tests": "tests/test_risk_attribution.py::test_integration_scope_and_identity_guard",
+      "log_sha256": "5934f2032f374ca46d1a5d6be121e27516a047c5a1dd3d0bd6a0d502307970c4",
+      "source_sha256": {
+        "risk_attribution.py": "f16b0da4fb54d1e67d3ea01c6330981faa2f00101210ab218fe62aa293fefe5b",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if not condition:",
+          "after": "if not condition and reason != \"engine_identity\":"
+        }
+      ]
+    },
+    {
+      "name": "winsorization",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6186191249871626,
+      "selected_tests": "tests/test_risk_attribution.py::test_standardization_winsorization_and_constant",
+      "log_sha256": "d4f88b10c059a35e7dcb495334b84c7955e6cfc9d48e9b1716cc3de624f0af0b",
+      "source_sha256": {
+        "risk_attribution.py": "b9d6d9f645120435b6e48b56c8fb1c1296992241f75a4be317d31dcc7fb9b492",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "clipped = raw.clip(lower=bounds.iloc[0], upper=bounds.iloc[1], axis=0)",
+          "after": "clipped = raw"
+        }
+      ]
+    },
+    {
+      "name": "demean",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6292884160066023,
+      "selected_tests": "tests/test_risk_attribution.py::test_standardization_winsorization_and_constant",
+      "log_sha256": "9837ae4f1972c35c435a037df48b9cccc5c084a1df9567bbd68c41c0e2ebf3b4",
+      "source_sha256": {
+        "risk_attribution.py": "57c38a7d9066f656fada13f0d019cb94a6cb4333519c1fdfda7779e174c70481",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "centered = clipped.sub(clipped.mean(axis=1), axis=0)",
+          "after": "centered = clipped"
+        }
+      ]
+    },
+    {
+      "name": "population_standardization",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6234253750299104,
+      "selected_tests": "tests/test_risk_attribution.py::test_standardization_winsorization_and_constant",
+      "log_sha256": "5cdcb6cc698157873cbebb9d3bd65bb681c6aa21be29b81b5bba79b3a0ac080d",
+      "source_sha256": {
+        "risk_attribution.py": "a4d152245d5413c72ddac51e2335f4f75c943bf066398234bae329a1733f14ec",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "scale = clipped.std(axis=1, ddof=0)",
+          "after": "scale = clipped.std(axis=1, ddof=1)"
+        }
+      ]
+    },
+    {
+      "name": "size_log",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6220222080009989,
+      "selected_tests": "tests/test_risk_attribution.py::test_market_descriptor_oracles_and_prefix",
+      "log_sha256": "9b4429910c58b7adb9ad469257a52ef1966ad6c7f3076ae8080003dbad71ac94",
+      "source_sha256": {
+        "risk_attribution.py": "5b98faac148b4bbf15a71c144c4d547941ffbc3f0a65dc05c4ee907f1a09133a",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "\"Size\": np.log(market_caps)",
+          "after": "\"Size\": market_caps"
+        }
+      ]
+    },
+    {
+      "name": "value_descriptor",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6174250839976594,
+      "selected_tests": "tests/test_risk_attribution.py::test_market_descriptor_oracles_and_prefix",
+      "log_sha256": "2d65d37b2b648424affcf161404fc36eeaff635e7a162205d00e4aaa165fa69f",
+      "source_sha256": {
+        "risk_attribution.py": "c5b5271b79df77ea0b7c0edb5bde0ae4dfcfd24334321d22ae83c2ea5ef48564",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "\"Value\": book_to_price",
+          "after": "\"Value\": book_to_price * 0"
+        }
+      ]
+    },
+    {
+      "name": "momentum_skip",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6227839170023799,
+      "selected_tests": "tests/test_risk_attribution.py::test_market_descriptor_oracles_and_prefix",
+      "log_sha256": "803278928e0cdc3ad650141d6244ac0199c9ec82e02c94efa8e3e6eb416bf99f",
+      "source_sha256": {
+        "risk_attribution.py": "142ec0ba333224c715e2cdc266d2a36c282ef9a5433a0eb48cacb9d2f9017bf9",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "prices.shift(momentum_skip)",
+          "after": "prices.shift(0)"
+        }
+      ]
+    },
+    {
+      "name": "volatility_sample",
+      "expected_exit": 1,
+      "observed_exit": 0,
+      "seconds": 0.5960089169675484,
+      "selected_tests": "tests/test_risk_attribution.py::test_market_descriptor_oracles_and_prefix",
+      "log_sha256": "71cecd4a03d26fc192e472bf26020cdc2172e564ac64a719b16960d8dffd73a1",
+      "source_sha256": {
+        "risk_attribution.py": "82f073f70253b1313b55b94dfde0cce363a90236dbe6024d42ca1e334d7a1cce",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": ".std(ddof=1)",
+          "after": ".std(ddof=0)"
+        }
+      ]
+    },
+    {
+      "name": "liquidity_dollar_basis",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6273091670009308,
+      "selected_tests": "tests/test_risk_attribution.py::test_market_descriptor_oracles_and_prefix",
+      "log_sha256": "49243b802e9f150277839f1c3f654b280977d1426c49c2fab4cf83feb7906f54",
+      "source_sha256": {
+        "risk_attribution.py": "f5ab99e9e588c413c8e80a5bf876c42ba96f50776b4a1e9d4e74232043cbc730",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "(prices * volumes).rolling",
+          "after": "volumes.rolling"
+        }
+      ]
+    },
+    {
+      "name": "prior_exposure_lag",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6372727919952013,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "57c0fd1c8084b7fb4b93116771e3bfedde6198e89b1246b6fbe5c3465c52e870",
+      "source_sha256": {
+        "risk_attribution.py": "269ad1bc447884c54bc9041188467faa224a484c86b93213076522138ce003c7",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "self.exposures.at(start)",
+          "after": "self.exposures.at(asset_returns.index[i])"
+        }
+      ]
+    },
+    {
+      "name": "wls_weighting",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6312632079934701,
+      "selected_tests": "tests/test_risk_attribution.py::test_wls_normal_equations_and_prior_weights",
+      "log_sha256": "c9a876f845265a6dbdd70a407bbeb585b523a63a94b49a99d938377eb29a9f02",
+      "source_sha256": {
+        "risk_attribution.py": "4d997e1eab501284cdb4acb678944cfe581f7e20b0c68a95be29596bedc7cd2c",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "np.sqrt(weights.iloc[i].to_numpy(dtype=float))",
+          "after": "np.ones(len(y))"
+        }
+      ]
+    },
+    {
+      "name": "residual_subtraction",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6229244999703951,
+      "selected_tests": "tests/test_risk_attribution.py::test_orthogonal_ols_golden",
+      "log_sha256": "9ddf7b38d26fb8ddc557ea1ac2fdb9b1537ad880d1dcdbbe6d0f366380dae708",
+      "source_sha256": {
+        "risk_attribution.py": "27222ecfb654f65e80207146be9825140d55b30c2ae4100c577a9d82e7ce3c54",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "residual = y - x @ coefficients",
+          "after": "residual = y"
+        }
+      ]
+    },
+    {
+      "name": "signed_portfolio_exposure",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6224289590027183,
+      "selected_tests": "tests/test_risk_attribution.py::test_exact_return_decomposition[1.0]",
+      "log_sha256": "078c0d6c330c6d3a7e26cf83222d587a9c622059eddb68d60d9ea1fd7efd6826",
+      "source_sha256": {
+        "risk_attribution.py": "6ccaedf28cb2997ac84417c03ae782f414da336ad5182a3ea29c228549f2d9f0",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "beta = p.iloc[i].to_numpy() @ x.to_numpy()",
+          "after": "beta = np.abs(p.iloc[i].to_numpy()) @ x.to_numpy()"
+        }
+      ]
+    },
+    {
+      "name": "signed_specific_return",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6408373750164174,
+      "selected_tests": "tests/test_risk_attribution.py::test_exact_return_decomposition[1.0]",
+      "log_sha256": "6e816738f00c40651e9bb70c444777af402f9cf44c7d33a615ce244421adf409",
+      "source_sha256": {
+        "risk_attribution.py": "f85aa2c07c0e5b203a096fe8a940766d07d6a2a134be240da4fad1bf6e570710",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "p.iloc[i].to_numpy() @ fit.residual_returns.iloc[i].to_numpy()",
+          "after": "np.abs(p.iloc[i].to_numpy()) @ fit.residual_returns.iloc[i].to_numpy()"
+        }
+      ]
+    },
+    {
+      "name": "current_return_in_risk",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6489954169956036,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "fb132b76a46c53f108797e1a06d52495cf4c5b22664ff0b02a0a498796e8cdf7",
+      "source_sha256": {
+        "risk_attribution.py": "5ad02ddacfc504e48b297f8738b6ab0abd3eb464e40c7b1f38e5dc4f8f614101",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": ".iloc[history_start:i]",
+          "after": ".iloc[history_start:i + 1]"
+        }
+      ]
+    },
+    {
+      "name": "bounded_risk_window",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6476247909595259,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "ce95987f8f41986792384e857c73e1f7cd32456ffc1b070c48bd8985c425eb92",
+      "source_sha256": {
+        "risk_attribution.py": "60f8524701db71e045708ac8f13de8b3f7d17b092577541a7d310ccdf02b9ea2",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "history_start = max(0, i - self.covariance_window)",
+          "after": "history_start = 0"
+        }
+      ]
+    },
+    {
+      "name": "risk_warmup",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.632025667000562,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "f92a6ed84dd2917ae54e34f1b78d8801357078f6397f1951b33bae02523fbaec",
+      "source_sha256": {
+        "risk_attribution.py": "434e5b9d71acd9a48932fc48c9b8f7e70b386496151f27a4c5933b97d82b1664",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "if len(factor_history) >= self.min_covariance_observations:",
+          "after": "if len(factor_history) >= 1:"
+        }
+      ]
+    },
+    {
+      "name": "factor_covariance_sample",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6364217919763178,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "8039c8119bf6257ed1037184c7f47def0adb72b25b6fbf3b901616ff75155bf8",
+      "source_sha256": {
+        "risk_attribution.py": "232b175fa864b55771493f806d1e96532c88d45f4a34e5f2266bef71cbc708e8",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "factor_history.cov(ddof=1)",
+          "after": "factor_history.cov(ddof=0)"
+        }
+      ]
+    },
+    {
+      "name": "specific_variance_sample",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6487005830276757,
+      "selected_tests": "tests/test_risk_attribution.py::test_prior_exposures_and_risk_causality",
+      "log_sha256": "721d398d4bd63ee2ec9a0935438d7d9cc6b1dd275b586403770e9614371af1b6",
+      "source_sha256": {
+        "risk_attribution.py": "ec7ad4f76f05aad1590b67a93a514166a595f314e63515af9645b527296f4404",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "residual_history.var(ddof=1)",
+          "after": "residual_history.var(ddof=0)"
+        }
+      ]
+    },
+    {
+      "name": "factor_cross_covariance",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6152612500009127,
+      "selected_tests": "tests/test_risk_attribution.py::test_risk_covariance_golden_and_signed_euler",
+      "log_sha256": "3e87f99682b0954e5b20cf9c2062ed3981a924441ad255dbc8640e4bab9efaef",
+      "source_sha256": {
+        "risk_attribution.py": "d730f4f16aef6d3dd56f19fd25aa7f7e52fb724fcebd008b52e4184599cc0079",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "beta * (covariance @ beta)",
+          "after": "beta**2 * np.diag(covariance)"
+        }
+      ]
+    },
+    {
+      "name": "squared_active_weights",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.616379082959611,
+      "selected_tests": "tests/test_risk_attribution.py::test_risk_covariance_golden_and_signed_euler",
+      "log_sha256": "2e10daa6f4aed4e2aa77d17b2fedbc2da580680531983c332c85b50dc1f9dd8c",
+      "source_sha256": {
+        "risk_attribution.py": "d7956316424c8f3f59a4b0b9164ce91033dee4166355283eb6870817cd0f7d34",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "active_weights**2 * specific",
+          "after": "np.abs(active_weights) * specific"
+        }
+      ]
+    },
+    {
+      "name": "benchmark_subtraction",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6278532089781947,
+      "selected_tests": "tests/test_risk_attribution.py::test_benchmark_weights_and_future_benchmark",
+      "log_sha256": "0201fd346f7afe29fc26feb9da1f7540328df0ed86ee94384de7e317ead3cd9d",
+      "source_sha256": {
+        "risk_attribution.py": "b17810d52319669f16e11bc1a225b5d446a864e35aabe71e1ff5045dd3b812a4",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "active_weights = p - b",
+          "after": "active_weights = p"
+        }
+      ]
+    },
+    {
+      "name": "total_active_variance",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6126134999794886,
+      "selected_tests": "tests/test_risk_attribution.py::test_risk_covariance_golden_and_signed_euler",
+      "log_sha256": "ccaac65737468ba001ed40c660d63b5182f778f2a33a08c91be752f43e2b6bec",
+      "source_sha256": {
+        "risk_attribution.py": "69977bbfbbdcafbb29f09851daca7e05335a53b00b7eaa91baee19b914420b5c",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "variance = factor_variance + specific_variance",
+          "after": "variance = factor_variance"
+        }
+      ]
+    },
+    {
+      "name": "tracking_error_root",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6098739170120098,
+      "selected_tests": "tests/test_risk_attribution.py::test_risk_covariance_golden_and_signed_euler",
+      "log_sha256": "963d14edad4e15ad9ded1acf74459e87584b417b53c075e19bee46905f8f530c",
+      "source_sha256": {
+        "risk_attribution.py": "597d693c4a09f0a3407d5e087cafc67c440d4b2d3a7899a775c5638fce923e95",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "tracking_error = float(np.sqrt(variance))",
+          "after": "tracking_error = float(variance)"
+        }
+      ]
+    },
+    {
+      "name": "annualization",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6153250419883989,
+      "selected_tests": "tests/test_risk_attribution.py::test_risk_covariance_golden_and_signed_euler",
+      "log_sha256": "22601680a8dd9fb4971947bb3ac315211e84a20b6ab9802c256150d88bbf6c65",
+      "source_sha256": {
+        "risk_attribution.py": "c3943f84ca7e6ea2e998e5c7e0c77e32b01256750dc879a42e18a923e2daac64",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "tracking_error * float(np.sqrt(periods_per_year))",
+          "after": "tracking_error"
+        }
+      ]
+    },
+    {
+      "name": "net_costs",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 0.6263170000165701,
+      "selected_tests": "tests/test_risk_attribution.py::test_exact_return_decomposition[1.0]",
+      "log_sha256": "b1fc2b8cff2fb0ad9054074d114ff699dea3ad501b7884812927f5c85c4772f1",
+      "source_sha256": {
+        "risk_attribution.py": "d6f5608c28f896b2d63dd63b5a1e1ea07cf75f19aabd8fadbaf8f50b0bcebb0a",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "(gross_series - costs).rename",
+          "after": "gross_series.rename"
+        }
+      ]
+    },
+    {
+      "name": "actual_prior_holdings",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 1.0885037920088507,
+      "selected_tests": "tests/test_risk_attribution.py::test_engine_integration_and_baseline",
+      "log_sha256": "291320362eb65dc0fcfd189fbb3c08081a621d094b5d7750f7c3f3f936141f06",
+      "source_sha256": {
+        "risk_attribution.py": "5eb26be82e7f1896c51fd24006ccfcf6f0a471a1e06654699626b453b29dfc2b",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "model.attribute(asset_returns, holdings.iloc[:-1]",
+          "after": "model.attribute(asset_returns, holdings.iloc[1:]"
+        }
+      ]
+    },
+    {
+      "name": "full_cross_section_returns",
+      "expected_exit": 1,
+      "observed_exit": 1,
+      "seconds": 1.1424177500302903,
+      "selected_tests": "tests/test_risk_attribution.py::test_engine_integration_and_baseline",
+      "log_sha256": "1075ef483d9b1feb0968fd145f25d58cb0c78ae6350088bc46ee7c60999f8caf",
+      "source_sha256": {
+        "risk_attribution.py": "a0027e7f059aafb9bcac40d03fd67189ceb8ef7a6fe2c9bfed392dfaf8ad9485",
+        "portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+        "long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4"
+      },
+      "edits": [
+        {
+          "file": "risk_attribution.py",
+          "before": "prices.pct_change(fill_method=None).iloc[1:]",
+          "after": "prices.pct_change(fill_method=None).iloc[1:] * 0"
+        }
+      ]
+    }
+  ]
+}

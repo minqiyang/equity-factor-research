@@ -10271,3 +10271,38 @@ This ablation round completes the implementation and machine verification of sev
   `/private/tmp/efr-m4-5-remediation-evidence`. The implementation report identifies
   the remediation SHA and the changed numerical boundary. Independent closure
   of M45-R1 and hosted CI remain pending at producer handoff.
+
+## 2026-09-22 — M4.6 causal multi-factor risk attribution candidate
+
+- Binding card `738caf5` precedes runtime changes from merged base `b60e109`.
+  The producer implements one risk module, optional sidecars in both engines,
+  a synthetic all-attempt demo, 70 deterministic tests, and isolated ablation.
+- Five winsorized standardized styles plus Market use immediately prior observed
+  exposures and actual holdings. OLS/WLS fits require full rank. Gross return
+  equals factor plus specific contributions; engine costs reconcile net return.
+  Active-risk covariance and residual variance use strictly earlier fits.
+- The 62-factor/124-book baseline preserves exact bytes for both the historic
+  comparison schema and every M4.5 result field. The latter includes 3,038
+  existing fields, raw buffer hashes, ordered axes and dtypes. The historic
+  fingerprint remains `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+- The synthetic demo retains eight successful negative-net-return books and two
+  expected refusals. Maximum one-period reconstruction error is
+  `3.469446951953614e-18`. The appended attempt log retains both generated runs.
+  All inputs and availability assertions are synthetic.
+- Final core QA passes 4,206 tests with two inherited platform precision skips;
+  diagnostics passes 125. Their verified disjoint union has 4,331 passes and two
+  skips. Ruff, compileall, baseline replay, repo-map checks, and diff checks pass.
+  Initial fixture errors and the initial 4,205-pass core run remain in evidence.
+- The initial ablation exposes an exact mathematical equivalence: changing
+  equal-window historical volatility ddof cancels during cross-sectional
+  standardization. The final run records that equivalent result, 52 expected
+  negative removals, and a passing intact baseline. Every production source hash
+  stays unchanged. The sample-volatility definition remains the declared
+  convention; removal of the volatility calculation fails its independent oracle.
+- Typed refusals cover enabled terminal-event attribution, missing cross-section
+  coverage, rank deficiency, and invalid covariance. Empirical calibration,
+  residual correlations, changing regression universes, industry factors and
+  geometric linking remain in the roadmap backlog. The implementation report
+  and `coord/reports/m4_6_evidence/validation.json` contain producer evidence.
+  The frozen candidate transfers write responsibility to the coordinator for
+  independent single-seat GPT-6 Astra High Fast review and hosted CI.
