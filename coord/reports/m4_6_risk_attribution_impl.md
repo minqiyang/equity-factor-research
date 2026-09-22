@@ -1,5 +1,12 @@
 # M4.6 Multi-Factor Risk Attribution Implementation
 
+Current remediation code candidate: `cfec56d016be17937a2496280e2a53d6722a0c0e`.
+M46-R1 has an implemented fix and completed local revalidation. Independent
+closure remains pending on the delivered evidence commit, whose parent is this
+code candidate and whose runtime/test bytes have the same validated hashes.
+The following original implementation evidence remains preserved; the M46-R1
+section records the new code candidate and current verification.
+
 The candidate adds optional five-style return attribution and causal active-risk
 forecasts to both portfolio engines. The binding card is commit `738caf5`; runtime
 work starts from `b60e109c6959e059dea6c19c3573dd5e861a2ac2`. Producer write
@@ -189,3 +196,70 @@ Observed-close labels carry the caller's frequency; periods-per-year is explicit
 Independent single-seat GPT-6 Astra High Fast review from a clean exact-head root
 and hosted CI belong to the coordinator's next gate. This report records producer
 implementation and local evidence; independent review remains pending.
+
+
+## M46-R1 remediation — singular covariance cancellation
+
+Independent review of `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` identified one
+P2 material finding: the PSD guard accepted eigenvalues down to -1e-14 while
+the downstream aggregate-variance guard required exact nonnegativity. The
+reviewer's full-rank, eight-asset regression fixture has singular factor
+covariance and a hedged exposure. Its signed Euler sum is
+`-1.6940658945085947e-22`, with positive specific variance near `6.25e-7`.
+The earlier candidate refused this valid numerical boundary.
+
+Remediation code commit `cfec56d016be17937a2496280e2a53d6722a0c0e` changes
+`decompose_active_risk` to accept factor and total variance down to -1e-14,
+then apply `max(value, 0.0)` to each aggregate scalar. Finite-value checks,
+material-negative refusal, and the existing covariance PSD test remain active.
+Signed Euler factor terms retain their exact computed values. The explicit
+aggregate roundoff correction is bounded by 1e-14; scalar-sum reconciliation
+includes the final floating-point addition rounding. Ordinary positive-variance
+calculations retain their arithmetic. Portfolio return reconciliation retains
+its 1e-12 tolerance. The policy uses the directive's fixed absolute tolerance.
+
+The reviewer's exact test fixture is retained in `tests/test_risk_attribution.py`
+with added checks for finite tracking error, zero clamped factor variance,
+positive active variance, and preserved signed Euler contributions. Eight
+additional parameterized cases cover negative boundary/near-zero/zero values,
+zero and positive specific risk, and materially negative levered factor variance
+with both zero and positive specific variance. Five new cases fail on the old
+runtime; all nine pass after the repair. The complete risk suite passes 79 tests.
+
+The first post-fix test run retained two new-oracle failures: bitwise comparison
+of exposure products with different array layouts, and a scalar-sum check that
+omitted one addition-rounding ULP at the tolerance boundary. The final tests use
+the actual fitted exposure vector for exact Euler preservation and explicitly
+bound the extra addition rounding. The reviewer's original fixture and expected
+active-variance assertion remain unchanged.
+
+| Revalidation gate | Result |
+| --- | --- |
+| Risk-attribution suite | 79 passed |
+| Core lane | 4,215 passed; 2 inherited precision skips; 32.23 seconds |
+| Diagnostics lane | 125 passed; 96.73 seconds |
+| Verified disjoint union | 4,340 passed; 2 skipped; 4,342 unique cases; zero overlap |
+| Original negative ablations | all 52 retain their expected failures |
+| Remediation negative ablations | tolerance removal and each scalar-clamp removal fail independently |
+| Intact ablation and volatility-ddof equivalence | both pass; 57 total isolated cases |
+| Production sources and archived logs | source preservation and log SHA-256 verified |
+| 124-book baseline, both schemas | exact decompressed bytes match preserved baselines |
+| Repository Ruff and compileall | PASS |
+
+The original 52 variants retain their edits and targeted counterexamples. Three
+additional isolated variants remove the repaired tolerance, factor clamp, and
+active-variance clamp independently. Every removal exposes its targeted failure;
+the retained implementation uses two scalar clamps and the aligned guard.
+The supported outcome preserves these necessary numerical controls.
+
+Reproduction commands and the baseline capture script remain those recorded
+above. Current QA artifacts, before/after failures, ablation manifest and archived
+logs, replay snapshots, and source hashes live in
+`coord/reports/m4_6_evidence/remediation_r1/`. Its `validation.json` identifies the
+reviewed candidate and remediation code commit. Original candidate evidence and
+historical demo attempts remain preserved. The roadmap scope and documented
+empirical limitations retain their existing status.
+
+Producer write responsibility transfers with the frozen evidence commit for
+independent single-seat GPT-6 Astra High Fast re-review. M46-R1 independent
+closure and hosted CI remain coordinator-owned gates.

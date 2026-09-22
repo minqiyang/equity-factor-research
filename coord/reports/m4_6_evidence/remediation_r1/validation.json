@@ -1,0 +1,68 @@
+{
+  "finding": "M46-R1",
+  "reviewed_candidate": "a79d4bd69ff82c354fc5f993bf8758ab6e826c83",
+  "remediation_code_commit": "cfec56d016be17937a2496280e2a53d6722a0c0e",
+  "environment": {
+    "python": "3.12.13",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scipy": "1.18.1"
+  },
+  "lanes": {
+    "core": {
+      "collected": 4217,
+      "passed": 4215,
+      "skipped": 2,
+      "failed": 0
+    },
+    "diagnostics": {
+      "collected": 125,
+      "passed": 125,
+      "skipped": 0,
+      "failed": 0
+    }
+  },
+  "disjoint": true,
+  "total_passed": 4340,
+  "total_skipped": 2,
+  "baselines": {
+    "legacy": {
+      "books": 124,
+      "byte_equal": true,
+      "uncompressed_sha256": "5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4"
+    },
+    "all_fields": {
+      "books": 124,
+      "byte_equal": true,
+      "uncompressed_sha256": "878cfc0315ac0fa64ed120205f1c73eb1572c71822c1ea8111c229ab4e17c7d1"
+    }
+  },
+  "ablation": {
+    "original_negative_removals_detected": 52,
+    "additional_negative_removals_detected": 3,
+    "total_cases": 57,
+    "all_expected_outcomes": true,
+    "production_sources_preserved": true,
+    "archived_log_hashes_verified": true
+  },
+  "checks": {
+    "ruff": "PASS",
+    "compileall": "PASS"
+  },
+  "regression_before": {
+    "failed": 5,
+    "passed": 4
+  },
+  "unit_after": {
+    "passed": 79
+  },
+  "re_review": "pending_coordinator",
+  "source_sha256": {
+    "src/backtest/risk_attribution.py": "a80b19c13e2e603206f346143ac1afd7285ff64838c5210a88cf18a3334ef276",
+    "tests/test_risk_attribution.py": "87ebe7eb2d8fc2b552f73207e0e2017bf839a2c2024957787a770d2ad750ef12",
+    "coord/reports/m4_6_evidence/ablate.py": "47a9329a5fc26065ec81edc948b17cbb98d23da8a579550ffa6beb28f4ae7a35",
+    "src/backtest/portfolio.py": "f1fe4dc943b54c71926c4fd4c64ccd8bc024466c23ab36502ff938c3d68e5d16",
+    "src/backtest/long_short.py": "0c357c1c43f92af279c04b15d0feea8c85a3a2468e7f268745bf320b2c8b45c4",
+    "coord/reports/m4_6_evidence/capture_baseline.py": "d1484713d9c6c65f7331476cfcb2373e08abce8b413aa8e85f65a8af58a8fbe2"
+  }
+}

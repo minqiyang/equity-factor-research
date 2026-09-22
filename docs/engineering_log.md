@@ -10306,3 +10306,30 @@ This ablation round completes the implementation and machine verification of sev
   and `coord/reports/m4_6_evidence/validation.json` contain producer evidence.
   The frozen candidate transfers write responsibility to the coordinator for
   independent single-seat GPT-6 Astra High Fast review and hosted CI.
+
+## 2026-09-22 — M46-R1 singular covariance remediation
+
+- Review of `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` identified a P2 material
+  numerical mismatch: PSD tolerance accepted tiny negative covariance roundoff,
+  while a zero-tolerance quadratic-form check refused a valid hedged portfolio.
+- Code candidate `cfec56d016be17937a2496280e2a53d6722a0c0e` aligns aggregate
+  factor/active variance acceptance to -1e-14, then clamps each aggregate to zero.
+  Signed Euler contributions remain unchanged; the bounded aggregate correction
+  and final addition rounding are explicit in the function contract and tests.
+- Numerical boundary verification pairs every tolerated PSD boundary with a
+  downstream quadratic-form counterexample, including null-space exposure,
+  zero total risk, positive specific risk, and material levered negativity.
+  The exact reviewer fixture is retained. Five new counterexamples fail before
+  repair; the complete final risk suite passes 79 tests. Two initial oracle
+  precision errors and their corrected checks remain visible in the evidence.
+- Final core lane: 4,215 passed and two inherited precision skips. Diagnostics:
+  125 passed. Parsed JUnit IDs establish a disjoint total of 4,340 passes and two
+  skips. Ruff, compileall, and both exact 124-book baseline comparisons pass.
+- All original 52 negative ablations still fail as expected. Three independent
+  removals prove the necessity of the aligned tolerance and the two scalar
+  clamps. The intact package and existing volatility-ddof equivalence pass;
+  every original production source and archived log hash is verified.
+- `coord/reports/m4_6_evidence/remediation_r1/validation.json` records code hashes,
+  baseline fingerprints and new QA; the implementation report records the code
+  commit and preserved evidence. Independent M46-R1 closure remains pending
+  coordinator re-review of the frozen evidence commit.
