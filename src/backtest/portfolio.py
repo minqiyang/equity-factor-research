@@ -967,6 +967,13 @@ def _calculate_bounded_portfolio_path(
     terminal_events = terminal_events or {}
     terminal_cashflows = np.zeros(prices.shape, dtype=float)
     terminal_event_log: list[dict[str, Any]] = []
+    anchor_events = terminal_events.get(index[0], ())
+    if anchor_events:
+        _, anchor_log = _terminal_settlement(
+            records=anchor_events, previous_holdings=post_trade_weights,
+            previous_equity=float(initial_capital),
+        )
+        terminal_event_log.extend(anchor_log)
     settled = {record["permanent_id"] for event_date, records in terminal_events.items()
                if event_date <= index[0] for record in records}
 

@@ -594,13 +594,157 @@ def test_pit_csv_effective_dates_preserve_precision_boundary(tmp_path, column, k
     table = intervals(dates)
     stamp = dates[0] if column == "start_date" else dates[5]
     table[column] = (
-        stamp + pd.Timedelta(hours=16) if kind == "intraday" else stamp.tz_localize("UTC")
+        stamp + pd.Timedelta(hours=16)
+        if kind == "intraday"
+        else stamp.tz_localize("UTC")
     )
     path = tmp_path / "pit_effective_dates.csv"
     table.to_csv(path, index=False)
     reason = "source-close labels" if kind == "intraday" else "timezone-naive"
     with pytest.raises(ValueError, match=reason):
         load_constituent_intervals_csv(path)
+
+
+@pytest.mark.parametrize("custom_columns", [False, True])
+@pytest.mark.parametrize("column", ["symbol", "permanent_id"])
+@pytest.mark.parametrize("value", [" ID_A", "ID_A ", "", " \t"])
+def test_pit_csv_raw_identity_refusal_matches_direct_frame(
+    tmp_path, custom_columns, column, value
+):
+    dates, _, _ = panels()
+    table = intervals(dates)
+    table.loc[0, column] = value
+    with pytest.raises(ValueError, match=f"PIT-005: {column}.*exact string IDs"):
+        build_pit_membership_mask(table, dates, ["SEC_A", "SEC_B"])
+    names = (
+        {
+            "symbol": "ticker",
+            "permanent_id": "security_key",
+            "start_date": "entry",
+            "end_date": "exit",
+        }
+        if custom_columns
+        else {}
+    )
+    path = tmp_path / "raw_identity.csv"
+    table.rename(columns=names).to_csv(path, index=False)
+    source_column = names.get(column, column)
+    kwargs = {f"{canonical}_column": source for canonical, source in names.items()}
+    with pytest.raises(ValueError, match=f"PIT-005: {source_column}.*exact string IDs"):
+        load_constituent_intervals_csv(path, **kwargs)
+
+
+@pytest.mark.parametrize("custom_columns", [False, True])
+def test_pit_csv_preserves_leading_zero_string_identities(tmp_path, custom_columns):
+    dates, _, _ = panels()
+    table = intervals(dates)
+    table["symbol"] = ["00011", "00012"]
+    table["permanent_id"] = ["00001", "00002"]
+    names = (
+        {
+            "symbol": "ticker",
+            "permanent_id": "security_key",
+            "start_date": "entry",
+            "end_date": "exit",
+        }
+        if custom_columns
+        else {}
+    )
+    path = tmp_path / "leading_zero_ids.csv"
+    table.rename(columns=names).to_csv(path, index=False)
+    loaded = load_constituent_intervals_csv(
+        path, **{f"{canonical}_column": source for canonical, source in names.items()}
+    )
+    assert loaded.data["symbol"].tolist() == ["00011", "00012"]
+    assert loaded.data["permanent_id"].tolist() == ["00001", "00002"]
+    pd.testing.assert_frame_equal(
+        build_pit_membership_mask(loaded, dates, ["00001", "00002"]),
+        build_pit_membership_mask(table, dates, ["00001", "00002"]),
+    )
+
+
+def test_legacy_csv_retains_identity_trimming(tmp_path):
+    dates, _, _ = panels()
+    table = intervals(dates).drop(columns=["start_known_at", "end_known_at"])
+    table.loc[0, ["symbol", "permanent_id"]] = [" AAA ", " SEC_A "]
+    path = tmp_path / "legacy.csv"
+    table.to_csv(path, index=False)
+    loaded = load_constituent_intervals_csv(path)
+    assert loaded.data.loc[0, "symbol"] == "AAA"
+    assert loaded.data.loc[0, "permanent_id"] == "SEC_A"
+
+
+@pytest.mark.parametrize("kind", ["lo", "ls"])
+@pytest.mark.parametrize("event_position", [4, 5, 6])
+def test_unheld_terminal_evidence_at_prior_anchor_and_later_rows(kind, event_position):
+    dates, prices, signals = panels()
+    signals.loc[:, :] = np.nan
+    events = event(dates, position=event_position, known_position=event_position - 1)
+    prices.loc[dates[event_position] :, "SEC_A"] = np.nan
+    book = run(
+        kind,
+        prices,
+        signals,
+        terminal_events=events,
+        evaluation_start=dates[5],
+        evaluation_end=dates[6],
+        transaction_cost_bps=10,
+        slippage_bps=20,
+    )
+    expected_log_count = int(event_position >= 5)
+    assert len(book.terminal_event_log) == expected_log_count
+    if expected_log_count:
+        record = book.terminal_event_log[0]
+        assert record["event_id"] == events.loc[0, "event_id"]
+        assert record["effective_date"] == dates[event_position].isoformat()
+        assert record["reference_date"] == dates[event_position - 1].isoformat()
+        assert record["incoming_weight"] == record["cashflow"] == 0.0
+    assert book.equity_curve.eq(100).all()
+    assert book.cash_balance.eq(100).all()
+    assert holdings(kind, book).eq(0).all().all()
+    assert book.terminal_cashflows.eq(0).all().all()
+    assert book.turnover.eq(0).all()
+    assert book.total_trading_costs.eq(0).all()
+
+
+@pytest.mark.parametrize("kind", ["lo", "ls"])
+def test_anchor_terminal_event_stays_closed_after_initialization(kind):
+    dates, prices, signals = panels()
+    prices.loc[dates[5] :, "SEC_A"] = np.nan
+    book = run(
+        kind,
+        prices,
+        signals,
+        terminal_events=event(dates),
+        evaluation_start=dates[5],
+        rebalance_frequency="D",
+        transaction_cost_bps=10,
+        slippage_bps=20,
+    )
+    assert len(book.terminal_event_log) == 1
+    assert book.terminal_event_log[0]["incoming_weight"] == 0
+    assert book.terminal_event_log[0]["cashflow"] == 0
+    assert book.equity_curve.iloc[0] == book.cash_balance.iloc[0] == 100
+    assert book.turnover.iloc[0] == book.total_trading_costs.iloc[0] == 0
+    assert holdings(kind, book)["SEC_A"].eq(0).all()
+    assert book.terminal_cashflows.eq(0).all().all()
+
+
+@pytest.mark.parametrize("kind", ["lo", "ls"])
+def test_single_row_bounded_terminal_window_retains_existing_refusal(kind):
+    dates, prices, signals = panels()
+    reason = (
+        "evaluation_bounds_invalid" if kind == "lo" else "evaluation_window_invalid"
+    )
+    with pytest.raises(BacktestValidationError, match=reason):
+        run(
+            kind,
+            prices,
+            signals,
+            terminal_events=event(dates),
+            evaluation_start=dates[5],
+            evaluation_end=dates[5],
+        )
 
 
 def test_same_security_reentry_and_gapped_observed_calendar():

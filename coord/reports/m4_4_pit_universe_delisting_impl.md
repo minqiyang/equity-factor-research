@@ -6,7 +6,78 @@ Branch: `feat/m4-4-pit-universe-delisting`.
 Producer worktree: `/private/tmp/efr-m4-4-pit-universe-delisting`.
 Plan commit: `4932ce815041954f267f42370fdfd186c2f674cd`.
 The containing implementation commit identifies this report's candidate.
-Status: implementation and local QA complete; independent review and hosted CI pending.
+Original candidate: `a2d6f3fe97be945a90e2c67f1bd67ab9dc16a38d`.
+Status: M44-R1 and M44-R2 remediated; local revalidation is recorded below.
+Independent re-review and hosted CI remain pending.
+
+## Review remediation
+
+The independent review of `a2d6f3f` returned CHANGES REQUIRED with two P2
+MATERIAL findings. This revision addresses both findings in their existing
+modules. Formal finding closure belongs to the independent re-review of the
+new commit.
+
+| Finding | Implemented correction | Regression evidence |
+| --- | --- | --- |
+| M44-R1 | PIT CSV input validates original symbol and permanent-ID strings before normalization. The guard uses the caller's column names and raises the intended `PIT-005` exact-string error for padded, blank, or missing identities. Legacy CSVs retain their existing trimming behavior. | Sixteen CSV/direct-frame refusal cases cover two identity fields, leading/trailing whitespace and blank strings, and standard/custom headers. Two valid leading-zero round trips preserve identities and mask equality; one legacy control preserves trimming. |
+| M44-R2 | Both engines pass events effective exactly at the initialization anchor through the existing settlement-log helper with their initialized zero holdings. Cash and accounting arrays retain their zero initialization. Strictly prior events remain settled outside the bounded log. | Six both-engine cases cover strictly prior, anchor, and later unheld events; two longer-window cases prove one anchor record and continued exclusion; two single-row cases preserve the existing window refusal. |
+
+The 29 new regression cases produced 20 failures and 9 passing controls against
+the reviewed implementation. The complete targeted run now passes 139 tests:
+the PIT implementation/demo tests plus the existing constituent-table tests.
+The independent reviewer's unmodified probe file also passes all 25 cases,
+including its four original failing reproductions. This probe replay was run
+by the producer and supplies remediation evidence.
+
+| Remediation validation | Result |
+| --- | --- |
+| Targeted PIT/demo/constituent suite | 139 passed, 1.75 seconds |
+| Full core CI lane | 4,003 passed, 2 platform skips, 26.63 seconds |
+| Full diagnostics CI lane | 125 passed, 90.85 seconds |
+| Combined full-suite count | 4,128 passed, 2 skipped; targeted tests are included in core |
+| Independent review probe replay | 25 passed, 0.94 seconds |
+| Ruff, compileall for source/tests/research/LEAN, distribution build, map freshness, whitespace | Passed |
+
+The environment and two-worker thread caps match the original producer setup
+recorded below. The skips retain the platform `longdouble` precision condition.
+Constant-input warnings remain confined to constant correlation fixtures.
+
+Single-row bounded evaluation retains the established public contract. The
+long-only engine raises `evaluation_bounds_invalid`; the long-short engine
+raises `evaluation_window_invalid`. Both tests provide a full source panel and
+a valid terminal reference, isolating the minimum-window refusal. Accepted
+multi-row windows retain anchor evidence without changing initial capital,
+holdings, ordinary turnover, or costs.
+
+Three isolated removal experiments preserved the corrected source:
+
+| Removal | Observed result | Retained necessity |
+| --- | --- | --- |
+| Raw identity guard | 16 failures, 3 passing controls | Exact-string validation at CSV ingestion |
+| Long-only anchor logging | 2 failures, 6 passing controls | Initialization-row evidence retention |
+| Long-short anchor logging | 2 failures, 6 passing controls | Initialization-row evidence retention |
+
+The removals ran in copied packages in separate subprocesses; producer files
+remained byte-identical. Pytest elapsed times were 0.55, 0.10, and 0.11 seconds.
+The existing settlement helper supplies the shared event representation;
+this revision adds no event abstraction or dependency. The unchanged synthetic
+demo reproduces its committed Markdown, JSON metrics/diagnostics, and all 24
+attempt records under the reviewer's probe.
+
+Current source identities:
+
+| File | SHA-256 |
+| --- | --- |
+| `src/data/constituent_table.py` | `28b3857e66528d5500a16d81b92c1d8b2e9f142fe3653e203af2e66d17585333` |
+| `src/backtest/portfolio.py` | `4eb82e37324d4a5c19c6ee3136b3ea6aa5f4bbc1fb86b07671cb3e3e62ee0006` |
+| `src/backtest/long_short.py` | `7b33283f3cef4b5eac61e2e325e2b2a88592c016b052dce3da2b95bebc935877` |
+| `tests/test_pit_universe_delisting.py` | `ac4181754b3d0cc44ad2796dc2c48a5440c5126e4e0da72660b2d4360fc94dec` |
+
+Remediation execution evidence is retained separately at
+`/private/tmp/efr-m4-4-remediation-evidence`: pre-fix reproductions, focused and
+full-lane JUnit/logs, reviewer-probe replay, build output, corrected source
+copies, and isolated ablation results. The sections below preserve the initial
+implementation record for `a2d6f3f`, including its original source hashes and QA.
 
 ## Delivered behavior
 
@@ -101,7 +172,7 @@ start and terminal records, totaling 24 JSONL records. Failed and interrupted
 execution handling is tested separately. JSON evidence includes all six outcomes
 and each successful book's path; Markdown and structured payload parity is tested.
 
-## Coverage and validation
+## Original candidate coverage and validation
 
 | Runtime boundary | Deterministic evidence |
 | --- | --- |
@@ -159,7 +230,7 @@ python scripts/repo_map.py
 git diff --check
 ```
 
-## Isolated ablation
+## Original candidate isolated ablation
 
 The experiment preserved the candidate portfolio module and copied its package
 into a separate temporary root for each removal. Each subprocess imported only
@@ -181,7 +252,7 @@ General corporate-action dispatch, a schema registry, and payment-lag receivable
 valuation remain outside this implementation. This ablation covers the added
 membership/terminal path and its baseline compatibility.
 
-## Evidence identities and remaining gates
+## Original candidate evidence identities and remaining gates
 
 | Artifact | SHA-256 |
 | --- | --- |

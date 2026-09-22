@@ -1009,6 +1009,11 @@ applies once its effective end and end-known-at cutoff both hold. The first `L`
 rows have empty eligibility. Membership changes act at scheduled target resets;
 an explicit terminal event also settles existing holdings between resets.
 
+PIT CSV ingestion validates raw symbol and permanent-ID strings before legacy
+normalization, including caller-selected column names. Padded or blank values
+raise a `PIT-005` exact-string error. Valid leading-zero string IDs preserve
+their bytes through loading and membership construction.
+
 Availability and effective dates use caller-declared, timezone-naive daily
 source-close labels. The interface refuses intraday timestamps and preserves
 observed source-row lag. Source publication precision, revision histories, and
@@ -1045,6 +1050,12 @@ accounting convention: equity times one minus the sum of signed closing weights.
 The event log records source evidence and signed proceeds independently of the
 ordinary timing ledger. Event-free calls preserve existing output values and
 add zero terminal flows plus the residual cash series.
+
+Events effective exactly at the initialization row retain zero-weight,
+zero-cashflow log entries when their full-source reference is valid. Events
+strictly earlier than the bounded start keep the identity closed and remain
+outside the bounded event log. Both public backtest APIs require at least two
+bounded source rows; a one-row evaluation retains its existing typed refusal.
 
 The synthetic command `python -m research.pit_universe_delisting_demo` records
 static/PIT comparisons, identity reuse, cash settlement, and retained missing-

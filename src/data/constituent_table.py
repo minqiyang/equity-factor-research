@@ -68,6 +68,15 @@ def load_constituent_intervals_csv(
         schema="constituent_intervals",
     )
 
+    pit_csv = bool({"start_known_at", "end_known_at"}.intersection(raw.columns))
+    if pit_csv:
+        for column in (symbol_column, permanent_id_column):
+            if column not in raw or not all(
+                isinstance(value, str) and value and value == value.strip()
+                for value in raw[column]
+            ):
+                raise ValueError(f"PIT-005: {column} must contain complete exact string IDs")
+
     symbols = _parse_symbols(raw[symbol_column], field_name=symbol_column)
     start_dates = _parse_dates(raw[start_date_column], field_name=start_date_column)
 
@@ -96,7 +105,7 @@ def load_constituent_intervals_csv(
 
     if permanent_id_column in raw:
         df["permanent_id"] = _parse_symbols(raw[permanent_id_column], field_name=permanent_id_column)
-    if {"start_known_at", "end_known_at"}.intersection(raw.columns):
+    if pit_csv:
         # The optional PIT interface checks raw timestamps at full precision.
         df["start_date"] = _source_close_column(raw[start_date_column], field=start_date_column)
         df["end_date"] = _source_close_column(

@@ -1,5 +1,32 @@
 # Engineering Log
 
+## 2026-09-21 - M4.4 independent-review remediation
+
+- The independent review of candidate `a2d6f3f` reproduced two P2 MATERIAL
+  findings. M44-R1 concerned CSV identity trimming before strict validation;
+  M44-R2 concerned omitted zero-holding terminal records at the bounded anchor.
+- PIT CSV ingestion now checks raw symbol and permanent-ID values, using custom
+  column names when supplied. Padded or blank values raise the same PIT-005
+  exact-string error as direct-frame evidence. Leading zeros stay intact;
+  legacy CSV trimming retains its existing contract.
+- Both engines now record anchor-effective events through the existing shared
+  settlement helper with initialized zero holdings. Cash, capital, turnover,
+  and costs preserve initialization. Strictly prior events remain closed outside
+  the bounded log. Existing single-row evaluation refusals remain explicit tests.
+- Added 29 regression cases. Against the reviewed source, the final fixtures
+  reproduce 20 failures and 9 passing controls. The corrected targeted suite
+  passes 139 tests. Full CI lanes pass with 4,003 core and 125 diagnostics tests,
+  plus two platform skips. The reviewer's unchanged 25-probe file also passes,
+  including its four original failures. Ruff, compileall, build, map freshness,
+  and whitespace checks pass.
+- Three isolated ablations remove raw-ID validation, long-only anchor logging,
+  and long-short anchor logging respectively. They reproduce 16, 2, and 2
+  regression failures with 3, 6, and 6 passing controls. All three operations
+  remain, and producer source hashes stayed fixed throughout the experiments.
+- Updated the timing-contract note and implementation report with current
+  behavior, source hashes, evidence locations, and the independent re-review
+  gate. The original review and original candidate evidence remain preserved.
+
 ## 2026-09-21 - M4.4 causal membership and terminal cash accounting
 
 - Implemented the coordinator-accepted card

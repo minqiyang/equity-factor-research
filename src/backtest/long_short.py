@@ -197,6 +197,13 @@ def run_long_short_backtest(
     current_net = pd.Series(0.0, index=columns)
     terminal_cashflows = np.zeros(sub_prices.shape, dtype=float)
     terminal_event_log: list[dict[str, Any]] = []
+    anchor_events = prepared_events.get(accounting_dates[0], ())
+    if anchor_events:
+        _, anchor_log = _terminal_settlement(
+            records=anchor_events, previous_holdings=current_net,
+            previous_equity=float(initial_capital),
+        )
+        terminal_event_log.extend(anchor_log)
     settled = {record["permanent_id"] for event_date, records in prepared_events.items()
                if event_date <= accounting_dates[0] for record in records}
 
