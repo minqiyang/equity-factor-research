@@ -991,3 +991,73 @@ Deferred:
 
 Those choices cannot be inferred from Stage 2a documentation or current
 synthetic results.
+
+## M4.4 Optional PIT Membership and Immediate Terminal Cash
+
+M4.4 extends the daily simulation boundary with optional
+`constituent_intervals` and `terminal_events` inputs in both backtest engines.
+The preceding Stage 2a decisions describe the original interface. This section
+defines the implemented immediate-cash subset of the deferred delisting work.
+The detailed input contract is in
+[`coord/card_m4_4_pit_universe_delisting.md`](../coord/card_m4_4_pit_universe_delisting.md).
+
+`build_pit_membership_mask` requires permanent-ID price/signal columns and
+identity-backed half-open membership intervals. At execution row `a[j]`, the
+membership schedule uses information available at bounded source row `a[j-L]`.
+An entry requires both its effective start and its known-at cutoff. A closure
+applies once its effective end and end-known-at cutoff both hold. The first `L`
+rows have empty eligibility. Membership changes act at scheduled target resets;
+an explicit terminal event also settles existing holdings between resets.
+
+PIT CSV ingestion validates raw symbol and permanent-ID strings before legacy
+normalization, including caller-selected column names. Padded or blank values
+raise a `PIT-005` exact-string error. Valid leading-zero string IDs preserve
+their bytes through loading and membership construction.
+
+Availability and effective dates use caller-declared, timezone-naive daily
+source-close labels. The interface refuses intraday timestamps and preserves
+observed source-row lag. Source publication precision, revision histories, and
+exchange-calendar certification require separate evidence. Synthetic declarations
+establish simulation conformance and carry `DIAGNOSTIC_ONLY` evidence status.
+
+A terminal event declares its permanent ID, unique event ID, effective close,
+known-at close, preceding full-source reference close, complete terminal return,
+and the literal basis `prior_observed_close_to_cash`. Terms must be available by
+the effective close. The complete return replaces the ordinary incoming return
+on that row and includes any final market and delisting legs. A held security
+still requires a valid positive reference price. Its terminal quote may be
+missing because the evidenced cash payoff supplies the final valuation.
+
+After gross P&L and drift, signed cash settlement equals prior equity multiplied
+by the prior signed weight and `(1 + terminal_return)`. The settled holding then
+becomes zero. Long redemption credits cash; short settlement debits the final
+liability. Existing positive-equity guards apply before division and after costs.
+An explicit return of -1 represents evidenced zero recovery. Missing evidence
+continues to refuse held disappearance under the strict price policy.
+
+Known terminal schedules exclude settled identities from frozen future targets.
+A late event that collides with a nonzero frozen target raises
+`terminal_target_invalid`. Ordinary execution-price validation, scheduled target
+construction, turnover, and costs retain their existing order. The terminal
+redemption itself has zero modeled extra fee and a separate cash-flow record;
+ordinary market turnover contains only subsequent market trades. Surviving
+positions drift until the next scheduled reset, including temporarily unbalanced
+long-short exposures.
+
+Both result types expose `cash_balance`, `terminal_cashflows`, and
+`terminal_event_log`. Cash is the residual of the existing postcost target-weight
+accounting convention: equity times one minus the sum of signed closing weights.
+The event log records source evidence and signed proceeds independently of the
+ordinary timing ledger. Event-free calls preserve existing output values and
+add zero terminal flows plus the residual cash series.
+
+Events effective exactly at the initialization row retain zero-weight,
+zero-cashflow log entries when their full-source reference is valid. Events
+strictly earlier than the bounded start keep the identity closed and remain
+outside the bounded event log. Both public backtest APIs require at least two
+bounded source rows; a one-row evaluation retains its existing typed refusal.
+
+The synthetic command `python -m research.pit_universe_delisting_demo` records
+static/PIT comparisons, identity reuse, cash settlement, and retained missing-
+evidence refusals. Delayed recoveries, unpriced receivables, stock or mixed
+consideration, and formal real-data lineage promotion remain open evidence gates.

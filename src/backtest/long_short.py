@@ -31,7 +31,12 @@ from backtest.portfolio import (
     _validate_bounded_signal_values,
     _read_exact_integral_scalar,
     _read_finite_real_scalar,
+    _prepare_terminal_events,
+    _resolve_pit_universe,
+    _terminal_settlement,
+    _validate_terminal_target,
 )
+from data.constituent_table import ValidatedConstituentIntervals
 
 
 @dataclass(frozen=True)
@@ -68,6 +73,9 @@ class LongShortBacktestResult:
     total_trading_costs: pd.Series
     metrics: dict[str, float]
     assumptions: dict[str, Any]
+    cash_balance: pd.Series
+    terminal_cashflows: pd.DataFrame
+    terminal_event_log: tuple[dict[str, Any], ...]
 
 
 def run_long_short_backtest(
@@ -83,6 +91,8 @@ def run_long_short_backtest(
     min_volatility_periods: int = 5,
     turnover_penalty_lambda: float = 0.0,
     universe_mask: pd.DataFrame | None = None,
+    constituent_intervals: ValidatedConstituentIntervals | pd.DataFrame | None = None,
+    terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
     initial_capital: float = 1.0,
@@ -143,6 +153,12 @@ def run_long_short_backtest(
 
     sub_prices = prices.loc[accounting_dates]
     sub_signals = _validate_bounded_signal_values(signals.loc[accounting_dates])
+    prepared_events = _prepare_terminal_events(terminal_events, prices.index, prices.columns)
+    universe_mask = _resolve_pit_universe(
+        constituent_intervals=constituent_intervals, universe_mask=universe_mask,
+        dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
+        terminal_events=prepared_events,
+    )
     lagged_signals = sub_signals.shift(signal_lag_periods)
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
 
@@ -179,6 +195,17 @@ def run_long_short_backtest(
 
     previous_target = pd.Series(0.0, index=columns)
     current_net = pd.Series(0.0, index=columns)
+    terminal_cashflows = np.zeros(sub_prices.shape, dtype=float)
+    terminal_event_log: list[dict[str, Any]] = []
+    anchor_events = prepared_events.get(accounting_dates[0], ())
+    if anchor_events:
+        _, anchor_log = _terminal_settlement(
+            records=anchor_events, previous_holdings=current_net,
+            previous_equity=float(initial_capital),
+        )
+        terminal_event_log.extend(anchor_log)
+    settled = {record["permanent_id"] for event_date, records in prepared_events.items()
+               if event_date <= accounting_dates[0] for record in records}
 
     for i in range(1, n_dates):
         date = accounting_dates[i]
@@ -186,6 +213,8 @@ def run_long_short_backtest(
 
         previous_prices = sub_prices.iloc[i - 1]
         current_prices = sub_prices.iloc[i]
+        events_today = prepared_events.get(date, ())
+        terminal_returns = {record["permanent_id"]: record["terminal_return"] for record in events_today}
 
         # Validate held endpoints before valuation, drift, or any liquidation.
         held_returns = _calculate_held_asset_returns(
@@ -195,6 +224,7 @@ def run_long_short_backtest(
             previous_date=prev_date,
             current_date=date,
             missing_price_policy="raise",
+            terminal_returns=terminal_returns or None,
         )
         with np.errstate(over="ignore", invalid="ignore"):
             weighted = (current_net * held_returns).to_numpy(dtype=float)
@@ -205,6 +235,15 @@ def run_long_short_backtest(
         )
         gross_returns[i] = period_gross
         pretrade_net = current_net * (1.0 + held_returns) / gross_multiplier
+        if events_today:
+            flows, event_log = _terminal_settlement(
+                records=events_today, previous_holdings=current_net,
+                previous_equity=float(equity[i - 1]),
+            )
+            terminal_cashflows[i] = flows.to_numpy(dtype=float)
+            terminal_event_log.extend(event_log)
+            pretrade_net.loc[list(terminal_returns)] = 0.0
+            settled.update(terminal_returns)
         # Calculate decile returns for diagnostic tracking
         if date in rebalance_dates:
             # These quantile returns describe the incoming interval diagnostically.
@@ -216,6 +255,9 @@ def run_long_short_backtest(
                 [_read_positive_price(value) for value in current_prices], index=columns, dtype=float
             )
             asset_returns = diagnostic_current / diagnostic_previous - 1.0
+            for asset, value in terminal_returns.items():
+                if _read_positive_price(previous_prices.loc[asset]) is not None:
+                    asset_returns.loc[asset] = value
 
             scores = lagged_signals.loc[date]
             valid_scores = scores[scores.notna()]
@@ -327,6 +369,7 @@ def run_long_short_backtest(
 
             # The frozen target reference stays independent of execution prices.
             previous_target = target_net.copy()
+            _validate_terminal_target(target_net, settled, date=date)
             signed_trades = target_net - pretrade_net
             _validate_execution_price_legs(
                 execution_prices=current_prices,
@@ -403,6 +446,18 @@ def run_long_short_backtest(
         "decile_return_scope": "incoming_interval_diagnostic_only",
         "periods_per_year": periods_per_year,
         "dollar_neutral": True,
+        **({
+            "membership_contract": "known_schedule_at_lagged_source_close_v1",
+            "formal_universe_evidence_eligible": False,
+        } if constituent_intervals is not None else {}),
+        **({
+            "terminal_settlement_contract": "prior_observed_close_to_cash_v1",
+            "formal_terminal_evidence_eligible": False,
+            "terminal_settlement_fee": 0.0,
+            "terminal_redemption_turnover": "excluded_from_ordinary_market_turnover",
+            "cash_model": "residual_of_postcost_target_weight_accounting",
+            "terminal_exposure_policy": "surviving_positions_drift_until_next_scheduled_reset",
+        } if terminal_events is not None else {}),
         "timing_contract": "after_close_signal_next_observed_close_v1",
     }
 
@@ -421,6 +476,9 @@ def run_long_short_backtest(
         total_trading_costs=total_costs,
         metrics=metrics,
         assumptions=assumptions,
+        cash_balance=(equity * (1.0 - net_holdings.sum(axis=1))).rename("cash_balance"),
+        terminal_cashflows=pd.DataFrame(terminal_cashflows, index=accounting_dates, columns=columns),
+        terminal_event_log=tuple(terminal_event_log),
     )
 
 

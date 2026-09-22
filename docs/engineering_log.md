@@ -1,5 +1,71 @@
 # Engineering Log
 
+## 2026-09-21 - M4.4 independent-review remediation
+
+- The independent review of candidate `a2d6f3f` reproduced two P2 MATERIAL
+  findings. M44-R1 concerned CSV identity trimming before strict validation;
+  M44-R2 concerned omitted zero-holding terminal records at the bounded anchor.
+- PIT CSV ingestion now checks raw symbol and permanent-ID values, using custom
+  column names when supplied. Padded or blank values raise the same PIT-005
+  exact-string error as direct-frame evidence. Leading zeros stay intact;
+  legacy CSV trimming retains its existing contract.
+- Both engines now record anchor-effective events through the existing shared
+  settlement helper with initialized zero holdings. Cash, capital, turnover,
+  and costs preserve initialization. Strictly prior events remain closed outside
+  the bounded log. Existing single-row evaluation refusals remain explicit tests.
+- Added 29 regression cases. Against the reviewed source, the final fixtures
+  reproduce 20 failures and 9 passing controls. The corrected targeted suite
+  passes 139 tests. Full CI lanes pass with 4,003 core and 125 diagnostics tests,
+  plus two platform skips. The reviewer's unchanged 25-probe file also passes,
+  including its four original failures. Ruff, compileall, build, map freshness,
+  and whitespace checks pass.
+- Three isolated ablations remove raw-ID validation, long-only anchor logging,
+  and long-short anchor logging respectively. They reproduce 16, 2, and 2
+  regression failures with 3, 6, and 6 passing controls. All three operations
+  remain, and producer source hashes stayed fixed throughout the experiments.
+- Updated the timing-contract note and implementation report with current
+  behavior, source hashes, evidence locations, and the independent re-review
+  gate. The original review and original candidate evidence remain preserved.
+
+## 2026-09-21 - M4.4 causal membership and terminal cash accounting
+
+- Implemented the coordinator-accepted card
+  `coord/card_m4_4_pit_universe_delisting.md` from M4.3 baseline `37437df`
+  in the isolated `feat/m4-4-pit-universe-delisting` worktree. The owner directed
+  immediate implementation and a single independent GPT-6 Astra extra-high
+  Fast review after candidate delivery.
+- Added availability-aware permanent-ID constituent masks. Entry and closure
+  schedules use bounded lagged source-close knowledge. CSV availability fields,
+  ticker reassignment refusal, exact identity axes, and malformed-evidence
+  guards preserve the declared input boundary.
+- Both engines now apply explicit complete prior-close-to-cash terminal
+  returns, credit signed cash settlement, and clear settled holdings between
+  scheduled resets. They retain strict reference-price validation, one-time
+  settlement, frozen-target collision refusal, existing cost arithmetic, and
+  positive-equity guards. Results expose cash, terminal cash flows, and event
+  evidence. Surviving long-short exposure drifts until the next scheduled reset.
+- Added the six-case synthetic comparison command
+  `python -m research.pit_universe_delisting_demo`. Its committed report retains
+  four successful books and two missing-terminal-evidence refusals. The attempt
+  log preserves two full executions, including every start and outcome.
+- Validation: 103 new focused tests pass; the complete core and diagnostics lanes
+  pass with 3,974 and 125 tests respectively, plus two platform-dependent core
+  skips. Ruff, compilation, distribution build, map freshness, and whitespace
+  checks pass. The captured baseline comparison preserves 124 books, 1,674
+  calculation fields, DSR/PBO, and M4.3 multiple-testing diagnostics byte for byte.
+- Isolated removal of the terminal knowledge cutoff breaks both late-information
+  refusal tests. Removal of long-only holding clearance breaks three settlement
+  cases while three long-short controls pass. Removing raw effective-date
+  validation from the PIT CSV path breaks both intraday-date refusal tests.
+  All three necessary operations remain; each experiment preserved its producer
+  source. Four new CSV date-precision tests cover the final boundary correction.
+- Added the M4.4 timing-contract extension and updated the authoritative backlog.
+  Evidence remains synthetic and `DIAGNOSTIC_ONLY`. External identity and
+  availability verification, delayed recoveries, stock consideration, calendar
+  certification, and formal universe promotion remain separately gated.
+  `coord/reports/m4_4_pit_universe_delisting_impl.md` records results, hashes,
+  reproduction commands, and the pending independent-review/hosted-CI gate.
+
 ## 2026-09-21 - M4.3 observed-family multiple-testing diagnostics
 
 - Selected multiple-testing diagnostics after comparing dynamic PIT membership,
