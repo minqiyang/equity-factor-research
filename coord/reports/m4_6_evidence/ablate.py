@@ -94,6 +94,13 @@ VARIANTS += [
              'model.attribute(asset_returns, holdings.iloc[:-1]', 'model.attribute(asset_returns, holdings.iloc[1:]'),
     mutation('full_cross_section_returns', 'test_engine_integration_and_baseline',
              'prices.pct_change(fill_method=None).iloc[1:]', 'prices.pct_change(fill_method=None).iloc[1:] * 0'),
+    mutation('variance_roundoff_tolerance', 'test_valid_rank_one_covariance_with_hedged_factor_exposure',
+             'variance >= -1e-14 and factor_variance >= -1e-14',
+             'variance >= 0 and factor_variance >= 0'),
+    mutation('factor_variance_roundoff_clamp', 'test_variance_roundoff_boundary',
+             'factor_variance = max(factor_variance, 0.0)', 'factor_variance = factor_variance'),
+    mutation('active_variance_roundoff_clamp', 'test_variance_roundoff_boundary',
+             'variance = max(variance, 0.0)', 'variance = variance'),
 ]
 
 def digest(path):

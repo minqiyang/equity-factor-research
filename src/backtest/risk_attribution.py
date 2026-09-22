@@ -174,7 +174,12 @@ def decompose_active_risk(
     benchmark_weights: pd.Series, factor_covariance: pd.DataFrame,
     specific_variances: pd.Series, *, periods_per_year: int = 252,
 ) -> ActiveRiskDecomposition:
-    """Euler variance contributions under a diagonal specific-covariance model."""
+    """Euler variance contributions under a diagonal specific-covariance model.
+
+    Aggregate variance roundoff within 1e-14 is clamped to zero after validation.
+    Signed Euler terms retain their original values and reconcile to the
+    nonnegative summaries within that correction plus floating-point sum roundoff.
+    """
     _positive_int(periods_per_year, 1, "periods_per_year")
     _frame(exposures, "exposures")
     _frame(factor_covariance, "factor_covariance")
@@ -198,8 +203,10 @@ def decompose_active_risk(
     specific_variance = float(specific_terms.sum())
     variance = factor_variance + specific_variance
     _require(np.isfinite(factor_terms).all() and np.isfinite(specific_terms).all()
-             and np.isfinite(variance) and variance >= 0 and factor_variance >= 0,
+             and np.isfinite(variance) and variance >= -1e-14 and factor_variance >= -1e-14,
              "risk_numerical", "risk calculation requires finite nonnegative variances")
+    factor_variance = max(factor_variance, 0.0)
+    variance = max(variance, 0.0)
     tracking_error = float(np.sqrt(variance))
     return ActiveRiskDecomposition(
         pd.Series(factor_terms, index=exposures.columns),

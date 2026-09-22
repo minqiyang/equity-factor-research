@@ -522,3 +522,84 @@ def test_solver_output_guard(monkeypatch):
     monkeypatch.setattr(np.linalg, 'lstsq', lambda *a, **kw: (np.full(6, np.nan), [], 6, np.ones(6)))
     with pytest.raises(RiskAttributionError, match='fit_numerical'):
         model.fit(returns, interval_starts=starts)
+
+
+def test_valid_rank_one_covariance_with_hedged_factor_exposure():
+    dates = pd.bdate_range('2024-01-01', periods=4)
+    assets = list('ABCDEFGH')
+    x = hadamard(8)[:, :6].astype(float)
+    exposures = StyleFactorExposures.from_descriptors({
+        name: pd.DataFrame(np.tile(x[:, k + 1], (4, 1)), index=dates, columns=assets)
+        for k, name in enumerate(STYLE_FACTORS)
+    }, winsor_quantile=0)
+    f = np.zeros((3, 6))
+    f[:, 1] = np.array([-1, 1, 0]) / 100
+    f[:, 2] = np.array([-1, 1, 0]) * 3 / 100
+    residuals = np.array([1, -1, 1])[:, None] * hadamard(8)[None, :, 6] * .01
+    returns = pd.DataFrame(f @ x.T + residuals, index=dates[1:], columns=assets)
+    starts = pd.Series(dates[:-1], index=dates[1:])
+    beta = np.array([0, 3 / 20, -1 / 20, 0, 0, 0])
+    p = x @ beta / 8
+    weights = pd.DataFrame(np.tile(p, (3, 1)), index=dates[:-1], columns=assets)
+    model = CrossSectionalRiskModel(exposures, covariance_window=2,
+                                   min_covariance_observations=2)
+    fit = model.fit(returns, interval_starts=starts)
+    covariance = fit.factor_returns.iloc[:2].cov().to_numpy()
+    actual_beta = p @ x
+    factor_variance = float(np.sum(actual_beta * (covariance @ actual_beta)))
+    specific_variance = float(np.sum(p**2 * fit.residual_returns.iloc[:2].var().to_numpy()))
+    print({'rank': fit.diagnostics['rank'].tolist(),
+           'minimum_covariance_eigenvalue': float(np.linalg.eigvalsh(covariance).min()),
+           'factor_variance': factor_variance, 'specific_variance': specific_variance})
+    result = model.attribute(returns, weights, interval_starts=starts)
+    np.testing.assert_allclose(result.risk.active_variance.iloc[-1], 6.25e-7,
+                               rtol=0, atol=1e-12)
+    latest = result.risk.iloc[-1]
+    assert latest.factor_variance == 0.0
+    assert latest.active_variance > 0.0
+    assert np.isfinite(latest.tracking_error)
+    np.testing.assert_allclose(latest.tracking_error, np.sqrt(6.25e-7), rtol=0, atol=1e-12)
+    used_beta = result.active_exposures.iloc[-1].to_numpy()
+    expected_terms = used_beta * (covariance @ used_beta)
+    np.testing.assert_array_equal(result.factor_risk_contributions.iloc[-1], expected_terms)
+    np.testing.assert_allclose(result.factor_risk_contributions.sum(axis=1).iloc[-1]
+                               + result.specific_risk_contributions.sum(axis=1).iloc[-1],
+                               latest.active_variance, rtol=0, atol=1e-14)
+
+
+@pytest.mark.parametrize('roundoff', [-1e-14, -1e-20, 0.0])
+@pytest.mark.parametrize('specific', [0.0, 1e-4])
+def test_variance_roundoff_boundary(roundoff, specific):
+    x = pd.DataFrame([[1.]], index=['asset'], columns=['factor'])
+    covariance = pd.DataFrame([[roundoff]], index=x.columns, columns=x.columns)
+    result = decompose_active_risk(x, pd.Series([1.], index=x.index),
+                                  pd.Series([0.], index=x.index), covariance,
+                                  pd.Series([specific], index=x.index))
+    assert result.factor_variance == 0.0
+    assert result.active_variance == max(roundoff + specific, 0.0)
+    assert result.tracking_error == np.sqrt(result.active_variance)
+    assert result.annualized_tracking_error == result.tracking_error * np.sqrt(252)
+    assert result.factor_contributions.iloc[0] == roundoff
+    assert result.specific_contributions.iloc[0] == specific
+    # Summary clamping preserves the raw signed terms within the declared tolerance.
+    np.testing.assert_allclose(result.factor_contributions.sum(), result.factor_variance,
+                               rtol=0, atol=1e-14)
+    np.testing.assert_allclose(result.factor_contributions.sum() + result.specific_contributions.sum(),
+                               result.active_variance, rtol=0, atol=1e-14)
+    # Adding a boundary-sized correction to specific risk introduces one
+    # additional floating-point addition rounding at the specific-risk scale.
+    assert abs(result.factor_variance + result.specific_variance - result.active_variance) <= (
+        1e-14 + np.spacing(specific)
+    )
+
+
+@pytest.mark.parametrize('specific', [0.0, 1.0])
+def test_material_negative_factor_variance_refused(specific):
+    x = pd.DataFrame([[1.]], index=['asset'], columns=['factor'])
+    covariance = pd.DataFrame([[-1e-14]], index=x.columns, columns=x.columns)
+    # The covariance tolerance accepts this eigenvalue; leverage makes its
+    # negative quadratic form material, even with positive total specific risk.
+    with pytest.raises(RiskAttributionError, match='^risk_numerical:'):
+        decompose_active_risk(x, pd.Series([2.], index=x.index),
+                              pd.Series([0.], index=x.index), covariance,
+                              pd.Series([specific], index=x.index))
