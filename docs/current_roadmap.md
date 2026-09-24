@@ -169,7 +169,10 @@ milestone on 2026-09-23. The owner's EODHD entitlement records
 2. **Data.** Retrieval of historical constituents and EOD histories for every
    ever-member, including delisted codes, runs under the existing plan and the
    written terms. Raw data and the provider-derived membership table stay
-   outside the repository.
+   outside the repository, under `EFR_EODHD_DATA_DIR`. The retrieval reads the
+   API token only from the `EFR_EODHD_API_TOKEN` environment variable, which the
+   owner sets at run time. It refuses when the variable is absent and never
+   writes the token to files, logs, or reports.
 3. **Universe.** Vendor effective dates map to M4.4 interval tables with
    `known_at` equal to the effective date. Permanent IDs combine vendor code
    and listing episode; ambiguous reuse fails closed and is counted.

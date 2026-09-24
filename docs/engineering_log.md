@@ -12,6 +12,20 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - Owner-delegated decisions executed
+
+- Pushed annotated tag `track-a-legacy-final` (object `ef13f62`, target
+  `8fa0055`) after confirming no local or remote tag had that name.
+- Moved five EFR project notes into `Codex/Standards/archive/efr_track_a_notes/`
+  and verified their SHA-256 hashes match before and after the move. Wrote
+  `project-notes/efr/efr_coordinator_bootstrap.md` (repository path, V8.0
+  policy files, resume order, and the owner's existing Pi launch flags).
+- Corrected `Codex/Standards/archive/README.md`, which named the V6 directory as
+  the live policy, to name `coordination-standard/`.
+- Quoted the owner's `AUTHORITY.md` approval on PR #257.
+- Recorded the credential convention in the M4.7 data step and refreshed the
+  handoff blockers and next action.
+
 ## 2026-09-23 - PR #259 remediation of REVIEW findings PR259-A1-01 to A1-03
 
 - The REVIEW seat (GPT-6 Astra, report
