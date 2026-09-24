@@ -27,7 +27,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `0d96a9df0f152f6f1fefd05d02dbd808a981039c` (main after PR #258).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #257: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #258: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
   square-root impact, M4.6 style risk attribution, the coordination standard
@@ -83,11 +83,10 @@ rerun, is the next research milestone. The evidence ceiling remains
 
 ## Next Safe Action
 
-- PR #257 (governance constitution) is merged at `5c5fd0c`. The active task is
-  the diagnostic corrections, PR #258: its exact-head REVIEW seat.
-- After PR #258 merges, the Track A code retirement (PR #259) and the decision
-  record (PR #260) follow in that order, each rebased onto the updated `main`;
-  then the M4.7 card.
+- PR #258 (diagnostic corrections) is merged at `0d96a9d`. The active task is
+  the Track A code retirement, PR #259: its exact-head REVIEW and AUDIT seats.
+- After PR #259 merges, the decision record (PR #260) follows, rebased onto the
+  updated `main`; then the M4.7 card.
 
 ## Source Routing
 
