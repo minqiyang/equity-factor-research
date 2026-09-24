@@ -15,6 +15,67 @@ investment performance.
 
 ---
 
+## 2026-09-23 - Owner Approval Of AUTHORITY.md And Four Delegated Decisions
+
+Context:
+
+- The owner approved the standing-authority record ("Authority没问题。",
+  "Authority is fine.") and delegated four open items to the producing session
+  (Claude Opus 5.5): agent identity, credential location, the preservation tag,
+  and the stale Standards project notes.
+
+Decision:
+
+- **Standing grants:** The owner approved `AUTHORITY.md` as introduced at
+  PR #257 head `cb3d7e3` and confirmed that approval ("Authority没问题。"); the
+  approval is quoted on PR #257. The PR #257 REVIEW remediation left the grant
+  substance unchanged: `7e4f5c5` rewrote each Grant field as a verbatim source
+  quote, labeled Scope and Expiry as owner-approved interpretation, and
+  restored the strict storage prohibition in `AGENTS.md`; `44007a0` pinned the
+  quotes to their source commits in the governance tests. PR #257 merged into
+  `main` as `5c5fd0c`.
+- **Agent identity:** Agents keep committing under the owner's GitHub account,
+  and `.github/CODEOWNERS` stays as an ownership label. Enforcement rests on
+  V8.0 section 5 (repository text never expands authority by itself) and the
+  CRITICAL lane for any `AUTHORITY.md` change. Revisit before any Milestone 5
+  execution repository: it uses separate agent identities from its first
+  commit.
+- **Credentials:** The EODHD API token lives only in the
+  `EFR_EODHD_API_TOKEN` environment variable, which the owner sets at run time,
+  following the existing `EFR_EODHD_DATA_DIR` and `EFR_EODHD_INVENTORY_PATH`
+  convention. Agents never search for, read from files, print, or store the
+  token. Retrieval code refuses when the variable is absent.
+- **Preservation tag:** Annotated tag `track-a-legacy-final` (object `ef13f62`)
+  points to `8fa0055`, the designated preservation baseline for the Track A
+  code that PR #259 removes. The immediate pre-retirement `main` commit,
+  `0d96a9d`, holds identical Track A packages: `src/campaign`,
+  `src/pit_manifest_validator_v1`, and `src/ledger` show no diff between the
+  two commits.
+- **Project notes:** The five Track A-era notes in
+  `Codex/Standards/project-notes/efr/` moved, with their bytes unchanged, to
+  `Codex/Standards/archive/efr_track_a_notes/`. They named the 14-trial campaign
+  as the mission, an older repository path, and the retired `@codex review`
+  channel. `project-notes/efr/efr_coordinator_bootstrap.md` replaces them and
+  routes to the V8.0 policy and this repository's documents.
+
+Rationale:
+
+- A second GitHub identity requires account and credential management and adds
+  little protection to a simulation-only repository. It becomes necessary where
+  credentials and capital exist.
+- Environment-only credentials keep secrets out of the repository and agent
+  context.
+- The archived notes contradicted the current North Star and would have
+  misdirected a freshly bootstrapped coordinator.
+
+Consequences:
+
+- Every owner decision from the strategic audit, D1 through D9, now has a
+  recorded disposition. Execution of D2 (the pre-flight audit) and the M4.7
+  binding plan await coordinator dispatch.
+
+---
+
 ## 2026-09-23 - Retire Track A Campaign, Validator, And Ledger Runtime Code
 
 Context:
