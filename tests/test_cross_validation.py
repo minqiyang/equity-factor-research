@@ -13,6 +13,7 @@ from sklearn.model_selection import cross_val_score
 from features.cross_validation import (
     PurgedGroupTimeSeriesSplit,
     combinatorial_purged_cross_validation_pbo,
+    cpcv_geometry_unavailable_reason,
 )
 from features.diagnostics import probability_of_backtest_overfitting
 
@@ -203,6 +204,50 @@ def test_cpcv_pbo_validates_inputs() -> None:
 
     with pytest.raises(ValueError, match="embargo_periods must be an integer >= 0"):
         combinatorial_purged_cross_validation_pbo(valid_df, embargo_periods=True)  # type: ignore[arg-type]
+
+
+def test_cpcv_geometry_reason_types_sample_shortfalls() -> None:
+    assert cpcv_geometry_unavailable_reason(15, n_splits=8) == "insufficient_rows_for_split_count"
+    assert cpcv_geometry_unavailable_reason(16, n_splits=8) is None
+    assert cpcv_geometry_unavailable_reason(0, n_splits=4) == "insufficient_rows_for_split_count"
+    assert (
+        cpcv_geometry_unavailable_reason(160, n_splits=4, holding_periods=21, embargo_periods=5)
+        is None
+    )
+    assert (
+        cpcv_geometry_unavailable_reason(160, n_splits=4, holding_periods=200, embargo_periods=5)
+        == "insufficient_training_rows_after_purge_and_embargo"
+    )
+
+
+def test_cpcv_geometry_reason_raises_for_invalid_parameters_on_short_samples() -> None:
+    # Parameter errors win over the sample-size shortfall on the same call.
+    with pytest.raises(ValueError, match="holding_periods must be an integer >= 0"):
+        cpcv_geometry_unavailable_reason(3, n_splits=4, holding_periods=-1)
+    with pytest.raises(ValueError, match="embargo_periods must be an integer >= 0"):
+        cpcv_geometry_unavailable_reason(3, n_splits=4, embargo_periods=-1)
+    with pytest.raises(ValueError, match="n_splits must be an integer >= 4"):
+        cpcv_geometry_unavailable_reason(3, n_splits=2)
+    with pytest.raises(ValueError, match="n_splits must be even"):
+        cpcv_geometry_unavailable_reason(3, n_splits=5)
+    with pytest.raises(ValueError, match="n_test_splits must be an integer in"):
+        cpcv_geometry_unavailable_reason(3, n_splits=4, n_test_splits=4)
+
+
+def test_cpcv_pbo_refuses_short_geometry_with_typed_reason() -> None:
+    rng = np.random.default_rng(7)
+    short = pd.DataFrame(rng.normal(0.0, 0.01, size=(15, 3)), columns=["a", "b", "c"])
+    with pytest.raises(ValueError, match="insufficient_rows_for_split_count"):
+        combinatorial_purged_cross_validation_pbo(short, n_splits=8)
+
+    long = pd.DataFrame(rng.normal(0.0, 0.01, size=(160, 3)), columns=["a", "b", "c"])
+    with pytest.raises(ValueError, match="insufficient_training_rows_after_purge_and_embargo"):
+        combinatorial_purged_cross_validation_pbo(long, n_splits=4, holding_periods=200)
+
+    nan_short = short.copy()
+    nan_short.iloc[0, 0] = np.nan
+    with pytest.raises(ValueError, match="finite values without NaN or Inf"):
+        combinatorial_purged_cross_validation_pbo(nan_short, n_splits=8)
 
 
 def test_purged_split_combined_holding_and_embargo_boundaries() -> None:

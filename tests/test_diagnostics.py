@@ -606,6 +606,53 @@ def test_deflated_sharpe_ratio_rejects_single_trial_and_zero_vol() -> None:
     assert np.isnan(deflated_sharpe_ratio(pd.Series([0.01, 0.01, 0.01]), n_trials=3, trial_sharpe_variance=0.1))
 
 
+@pytest.mark.parametrize("bad_value", [np.nan, np.inf, -np.inf])
+def test_deflated_sharpe_ratio_refuses_nonfinite_returns(bad_value: float) -> None:
+    returns = pd.Series([0.01, 0.02, -0.005, 0.015, 0.008, 0.012, -0.002, 0.01])
+    returns.iloc[3] = bad_value
+
+    with pytest.raises(ValueError, match="returns must be finite without NaN or Inf"):
+        deflated_sharpe_ratio(returns, n_trials=3, trial_sharpe_variance=0.1)
+
+
+def test_deflated_sharpe_ratio_refuses_gapped_series_instead_of_inflating() -> None:
+    rng = np.random.default_rng(20260924)
+    returns = pd.Series(rng.normal(0.001, 0.01, size=300))
+    complete = deflated_sharpe_ratio(returns, n_trials=10, trial_sharpe_variance=0.01)
+    gapped = returns.copy()
+    gapped.iloc[::3] = np.nan
+
+    assert 0.0 <= complete <= 1.0
+    with pytest.raises(ValueError, match="found 100 non-finite of 300"):
+        deflated_sharpe_ratio(gapped, n_trials=10, trial_sharpe_variance=0.01)
+    with pytest.raises(ValueError, match="returns must be finite"):
+        deflated_sharpe_ratio(
+            gapped.astype("Float64"), n_trials=10, trial_sharpe_variance=0.01
+        )
+
+
+@pytest.mark.parametrize("bad_value", [np.nan, np.inf, -np.inf])
+def test_newey_west_mean_tstat_refuses_nonfinite_values(bad_value: float) -> None:
+    values = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0])
+    values.iloc[2] = bad_value
+
+    with pytest.raises(ValueError, match="values must be finite without NaN or Inf"):
+        newey_west_mean_tstat(values, lags=1)
+    with pytest.raises(ValueError, match="values must be finite without NaN or Inf"):
+        newey_west_mean_tstat(values)
+
+
+def test_information_coefficient_summary_keeps_documented_missing_date_drop() -> None:
+    ic = pd.Series([0.2, np.nan, 0.0, -0.1, 0.3])
+
+    summary = information_coefficient_summary(ic, lags=0)
+
+    assert summary["count"] == pytest.approx(4.0)
+    assert summary["newey_west_tstat"] == pytest.approx(
+        newey_west_mean_tstat(ic.dropna(), lags=0)
+    )
+
+
 def test_diagnostics_module_has_no_backtest_alpha_reporting_or_real_data_imports() -> None:
     source = inspect.getsource(diagnostics)
     tree = ast.parse(source)

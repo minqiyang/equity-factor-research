@@ -423,7 +423,8 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     assert all("return_test" in record for record in completed)
     json.dumps(summary, allow_nan=False)
     assert "pbo" in result["pbo_summary"]
-    assert result["cpcv_summary"] is not None
+    assert result["cpcv_summary"]["status"] == "available"
+    assert result["cpcv_long_short_summary"]["status"] == "available"
     assert result["cpcv_summary"]["holding_periods"] == 21
     assert result["cpcv_summary"]["embargo_periods"] == 5
     assert 0.0 <= result["cpcv_summary"]["pbo"] <= 1.0
@@ -837,3 +838,76 @@ def test_runner_evaluates_ml_composites(tmp_path: Path) -> None:
     assert RANDOM_FOREST_COMPOSITE in report_text
     assert GRADIENT_BOOSTING_COMPOSITE in report_text
 
+
+
+def test_runner_reports_typed_cpcv_geometry_refusal_in_both_books(tmp_path: Path) -> None:
+    config = _reduced_config(
+        tmp_path, pbo_holding_periods=200, include_weighting_comparisons=False
+    )
+    report_path = tmp_path / "geometry_report.md"
+    result = run_real_data_multifactor_diagnostic(
+        config=config, report_path=report_path, write_outputs=True
+    )
+
+    reason = "insufficient_training_rows_after_purge_and_embargo"
+    for key in ("cpcv_summary", "cpcv_long_short_summary"):
+        summary = result[key]
+        assert summary["status"] == "unavailable"
+        assert summary["unavailable_reason"] == reason
+        assert summary["holding_periods"] == 200
+        assert summary["embargo_periods"] == 5
+        assert summary["n_splits"] == 4
+        assert "pbo" not in summary
+    assert 0.0 <= result["pbo_summary"]["pbo"] <= 1.0
+
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "### Combinatorial Purged Cross-Validation (CPCV)" in report_text
+    assert "`200`-bar forward-dependence horizon" in report_text
+    assert report_text.count(f"- Purged & Embargoed PBO: unavailable (`{reason}`;") == 2
+    assert "unavailable for this split geometry" not in report_text
+
+    payload = json.loads(Path(result["experiment_log_path"]).read_text(encoding="utf-8"))
+    assert payload["metrics"]["cpcv_summary"]["unavailable_reason"] == reason
+    assert payload["metrics"]["cpcv_long_short_summary"]["unavailable_reason"] == reason
+
+
+def test_runner_propagates_cpcv_value_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def refuse(*args: object, **kwargs: object) -> dict[str, object]:
+        raise ValueError("synthetic CPCV refusal")
+
+    monkeypatch.setattr(real_data_module, "combinatorial_purged_cross_validation_pbo", refuse)
+    config = _reduced_config(tmp_path, include_weighting_comparisons=False)
+    with pytest.raises(ValueError, match="synthetic CPCV refusal"):
+        run_real_data_multifactor_diagnostic(
+            config=config, report_path=tmp_path / "report.md", write_outputs=False
+        )
+
+
+def test_runner_propagates_invalid_cpcv_parameters(tmp_path: Path) -> None:
+    config = _reduced_config(
+        tmp_path, pbo_embargo_periods=-1, include_weighting_comparisons=False
+    )
+    with pytest.raises(ValueError, match="embargo_periods must be an integer >= 0"):
+        run_real_data_multifactor_diagnostic(
+            config=config, report_path=tmp_path / "report.md", write_outputs=False
+        )
+
+
+def test_purged_cpcv_summary_refuses_nonfinite_returns_before_geometry() -> None:
+    config = RealDataMultifactorDiagnosticConfig(pbo_n_splits=8)
+    returns = pd.DataFrame({"a": [0.01, np.nan, 0.02], "b": [0.0, 0.01, -0.01]})
+    with pytest.raises(ValueError, match="must be finite without NaN or Inf"):
+        real_data_module._purged_cpcv_summary(returns, config)
+
+    finite = pd.DataFrame({"a": [0.01, 0.0, 0.02], "b": [0.0, 0.01, -0.01]})
+    summary = real_data_module._purged_cpcv_summary(finite, config)
+    assert summary == {
+        "status": "unavailable",
+        "unavailable_reason": "insufficient_rows_for_split_count",
+        "n_rows": 3,
+        "n_splits": 8,
+        "holding_periods": 21,
+        "embargo_periods": 5,
+    }

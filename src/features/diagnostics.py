@@ -212,8 +212,9 @@ def newey_west_mean_tstat(
     """Newey-West t-statistic for the mean of a one-dimensional series.
 
     Automatic lag selection uses the Newey-West 1994 rule
-    ``floor(4 * (n / 100) ** (2 / 9))``. The series is not filled. Fewer than
-    two finite observations return ``NaN``.
+    ``floor(4 * (n / 100) ** (2 / 9))``. The series is not filled or dropped:
+    any NaN or infinite value raises ``ValueError`` (PIT-009). Fewer than two
+    observations return ``NaN``.
     """
 
     clean = _finite_series(values, name="values")
@@ -293,7 +294,8 @@ def deflated_sharpe_ratio(
     Candidate skewness and kurtosis determine the candidate's sampling error.
     ``n_trials`` declares an independent trial count or an explicitly disclosed
     raw-count sensitivity bound. The result is a probability in ``[0, 1]``.
-    Fewer than three observations, zero volatility,
+    Any NaN or infinite return raises ``ValueError``; observations are never
+    dropped (PIT-009). Fewer than three observations, zero volatility,
     or a non-positive Sharpe variance term return ``NaN``.
     """
 
@@ -335,8 +337,13 @@ def _finite_series(values: pd.Series, *, name: str) -> np.ndarray:
         raise TypeError(f"{name} must be a pandas Series")
     if is_bool_dtype(values.dtype) or not is_numeric_dtype(values.dtype):
         raise TypeError(f"{name} must contain numeric non-boolean values")
-    clean = values.astype(float).replace([np.inf, -np.inf], np.nan).dropna()
-    return clean.to_numpy(dtype=float)
+    clean = values.to_numpy(dtype=float, na_value=np.nan)
+    nonfinite = int((~np.isfinite(clean)).sum())
+    if nonfinite:
+        raise ValueError(
+            f"{name} must be finite without NaN or Inf; found {nonfinite} non-finite of {clean.size}"
+        )
+    return clean
 
 
 def factor_quantile_spread(
