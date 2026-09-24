@@ -1,5 +1,23 @@
 # Engineering Log
 
+## 2026-09-23 - Coordination standard V8.0 path
+
+- The owner released coordination standard V8.0 in
+  `Codex/Standards/coordination-standard/`. Its live policy is three files:
+  `coordinator.md`, `routing_table.json`, and `model_bindings.json`.
+  `Codex/Standards/herdr_pi_coordinator_v7_two_file` is a temporary link to
+  that directory for older references.
+- `AGENTS.md` Startup And Sources now names the V8.0 directory and all three
+  policy files, and its archive reference uses the canonical
+  `Codex/Standards/archive/` path. The controller's GitHub Review Lifecycle
+  names the same three files.
+- Historical log entries and review reports keep their original v7 path
+  strings as preserved evidence.
+- Producer: Claude Opus 5.5 in Claude Code at owner-selected max effort; the
+  V8.0 `GENERAL_EXEC` binding specifies high. Branch `claude/standard-v8-path`
+  from `8fa0055`. Merge requires the V8.0 STANDARD minimum gate: one fresh
+  independent `REVIEW` seat.
+
 ## 2026-09-21 - M4.4 independent-review remediation
 
 - The independent review of candidate `a2d6f3f` reproduced two P2 MATERIAL

@@ -101,7 +101,8 @@ re-enter this gate before acting on a different PR or changed scope.
   credits-for-review. Drafts get no request. After validation and required CI
   stabilize on the final stable current head, conduct formal review under the
   live Herdr+Pi coordination standard. Reviewer routing, lane seats, quota, and
-  review-loop dispatch live in `coordinator.md` and `routing_table.json`. The
+  review-loop dispatch live in `coordinator.md`, `routing_table.json`, and
+  `model_bindings.json`. The
   reviewer is read-only on a clean root at that exact head, never the producer
   worktree.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
