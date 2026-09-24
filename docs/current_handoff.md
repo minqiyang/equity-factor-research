@@ -24,13 +24,14 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `8fa0055aaf33bf355661580d2af79d839febde56` (main after PR #255).
+  `ad159c04b69d1a86b3b6430d3b601dbbbb6f19bb` (main after PR #256).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #255: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #256: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
-  square-root impact, and M4.6 style risk attribution.
+  square-root impact, M4.6 style risk attribution, and the coordination
+  standard V8.0 path (PR #256).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),

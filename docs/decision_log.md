@@ -28,9 +28,13 @@ Context:
 Decision:
 
 - `AGENTS.md` becomes a constitution with invariants R1–R12. Procedures and the
-  process-failure list move to the controller. The two standing grants move
-  verbatim to `AUTHORITY.md`, and `.github/CODEOWNERS` marks owner-controlled
-  files.
+  process-failure list move to the controller. `AUTHORITY.md` quotes each
+  standing grant verbatim from its source commit (`e2476a2`, `8dbba99`) and
+  adds `Scope` and `Expiry` fields as labeled interpretations that the owner
+  approved on 2026-09-23. `.github/CODEOWNERS` marks owner-controlled files.
+- `AGENTS.md` keeps the storage prohibition "Never store secrets or raw private
+  data in the repo" for tracked, untracked, and ignored files; R11 separately
+  governs publication.
 - R2 permits a static survivor cohort only under `DIAGNOSTIC_ONLY` and bars it
   from ranking, selection, promotion, and profitability claims. R11 aligns
   publication with the owner's written data terms.
@@ -59,9 +63,12 @@ Recorded process deviations (sources in the engineering log and cards):
 
 Consequences:
 
-- Authority grants have one owner-controlled record, and a test rejects grant
-  language in agent-maintained governance files.
-- A test fails when the handoff trails its base by more than one merged PR.
+- Authority grants have one owner-controlled record. A textual regression test
+  rejects the historical grant formulations and any eight-word run of the
+  current grant quotes in agent-maintained governance files; it does not
+  interpret paraphrased authority.
+- A test resolves the handoff's baseline commit in the base's first-parent
+  history and fails when more than one merged PR follows it.
 - `AGENTS.md` shrinks from 283 to under 200 lines under a tested cap.
 
 ---

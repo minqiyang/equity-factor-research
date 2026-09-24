@@ -33,8 +33,9 @@ stock-selection program. Procedures live in
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
   use a separate clean branch or worktree when the current tree is dirty.
 - Treat credentials, private data, licenses, account identifiers, and production
-  systems as sensitive. Never commit secrets, raw provider data, provider
-  responses, or private absolute paths.
+  systems as sensitive. Never store secrets or raw private data in the repo; the
+  prohibition covers tracked, untracked, and ignored files in every checkout.
+  R11 separately governs what may be published.
 
 ## Startup And Sources
 

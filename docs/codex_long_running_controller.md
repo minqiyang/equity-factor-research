@@ -184,7 +184,7 @@ first recorded the rule.
 
 | Failure | First recorded |
 | --- | --- |
-| Skipping a required live availability check before claiming a provider, model, or quota is unavailable | `9798ba4` (2026-09-03) |
+| Skipping a required live availability check before claiming a provider, model, or quota is unavailable | `21d9d27` (2026-09-03); moved to the controller by `9798ba4` |
 | Skipping the pre-round Herdr tab inspection | `00f1b3d` (2026-09-14) |
 | Ending the coordinator process while an authorized PR waits for its exact-head review body | `00f1b3d` (2026-09-14) |
 | Asking the owner for a second create-PR or merge command after an owner-requested in-scope change is complete | `932d576` (2026-09-15) |

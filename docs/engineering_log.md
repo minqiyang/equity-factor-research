@@ -12,18 +12,45 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A1-01 to A1-05
+
+- The REVIEW seat (GPT-6 Astra, report
+  `coord/reports/v8_review_20260923/pr257/review_pr257_gpt6astra_a1.md`)
+  returned four MATERIAL findings and one ADVISORY finding on `cb3d7e3`. The
+  branch was rebased onto main after PR #256 (`ad159c0`) with an unchanged tree.
+- A1-01: each `AUTHORITY.md` grant now quotes its source sentences verbatim
+  (verified against `e2476a2` and `8dbba99` after whitespace normalization).
+  `Scope` and `Expiry` are labeled owner-approved interpretations. The decision
+  log, this log, and the PR description no longer call the adapted record
+  verbatim.
+- A1-02: `AGENTS.md` restores "Never store secrets or raw private data in the
+  repo" and states that it covers untracked and ignored files; R11 keeps the
+  publication rules.
+- A1-03: the freshness test resolves the handoff's baseline SHA in the base's
+  first-parent history and counts squash-merge subjects after it, refusing an
+  absent checkpoint. Cases cover a skipped PR number, out-of-order numbers,
+  stacked feature commits, and a future checkpoint. CI checks out full history
+  (`fetch-depth: 0`); the packed history is about 7 MiB.
+- A1-04: the grant guard derives eight-word runs from the current grant quotes
+  plus the historical phrases. Tests copy each current grant, each historical
+  phrase, and a partial run into every agent-maintained file in memory, and
+  each copy is detected. The docstring states the guard's finite textual scope.
+- A1-05: the process-failure table cites `21d9d27` as the first recording of the
+  live-availability rule and `9798ba4` as its move to the controller.
+
 ## 2026-09-23 - Governance constitution and standing-authority record
 
 - The owner adopted the strategic audit's decisions and directed this
-  streamlining. Branch `claude/governance-constitution` stacks on
-  `claude/standard-v8-path`.
+  streamlining. Branch `claude/governance-constitution` was rebased onto main
+  after PR #256 merged.
 - `AGENTS.md` shrinks from 283 to 192 lines. Invariants R1–R12 replace five
   restatements of the non-deferrable list across `AGENTS.md`, the North Star,
   and the roadmap. Every test-pinned authority phrase, section, marker, and
   resume-order path remains.
-- The two standing grants moved verbatim to the new `AUTHORITY.md` with source
-  commits (`e2476a2`, `8dbba99`) and expiry. `.github/CODEOWNERS` marks
-  `AUTHORITY.md`, `AGENTS.md`, and `.github/` as owner-controlled.
+- The two standing grants moved to the new `AUTHORITY.md`, which quotes each
+  one verbatim from its source commit (`e2476a2`, `8dbba99`) and adds labeled
+  scope and expiry interpretations. `.github/CODEOWNERS` marks `AUTHORITY.md`,
+  `AGENTS.md`, and `.github/` as owner-controlled.
 - The controller absorbs the P1 process-failure list with first-recording
   commits. It drops the retired GitHub Code Review compatibility note. Two test
   pins that quoted the retired channel now assert the current rule, and two new
@@ -33,10 +60,10 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   its decision gate, aligns the privacy bullet with the written data terms, and
   adds backlog rows for real-data evidence freshness and delisting terminal
   evidence.
-- The handoff moves to main after PR #255. `tests/test_governance_constitution.py`
+- The handoff moves to main after PR #256. `tests/test_governance_constitution.py`
   checks the constitution cap and R1–R12 labels, the standing-grant record, the
-  North Star sections, and handoff freshness against first-parent history. CI
-  checkout uses `fetch-depth: 2` so the test can read the base commit subject.
+  North Star sections, and handoff freshness in merge distance along the base's
+  first-parent history. CI checks out full history for that test.
 
 ## 2026-09-23 - Coordination standard V8.0 path
 
