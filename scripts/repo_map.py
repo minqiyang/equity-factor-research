@@ -63,7 +63,11 @@ MAJOR_DIRS = [
 IMPORTANT_FILES = [
     (
         "AGENTS.md",
-        "Canonical external-action authority boundary, repository invariants, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.",
+        "Canonical external-action authority boundary, repository invariants R1-R12, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.",
+    ),
+    (
+        "AUTHORITY.md",
+        "Owner-issued standing grants with scope, source, and expiry; agents never edit it.",
     ),
     (
         "docs/current_handoff.md",
@@ -71,7 +75,7 @@ IMPORTANT_FILES = [
     ),
     (
         "docs/north_star.md",
-        "Active North Star product aspiration and demo-first delivery principles; not an external-action authority source.",
+        "Active North Star product aspiration, edge thesis, objective, and kill criteria; not an external-action authority source.",
     ),
     (
         "docs/research_program_charter.md",

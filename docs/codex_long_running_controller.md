@@ -9,16 +9,17 @@ This process is subordinate to the
 [repository authority boundary](../AGENTS.md#authority-and-scope), the
 [research program charter](research_program_charter.md) (preserved formal research
 evidence policy), and current higher-level instructions. Authority remains in
-`AGENTS.md`. Eligibility is not authorization; every external, sensitive, or
-destructive operation must satisfy that boundary.
+`AGENTS.md`, with the owner's standing grants recorded in `AUTHORITY.md`.
+Eligibility is not authorization; every external, sensitive, or destructive
+operation must satisfy that boundary.
 
 ## Startup And Freshness
 
 1. After `AGENTS.md`, read `docs/current_handoff.md`,
    `docs/codex_long_running_controller.md`, and `docs/current_roadmap.md` for the
    recorded checkpoint, execution gates, and program status, respectively.
-   Read `docs/north_star.md` for active product aspiration and demo-first delivery
-   principles.
+   Read `docs/north_star.md` for active product aspiration, edge thesis, and
+   kill criteria, and `AUTHORITY.md` for standing owner grants.
 2. Use `docs/repo_map.md` for targeted orientation and read only active-stage
    contracts. Research or code stages also require `PROJECT_SPEC.md`.
 3. With capped output, check branch/tree state, local and remote `main`, recent
@@ -52,7 +53,7 @@ destructive operation must satisfy that boundary.
 
 ## Local Execution And Validation
 
-- Use a clean `codex/` branch or worktree and state the intended edits first.
+- Use a clean feature branch or worktree and state the intended edits first.
 - Add or update tests and durable records required by `AGENTS.md`; stage only
   files in the declared scope.
 - Run focused tests, then the baselines defined by `.github/workflows/ci.yml`.
@@ -64,21 +65,16 @@ destructive operation must satisfy that boundary.
 - Use `docs/engineering_log.md` for implementation/process evidence,
   `docs/decision_log.md` for durable choices, `docs/troubleshooting_log.md` for
   failures, and `EXPERIMENT_LOG.md` only for research experiments.
-- All newly authored or edited equity-factor-research-related documentation must
-  be written in English. This includes public docs, AGENTS, skills, logs, private
-  addenda, task handoffs, and reports. Do not rewrite immutable historical
-  evidence just to translate it; report any retained historical exception
-  explicitly. No newly authored non-English prose anywhere in this project's
-  documentation. User-facing chat interactions may remain in the user's preferred language.
+- Documentation language follows the `AGENTS.md` writing rules.
 
 ## External Authorization Gate
 
 Apply the [repository authority boundary](../AGENTS.md#authority-and-scope) to
 external, sensitive, or destructive operations. Workflow eligibility and
 successful checks do not grant authority. Without explicit action-and-scope
-authorization, stop after local validation. The owner standing same-change
-publication rule in `AGENTS.md` is that explicit authorization for the matching
-PR.
+authorization, stop after local validation. The owner's standing same-change
+publication grant in `AUTHORITY.md` is that explicit authorization for the
+matching PR.
 
 When the same-PR lifecycle authorization defined in `AGENTS.md` is current,
 apply the lifecycle below to that PR. Otherwise, stop after local validation and
@@ -102,9 +98,8 @@ re-enter this gate before acting on a different PR or changed scope.
   stabilize on the final stable current head, conduct formal review under the
   live Herdr+Pi coordination standard. Reviewer routing, lane seats, quota, and
   review-loop dispatch live in `coordinator.md`, `routing_table.json`, and
-  `model_bindings.json`. The
-  reviewer is read-only on a clean root at that exact head, never the producer
-  worktree.
+  `model_bindings.json`. The reviewer is read-only on a clean root at that exact
+  head, never the producer worktree.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -135,21 +130,16 @@ re-enter this gate before acting on a different PR or changed scope.
 - No PR is technically merge-eligible while its current head has any unresolved
   actionable finding from any review channel, including PR-level comments or
   independent audits that do not create a resolvable thread.
-- For review-required PRs, active review gates are satisfied by table-owned live
-  independent review reports. The legacy requirement where a requested
-  Codex review has completed on the exact current head via GitHub Code Review is
-  retired, as GitHub `@codex review` is retired and not a valid review channel.
-  (Retained historical compatibility note for unchanged test pins: "Pending,
-  missing, or head-mismatched Codex review evidence is ineligible"; active merge
-  gating is governed by live independent reviews). A review-required PR is
-  technically merge-eligible only when required exact-head independent reviews
-  report no actionable findings, no review thread remains unresolved, and all
-  required checks and formal reviews pass.
+- For review-required PRs, the review seats in `routing_table.json` supply the
+  formal reviews; GitHub `@codex review` is a retired channel. Pending, missing,
+  or head-mismatched independent review evidence is ineligible. A
+  review-required PR is technically merge-eligible only when required exact-head
+  independent reviews report no actionable findings, no review thread remains
+  unresolved, and all required checks and formal reviews pass.
 - Before claiming a provider, model, or quota is unavailable, probe it live in
   that same turn. Do not reuse an older pull request's limit message.
 - Merge wait requires the actual exact-head formal review body: pass or
   findings. A silent wait that times out is not evidence of unavailability.
-  GitHub Code Review usage-limit is irrelevant because that channel is retired.
 - Technical eligibility alone never grants merge authority; full-lifecycle or
   explicit merge authorization must also be current for that same PR and scope.
 
@@ -181,11 +171,27 @@ choice, missing authority, or when no capable model can determine the next
 legal step. Do not pause to request permission to continue that step. When the
 owner explicitly directs a STOP boundary after an authorized task, checks, and
 version management, that explicit stop directive governs; do not continue into
-unauthorized implementation or data tasks. Owner standing same-change
-publication in `AGENTS.md` is the explicit authorization for the matching PR.
-Private data, new paid services, credentials, and trading stay outside that
-path. Do not end a turn merely on dispatch acknowledgment while delegated work
-is outstanding.
+unauthorized implementation or data tasks. The owner's standing same-change
+publication grant in `AUTHORITY.md` is the explicit authorization for the
+matching PR. Private data, new paid services, credentials, and trading stay
+outside that path. Do not end a turn merely on dispatch acknowledgment while
+delegated work is outstanding.
+
+## Process Failures
+
+The owner ranks these process failures as P1. Each entry names the commit that
+first recorded the rule.
+
+| Failure | First recorded |
+| --- | --- |
+| Skipping a required live availability check before claiming a provider, model, or quota is unavailable | `21d9d27` (2026-09-03); moved to the controller by `9798ba4` |
+| Skipping the pre-round Herdr tab inspection | `00f1b3d` (2026-09-14) |
+| Ending the coordinator process while an authorized PR waits for its exact-head review body | `00f1b3d` (2026-09-14) |
+| Asking the owner for a second create-PR or merge command after an owner-requested in-scope change is complete | `932d576` (2026-09-15) |
+| Asking the owner to issue an already-determined next command during authorized unattended work, including running a demo or starting the next roadmap slice | `4859cab` (2026-09-16) |
+
+Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
+own incident record and owner confirmation.
 
 ## Waiting And Follow-Up
 

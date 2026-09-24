@@ -43,6 +43,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # The handoff freshness test resolves its checkpoint in full history.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5

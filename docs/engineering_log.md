@@ -1,5 +1,94 @@
 # Engineering Log
 
+This is a living engineering log for review notes, correctness audits, bug fixes, and implementation decisions that are useful for future PR summaries, interviews, retrospectives, and performance-review material.
+
+## How To Update This Log
+
+- Add a new dated entry at the top of the log, newest first, after meaningful engineering work, especially after correctness reviews, bug fixes, test design changes, architecture decisions, or non-obvious tradeoffs.
+- Do not use this log to claim profitability or investment performance.
+- Separate observed facts from assumptions. Use `Assumption:` or `Needs follow-up:` when evidence is incomplete.
+- Prefer specific engineering reasoning over generic status updates.
+- Link or name the relevant files, functions, tests, and checks when possible.
+
+---
+
+## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A2-01 and A2-02
+
+- The REVIEW seat (GPT-6 Astra, report
+  `coord/reports/v8_review_20260923/pr257/review_pr257_gpt6astra_a2.md`)
+  returned one MATERIAL and one ADVISORY finding on `7e4f5c5`.
+- A2-01 (process failure, P1 class): the a1 PR description and FIXER report
+  stated that `test_authority_record_fields_and_quotes` asserts
+  whitespace-normalized equality with the source commits. The test checked
+  structure only; the equality had been verified once by hand. Replacing
+  "zero open MATERIAL" with "one open MATERIAL" in `AUTHORITY.md` passed every
+  governance test.
+- Fix: `SOURCE_GRANTS` pins each grant's source commit, file, and text.
+  `test_authority_record_fields_and_quotes` now requires each quote to equal its
+  pinned text (case-sensitive, whitespace collapsed) and each `Source` field to
+  name the pinned commit. `test_pinned_grant_text_matches_its_source_commit`
+  reads `git show <commit>:AGENTS.md` and requires the pinned text in it.
+  `test_grant_quote_check_rejects_a_substantive_mutation` plants three
+  mutations (a changed word, a changed clause, a changed letter case) and
+  requires each to fail the check.
+- Rule applied from this incident: a published claim that a test checks a
+  property names the test and a mutation that the test rejects.
+- A2-02: the handoff's Next Safe Action names PR #256 as merged and PR #257 as
+  the active review, followed by PR #258, PR #259, and PR #260.
+
+## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A1-01 to A1-05
+
+- The REVIEW seat (GPT-6 Astra, report
+  `coord/reports/v8_review_20260923/pr257/review_pr257_gpt6astra_a1.md`)
+  returned four MATERIAL findings and one ADVISORY finding on `cb3d7e3`. The
+  branch was rebased onto main after PR #256 (`ad159c0`) with an unchanged tree.
+- A1-01: each `AUTHORITY.md` grant now quotes its source sentences verbatim
+  (verified against `e2476a2` and `8dbba99` after whitespace normalization).
+  `Scope` and `Expiry` are labeled owner-approved interpretations. The decision
+  log, this log, and the PR description no longer call the adapted record
+  verbatim.
+- A1-02: `AGENTS.md` restores "Never store secrets or raw private data in the
+  repo" and states that it covers untracked and ignored files; R11 keeps the
+  publication rules.
+- A1-03: the freshness test resolves the handoff's baseline SHA in the base's
+  first-parent history and counts squash-merge subjects after it, refusing an
+  absent checkpoint. Cases cover a skipped PR number, out-of-order numbers,
+  stacked feature commits, and a future checkpoint. CI checks out full history
+  (`fetch-depth: 0`); the packed history is about 7 MiB.
+- A1-04: the grant guard derives eight-word runs from the current grant quotes
+  plus the historical phrases. Tests copy each current grant, each historical
+  phrase, and a partial run into every agent-maintained file in memory, and
+  each copy is detected. The docstring states the guard's finite textual scope.
+- A1-05: the process-failure table cites `21d9d27` as the first recording of the
+  live-availability rule and `9798ba4` as its move to the controller.
+
+## 2026-09-23 - Governance constitution and standing-authority record
+
+- The owner adopted the strategic audit's decisions and directed this
+  streamlining. Branch `claude/governance-constitution` was rebased onto main
+  after PR #256 merged.
+- `AGENTS.md` shrinks from 283 to 192 lines. Invariants R1–R12 replace five
+  restatements of the non-deferrable list across `AGENTS.md`, the North Star,
+  and the roadmap. Every test-pinned authority phrase, section, marker, and
+  resume-order path remains.
+- The two standing grants moved to the new `AUTHORITY.md`, which quotes each
+  one verbatim from its source commit (`e2476a2`, `8dbba99`) and adds labeled
+  scope and expiry interpretations. `.github/CODEOWNERS` marks `AUTHORITY.md`,
+  `AGENTS.md`, and `.github/` as owner-controlled.
+- The controller absorbs the P1 process-failure list with first-recording
+  commits. It drops the retired GitHub Code Review compatibility note. Two test
+  pins that quoted the retired channel now assert the current rule, and two new
+  assertions keep the retired wording out.
+- The North Star states the edge thesis, objective and hurdle, and kill
+  criteria. The roadmap records M4.0 through M4.6 as merged, defines M4.7 with
+  its decision gate, aligns the privacy bullet with the written data terms, and
+  adds backlog rows for real-data evidence freshness and delisting terminal
+  evidence.
+- The handoff moves to main after PR #256. `tests/test_governance_constitution.py`
+  checks the constitution cap and R1–R12 labels, the standing-grant record, the
+  North Star sections, and handoff freshness in merge distance along the base's
+  first-parent history. CI checks out full history for that test.
+
 ## 2026-09-23 - Coordination standard V8.0 path
 
 - The owner released coordination standard V8.0 in
@@ -17,6 +106,139 @@
   V8.0 `GENERAL_EXEC` binding specifies high. Branch `claude/standard-v8-path`
   from `8fa0055`. Merge requires the V8.0 STANDARD minimum gate: one fresh
   independent `REVIEW` seat.
+
+## 2026-09-22 — M46-R1 singular covariance remediation
+
+- Review of `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` identified a P2 material
+  numerical mismatch: PSD tolerance accepted tiny negative covariance roundoff,
+  while a zero-tolerance quadratic-form check refused a valid hedged portfolio.
+- Code candidate `cfec56d016be17937a2496280e2a53d6722a0c0e` aligns aggregate
+  factor/active variance acceptance to -1e-14, then clamps each aggregate to zero.
+  Signed Euler contributions remain unchanged; the bounded aggregate correction
+  and final addition rounding are explicit in the function contract and tests.
+- Numerical boundary verification pairs every tolerated PSD boundary with a
+  downstream quadratic-form counterexample, including null-space exposure,
+  zero total risk, positive specific risk, and material levered negativity.
+  The exact reviewer fixture is retained. Five new counterexamples fail before
+  repair; the complete final risk suite passes 79 tests. Two initial oracle
+  precision errors and their corrected checks remain visible in the evidence.
+- Final core lane: 4,215 passed and two inherited precision skips. Diagnostics:
+  125 passed. Parsed JUnit IDs establish a disjoint total of 4,340 passes and two
+  skips. Ruff, compileall, and both exact 124-book baseline comparisons pass.
+- All original 52 negative ablations still fail as expected. Three independent
+  removals prove the necessity of the aligned tolerance and the two scalar
+  clamps. The intact package and existing volatility-ddof equivalence pass;
+  every original production source and archived log hash is verified.
+- `coord/reports/m4_6_evidence/remediation_r1/validation.json` records code hashes,
+  baseline fingerprints and new QA; the implementation report records the code
+  commit and preserved evidence. Independent M46-R1 closure remains pending
+  coordinator re-review of the frozen evidence commit.
+
+## 2026-09-22 — M4.6 causal multi-factor risk attribution candidate
+
+- Binding card `738caf5` precedes runtime changes from merged base `b60e109`.
+  The producer implements one risk module, optional sidecars in both engines,
+  a synthetic all-attempt demo, 70 deterministic tests, and isolated ablation.
+- Five winsorized standardized styles plus Market use immediately prior observed
+  exposures and actual holdings. OLS/WLS fits require full rank. Gross return
+  equals factor plus specific contributions; engine costs reconcile net return.
+  Active-risk covariance and residual variance use strictly earlier fits.
+- The 62-factor/124-book baseline preserves exact bytes for both the historic
+  comparison schema and every M4.5 result field. The latter includes 3,038
+  existing fields, raw buffer hashes, ordered axes and dtypes. The historic
+  fingerprint remains `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+- The synthetic demo retains eight successful negative-net-return books and two
+  expected refusals. Maximum one-period reconstruction error is
+  `3.469446951953614e-18`. The appended attempt log retains both generated runs.
+  All inputs and availability assertions are synthetic.
+- Final core QA passes 4,206 tests with two inherited platform precision skips;
+  diagnostics passes 125. Their verified disjoint union has 4,331 passes and two
+  skips. Ruff, compileall, baseline replay, repo-map checks, and diff checks pass.
+  Initial fixture errors and the initial 4,205-pass core run remain in evidence.
+- The initial ablation exposes an exact mathematical equivalence: changing
+  equal-window historical volatility ddof cancels during cross-sectional
+  standardization. The final run records that equivalent result, 52 expected
+  negative removals, and a passing intact baseline. Every production source hash
+  stays unchanged. The sample-volatility definition remains the declared
+  convention; removal of the volatility calculation fails its independent oracle.
+- Typed refusals cover enabled terminal-event attribution, missing cross-section
+  coverage, rank deficiency, and invalid covariance. Empirical calibration,
+  residual correlations, changing regression universes, industry factors and
+  geometric linking remain in the roadmap backlog. The implementation report
+  and `coord/reports/m4_6_evidence/validation.json` contain producer evidence.
+  The frozen candidate transfers write responsibility to the coordinator for
+  independent single-seat GPT-6 Astra High Fast review and hosted CI.
+
+## 2026-09-22 — M45-R1 All-Buy Funding Remediation
+
+- Independent review of `fa63cfae90b6543e94b861df2277ecdfab9b9460` reproduced a
+  P1 self-financing defect missed by the initial tests. An all-True pandas buy
+  selection aliased the executed-trade buffer; actual-fill scaling then caused
+  final outlay to apply the funding scale twice. The initial producer QA's
+  cash-conservation coverage omitted this selection boundary.
+- Runtime and regression fix commit: `de37dd053c6302e0d630469d7796ab7eee9e8a36`.
+  Buy values now own an explicit copy. A post-trade guard requires finite cash
+  plus signed positions to match post-cost equity within $0.000001. The
+  existing input-balance guard remains before trade quotation.
+- Durable verification rule: arrays retained across financial-state mutation
+  require explicit ownership, and all-buy/single-security funding cases must
+  verify actual-fill fees, cash debits, and final cash-plus-position equality.
+  The original eight reviewer regressions fail before repair and pass after it.
+  Twenty added regression cases bring the three impact suites to 133 tests.
+- Seventeen isolated negative ablations fail as expected; the intact package
+  passes 133 tests. The new copy and post-trade reconciliation removals each
+  expose their own counterexample. Necessary accounting controls remain intact.
+- Full core lane: 4,136 passed and two inherited platform precision skips.
+  Diagnostics: 125 passed. Their disjoint union contains 4,263 collected cases,
+  with 4,261 passing. Baseline capture remains byte-identical with fingerprint
+  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+  Ruff, compileall, build, package-content comparison and map checks pass.
+- Capacity replay records 61 successes, 35 refusals and 37 negative-return books.
+  The $1B synthetic long-short throttle path now refuses a measured
+  $0.0000011920928955078125 post-trade discrepancy. The requested absolute limit
+  remains $0.000001. All prior outcomes remain in Git and the append-only log;
+  the current cases, brackets and Markdown match a separate replay exactly.
+- Current source/artifact hashes and full logs are recorded in
+  `coord/reports/m4_5_evidence/validation.json` and
+  `/private/tmp/efr-m4-5-remediation-evidence`. The implementation report identifies
+  the remediation SHA and the changed numerical boundary. Independent closure
+  of M45-R1 and hosted CI remain pending at producer handoff.
+
+## 2026-09-22 — M4.5 Optional Market Impact and Capacity Candidate
+
+- Implemented accepted plan `bd7a2c0` on branch `feat/m4-5-market-impact-capacity`
+  from verified M4.4 base `fe851ba0a69be1416db265bee4375433ab45d52d`. The directive's
+  expanded base-hash typo was resolved with live Git and coordinator/owner confirmation.
+- Added a shared square-root impact model, complete lagged ADV/volatility,
+  matching price/volume basis guards, and explicit raise/throttle/penalize policies.
+  Both engines expose dollar costs, actual trades, participation, deferred shares,
+  cancellations, and self-financing cash under the optional model. Existing
+  default-path fields retain exact baseline equality across 124 books and M4.3/M4.4 summaries.
+- Preserved baseline/candidate fingerprint:
+  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
+  The candidate retains the M4.4 terminal evidence and fee-exemption boundaries.
+- Generated 96 declared capacity scenarios: 62 successes, 34 refusals, and
+  38 negative net returns. The grid has zero observed positive-to-nonpositive
+  benchmark-excess brackets. Empirical capacity remains unmeasured.
+- The first demo run exposed small negative long-only holdings from floating-point
+  completion of deferred sells. Actual long-only sells now respect remaining
+  position value; excess shares are recorded cancellations. The append-only log
+  retains all five initial failures, and regression/ablation tests retain their cause.
+- Added 113 deterministic tests. Full CI selections pass locally: core 4,116
+  passed and two inherited longdouble precision skips in 28.02 seconds;
+  diagnostics 125 passed in 90.21 seconds. The disjoint union contains 4,243 cases.
+  Ruff, compilation, distribution build, package-schema checks, map freshness,
+  and whitespace checks pass. The initial stale-map failure was closed by
+  regeneration and a complete core rerun.
+- Fifteen isolated negative ablations each fail their independent counterexample;
+  the intact copied package passes all 113 new tests. Production source hashes
+  remain unchanged. Necessary causal, cost, cash, liquidity, and terminal controls
+  are retained. The supported no-removal outcome covers M4.5.
+- Updated the timing/accounting supplement, roadmap limitations, generated map,
+  and evidence report at `coord/reports/m4_5_market_impact_capacity_impl.md`.
+  CPython 3.12.13 is the supplied local environment. Hosted Python 3.11 CI and
+  the owner-directed fresh independent GPT-6 Astra High Fast review remain pending
+  at producer delivery to coordinator `w3:pE8`.
 
 ## 2026-09-21 - M4.4 independent-review remediation
 
@@ -112,6 +334,92 @@
   `coord/reports/m4_3_multiple_testing_impl.md`. Two independent GPT-6 Astra
   implementation reviews form the next acceptance gate under the owner's
   24-hour GPT-only mandate.
+
+## 2026-09-21 — CI Stage B/C runtime and lane acceleration
+
+- Delivery branch `feat/ci-stage-bc-acceleration`, base `431cdd2` (Stage A).
+- Profiled the complete synthetic diagnostic. The two book engines consume approximately 86% of instrumented pipeline time; native rolling rank alone addresses approximately 7.5%.
+- Implemented native rolling ranks with the existing tie-rule fallback, scalar-preserving signal traversal, a guarded numeric held-return path, and array output buffers for both accounting engines. Long-short bucket diagnostics execute on rebalance dates. Existing timing, arithmetic, costs, provenance and refusal guards retain their contracts.
+- Split CI into exhaustive core and diagnostics lanes with two bounded xdist workers each. The required `Python validation` job accepts only successful lane completion and retains failure/cancellation/skipped-result protection.
+- Local Python 3.11 verification: core 3,790 passed and two inherited platform precision skips in 39.74 seconds; diagnostics 125 passed in 135.04 seconds. Collection union has 3,917 unique cases, retaining all 3,819 original cases and adding 98 regression cases. Ruff, compilation, actionlint, packaging and whitespace checks pass. All 20 packaged ledger JSON/hash files match source. Tracked fixtures and reports remain unchanged. Repository-map regeneration produced identical content.
+- Fresh official-test call time falls from 218.774 to 79.844 seconds. Twenty-four preserved-baseline book configurations match all public fields exactly, including signed zeros. Isolated ablations retain the measured optimizations; median pair-of-books time falls from 2.0527 to 0.6818 seconds.
+- Assessment, implementation, ablation, evidence locations and limits: `coord/reports/ci_acceleration_stage_bc_impl.md`.
+- Formal independent review by Grok 4.6 Extra High on clean detached worktree: Verdict PASS (MATERIAL: 0). Independent local QA: core lane 3,790 passed, 2 skipped in 38.66s; diagnostics lane 125 passed in 134.83s; 3,917 unique cases across disjoint lanes. Report recorded in `coord/reports/ci_acceleration_stage_bc_grok_review.md`.
+- Hosted CI verification: second consecutive hosted run `35631677129` on candidate `ccaf59c` passed all 3,917 cases and `Python validation` in 5m29s (core 2m12s, diagnostics 5m26s, gate 3s), confirming reproducible sub-6-minute CI performance across multiple runs and addressing ADV-BC-1.
+
+## 2026-09-21 — Stage A CI acceleration: bounded pytest-xdist scheduling
+
+- Working branch `feat/ci-acceleration-and-optimization` from design baseline `3bb32dfd316bdd2a831fbe62ab961e62a0cf7689`.
+- Added `pytest-xdist>=3.5.0` to the `dev` extra. `[tool.pytest.ini_options]` remains `testpaths = ["tests"]`, `pythonpath = ["src"]`, and `addopts = "-ra"`. Local `python -m pytest -q` stays the serial reference.
+- Sorted `tests/test_ml_combination.py` parametrization over `_SUPPORTED_MODELS` so independent xdist workers collect the same node IDs under hash randomization. Production `_SUPPORTED_MODELS` remains a set.
+- Replaced `.github/workflows/ci.yml` with the Stage A single-job workflow: required check name `Python validation`, job ID `validation`, two-worker `--dist worksteal`, `--max-worker-restart=0`, native thread limits, explicit `cache-dependency-path: pyproject.toml`, `--prefer-binary` install, fail-closed evidence upload, PR concurrency cancel-in-progress, and `merge_group` eligibility.
+- Retained the existing campaign-safety comments required by `test_ci_runs_only_committed_synthetic_campaign_fixtures` (`committed synthetic fixtures`, `not result-bearing`, `private panel`).
+- Stage B runtime-kernel work and Stage C multi-job lanes remain unactivated. GitHub 5–8 minute wall-clock acceptance remains a same-runner measurement after publication.
+- Local verification on CPython 3.12.13 / pytest 9.1.1 / xdist 3.8.0 with native threads clamped to 1: `ruff check .` clean; `compileall` of `src tests research lean` clean; `python -m build --outdir /tmp/efr-ci-accel-dist` produced sdist and wheel each containing 20 ledger schema files; actionlint 1.7.12 accepted the workflow; three workflow shell bodies passed `bash -n`.
+- Key parallel suites (`test_ml_combination.py`, `test_campaign_conformance.py`, `test_campaign_runner.py`, `test_project_structure.py`, `test_real_data_multifactor_diagnostic.py`, `test_cross_validation.py`, `test_lean_smoke_test_scope.py`): 164 passed in 7.33 s.
+- Full two-worker worksteal: 3,817 passed, 2 skipped, 23 warnings in 268.59 s; JUnit 3,819 unique node IDs, 0 duplicates. ML collection order is identical under `PYTHONHASHSEED` 1, 2, and 3. `git diff --check` clean. Tracked fixtures and reports unchanged.
+- Implementation report: `coord/reports/ci_acceleration_impl_report.md`.
+- Dual independent review conducted across isolated clean worktrees at candidate `8c859ef80de036f9839a72d4019d181180eca134`:
+  - Reviewer 1 (GPT-6 Astra Extra High): technical assessment found 0 MATERIAL implementation defects; full 2-worker suite passed 3,817, 2 skipped; recorded R1-A01 (reversed comparison wording in impl report). Report at `coord/reports/ci_acceleration_gpt6_review.md`.
+  - Reviewer 2 (Grok 4.6 Extra High): Verdict PASS (MATERIAL: 0); full 2-worker suite passed 3,817 in 264.06s with 3,819 unique node IDs; recorded ADV-CIA-1 (conformance pin coverage). Report at `coord/reports/ci_acceleration_grok_review.md`.
+- Remediated R1-A01: corrected 420s vs 1,144.64s floor comparison and nominal 1.94x speedup / 0.515 elapsed ratio phrasing in `coord/reports/ci_acceleration_impl_report.md`.
+- Remediated ADV-CIA-1: extended `tests/test_campaign_conformance.py::test_ci_runs_only_committed_synthetic_campaign_fixtures` to assert job name `Python validation`, the six thread clamping env keys (`OMP_NUM_THREADS="1"`, etc.), `-n 2 --dist worksteal`, and `--max-worker-restart=0`.
+
+## 2026-09-20 — Milestone 4.0 Step 4: real-data multi-factor diagnostic runner
+
+- Working branch `feat/m4-0-real-data-diagnostic-runner` from baseline `01a2607` (`main` after PR #245).
+- Implemented `research/real_data_multifactor_diagnostic.py` wiring `BLUECHIP_50_COHORT` and `SPY.US` through `load_eod_cohort_panels` into the committed 62-trial diagnostic path (52 classical price-volume alphas plus 10 composites/interactions).
+- Research prices use vendor `adjusted_close`; OHLC is scaled by `adjusted_close / close` and volume by the inverse ratio so dollar volume stays on a matching price/volume basis. `SPY.US` adjusted close is the long-only accounting benchmark. A separate cash-dividend overlay is refused (PIT-007).
+- Reused M01-M11 causal parents: lag-1 execution, closed-window walk-forward IC weights, decision-time frozen smoothing targets, netted gross exposure, solvency guards, across-trial Sharpe variance for DSR, and append-only trial inventory logging.
+- Official outputs: `reports/real_data_multifactor_diagnostic.md`, `reports/experiment_logs/real_data_multifactor_diagnostic.json`, and `reports/experiment_logs/real_data_multifactor_diagnostic.trials.jsonl`. Tracked records redact private absolute paths.
+- Added `tests/test_real_data_multifactor_diagnostic.py` on synthetic temporary Parquet fixtures so CI does not require local private data.
+- `src/reporting/experiment_log.py` accepts `DIAGNOSTIC_REAL_DATA_CAVEATS`. The synthetic experiment registry skips `real_data_multifactor_diagnostic` logs.
+- Experiment log entry `20260920-001-real-data-multifactor-diagnostic`. Evidence ceiling remains `DIAGNOSTIC_ONLY`. Readiness decision `diagnostic_ready_with_low_caveats`. Survivorship bias remains explicit.
+- Official run on the local 50-stock window `2016-08-08` through `2026-08-07` (2,514 source rows) completed 156 books / 148 distinct trials with zero failed attempts. Tracked outputs redact private paths.
+- Verification: focused real-data tests 10 passed; full `pytest tests/ -q --basetemp=/tmp/efr-pytest-m40-real` 3779 passed, 2 skipped; `ruff check .` clean; `compileall` of `src tests research lean` clean; `python scripts/repo_map.py` regenerated (`research` 25 files, `tests` 233 files).
+
+## 2026-09-20 — Milestone 4.0 Steps 1–2: Parquet adapter and blue-chip cohort
+
+- Working branch `feat/m4-0-real-data-parquet-adapter` from baseline `24592d5`.
+- Implemented `src/data/parquet_loader.py` providing local EODHD daily Parquet loading and wide panel alignment:
+  - `load_eod_parquet(file_path)`: validates OHLCV schema, requires finite strictly positive prices, non-negative volume, and rejects boolean types and unordered/duplicate dates.
+  - `load_eod_cohort_panels(symbols, data_dir, inventory_path, start_date, end_date)`: resolves symbols via JSON inventory or convention, enforces path confinement under data directory, and aligns per-symbol frames into wide union panels while preserving missing dates as NaN (PIT-009).
+- Implemented `src/data/bluechip_cohort.py` defining `BLUECHIP_50_COHORT` (static 50-stock liquid blue-chip diagnostic cohort snapshot) and `BENCHMARK_SYMBOL = "SPY.US"` under DIAGNOSTIC_ONLY status with explicit survivorship caveats.
+- Added runtime dependency `pyarrow>=14.0` in `pyproject.toml` and verified dependency structure in `tests/test_project_structure.py`.
+- Added 41 unit tests in `tests/test_parquet_loader.py` covering valid loads, inventory resolution, date filtering, and integrity error handling on synthetic temporary fixtures.
+- Regenerated `docs/repo_map.md` (7 mapped data files, 232 mapped test files).
+- Independent formal review by `GROK_REVIEW` on clean detached worktree: `PASS (MATERIAL: 0)` in `coord/reports/m4_0_parquet_adapter_review.md`.
+- Addressed advisories ADV-M40-1 (calendar-day midnight flooring for timestamped daily bars), ADV-M40-2 (explicit `sort=True` in panel concat), ADV-M40-3 (cohort wording precision), and ADV-M40-4 (dedicated edge-case unit tests).
+- Implementation report recorded in `coord/reports/m4_0_parquet_adapter_impl.md`.
+
+## 2026-09-20 — Milestone 3.10 causality and accounting remediation
+
+- Owner scope covers audit M01–M11 on the assigned hardening branch. A clean
+  detached worktree preserved the original checkout's untracked audit evidence
+  and lockfile.
+- Executable IC and regime families now use horizon-complete expanding weights.
+  Both books freeze smoothing references at decision time. Signed exposure,
+  final eligibility/caps, held-price refusal, solvency, and cost/liquidation
+  bases have deterministic synthetic regression coverage.
+- Constituent stitching preserves permanent IDs and refuses ambiguous ticker
+  reuse. Regime APIs validate lag/axes/range and preserve parent missingness.
+  DSR accepts explicit trial dispersion; the multifactor runner inventories
+  attempted configurations and persists append-only attempt events.
+- Superseded report bytes remain at baseline `25825b422add80ad8fc0e39f0c19f8c943da5548`.
+  Current synthetic reports and numerical pins reflect the repaired methods.
+- The ablation retained a redundant-handler removal after 18 exact-result
+  comparisons. Removing held-price refusal reproduced silent zero-return
+  valuation; that necessary guard remains.
+- `coord/reports/m3_10_hardening_report.md` records the implementation matrix,
+  accounting/statistical assumptions, trial inventory, validation, limitations,
+  and Coordinator acceptance gate.
+- Final validation on the assigned branch passed 3,726 tests with two platform
+  precision skips and 23 constant-input correlation warnings. Ruff, compilation,
+  whitespace checks, and the isolated offline source/wheel build passed. The
+  first full run's sole stale-map failure was corrected by regeneration.
+  All 62 default factors preserved early scores and both books' holdings under
+  separate future-label and future-price perturbations. The refined partial
+  sign-reversal and intervening-date disappearance fixtures passed 42 cases.
 
 ## 2026-09-19 - Milestone 3.9 Regime-aware dynamic factor allocation and composite
 
@@ -639,6 +947,250 @@
   the coordinator. Milestone 3 remains in progress and Step 4 retains its
   separate private-data owner gate.
 
+## 2026-09-18 - PR221 delegated runner-outcome decision
+
+- The owner delegated GROK-221-ADV-3's A/B runner-outcome decision through
+  `coord/pr221_astra_decision_card.md`, SHA-256
+  `63513da756d935defa77249899919c878b7bdf759593b04bc4e8e922642866ca`.
+  Starting HEAD was `3cee36c3a335e69a21e29edd6246fc0421787ce2` on clean
+  branch `codex/pr221-astra-outcome-decision`. One writer handled the
+  bounded design/evidence scope.
+- Chosen policy: diagnostic-only completion. Completed `MATCHED`,
+  `MISMATCHED` and valid `INSUFFICIENT_EVIDENCE` results permit attempt
+  `success` after the diagnostic evidence, report and terminal log complete.
+  The affected economic acceptance claim remains blocked for a mismatch or
+  evidence gap. `NOT_REQUESTED` preserves existing default report/log
+  behavior. The repeated owner-choice gate is resolved; formal review and
+  binding acceptance remain pending.
+- The design now binds report replacement, ordered per-item retention,
+  partial coverage, malformed request versus typed evidence deficiencies,
+  existing input/source-date/overlay refusals, unexpected execution errors,
+  logging failures and interruptions. The opt-in order is start, existing
+  guards/simulation, comparison with per-item retention, prepared report
+  replacement, then terminal success. A late logging failure remains an
+  incomplete attempt even when a new report exists. Earlier negative
+  evidence survives a later match.
+- The accepted four synthetic economic choices, evidence boundary, fixture
+  and timing/revision definitions, exact rational precision contract and
+  D01-D47 matrix retain their baseline bytes. Source, schemas, frozen
+  configurations, fixtures, official outputs and historical reports remain
+  preserved. Comparison output supplies no accounting or signal feedback.
+- Local design evidence passed 103 assertions, including 15 arithmetic
+  witnesses, 22 lifecycle traces and 24 completion-order permutations.
+  Seven isolated constraint removals each admitted a concrete regression;
+  all guards were retained. The supported ablation outcome is no further
+  design removal. These are producer design checks; future runtime
+  enforcement remains unverified.
+- Both current runners passed 44 retained scenarios. Injected partial report
+  writes reproduced damage to previous bytes; injected terminal-log failure
+  reproduced a new report with only a start record. These existing limits
+  are recorded explicitly and motivate the future opt-in report-preservation
+  requirements. Initial probe-import and prose-whitespace checker failures
+  were corrected; their logs remain retained.
+- Documentation QA passed 66 tests; focused consumer/split/event/overlay
+  regressions passed 94 tests. The full suite passed 2908 tests with two
+  platform precision skips and one existing constant-input warning. Ruff,
+  compilation and offline build passed. The generated map matched baseline.
+  `reports/pr221_runner_decision_attempt.md` records the policy, evidence,
+  commands, environment, trade-offs and genuine remaining gates.
+- Staging failed with exit 128 because `.git/index.lock` creation received
+  `Operation not permitted`. No commit was created. Exact delivery bytes,
+  SHA-256 manifests, replay evidence and final checks are released under
+  `build/pr221-runner-decision-evidence/` for a Git-writable coordinator.
+  Writer responsibility ends at that handoff. Fresh exact-head QA, two-seat
+  CRITICAL review, binding acceptance and Step 3 implementation remain
+  separate gates; this worker performed no publication or self-acceptance.
+
+## 2026-09-17 - PR221 numeric precision/error contract repair
+
+- Repaired `docs/synthetic_event_reconciliation_design.md` on baseline
+  `3a040b67d874dc850772d8053fd8c15cc9e29060`. AUDIT-001 required a precision
+  contract over the admitted positive finite binary64 domain. The match
+  predicate now uses exact rationals from `to_rational(x) =
+  Fraction(*float(x).as_integer_ratio())` and unrounded absolute tolerance
+  `1/10^12`. Finite-rounding witness D41 (`P_p=1`, `P_e=1e16`, `D=1`,
+  `A_p=1`, `A_e=1e16`) is `MISMATCHED` with exact delta `-1`; diagnostic
+  binary64 delta is `0.0`.
+- GROK-221-ADV-1: D04/D05/D44 are injected decimal `r_supplied` literals;
+  D42/D43/D45 are explicit binary64 level literals with unrounded computed
+  deltas. GROK-221-ADV-2: comparable rows carry `within_tolerance` or
+  `return_difference`. GROK-221-ADV-4: D31 names `P_p`, `P_e`, `A_p`, `A_e`
+  and `D`. GROK-221-ADV-3: diagnostic labels remain separate from existing
+  exceptions and the M3-08 metadata API; Step 3 runner mapping of those
+  labels onto attempt success or official-report replacement remains an
+  owner-semantic question and is unset.
+- Owner-approved synthetic economics are unchanged: pre-ex-date holder
+  gross entitlement, zero withholding, theoretical fractional ex-close
+  reinvestment, after-ex-close cutoff, and the 100/98/2 zero-return
+  example bound to draft `a6a22e8a3f9007dfe439192aae1dd433d6a093f7`.
+- Local stdlib checker recorded 110 assertions and five isolated guard
+  restorations (binary64-only match, omitted supplied-level domain,
+  rounded delta, collapsed injected/reconstructed literals, Boolean
+  conversion). Supported ablation outcome is no design removal. Existing
+  documentation QA passed 66 tests. Focused dividend/event guards passed
+  94 tests. Full suite passed 2908 tests with two platform precision skips
+  and one existing constant-input warning. Ruff, compileall, offline build
+  and whitespace checks passed. `docs/repo_map.md` regenerated identically.
+- Runtime, schemas, fixtures, official reports and
+  `reports/dividend_design_attempt.md` are preserved. No comparator or
+  schema implementation was added. Exact commands, log hashes and
+  limitations are in `reports/pr221_precision_fix_attempt.md`. Formal
+  CRITICAL reviews remain required on the new exact head.
+
+## 2026-09-17 - Step 2 owner semantic acceptance for synthetic tests
+
+- The owner accepted the convention presented in draft
+  `a6a22e8a3f9007dfe439192aae1dd433d6a093f7` for synthetic tests only:
+  pre-ex-date holder gross entitlement, zero withholding, theoretical
+  fractional reinvestment at the ex-date close and an after-ex-close evidence
+  cutoff. The prior-close 100, ex-close 98 and dividend 2 example retains its
+  zero gross reference return and the existing dividend double-count refusal.
+- Acceptance evidence is the coordinator record
+  `coord/step2_semantic_acceptance.md`, SHA-256
+  `b6ae3b63af80e7afda8dc72784ec69b8cecae7697bbbcf3aa562d43943d01ba1`.
+  The current design records the resolved owner semantic gate. Independent
+  CRITICAL reviews, exact-head QA, binding acceptance and implementation gates
+  remain pending. The decision's scope is synthetic tests only.
+- This metadata update preserves economic definitions, examples, matrix rows,
+  runtime, schemas, historical reports and earlier engineering entries.
+  The separate local report
+  `build/dividend-design-evidence/owner-acceptance-qa.md` records design-check
+  revalidation, documentation QA, diff and preservation checks, exact file
+  hashes and version-management disposition. Existing design witnesses are
+  revalidated; this owner-state update starts no new ablation loop.
+
+## 2026-09-17 - Step 2 proposed synthetic dividend comparison
+
+- Added `docs/synthetic_event_reconciliation_design.md` as an unaccepted
+  Step 2 proposal on source HEAD
+  `57035fbfe3f8495e6495feecb8afbc2664f3f237`. The single owner decision covers
+  pre-ex-date holder entitlement, gross zero-withholding treatment,
+  theoretical ex-close reinvestment and an after-ex-close evidence cutoff.
+  The USD 100 -> USD 98 raw-price example plus USD 2 dividend gives 0%
+  reference return; unchanged supplied total-return levels match that value.
+- The note supplies independent hand arithmetic and 40 outcome rows covering
+  numeric discrepancies, field bases, identity, missing anchors, revisions,
+  repeated dates, duplicates, empty evidence, invalid inputs and unsupported
+  events. An explicit future comparison request preserves the current M3-08
+  metadata API and independent PIT-007 overlay refusal. Runtime, schemas,
+  official configurations/reports, data access and publication remain outside
+  this design attempt. Owner semantics and formal acceptance remain pending.
+- Local evidence recorded 169 literal assertions, including 12 numeric
+  scenarios, 40 matrix-row consistency checks and six isolated guard
+  ablations. Each removed guard admitted an unsafe match; all six were
+  restored, preserving the original proposal bytes. This is a supported
+  no-change design outcome. Future runtime enforcement remains unverified.
+- Existing focused regressions passed 94 tests. The full suite passed 2908
+  tests with two platform precision skips and one existing constant-input
+  warning. Ruff, compilation and the offline build with cached tools passed.
+  `docs/repo_map.md` was regenerated. The attempt report records commands,
+  environment, baseline identities, read scope, negative evidence and limits.
+- Herdr inspection returned `PermissionDenied: Operation not permitted`.
+  The inherited worker locator is workspace `w3`, tab `w3:tBS`, pane
+  `w3:pDR`; actual pane rendering and native model settings require
+  coordinator verification. QA output streamed through the active worker.
+  Live remote verification failed at GitHub DNS resolution. These operational
+  limits establish no unavailable-model claim and grant no permission bypass.
+- Current process evidence incorporates the live v7.24 operating card's
+  section 6 adaptive waiting correction: select supported waits or adaptive
+  polling from task duration, progress, risk and intervention needs; prefer
+  lightweight state checks, reconcile reports and processes on each wake,
+  and maintain an active wait when notification-driven resumption is
+  unverified. Completion notifications follow saved evidence and require
+  recipient verification. Earlier historical incidents retain their bytes.
+- `reports/dividend_design_attempt.md` owns the full local attempt evidence
+  and owner decision. The worker stops at the proposed draft; CRITICAL
+  reviews, binding acceptance and Step 3 implementation remain later gates.
+- Local staging failed with exit 128 because `.git/index.lock` creation
+  received `Operation not permitted`. The four-file draft remains unstaged
+  at the source HEAD. The delivery manifest, complete patch and evidence
+  manifest are saved under `build/dividend-design-evidence/`. Writer
+  responsibility is released at final handoff for a Git-writable coordinator
+  session to commit the exact bytes. Herdr notification remains unavailable
+  under the same session-inspection restriction; the final response carries
+  the full report and manifest locators.
+
+## 2026-09-17 - Astra roadmap Step 1 split consumption proof
+
+- PR #219 is merged at source HEAD
+  `744f4922485b34317bb472e43bf5eb79e7f713e7`, as recorded in local Git
+  history. This authorized increment implements Step 1 through tests and
+  evidence on `codex/split-proof-20260918`.
+- Added `tests/test_demo_split_proof.py` with 20 deterministic cases across
+  Demo v0 and M3-01. Both actual pipelines establish equal-weight holdings
+  before the golden's April 1-2 split interval. Independent committed
+  expectations pin adjusted gross return, drift, turnover, and cost. The raw
+  contamination counterexample pins -0.25 gross return, one-third turnover,
+  and 0.00025 event cost. Initial deployment cost 0.001 is asserted separately.
+- Tests preserve metadata equivalence, source prices/index/events, frozen
+  configurations, the original split golden, and success/refusal attempt
+  prefixes. Absent, malformed, and missing event dates and cash overlays
+  preserve the previous successful report. Official reports/logs and runtime
+  files retain their baseline bytes. The generated map records 216 test files.
+- Tested source HEAD was `744f4922485b34317bb472e43bf5eb79e7f713e7` plus the
+  new test with SHA-256
+  `653d0e80146fed242c4574ddb7194601e0975d4d6e26231b2ef59737c757b12f`.
+  Existing focused baseline: 78 passed. New proof and isolated ablation:
+  20 passed each. Baseline archive suite: 2888 passed, two platform skips,
+  one existing constant-input warning. Candidate suite: 2908 passed with
+  the same skips and warning. Ruff and compilation passed. The default
+  isolated build failed at dependency download because PyPI resolution was
+  unavailable. An offline build using existing cached setuptools 84.0.0 and
+  wheel 0.48.0 produced both distribution formats.
+- The first candidate suite retained 102 failures: 101 from placing pytest
+  temporary outputs inside the repository, where existing safety guards
+  require external paths, and one stale generated-map count. Restoring
+  pytest's standard temporary location and regenerating the map resolved
+  these failures. Source guards and existing tests retained their bytes.
+  The initial environment probe also retained its missing-setuptools result.
+- Isolated ablation inlined the single-use event-value projection helper,
+  reducing the test from 221 to 217 lines. All 12 value snapshots, 20 attempt
+  logs, and 20 temporary reports matched after output-directory normalization.
+  The simplification is retained; input capture, golden assertions, and
+  refusal checks remain. Single-run timings provide no speedup claim.
+- `reports/split_proof_attempt.md` records exact commands, environment,
+  hashes, preserved failures, reconstruction instructions, limitations, and
+  the next coordinator CI/review gate. This evidence covers one synthetic
+  adjusted-series consumption proof. Full corporate-action reconciliation
+  remains open, Milestone 3 remains in progress, and Step 2 design acceptance
+  remains a separate owner semantic gate. Historical language exceptions
+  retain their immutable bytes; all prose added in this increment is English.
+
+### PR #219 process incidents carried by the canonical writer
+
+- **Visibility incident, P1:** `coord/pr219_visibility_incident.md` records
+  four minutes of empty output from a non-interactive Pi reviewer. The
+  coordinator retained the empty attempt, stopped the original process,
+  verified its exit, and replaced it with an interactive TUI review in the
+  same tab. Visible prompt delivery and live response were verified. The
+  operating correction requires interactive review and verification of both
+  submitted task and live response after startup settles. Shell command
+  display and an empty output file provide insufficient visibility evidence.
+- **Continuation incident, P1:** `coord/continuation_correction.md` records
+  the coordinator ending a turn while that authorized review remained active.
+  The resumed coordination captured the final MATERIAL 0 / ADVISORY 0 body
+  for candidate `ee98ee674fba1d86b66037c3f81bfbcf1ff69355`, with CI run
+  `35296802364` passed and the independent clone clean. The existing
+  controller's Waiting And Follow-Up section owns continued bounded waits,
+  evidence reconciliation, and advancement through the authorized scope.
+  This entry records the incident and recovery under that existing policy.
+- The incident records' pending-review and pending-merge statements describe
+  their historical checkpoints. The subsequent local PR #219 merge at
+  `744f4922485b34317bb472e43bf5eb79e7f713e7` supplies this increment's baseline.
+
+### Local version-management handoff
+
+- Final documentation regression: 66 passed. Ruff passed again. Ablation
+  reconstruction reproduced the saved baseline bytes. The baseline manifest
+  comparison confirmed the complete engineering-log prefix and every other
+  pre-existing tracked file except the generated map count remained intact.
+- Local staging failed with exit 128 because `.git/index.lock` creation
+  received `Operation not permitted`; the session exposes `.git` as read-only.
+  The four-file change remains unstaged, with current HEAD
+  `744f4922485b34317bb472e43bf5eb79e7f713e7` and no new commit. The complete
+  delivery patch and QA evidence remain under `build/split-proof-evidence/`.
+  Writer responsibility is released at handoff. A Git-writable coordinator
+  session owns the local commit and subsequent exact-head CI/review gate.
 
 ## 2026-09-16 - M3-08 event-date membership and event-table disclosure
 
@@ -1247,6 +1799,64 @@
   QA_WINDOW_CLEAR. Conditional acceptance of any residual fixture cost belongs
   to the coordinator under owner instruction, not this producer.
 
+## 2026-09-08: Round 2 Whole-Codebase Ablation (Historical B2 Acceptance & Initial C1 Evidence Checkpoints)
+
+- **Status:** B2 Implementation Accepted (Plan A2); Initial C1 Integration Checkpoint QA Complete (124 Executions, 36 Triples, 7-Triple Campaign Cohort Evaluated); Three B2 Static Reviews Complete (3 Open Advisories Preserved); Gates for Later Final Candidate (Fresh Exact-Candidate QA, Fresh Static Reviews, Local Codex PR Review, Linux/Python 3.11 CI) and Owner-Authorized Separate Branch/PR Publication Pending (Live Checks Belong in Eventual PR Gate Record); Merge, auto-merge, deployment and main pushes are not authorized.
+- **Baseline Commit:** `6ee193c9bb43f8290b3e09396fd241fec32df695` (439 files, manifest `70237d678616cd309632117cac062dba9d24d63f29d9fd97361b29a4b2146dc4`).
+- **Review Candidate Checkpoint (B2):** `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (448 files, candidate source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`).
+- **Initial Integration Checkpoint (C1):** `713bba95e393514720973ca2fcb58b70cba23d8d` (tree `359090fbca29034648307ab7740b776f0122eff6`, parent `6ee193c9bb43f8290b3e09396fd241fec32df695`, 483 tracked files, initial churn 53 files / +89,521 / -55, not final PR churn; runtime/test bytes identical to B2; documentation/evidence composition differs).
+- **Executed Environment:** macOS 27 arm64, existing isolated Python 3.12.14 virtual environment, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, pytest 9.1.1, Ruff 0.16.6. Numerical library threads locked to 1.
+
+### Scope & Architectural Changes
+This ablation round completes the implementation and machine verification of seven accepted architectural simplifications across six runtime files:
+1. `src/campaign/runner.py` (C13 + C01c): Per-execution memo of cost-independent interval return maps (`_held_map` / `_held_return` lookups, `C13`) and execution-owned anchor date indexing (`C01c`). Per-trial costs, holdings, and validation state remain strictly isolated.
+2. `src/ledger/schema_registry.py` (C02): Consolidated redundant structural schema traversals within single validation calls while preserving packaged schema authority, release isolation, and transactional event validation.
+3. `src/backtest/portfolio.py` (C04b): Empty-axis preserving column iteration in source provenance capture, guaranteeing exact Nx0, 0xM, and 0x0 shape invariants (`((), ())` on 2x0 input), original/current digests, and wide/nullable scalar typing.
+4. `src/backtest/metrics.py` (C05): Direct array access for validated numeric episode accounting, preserving chronological episode state transitions, fees, slippage, and terminal-open exclusions. C05 retains episode loops while replacing DataFrame scalar lookups.
+5. `src/features/validation.py` (C12): Canonical eligible-only label endpoint gathering after split reconstruction, batching endpoint gathering and vectorized division to eliminate repeated scalar indexing (baseline already restricted computation to eligible rows).
+6. `src/features/diagnostics.py` (C10b): Vectorized Spearman Rank IC batching with eligibility-local gating (B2 repair, checking valid asset-pair counts within each date row) while keeping baseline Pearson correlation byte-exact; ONLY Spearman receives the 1e-12 gate; Pearson, public axes, dtypes, names, NaN masks, and error order stay exact in tested contracts.
+
+### Code Churn Summary (Pre-Publication Checkpoint)
+- **Production Python (`src/`):** 109 added / 52 deleted across 6 files (+57 net lines).
+- **Test Python (`tests/`):** 838 added / 0 deleted across 6 files (+838 net lines).
+- **Golden Fixtures (`tests/fixtures/`):** 30,325 added / 0 deleted across 3 files (+30,325 net lines).
+- **Documentation & Controls:** 148 added / 2 deleted across 3 files (`AGENTS.md`, `docs/engineering_log.md`, `docs/repo_map.md`; +146 net lines) before publication material.
+- **Repository Membership:** 439 baseline files → 448 candidate files (+9 added files).
+
+### Measured Performance & Tradeoffs (Producer Matrix: 18 Cases, 126 Triples)
+- **Core Speedups (Median Wall Clock):**
+  - Campaign 504×100: **13.052×** speedup (18.812s → 1.441s; -17.371s, -92.34%; cProfile calls 622.5M → 34.6M).
+  - Generic Backtest 504×100: **2.425×** speedup (2.217s → 0.914s; -1.303s, -58.77%); 160×12: **1.572×** (151.9ms → 96.7ms; -55.3ms, -36.37%).
+  - Feature Labels 1260×100: **2.883×** speedup (99.7ms → 34.6ms; -65.1ms, -65.32%).
+  - Sparse Diagnostics 504×100: **2.353×** speedup (183.3ms → 77.9ms; -105.4ms, -57.50%).
+  - Research Sweep 160×12 (8 cases): **1.586×** speedup (1.243s → 0.783s; -459.1ms, -36.95%).
+  - Ledger Transactions (Paths A & B): **2.237× – 2.239×** (197ms → 88ms; -109ms, -55.3%); with +1,000 extra records: **1.667× – 1.684×** (271ms → 161ms; -109ms, -40.0% to -40.6%).
+  - Schema Registry (30 Validations): **2.457×** speedup (596.9ms → 242.9ms; -354.0ms, -59.30%).
+- **Adverse Observations & Memory Tradeoffs Disclosed:**
+  - Independent campaign repetition 1: In the single initial independent triple, B2 was +0.151737s (~+10.8%) slower than B1 in wall time (1.558791s vs 1.407054s; CPU 1.557491s vs 1.405663s; baseline wall 18.091250s). This single observation qualifies B1-preservation statements; equal runner bytes do not prove host noise; recurrence/cause remain unresolved pending final integration QA.
+  - Minor B1-to-B2 shifts observed on large cases: `labels_1260x100` B2 median is +0.353ms (+1.03%) slower than B1; `sweep_160x12_eight_cases` B2 median is +8.145ms (+1.05%) slower than B1; `campaign_504x100` B2 is +9.4ms (+0.66%) slower than B1. Matched serial order mitigates confounding within pairs, but host activity varies over time; observed values are reported directly without causal speculation.
+  - Vectorized allocation costs: `labels_1260x100` tracemalloc peak increased +57.9% (+1,714,822 bytes) to 4.68 MB; `diagnostics_504x100_sparse` tracemalloc peak increased to peak 14.6× baseline (+3,713,984 bytes) while process peak RSS dropped 40.2% (-65.2 MB). Mechanisms provide plausible context, not isolated causal proofs.
+  - Unprofiled campaign peak RSS: In `campaign_504x100` measured executions, median process peak RSS rose slightly: baseline 309,526,528 bytes, B1 310,706,176 bytes, B2 311,394,304 bytes (+0.60% vs baseline, +0.22% vs B1), preserving the adverse finding across unprofiled and instrumented runs.
+  - Fixture resolution: Committed 4×3 fixture median is 44.47 ms in B2 vs 46.24 ms in baseline and 50.92 ms in B1 (7/7 pairs faster than B1, a 1.145× speedup; 6/7 faster than baseline).
+
+### Test Discipline, Source-Binding & Verification Lessons
+1. **Source-Binding Verification:** To prevent test harness path hijacking from repository root `pyproject.toml` `pythonpath`, the producer ran under `repair_b2/isolated_qa/` using isolated `pytest.ini` and conftest hooks, while independent QA under `qa/independent_b2/` used `-p independent_binding -o pythonpath=` with postcollection hooks asserting both module `__file__` and function `__code__.co_filename` matched expected candidate paths.
+2. **Restored Mechanism Assertions:** Checkpoint 001 omitted `assert rank_indexes and corr_indexes`. Checkpoint 002 restored the assertion byte-for-byte: baseline fails as an expected mechanism control (1 failed, 35 passed), B1 fails ineligible ranking (6 failed, 30 passed), and B2 passes completely (36 passed, exit 0). No assertions or tolerances in the current candidate were weakened.
+3. **Independent Population Structure:** Independent execution series under `qa/independent_b2/` comprises 106 separate executions (full suites 2,573 / 2,722 / 2,758 passes with 2 platform skips; 9 rejected controls; 30 fresh triples across 18 scopes). A separate 24-process cohort (`independent_b2_imports`) verified 7 fresh import triples plus 3 warmups across 11 first-party modules (medians: baseline 0.205355s, B1 0.206648s, B2 0.205939s).
+4. **Initial C1 Integration QA & Repeated Campaign Cohort:** Independent C1 execution QA, recorded in the supplemental public evidence (with raw runs preserved in local execution archive `qa/independent_c1_001`), comprised 124 separate executions (full suites 2,573 / 2,722 / 2,758 passes with 2 platform skips; 9 negative variants reproduced exact failure nodes; bound new guards baseline 1 failed/35 passed, B1 6 failed/30 passed, C1 36 passed). It evaluated 36 fresh triples across 18 scopes (7 triples each for `fixture_all_configured`, `diagnostics_504x100_sparse`, and `campaign_504x100`; 1 triple each for the other 15 scopes; campaign 7 are a subset of 36, separate from earlier populations).
+   - *Repeated Campaign 504 Medians:* Baseline wall 17.828260s / CPU 17.810254s; B1 wall 1.411179s / CPU 1.409800s; C1 wall 1.414200s / CPU 1.412997s.
+   - *Campaign Paired Behavior:* Ratio of wall medians is +0.214059%; CPU medians +0.226770%. C1 was slower than B1 in 5 of 7 wall pairs and 6 of 7 CPU pairs; largest observed paired wall increase was +3.858665% (rep 5: 1.470304s vs 1.415677s). All 7 samples are published in supplemental public evidence (`docs/ablation_evidence/round2_integration/summary.json`). Overlapping ranges do not prove equivalence or that regressions are eliminated; the original adverse B2 single triple (+10.8% slower; baseline wall 18.091250s) remains visible and preserved.
+   - *Independent Reproduction Smoke Execution:* Documented reproduction commands were independently smoke-executed on C1 using trusted git archive baseline and HEAD, runtime-only B1 reverse patch with 6 verified source hashes, concrete path substitution with `-B`, and existing isolated interpreter/dependencies (no installation performed). Verified on `diagnostics_504x100` (all 3 CLI pair comparisons and Python alternative PASS).
+   - *Source-Binding & Packaging Checks:* 3 fresh import processes (one process for each: baseline, sealed B1, and C1) verified module/function origins across 11 modules each. No-install build from trusted C1 export verified wheel (55 Python members) and sdist (137 Python members) with 20 packaged schema/checksum resources.
+   - *Diff Cleanliness Check:* `git diff --check` returned 2 with 78 diagnostics bound to archived patch context, Markdown hard breaks, and test EOF blank (not a clean check; no patch/test normalized or removed).
+
+### Current Limitations & Downstream Final Candidate Gates
+- Current runtime verification is strictly limited to macOS 27 arm64 / Python 3.12.14.
+- Isolated distribution build (`platform_build_002`) verified syntax compilation and Python 3.11 AST grammar parsing across 161 files, with valid wheel (55 Python members) and sdist (137 Python members) containing all 20 package resources in `src/ledger/schemas/` (JSON schemas and checksum sidecars); however, Linux / Python 3.11 **runtime CI remains pending** (prior PR202 Linux fixture failures were corrected prior to baseline, but current B2 candidate execution on Linux/3.11 is unverified).
+- **Implementation & Review Status:** The coordinator has formally accepted exact frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (recorded in local coordinator archive `coord/decision_implementation_b2.md`). Three eligible mutually blind reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) reported zero MATERIAL findings. (A prior Gemini attempt was excluded for a prohibited native self-transcript read-boundary violation; metadata-only observed return, no peer-text exposure; preserved in local coordinator archive `coord/agy_b2_exclusion.json` as internal audit history, not a published repository artifact).
+- **Open Advisories Preserved:** Three advisories remain OPEN: `B2-GPT-ADD-001` (original independent campaign single triple +10.8% wall time slower than B1; recurrence/cause unresolved; follow-up 7-triple cohort on C1 evaluated with wall median +0.214059% and CPU +0.226770% vs B1, 5/7 wall pairs slower, max increase +3.858665% in rep 5); `ADVISORY-B2-GROK-001` (fixture matrix002 pair 4 slower 0.897ms than baseline); and `ADVISORY-B2-GROK-002` (named B1-to-B2 slower-pair counts, medians, and allocation/RSS tradeoffs preserved).
+- **Gates Applying to Later Final Candidate:** Initial clean worktree integration checkpoint (commit `713bba95...`) and initial C1 integration QA are complete. Initial C1 whole-commit QA does not imply acceptance of changed final bytes. Any later assembled final candidate (incorporating documentation updates) requires fresh exact-candidate QA before fresh reviews, followed by fresh exact-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 runtime CI. Live publication head and check verification belong in the eventual PR gate record rather than this historical checkpoint log. No integration PR acceptance, Codex PR review, Linux CI, or publication has occurred at this checkpoint. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
+
 ## 2026-09-07 - Seven accepted ablation components applied as one B1 candidate
 
 - The accepted ordered implementation changes six runtime files: registry
@@ -1303,7 +1913,6 @@
   task's evidence/phase_b1. This start entry records governance/test preparation;
   subsequent implemented facts and measurements are recorded when completed.
 
-
 ## 2026-09-07 - P2 public provenance empty-axis ablation counterexample
 
 - Independent QA-A-C04-EMPTY showed that the proposed C04 column iterator
@@ -1320,7 +1929,6 @@
   of downstream validation. A2 producer evidence is not independent acceptance
   or completion of implementation; correction replay and structural plan gates
   still apply. This entry is prepared externally for accepted implementation.
-
 
 ## 2026-09-07 - P1 whole-project ablation scope and completion correction
 
@@ -1439,6 +2047,17 @@
   capability on start refusals.
 - No 14-trial, D8, identity reopen, GitHub review, or real data.
 
+## 2026-09-06 - Rotate GitHub Codex Cloud on review usage-limit
+
+- Owner correction: when one designated ChatGPT account is out of GitHub
+  `@codex review` quota, switch immediately to the other designated account's
+  Codex Cloud GitHub connector. Do not wait, and do not treat the limit as a
+  stop. CLI login is a different bucket.
+- Incident: PR #199 exact-head review returned a usage-limit body. Work stopped
+  instead of rotating the hosted-review account.
+- Continuation: rotate the exhausted hosted-review account, then one
+  `@codex review` on the unchanged head. Addresses stay in private control.
+
 ## 2026-09-05 - Track B v7 Path B PR 200 P1-FIX3 remediations
 
 - PR #200 head `81239b4c75cd968109d1cc5d74a026f06498ebd0` remaining P1s:
@@ -1501,17 +2120,6 @@
   currentness, executor mismatch, and EXECUTE consumer mismatch.
 - No 14-trial run, D8, identity reopen, real/private market data, brokerage,
   or vendor API.
-
-## 2026-09-06 - Rotate GitHub Codex Cloud on review usage-limit
-
-- Owner correction: when one designated ChatGPT account is out of GitHub
-  `@codex review` quota, switch immediately to the other designated account's
-  Codex Cloud GitHub connector. Do not wait, and do not treat the limit as a
-  stop. CLI login is a different bucket.
-- Incident: PR #199 exact-head review returned a usage-limit body. Work stopped
-  instead of rotating the hosted-review account.
-- Continuation: rotate the exhausted hosted-review account, then one
-  `@codex review` on the unchanged head. Addresses stay in private control.
 
 ## 2026-09-05 - Do not stop after naming the next step
 
@@ -1917,7 +2525,6 @@
   stay off GitHub.
 - No runner, validator, private data, or result-bearing behavior changed.
 
-
 ## 2026-08-24 - Public docs sync for post-PR3 resume surface
 
 - Updated `docs/current_handoff.md` and `docs/current_roadmap.md` so protected
@@ -1930,7 +2537,6 @@
   remains `DIAGNOSTIC_ONLY`, the 14-trial run has not executed, and private
   control-tree bodies are not on GitHub.
 - No runner, validator, private data, or result-bearing behavior changed.
-
 
 ## 2026-08-23 - Track A PR 3 FIX-12 ledger cross-product equivalence
 
@@ -2363,7 +2969,6 @@
 - Live core_v18 / v5 execute finished with 567 queries, 189 identities, and
   1761 HTTP 200 responses. Acquisition integrity is not identity acceptance.
   Accepted identity coverage remained 0.
-
 
 ## 2026-08-02 - Frozen Dataset-Independent Protocol Core
 
@@ -4606,18 +5211,6 @@
   interaction, and focused implementation-test requirements.
 - Kept `src/risk/constraints.py` unchanged and deferred every other constraint,
   episode metric, plotting feature, and strategy-selection change.
-
-This is a living engineering log for review notes, correctness audits, bug fixes, and implementation decisions that are useful for future PR summaries, interviews, retrospectives, and performance-review material.
-
-## How To Update This Log
-
-- Add a new dated entry after meaningful engineering work, especially after correctness reviews, bug fixes, test design changes, architecture decisions, or non-obvious tradeoffs.
-- Do not use this log to claim profitability or investment performance.
-- Separate observed facts from assumptions. Use `Assumption:` or `Needs follow-up:` when evidence is incomplete.
-- Prefer specific engineering reasoning over generic status updates.
-- Link or name the relevant files, functions, tests, and checks when possible.
-
----
 
 ## 2026-07-11 - Tracking-Error Implementation
 
@@ -9318,6 +9911,177 @@ The audit reviewed tracked files, stage traceability, test status, scope guardra
 
 ---
 
+## 2026-05-28 - Factor Correlation Diagnostics
+
+This milestone added diagnostic-only factor correlation infrastructure for aligned factor panels.
+
+The helper measures pairwise Pearson or Spearman relationships across flattened factor panels using overlapping non-missing observations only. It preserves factor names, validates panel alignment, and does not fill missing values.
+
+Factor selection, model training, backtest integration, performance reporting, real data fetching, new alpha formulas, and profitability claims remain deferred.
+
+---
+
+## 2026-05-28 - Factor Combination Helper
+
+This milestone added a narrow helper for combining already-preprocessed factor panels with explicit weights.
+
+The helper enforces exact date and asset alignment, finite non-boolean weights, at least one nonzero weight, and strict missing-value behavior before producing a weighted combined score.
+
+Normalization, factor correlation diagnostics, synthetic alpha smoke demos, backtest integration, real data fetching, new alpha formulas, reports, and profitability claims remain deferred.
+
+---
+
+## 2026-05-28 - Cross-Sectional Factor Winsorization Helper
+
+This milestone added a row-wise winsorization helper for date-indexed asset factor panels.
+
+The helper is intentionally limited to factor preprocessing. It preserves missing values, reuses strict panel validation, and clips each date's cross-section independently using explicit lower and upper quantile bounds.
+
+Factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-28 - Synthetic Combined-Score Backtest Smoke Test
+
+This milestone added a synthetic-only smoke test that passes a deterministic combined factor score into the existing long-only backtester.
+
+The workflow generates synthetic prices and synthetic factor panels, applies existing factor preprocessing and normalization helpers, combines z-scored factors with explicit weights, and runs the existing backtester with transaction costs and signal lag.
+
+The output is a workflow diagnostic only. It does not modify backtester or feature helper behavior, fetch real market data, add broker or live trading logic, introduce order execution, or make profitability claims.
+
+---
+
+## 2026-05-28 - Synthetic Multi-Factor Workflow Demo
+
+This milestone added a synthetic-only workflow demo showing how existing factor preprocessing, normalization, diagnostics, and combination helpers can be used together on deterministic factor panels.
+
+The demo applies row-wise winsorization, z-score normalization, rank-based normalization, factor correlation diagnostics, and explicit weighted factor combination before writing a synthetic workflow report.
+
+It does not add backtest integration, portfolio construction, real market data, new alpha formulas, reports beyond the synthetic demo report, live trading functionality, or profitability claims.
+
+---
+
+## 2026-05-27 - Cross-Sectional Z-Score Normalization Helper
+
+This milestone added the first factor normalization helper: cross-sectional z-score normalization for date-indexed asset factor panels.
+
+The helper is intentionally narrow. It reuses the existing strict operator-layer validation and row-wise z-score behavior so missing factor values remain visible, zero-dispersion cross-sections produce `NaN`, and index and asset alignment are preserved.
+
+Rank normalization, factor combination, factor diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-27 - Rank-Based Factor Normalization Helpers
+
+This milestone added rank-based factor normalization helpers for date-indexed asset factor panels: ordinal cross-sectional ranks and pandas-style percentile ranks.
+
+The helpers are intentionally limited to row-wise ranking across assets. They preserve missing values, reuse strict panel validation, and document that pandas percentile ranks use `pct=True` semantics rather than min-max percentile scaling.
+
+Winsorization, factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
+
+No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-25 - Stage 3 Planning Rationale: Start With alpha_009 Only
+
+Stage 3 intentionally starts with a single WorldQuant-style alpha candidate: `alpha_009`. This is a scope-control decision, not a rejection of `alpha_012`, `alpha_101`, or the broader WorldQuant 101 set as future research candidates. The project is deliberately avoiding a bulk implementation milestone because formulaic alpha work is only useful if each formula has clear data requirements, date alignment, missing-data behavior, and tests.
+
+`alpha_009` is the safest first candidate because it is close-only. The repository already has close-price-based feature work, and the Stage 2 reusable operator layer now provides the primitives needed for this formula: strict panel validation, one-period deltas, and full trailing rolling minimum and maximum operators. It does not require volume, OHLC, VWAP, market cap, or industry classification schemas. That makes it a good first formulaic alpha for testing operator reuse, date alignment, missing-data propagation, strict input validation, and no-look-ahead behavior without expanding the data model.
+
+Other candidates remain staged. `alpha_012` requires volume + close data, so it should wait until the project defines a volume schema and adds volume-specific validation tests. `alpha_101` requires OHLC inputs, so it should wait until the project has explicit open, high, low, and close schemas plus safe denominator handling and OHLC alignment tests. VWAP, market cap, and industry-neutral alphas remain deferred until the project has explicit data support and validation rules for those inputs.
+
+The WorldQuant 101 Formulaic Alphas are treated here as educational formulaic alpha references, not guaranteed profitable trading strategies. A formulaic alpha is not a complete strategy. It still requires universe selection, data cleaning, date alignment, signal lag, ranking or normalization, portfolio construction, transaction costs, slippage assumptions, risk controls, benchmark comparison, and out-of-sample validation before it can be evaluated as part of a research workflow.
+
+The implementation philosophy for this project is to keep milestones small and reviewable. Reusable operators are tested before formulas. Formulas are implemented one at a time. Alpha outputs are not connected to the backtester until formula correctness has been reviewed. Real market data is deferred until synthetic and unit-test behavior is stable. No profitability claim is made from implementing a formula alone.
+
+Codex is being used as an engineering agent, not as a strategy oracle. Stage 3 prompts use hard preflight checks, strict allowed-file lists, no-go conditions, self-checks after implementation, read-only review before commit, and separate commit and PR steps. When subagents are used, their role is read-only review or scoped analysis; they are not used to modify the same files concurrently.
+
+The prompt workflow is also designed to be queue-safe. Each prompt checks the active branch, working-tree cleanliness, test status, and allowed file set before proceeding. If a prerequisite fails, the prompt must stop instead of continuing. This prevents later queued tasks from blindly building on a broken, stale, or dirty state.
+
+Explicit Stage 3 non-goals:
+
+- no `alpha_012`
+- no `alpha_101`
+- no full WQ101 implementation
+- no backtester integration
+- no performance report
+- no real data fetching
+- no live trading
+- no profitability claim
+
+---
+
+## 2026-05-25 - WorldQuant Alpha#009 Stage 3
+
+This milestone implemented `alpha_009` as the first close-only WorldQuant-style alpha candidate. The function is a research feature only: it calculates a point-in-time-safe signal from close prices and does not define portfolio construction, execution timing, backtest integration, or expected profitability.
+
+The implementation uses the reusable operator layer from Stage 2. It computes one-period close deltas, evaluates full trailing rolling windows over those deltas, and applies the Alpha#009 rule: continue the current delta when the trailing delta window is strictly all positive or strictly all negative; otherwise use the negative current delta. A zero delta falls into the mixed-window branch because the conditions are strict.
+
+Date alignment is explicit: the feature at date `t` may use `close[t]` and earlier closes only, so it is known after the close at `t`. Trading lag remains the responsibility of a later strategy or backtest layer.
+
+Tests were added for hand-calculated positive, negative, mixed, and zero-delta cases; output shape preservation; future-row isolation; missing close behavior; strict input validation; window validation; and absence of backtest integration imports.
+
+No real market data was fetched. No reports were modified. No profitability claim or strategy performance result was added.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+60 passed
+```
+
+---
+
+## 2026-05-25 - Pull Request and Commit Hygiene Rules
+
+This documentation-only governance update added explicit pull request and commit discipline to `AGENTS.md`.
+
+The project is adopting small, meaningful PR and commit practices to improve reviewability and traceability. The goal is not artificial PR or commit inflation. Trivial edits should not be split just to increase counts, and unrelated changes should not be combined into one PR.
+
+Future alpha work should continue to be split by clear milestones, such as planning, tests or documentation, implementation, read-only review, and PR review.
+
+No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-25 - Factor Normalization And Combination Roadmap
+
+This documentation-only roadmap defines the next research infrastructure step before combining factor outputs or connecting WorldQuant-style alphas to the backtester.
+
+The roadmap explains why raw factor values should not be combined directly, distinguishes raw factors from normalized factors, combined scores, and full strategies, and records expected policies for cross-sectional normalization, ranking, winsorization, missing values, factor alignment, and correlation diagnostics.
+
+The intended future sequence is normalization helpers first, factor combination helpers second, factor correlation diagnostics third, an `alpha_009` synthetic feature smoke demo fourth, and backtest integration only after those pieces are tested.
+
+No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
+
+---
+
+## 2026-05-23 - WorldQuant Operator Layer Stage 2
+
+This milestone added a reusable pandas operator layer for future WorldQuant-style alpha research. The work is infrastructure only: no alpha formulas, backtest integration, real data fetching, live trading, or profitability claims were added.
+
+The key correctness decisions were to require sorted date-indexed DataFrames, preserve index and columns, use full trailing windows for rolling operators, reject invalid non-numeric panel values instead of silently coercing them to missing data, and require exact index/column matches for pairwise operators such as rolling correlation, rolling covariance, and safe division.
+
+Tests were added for hand-calculated examples, missing-data propagation, invalid input handling, tie behavior in ranks, zero-denominator division, zero cross-sectional standard deviation, full-window rolling behavior, and future-row isolation for time-series operators.
+
+Follow-up review note:
+
+The read-only review found one subtle validation gap: `astype(float)` correctly rejects values such as `"bad"`, but can silently convert string sentinel values such as `"nan"` into real missing values. That behavior would blur the difference between an intentional missing value and an invalid non-numeric data error. The validator was tightened to require numeric, non-boolean dtypes before conversion to a float copy, rejecting object, string, category, boolean, and numeric-looking string columns. Regression tests were added for `"nan"`, `"NaN"`, and `"1.0"` string inputs while preserving support for real numeric `NaN` values in numeric columns. The `ts_rank` docstring was also clarified to state that ties use average rank by default and that `pct=True` returns percentile ranks.
+
+Validation at the time of this entry:
+
+```text
+python -m pytest -q
+46 passed
+```
+
+---
+
 ## 2026-05-22 - Backtester Correctness Review: Silent Data Failures, Leakage Tests, and Return Semantics
 
 ### Context
@@ -9656,698 +10420,3 @@ python -m pytest -q
 ```
 
 ---
-
-## 2026-05-23 - WorldQuant Operator Layer Stage 2
-
-This milestone added a reusable pandas operator layer for future WorldQuant-style alpha research. The work is infrastructure only: no alpha formulas, backtest integration, real data fetching, live trading, or profitability claims were added.
-
-The key correctness decisions were to require sorted date-indexed DataFrames, preserve index and columns, use full trailing windows for rolling operators, reject invalid non-numeric panel values instead of silently coercing them to missing data, and require exact index/column matches for pairwise operators such as rolling correlation, rolling covariance, and safe division.
-
-Tests were added for hand-calculated examples, missing-data propagation, invalid input handling, tie behavior in ranks, zero-denominator division, zero cross-sectional standard deviation, full-window rolling behavior, and future-row isolation for time-series operators.
-
-Follow-up review note:
-
-The read-only review found one subtle validation gap: `astype(float)` correctly rejects values such as `"bad"`, but can silently convert string sentinel values such as `"nan"` into real missing values. That behavior would blur the difference between an intentional missing value and an invalid non-numeric data error. The validator was tightened to require numeric, non-boolean dtypes before conversion to a float copy, rejecting object, string, category, boolean, and numeric-looking string columns. Regression tests were added for `"nan"`, `"NaN"`, and `"1.0"` string inputs while preserving support for real numeric `NaN` values in numeric columns. The `ts_rank` docstring was also clarified to state that ties use average rank by default and that `pct=True` returns percentile ranks.
-
-Validation at the time of this entry:
-
-```text
-python -m pytest -q
-46 passed
-```
-
----
-
-## 2026-05-25 - Stage 3 Planning Rationale: Start With alpha_009 Only
-
-Stage 3 intentionally starts with a single WorldQuant-style alpha candidate: `alpha_009`. This is a scope-control decision, not a rejection of `alpha_012`, `alpha_101`, or the broader WorldQuant 101 set as future research candidates. The project is deliberately avoiding a bulk implementation milestone because formulaic alpha work is only useful if each formula has clear data requirements, date alignment, missing-data behavior, and tests.
-
-`alpha_009` is the safest first candidate because it is close-only. The repository already has close-price-based feature work, and the Stage 2 reusable operator layer now provides the primitives needed for this formula: strict panel validation, one-period deltas, and full trailing rolling minimum and maximum operators. It does not require volume, OHLC, VWAP, market cap, or industry classification schemas. That makes it a good first formulaic alpha for testing operator reuse, date alignment, missing-data propagation, strict input validation, and no-look-ahead behavior without expanding the data model.
-
-Other candidates remain staged. `alpha_012` requires volume + close data, so it should wait until the project defines a volume schema and adds volume-specific validation tests. `alpha_101` requires OHLC inputs, so it should wait until the project has explicit open, high, low, and close schemas plus safe denominator handling and OHLC alignment tests. VWAP, market cap, and industry-neutral alphas remain deferred until the project has explicit data support and validation rules for those inputs.
-
-The WorldQuant 101 Formulaic Alphas are treated here as educational formulaic alpha references, not guaranteed profitable trading strategies. A formulaic alpha is not a complete strategy. It still requires universe selection, data cleaning, date alignment, signal lag, ranking or normalization, portfolio construction, transaction costs, slippage assumptions, risk controls, benchmark comparison, and out-of-sample validation before it can be evaluated as part of a research workflow.
-
-The implementation philosophy for this project is to keep milestones small and reviewable. Reusable operators are tested before formulas. Formulas are implemented one at a time. Alpha outputs are not connected to the backtester until formula correctness has been reviewed. Real market data is deferred until synthetic and unit-test behavior is stable. No profitability claim is made from implementing a formula alone.
-
-Codex is being used as an engineering agent, not as a strategy oracle. Stage 3 prompts use hard preflight checks, strict allowed-file lists, no-go conditions, self-checks after implementation, read-only review before commit, and separate commit and PR steps. When subagents are used, their role is read-only review or scoped analysis; they are not used to modify the same files concurrently.
-
-The prompt workflow is also designed to be queue-safe. Each prompt checks the active branch, working-tree cleanliness, test status, and allowed file set before proceeding. If a prerequisite fails, the prompt must stop instead of continuing. This prevents later queued tasks from blindly building on a broken, stale, or dirty state.
-
-Explicit Stage 3 non-goals:
-
-- no `alpha_012`
-- no `alpha_101`
-- no full WQ101 implementation
-- no backtester integration
-- no performance report
-- no real data fetching
-- no live trading
-- no profitability claim
-
----
-
-## 2026-05-25 - WorldQuant Alpha#009 Stage 3
-
-This milestone implemented `alpha_009` as the first close-only WorldQuant-style alpha candidate. The function is a research feature only: it calculates a point-in-time-safe signal from close prices and does not define portfolio construction, execution timing, backtest integration, or expected profitability.
-
-The implementation uses the reusable operator layer from Stage 2. It computes one-period close deltas, evaluates full trailing rolling windows over those deltas, and applies the Alpha#009 rule: continue the current delta when the trailing delta window is strictly all positive or strictly all negative; otherwise use the negative current delta. A zero delta falls into the mixed-window branch because the conditions are strict.
-
-Date alignment is explicit: the feature at date `t` may use `close[t]` and earlier closes only, so it is known after the close at `t`. Trading lag remains the responsibility of a later strategy or backtest layer.
-
-Tests were added for hand-calculated positive, negative, mixed, and zero-delta cases; output shape preservation; future-row isolation; missing close behavior; strict input validation; window validation; and absence of backtest integration imports.
-
-No real market data was fetched. No reports were modified. No profitability claim or strategy performance result was added.
-
-Validation at the time of this entry:
-
-```text
-python -m pytest -q
-60 passed
-```
-
----
-
-## 2026-05-25 - Pull Request and Commit Hygiene Rules
-
-This documentation-only governance update added explicit pull request and commit discipline to `AGENTS.md`.
-
-The project is adopting small, meaningful PR and commit practices to improve reviewability and traceability. The goal is not artificial PR or commit inflation. Trivial edits should not be split just to increase counts, and unrelated changes should not be combined into one PR.
-
-Future alpha work should continue to be split by clear milestones, such as planning, tests or documentation, implementation, read-only review, and PR review.
-
-No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
-
----
-
-## 2026-05-28 - Factor Correlation Diagnostics
-
-This milestone added diagnostic-only factor correlation infrastructure for aligned factor panels.
-
-The helper measures pairwise Pearson or Spearman relationships across flattened factor panels using overlapping non-missing observations only. It preserves factor names, validates panel alignment, and does not fill missing values.
-
-Factor selection, model training, backtest integration, performance reporting, real data fetching, new alpha formulas, and profitability claims remain deferred.
-
----
-
-## 2026-05-28 - Factor Combination Helper
-
-This milestone added a narrow helper for combining already-preprocessed factor panels with explicit weights.
-
-The helper enforces exact date and asset alignment, finite non-boolean weights, at least one nonzero weight, and strict missing-value behavior before producing a weighted combined score.
-
-Normalization, factor correlation diagnostics, synthetic alpha smoke demos, backtest integration, real data fetching, new alpha formulas, reports, and profitability claims remain deferred.
-
----
-
-## 2026-05-27 - Cross-Sectional Z-Score Normalization Helper
-
-This milestone added the first factor normalization helper: cross-sectional z-score normalization for date-indexed asset factor panels.
-
-The helper is intentionally narrow. It reuses the existing strict operator-layer validation and row-wise z-score behavior so missing factor values remain visible, zero-dispersion cross-sections produce `NaN`, and index and asset alignment are preserved.
-
-Rank normalization, factor combination, factor diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
-
-No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
-
----
-
-## 2026-05-28 - Cross-Sectional Factor Winsorization Helper
-
-This milestone added a row-wise winsorization helper for date-indexed asset factor panels.
-
-The helper is intentionally limited to factor preprocessing. It preserves missing values, reuses strict panel validation, and clips each date's cross-section independently using explicit lower and upper quantile bounds.
-
-Factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
-
-No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
-
----
-
-## 2026-05-27 - Rank-Based Factor Normalization Helpers
-
-This milestone added rank-based factor normalization helpers for date-indexed asset factor panels: ordinal cross-sectional ranks and pandas-style percentile ranks.
-
-The helpers are intentionally limited to row-wise ranking across assets. They preserve missing values, reuse strict panel validation, and document that pandas percentile ranks use `pct=True` semantics rather than min-max percentile scaling.
-
-Winsorization, factor combination, factor correlation diagnostics, synthetic alpha smoke demos, and backtest integration remain deferred to later PRs.
-
-No backtester behavior, metrics, WorldQuant alpha formulas, reports, real data fetching, or profitability claims were changed.
-
----
-
-## 2026-05-25 - Factor Normalization And Combination Roadmap
-
-This documentation-only roadmap defines the next research infrastructure step before combining factor outputs or connecting WorldQuant-style alphas to the backtester.
-
-The roadmap explains why raw factor values should not be combined directly, distinguishes raw factors from normalized factors, combined scores, and full strategies, and records expected policies for cross-sectional normalization, ranking, winsorization, missing values, factor alignment, and correlation diagnostics.
-
-The intended future sequence is normalization helpers first, factor combination helpers second, factor correlation diagnostics third, an `alpha_009` synthetic feature smoke demo fourth, and backtest integration only after those pieces are tested.
-
-No source code, tests, strategy logic, backtester behavior, metrics, reports, real data fetching, or profitability claims were changed.
-
----
-
-## 2026-05-28 - Synthetic Multi-Factor Workflow Demo
-
-This milestone added a synthetic-only workflow demo showing how existing factor preprocessing, normalization, diagnostics, and combination helpers can be used together on deterministic factor panels.
-
-The demo applies row-wise winsorization, z-score normalization, rank-based normalization, factor correlation diagnostics, and explicit weighted factor combination before writing a synthetic workflow report.
-
-It does not add backtest integration, portfolio construction, real market data, new alpha formulas, reports beyond the synthetic demo report, live trading functionality, or profitability claims.
-
----
-
-## 2026-05-28 - Synthetic Combined-Score Backtest Smoke Test
-
-This milestone added a synthetic-only smoke test that passes a deterministic combined factor score into the existing long-only backtester.
-
-The workflow generates synthetic prices and synthetic factor panels, applies existing factor preprocessing and normalization helpers, combines z-scored factors with explicit weights, and runs the existing backtester with transaction costs and signal lag.
-
-The output is a workflow diagnostic only. It does not modify backtester or feature helper behavior, fetch real market data, add broker or live trading logic, introduce order execution, or make profitability claims.
-
----
-
-## 2026-09-08: Round 2 Whole-Codebase Ablation (Historical B2 Acceptance & Initial C1 Evidence Checkpoints)
-
-- **Status:** B2 Implementation Accepted (Plan A2); Initial C1 Integration Checkpoint QA Complete (124 Executions, 36 Triples, 7-Triple Campaign Cohort Evaluated); Three B2 Static Reviews Complete (3 Open Advisories Preserved); Gates for Later Final Candidate (Fresh Exact-Candidate QA, Fresh Static Reviews, Local Codex PR Review, Linux/Python 3.11 CI) and Owner-Authorized Separate Branch/PR Publication Pending (Live Checks Belong in Eventual PR Gate Record); Merge, auto-merge, deployment and main pushes are not authorized.
-- **Baseline Commit:** `6ee193c9bb43f8290b3e09396fd241fec32df695` (439 files, manifest `70237d678616cd309632117cac062dba9d24d63f29d9fd97361b29a4b2146dc4`).
-- **Review Candidate Checkpoint (B2):** `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (448 files, candidate source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`).
-- **Initial Integration Checkpoint (C1):** `713bba95e393514720973ca2fcb58b70cba23d8d` (tree `359090fbca29034648307ab7740b776f0122eff6`, parent `6ee193c9bb43f8290b3e09396fd241fec32df695`, 483 tracked files, initial churn 53 files / +89,521 / -55, not final PR churn; runtime/test bytes identical to B2; documentation/evidence composition differs).
-- **Executed Environment:** macOS 27 arm64, existing isolated Python 3.12.14 virtual environment, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, pytest 9.1.1, Ruff 0.16.6. Numerical library threads locked to 1.
-
-### Scope & Architectural Changes
-This ablation round completes the implementation and machine verification of seven accepted architectural simplifications across six runtime files:
-1. `src/campaign/runner.py` (C13 + C01c): Per-execution memo of cost-independent interval return maps (`_held_map` / `_held_return` lookups, `C13`) and execution-owned anchor date indexing (`C01c`). Per-trial costs, holdings, and validation state remain strictly isolated.
-2. `src/ledger/schema_registry.py` (C02): Consolidated redundant structural schema traversals within single validation calls while preserving packaged schema authority, release isolation, and transactional event validation.
-3. `src/backtest/portfolio.py` (C04b): Empty-axis preserving column iteration in source provenance capture, guaranteeing exact Nx0, 0xM, and 0x0 shape invariants (`((), ())` on 2x0 input), original/current digests, and wide/nullable scalar typing.
-4. `src/backtest/metrics.py` (C05): Direct array access for validated numeric episode accounting, preserving chronological episode state transitions, fees, slippage, and terminal-open exclusions. C05 retains episode loops while replacing DataFrame scalar lookups.
-5. `src/features/validation.py` (C12): Canonical eligible-only label endpoint gathering after split reconstruction, batching endpoint gathering and vectorized division to eliminate repeated scalar indexing (baseline already restricted computation to eligible rows).
-6. `src/features/diagnostics.py` (C10b): Vectorized Spearman Rank IC batching with eligibility-local gating (B2 repair, checking valid asset-pair counts within each date row) while keeping baseline Pearson correlation byte-exact; ONLY Spearman receives the 1e-12 gate; Pearson, public axes, dtypes, names, NaN masks, and error order stay exact in tested contracts.
-
-### Code Churn Summary (Pre-Publication Checkpoint)
-- **Production Python (`src/`):** 109 added / 52 deleted across 6 files (+57 net lines).
-- **Test Python (`tests/`):** 838 added / 0 deleted across 6 files (+838 net lines).
-- **Golden Fixtures (`tests/fixtures/`):** 30,325 added / 0 deleted across 3 files (+30,325 net lines).
-- **Documentation & Controls:** 148 added / 2 deleted across 3 files (`AGENTS.md`, `docs/engineering_log.md`, `docs/repo_map.md`; +146 net lines) before publication material.
-- **Repository Membership:** 439 baseline files → 448 candidate files (+9 added files).
-
-### Measured Performance & Tradeoffs (Producer Matrix: 18 Cases, 126 Triples)
-- **Core Speedups (Median Wall Clock):**
-  - Campaign 504×100: **13.052×** speedup (18.812s → 1.441s; -17.371s, -92.34%; cProfile calls 622.5M → 34.6M).
-  - Generic Backtest 504×100: **2.425×** speedup (2.217s → 0.914s; -1.303s, -58.77%); 160×12: **1.572×** (151.9ms → 96.7ms; -55.3ms, -36.37%).
-  - Feature Labels 1260×100: **2.883×** speedup (99.7ms → 34.6ms; -65.1ms, -65.32%).
-  - Sparse Diagnostics 504×100: **2.353×** speedup (183.3ms → 77.9ms; -105.4ms, -57.50%).
-  - Research Sweep 160×12 (8 cases): **1.586×** speedup (1.243s → 0.783s; -459.1ms, -36.95%).
-  - Ledger Transactions (Paths A & B): **2.237× – 2.239×** (197ms → 88ms; -109ms, -55.3%); with +1,000 extra records: **1.667× – 1.684×** (271ms → 161ms; -109ms, -40.0% to -40.6%).
-  - Schema Registry (30 Validations): **2.457×** speedup (596.9ms → 242.9ms; -354.0ms, -59.30%).
-- **Adverse Observations & Memory Tradeoffs Disclosed:**
-  - Independent campaign repetition 1: In the single initial independent triple, B2 was +0.151737s (~+10.8%) slower than B1 in wall time (1.558791s vs 1.407054s; CPU 1.557491s vs 1.405663s; baseline wall 18.091250s). This single observation qualifies B1-preservation statements; equal runner bytes do not prove host noise; recurrence/cause remain unresolved pending final integration QA.
-  - Minor B1-to-B2 shifts observed on large cases: `labels_1260x100` B2 median is +0.353ms (+1.03%) slower than B1; `sweep_160x12_eight_cases` B2 median is +8.145ms (+1.05%) slower than B1; `campaign_504x100` B2 is +9.4ms (+0.66%) slower than B1. Matched serial order mitigates confounding within pairs, but host activity varies over time; observed values are reported directly without causal speculation.
-  - Vectorized allocation costs: `labels_1260x100` tracemalloc peak increased +57.9% (+1,714,822 bytes) to 4.68 MB; `diagnostics_504x100_sparse` tracemalloc peak increased to peak 14.6× baseline (+3,713,984 bytes) while process peak RSS dropped 40.2% (-65.2 MB). Mechanisms provide plausible context, not isolated causal proofs.
-  - Unprofiled campaign peak RSS: In `campaign_504x100` measured executions, median process peak RSS rose slightly: baseline 309,526,528 bytes, B1 310,706,176 bytes, B2 311,394,304 bytes (+0.60% vs baseline, +0.22% vs B1), preserving the adverse finding across unprofiled and instrumented runs.
-  - Fixture resolution: Committed 4×3 fixture median is 44.47 ms in B2 vs 46.24 ms in baseline and 50.92 ms in B1 (7/7 pairs faster than B1, a 1.145× speedup; 6/7 faster than baseline).
-
-### Test Discipline, Source-Binding & Verification Lessons
-1. **Source-Binding Verification:** To prevent test harness path hijacking from repository root `pyproject.toml` `pythonpath`, the producer ran under `repair_b2/isolated_qa/` using isolated `pytest.ini` and conftest hooks, while independent QA under `qa/independent_b2/` used `-p independent_binding -o pythonpath=` with postcollection hooks asserting both module `__file__` and function `__code__.co_filename` matched expected candidate paths.
-2. **Restored Mechanism Assertions:** Checkpoint 001 omitted `assert rank_indexes and corr_indexes`. Checkpoint 002 restored the assertion byte-for-byte: baseline fails as an expected mechanism control (1 failed, 35 passed), B1 fails ineligible ranking (6 failed, 30 passed), and B2 passes completely (36 passed, exit 0). No assertions or tolerances in the current candidate were weakened.
-3. **Independent Population Structure:** Independent execution series under `qa/independent_b2/` comprises 106 separate executions (full suites 2,573 / 2,722 / 2,758 passes with 2 platform skips; 9 rejected controls; 30 fresh triples across 18 scopes). A separate 24-process cohort (`independent_b2_imports`) verified 7 fresh import triples plus 3 warmups across 11 first-party modules (medians: baseline 0.205355s, B1 0.206648s, B2 0.205939s).
-4. **Initial C1 Integration QA & Repeated Campaign Cohort:** Independent C1 execution QA, recorded in the supplemental public evidence (with raw runs preserved in local execution archive `qa/independent_c1_001`), comprised 124 separate executions (full suites 2,573 / 2,722 / 2,758 passes with 2 platform skips; 9 negative variants reproduced exact failure nodes; bound new guards baseline 1 failed/35 passed, B1 6 failed/30 passed, C1 36 passed). It evaluated 36 fresh triples across 18 scopes (7 triples each for `fixture_all_configured`, `diagnostics_504x100_sparse`, and `campaign_504x100`; 1 triple each for the other 15 scopes; campaign 7 are a subset of 36, separate from earlier populations).
-   - *Repeated Campaign 504 Medians:* Baseline wall 17.828260s / CPU 17.810254s; B1 wall 1.411179s / CPU 1.409800s; C1 wall 1.414200s / CPU 1.412997s.
-   - *Campaign Paired Behavior:* Ratio of wall medians is +0.214059%; CPU medians +0.226770%. C1 was slower than B1 in 5 of 7 wall pairs and 6 of 7 CPU pairs; largest observed paired wall increase was +3.858665% (rep 5: 1.470304s vs 1.415677s). All 7 samples are published in supplemental public evidence (`docs/ablation_evidence/round2_integration/summary.json`). Overlapping ranges do not prove equivalence or that regressions are eliminated; the original adverse B2 single triple (+10.8% slower; baseline wall 18.091250s) remains visible and preserved.
-   - *Independent Reproduction Smoke Execution:* Documented reproduction commands were independently smoke-executed on C1 using trusted git archive baseline and HEAD, runtime-only B1 reverse patch with 6 verified source hashes, concrete path substitution with `-B`, and existing isolated interpreter/dependencies (no installation performed). Verified on `diagnostics_504x100` (all 3 CLI pair comparisons and Python alternative PASS).
-   - *Source-Binding & Packaging Checks:* 3 fresh import processes (one process for each: baseline, sealed B1, and C1) verified module/function origins across 11 modules each. No-install build from trusted C1 export verified wheel (55 Python members) and sdist (137 Python members) with 20 packaged schema/checksum resources.
-   - *Diff Cleanliness Check:* `git diff --check` returned 2 with 78 diagnostics bound to archived patch context, Markdown hard breaks, and test EOF blank (not a clean check; no patch/test normalized or removed).
-
-### Current Limitations & Downstream Final Candidate Gates
-- Current runtime verification is strictly limited to macOS 27 arm64 / Python 3.12.14.
-- Isolated distribution build (`platform_build_002`) verified syntax compilation and Python 3.11 AST grammar parsing across 161 files, with valid wheel (55 Python members) and sdist (137 Python members) containing all 20 package resources in `src/ledger/schemas/` (JSON schemas and checksum sidecars); however, Linux / Python 3.11 **runtime CI remains pending** (prior PR202 Linux fixture failures were corrected prior to baseline, but current B2 candidate execution on Linux/3.11 is unverified).
-- **Implementation & Review Status:** The coordinator has formally accepted exact frozen review candidate `3e006260952521eac66b62dcaf4527fc867e453e04b8fbd7af180ea1e4a95392` (source manifest `fdfd4d7c8533bd6190171fa679ac4acc52a61ca6cb504427c92e9d3a932a28ac`, 448 files) as the implementation input to controlled integration under accepted binding plan A2 (recorded in local coordinator archive `coord/decision_implementation_b2.md`). Three eligible mutually blind reviews (GPT-6-Astra medium normal/default, Grok-4.6 xhigh, Gemini-3.8-Flash high) reported zero MATERIAL findings. (A prior Gemini attempt was excluded for a prohibited native self-transcript read-boundary violation; metadata-only observed return, no peer-text exposure; preserved in local coordinator archive `coord/agy_b2_exclusion.json` as internal audit history, not a published repository artifact).
-- **Open Advisories Preserved:** Three advisories remain OPEN: `B2-GPT-ADD-001` (original independent campaign single triple +10.8% wall time slower than B1; recurrence/cause unresolved; follow-up 7-triple cohort on C1 evaluated with wall median +0.214059% and CPU +0.226770% vs B1, 5/7 wall pairs slower, max increase +3.858665% in rep 5); `ADVISORY-B2-GROK-001` (fixture matrix002 pair 4 slower 0.897ms than baseline); and `ADVISORY-B2-GROK-002` (named B1-to-B2 slower-pair counts, medians, and allocation/RSS tradeoffs preserved).
-- **Gates Applying to Later Final Candidate:** Initial clean worktree integration checkpoint (commit `713bba95...`) and initial C1 integration QA are complete. Initial C1 whole-commit QA does not imply acceptance of changed final bytes. Any later assembled final candidate (incorporating documentation updates) requires fresh exact-candidate QA before fresh reviews, followed by fresh exact-candidate static reviews, local latest/high normal Codex PR review, and Linux/Python 3.11 runtime CI. Live publication head and check verification belong in the eventual PR gate record rather than this historical checkpoint log. No integration PR acceptance, Codex PR review, Linux CI, or publication has occurred at this checkpoint. The owner has authorized a separate branch/PR after the required gates; merge, auto-merge, deployment and main pushes are not authorized.
-
-
-## 2026-09-17 - Astra roadmap Step 1 split consumption proof
-
-- PR #219 is merged at source HEAD
-  `744f4922485b34317bb472e43bf5eb79e7f713e7`, as recorded in local Git
-  history. This authorized increment implements Step 1 through tests and
-  evidence on `codex/split-proof-20260918`.
-- Added `tests/test_demo_split_proof.py` with 20 deterministic cases across
-  Demo v0 and M3-01. Both actual pipelines establish equal-weight holdings
-  before the golden's April 1-2 split interval. Independent committed
-  expectations pin adjusted gross return, drift, turnover, and cost. The raw
-  contamination counterexample pins -0.25 gross return, one-third turnover,
-  and 0.00025 event cost. Initial deployment cost 0.001 is asserted separately.
-- Tests preserve metadata equivalence, source prices/index/events, frozen
-  configurations, the original split golden, and success/refusal attempt
-  prefixes. Absent, malformed, and missing event dates and cash overlays
-  preserve the previous successful report. Official reports/logs and runtime
-  files retain their baseline bytes. The generated map records 216 test files.
-- Tested source HEAD was `744f4922485b34317bb472e43bf5eb79e7f713e7` plus the
-  new test with SHA-256
-  `653d0e80146fed242c4574ddb7194601e0975d4d6e26231b2ef59737c757b12f`.
-  Existing focused baseline: 78 passed. New proof and isolated ablation:
-  20 passed each. Baseline archive suite: 2888 passed, two platform skips,
-  one existing constant-input warning. Candidate suite: 2908 passed with
-  the same skips and warning. Ruff and compilation passed. The default
-  isolated build failed at dependency download because PyPI resolution was
-  unavailable. An offline build using existing cached setuptools 84.0.0 and
-  wheel 0.48.0 produced both distribution formats.
-- The first candidate suite retained 102 failures: 101 from placing pytest
-  temporary outputs inside the repository, where existing safety guards
-  require external paths, and one stale generated-map count. Restoring
-  pytest's standard temporary location and regenerating the map resolved
-  these failures. Source guards and existing tests retained their bytes.
-  The initial environment probe also retained its missing-setuptools result.
-- Isolated ablation inlined the single-use event-value projection helper,
-  reducing the test from 221 to 217 lines. All 12 value snapshots, 20 attempt
-  logs, and 20 temporary reports matched after output-directory normalization.
-  The simplification is retained; input capture, golden assertions, and
-  refusal checks remain. Single-run timings provide no speedup claim.
-- `reports/split_proof_attempt.md` records exact commands, environment,
-  hashes, preserved failures, reconstruction instructions, limitations, and
-  the next coordinator CI/review gate. This evidence covers one synthetic
-  adjusted-series consumption proof. Full corporate-action reconciliation
-  remains open, Milestone 3 remains in progress, and Step 2 design acceptance
-  remains a separate owner semantic gate. Historical language exceptions
-  retain their immutable bytes; all prose added in this increment is English.
-
-### PR #219 process incidents carried by the canonical writer
-
-- **Visibility incident, P1:** `coord/pr219_visibility_incident.md` records
-  four minutes of empty output from a non-interactive Pi reviewer. The
-  coordinator retained the empty attempt, stopped the original process,
-  verified its exit, and replaced it with an interactive TUI review in the
-  same tab. Visible prompt delivery and live response were verified. The
-  operating correction requires interactive review and verification of both
-  submitted task and live response after startup settles. Shell command
-  display and an empty output file provide insufficient visibility evidence.
-- **Continuation incident, P1:** `coord/continuation_correction.md` records
-  the coordinator ending a turn while that authorized review remained active.
-  The resumed coordination captured the final MATERIAL 0 / ADVISORY 0 body
-  for candidate `ee98ee674fba1d86b66037c3f81bfbcf1ff69355`, with CI run
-  `35296802364` passed and the independent clone clean. The existing
-  controller's Waiting And Follow-Up section owns continued bounded waits,
-  evidence reconciliation, and advancement through the authorized scope.
-  This entry records the incident and recovery under that existing policy.
-- The incident records' pending-review and pending-merge statements describe
-  their historical checkpoints. The subsequent local PR #219 merge at
-  `744f4922485b34317bb472e43bf5eb79e7f713e7` supplies this increment's baseline.
-
-### Local version-management handoff
-
-- Final documentation regression: 66 passed. Ruff passed again. Ablation
-  reconstruction reproduced the saved baseline bytes. The baseline manifest
-  comparison confirmed the complete engineering-log prefix and every other
-  pre-existing tracked file except the generated map count remained intact.
-- Local staging failed with exit 128 because `.git/index.lock` creation
-  received `Operation not permitted`; the session exposes `.git` as read-only.
-  The four-file change remains unstaged, with current HEAD
-  `744f4922485b34317bb472e43bf5eb79e7f713e7` and no new commit. The complete
-  delivery patch and QA evidence remain under `build/split-proof-evidence/`.
-  Writer responsibility is released at handoff. A Git-writable coordinator
-  session owns the local commit and subsequent exact-head CI/review gate.
-
-## 2026-09-17 - Step 2 proposed synthetic dividend comparison
-
-- Added `docs/synthetic_event_reconciliation_design.md` as an unaccepted
-  Step 2 proposal on source HEAD
-  `57035fbfe3f8495e6495feecb8afbc2664f3f237`. The single owner decision covers
-  pre-ex-date holder entitlement, gross zero-withholding treatment,
-  theoretical ex-close reinvestment and an after-ex-close evidence cutoff.
-  The USD 100 -> USD 98 raw-price example plus USD 2 dividend gives 0%
-  reference return; unchanged supplied total-return levels match that value.
-- The note supplies independent hand arithmetic and 40 outcome rows covering
-  numeric discrepancies, field bases, identity, missing anchors, revisions,
-  repeated dates, duplicates, empty evidence, invalid inputs and unsupported
-  events. An explicit future comparison request preserves the current M3-08
-  metadata API and independent PIT-007 overlay refusal. Runtime, schemas,
-  official configurations/reports, data access and publication remain outside
-  this design attempt. Owner semantics and formal acceptance remain pending.
-- Local evidence recorded 169 literal assertions, including 12 numeric
-  scenarios, 40 matrix-row consistency checks and six isolated guard
-  ablations. Each removed guard admitted an unsafe match; all six were
-  restored, preserving the original proposal bytes. This is a supported
-  no-change design outcome. Future runtime enforcement remains unverified.
-- Existing focused regressions passed 94 tests. The full suite passed 2908
-  tests with two platform precision skips and one existing constant-input
-  warning. Ruff, compilation and the offline build with cached tools passed.
-  `docs/repo_map.md` was regenerated. The attempt report records commands,
-  environment, baseline identities, read scope, negative evidence and limits.
-- Herdr inspection returned `PermissionDenied: Operation not permitted`.
-  The inherited worker locator is workspace `w3`, tab `w3:tBS`, pane
-  `w3:pDR`; actual pane rendering and native model settings require
-  coordinator verification. QA output streamed through the active worker.
-  Live remote verification failed at GitHub DNS resolution. These operational
-  limits establish no unavailable-model claim and grant no permission bypass.
-- Current process evidence incorporates the live v7.24 operating card's
-  section 6 adaptive waiting correction: select supported waits or adaptive
-  polling from task duration, progress, risk and intervention needs; prefer
-  lightweight state checks, reconcile reports and processes on each wake,
-  and maintain an active wait when notification-driven resumption is
-  unverified. Completion notifications follow saved evidence and require
-  recipient verification. Earlier historical incidents retain their bytes.
-- `reports/dividend_design_attempt.md` owns the full local attempt evidence
-  and owner decision. The worker stops at the proposed draft; CRITICAL
-  reviews, binding acceptance and Step 3 implementation remain later gates.
-- Local staging failed with exit 128 because `.git/index.lock` creation
-  received `Operation not permitted`. The four-file draft remains unstaged
-  at the source HEAD. The delivery manifest, complete patch and evidence
-  manifest are saved under `build/dividend-design-evidence/`. Writer
-  responsibility is released at final handoff for a Git-writable coordinator
-  session to commit the exact bytes. Herdr notification remains unavailable
-  under the same session-inspection restriction; the final response carries
-  the full report and manifest locators.
-
-## 2026-09-17 - Step 2 owner semantic acceptance for synthetic tests
-
-- The owner accepted the convention presented in draft
-  `a6a22e8a3f9007dfe439192aae1dd433d6a093f7` for synthetic tests only:
-  pre-ex-date holder gross entitlement, zero withholding, theoretical
-  fractional reinvestment at the ex-date close and an after-ex-close evidence
-  cutoff. The prior-close 100, ex-close 98 and dividend 2 example retains its
-  zero gross reference return and the existing dividend double-count refusal.
-- Acceptance evidence is the coordinator record
-  `coord/step2_semantic_acceptance.md`, SHA-256
-  `b6ae3b63af80e7afda8dc72784ec69b8cecae7697bbbcf3aa562d43943d01ba1`.
-  The current design records the resolved owner semantic gate. Independent
-  CRITICAL reviews, exact-head QA, binding acceptance and implementation gates
-  remain pending. The decision's scope is synthetic tests only.
-- This metadata update preserves economic definitions, examples, matrix rows,
-  runtime, schemas, historical reports and earlier engineering entries.
-  The separate local report
-  `build/dividend-design-evidence/owner-acceptance-qa.md` records design-check
-  revalidation, documentation QA, diff and preservation checks, exact file
-  hashes and version-management disposition. Existing design witnesses are
-  revalidated; this owner-state update starts no new ablation loop.
-
-## 2026-09-17 - PR221 numeric precision/error contract repair
-
-- Repaired `docs/synthetic_event_reconciliation_design.md` on baseline
-  `3a040b67d874dc850772d8053fd8c15cc9e29060`. AUDIT-001 required a precision
-  contract over the admitted positive finite binary64 domain. The match
-  predicate now uses exact rationals from `to_rational(x) =
-  Fraction(*float(x).as_integer_ratio())` and unrounded absolute tolerance
-  `1/10^12`. Finite-rounding witness D41 (`P_p=1`, `P_e=1e16`, `D=1`,
-  `A_p=1`, `A_e=1e16`) is `MISMATCHED` with exact delta `-1`; diagnostic
-  binary64 delta is `0.0`.
-- GROK-221-ADV-1: D04/D05/D44 are injected decimal `r_supplied` literals;
-  D42/D43/D45 are explicit binary64 level literals with unrounded computed
-  deltas. GROK-221-ADV-2: comparable rows carry `within_tolerance` or
-  `return_difference`. GROK-221-ADV-4: D31 names `P_p`, `P_e`, `A_p`, `A_e`
-  and `D`. GROK-221-ADV-3: diagnostic labels remain separate from existing
-  exceptions and the M3-08 metadata API; Step 3 runner mapping of those
-  labels onto attempt success or official-report replacement remains an
-  owner-semantic question and is unset.
-- Owner-approved synthetic economics are unchanged: pre-ex-date holder
-  gross entitlement, zero withholding, theoretical fractional ex-close
-  reinvestment, after-ex-close cutoff, and the 100/98/2 zero-return
-  example bound to draft `a6a22e8a3f9007dfe439192aae1dd433d6a093f7`.
-- Local stdlib checker recorded 110 assertions and five isolated guard
-  restorations (binary64-only match, omitted supplied-level domain,
-  rounded delta, collapsed injected/reconstructed literals, Boolean
-  conversion). Supported ablation outcome is no design removal. Existing
-  documentation QA passed 66 tests. Focused dividend/event guards passed
-  94 tests. Full suite passed 2908 tests with two platform precision skips
-  and one existing constant-input warning. Ruff, compileall, offline build
-  and whitespace checks passed. `docs/repo_map.md` regenerated identically.
-- Runtime, schemas, fixtures, official reports and
-  `reports/dividend_design_attempt.md` are preserved. No comparator or
-  schema implementation was added. Exact commands, log hashes and
-  limitations are in `reports/pr221_precision_fix_attempt.md`. Formal
-  CRITICAL reviews remain required on the new exact head.
-
-## 2026-09-18 - PR221 delegated runner-outcome decision
-
-- The owner delegated GROK-221-ADV-3's A/B runner-outcome decision through
-  `coord/pr221_astra_decision_card.md`, SHA-256
-  `63513da756d935defa77249899919c878b7bdf759593b04bc4e8e922642866ca`.
-  Starting HEAD was `3cee36c3a335e69a21e29edd6246fc0421787ce2` on clean
-  branch `codex/pr221-astra-outcome-decision`. One writer handled the
-  bounded design/evidence scope.
-- Chosen policy: diagnostic-only completion. Completed `MATCHED`,
-  `MISMATCHED` and valid `INSUFFICIENT_EVIDENCE` results permit attempt
-  `success` after the diagnostic evidence, report and terminal log complete.
-  The affected economic acceptance claim remains blocked for a mismatch or
-  evidence gap. `NOT_REQUESTED` preserves existing default report/log
-  behavior. The repeated owner-choice gate is resolved; formal review and
-  binding acceptance remain pending.
-- The design now binds report replacement, ordered per-item retention,
-  partial coverage, malformed request versus typed evidence deficiencies,
-  existing input/source-date/overlay refusals, unexpected execution errors,
-  logging failures and interruptions. The opt-in order is start, existing
-  guards/simulation, comparison with per-item retention, prepared report
-  replacement, then terminal success. A late logging failure remains an
-  incomplete attempt even when a new report exists. Earlier negative
-  evidence survives a later match.
-- The accepted four synthetic economic choices, evidence boundary, fixture
-  and timing/revision definitions, exact rational precision contract and
-  D01-D47 matrix retain their baseline bytes. Source, schemas, frozen
-  configurations, fixtures, official outputs and historical reports remain
-  preserved. Comparison output supplies no accounting or signal feedback.
-- Local design evidence passed 103 assertions, including 15 arithmetic
-  witnesses, 22 lifecycle traces and 24 completion-order permutations.
-  Seven isolated constraint removals each admitted a concrete regression;
-  all guards were retained. The supported ablation outcome is no further
-  design removal. These are producer design checks; future runtime
-  enforcement remains unverified.
-- Both current runners passed 44 retained scenarios. Injected partial report
-  writes reproduced damage to previous bytes; injected terminal-log failure
-  reproduced a new report with only a start record. These existing limits
-  are recorded explicitly and motivate the future opt-in report-preservation
-  requirements. Initial probe-import and prose-whitespace checker failures
-  were corrected; their logs remain retained.
-- Documentation QA passed 66 tests; focused consumer/split/event/overlay
-  regressions passed 94 tests. The full suite passed 2908 tests with two
-  platform precision skips and one existing constant-input warning. Ruff,
-  compilation and offline build passed. The generated map matched baseline.
-  `reports/pr221_runner_decision_attempt.md` records the policy, evidence,
-  commands, environment, trade-offs and genuine remaining gates.
-- Staging failed with exit 128 because `.git/index.lock` creation received
-  `Operation not permitted`. No commit was created. Exact delivery bytes,
-  SHA-256 manifests, replay evidence and final checks are released under
-  `build/pr221-runner-decision-evidence/` for a Git-writable coordinator.
-  Writer responsibility ends at that handoff. Fresh exact-head QA, two-seat
-  CRITICAL review, binding acceptance and Step 3 implementation remain
-  separate gates; this worker performed no publication or self-acceptance.
-
-## 2026-09-20 — Milestone 3.10 causality and accounting remediation
-
-- Owner scope covers audit M01–M11 on the assigned hardening branch. A clean
-  detached worktree preserved the original checkout's untracked audit evidence
-  and lockfile.
-- Executable IC and regime families now use horizon-complete expanding weights.
-  Both books freeze smoothing references at decision time. Signed exposure,
-  final eligibility/caps, held-price refusal, solvency, and cost/liquidation
-  bases have deterministic synthetic regression coverage.
-- Constituent stitching preserves permanent IDs and refuses ambiguous ticker
-  reuse. Regime APIs validate lag/axes/range and preserve parent missingness.
-  DSR accepts explicit trial dispersion; the multifactor runner inventories
-  attempted configurations and persists append-only attempt events.
-- Superseded report bytes remain at baseline `25825b422add80ad8fc0e39f0c19f8c943da5548`.
-  Current synthetic reports and numerical pins reflect the repaired methods.
-- The ablation retained a redundant-handler removal after 18 exact-result
-  comparisons. Removing held-price refusal reproduced silent zero-return
-  valuation; that necessary guard remains.
-- `coord/reports/m3_10_hardening_report.md` records the implementation matrix,
-  accounting/statistical assumptions, trial inventory, validation, limitations,
-  and Coordinator acceptance gate.
-- Final validation on the assigned branch passed 3,726 tests with two platform
-  precision skips and 23 constant-input correlation warnings. Ruff, compilation,
-  whitespace checks, and the isolated offline source/wheel build passed. The
-  first full run's sole stale-map failure was corrected by regeneration.
-  All 62 default factors preserved early scores and both books' holdings under
-  separate future-label and future-price perturbations. The refined partial
-  sign-reversal and intervening-date disappearance fixtures passed 42 cases.
-
-## 2026-09-20 — Milestone 4.0 Steps 1–2: Parquet adapter and blue-chip cohort
-
-- Working branch `feat/m4-0-real-data-parquet-adapter` from baseline `24592d5`.
-- Implemented `src/data/parquet_loader.py` providing local EODHD daily Parquet loading and wide panel alignment:
-  - `load_eod_parquet(file_path)`: validates OHLCV schema, requires finite strictly positive prices, non-negative volume, and rejects boolean types and unordered/duplicate dates.
-  - `load_eod_cohort_panels(symbols, data_dir, inventory_path, start_date, end_date)`: resolves symbols via JSON inventory or convention, enforces path confinement under data directory, and aligns per-symbol frames into wide union panels while preserving missing dates as NaN (PIT-009).
-- Implemented `src/data/bluechip_cohort.py` defining `BLUECHIP_50_COHORT` (static 50-stock liquid blue-chip diagnostic cohort snapshot) and `BENCHMARK_SYMBOL = "SPY.US"` under DIAGNOSTIC_ONLY status with explicit survivorship caveats.
-- Added runtime dependency `pyarrow>=14.0` in `pyproject.toml` and verified dependency structure in `tests/test_project_structure.py`.
-- Added 41 unit tests in `tests/test_parquet_loader.py` covering valid loads, inventory resolution, date filtering, and integrity error handling on synthetic temporary fixtures.
-- Regenerated `docs/repo_map.md` (7 mapped data files, 232 mapped test files).
-- Independent formal review by `GROK_REVIEW` on clean detached worktree: `PASS (MATERIAL: 0)` in `coord/reports/m4_0_parquet_adapter_review.md`.
-- Addressed advisories ADV-M40-1 (calendar-day midnight flooring for timestamped daily bars), ADV-M40-2 (explicit `sort=True` in panel concat), ADV-M40-3 (cohort wording precision), and ADV-M40-4 (dedicated edge-case unit tests).
-- Implementation report recorded in `coord/reports/m4_0_parquet_adapter_impl.md`.
-
-## 2026-09-20 — Milestone 4.0 Step 4: real-data multi-factor diagnostic runner
-
-- Working branch `feat/m4-0-real-data-diagnostic-runner` from baseline `01a2607` (`main` after PR #245).
-- Implemented `research/real_data_multifactor_diagnostic.py` wiring `BLUECHIP_50_COHORT` and `SPY.US` through `load_eod_cohort_panels` into the committed 62-trial diagnostic path (52 classical price-volume alphas plus 10 composites/interactions).
-- Research prices use vendor `adjusted_close`; OHLC is scaled by `adjusted_close / close` and volume by the inverse ratio so dollar volume stays on a matching price/volume basis. `SPY.US` adjusted close is the long-only accounting benchmark. A separate cash-dividend overlay is refused (PIT-007).
-- Reused M01-M11 causal parents: lag-1 execution, closed-window walk-forward IC weights, decision-time frozen smoothing targets, netted gross exposure, solvency guards, across-trial Sharpe variance for DSR, and append-only trial inventory logging.
-- Official outputs: `reports/real_data_multifactor_diagnostic.md`, `reports/experiment_logs/real_data_multifactor_diagnostic.json`, and `reports/experiment_logs/real_data_multifactor_diagnostic.trials.jsonl`. Tracked records redact private absolute paths.
-- Added `tests/test_real_data_multifactor_diagnostic.py` on synthetic temporary Parquet fixtures so CI does not require local private data.
-- `src/reporting/experiment_log.py` accepts `DIAGNOSTIC_REAL_DATA_CAVEATS`. The synthetic experiment registry skips `real_data_multifactor_diagnostic` logs.
-- Experiment log entry `20260920-001-real-data-multifactor-diagnostic`. Evidence ceiling remains `DIAGNOSTIC_ONLY`. Readiness decision `diagnostic_ready_with_low_caveats`. Survivorship bias remains explicit.
-- Official run on the local 50-stock window `2016-08-08` through `2026-08-07` (2,514 source rows) completed 156 books / 148 distinct trials with zero failed attempts. Tracked outputs redact private paths.
-- Verification: focused real-data tests 10 passed; full `pytest tests/ -q --basetemp=/tmp/efr-pytest-m40-real` 3779 passed, 2 skipped; `ruff check .` clean; `compileall` of `src tests research lean` clean; `python scripts/repo_map.py` regenerated (`research` 25 files, `tests` 233 files).
-
-## 2026-09-21 — Stage A CI acceleration: bounded pytest-xdist scheduling
-
-- Working branch `feat/ci-acceleration-and-optimization` from design baseline `3bb32dfd316bdd2a831fbe62ab961e62a0cf7689`.
-- Added `pytest-xdist>=3.5.0` to the `dev` extra. `[tool.pytest.ini_options]` remains `testpaths = ["tests"]`, `pythonpath = ["src"]`, and `addopts = "-ra"`. Local `python -m pytest -q` stays the serial reference.
-- Sorted `tests/test_ml_combination.py` parametrization over `_SUPPORTED_MODELS` so independent xdist workers collect the same node IDs under hash randomization. Production `_SUPPORTED_MODELS` remains a set.
-- Replaced `.github/workflows/ci.yml` with the Stage A single-job workflow: required check name `Python validation`, job ID `validation`, two-worker `--dist worksteal`, `--max-worker-restart=0`, native thread limits, explicit `cache-dependency-path: pyproject.toml`, `--prefer-binary` install, fail-closed evidence upload, PR concurrency cancel-in-progress, and `merge_group` eligibility.
-- Retained the existing campaign-safety comments required by `test_ci_runs_only_committed_synthetic_campaign_fixtures` (`committed synthetic fixtures`, `not result-bearing`, `private panel`).
-- Stage B runtime-kernel work and Stage C multi-job lanes remain unactivated. GitHub 5–8 minute wall-clock acceptance remains a same-runner measurement after publication.
-- Local verification on CPython 3.12.13 / pytest 9.1.1 / xdist 3.8.0 with native threads clamped to 1: `ruff check .` clean; `compileall` of `src tests research lean` clean; `python -m build --outdir /tmp/efr-ci-accel-dist` produced sdist and wheel each containing 20 ledger schema files; actionlint 1.7.12 accepted the workflow; three workflow shell bodies passed `bash -n`.
-- Key parallel suites (`test_ml_combination.py`, `test_campaign_conformance.py`, `test_campaign_runner.py`, `test_project_structure.py`, `test_real_data_multifactor_diagnostic.py`, `test_cross_validation.py`, `test_lean_smoke_test_scope.py`): 164 passed in 7.33 s.
-- Full two-worker worksteal: 3,817 passed, 2 skipped, 23 warnings in 268.59 s; JUnit 3,819 unique node IDs, 0 duplicates. ML collection order is identical under `PYTHONHASHSEED` 1, 2, and 3. `git diff --check` clean. Tracked fixtures and reports unchanged.
-- Implementation report: `coord/reports/ci_acceleration_impl_report.md`.
-- Dual independent review conducted across isolated clean worktrees at candidate `8c859ef80de036f9839a72d4019d181180eca134`:
-  - Reviewer 1 (GPT-6 Astra Extra High): technical assessment found 0 MATERIAL implementation defects; full 2-worker suite passed 3,817, 2 skipped; recorded R1-A01 (reversed comparison wording in impl report). Report at `coord/reports/ci_acceleration_gpt6_review.md`.
-  - Reviewer 2 (Grok 4.6 Extra High): Verdict PASS (MATERIAL: 0); full 2-worker suite passed 3,817 in 264.06s with 3,819 unique node IDs; recorded ADV-CIA-1 (conformance pin coverage). Report at `coord/reports/ci_acceleration_grok_review.md`.
-- Remediated R1-A01: corrected 420s vs 1,144.64s floor comparison and nominal 1.94x speedup / 0.515 elapsed ratio phrasing in `coord/reports/ci_acceleration_impl_report.md`.
-- Remediated ADV-CIA-1: extended `tests/test_campaign_conformance.py::test_ci_runs_only_committed_synthetic_campaign_fixtures` to assert job name `Python validation`, the six thread clamping env keys (`OMP_NUM_THREADS="1"`, etc.), `-n 2 --dist worksteal`, and `--max-worker-restart=0`.
-
-## 2026-09-21 — CI Stage B/C runtime and lane acceleration
-
-- Delivery branch `feat/ci-stage-bc-acceleration`, base `431cdd2` (Stage A).
-- Profiled the complete synthetic diagnostic. The two book engines consume approximately 86% of instrumented pipeline time; native rolling rank alone addresses approximately 7.5%.
-- Implemented native rolling ranks with the existing tie-rule fallback, scalar-preserving signal traversal, a guarded numeric held-return path, and array output buffers for both accounting engines. Long-short bucket diagnostics execute on rebalance dates. Existing timing, arithmetic, costs, provenance and refusal guards retain their contracts.
-- Split CI into exhaustive core and diagnostics lanes with two bounded xdist workers each. The required `Python validation` job accepts only successful lane completion and retains failure/cancellation/skipped-result protection.
-- Local Python 3.11 verification: core 3,790 passed and two inherited platform precision skips in 39.74 seconds; diagnostics 125 passed in 135.04 seconds. Collection union has 3,917 unique cases, retaining all 3,819 original cases and adding 98 regression cases. Ruff, compilation, actionlint, packaging and whitespace checks pass. All 20 packaged ledger JSON/hash files match source. Tracked fixtures and reports remain unchanged. Repository-map regeneration produced identical content.
-- Fresh official-test call time falls from 218.774 to 79.844 seconds. Twenty-four preserved-baseline book configurations match all public fields exactly, including signed zeros. Isolated ablations retain the measured optimizations; median pair-of-books time falls from 2.0527 to 0.6818 seconds.
-- Assessment, implementation, ablation, evidence locations and limits: `coord/reports/ci_acceleration_stage_bc_impl.md`.
-- Formal independent review by Grok 4.6 Extra High on clean detached worktree: Verdict PASS (MATERIAL: 0). Independent local QA: core lane 3,790 passed, 2 skipped in 38.66s; diagnostics lane 125 passed in 134.83s; 3,917 unique cases across disjoint lanes. Report recorded in `coord/reports/ci_acceleration_stage_bc_grok_review.md`.
-- Hosted CI verification: second consecutive hosted run `35631677129` on candidate `ccaf59c` passed all 3,917 cases and `Python validation` in 5m29s (core 2m12s, diagnostics 5m26s, gate 3s), confirming reproducible sub-6-minute CI performance across multiple runs and addressing ADV-BC-1.
-
-## 2026-09-22 — M4.5 Optional Market Impact and Capacity Candidate
-
-- Implemented accepted plan `bd7a2c0` on branch `feat/m4-5-market-impact-capacity`
-  from verified M4.4 base `fe851ba0a69be1416db265bee4375433ab45d52d`. The directive's
-  expanded base-hash typo was resolved with live Git and coordinator/owner confirmation.
-- Added a shared square-root impact model, complete lagged ADV/volatility,
-  matching price/volume basis guards, and explicit raise/throttle/penalize policies.
-  Both engines expose dollar costs, actual trades, participation, deferred shares,
-  cancellations, and self-financing cash under the optional model. Existing
-  default-path fields retain exact baseline equality across 124 books and M4.3/M4.4 summaries.
-- Preserved baseline/candidate fingerprint:
-  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
-  The candidate retains the M4.4 terminal evidence and fee-exemption boundaries.
-- Generated 96 declared capacity scenarios: 62 successes, 34 refusals, and
-  38 negative net returns. The grid has zero observed positive-to-nonpositive
-  benchmark-excess brackets. Empirical capacity remains unmeasured.
-- The first demo run exposed small negative long-only holdings from floating-point
-  completion of deferred sells. Actual long-only sells now respect remaining
-  position value; excess shares are recorded cancellations. The append-only log
-  retains all five initial failures, and regression/ablation tests retain their cause.
-- Added 113 deterministic tests. Full CI selections pass locally: core 4,116
-  passed and two inherited longdouble precision skips in 28.02 seconds;
-  diagnostics 125 passed in 90.21 seconds. The disjoint union contains 4,243 cases.
-  Ruff, compilation, distribution build, package-schema checks, map freshness,
-  and whitespace checks pass. The initial stale-map failure was closed by
-  regeneration and a complete core rerun.
-- Fifteen isolated negative ablations each fail their independent counterexample;
-  the intact copied package passes all 113 new tests. Production source hashes
-  remain unchanged. Necessary causal, cost, cash, liquidity, and terminal controls
-  are retained. The supported no-removal outcome covers M4.5.
-- Updated the timing/accounting supplement, roadmap limitations, generated map,
-  and evidence report at `coord/reports/m4_5_market_impact_capacity_impl.md`.
-  CPython 3.12.13 is the supplied local environment. Hosted Python 3.11 CI and
-  the owner-directed fresh independent GPT-6 Astra High Fast review remain pending
-  at producer delivery to coordinator `w3:pE8`.
-
-
-## 2026-09-22 — M45-R1 All-Buy Funding Remediation
-
-- Independent review of `fa63cfae90b6543e94b861df2277ecdfab9b9460` reproduced a
-  P1 self-financing defect missed by the initial tests. An all-True pandas buy
-  selection aliased the executed-trade buffer; actual-fill scaling then caused
-  final outlay to apply the funding scale twice. The initial producer QA's
-  cash-conservation coverage omitted this selection boundary.
-- Runtime and regression fix commit: `de37dd053c6302e0d630469d7796ab7eee9e8a36`.
-  Buy values now own an explicit copy. A post-trade guard requires finite cash
-  plus signed positions to match post-cost equity within $0.000001. The
-  existing input-balance guard remains before trade quotation.
-- Durable verification rule: arrays retained across financial-state mutation
-  require explicit ownership, and all-buy/single-security funding cases must
-  verify actual-fill fees, cash debits, and final cash-plus-position equality.
-  The original eight reviewer regressions fail before repair and pass after it.
-  Twenty added regression cases bring the three impact suites to 133 tests.
-- Seventeen isolated negative ablations fail as expected; the intact package
-  passes 133 tests. The new copy and post-trade reconciliation removals each
-  expose their own counterexample. Necessary accounting controls remain intact.
-- Full core lane: 4,136 passed and two inherited platform precision skips.
-  Diagnostics: 125 passed. Their disjoint union contains 4,263 collected cases,
-  with 4,261 passing. Baseline capture remains byte-identical with fingerprint
-  `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
-  Ruff, compileall, build, package-content comparison and map checks pass.
-- Capacity replay records 61 successes, 35 refusals and 37 negative-return books.
-  The $1B synthetic long-short throttle path now refuses a measured
-  $0.0000011920928955078125 post-trade discrepancy. The requested absolute limit
-  remains $0.000001. All prior outcomes remain in Git and the append-only log;
-  the current cases, brackets and Markdown match a separate replay exactly.
-- Current source/artifact hashes and full logs are recorded in
-  `coord/reports/m4_5_evidence/validation.json` and
-  `/private/tmp/efr-m4-5-remediation-evidence`. The implementation report identifies
-  the remediation SHA and the changed numerical boundary. Independent closure
-  of M45-R1 and hosted CI remain pending at producer handoff.
-
-## 2026-09-22 — M4.6 causal multi-factor risk attribution candidate
-
-- Binding card `738caf5` precedes runtime changes from merged base `b60e109`.
-  The producer implements one risk module, optional sidecars in both engines,
-  a synthetic all-attempt demo, 70 deterministic tests, and isolated ablation.
-- Five winsorized standardized styles plus Market use immediately prior observed
-  exposures and actual holdings. OLS/WLS fits require full rank. Gross return
-  equals factor plus specific contributions; engine costs reconcile net return.
-  Active-risk covariance and residual variance use strictly earlier fits.
-- The 62-factor/124-book baseline preserves exact bytes for both the historic
-  comparison schema and every M4.5 result field. The latter includes 3,038
-  existing fields, raw buffer hashes, ordered axes and dtypes. The historic
-  fingerprint remains `5a885b96e7379a83658047d4720d701f504f92838ffae10a76fa267580b61ed4`.
-- The synthetic demo retains eight successful negative-net-return books and two
-  expected refusals. Maximum one-period reconstruction error is
-  `3.469446951953614e-18`. The appended attempt log retains both generated runs.
-  All inputs and availability assertions are synthetic.
-- Final core QA passes 4,206 tests with two inherited platform precision skips;
-  diagnostics passes 125. Their verified disjoint union has 4,331 passes and two
-  skips. Ruff, compileall, baseline replay, repo-map checks, and diff checks pass.
-  Initial fixture errors and the initial 4,205-pass core run remain in evidence.
-- The initial ablation exposes an exact mathematical equivalence: changing
-  equal-window historical volatility ddof cancels during cross-sectional
-  standardization. The final run records that equivalent result, 52 expected
-  negative removals, and a passing intact baseline. Every production source hash
-  stays unchanged. The sample-volatility definition remains the declared
-  convention; removal of the volatility calculation fails its independent oracle.
-- Typed refusals cover enabled terminal-event attribution, missing cross-section
-  coverage, rank deficiency, and invalid covariance. Empirical calibration,
-  residual correlations, changing regression universes, industry factors and
-  geometric linking remain in the roadmap backlog. The implementation report
-  and `coord/reports/m4_6_evidence/validation.json` contain producer evidence.
-  The frozen candidate transfers write responsibility to the coordinator for
-  independent single-seat GPT-6 Astra High Fast review and hosted CI.
-
-## 2026-09-22 — M46-R1 singular covariance remediation
-
-- Review of `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` identified a P2 material
-  numerical mismatch: PSD tolerance accepted tiny negative covariance roundoff,
-  while a zero-tolerance quadratic-form check refused a valid hedged portfolio.
-- Code candidate `cfec56d016be17937a2496280e2a53d6722a0c0e` aligns aggregate
-  factor/active variance acceptance to -1e-14, then clamps each aggregate to zero.
-  Signed Euler contributions remain unchanged; the bounded aggregate correction
-  and final addition rounding are explicit in the function contract and tests.
-- Numerical boundary verification pairs every tolerated PSD boundary with a
-  downstream quadratic-form counterexample, including null-space exposure,
-  zero total risk, positive specific risk, and material levered negativity.
-  The exact reviewer fixture is retained. Five new counterexamples fail before
-  repair; the complete final risk suite passes 79 tests. Two initial oracle
-  precision errors and their corrected checks remain visible in the evidence.
-- Final core lane: 4,215 passed and two inherited precision skips. Diagnostics:
-  125 passed. Parsed JUnit IDs establish a disjoint total of 4,340 passes and two
-  skips. Ruff, compileall, and both exact 124-book baseline comparisons pass.
-- All original 52 negative ablations still fail as expected. Three independent
-  removals prove the necessity of the aligned tolerance and the two scalar
-  clamps. The intact package and existing volatility-ddof equivalence pass;
-  every original production source and archived log hash is verified.
-- `coord/reports/m4_6_evidence/remediation_r1/validation.json` records code hashes,
-  baseline fingerprints and new QA; the implementation report records the code
-  commit and preserved evidence. Independent M46-R1 closure remains pending
-  coordinator re-review of the frozen evidence commit.

@@ -4,6 +4,11 @@ Canonical responsibility: repository invariants, authority boundaries,
 research-safety review standards, writing-style rules, and ablation after
 completed design or implementation.
 
+This repository is the simulation-only research phase of an automated
+stock-selection program. Procedures live in
+`docs/codex_long_running_controller.md`, standing owner grants in
+`AUTHORITY.md`, and product direction in `docs/north_star.md`.
+
 ## Authority And Scope
 
 - Repository instructions define constraints and eligibility; they never expand
@@ -11,7 +16,9 @@ completed design or implementation.
 - No repository file grants authority to push, create or update a PR, post a
   comment or review request, enable auto-merge, merge, close, deploy, access
   private data, or take destructive action. Each requires explicit user or
-  higher-level authorization for that action and scope.
+  higher-level authorization for that action and scope. `AUTHORITY.md` records
+  the owner's standing grants; the owner is their source, and agents never edit
+  that file.
 - Unless the user narrows the request, an explicit instruction to create or
   publish a PR authorizes the normal protected lifecycle for that same PR:
   readiness transition, required review request, in-scope remediation
@@ -19,196 +26,78 @@ completed design or implementation.
   merge. The user may revoke that lifecycle authorization at any time.
 - Lifecycle authorization never covers another PR, scope expansion, auto-merge,
   administrative or protection bypass, deployment, private data, credentials,
-  brokerage, or destructive action.
-- Approval for a named PR or remediation does not expand its stage or file
-  scope. The owner grants standing same-change publication: completing an
-  owner-requested in-scope repository change is explicit action-and-scope
-  authorization for that change's ordinary feature-branch publication and
-  same-PR protected lifecycle through eligible normal merge. A higher-level
-  STOP or narrowed request remains a stop. Asking the owner for a second 建PR
-  or merge prompt after that completion is a P1 process failure.
-- **Owner-Authorized Autonomous Coordinator Lifecycle**: Under explicit owner
-  authorization for unattended progression, the Coordinator is authorized to
-  autonomously execute the full development and delivery lifecycle: push
-  passing candidate branches, create/publish PRs, manage required reviews and
-  remediations, perform eligible normal merge once all deterministic tests and
-  independent reviews pass with zero open MATERIAL findings (MATERIAL: 0), and
-  advance to the next authorized research milestone without pausing for manual
-  interactive confirmation.
+  brokerage, or destructive action. Approval for a named PR or remediation
+  keeps its stage and file scope.
 - Never direct-push or direct-merge to `main`, bypass protections, checks,
   reviews, or a merge queue, or use administrative override flags.
 - Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
   use a separate clean branch or worktree when the current tree is dirty.
 - Treat credentials, private data, licenses, account identifiers, and production
-  systems as sensitive. Never store secrets or raw private data in the repo.
-- Do not use GitHub Code Review. Do not post `@codex review`, enable Auto
-  review, Exhaustive review, or credits-for-review. Keep GitHub Automatic Review
-  disabled.
-- This file owns repository invariants, authority boundaries, research-safety
-  review standards, and writing style. The live Herdr+Pi coordination standard
-  owns reviewer routing, quota rotation, and review-loop dispatch.
-- A formal review of this repository is valid only on a clean root at the exact
-  current head, never the producer worktree.
-
-## Writing Style And Syntax
-
-This section binds every model and harness working in this repository,
-including Codex, Grok Build, Gemini, Pi, and any later replacement.
-Newly authored explanatory prose, comments, reports, and documentation
-use this style. Research-safety invariants and authority prohibitions
-keep their existing wording.
-
-- Direct affirmative construction: state strictly what things are.
-  Define concepts using direct predicates (subject + verb +
-  object/predicate).
-- Definition by negation is banned. False-dichotomy templates are
-  banned: "not just X, but Y"; "not merely X, but rather Y";
-  "it is not about X, it is about Y". Strawmen and
-  pseudo-philosophical antithesis used to make an idea sound deeper
-  are banned.
-- Assertive tone: the first clause states the core definition or
-  conclusion.
-- When a Mermaid diagram or other visualization shows the structure more
-  clearly than prose, use that diagram.
+  systems as sensitive. Never store secrets or raw private data in the repo; the
+  prohibition covers tracked, untracked, and ignored files in every checkout.
+  R11 separately governs what may be published.
 
 ## Startup And Sources
 
-- Live Herdr+Pi coordination standard owns dispatch, lanes, reviewer routing,
-  quota, and visible-tab review. Before dispatch or review, read the three
-  policy files in `Codex/Standards/coordination-standard/`: `coordinator.md`,
-  `routing_table.json`, and `model_bindings.json`. Do not copy those seats or
-  bindings into this file. Do not load `Codex/Standards/archive/`.
+- The coordination standard owns dispatch, lanes, reviewer routing, model
+  bindings, quota, and visible-tab review. Before dispatch or review, read the
+  three policy files in `Codex/Standards/coordination-standard/`:
+  `coordinator.md`, `routing_table.json`, and `model_bindings.json`. Do not copy
+  seats or bindings into this file. Do not load `Codex/Standards/archive/`.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
-- Read `docs/north_star.md` for active product vision and demo-first delivery
-  principles; read `docs/current_roadmap.md` for program milestones, execution
-  gates, and the authoritative imperfection backlog.
-- Use `docs/repo_map.md` for targeted orientation; verify cached handoff facts live.
-- Read long logs or contracts only for active-stage or failed/sensitive checks.
-- Cap unknown output and prefer targeted searches or short views. Regenerate
-  `docs/repo_map.md` when workflow-control changes alter the map.
+- Use `docs/repo_map.md` for targeted orientation and verify cached handoff
+  facts live. Read long logs or contracts only for the active stage, cap unknown
+  output, and regenerate `docs/repo_map.md` when workflow changes alter it.
 
 ## Research Safety Invariants
 
-- North Star and Project Scope: The ultimate aspiration is automated stock
-  selection and trading pursuing sustainable risk-controlled long-term net
-  returns. Stable profit is an objective, not a guarantee. This research
-  repository is the first simulation phase; execution, live order capabilities,
-  pre-trade risk limits, position/cash reconciliation, health monitoring, and
-  emergency kill switches belong strictly to a future, separately authorized private
-  execution repository. Active product aspiration and demo-first delivery
-  principles are in `docs/north_star.md`.
-- Keep this project simulated, auditable, reproducible, and explainable; never
-  add brokerage connections, orders, paper/live trading, or live-account behavior.
-- Demo-first delivery: deliver a working, presentable end-to-end vertical slice
-  (Demo v0) first; record non-blocking imperfections, data caveats, and missing
-  coverage in a lightweight backlog and improve in layers. Do not block early
-  demos on an ideal pipeline, comprehensive SEC entity lineage, complete ledger
-  schema coverage, or a factor zoo. While comprehensive SEC lineage may be
-  deferred, basic identity and accounting integrity are NEVER deferrable:
-  fail-closed ticker reuse / identity mis-stitching prevention (PIT-005);
-  no default last-price exits or zero payoff at asset disappearance (PIT-006);
-  no dividend double counting (PIT-007); no incompatible price/volume dollar
-  turnover calculations (such as raw price multiplied by split-adjusted volume
-  or vice-versa; price and volume bases must match); accepted timing contract
-  without lookahead, realistic costs under existing turnover conventions, no
-  future-membership selection, no silent repairs (PIT-009 typed missingness),
-  sample honesty, trial retention, privacy, and non-execution. Preserved minimum
-  correctness across these non-negotiable boundaries is mandatory. Formal promotion
-  controls remain prerequisites for formal claims, not universal blockers for
-  limited exploratory demos.
-- Never invent results or claim profitability without reproducible evidence.
-  Zero-cost or no-slippage results are diagnostics only.
-- Keep failed, weak, invalid, abandoned, and contrary results visible; never
-  cherry-pick only the best parameter or trial.
-- Never use future returns, future universe membership, future fundamentals,
-  same-period target returns, or any other look-ahead or survivorship leakage.
-- Real/private-data access or interpretation requires accepted methodology,
-  evidence gates, and explicit authorization.
-- **Pragmatic Data First**: Under `DIAGNOSTIC_ONLY`, permit a verified static
-  cohort (e.g. 50 liquid blue chips) to run end-to-end diagnostic pipelines.
-  Forbid blocking research execution on unresolved legal/textual SEC EDGAR
-  lineage parsing.
-- Explain data provenance, missingness, costs, slippage, execution timing,
-  benchmark choice, sample splits, and material limitations.
+The ultimate aspiration is automated stock selection and trading pursuing
+sustainable risk-controlled long-term net returns. Stable profit is an
+objective, not a guarantee. Invariants R1–R12 bind every layer, including demos
+and diagnostics. Everything else may wait in the backlog in
+`docs/current_roadmap.md`. A known defect stays a defect when a caveat is added.
 
-## Alignment And Evidence
-
-- Inputs must be known before trading. Distinguish feature, signal, rebalance,
-  execution, and return dates; state execution time and test every boundary.
-- Add deterministic tests for feature, strategy, portfolio, accounting, or
-  reporting calculation changes.
-- Document strategy changes in `EXPERIMENT_LOG.md`, `PROJECT_SPEC.md`, or the
-  relevant note; record durable process evidence in `docs/engineering_log.md`.
-- Keep reports and experiment records reproducible.
-- Reports, handoffs, and section closings state completed facts and current
-  measurements. Close a section with what it records. Authority remains in
-  this file rather than in a closing disclaimer.
-
-## Owner Corrections And Continuation
-
-When the owner points out an agent process failure, do not stop at the
-apology. Acknowledge the concrete failure, record a durable rule so it does
-not recur, then continue the still-authorized task unless the correction
-itself is a hold or unblock condition.
-
-- Record authority, research-safety, and writing-style invariants here. Record the incident
-  in `docs/engineering_log.md`. Operational review, quota, merge-wait, and Herdr
-  tab-cleanup steps live in `docs/codex_long_running_controller.md`. Reviewer
-  assignment lives in the live Herdr+Pi coordination standard.
-- Rank severity. Skipping a required live availability check is P1 process
-  failure. Skipping the required pre-round Herdr tab inspection is P1 process
-  failure. Asking the owner to type 建PR or merge after an owner-requested
-  in-scope repository change is already complete is a P1 process failure.
-  Asking the owner to type the next already-determined command, including
-  running a demo or starting the next roadmap slice, is a P1 process failure
-  during an authorized unattended session.
-- Before starting the next round of Herdr work, inspect live tabs. Close only
-  execution tabs whose process is inactive, required outputs are saved and
-  hash-verified, write responsibility is released, and the tab will not be
-  resumed. Keep the coordinator tab, working or blocked tabs, tabs whose disk
-  and live state disagree, and any tab still needed for the current or next
-  authorized card.
-- When the next step is already determined by an accepted plan, owner decision,
-  or repository rules, automatically execute the next clear, already-authorized
-  step in the same turn without stopping to request repeat permission. Continue
-  through ordinary QA, review, and remediation waits. Authorized unattended
-  overnight work keeps executing determined roadmap slices until a stop
-  condition. Stop only for a genuine blocker, a large unresolvable
-  owner-semantic choice, missing authority, or additional authority. When the owner
-  explicitly directs a STOP boundary after an authorized task, checks, and
-  version management, that explicit stop directive governs; do not continue into
-  unauthorized implementation or data tasks. Completing an owner-requested
-  in-scope repository change includes ordinary feature-branch publication, the
-  PR for that same change, required checks and review, and eligible normal
-  merge. Private data access, new paid services, credentials, and trading stay
-  outside that standing publication path. Do not end a turn merely on dispatch
-  acknowledgment while delegated work is outstanding.
-- Do not end the coordinator process while an authorized PR is waiting for its
-  exact-head review body. Keep the session alive and re-check until that body
-  exists (pass, findings, or an explicit current limit). Timeout is not a review
-  result.
-- Delivery methodology correction: avoid unbounded perfectionism. Prioritize
-  shipping a small, demonstrable, presentable end-to-end version (Demo v0);
-  record non-blocking imperfections and caveats in a lightweight backlog and
-  improve in working layers. Do not block early demos on an ideal pipeline or
-  100% formal infrastructure. Historical Track A 14-trial refusal remains
-  preserved historical evidence, but is no longer the sole entry point of the
-  project.
-
-- A whole-project ablation completion claim requires an explicit runtime and
-  subsystem coverage matrix, tested high-impact hypotheses, preserved baseline
-  and negative evidence, and an explicit limitations/gap assessment. Local QA,
-  review success, a file inventory, or a handful of local optimizations cannot
-  substitute for fulfillment of the owner's requested scope. Plan readiness
-  records a planning checkpoint, not completion of the implementation round.
-
-- For ablations that replace array traversal, test every accepted public
-  boundary's empty-axis shapes (Nx0, 0xM and 0x0), duplicate/named axes and mixed
-  scalar identity. A downstream function's stricter inputs do not narrow an
-  upstream public API. Compare public cells, state digests and refusal reasons;
-  ordinary test success cannot dispose of a demonstrated counterexample.
+- **R1 Timing.** Inputs are known before trading under
+  `after_close_signal_next_observed_close_v1`. Distinguish feature, signal,
+  rebalance, execution, and return dates, and test every boundary. Never use
+  future returns, future fundamentals, or same-period target returns.
+- **R2 Universe.** Eligibility uses only membership known at decision time. A
+  static survivor cohort is permitted only under `DIAGNOSTIC_ONLY`, with the
+  bias stated in each report header, and it never supports a ranking,
+  selection, promotion, or profitability claim.
+- **R3 Identity (PIT-005).** Fail closed on ticker reuse; never stitch returns
+  across permanent securities. Vendor identifiers with fail-closed ambiguity
+  handling suffice for diagnostics; unresolved SEC EDGAR lineage parsing never
+  blocks diagnostic research.
+- **R4 Disappearance (PIT-006).** No default last-price or zero-payoff exit. A
+  held disappearance without accepted terminal evidence refuses the affected
+  run or window.
+- **R5 Distributions (PIT-007).** Use one total-return basis; never add cash
+  dividends to an adjusted series.
+- **R6 Missingness (PIT-009).** Missing values stay typed; no silent fill, clip,
+  drop, or repair.
+- **R7 Price and volume basis.** Dollar turnover, liquidity, and capacity use
+  matching price and volume bases.
+- **R8 Costs.** Apply explicit commission and spread or slippage under existing
+  turnover conventions. Zero-cost or no-slippage results are diagnostics only.
+- **R9 Trials.** Keep failed, weak, invalid, abandoned, and contrary results
+  visible. Declare the trial family before results; never cherry-pick only the
+  best parameter or trial.
+- **R10 Claims.** Never invent results or claim profitability without
+  reproducible evidence. Report excess over a declared benchmark at a stated
+  evidence ceiling, and explain data provenance, missingness, costs, slippage,
+  execution timing, benchmark choice, sample splits, and material limitations.
+- **R11 Data and privacy.** Real/private-data access or interpretation requires
+  accepted methodology, evidence gates, and explicit authorization. Publication
+  follows the owner's written data terms: noncommercial aggregates may be
+  public; raw provider rows, provider responses, provider-derived membership
+  lists, credentials, and private paths stay private.
+- **R12 Non-execution.** Keep this project simulated, auditable, reproducible,
+  and explainable; never add brokerage connections, orders, paper/live trading,
+  or live-account behavior. Execution belongs to a future, separately
+  authorized private repository.
 
 ## Review Priorities
 
@@ -226,6 +115,61 @@ itself is a hold or unblock condition.
 - Every finding must cite the file and claim, code/test evidence, mismatch and
   impact, plus a recommended fix or targeted test.
 
+## Writing Style And Syntax
+
+These rules bind every model and harness working in this repository.
+Research-safety invariants and authority prohibitions keep their existing
+wording.
+
+- Every newly authored or edited repository document is English, including
+  AGENTS, skills, logs, handoffs, and reports. Historical evidence keeps its
+  original bytes. User-facing chat may use the user's preferred language.
+- Use direct affirmative construction: state what things are, and let the first
+  clause state the conclusion.
+- Definition by negation is banned. False-dichotomy templates are banned: "not
+  just X, but Y"; "not merely X, but rather Y"; "it is not about X, it is about
+  Y". Strawman antithesis is banned.
+- When a Mermaid diagram shows structure more clearly than prose, use it.
+- Reports, handoffs, and section closings state completed facts and current
+  measurements.
+
+## Engineering And Change Discipline
+
+- State scope before editing; afterward report files, tests, caveats, and the
+  next gate. Keep branches, PRs, and commits coherent; separate unrelated change
+  types.
+- Never remove, weaken, or skip tests to make a change pass. Add deterministic
+  tests for feature, strategy, portfolio, accounting, or reporting calculation
+  changes; prefer behavioral tests over source-text assertions.
+- Walking skeleton first: keep one working thread from data through factor,
+  statistics, portfolio backtest, and evidence report, and grow it in working
+  layers.
+- Milestone admission: every milestone changes a real-data result or an owner
+  decision within that milestone. A capability without a real-data consumer
+  waits for the milestone that consumes it.
+- Choose the simplest implementation that meets current requirements. Add no
+  speculative registries, capability minting, recursive abstraction layers, or
+  optional engine parameters without a consumer. Reuse existing dependencies and
+  established libraries before writing custom code.
+- When data or infrastructure is blocked, unblocked modules proceed on
+  synthetic golden fixtures.
+- Record strategy changes in `EXPERIMENT_LOG.md` or `PROJECT_SPEC.md`, process
+  evidence in `docs/engineering_log.md` with the newest entry first, and durable
+  choices in `docs/decision_log.md`. Commit summaries and hashes; keep bulky
+  evidence such as full test logs and multi-megabyte attempt files out of Git.
+- Every PR refreshes `docs/current_handoff.md` to its base. A test fails when
+  the handoff trails the base by more than one merged PR.
+
+## Owner Corrections And Continuation
+
+- When the owner identifies a process failure, acknowledge it, record the
+  incident in `docs/engineering_log.md`, update the rule in its owning document,
+  and continue the still-authorized task. Invariants belong here; procedures and
+  the process-failure list belong in the controller.
+- Execute the next clear, already-authorized step without repeat permission.
+  Stop for a genuine blocker, missing or additional authority, or a large
+  unresolvable owner-semantic choice. An explicit owner STOP governs.
+
 ## Ablation
 
 After every completed design or implementation, run an ablation experiment.
@@ -234,50 +178,16 @@ simplest implementation that still meets current requirements.
 
 Preserve the baseline. Test each removal in isolation. Compare behavior,
 correctness, and relevant costs. Keep justified simplifications. Restore
-regressions.
+regressions. Keep necessary tests, validation, and guards.
 
-Keep necessary tests, validation, and guards. Record removals, retained
-necessities, and known limitations. A supported no-change outcome is valid.
-Ablation revalidation is not a recursive ablation loop.
+Report at least one simplification attempt separately from guard-necessity
+checks. Record removals, retained necessities, and known limitations. A
+supported no-change outcome is valid. Ablation revalidation is not a recursive
+ablation loop.
 
-## Engineering And Change Discipline
-
-- State scope before editing; afterward report files, tests, caveats, and next gate.
-- Keep branches, PRs, and commits coherent; separate unrelated change types.
-- Never remove, weaken, or skip tests to make a change pass.
-- Choose the simplest implementation that fully meets current requirements;
-  avoid speculative abstractions, configuration, and indirection.
-- **Anti-Overengineering**: Explicitly forbid speculative multi-layer schema
-  registries, capability minting, or recursive abstraction layers before
-  end-to-end business logic works.
-- **Walking Skeleton First (End-to-End Minimal Closed Loop)**: Prioritize
-  completing and maintaining a single minimal thread connecting data -> factor ->
-  basic statistics -> simple portfolio backtest -> evidence report before
-  expanding any single component.
-- Grow the system in working layers: start with the smallest end-to-end
-  version, then add capabilities without trading a working product for
-  unfinished complexity.
-- **Mandatory Ablation Experiments**: Whenever agents introduce excessive
-  abstractions, wrapper layers, or boilerplate, coordinators and reviewers shall
-  trigger ablation experiments to remove unnecessary elements and simplify code.
-- **Anti-Gridlock Decoupling**: When data or infrastructure is blocked, unblocked
-  modules (such as pure math factor operators and statistical test formulas) must
-  proceed in parallel using synthetic golden fixtures.
-- Ablation after each completed design or implementation follows the Ablation
-  section.
-- Keep components modular and concerns clearly separated; prefer narrow modules,
-  clear pandas, and deterministic tests.
-- Prefer established, well-maintained libraries when they reduce complexity or
-  improve reliability; reimplement common functionality only with a clear reason.
-- Reuse existing project dependencies before writing custom implementations or
-  adding packages. Check library documentation and types before deciding a
-  needed capability is missing.
-- Do not add an unjustified heavyweight dependency. The controller owns workflow
-  and review lifecycle.
-- Documentation Language Standard: Every newly authored or edited
-  equity-factor-research-related documentation must be written in English. This
-  includes public docs, AGENTS, skills, logs, private addenda, task handoffs, and
-  reports. Do not rewrite immutable historical evidence just to translate it;
-  report any retained historical exception explicitly. No newly authored
-  non-English prose anywhere in this project's documentation. User-facing chat
-  interactions may remain in the user's preferred language.
+For ablations that replace array traversal, test every public boundary's
+empty-axis shapes (Nx0, 0xM, and 0x0), duplicate or named axes, and mixed
+scalar identity; compare public cells, state digests, and refusal reasons. A
+whole-project ablation completion claim requires a runtime and subsystem
+coverage matrix, tested high-impact hypotheses, preserved baseline and negative
+evidence, and a limitations assessment.
