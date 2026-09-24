@@ -1,7 +1,9 @@
 import ast
 import inspect
 import json
+import math
 from pathlib import Path
+import subprocess
 
 import numpy as np
 import pandas as pd
@@ -426,6 +428,83 @@ def test_runner_uses_spy_benchmark_and_writes_report_structure(tmp_path: Path) -
     assert result["cpcv_summary"]["embargo_periods"] == 5
     assert 0.0 <= result["cpcv_summary"]["pbo"] <= 1.0
     assert len(result["weighting_comparisons"]) == 4
+
+
+def test_runner_reports_benchmark_excess_code_identity_and_long_short_pbo(
+    tmp_path: Path,
+) -> None:
+    config = _reduced_config(tmp_path, include_weighting_comparisons=False)
+    report_path = tmp_path / "real_data_multifactor_diagnostic.md"
+    result = run_real_data_multifactor_diagnostic(
+        config=config, report_path=report_path, write_outputs=True
+    )
+
+    window = result["prices"].loc[result["evaluation_start"] : result["evaluation_end"]]
+    daily = window.pct_change(fill_method=None).iloc[1:].mean(axis=1)
+    expected_equal_weight = float((1.0 + daily).prod() - 1.0)
+    assert result["equal_weight_cohort_total_return"] == pytest.approx(
+        expected_equal_weight, rel=1e-12
+    )
+
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=Path(real_data_module.__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert result["code_identity"]["git_commit"] == head
+    assert isinstance(result["code_identity"]["tracked_changes"], bool)
+    assert 0.0 <= result["pbo_long_short_summary"]["pbo"] <= 1.0
+
+    report_text = report_path.read_text(encoding="utf-8")
+    assert (
+        "| excess vs benchmark | excess vs equal-weight cohort | tracking error |"
+        in report_text
+    )
+    assert f"Code commit: `{head}`" in report_text
+    assert "### Long-short alpha family" in report_text
+    metrics = result["factors"][ALPHA_001]["backtest"].metrics
+    diagnostics = report_text.split("## Factor diagnostics", 1)[1].split("\n## ", 1)[0]
+    alpha_row = next(
+        line for line in diagnostics.splitlines() if line.startswith(f"| {ALPHA_001} |")
+    )
+    assert f"{metrics['excess_total_return']:.2%}" in alpha_row
+    assert f"{metrics['total_return'] - expected_equal_weight:.2%}" in alpha_row
+
+    payload = json.loads(Path(result["experiment_log_path"]).read_text(encoding="utf-8"))
+    assert payload["config"]["code_identity"]["git_commit"] == head
+    assert payload["metrics"]["pbo_long_short_summary"]["pbo"] == pytest.approx(
+        result["pbo_long_short_summary"]["pbo"]
+    )
+    assert payload["metrics"]["equal_weight_cohort_total_return"] == pytest.approx(
+        expected_equal_weight
+    )
+
+
+def test_equal_weight_total_return_refuses_gaps() -> None:
+    dates = pd.bdate_range("2021-01-04", periods=4)
+    gapped = pd.DataFrame(
+        {"A": [100.0, 101.0, np.nan, 103.0], "B": [50.0, 50.5, 51.0, 51.5]},
+        index=dates,
+    )
+    assert math.isnan(real_data_module.equal_weight_total_return(gapped))
+    complete = gapped.assign(A=[100.0, 101.0, 102.0, 103.0])
+    daily = complete.pct_change(fill_method=None).iloc[1:].mean(axis=1)
+    assert real_data_module.equal_weight_total_return(complete) == pytest.approx(
+        float((1.0 + daily).prod() - 1.0), rel=1e-12
+    )
+
+
+def test_code_identity_without_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    def unavailable(*args, **kwargs):
+        raise OSError("git unavailable")
+
+    monkeypatch.setattr(real_data_module.subprocess, "run", unavailable)
+    assert real_data_module.code_identity() == {
+        "git_commit": None,
+        "tracked_changes": None,
+    }
 
 
 def test_runner_records_trials_without_writing_when_requested(tmp_path: Path) -> None:

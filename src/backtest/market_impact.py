@@ -28,6 +28,18 @@ def _finite_real(value: object) -> bool:
         return False
 
 
+def _post_trade_reconciles(balance: float, equity: float) -> bool:
+    """Closing cash plus signed positions must equal post-cost equity.
+
+    The relative bound scales with notional like the pre-trade check, so
+    floating-point rounding on large books reconciles; the absolute floor keeps
+    books below $1M at the $0.000001 limit.
+    """
+    return math.isfinite(balance) and math.isclose(
+        balance, equity, rel_tol=1e-12, abs_tol=1e-6
+    )
+
+
 @dataclass(frozen=True)
 class SquareRootImpactModel:
     eta: float = 0.25
@@ -480,13 +492,10 @@ def execute_impact_step(
             "position and share arithmetic must remain finite",
         )
     post_trade_balance = cash_after + float(positions_after.sum())
-    if (
-        not math.isfinite(post_trade_balance)
-        or abs(post_trade_balance - equity_after) > 1e-6
-    ):
+    if not _post_trade_reconciles(post_trade_balance, equity_after):
         raise MarketImpactValidationError(
             "impact_accounting_invalid",
-            "cash plus signed positions must reconcile to pretrade equity",
+            "cash plus signed positions must reconcile to post-cost equity",
         )
     return MarketImpactExecution(
         positions_after,

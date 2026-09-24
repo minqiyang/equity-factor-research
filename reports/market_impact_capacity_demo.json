@@ -670,7 +670,7 @@
         "lower_aum": 500000000.0,
         "mode": "throttle",
         "scope": "synthetic_cohort",
-        "status": "unavailable",
+        "status": "no_observed_crossing",
         "upper_aum": 1000000000.0
       }
     ]
@@ -691,10 +691,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007408,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -826,10 +827,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007408,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -961,10 +963,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007408,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1096,10 +1099,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007408,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1231,10 +1235,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007186,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1366,10 +1371,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.016617457009007186,
-        "net_sharpe": 24.94565521860901,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1561,6 +1567,7 @@
         "final_pending_abs_shares": 14467.345749014634,
         "gross_path_return": 0.003657949791968651,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -1572,7 +1579,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 0.0031700556679510328,
-        "net_sharpe": 21.487332632103286,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1704,6 +1711,7 @@
         "final_pending_abs_shares": 233698.43325672683,
         "gross_path_return": 0.0003656936959659518,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -1715,7 +1723,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 0.0003170055667947036,
-        "net_sharpe": 21.472780975034713,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1847,6 +1855,7 @@
         "final_pending_abs_shares": 1208058.8221798923,
         "gross_path_return": 7.313693794919196e-05,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -1858,7 +1867,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 6.340111335911836e-05,
-        "net_sharpe": 21.471485849997823,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -1990,6 +1999,7 @@
         "final_pending_abs_shares": 2426009.30833385,
         "gross_path_return": 3.6568356392763235e-05,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -2001,7 +2011,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 3.17005566796702e-05,
-        "net_sharpe": 21.471323940092756,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2133,6 +2143,7 @@
         "final_pending_abs_shares": 12169613.197565502,
         "gross_path_return": 7.313653265228481e-06,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -2144,7 +2155,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 6.340111335711995e-06,
-        "net_sharpe": 21.47119440481779,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2276,6 +2287,7 @@
         "final_pending_abs_shares": 24349118.05910506,
         "gross_path_return": 3.65682550618196e-06,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -2287,7 +2299,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 3.170055667300886e-06,
-        "net_sharpe": 21.471178216226377,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2419,6 +2431,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 2.0893026938236914,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -2430,7 +2443,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.1448538006435598,
-        "net_sharpe": -4.638608034186001,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2562,6 +2575,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 11.61105402855394,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -2573,7 +2587,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.5247625558329905,
-        "net_sharpe": -5.093775150475516,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2705,6 +2719,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 30.70060086150951,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -2716,7 +2731,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.7486864663288051,
-        "net_sharpe": -5.151361031935725,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2848,6 +2863,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 45.2098778614293,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -2859,7 +2875,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.8149571369392363,
-        "net_sharpe": -5.162481680316052,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -2991,6 +3007,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 106.72630144142195,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -3002,7 +3019,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.9126344006363458,
-        "net_sharpe": -5.175991762849245,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3134,6 +3151,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0181446740200375,
         "max_participation": 152.889698972491,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -3145,7 +3163,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.9374226408726829,
-        "net_sharpe": -5.178981842373858,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3277,10 +3295,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.005271028095795494,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3412,10 +3431,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.005271028095795494,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3547,10 +3567,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.0052710280957952715,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3682,10 +3703,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.0052710280957952715,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3817,10 +3839,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.0052710280957952715,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -3952,10 +3975,11 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.006791403999343082,
         "max_participation": null,
+        "measured_returns": 10,
         "mode": "fixed_control",
         "model": null,
         "net_return": 0.0052710280957952715,
-        "net_sharpe": 11.731134834889582,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4147,6 +4171,7 @@
         "final_pending_abs_shares": 42071.50434178658,
         "gross_path_return": 0.0034322594279843077,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4158,7 +4183,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 0.0028237520076117573,
-        "net_sharpe": 19.348342344891716,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4290,6 +4315,7 @@
         "final_pending_abs_shares": 598772.2600529937,
         "gross_path_return": 0.0003431073302486709,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4301,7 +4327,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 0.0002823752007610203,
-        "net_sharpe": 19.33782541581878,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4433,6 +4459,7 @@
         "final_pending_abs_shares": 3072997.8409916935,
         "gross_path_return": 6.86193568864013e-05,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4444,7 +4471,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 5.647504015260374e-05,
-        "net_sharpe": 19.336889388527567,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4576,6 +4603,7 @@
         "final_pending_abs_shares": 6165779.817165065,
         "gross_path_return": 3.4309546617983244e-05,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4587,7 +4615,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 2.8237520076190847e-05,
-        "net_sharpe": 19.33677237121049,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4719,6 +4747,7 @@
         "final_pending_abs_shares": 30908035.62655203,
         "gross_path_return": 6.861888231179947e-06,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4730,7 +4759,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 5.647504014882898e-06,
-        "net_sharpe": 19.336678755596154,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -4862,6 +4891,7 @@
         "final_pending_abs_shares": 61835855.38828577,
         "gross_path_return": 3.4309427974221762e-06,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 10,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -4873,7 +4903,7 @@
           "penalty_bps": 10.0
         },
         "net_return": 2.8237520075524714e-06,
-        "net_sharpe": 19.33666705028828,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -5005,6 +5035,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.008458051254256693,
         "max_participation": 4.993755308674394,
+        "measured_returns": 10,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -5016,7 +5047,7 @@
           "penalty_bps": 10.0
         },
         "net_return": -0.3094566616408969,
-        "net_sharpe": -5.4175922854971015,
+        "net_sharpe": null,
         "path": [
           {
             "absolute_traded_dollars": 0.0,
@@ -5198,6 +5229,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061444573,
@@ -5663,6 +5695,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061444573,
@@ -6128,6 +6161,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061447904,
@@ -6593,6 +6627,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061447904,
@@ -7058,6 +7093,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061450124,
@@ -7523,6 +7559,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.0045470527990885135,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.0030248361061450124,
@@ -8048,6 +8085,7 @@
         "final_pending_abs_shares": 5083.178390902145,
         "gross_path_return": 0.005641351526785909,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -8521,6 +8559,7 @@
         "final_pending_abs_shares": 240250.9567818714,
         "gross_path_return": 0.003960805245595944,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -8994,6 +9033,7 @@
         "final_pending_abs_shares": 1402949.9150278606,
         "gross_path_return": -0.0014323466389110084,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -9467,6 +9507,7 @@
         "final_pending_abs_shares": 2436674.2020096565,
         "gross_path_return": -0.002537338795478794,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -9940,6 +9981,7 @@
         "final_pending_abs_shares": 9593077.59991719,
         "gross_path_return": -0.0005059850880804184,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -10413,6 +10455,7 @@
         "final_pending_abs_shares": 18538581.84730161,
         "gross_path_return": -0.00025289954758778155,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -10886,6 +10929,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.004546750175878023,
         "max_participation": 0.19554859548362138,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -11359,6 +11403,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.004546727636131731,
         "max_participation": 1.760676202263345,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -11832,6 +11877,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.00454670586900674,
         "max_participation": 6.6409437709812735,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -12305,6 +12351,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": 0.004546679913169038,
         "max_participation": 10.926671277415764,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -12798,6 +12845,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650219502,
@@ -13263,6 +13311,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650219947,
@@ -13728,6 +13777,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650218947,
@@ -14193,6 +14243,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650218947,
@@ -14658,6 +14709,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650220058,
@@ -15123,6 +15175,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012757211479394348,
         "max_participation": null,
+        "measured_returns": 43,
         "mode": "fixed_control",
         "model": null,
         "net_return": -0.020381311650220058,
@@ -15648,6 +15701,7 @@
         "final_pending_abs_shares": 5155.9533771309525,
         "gross_path_return": -0.010355786115217147,
         "max_participation": 0.1,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -16121,6 +16175,7 @@
         "final_pending_abs_shares": 248466.80258054618,
         "gross_path_return": 0.0042049245353634745,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -16594,6 +16649,7 @@
         "final_pending_abs_shares": 954217.5233931552,
         "gross_path_return": -0.01133746070715047,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -17067,6 +17123,7 @@
         "final_pending_abs_shares": 1524757.459407461,
         "gross_path_return": -0.009594902864955346,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -17540,6 +17597,7 @@
         "final_pending_abs_shares": 7283050.00548412,
         "gross_path_return": -0.0018302410328173702,
         "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
         "model": {
           "eta": 0.25,
@@ -18003,13 +18061,477 @@
       },
       {
         "aum": 1000000000.0,
+        "benchmark_excess_return": -0.02714364529796809,
+        "benchmark_return": 0.025936126374907165,
+        "cancelled_abs_shares": 117790227.70064367,
         "case_id": "synthetic_cohort_long_short_throttle_1e+09",
         "engine": "long_short",
-        "error_type": "MarketImpactValidationError",
+        "final_gross_exposure": 0.003723090949857121,
+        "final_net_exposure": -0.002232961935299254,
+        "final_pending_abs_shares": 14630922.701980803,
+        "gross_path_return": -0.0009149833100045024,
+        "max_participation": 0.10000000000000002,
+        "measured_returns": 43,
         "mode": "throttle",
-        "reason": "impact_accounting_invalid",
+        "model": {
+          "eta": 0.25,
+          "fixed_bps": 2,
+          "lookback": 20,
+          "max_participation_rate": 0.1,
+          "min_adv": 100000.0,
+          "mode": "throttle",
+          "penalty_bps": 10.0
+        },
+        "net_return": -0.001207518923060924,
+        "net_sharpe": -1.3997617965791558,
+        "path": [
+          {
+            "absolute_traded_dollars": 0.0,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1000000000.0,
+            "date": "2024-01-30T00:00:00",
+            "equity": 1000000000.0,
+            "pending_abs_shares": 0.0,
+            "slippage_dollars": 0.0,
+            "turnover": 0.0
+          },
+          {
+            "absolute_traded_dollars": 0.0,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1000000000.0,
+            "date": "2024-01-31T00:00:00",
+            "equity": 1000000000.0,
+            "pending_abs_shares": 0.0,
+            "slippage_dollars": 0.0,
+            "turnover": 0.0
+          },
+          {
+            "absolute_traded_dollars": 0.0,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1000000000.0,
+            "date": "2024-02-01T00:00:00",
+            "equity": 1000000000.0,
+            "pending_abs_shares": 0.0,
+            "slippage_dollars": 0.0,
+            "turnover": 0.0
+          },
+          {
+            "absolute_traded_dollars": 3731351.812563954,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1002281305.6073483,
+            "date": "2024-02-02T00:00:00",
+            "equity": 999992919.5618726,
+            "pending_abs_shares": 14918255.653483538,
+            "slippage_dollars": 3349.08631481855,
+            "turnover": 0.003731351812563954
+          },
+          {
+            "absolute_traded_dollars": 3735926.4652155186,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1004568646.3321563,
+            "date": "2024-02-05T00:00:00",
+            "equity": 999992160.8201838,
+            "pending_abs_shares": 14870279.70534071,
+            "slippage_dollars": 3315.007839891701,
+            "turnover": 0.0037359294100451058
+          },
+          {
+            "absolute_traded_dollars": 3738447.216822424,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1006859660.2277839,
+            "date": "2024-02-06T00:00:00",
+            "equity": 1000043159.2069888,
+            "pending_abs_shares": 14821999.086152203,
+            "slippage_dollars": 3259.342875447268,
+            "turnover": 0.003738259716940713
+          },
+          {
+            "absolute_traded_dollars": 3739080.0270339004,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1009151404.1091801,
+            "date": "2024-02-07T00:00:00",
+            "equity": 1000144950.3765792,
+            "pending_abs_shares": 14773477.957559293,
+            "slippage_dollars": 3281.0569031160535,
+            "turnover": 0.00373851188346321
+          },
+          {
+            "absolute_traded_dollars": 3738933.1445797905,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1011441901.4905736,
+            "date": "2024-02-08T00:00:00",
+            "equity": 1000236993.3913118,
+            "pending_abs_shares": 14724898.549147071,
+            "slippage_dollars": 3344.894905161459,
+            "turnover": 0.0037380207788621704
+          },
+          {
+            "absolute_traded_dollars": 3739500.1927914433,
+            "cancelled_abs_shares": 14724898.549147071,
+            "cash": 1013731144.4893061,
+            "date": "2024-02-09T00:00:00",
+            "equity": 1000230634.2444252,
+            "pending_abs_shares": 14614387.972777827,
+            "slippage_dollars": 3343.7535338254424,
+            "turnover": 0.0037386114594287465
+          },
+          {
+            "absolute_traded_dollars": 3741907.6130446787,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1016020993.3737737,
+            "date": "2024-02-12T00:00:00",
+            "equity": 1000067639.2758119,
+            "pending_abs_shares": 14566255.49851416,
+            "slippage_dollars": 3281.1613273172516,
+            "turnover": 0.0037416282543060206
+          },
+          {
+            "absolute_traded_dollars": 3746382.834668022,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1018314203.5483541,
+            "date": "2024-02-13T00:00:00",
+            "equity": 999772471.5571465,
+            "pending_abs_shares": 14518408.220123049,
+            "slippage_dollars": 3267.448146099678,
+            "turnover": 0.0037472091490391283
+          },
+          {
+            "absolute_traded_dollars": 3752177.415163626,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1020613181.6802614,
+            "date": "2024-02-14T00:00:00",
+            "equity": 999463233.9800498,
+            "pending_abs_shares": 14470701.510152275,
+            "slippage_dollars": 3332.072010652983,
+            "turnover": 0.0037541659284194336
+          },
+          {
+            "absolute_traded_dollars": 3757924.0928775193,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1022918924.838466,
+            "date": "2024-02-15T00:00:00",
+            "equity": 999301833.2542505,
+            "pending_abs_shares": 14422925.829378402,
+            "slippage_dollars": 3372.7192124222793,
+            "turnover": 0.0037605227498617366
+          },
+          {
+            "absolute_traded_dollars": 3762260.773536254,
+            "cancelled_abs_shares": 14422925.829378402,
+            "cash": 1025230481.4647497,
+            "date": "2024-02-16T00:00:00",
+            "equity": 999400920.5608002,
+            "pending_abs_shares": 14447139.221313514,
+            "slippage_dollars": 3327.619015587695,
+            "turnover": 0.0037644893119054153
+          },
+          {
+            "absolute_traded_dollars": 3764481.066183632,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1027545290.1159592,
+            "date": "2024-02-19T00:00:00",
+            "equity": 999743095.6199931,
+            "pending_abs_shares": 14398814.777242543,
+            "slippage_dollars": 3279.0673154296555,
+            "turnover": 0.0037654218976303933
+          },
+          {
+            "absolute_traded_dollars": 3764911.0536788236,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1029860436.4253447,
+            "date": "2024-02-20T00:00:00",
+            "equity": 1000168710.1435984,
+            "pending_abs_shares": 14350271.266257484,
+            "slippage_dollars": 3313.580514177686,
+            "turnover": 0.003764249341424669
+          },
+          {
+            "absolute_traded_dollars": 3764771.971718788,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1032174191.1246152,
+            "date": "2024-02-21T00:00:00",
+            "equity": 1000444977.4292867,
+            "pending_abs_shares": 14301702.237203255,
+            "slippage_dollars": 3373.939659785732,
+            "turnover": 0.0037630706267490197
+          },
+          {
+            "absolute_traded_dollars": 3765562.8391728327,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1034486866.6972353,
+            "date": "2024-02-22T00:00:00",
+            "equity": 1000380625.2152636,
+            "pending_abs_shares": 14253315.92095182,
+            "slippage_dollars": 3359.009902178171,
+            "turnover": 0.0037641033089127734
+          },
+          {
+            "absolute_traded_dollars": 3768309.56440226,
+            "cancelled_abs_shares": 14253315.92095182,
+            "cash": 1036800550.7819484,
+            "date": "2024-02-23T00:00:00",
+            "equity": 999931888.4426273,
+            "pending_abs_shares": 13993659.541123547,
+            "slippage_dollars": 3295.915402321827,
+            "turnover": 0.003768539623693353
+          },
+          {
+            "absolute_traded_dollars": 3773088.490628617,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1039118045.1640351,
+            "date": "2024-02-26T00:00:00",
+            "equity": 999249928.9507973,
+            "pending_abs_shares": 13945845.3066541,
+            "slippage_dollars": 3296.3395384085206,
+            "turnover": 0.003775893985981581
+          },
+          {
+            "absolute_traded_dollars": 3779020.1523193466,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1041441617.7787372,
+            "date": "2024-02-27T00:00:00",
+            "equity": 998633785.0525717,
+            "pending_abs_shares": 13898141.902871333,
+            "slippage_dollars": 3365.9496554765096,
+            "turnover": 0.0037841630947718706
+          },
+          {
+            "absolute_traded_dollars": 3784682.066624511,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1043771991.405831,
+            "date": "2024-02-28T00:00:00",
+            "equity": 998389986.913865,
+            "pending_abs_shares": 13850338.577224186,
+            "slippage_dollars": 3394.194202871875,
+            "turnover": 0.0037907580232655227
+          },
+          {
+            "absolute_traded_dollars": 3788759.528486045,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1046107914.0413591,
+            "date": "2024-02-29T00:00:00",
+            "equity": 998662135.7471404,
+            "pending_abs_shares": 13802273.063403977,
+            "slippage_dollars": 3340.155544033237,
+            "turnover": 0.003793808082966831
+          },
+          {
+            "absolute_traded_dollars": 3790681.177789446,
+            "cancelled_abs_shares": 13802273.063403977,
+            "cash": 1043754991.7878219,
+            "date": "2024-03-01T00:00:00",
+            "equity": 999333101.4688119,
+            "pending_abs_shares": 15856832.363867411,
+            "slippage_dollars": 3301.221200765262,
+            "turnover": 0.0037931839457011137
+          },
+          {
+            "absolute_traded_dollars": 3790933.0477575175,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1041402008.5064541,
+            "date": "2024-03-04T00:00:00",
+            "equity": 999995764.9267362,
+            "pending_abs_shares": 15808271.035481362,
+            "slippage_dollars": 3347.1494243967754,
+            "turnover": 0.003790922042675919
+          },
+          {
+            "absolute_traded_dollars": 3790836.8203967875,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1039050406.2119676,
+            "date": "2024-03-05T00:00:00",
+            "equity": 1000320932.8513441,
+            "pending_abs_shares": 15759717.30745374,
+            "slippage_dollars": 3401.194541444691,
+            "turnover": 0.003789593360519864
+          },
+          {
+            "absolute_traded_dollars": 3791879.300594479,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1036699716.6491824,
+            "date": "2024-03-06T00:00:00",
+            "equity": 1000172508.2526729,
+            "pending_abs_shares": 15711372.039868169,
+            "slippage_dollars": 3372.9855804406916,
+            "turnover": 0.003791198124208238
+          },
+          {
+            "absolute_traded_dollars": 3794973.00446371,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1034347708.1970156,
+            "date": "2024-03-07T00:00:00",
+            "equity": 999645166.8728904,
+            "pending_abs_shares": 15663333.21895268,
+            "slippage_dollars": 3312.4648994412655,
+            "turnover": 0.0037962930730889768
+          },
+          {
+            "absolute_traded_dollars": 3800040.4499451118,
+            "cancelled_abs_shares": 15663333.21895268,
+            "cash": 1031991407.0980434,
+            "date": "2024-03-08T00:00:00",
+            "equity": 998998814.9653229,
+            "pending_abs_shares": 15357094.285501339,
+            "slippage_dollars": 3327.4096648442737,
+            "turnover": 0.0038038216677242355
+          },
+          {
+            "absolute_traded_dollars": 3806078.322813722,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1029628595.0254244,
+            "date": "2024-03-11T00:00:00",
+            "equity": 998524311.0169669,
+            "pending_abs_shares": 15309389.224437784,
+            "slippage_dollars": 3399.0501158549837,
+            "turnover": 0.0038116757070484723
+          },
+          {
+            "absolute_traded_dollars": 3811622.920496035,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1027258953.3921489,
+            "date": "2024-03-12T00:00:00",
+            "equity": 998400520.9841566,
+            "pending_abs_shares": 15261554.435080498,
+            "slippage_dollars": 3413.5683323314456,
+            "turnover": 0.003817701670582165
+          },
+          {
+            "absolute_traded_dollars": 3815422.6753370278,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1024884180.8408213,
+            "date": "2024-03-13T00:00:00",
+            "equity": 998616420.9498725,
+            "pending_abs_shares": 15213442.513884334,
+            "slippage_dollars": 3353.128088173015,
+            "turnover": 0.0038206815014703776
+          },
+          {
+            "absolute_traded_dollars": 3817051.3000628715,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1022507089.3098254,
+            "date": "2024-03-14T00:00:00",
+            "equity": 999000879.812309,
+            "pending_abs_shares": 15165036.90840321,
+            "slippage_dollars": 3325.889812512994,
+            "turnover": 0.0038208414878816333
+          },
+          {
+            "absolute_traded_dollars": 3817152.5816590837,
+            "cancelled_abs_shares": 15165036.90840321,
+            "cash": 1020130258.3907505,
+            "date": "2024-03-15T00:00:00",
+            "equity": 999333267.642965,
+            "pending_abs_shares": 15270469.450434279,
+            "slippage_dollars": 3381.290221607329,
+            "turnover": 0.0038196717847423555
+          },
+          {
+            "absolute_traded_dollars": 3817134.6061744946,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1017754873.775863,
+            "date": "2024-03-18T00:00:00",
+            "equity": 999459655.1602314,
+            "pending_abs_shares": 15221935.771329228,
+            "slippage_dollars": 3426.43730322675,
+            "turnover": 0.00381917061086932
+          },
+          {
+            "absolute_traded_dollars": 3818454.332441601,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1015380161.5992514,
+            "date": "2024-03-19T00:00:00",
+            "equity": 999352442.1808083,
+            "pending_abs_shares": 15173633.864396732,
+            "slippage_dollars": 3386.0940172341634,
+            "turnover": 0.0038209010589322517
+          },
+          {
+            "absolute_traded_dollars": 3821899.2414320344,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1013003675.0221987,
+            "date": "2024-03-20T00:00:00",
+            "equity": 999098434.7124962,
+            "pending_abs_shares": 15125640.261504253,
+            "slippage_dollars": 3331.167274983881,
+            "turnover": 0.0038253206549750396
+          },
+          {
+            "absolute_traded_dollars": 3827236.859397169,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1010622435.5738403,
+            "date": "2024-03-21T00:00:00",
+            "equity": 998835861.7303354,
+            "pending_abs_shares": 15077880.438510275,
+            "slippage_dollars": 3360.3475241624965,
+            "turnover": 0.0038316699125282394
+          },
+          {
+            "absolute_traded_dollars": 3833348.5239829645,
+            "cancelled_abs_shares": 15077880.438510275,
+            "cash": 1008234446.1122723,
+            "date": "2024-03-22T00:00:00",
+            "equity": 998676032.3685838,
+            "pending_abs_shares": 14873616.682267733,
+            "slippage_dollars": 3430.928865620885,
+            "turnover": 0.0038384025615098086
+          },
+          {
+            "absolute_traded_dollars": 3838744.096296544,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1005839716.277728,
+            "date": "2024-03-25T00:00:00",
+            "equity": 998650025.2660809,
+            "pending_abs_shares": 14825746.959419997,
+            "slippage_dollars": 3431.0055940582956,
+            "turnover": 0.0038439053271381966
+          },
+          {
+            "absolute_traded_dollars": 3842250.707778025,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1003440205.2272722,
+            "date": "2024-03-26T00:00:00",
+            "equity": 998709275.082216,
+            "pending_abs_shares": 14777588.23360182,
+            "slippage_dollars": 3367.0429444876663,
+            "turnover": 0.003847188634499387
+          },
+          {
+            "absolute_traded_dollars": 3843595.7517189025,
+            "cancelled_abs_shares": 0.0,
+            "cash": 1001038798.3628613,
+            "date": "2024-03-27T00:00:00",
+            "equity": 998775300.7693695,
+            "pending_abs_shares": 14729146.226440627,
+            "slippage_dollars": 3353.0485516561976,
+            "turnover": 0.0038482810438426945
+          },
+          {
+            "absolute_traded_dollars": 3843576.5165729793,
+            "cancelled_abs_shares": 0.0,
+            "cash": 998637944.8004118,
+            "date": "2024-03-28T00:00:00",
+            "equity": 998799742.8470298,
+            "pending_abs_shares": 14680563.771896236,
+            "slippage_dollars": 3415.505275200573,
+            "turnover": 0.0038481673728263323
+          },
+          {
+            "absolute_traded_dollars": 3843672.1230455986,
+            "cancelled_abs_shares": 14680563.771896236,
+            "cash": 1001022746.6684488,
+            "date": "2024-03-29T00:00:00",
+            "equity": 998792481.0769391,
+            "pending_abs_shares": 14630922.701980803,
+            "slippage_dollars": 3449.543484495825,
+            "turnover": 0.0038482909407624617
+          }
+        ],
         "scope": "synthetic_cohort",
-        "status": "refused"
+        "slippage_dollars": 137378.78653596307,
+        "status": "success",
+        "summed_turnover": 0.15538559092375875,
+        "traded_notional": 155294062.68166807,
+        "weighted_slippage_bps": 8.846364385325606
       },
       {
         "aum": 1000000.0,
@@ -18023,6 +18545,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012737259290665937,
         "max_participation": 0.19484253943889382,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -18496,6 +19019,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.012567537534948992,
         "max_participation": 1.8889915393918773,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,
@@ -18969,6 +19493,7 @@
         "final_pending_abs_shares": 0.0,
         "gross_path_return": -0.015079404328556811,
         "max_participation": 7.696317456502514,
+        "measured_returns": 43,
         "mode": "penalize",
         "model": {
           "eta": 0.25,

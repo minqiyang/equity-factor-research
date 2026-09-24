@@ -1120,10 +1120,11 @@ slippage_costs = C / E_previous
 ```
 
 Funding calculations retain an immutable snapshot of unscaled quoted buys.
-Closing cash plus signed holdings must reconcile to post-cost equity within
-$0.000001 absolute difference; an excess discrepancy raises
-`impact_accounting_invalid`. Large-notional paths can refuse when accumulated
-floating-point discrepancy exceeds this absolute limit. Held quantities persist between
+Closing cash plus signed holdings must reconcile to post-cost equity within a
+relative tolerance of 1e-12 of equity, with a $0.000001 absolute floor; an
+excess discrepancy raises `impact_accounting_invalid`. The relative bound
+matches the pre-trade check, so floating-point rounding on large books
+reconciles while books below $1M keep the absolute limit. Held quantities persist between
 market trades. Terminal redemption contributes zero market turnover and zero
 impact fee; later ordinary reinvestment follows the impact policy. Target
 position caps and long-short neutrality describe frozen targets. Partial fills
@@ -1143,6 +1144,42 @@ The generated capacity report retains every engine, AUM, and policy attempt,
 including failures and refusals. Its benchmark holds equal initial dollars in
 the predeclared cohort at zero benchmark cost. Adjacent positive-to-nonpositive
 benchmark-excess brackets are reported without interpolation. Refused endpoints
-remain unavailable. Borrow fees, recalls, intraday execution, corporate-action
+remain unavailable. Books with fewer than 21 measured daily returns report
+Sharpe as unavailable. Borrow fees, recalls, intraday execution, corporate-action
 conversion of pending shares, source basis verification, and empirical capacity
 remain open research work.
+
+## M4.6 Optional Style Risk Attribution
+
+Both engines accept `risk_model`. The default `risk_model=None` preserves every
+existing result field and returns `risk_attribution=None`. An active
+`CrossSectionalRiskModel` produces a diagnostic sidecar; engine accounting,
+holdings, costs, and metrics are unchanged.
+
+For each measured return row `a[j]`, the interval is `(close[a[j-1]],
+close[a[j]]]`. Style exposures, regression weights, and benchmark weights come
+from the immediately previous observed close `a[j-1]`, and the model refuses
+any other start. Portfolio weights are the engine's actual prior-close
+holdings after drift and partial fills. Exposures are winsorized, demeaned,
+and population-scaled at that close; warm-up rows stay missing and a selected
+row requires complete finite values.
+
+Cross-sectional OLS or WLS with a Market intercept estimates factor returns on
+each interval. A fit requires more assets than coefficients (`sample_size`)
+and full column rank (`rank_deficient`). Factor plus specific return
+reconciles to the engine's gross return within 1e-12, and net return equals
+gross return minus engine costs.
+
+Active-risk forecasts use only strictly earlier fitted intervals: at most
+`covariance_window` of them, and at least `min_covariance_observations`, or the
+row reports `insufficient_history`. The current interval stays outside its own
+estimate. Specific variance is diagonal. Aggregate variance roundoff within
+1e-14 is clamped to zero after validation; material negative variance refuses.
+
+Enabled attribution requires an absent terminal-event table and the strict
+missing-price policy (`integration_scope`), plus complete finite prices for
+every regression asset (`nonfinite`); a changing regression universe therefore
+refuses. Market capitalization and book-to-price inputs are
+caller-declared at their availability close. Empirical calibration, industry
+factors, residual correlations, and geometric linking remain open research
+work.

@@ -27,6 +27,8 @@ COMMAND = "PYTHONPATH=src:. python -m research.market_impact_capacity_demo"
 AUM_TIERS = (1e6, 1e7, 5e7, 1e8, 5e8, 1e9)
 MODES = ("fixed_control", "raise", "throttle", "penalize")
 ENGINES = ("long_only", "long_short")
+# Annualized Sharpe needs at least one trading month of measured daily returns.
+MIN_SHARPE_OBSERVATIONS = 21
 
 
 def synthetic_inputs(scope: str):
@@ -218,9 +220,15 @@ def evaluate_capacity(
                     slippage = float(book.slippage_cost_series.sum())
                     rates = book.trade_participation_rates.to_numpy()
                     finite_rates = rates[np.isfinite(rates)]
+                    measured_returns = len(book.equity_curve) - 1
                     case.update(
                         status="success",
-                        net_sharpe=_finite_or_none(sharpe),
+                        measured_returns=measured_returns,
+                        net_sharpe=(
+                            _finite_or_none(sharpe)
+                            if measured_returns >= MIN_SHARPE_OBSERVATIONS
+                            else None
+                        ),
                         net_return=net_return,
                         gross_path_return=gross_path_return,
                         benchmark_return=benchmark_return,
@@ -312,7 +320,8 @@ def render_report(result):
         "The benchmark holds equal initial dollars of every predeclared security, with zero benchmark costs. "
         "Excess return is the difference of cumulative net strategy and benchmark returns. "
         "Gross path return compounds pre-cost returns on the actual executed holdings; fixed-control comparisons also change the accounting convention. "
-        "Sharpe uses measured daily net returns, a zero risk-free rate, population standard deviation, and 252-day annualization.",
+        "Sharpe uses measured daily net returns, a zero risk-free rate, population standard deviation, and 252-day annualization. "
+        f"Books with fewer than {MIN_SHARPE_OBSERVATIONS} measured daily returns report Sharpe as unavailable.",
         "",
         "## Capacity curves by tested AUM",
         "",

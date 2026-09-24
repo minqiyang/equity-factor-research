@@ -24,14 +24,14 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `ad159c04b69d1a86b3b6430d3b601dbbbb6f19bb` (main after PR #256).
+  `5c5fd0c84789239cbc2f218199efd3d07585e3d9` (main after PR #257).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #256: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #257: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
-  square-root impact, M4.6 style risk attribution, and the coordination
-  standard V8.0 path (PR #256).
+  square-root impact, M4.6 style risk attribution, the coordination standard
+  V8.0 path (PR #256), and the governance constitution (PR #257).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
@@ -52,10 +52,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Governance streamlining: the V8.0 standard path, an `AGENTS.md` constitution
   with invariants R1–R12, owner grants recorded in `AUTHORITY.md`, North Star
   edge thesis and kill criteria, and a handoff freshness test.
-- Planned corrections: the M4.5 relative post-trade tolerance, capacity-report
-  metric guards, real-data report benchmark columns and code identity, and a
-  timing-contract M4.6 section. The spread floor and changing-universe style
-  attribution wait for M4.8, their first real-data consumer.
+- Diagnostic corrections: the M4.5 relative post-trade tolerance, a capacity
+  report Sharpe guard for short books, real-data report benchmark excess and
+  code identity with long-short PBO, and a timing-contract M4.6 section. The
+  spread floor and changing-universe style attribution wait for M4.8.
 - Planned retirement of legacy Track A code behind a preservation tag.
 
 ## Current Research Gate Summary
@@ -81,12 +81,11 @@ rerun, is the next research milestone. The evidence ceiling remains
 
 ## Next Safe Action
 
-- PR #256 (standard path) is merged at `ad159c0`. The active task is the
-  governance constitution, PR #257: its exact-head REVIEW and AUDIT seats and
-  the owner's reconfirmation of `AUTHORITY.md`.
-- After PR #257 merges, the diagnostic corrections (PR #258), the Track A code
-  retirement (PR #259), and the decision record (PR #260) follow in that order,
-  each rebased onto the updated `main`; then the M4.7 card.
+- PR #257 (governance constitution) is merged at `5c5fd0c`. The active task is
+  the diagnostic corrections, PR #258: its exact-head REVIEW seat.
+- After PR #258 merges, the Track A code retirement (PR #259) and the decision
+  record (PR #260) follow in that order, each rebased onto the updated `main`;
+  then the M4.7 card.
 
 ## Source Routing
 

@@ -18,6 +18,7 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
 from typing import Any
 import uuid
 
@@ -225,6 +226,41 @@ def redact_local_path(path: Path | str | None) -> str:
         return REDACTED_LOCAL_PATH
 
 
+def code_identity() -> dict[str, object]:
+    """Return the running checkout's Git commit and tracked-change state.
+
+    Together with `sample_sha256`, the configuration, and the metrics, this
+    run-level identity completes the minimal experiment ledger. Both fields are
+    None when Git metadata is unavailable.
+    """
+
+    root = Path(__file__).resolve().parents[1]
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        tracked = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=root, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_commit": None, "tracked_changes": None}
+    return {"git_commit": commit, "tracked_changes": bool(tracked)}
+
+
+def equal_weight_total_return(prices: pd.DataFrame) -> float:
+    """Zero-cost, daily-rebalanced equal-weight total return over the supplied rows.
+
+    The first row is the anchor. A missing asset return leaves that date's
+    cohort return missing, so any gap yields NaN instead of a silently
+    reweighted benchmark (PIT-009).
+    """
+
+    daily = prices.pct_change(fill_method=None).iloc[1:].mean(axis=1, skipna=False)
+    return float((1.0 + daily).prod() - 1.0) if daily.notna().all() else math.nan
+
+
 def evaluate_diagnostic_readiness(
     panels: dict[str, pd.DataFrame],
     benchmark: pd.Series,
@@ -368,6 +404,7 @@ def run_real_data_multifactor_diagnostic(
     """Run the local EODHD 50-stock diagnostic and optionally write reports."""
 
     config = RealDataMultifactorDiagnosticConfig() if config is None else config
+    run_code_identity = code_identity()
     mvp_config = to_mvp_config(config)
     alpha_ids = _validate_id_subset(config.alpha_ids, ALPHA_IDS, field_name="alpha_ids")
     composite_ids = _validate_id_subset(
@@ -583,6 +620,31 @@ def run_real_data_multifactor_diagnostic(
     except ValueError:
         # Sample size or split geometry insufficient for purged and embargoed evaluation
         cpcv_summary = None
+    # Long-only books share market beta, so their PBO measures beta noise; the
+    # dollar-neutral family measures cross-sectional ranking skill.
+    long_short_returns = pd.DataFrame(
+        {
+            factor_id: factor_results[factor_id]["long_short_backtest"].returns.iloc[1:]
+            for factor_id in alpha_ids
+        }
+    )
+    pbo_long_short_summary = probability_of_backtest_overfitting(
+        long_short_returns,
+        n_splits=config.pbo_n_splits,
+    )
+    cpcv_long_short_summary: dict[str, Any] | None = None
+    try:
+        cpcv_long_short_summary = combinatorial_purged_cross_validation_pbo(
+            long_short_returns,
+            n_splits=config.pbo_n_splits,
+            holding_periods=config.pbo_holding_periods,
+            embargo_periods=config.pbo_embargo_periods,
+        )
+    except ValueError:
+        cpcv_long_short_summary = None
+    equal_weight_cohort_return = equal_weight_total_return(
+        prices.loc[evaluation_start:evaluation_end]
+    )
 
     weighting_comparisons: list[dict[str, Any]] = []
     if config.include_weighting_comparisons:
@@ -633,6 +695,10 @@ def run_real_data_multifactor_diagnostic(
         "sector_map": build_default_sector_mapping(prices.columns),
         "pbo_summary": pbo_summary,
         "cpcv_summary": cpcv_summary,
+        "pbo_long_short_summary": pbo_long_short_summary,
+        "cpcv_long_short_summary": cpcv_long_short_summary,
+        "equal_weight_cohort_total_return": equal_weight_cohort_return,
+        "code_identity": run_code_identity,
         "weighting_comparisons": weighting_comparisons,
         "trial_inventory": tuple(inventory),
         "trial_family": trial_family,
@@ -825,6 +891,7 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "pbo_n_splits": config.pbo_n_splits,
             "pbo_holding_periods": config.pbo_holding_periods,
             "pbo_embargo_periods": config.pbo_embargo_periods,
+            "code_identity": result["code_identity"],
         },
         assumptions={
             "data_scope": "local EODHD Parquet diagnostic",
@@ -928,6 +995,9 @@ def write_real_data_experiment_log(*, result: dict[str, Any]) -> dict[str, objec
             "multiple_testing": result["multiple_testing"],
             "pbo_summary": result["pbo_summary"],
             "cpcv_summary": result.get("cpcv_summary"),
+            "pbo_long_short_summary": result["pbo_long_short_summary"],
+            "cpcv_long_short_summary": result.get("cpcv_long_short_summary"),
+            "equal_weight_cohort_total_return": result["equal_weight_cohort_total_return"],
             "weighting_comparisons": result.get("weighting_comparisons", []),
             "trial_inventory": [
                 {key: value for key, value in record.items() if key != "attempt_id"}
@@ -979,6 +1049,8 @@ def write_real_data_report(*, result: dict[str, Any]) -> None:
         f"{config.forward_holding_periods} <= source_row(t)"
     )
     evaluated_ids = result["evaluated_factor_ids"]
+    equal_weight_return = result["equal_weight_cohort_total_return"]
+    identity = result["code_identity"]
     rows = []
     ls_rows = []
     for factor_id in evaluated_ids:
@@ -1000,6 +1072,9 @@ def write_real_data_report(*, result: dict[str, Any]) -> None:
                     _format_number(ic_summary["newey_west_tstat"]),
                     _format_number(payload["dsr"]),
                     _format_percent(metrics["total_return"]),
+                    _format_percent(metrics.get("excess_total_return", np.nan)),
+                    _format_percent(metrics["total_return"] - equal_weight_return),
+                    _format_number(metrics.get("tracking_error", np.nan)),
                     _format_number(metrics["sharpe_ratio"]),
                     _format_percent(metrics["max_drawdown"]),
                     _format_number(metrics.get("average_turnover", np.nan)),
@@ -1093,6 +1168,15 @@ CPCV evaluates backtest overfitting on the one-period strategy return series wit
 - Mean OOS Sharpe: `{_format_number(cpcv_summary["mean_oos_sharpe"])}`
 """
 
+    long_short_pbo = result["pbo_long_short_summary"]
+    long_short_cpcv = result.get("cpcv_long_short_summary")
+    long_short_cpcv_line = (
+        f"- Purged & Embargoed PBO: `{_format_number(long_short_cpcv['pbo'])}` "
+        f"(`{long_short_cpcv['holding_periods']}`-bar horizon, "
+        f"`{long_short_cpcv['embargo_periods']}`-bar embargo)"
+        if long_short_cpcv
+        else "- Purged & Embargoed PBO: unavailable for this split geometry"
+    )
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in result["alpha_ids"])
     composite_names = ", ".join(f"`{factor_id}`" for factor_id in result["composite_ids"])
     n_alphas = len(result["alpha_ids"])
@@ -1174,6 +1258,8 @@ evidence of real-world strategy profitability.
 - Turnover penalty lambda: `{config.turnover_penalty_lambda:.2f}`
 - Volatility window: `{config.volatility_window}`
 - Cash-dividend overlay: refused (PIT-007); vendor adjusted close is the return basis
+- Equal-weight cohort benchmark: zero-cost daily-rebalanced total return `{_format_percent(equal_weight_return)}`
+- Code commit: `{identity["git_commit"]}` (tracked changes: `{identity["tracked_changes"]}`)
 
 ## In-sample IC summaries (descriptive only)
 
@@ -1188,11 +1274,14 @@ execution-aligned forward-return window has closed by t.
 
 ## Factor diagnostics
 
-| factor | mean IC | ICIR | Newey-West t | DSR | total return | Sharpe | max drawdown | average turnover | slippage cost |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| factor | mean IC | ICIR | Newey-West t | DSR | total return | excess vs benchmark | excess vs equal-weight cohort | tracking error | Sharpe | max drawdown | average turnover | slippage cost |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 {chr(10).join(rows)}
 
-IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
+Excess columns subtract the `{config.benchmark_symbol}` and equal-weight cohort
+total returns from each long-only book's total return. A static survivor cohort
+can lift every long-only book; excess over the equal-weight cohort separates
+stock selection from cohort selection. IC is monthly Spearman Rank IC. ICIR is not annualized. DSR is computed on
 non-annualized daily measured returns using the Bailey-Lopez de Prado formula
 with the Euler-Mascheroni mix and across-trial Sharpe variance
 `{result["trial_family"]["trial_sharpe_variance"]}`. This run evaluated
@@ -1202,8 +1291,8 @@ factors, weighting, penalties, and both directions. Reproductions share a
 semantic trial ID; append-only attempt events retain failures and repeated runs.
 DSR uses the raw distinct count as an independent-trial upper-bound sensitivity.
 Effective independence and total historical search remain unestimated. Missing
-trial Sharpe dispersion withholds DSR. PBO covers the alpha-only long-only
-family. Weak or negative diagnostics are retained.
+trial Sharpe dispersion withholds DSR. PBO covers the alpha-only long-only and
+long-short families. Weak or negative diagnostics are retained.
 
 {render_multiple_testing(result["multiple_testing"])}
 
@@ -1246,6 +1335,17 @@ Inverse-volatility weighting applies lagged 20-day return volatility (shift 1 so
 - Mean IS Sharpe: `{_format_number(pbo_summary["mean_is_sharpe"])}`
 - Mean OOS Sharpe: `{_format_number(pbo_summary["mean_oos_sharpe"])}`
 {cpcv_section}
+### Long-short alpha family
+
+The long-only family above shares market beta. The dollar-neutral long-short
+family measures whether in-sample ranking skill persists out of sample.
+
+- Probability of Backtest Overfitting (PBO): `{_format_number(long_short_pbo["pbo"])}`
+- Out-of-Sample Probability of Loss: `{_format_number(long_short_pbo["prob_loss"])}`
+- Combinations: `{long_short_pbo["n_combinations"]}` (from `{long_short_pbo["n_splits"]}` splits)
+- Mean IS Sharpe: `{_format_number(long_short_pbo["mean_is_sharpe"])}`
+- Mean OOS Sharpe: `{_format_number(long_short_pbo["mean_oos_sharpe"])}`
+{long_short_cpcv_line}
 {ml_section}
 ## Limitations
 

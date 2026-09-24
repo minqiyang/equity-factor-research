@@ -70,6 +70,34 @@ def test_complete_demo_markdown_json_parity(tmp_path):
     assert "zero positive-to-nonpositive brackets" in path.read_text()
 
 
+def test_short_books_report_sharpe_as_unavailable():
+    """Annualizing ten daily returns produced Sharpe values near 25 (OPUS-16)."""
+    hand = [c for c in evaluate(modes=("fixed_control",)) if c["status"] == "success"]
+    assert hand
+    for case in hand:
+        assert case["measured_returns"] < demo.MIN_SHARPE_OBSERVATIONS
+        assert case["net_sharpe"] is None
+
+    prices, signals, volumes = demo.synthetic_inputs("synthetic_cohort")
+    cohort = demo.evaluate_capacity(
+        prices,
+        signals,
+        volumes,
+        scope="synthetic_cohort",
+        evaluation_start=prices.index[21],
+        evaluation_end=prices.index[-1],
+        price_basis="raw",
+        volume_basis="raw",
+        aum_tiers=(1e6,),
+        modes=("fixed_control",),
+    )
+    assert cohort and all(
+        c["measured_returns"] >= demo.MIN_SHARPE_OBSERVATIONS
+        and np.isfinite(c["net_sharpe"])
+        for c in cohort
+    )
+
+
 def test_changing_price_cohort_throttle_remains_long_only():
     prices, signals, volumes = demo.synthetic_inputs("synthetic_cohort")
     cases = demo.evaluate_capacity(
