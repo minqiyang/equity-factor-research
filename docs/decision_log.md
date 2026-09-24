@@ -27,10 +27,13 @@ Context:
 Decision:
 
 - **Standing grants:** The owner approved `AUTHORITY.md` as introduced at
-  PR #257 head `cb3d7e3`. The approval is quoted on PR #257. The PR #257 REVIEW
-  remediation (`7e4f5c5`) rewrote each Grant field as a verbatim source quote
-  and labeled Scope and Expiry as owner-approved interpretation; the owner
-  reconfirms those bytes before PR #257 merges.
+  PR #257 head `cb3d7e3` and confirmed that approval ("Authority没问题。"); the
+  approval is quoted on PR #257. The PR #257 REVIEW remediation left the grant
+  substance unchanged: `7e4f5c5` rewrote each Grant field as a verbatim source
+  quote, labeled Scope and Expiry as owner-approved interpretation, and
+  restored the strict storage prohibition in `AGENTS.md`; `44007a0` pinned the
+  quotes to their source commits in the governance tests. PR #257 merged into
+  `main` as `5c5fd0c`.
 - **Agent identity:** Agents keep committing under the owner's GitHub account,
   and `.github/CODEOWNERS` stays as an ownership label. Enforcement rests on
   V8.0 section 5 (repository text never expands authority by itself) and the
@@ -43,8 +46,11 @@ Decision:
   convention. Agents never search for, read from files, print, or store the
   token. Retrieval code refuses when the variable is absent.
 - **Preservation tag:** Annotated tag `track-a-legacy-final` (object `ef13f62`)
-  points to `8fa0055`, the last main commit with the Track A code that PR #259
-  removes.
+  points to `8fa0055`, the designated preservation baseline for the Track A
+  code that PR #259 removes. The immediate pre-retirement `main` commit,
+  `0d96a9d`, holds identical Track A packages: `src/campaign`,
+  `src/pit_manifest_validator_v1`, and `src/ledger` show no diff between the
+  two commits.
 - **Project notes:** The five Track A-era notes in
   `Codex/Standards/project-notes/efr/` moved, with their bytes unchanged, to
   `Codex/Standards/archive/efr_track_a_notes/`. They named the 14-trial campaign
