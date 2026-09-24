@@ -37,7 +37,7 @@ jobs:
       max-parallel: 2
       matrix:
         lane: [core, diagnostics]
-    # Campaign and repository tests use committed synthetic fixtures only.
+    # Repository tests use committed synthetic fixtures only.
     # This job is not result-bearing and does not read a private panel.
 
     steps:

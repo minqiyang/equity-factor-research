@@ -56,7 +56,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   report Sharpe guard for short books, real-data report benchmark excess and
   code identity with long-short PBO, and a timing-contract M4.6 section. The
   spread floor and changing-universe style attribution wait for M4.8.
-- Planned retirement of legacy Track A code behind a preservation tag.
+- Legacy Track A code retirement: the campaign runner, PIT manifest validator,
+  and ledger runtime leave the tree; history keeps them at `8fa0055`.
 
 ## Current Research Gate Summary
 

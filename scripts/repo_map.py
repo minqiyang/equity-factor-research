@@ -38,16 +38,12 @@ MAJOR_DIRS = [
     (".github", "Repository automation such as CI workflows."),
     ("docs", "Project process notes, readiness gates, designs, logs, and maps."),
     ("scripts", "Workflow tooling; scripts here must not fetch data or trade."),
-    (
-        "src/campaign",
-        "Frozen dataset-independent computations for bounded research campaigns.",
-    ),
     ("src/features", "Factor calculations, validation, normalization, combination, and diagnostics."),
-    ("src/backtest", "Simulated long-only backtester and metrics helpers."),
-    ("src/data", "Strict local CSV and Parquet loaders, blue-chip cohort spec, and metadata review helpers."),
+    ("src/backtest", "Simulated long-only and long-short engines, market impact, style risk attribution, and metrics."),
+    ("src/data", "Strict local CSV and Parquet loaders, point-in-time constituent tables, blue-chip cohort spec, and metadata review helpers."),
     (
         "src/ledger",
-        "Fail-closed Stage 4B schema-registry helpers and Path A/B sqlite3 runtime; caller-supplied DB path outside the repository.",
+        "Frozen Stage 4B ledger schema releases bound by accepted contracts; data only. The Track A runtime retired on 2026-09-23 and remains in history at 8fa0055.",
     ),
     (
         "src/reporting",

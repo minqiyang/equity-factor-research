@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - Track A legacy code retirement
+
+- Branch `claude/retire-track-a-code` stacks on `claude/diagnostic-corrections`.
+- Dependency proof: an AST import scan finds zero imports of `campaign`,
+  `ledger`, or `pit_manifest_validator_v1` from `src` (outside those packages),
+  `research`, `scripts`, or `lean`. Forty-two test files import only legacy
+  modules; two files mix legacy and active imports.
+- Removed:
+  - `src/campaign` (21 files) and `src/pit_manifest_validator_v1`;
+  - `src/ledger/__init__.py`, `runtime.py`, and `schema_registry.py`;
+  - the 42 legacy-only test files and support modules;
+  - seven code-bound Track A tests and two orphaned helpers from
+    `tests/test_project_structure.py`;
+  - seven legacy tests from `tests/test_ablation_defensive_boundaries.py`;
+  - the ledger `package-data` entry in `pyproject.toml`.
+- In total, 15,226 source lines and 21,555 test lines are removed across
+  73 deleted and 9 modified files.
+- Kept: `src/ledger/schemas/` (20 frozen releases read by eight structure
+  tests), every fixture under `tests/fixtures/` (frozen public manifests
+  hash-reference most of them; `tests/test_demo_split_proof.py` uses the split
+  golden), and all contract documents.
+- The two CI-workflow conformance tests moved verbatim to
+  `tests/test_ci_workflow.py`; only the function name drops "campaign". The CI
+  comment now reads "Repository tests use committed synthetic fixtures only";
+  the pinned phrases still hold.
+- The isolated build succeeds, and the wheel's top-level packages are backtest,
+  data, features, reporting, risk, strategies, and utils. `docs/repo_map.md` is
+  regenerated.
+
 ## 2026-09-23 - Diagnostic corrections from the strategic audit
 
 - Branch `claude/diagnostic-corrections` is based on main after PR #257

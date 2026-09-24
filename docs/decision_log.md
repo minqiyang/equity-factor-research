@@ -15,6 +15,46 @@ investment performance.
 
 ---
 
+## 2026-09-23 - Retire Track A Campaign, Validator, And Ledger Runtime Code
+
+Context:
+
+- `src/campaign`, `src/pit_manifest_validator_v1`, and the `src/ledger` Python
+  runtime held 15,226 lines, half of `src`. No active source, research, script,
+  or LEAN file imported them. They implemented the frozen Track A 14-trial
+  protocol, whose run remains REFUSED.
+- The owner adopted the audit's tag-and-remove disposition on 2026-09-23.
+
+Decision:
+
+- Remove the Python code of the three packages, the 42 test files that
+  exercise only that code, and the code-bound Track A tests in
+  `tests/test_project_structure.py` and `tests/test_ablation_defensive_boundaries.py`.
+- Keep every artifact an accepted contract, a frozen public manifest, or an
+  active test binds by path or hash:
+  - the 20 frozen ledger schema releases in `src/ledger/schemas/`;
+  - every file under `tests/fixtures/`;
+  - all contract and protocol documents.
+- Keep the CI-workflow conformance checks unchanged in `tests/test_ci_workflow.py`.
+- Preservation: Git history holds the removed code at `8fa0055`. The owner may
+  publish a preservation tag there.
+
+Rationale:
+
+- The owner's anti-overengineering and walking-skeleton directives favor
+  deleting unused machinery. Frozen evidence keeps its bytes and bindings.
+
+Consequences:
+
+- Executable verification of the removed Track A code ends: its classifier,
+  deciles, listing keys, turnover, eligibility, and runner goldens. The frozen
+  documents, fixtures, and schema bytes remain, and so do their document-level
+  tests.
+- The wheel ships only active packages. `src/ledger/schemas/` is repository
+  data outside any package.
+
+---
+
 ## 2026-09-23 - Adopt Strategic Audit Decisions And Governance Constitution
 
 Context:
