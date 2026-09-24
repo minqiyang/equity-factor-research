@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - Diagnostic corrections from the strategic audit
+
+- Branch `claude/diagnostic-corrections` is based on main after PR #257
+  (`5c5fd0c`) and implements the owner-adopted corrections that have a consumer
+  now.
+- F1: the M4.5 post-trade reconciliation uses `math.isclose` with a 1e-12
+  relative tolerance, the same relative tolerance as the pre-trade check. The
+  absolute floors differ: the pre-trade check keeps `abs_tol=1e-12`, and the
+  post-trade check keeps its $0.000001 (`abs_tol=1e-6`) floor (PR258-A1-01).
+  At about $1B a ten-ULP rounding gap reconciles; below $1M the absolute
+  limit is unchanged. The refusal message now names post-cost equity. The two
+  tests that pinned absolute refusal at 2^30 became a two-regime predicate
+  contract plus an engine-level wiring test. Reintroducing the original M45-R1
+  buffer-aliasing defect still fails all 11 all-buy regressions.
+- The regenerated capacity report restores the $1B synthetic long-short
+  throttle endpoint: 62 successes, 34 refusals, and 38 negative net returns.
+  Books with fewer than 21 measured daily returns report Sharpe as unavailable,
+  replacing annualized values near 25 on the 14-close hand panel. The
+  append-only attempts log grows by one run to 2.59 MB.
+- F4: the real-data runner reports excess over the benchmark and over a
+  zero-cost daily-rebalanced equal-weight cohort, tracking error, long-short PBO
+  and CPCV, and the run's Git commit and tracked-change state. Code identity is
+  recorded per run so semantic trial IDs stay stable. The committed real-data
+  report keeps its PR #249 bytes until an authorized local-data run.
+- OPUS-20: the timing contract gains an M4.6 section, and the M4.5 section
+  states the relative reconciliation rule.
+- F2 (spread floor) and F3 (changing-universe style attribution) wait for M4.8,
+  their first real-data consumer.
+
 ## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A2-01 and A2-02
 
 - The REVIEW seat (GPT-6 Astra, report

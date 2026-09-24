@@ -11,6 +11,7 @@ from backtest.market_impact import (
     MarketImpactValidationError,
     MarketLiquidity,
     SquareRootImpactModel,
+    _post_trade_reconciles,
     calculate_market_impact,
     execute_impact_step,
     prepare_market_liquidity,
@@ -511,19 +512,47 @@ def test_all_buy_funding_after_binding_participation_policy(mode):
     )
 
 
-@pytest.mark.parametrize("discrepancy", [2.0**-19, -(2.0**-19)])
-def test_post_trade_balance_guard_refuses_absolute_mismatch(discrepancy):
-    """Large balances can meet the input relative tolerance and fail the output dollar limit."""
-    equity = float(2**30)
-    with pytest.raises(
-        MarketImpactValidationError,
-        match="cash plus signed positions must reconcile to pretrade equity",
-    ):
-        step(target=None, cash=equity + discrepancy, equity=equity)
+@pytest.mark.parametrize(
+    "equity,discrepancy,reconciles",
+    [
+        # About $1B: a few units in the last place are rounding, not accounting.
+        (float(2**30), 2.0**-19, True),
+        (float(2**30), -(2.0**-19), True),
+        # Above the 1e-12 relative bound at about $1B.
+        (float(2**30), 2e-3, False),
+        (float(2**30), -2e-3, False),
+        # Below $1M the $0.000001 absolute floor governs.
+        (100.0, 2.0**-19, False),
+        (100.0, -(2.0**-19), False),
+        (100.0, 2.0**-20, True),
+        (100.0, 0.0, True),
+    ],
+)
+def test_post_trade_reconciliation_scales_with_notional(equity, discrepancy, reconciles):
+    assert _post_trade_reconciles(equity + discrepancy, equity) is reconciles
 
 
-@pytest.mark.parametrize("discrepancy", [2.0**-20, -(2.0**-20), 0.0])
-def test_post_trade_balance_guard_accepts_within_absolute_tolerance(discrepancy):
+@pytest.mark.parametrize("balance", [float("nan"), float("inf"), -float("inf")])
+def test_post_trade_reconciliation_refuses_nonfinite_balance(balance):
+    assert _post_trade_reconciles(balance, 1.0) is False
+
+
+@pytest.mark.parametrize("discrepancy", [2.0**-19, -(2.0**-19), 2.0**-20, 0.0])
+def test_large_book_rounding_reconciles_after_execution(discrepancy):
+    """The $1B capacity endpoint no longer refuses a rounding-scale gap."""
     equity = float(2**30)
     result = step(target=None, cash=equity + discrepancy, equity=equity)
-    assert abs(result.cash + result.position_values.sum() - equity) <= 1e-6
+    assert result.cash + result.position_values.sum() == pytest.approx(
+        equity, rel=1e-12
+    )
+
+
+def test_post_trade_guard_is_enforced_after_execution(monkeypatch):
+    monkeypatch.setattr(
+        "backtest.market_impact._post_trade_reconciles", lambda balance, equity: False
+    )
+    with pytest.raises(
+        MarketImpactValidationError,
+        match="cash plus signed positions must reconcile to post-cost equity",
+    ):
+        step(target=None, cash=100.0, equity=100.0)
