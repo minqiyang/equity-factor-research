@@ -24,14 +24,15 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `5c5fd0c84789239cbc2f218199efd3d07585e3d9` (main after PR #257).
+  `0d96a9df0f152f6f1fefd05d02dbd808a981039c` (main after PR #258).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #257: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #258: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
   square-root impact, M4.6 style risk attribution, the coordination standard
-  V8.0 path (PR #256), and the governance constitution (PR #257).
+  V8.0 path (PR #256), the governance constitution (PR #257), and the
+  impact reconciliation and M4.6 timing fixes (PR #258).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
@@ -56,7 +57,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   report Sharpe guard for short books, real-data report benchmark excess and
   code identity with long-short PBO, and a timing-contract M4.6 section. The
   spread floor and changing-universe style attribution wait for M4.8.
-- Planned retirement of legacy Track A code behind a preservation tag.
+- Legacy Track A code retirement: the campaign runner, PIT manifest validator,
+  and ledger runtime leave the tree; history keeps them at `8fa0055`.
 
 ## Current Research Gate Summary
 
@@ -81,11 +83,10 @@ rerun, is the next research milestone. The evidence ceiling remains
 
 ## Next Safe Action
 
-- PR #257 (governance constitution) is merged at `5c5fd0c`. The active task is
-  the diagnostic corrections, PR #258: its exact-head REVIEW seat.
-- After PR #258 merges, the Track A code retirement (PR #259) and the decision
-  record (PR #260) follow in that order, each rebased onto the updated `main`;
-  then the M4.7 card.
+- PR #258 (diagnostic corrections) is merged at `0d96a9d`. The active task is
+  the Track A code retirement, PR #259: its exact-head REVIEW and AUDIT seats.
+- After PR #259 merges, the decision record (PR #260) follows, rebased onto the
+  updated `main`; then the M4.7 card.
 
 ## Source Routing
 

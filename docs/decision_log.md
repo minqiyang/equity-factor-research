@@ -15,6 +15,51 @@ investment performance.
 
 ---
 
+## 2026-09-23 - Retire Track A Campaign, Validator, And Ledger Runtime Code
+
+Context:
+
+- `src/campaign`, `src/pit_manifest_validator_v1`, and the `src/ledger` Python
+  runtime held 15,226 lines, half of `src`. No active source, research, script,
+  or LEAN file imported them. They implemented the frozen Track A 14-trial
+  protocol, whose run remains REFUSED.
+- The owner adopted the audit's tag-and-remove disposition on 2026-09-23.
+
+Decision:
+
+- Remove the Python code of the three packages, the 44 test and support files
+  that exist only to exercise it, and the code-bound Track A tests in
+  `tests/test_project_structure.py` and `tests/test_ablation_defensive_boundaries.py`.
+- Keep every artifact an accepted contract, a frozen public manifest, or an
+  active test binds by path or hash, together with its static checks:
+  - the 10 frozen ledger schema releases in `src/ledger/schemas/` (20 files,
+    JSON plus SHA-256 sidecars) and the eight structure tests that bind them;
+  - `tests/test_ledger_track_b_v7_design.py`, which checks the retained Track B
+    v7 design evidence without importing retired code;
+  - every file under `tests/fixtures/`;
+  - all contract and protocol documents.
+- Keep the CI-workflow conformance checks unchanged in `tests/test_ci_workflow.py`.
+- Preservation: tag `track-a-legacy-final` points to `8fa0055`, which holds the
+  removed code. The retained fixture builder
+  `tests/fixtures/pit_manifest_validator_v1/_build_valid_fixtures.py` imports the
+  retired validator and runs only from that checkout.
+
+Rationale:
+
+- The owner's anti-overengineering and walking-skeleton directives favor
+  deleting unused machinery. Frozen evidence keeps its bytes and bindings.
+
+Consequences:
+
+- Executable verification of the removed Track A code ends: its classifier,
+  deciles, listing keys, turnover, eligibility, and runner goldens. The frozen
+  documents, fixtures, and schema bytes remain, and so do their static checks:
+  the eight schema structure tests and the Track B v7 design test.
+- The wheel ships only active packages. `src/ledger/schemas/` is repository
+  data outside any package.
+
+---
+
 ## 2026-09-23 - Adopt Strategic Audit Decisions And Governance Constitution
 
 Context:

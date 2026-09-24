@@ -12,6 +12,57 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - PR #259 remediation of REVIEW findings PR259-A1-01 to A1-03
+
+- The REVIEW seat (GPT-6 Astra, report
+  `coord/reports/v8_review_20260923/pr259/review_pr259_gpt6astra_a1.md`)
+  returned two MATERIAL findings and one ADVISORY finding on `c9ea8ce`. The
+  branch was rebased onto the remediated #258 head.
+- A1-01: `tests/test_ledger_track_b_v7_design.py` is restored byte-for-byte
+  from `8fa0055`. Its 14 cases check the retained Track B v7 design evidence and
+  pass without the retired packages. The earlier glob deletion of
+  `tests/test_ledger_*.py` had removed it.
+- A1-02: README and the roadmap backlog row now say that JSONL trial records
+  carry sample hash, specification, statistics, and status. The run's code
+  commit appears once per run in the experiment log and report. The missing
+  per-attempt commit binding is listed as open.
+- A1-03: counts are measured from the fixed tree (below). The orphaned helper
+  `tests/ledger_cross_product.py`, which had no consumer after its tests left,
+  is removed with them.
+
+## 2026-09-23 - Track A legacy code retirement
+
+- Branch `claude/retire-track-a-code` stacks on `claude/diagnostic-corrections`.
+- Dependency proof: an AST import scan finds zero imports of `campaign`,
+  `ledger`, or `pit_manifest_validator_v1` from `src` (outside those packages),
+  `research`, `scripts`, or `lean`. Two test files mix legacy and active imports.
+- Removed:
+  - `src/campaign` (21 files), `src/pit_manifest_validator_v1` (5 files), and
+    `src/ledger/__init__.py`, `runtime.py`, and `schema_registry.py`;
+  - 44 test and support files (39 test modules, 5 support modules). Forty-two
+    import retired packages. `tests/test_campaign_import_boundaries.py` inspects
+    the retired campaign sources by AST, and `tests/ledger_cross_product.py`
+    served only the removed ledger tests;
+  - seven code-bound Track A tests and two orphaned helpers from
+    `tests/test_project_structure.py`;
+  - seven legacy tests from `tests/test_ablation_defensive_boundaries.py`;
+  - the ledger `package-data` entry in `pyproject.toml`.
+- In total, 15,226 source lines and 21,460 test lines are removed, and 71 test
+  lines are added, across 73 deleted, 11 modified, and 1 added files. The
+  removed test cases number 1,675.
+- Kept: `src/ledger/schemas/` (10 frozen releases in 20 files, bound by eight
+  structure tests), `tests/test_ledger_track_b_v7_design.py`, every fixture
+  under `tests/fixtures/` (frozen public manifests hash-reference most of them;
+  `tests/test_demo_split_proof.py` uses the split golden), and all contract
+  documents.
+- The two CI-workflow conformance tests moved verbatim to
+  `tests/test_ci_workflow.py`; only the function name drops "campaign". The CI
+  comment now reads "Repository tests use committed synthetic fixtures only";
+  the pinned phrases still hold.
+- The isolated build succeeds, and the wheel's top-level packages are backtest,
+  data, features, reporting, risk, strategies, and utils. `docs/repo_map.md` is
+  regenerated.
+
 ## 2026-09-23 - Diagnostic corrections from the strategic audit
 
 - Branch `claude/diagnostic-corrections` is based on main after PR #257
