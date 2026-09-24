@@ -9,7 +9,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | Path | Purpose | Map status |
 | --- | --- | --- |
 | `.agents/skills/` | Project-specific Codex Skills and workflow gates. | 2 mapped files |
-| `.github/` | Repository automation such as CI workflows. | 1 mapped file |
+| `.github/` | Repository automation such as CI workflows. | 2 mapped files |
 | `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 149 mapped files |
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/campaign/` | Frozen dataset-independent computations for bounded research campaigns. | 21 mapped files |
@@ -19,16 +19,17 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `src/ledger/` | Fail-closed Stage 4B schema-registry helpers and Path A/B sqlite3 runtime; caller-supplied DB path outside the repository. | 23 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
 | `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 29 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 243 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 244 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 117 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |
 
 ## Important Files
 
-- `AGENTS.md` (present): Canonical external-action authority boundary, repository invariants, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.
+- `AGENTS.md` (present): Canonical external-action authority boundary, repository invariants R1-R12, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.
+- `AUTHORITY.md` (present): Owner-issued standing grants with scope, source, and expiry; agents never edit it.
 - `docs/current_handoff.md` (present): Concise operational handoff with a timestamped checkpoint, blockers, and next safe action. Authority remains in AGENTS.md.
-- `docs/north_star.md` (present): Active North Star product aspiration and demo-first delivery principles; not an external-action authority source.
+- `docs/north_star.md` (present): Active North Star product aspiration, edge thesis, objective, and kill criteria; not an external-action authority source.
 - `docs/research_program_charter.md` (present): Preserved historical formal research evidence policy; not an external-action authority source or product delivery blocker.
 - `docs/purged_bounded_split_contract.md` (present): Accepted Stage 1a timing and sample-isolation design.
 - `docs/signal_execution_timing_contract.md` (present): Accepted Stage 2a signal, execution, and metric timing design.

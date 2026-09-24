@@ -1,5 +1,31 @@
 # Engineering Log
 
+## 2026-09-23 - Governance constitution and standing-authority record
+
+- The owner adopted the strategic audit's decisions and directed this
+  streamlining. Branch `claude/governance-constitution` stacks on
+  `claude/standard-v8-path`.
+- `AGENTS.md` shrinks from 283 to 192 lines. Invariants R1–R12 replace five
+  restatements of the non-deferrable list across `AGENTS.md`, the North Star,
+  and the roadmap. Every test-pinned authority phrase, section, marker, and
+  resume-order path remains.
+- The two standing grants moved verbatim to the new `AUTHORITY.md` with source
+  commits (`e2476a2`, `8dbba99`) and expiry. `.github/CODEOWNERS` marks
+  `AUTHORITY.md`, `AGENTS.md`, and `.github/` as owner-controlled.
+- The controller absorbs the P1 process-failure list with first-recording
+  commits. It drops the retired GitHub Code Review compatibility note. Two test
+  pins that quoted the retired channel now assert the current rule, and two new
+  assertions keep the retired wording out.
+- The North Star states the edge thesis, objective and hurdle, and kill
+  criteria. The roadmap records M4.0 through M4.6 as merged, defines M4.7 with
+  its decision gate, aligns the privacy bullet with the written data terms, and
+  adds backlog rows for real-data evidence freshness and delisting terminal
+  evidence.
+- The handoff moves to main after PR #255. `tests/test_governance_constitution.py`
+  checks the constitution cap and R1–R12 labels, the standing-grant record, the
+  North Star sections, and handoff freshness against first-parent history. CI
+  checkout uses `fetch-depth: 2` so the test can read the base commit subject.
+
 ## 2026-09-23 - Coordination standard V8.0 path
 
 - The owner released coordination standard V8.0 in

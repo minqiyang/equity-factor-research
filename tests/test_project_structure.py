@@ -7164,7 +7164,8 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "leave an unverified or disputed thread open and stop",
         "thread-write",
         "metadata-only edits may omit it",
-        "Codex review has completed on the exact current head",
+        "the review seats in `routing_table.json` supply the formal reviews",
+        "`@codex review` is a retired channel",
         "no actionable findings",
         "no review thread remains unresolved",
         "all required checks and formal reviews pass",
@@ -7172,7 +7173,8 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "unresolved actionable finding from any review channel",
         "PR-level comments or independent audits",
         "do not create a resolvable thread",
-        "Pending, missing, or head-mismatched Codex review evidence is ineligible",
+        "Pending, missing, or head-mismatched independent review evidence is "
+        "ineligible",
         "Technical eligibility alone never grants merge authority",
         "full-lifecycle",
         "External Authorization Gate",
@@ -7196,9 +7198,11 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "technically merge-eligible"
     )
     assert review_lifecycle.index("actionable fix changes the head") < (
-        review_lifecycle.index("Codex review has completed on the exact current head")
+        review_lifecycle.index("head-mismatched independent review evidence")
     )
     assert "may enable GitHub auto-merge" not in review_lifecycle
+    assert "compatibility note" not in review_lifecycle
+    assert "Codex review has completed" not in review_lifecycle
 
     protected_merge = " ".join(
         _markdown_section(controller, "Protected Merge Eligibility").split()

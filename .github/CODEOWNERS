@@ -1,0 +1,5 @@
+# Owner-controlled governance files. A change needs the owner's explicit
+# approval in the pull request; see AUTHORITY.md.
+/AUTHORITY.md @minqiyang
+/AGENTS.md @minqiyang
+/.github/ @minqiyang

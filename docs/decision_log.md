@@ -15,6 +15,57 @@ investment performance.
 
 ---
 
+## 2026-09-23 - Adopt Strategic Audit Decisions And Governance Constitution
+
+Context:
+
+- An owner-commissioned strategic audit found three contradictions in
+  `AGENTS.md`, a handoff 52 merged PRs stale, standing grants written in an
+  agent-editable file, and a real-data design too underpowered to detect
+  published-factor effect sizes. The owner adopted every decision and
+  recommendation of that audit on 2026-09-23.
+
+Decision:
+
+- `AGENTS.md` becomes a constitution with invariants R1–R12. Procedures and the
+  process-failure list move to the controller. The two standing grants move
+  verbatim to `AUTHORITY.md`, and `.github/CODEOWNERS` marks owner-controlled
+  files.
+- R2 permits a static survivor cohort only under `DIAGNOSTIC_ONLY` and bars it
+  from ranking, selection, promotion, and profitability claims. R11 aligns
+  publication with the owner's written data terms.
+- The North Star gains an edge thesis, objective and hurdle, and kill criteria.
+- M4.7, a survivorship-reduced S&P 500 point-in-time universe with a
+  pre-registered rerun, is the next milestone. Its holdout is the earliest
+  available unexamined decade. Its terminal-evidence standard covers
+  documented cash consideration, stock consideration valued at the
+  effective-date close, and window splitting for unresolvable events.
+- Legacy Track A code retires behind a preservation tag in a separate change.
+- The audit reports stay local because they contain local paths.
+
+Recorded process deviations (sources in the engineering log and cards):
+
+- Antigravity (Gemini) coordinated M4.0 through M4.6 while the committed v7
+  standard named Pi as coordinator.
+- The owner's 24-hour GPT-only mandate of 2026-09-21 routed M4.3 production and
+  review to GPT-6 Astra.
+- M4.4 through M4.6 used one GPT-6 Astra review seat with the Fast tier on owner
+  direction; M4.4 met CRITICAL-lane criteria.
+- The committed v7.30 routing table read `TEMPLATE_NOT_ACTIVE` during M4.0
+  through M4.6.
+- This governance change: the owner assigned the work and its prose directly to
+  Claude Opus 5.5 at max effort, and the adopted audit structure served as the
+  binding plan without a separate CRITICAL plan review.
+
+Consequences:
+
+- Authority grants have one owner-controlled record, and a test rejects grant
+  language in agent-maintained governance files.
+- A test fails when the handoff trails its base by more than one merged PR.
+- `AGENTS.md` shrinks from 283 to under 200 lines under a tested cap.
+
+---
+
 ## 2026-09-23 - Coordination Standard V8.0 Path
 
 Context:
