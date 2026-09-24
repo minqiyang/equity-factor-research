@@ -74,10 +74,10 @@ keep their existing wording.
 ## Startup And Sources
 
 - Live Herdr+Pi coordination standard owns dispatch, lanes, reviewer routing,
-  quota, and visible-tab review. Before dispatch or review, read both files in
-  `Codex/Standards/herdr_pi_coordinator_v7_two_file/`: `coordinator.md` and
-  `routing_table.json`. Do not copy those seats into this file. Do not load
-  `Codex/standards/archive/`.
+  quota, and visible-tab review. Before dispatch or review, read the three
+  policy files in `Codex/Standards/coordination-standard/`: `coordinator.md`,
+  `routing_table.json`, and `model_bindings.json`. Do not copy those seats or
+  bindings into this file. Do not load `Codex/Standards/archive/`.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.

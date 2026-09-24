@@ -15,6 +15,34 @@ investment performance.
 
 ---
 
+## 2026-09-23 - Coordination Standard V8.0 Path
+
+Context:
+
+- The owner released coordination standard V8.0. It separates the portable
+  rules (`coordinator.md`, `routing_table.json`) from replaceable model
+  choices (`model_bindings.json`) in `Codex/Standards/coordination-standard/`.
+- `Codex/Standards/herdr_pi_coordinator_v7_two_file` is a temporary link kept
+  until repository references move to the new directory.
+
+Decision:
+
+- `AGENTS.md` and the controller reference `Codex/Standards/coordination-standard/`
+  and all three policy files.
+- Historical entries and review reports keep their v7 path strings unchanged.
+
+Rationale:
+
+- The Standards README asks for the temporary link's removal once references
+  are updated. Model-binding changes then require no repository edit.
+
+Consequences:
+
+- After this change merges, the temporary link has no active repository
+  consumer.
+
+---
+
 ## 2026-09-18 - Walking Skeleton Uses Static 50-Stock Diagnostic Cohort
 
 Context:
