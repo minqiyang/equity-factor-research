@@ -81,10 +81,12 @@ rerun, is the next research milestone. The evidence ceiling remains
 
 ## Next Safe Action
 
-- The coordinator dispatches V8.0 review seats in merge order: the standard-path
-  PR first, then the governance constitution.
-- Once those merge, continue with the diagnostic corrections, the legacy code
-  retirement, and the M4.7 card.
+- PR #256 (standard path) is merged at `ad159c0`. The active task is the
+  governance constitution, PR #257: its exact-head REVIEW and AUDIT seats and
+  the owner's reconfirmation of `AUTHORITY.md`.
+- After PR #257 merges, the diagnostic corrections (PR #258), the Track A code
+  retirement (PR #259), and the decision record (PR #260) follow in that order,
+  each rebased onto the updated `main`; then the M4.7 card.
 
 ## Source Routing
 

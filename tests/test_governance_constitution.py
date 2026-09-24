@@ -25,6 +25,29 @@ HISTORICAL_GRANT_PHRASES = [
     "is authorized to autonomously",
 ]
 GRANT_SHINGLE_WORDS = 8
+# Immutable owner source text of each standing grant: heading -> (commit, file, text).
+SOURCE_GRANTS = {
+    "Standing Same-Change Publication": (
+        "e2476a2",
+        "AGENTS.md",
+        "The owner grants standing same-change publication: completing an "
+        "owner-requested in-scope repository change is explicit action-and-scope "
+        "authorization for that change's ordinary feature-branch publication and "
+        "same-PR protected lifecycle through eligible normal merge. A higher-level "
+        "STOP or narrowed request remains a stop.",
+    ),
+    "Autonomous Coordinator Lifecycle": (
+        "8dbba99",
+        "AGENTS.md",
+        "Under explicit owner authorization for unattended progression, the "
+        "Coordinator is authorized to autonomously execute the full development and "
+        "delivery lifecycle: push passing candidate branches, create/publish PRs, "
+        "manage required reviews and remediations, perform eligible normal merge once "
+        "all deterministic tests and independent reviews pass with zero open MATERIAL "
+        "findings (MATERIAL: 0), and advance to the next authorized research milestone "
+        "without pausing for manual interactive confirmation.",
+    ),
+}
 MAX_HANDOFF_MERGE_LAG = 1
 SQUASH_SUBJECT = re.compile(r"\(#(\d+)\)\s*$")
 
@@ -56,6 +79,24 @@ def _grant_quotes(authority: str) -> list[str]:
         assert quote.strip(), f"grant {heading!r} quotes no source text"
         quotes.append(quote)
     return quotes
+
+
+def _collapse_whitespace(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _grant_quote_mismatches(authority: str) -> list[str]:
+    """Return the grant headings whose quote differs from the pinned source text.
+
+    The comparison is case-sensitive and normalizes whitespace only.
+    """
+    headings = re.findall(r"^## (.+)$", authority, re.MULTILINE)
+    quotes = dict(zip(headings, _grant_quotes(authority), strict=True))
+    return [
+        heading
+        for heading, (_, _, text) in SOURCE_GRANTS.items()
+        if _collapse_whitespace(quotes.get(heading, "")) != _collapse_whitespace(text)
+    ]
 
 
 def _grant_language_hits(
@@ -146,6 +187,39 @@ def test_authority_record_fields_and_quotes() -> None:
         body = _section(authority, grant)
         for field in ("Grant", "Scope", "Source", "Expiry"):
             assert re.search(rf"^- {field}\b", body, re.MULTILINE), (grant, field)
+    assert sorted(grants) == sorted(SOURCE_GRANTS)
+    for grant, (commit, source_file, _) in SOURCE_GRANTS.items():
+        source = re.search(r"^- Source: (.+)$", _section(authority, grant), re.MULTILINE)
+        assert source and f"`{source_file}`, commit `{commit}`" in source.group(1), grant
+    assert _grant_quote_mismatches(authority) == []
+
+
+def test_pinned_grant_text_matches_its_source_commit() -> None:
+    for commit, source_file, text in SOURCE_GRANTS.values():
+        source = subprocess.run(
+            ["git", "show", f"{commit}:{source_file}"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        assert _collapse_whitespace(text) in _collapse_whitespace(source), commit
+
+
+@pytest.mark.parametrize(
+    ("original", "mutation", "grant"),
+    [
+        ("zero open MATERIAL", "one open MATERIAL", "Autonomous Coordinator Lifecycle"),
+        ("remains a stop", "remains a pause", "Standing Same-Change Publication"),
+        ("owner-requested", "Owner-requested", "Standing Same-Change Publication"),
+    ],
+)
+def test_grant_quote_check_rejects_a_substantive_mutation(
+    original: str, mutation: str, grant: str
+) -> None:
+    authority = _read("AUTHORITY.md")
+    assert authority.count(original) == 1
+    assert _grant_quote_mismatches(authority.replace(original, mutation)) == [grant]
 
 
 def test_standing_grants_live_only_in_the_authority_record() -> None:

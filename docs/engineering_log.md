@@ -12,6 +12,30 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A2-01 and A2-02
+
+- The REVIEW seat (GPT-6 Astra, report
+  `coord/reports/v8_review_20260923/pr257/review_pr257_gpt6astra_a2.md`)
+  returned one MATERIAL and one ADVISORY finding on `7e4f5c5`.
+- A2-01 (process failure, P1 class): the a1 PR description and FIXER report
+  stated that `test_authority_record_fields_and_quotes` asserts
+  whitespace-normalized equality with the source commits. The test checked
+  structure only; the equality had been verified once by hand. Replacing
+  "zero open MATERIAL" with "one open MATERIAL" in `AUTHORITY.md` passed every
+  governance test.
+- Fix: `SOURCE_GRANTS` pins each grant's source commit, file, and text.
+  `test_authority_record_fields_and_quotes` now requires each quote to equal its
+  pinned text (case-sensitive, whitespace collapsed) and each `Source` field to
+  name the pinned commit. `test_pinned_grant_text_matches_its_source_commit`
+  reads `git show <commit>:AGENTS.md` and requires the pinned text in it.
+  `test_grant_quote_check_rejects_a_substantive_mutation` plants three
+  mutations (a changed word, a changed clause, a changed letter case) and
+  requires each to fail the check.
+- Rule applied from this incident: a published claim that a test checks a
+  property names the test and a mutation that the test rejects.
+- A2-02: the handoff's Next Safe Action names PR #256 as merged and PR #257 as
+  the active review, followed by PR #258, PR #259, and PR #260.
+
 ## 2026-09-23 - PR #257 remediation of REVIEW findings PR257-A1-01 to A1-05
 
 - The REVIEW seat (GPT-6 Astra, report
