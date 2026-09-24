@@ -9,6 +9,7 @@ Key components:
   label purging and post-test embargo.
 - combinatorial_purged_cross_validation_pbo: Combinatorial Purged Cross-Validation
   (CPCV) Probability of Backtest Overfitting (PBO) evaluator.
+- cpcv_geometry_unavailable_reason: Typed sample-size check for CPCV split geometry.
 """
 
 from __future__ import annotations
@@ -202,6 +203,67 @@ class PurgedGroupTimeSeriesSplit(BaseCrossValidator):
             yield train_indices, test_indices
 
 
+def _validate_cpcv_parameters(
+    n_splits: int,
+    n_test_splits: int | None,
+    holding_periods: int,
+    embargo_periods: int,
+) -> int:
+    """Validate CPCV parameters and return the resolved test-block count."""
+    if isinstance(n_splits, bool) or not isinstance(n_splits, int) or n_splits < 4:
+        raise ValueError("n_splits must be an integer >= 4")
+
+    if n_test_splits is None:
+        if n_splits % 2 != 0:
+            raise ValueError("n_splits must be even when n_test_splits is not specified")
+        n_test = n_splits // 2
+    else:
+        if not isinstance(n_test_splits, int) or n_test_splits < 1 or n_test_splits >= n_splits:
+            raise ValueError(f"n_test_splits must be an integer in [1, n_splits - 1], got {n_test_splits}")
+        n_test = n_test_splits
+
+    if isinstance(holding_periods, bool) or not isinstance(holding_periods, int) or holding_periods < 0:
+        raise ValueError(f"holding_periods must be an integer >= 0, got {holding_periods}")
+
+    if isinstance(embargo_periods, bool) or not isinstance(embargo_periods, int) or embargo_periods < 0:
+        raise ValueError(f"embargo_periods must be an integer >= 0, got {embargo_periods}")
+
+    return n_test
+
+
+def cpcv_geometry_unavailable_reason(
+    n_rows: int,
+    *,
+    n_splits: int = 8,
+    n_test_splits: int | None = None,
+    holding_periods: int = 0,
+    embargo_periods: int = 0,
+) -> str | None:
+    """Return a typed reason when the sample is too short for CPCV, else None.
+
+    Reasons:
+        - 'insufficient_rows_for_split_count': fewer than 2 * n_splits rows.
+        - 'insufficient_training_rows_after_purge_and_embargo': some combination
+          keeps fewer than 2 training rows after purging and embargo.
+
+    Invalid parameters raise ValueError; only sample-size shortfalls return a reason.
+    """
+    n_test = _validate_cpcv_parameters(n_splits, n_test_splits, holding_periods, embargo_periods)
+    if n_rows < 2 * n_splits:
+        return "insufficient_rows_for_split_count"
+
+    cv = PurgedGroupTimeSeriesSplit(
+        n_splits=n_splits,
+        n_test_groups=n_test,
+        holding_periods=holding_periods,
+        embargo_periods=embargo_periods,
+    )
+    for train_idx, _, _, _ in cv.split_details(np.empty(n_rows)):
+        if len(train_idx) < 2:
+            return "insufficient_training_rows_after_purge_and_embargo"
+    return None
+
+
 def combinatorial_purged_cross_validation_pbo(
     returns_matrix: pd.DataFrame,
     *,
@@ -265,32 +327,24 @@ def combinatorial_purged_cross_validation_pbo(
     if n_cols < 2:
         raise ValueError("returns_matrix must contain at least 2 strategy columns")
 
-    if isinstance(n_splits, bool) or not isinstance(n_splits, int) or n_splits < 4:
-        raise ValueError("n_splits must be an integer >= 4")
-
-    if n_test_splits is None:
-        if n_splits % 2 != 0:
-            raise ValueError("n_splits must be even when n_test_splits is not specified")
-        n_test = n_splits // 2
-    else:
-        if not isinstance(n_test_splits, int) or n_test_splits < 1 or n_test_splits >= n_splits:
-            raise ValueError(f"n_test_splits must be an integer in [1, n_splits - 1], got {n_test_splits}")
-        n_test = n_test_splits
-
-    if n_rows < 2 * n_splits:
-        raise ValueError(
-            f"returns_matrix has {n_rows} rows; requires at least 2 * n_splits = {2 * n_splits} rows"
-        )
-
-    if isinstance(holding_periods, bool) or not isinstance(holding_periods, int) or holding_periods < 0:
-        raise ValueError(f"holding_periods must be an integer >= 0, got {holding_periods}")
-
-    if isinstance(embargo_periods, bool) or not isinstance(embargo_periods, int) or embargo_periods < 0:
-        raise ValueError(f"embargo_periods must be an integer >= 0, got {embargo_periods}")
+    n_test = _validate_cpcv_parameters(n_splits, n_test_splits, holding_periods, embargo_periods)
 
     rf = float(risk_free_rate)
     if not math.isfinite(rf):
         raise ValueError("risk_free_rate must be a finite float")
+
+    geometry_reason = cpcv_geometry_unavailable_reason(
+        n_rows,
+        n_splits=n_splits,
+        n_test_splits=n_test_splits,
+        holding_periods=holding_periods,
+        embargo_periods=embargo_periods,
+    )
+    if geometry_reason is not None:
+        raise ValueError(
+            f"CPCV split geometry unavailable ({geometry_reason}): {n_rows} rows, "
+            f"n_splits={n_splits}, holding_periods={holding_periods}, embargo_periods={embargo_periods}"
+        )
 
     # Fast path for classical unpurged symmetric CSCV
     if holding_periods == 0 and embargo_periods == 0 and n_test == n_splits // 2:
@@ -320,11 +374,6 @@ def combinatorial_purged_cross_validation_pbo(
     for train_idx, test_idx, n_purged, n_embargoed in cv.split_details(values):
         purged_counts.append(n_purged)
         embargoed_counts.append(n_embargoed)
-
-        if len(train_idx) < 2:
-            raise ValueError(
-                "Purging and embargo removed too many training samples; reduce holding_periods or embargo_periods"
-            )
 
         # In-sample statistics
         is_data = values[train_idx]

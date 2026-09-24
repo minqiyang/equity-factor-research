@@ -78,7 +78,10 @@ from research.multifactor_diagnostic_mvp import (
     evaluate_portfolio_weighting_comparisons,
 )
 from research.multiple_testing_diagnostics import render_multiple_testing, summarize_multiple_testing
-from features.cross_validation import combinatorial_purged_cross_validation_pbo
+from features.cross_validation import (
+    combinatorial_purged_cross_validation_pbo,
+    cpcv_geometry_unavailable_reason,
+)
 from features.ml_combination import walk_forward_ml_factor_composite
 from research.walking_skeleton_mvp import (
     execution_aligned_forward_returns,
@@ -259,6 +262,42 @@ def equal_weight_total_return(prices: pd.DataFrame) -> float:
 
     daily = prices.pct_change(fill_method=None).iloc[1:].mean(axis=1, skipna=False)
     return float((1.0 + daily).prod() - 1.0) if daily.notna().all() else math.nan
+
+
+def _purged_cpcv_summary(
+    returns: pd.DataFrame, config: RealDataMultifactorDiagnosticConfig
+) -> dict[str, Any]:
+    """Purged CPCV summary with a typed status.
+
+    A sample too short for the declared split, purge, and embargo geometry
+    returns status 'unavailable' with its reason. Non-finite returns and
+    invalid parameters raise ValueError.
+    """
+
+    if not np.isfinite(returns.to_numpy(dtype=float)).all():
+        raise ValueError("CPCV strategy returns must be finite without NaN or Inf")
+    reason = cpcv_geometry_unavailable_reason(
+        len(returns),
+        n_splits=config.pbo_n_splits,
+        holding_periods=config.pbo_holding_periods,
+        embargo_periods=config.pbo_embargo_periods,
+    )
+    if reason is not None:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": reason,
+            "n_rows": len(returns),
+            "n_splits": config.pbo_n_splits,
+            "holding_periods": config.pbo_holding_periods,
+            "embargo_periods": config.pbo_embargo_periods,
+        }
+    summary = combinatorial_purged_cross_validation_pbo(
+        returns,
+        n_splits=config.pbo_n_splits,
+        holding_periods=config.pbo_holding_periods,
+        embargo_periods=config.pbo_embargo_periods,
+    )
+    return {"status": "available", **summary}
 
 
 def evaluate_diagnostic_readiness(
@@ -609,17 +648,7 @@ def run_real_data_multifactor_diagnostic(
         alpha_returns,
         n_splits=config.pbo_n_splits,
     )
-    cpcv_summary: dict[str, Any] | None = None
-    try:
-        cpcv_summary = combinatorial_purged_cross_validation_pbo(
-            alpha_returns,
-            n_splits=config.pbo_n_splits,
-            holding_periods=config.pbo_holding_periods,
-            embargo_periods=config.pbo_embargo_periods,
-        )
-    except ValueError:
-        # Sample size or split geometry insufficient for purged and embargoed evaluation
-        cpcv_summary = None
+    cpcv_summary = _purged_cpcv_summary(alpha_returns, config)
     # Long-only books share market beta, so their PBO measures beta noise; the
     # dollar-neutral family measures cross-sectional ranking skill.
     long_short_returns = pd.DataFrame(
@@ -632,16 +661,7 @@ def run_real_data_multifactor_diagnostic(
         long_short_returns,
         n_splits=config.pbo_n_splits,
     )
-    cpcv_long_short_summary: dict[str, Any] | None = None
-    try:
-        cpcv_long_short_summary = combinatorial_purged_cross_validation_pbo(
-            long_short_returns,
-            n_splits=config.pbo_n_splits,
-            holding_periods=config.pbo_holding_periods,
-            embargo_periods=config.pbo_embargo_periods,
-        )
-    except ValueError:
-        cpcv_long_short_summary = None
+    cpcv_long_short_summary = _purged_cpcv_summary(long_short_returns, config)
     equal_weight_cohort_return = equal_weight_total_return(
         prices.loc[evaluation_start:evaluation_end]
     )
@@ -1043,7 +1063,7 @@ def write_real_data_report(*, result: dict[str, Any]) -> None:
     first_factor_id = result["alpha_ids"][0]
     first_backtest: BacktestResult = result["factors"][first_factor_id]["backtest"]
     pbo_summary = result["pbo_summary"]
-    cpcv_summary = result.get("cpcv_summary")
+    cpcv_summary = result["cpcv_summary"]
     horizon_contract = (
         f"source_row(s) + {config.signal_lag_periods} + "
         f"{config.forward_holding_periods} <= source_row(t)"
@@ -1148,14 +1168,13 @@ expanding training windows with strictly closed forward-return labels (zero look
 {chr(10).join(ml_table_rows)}
 """
 
-    cpcv_section = ""
-    if cpcv_summary:
-        cpcv_section = f"""
-### Combinatorial Purged Cross-Validation (CPCV)
-
-CPCV evaluates backtest overfitting on the one-period strategy return series with a declared 21-bar forward-dependence horizon and 5-bar post-test embargo window.
-
-- Purged & Embargoed PBO: `{_format_number(cpcv_summary["pbo"])}`
+    cpcv_intro = (
+        "CPCV evaluates backtest overfitting on the one-period strategy return series "
+        f"with a declared `{cpcv_summary['holding_periods']}`-bar forward-dependence horizon "
+        f"and `{cpcv_summary['embargo_periods']}`-bar post-test embargo window."
+    )
+    if cpcv_summary["status"] == "available":
+        cpcv_body = f"""- Purged & Embargoed PBO: `{_format_number(cpcv_summary["pbo"])}`
 - Out-of-Sample Probability of Loss: `{_format_number(cpcv_summary["prob_loss"])}`
 - Combinations: `{cpcv_summary["n_combinations"]}` (from `{cpcv_summary["n_splits"]}` splits)
 - Forward Holding Horizon: `{cpcv_summary["holding_periods"]}` bars
@@ -1165,17 +1184,25 @@ CPCV evaluates backtest overfitting on the one-period strategy return series wit
 - Mean OOS Relative Rank: `{_format_number(cpcv_summary["mean_relative_rank"])}`
 - Median OOS Relative Rank: `{_format_number(cpcv_summary["median_relative_rank"])}`
 - Mean IS Sharpe: `{_format_number(cpcv_summary["mean_is_sharpe"])}`
-- Mean OOS Sharpe: `{_format_number(cpcv_summary["mean_oos_sharpe"])}`
+- Mean OOS Sharpe: `{_format_number(cpcv_summary["mean_oos_sharpe"])}`"""
+    else:
+        cpcv_body = _cpcv_unavailable_line(cpcv_summary)
+    cpcv_section = f"""
+### Combinatorial Purged Cross-Validation (CPCV)
+
+{cpcv_intro}
+
+{cpcv_body}
 """
 
     long_short_pbo = result["pbo_long_short_summary"]
-    long_short_cpcv = result.get("cpcv_long_short_summary")
+    long_short_cpcv = result["cpcv_long_short_summary"]
     long_short_cpcv_line = (
         f"- Purged & Embargoed PBO: `{_format_number(long_short_cpcv['pbo'])}` "
         f"(`{long_short_cpcv['holding_periods']}`-bar horizon, "
         f"`{long_short_cpcv['embargo_periods']}`-bar embargo)"
-        if long_short_cpcv
-        else "- Purged & Embargoed PBO: unavailable for this split geometry"
+        if long_short_cpcv["status"] == "available"
+        else _cpcv_unavailable_line(long_short_cpcv)
     )
     alpha_names = ", ".join(f"`{factor_id}`" for factor_id in result["alpha_ids"])
     composite_names = ", ".join(f"`{factor_id}`" for factor_id in result["composite_ids"])
@@ -1363,6 +1390,14 @@ family measures whether in-sample ranking skill persists out of sample.
 - This does not grant `RESEARCH_PASS`, formal interpretation, or profitability.
 """
     report_path.write_text(content, encoding="utf-8")
+
+
+def _cpcv_unavailable_line(summary: dict[str, Any]) -> str:
+    return (
+        f"- Purged & Embargoed PBO: unavailable (`{summary['unavailable_reason']}`; "
+        f"`{summary['n_rows']}` rows, `{summary['n_splits']}` splits, "
+        f"`{summary['holding_periods']}`-bar horizon, `{summary['embargo_periods']}`-bar embargo)"
+    )
 
 
 def _unique_symbols(symbols: Sequence[str], *, field_name: str) -> tuple[str, ...]:

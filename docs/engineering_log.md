@@ -12,6 +12,40 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-24 - AUDIT-M4-01 and AUDIT-M4-02 repair
+
+- Source: the M4.2–M4.4 pre-flight audit on `770cfe5`
+  (`coord/reports/v8_review_20260923/audit_preflight_m42_m44_opus.md`), two
+  MATERIAL findings that blocked M4.7 step 7.
+- AUDIT-M4-01: `research/real_data_multifactor_diagnostic.py` no longer wraps
+  either CPCV call in `except ValueError`. `_purged_cpcv_summary` refuses
+  non-finite strategy returns, then calls
+  `features.cross_validation.cpcv_geometry_unavailable_reason`. A short sample
+  yields `status: unavailable` with `insufficient_rows_for_split_count` or
+  `insufficient_training_rows_after_purge_and_embargo`; available summaries
+  carry `status: available`. Invalid parameters, non-finite returns, and any
+  other CPCV `ValueError` propagate. The report renders the long-only CPCV
+  section and the long-short CPCV line in both states, with the typed reason
+  and the configured horizon and embargo in place of the hardcoded 21-bar and
+  5-bar text.
+- `combinatorial_purged_cross_validation_pbo` uses the same geometry function,
+  so the runner check and the estimator share one refusal rule. Parameter
+  validation moved into `_validate_cpcv_parameters` and now runs before the
+  row-count check; boolean `n_test_splits` is refused.
+- AUDIT-M4-02: `_finite_series` in `src/features/diagnostics.py` raises
+  `ValueError` with the non-finite count instead of dropping NaN and Inf.
+  `deflated_sharpe_ratio` and `newey_west_mean_tstat` therefore refuse gapped
+  series. `information_coefficient_summary` keeps its documented missing-date
+  drop before it calls the Newey-West statistic; `return_test_statistics`
+  already returns `nonfinite_observations` before its call.
+- Tests: geometry reasons, parameter-before-geometry ordering, and estimator
+  refusal messages in `tests/test_cross_validation.py`; NaN, +Inf, -Inf, the
+  audit's every-third-NaN probe, and nullable `Float64` refusals in
+  `tests/test_diagnostics.py`; both-book typed refusal in report and sidecar,
+  propagation of a synthetic CPCV error and an invalid embargo, and
+  non-finite refusal ahead of geometry in
+  `tests/test_real_data_multifactor_diagnostic.py`.
+
 ## 2026-09-23 - Owner-delegated decisions executed
 
 - Pushed annotated tag `track-a-legacy-final` (object `ef13f62`, target
