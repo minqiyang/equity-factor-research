@@ -424,24 +424,10 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
         frame = _parquet(payload, files[pid]["file"], columns=["date", "adjusted_close"])
         present = pd.DatetimeIndex(frame.loc[np.isfinite(frame["adjusted_close"]), "date"])
         bars.loc[present.intersection(calendar), pid] = True
-    events = read_engine_events(root)
-    events = events[events["permanent_id"].isin(assets)].reset_index(drop=True)
-    if assets:
-        mask = resolve_pit_universe_mask(intervals[intervals["permanent_id"].isin(assets)],
-                                         events if len(events) else None, calendar, assets)
-    else:
-        mask = bars.copy()
     master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
-    settled = set(events["permanent_id"])
-    unresolved = {
-        row["permanent_id"]: int(calendar.get_loc(pd.Timestamp(row["last_bar"]))) + 1
-        for row in master.to_dict(orient="records")
-        if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"
-        and row["permanent_id"] not in settled
-    }
-    schedule = common_support_schedule(calendar, bars, mask, unresolved, d0 - i_h)
-    support = SnapshotSupport(calendar, snapshot.holdout_end.isoformat(), intervals, events, bars, mask, unresolved,
-                              schedule, inputs)
+    support = snapshot_support(calendar, snapshot.holdout_end.isoformat(), intervals, read_engine_events(root), bars,
+                               master, inputs, d0 - i_h)
+    schedule = support.schedule
     iso = [day.date().isoformat() for day in support.calendar]
     columns = list(schedule.g_base.columns)
     base = sorted(np.argwhere(schedule.g_base.to_numpy(dtype=bool)).tolist(), key=lambda rc: (columns[rc[1]], rc[0]))
@@ -458,6 +444,35 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     write_bytes(root / SEGMENTS, _canonical({**record, "discovery_inputs_sha256": support.discovery_inputs_sha256,
                                              "segments_sha256": support.segments_sha256}))
     return support
+
+
+def snapshot_support(
+    calendar: pd.DatetimeIndex, holdout_end: str, intervals: pd.DataFrame, events: pd.DataFrame,
+    bars: pd.DataFrame, master: pd.DataFrame, inputs: str, d0: int,
+) -> SnapshotSupport:
+    """The schedule of sections 4.1-4.2 from a bar-presence matrix whose columns are the member permanent IDs.
+
+    The mask comes from ``resolve_pit_universe_mask`` over the member events
+    and ``U`` from the delisting candidates without an engine event. The
+    census passes bars read from the panel files; the runner passes the
+    loaded panel's missing-value pattern (plan 4.5).
+    """
+    assets = list(bars.columns)
+    events = events[events["permanent_id"].isin(assets)].reset_index(drop=True)
+    if assets:
+        mask = resolve_pit_universe_mask(intervals[intervals["permanent_id"].isin(assets)],
+                                         events if len(events) else None, calendar, assets)
+    else:
+        mask = bars.copy()
+    settled = set(events["permanent_id"])
+    unresolved = {
+        row["permanent_id"]: int(calendar.get_loc(pd.Timestamp(row["last_bar"]))) + 1
+        for row in master.to_dict(orient="records")
+        if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"
+        and row["permanent_id"] not in settled
+    }
+    schedule = common_support_schedule(calendar, bars, mask, unresolved, d0)
+    return SnapshotSupport(calendar, holdout_end, intervals, events, bars, mask, unresolved, schedule, inputs)
 
 
 def _canonical(payload) -> bytes:

@@ -112,6 +112,17 @@ def power_projection(ic_month_supply: int) -> dict[str, Any]:
             "note": "declared prior band for the monthly Rank IC standard deviation; the gate applies realized power"}
 
 
+def post_join_warmup_estimate(s_mask: pd.DataFrame, bars: pd.DataFrame, ic_resets: tuple[int, ...]) -> dict[str, int]:
+    """Section 5.2: eligible asset-months per Family A factor whose signal row precedes ``first_bar + warmup_rows``."""
+    first_bar = {pid: int(np.flatnonzero(bars[pid].to_numpy())[0]) for pid in bars.columns if bars[pid].any()}
+    return {
+        factor.factor_id: int(sum(
+            1 for r in ic_resets for pid in s_mask.columns[s_mask.iloc[r - 1].to_numpy()]
+            if r - 1 < first_bar.get(pid, 0) + factor.warmup_rows))
+        for factor in FAMILY_A
+    }
+
+
 def prior_exposure_overlap(ic_month_dates: list[date]) -> dict[str, Any]:
     """Section 5.2 exposure: the fraction of IC months inside each prior exposure window."""
     return {
@@ -271,15 +282,7 @@ def run_census(
     episodes = _episode_metrics(ctx, mask)
     ic_included, ic_excluded = ic_month_set(support.schedule)
     reset_dates = [support.calendar[r].date() for r in ic_included]
-    s_mask = signal_eligibility(support.mask, support.bars)
-    first_disc = {pid: int(np.flatnonzero(support.bars[pid].to_numpy())[0]) for pid in support.bars.columns
-                  if support.bars[pid].any()}
-    warmup = {
-        factor.factor_id: int(sum(
-            1 for r in ic_included for pid in s_mask.columns[s_mask.iloc[r - 1].to_numpy()]
-            if r - 1 < max(first_disc.get(pid, 0), 0) + factor.warmup_rows))
-        for factor in FAMILY_A
-    }
+    warmup = post_join_warmup_estimate(signal_eligibility(support.mask, support.bars), support.bars, ic_included)
     schedule = support.schedule
     record = support.record()
     verify = snapshot.manifest.get("verify") or {}
