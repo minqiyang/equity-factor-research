@@ -1419,9 +1419,9 @@ Execute the frozen S&P 500 point-in-time rerun protocol on snapshot `real_v1` bo
 - **Decision Gate Outcome**: `extend_first`.
 - **Program Decision**: "Extend breadth or history under a new registration; the holdout stays sealed."
 
-### Next Action
+### Next Action & Milestone Conclusion
 
-Independent audit review, squash-merge PR for M4.7c-1, and advance to Phase M4.7c-2 (decision log entry, roadmap close, and milestone conclusion).
+PR #269 merged at commit `a9c94dca…af45` following verified dual independent audit (MATERIAL: 0). Milestone 4.7 concludes in Phase M4.7c-2 with deterministic gate record in `docs/decision_log.md` (outcome `extend_first`, holdout partition sealed), updated roadmap and backlog in `docs/current_roadmap.md`, and refreshed handoff.
 
 
 ## Local CSV Experiment Records

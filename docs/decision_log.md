@@ -15,6 +15,69 @@ investment performance.
 
 ---
 
+## 2026-09-26 - Milestone 4.7 Point-in-Time Rerun Decision Gate Record: extend_first
+
+Context:
+
+- Milestone 4.7 Phase M4.7c-1 executed the pre-registered point-in-time rerun on snapshot `real_v1` bound to preregistration `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json` (SHA-256 `6ea218a6…1c9f`).
+- Phase M4.7c-2 records the deterministic decision gate evaluation pursuant to Binding Implementation Plan Revision 11 (§6.9, §7.3 stage c-2).
+
+Decision:
+
+- **Decision Gate Outcome**: `extend_first`
+- **Program Decision**: "Extend breadth or history under a new registration; the holdout stays sealed."
+- **Holdout Disposition**: The 1-year holdout window `[2019-07-31, 2020-07-31)` under `SPY.US_eod_dates_v1` remains completely sealed and unaccessed.
+
+Deterministic Gate Inputs & Registered Bindings:
+
+- **Registration SHA-256**: `6ea218a6…1c9f`
+- **Result Commit**: `a9c94dca59649dcb62af9b5d9fd65bde3400af45` (PR #269 merge)
+- **Snapshot Manifest SHA-256**: `ffa76053…35c7` (`real_v1`)
+- **Segments SHA-256**: `6b014b13…5933`
+- **Census JSON SHA-256**: `608fd1b1…1c40`
+- **Universe & Support Dimensions**: `|U| = 24`, `|G| = 1`, `|W| = 20`, excluded rows: 476, excluded fraction: 0.3842 (accepted shortfall <= 0.45); eligible unpriced member-day fraction: 0.3297 (accepted shortfall <= 0.40).
+- **Cost Cases**: Primary: 1.0 bp transaction cost, 4.0 bps slippage; 2x sensitivity: 2.0 bps / 8.0 bps; zero-cost diagnostic: 0.0 bps / 0.0 bps.
+
+Family A (6 factors, primary Rank IC, BY within family of 6):
+
+| Factor | T_f | Mean IC | HAC p | BY q | Half 1 mean | Half 2 mean | Sign stable | MDE_f | MDE_single | LS mean daily net | LS HAC p |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `MOM_12_1` | 32 | 0.013459 | 0.566874 | 1.000000 | -0.015793 | 0.042712 | false | 0.088620 | 0.065846 | -0.000012 | 0.964200 |
+| `HIGH_52W` | 32 | -0.010275 | 0.706731 | 1.000000 | -0.056098 | 0.035548 | false | 0.102970 | 0.076509 | -0.000177 | 0.497036 |
+| `REV_1M` | 32 | 0.027931 | 0.144407 | 1.000000 | 0.031098 | 0.024764 | true | 0.072155 | 0.053612 | 0.000010 | 0.962834 |
+| `LOW_VOL_252` | 32 | -0.010835 | 0.774981 | 1.000000 | -0.090620 | 0.068950 | false | 0.142912 | 0.106186 | -0.000165 | 0.591778 |
+| `LOW_BETA_252` | 32 | -0.016749 | 0.711196 | 1.000000 | -0.101960 | 0.068462 | false | 0.170566 | 0.126734 | -0.000137 | 0.708933 |
+| `AMIHUD_ILLIQ_63` | 32 | -0.008513 | 0.607242 | 1.000000 | 0.018212 | -0.035237 | false | 0.062444 | 0.046397 | -0.000006 | 0.966123 |
+
+Family B & Combinatorial Purged Cross-Validation (CPCV):
+
+- **Family B (63 trials)**: 55 evaluated, 8 invalid (`insufficient_ic_months` reaching 27–30 vs 32 minimum). Zero BY rejections (all BY $q = 1.0$). Family B provides exploratory context and changes no decision.
+- **CPCV PBO & OOS Sharpe** (763 rows, 8 blocks, 4 test blocks, 70 splits, horizon 23, embargo 5):
+  - `A_excess`: PBO 0.5857, mean OOS Sharpe -0.0190
+  - `A_long_short`: PBO 0.6286, mean OOS Sharpe -0.0185
+  - `B_excess`: PBO 0.5000, mean OOS Sharpe -0.0121
+  - `B_long_short`: PBO 0.6143, mean OOS Sharpe -0.0440
+
+Gate Flags & Evaluation Summary:
+
+- `power_status`: `inadequate` (realized MDEs range from 0.0624 to 0.1706, exceeding the 0.02 adequate power floor).
+- `contrary_rejections`: `[]` (zero contrary rejections).
+- `kill_reachable_projection`: `false`.
+- Rule 1 (`evaluation_incomplete`): Not matched (all 6 factors evaluated).
+- Rule 2 (`proceed`): Not matched (zero BY rejections).
+- Rule 3 (`survivor_without_confirmation`): Not matched (zero survivors).
+- Rule 4 (`review_thesis`): Not matched (requires every $\text{MDE}_f \le 0.02$).
+- Rule 5 (`extend_first`): Matched.
+
+Consequences:
+
+- Milestone 4.7 closes with the deterministic outcome `extend_first`.
+- The holdout window remains sealed.
+- No factor is promoted; the evidence ceiling remains `DIAGNOSTIC_ONLY`.
+- Follow-up research requires expanding cross-sectional breadth or historical depth under a newly versioned preregistration.
+
+---
+
 ## 2026-09-26 - Owner Decisions O-1, O-3 (Power Projection & Contrary Rejection), And O-6 For S&P 500 PIT Registration Freeze
 
 Context:

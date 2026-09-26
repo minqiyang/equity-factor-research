@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-26 for the Milestone 4.7 stage c-1 point-in-time rerun on real_v1.
+Updated: 2026-09-26 for the Milestone 4.7 stage c-2 decision record and milestone conclusion.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,15 +24,15 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `0d87d7ebd5d5de2bf42f264eb2e29d127c4cc64d` (main after PR #268).
+  `a9c94dca59649dcb62af9b5d9fd65bde3400af45` (main after PR #269).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #268: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
-  and M4.7b-2 preregistration freeze on real_v1 (`6ea218a6…1c9f`).
+- Merged through PR #269: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
+  M4.7b-2 preregistration freeze on real_v1, and M4.7c-1 point-in-time rerun on real_v1 (`extend_first`).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
-  `45fe5adc` (PR #267), and `0d87d7eb` (PR #268).
+  `45fe5adc` (PR #267), `0d87d7eb` (PR #268), and `a9c94dca` (PR #269).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -44,32 +44,31 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Recorded Delivery Scope
 
 - Milestone 4.7 Binding Implementation Plan Revision 11 (`coord/plans/m4_7_binding_plan.md`,
-  SHA-256 `6541db93…6407`) is formally accepted under Coordination Standard V8.5 and Owner Directives 1–4.
-- Phase M4.7c-1 candidate delivers point-in-time rerun on snapshot `real_v1` bound to preregistration `6ea218a6…1c9f`:
-  - `reports/m4_7_sp500_pit_rerun.md` (SHA-256 `2de61b35…49ca6`)
-  - `reports/experiment_logs/m4_7_sp500_pit_rerun.json` (SHA-256 `07d8ab19…23b6`)
-  - `reports/experiment_logs/m4_7_sp500_pit_rerun_trials.jsonl` (SHA-256 `eb366ab7…9b27`)
-- Rerun completed with exit 0, zero Class I stops, and decision outcome `extend_first`
-  (power inadequate, zero BY rejections across Family A and Family B, holdout unaccessed and sealed).
+  SHA-256 `6541db93…6407`) is formally completed.
+- Phase M4.7c-2 candidate delivers:
+  - `docs/decision_log.md`: deterministic decision gate record for M4.7 rerun on real_v1 (`extend_first`).
+  - `docs/current_roadmap.md`: Milestone 4.7 completed status and updated imperfection backlog rows.
+  - `docs/engineering_log.md`: M4.7c-2 milestone completion entry.
+  - `docs/current_handoff.md`: refreshed handoff to baseline `a9c94dca...`.
 - Program decision: "Extend breadth or history under a new registration; the holdout stays sealed."
+- Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
-Milestone 4 diagnostic capabilities M4.0 through M4.6 are merged; see
-`docs/current_roadmap.md`. The point-in-time rerun on real_v1 (Phase M4.7c-1)
-confirms that statistical power is inadequate and no factor or composite
-survives BY correction. Under the deterministic gate, the holdout window remains
-sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+Milestone 4.7 is completed; see `docs/current_roadmap.md`. The pre-registered point-in-time rerun on real_v1
+confirms that statistical power is inadequate and no factor or composite survives BY correction.
+Under the deterministic gate, the outcome is `extend_first` and the holdout window remains sealed and unaccessed.
+Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- No operational blocker. Phase M4.7c-1 candidate is ready for independent dual audit.
-- Owner Decisions O-1 through O-8 are formally recorded in `docs/decision_log.md` and `docs/engineering_log.md`.
+- No operational blocker. Milestone 4.7 delivery is complete.
+- Follow-up research requires expanding universe breadth or historical depth under a new preregistration.
 
 ## Next Safe Action
 
-- Open PR for Phase M4.7c-1, run independent dual audit, squash-merge into `main`,
-  and advance to Phase M4.7c-2 (decision log entry, roadmap close, and milestone conclusion).
+- Open PR for Phase M4.7c-2, execute review verification, squash-merge into `main`,
+  and await owner scoping instructions for the next research phase.
 
 ## Source Routing
 
