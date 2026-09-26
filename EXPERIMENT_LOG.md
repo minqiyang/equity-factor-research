@@ -1376,6 +1376,54 @@ Freeze the point-in-time rerun protocol for S&P 500 on snapshot `real_v1` prior 
 Verify PR #268 protected merge to `main`, record the merge commit, verify owner O-4 private-data execution authorization in `docs/engineering_log.md`, and execute Phase M4.7c-1 `research/m4_7_sp500_pit_rerun.py` bound to registration hash `6ea218a6…1c9f` on snapshot `real_v1`.
 
 
+## 20260926-002-m47-sp500-pit-rerun-real-v1
+
+### Experiment ID
+
+`20260926-002-m47-sp500-pit-rerun-real-v1`
+
+### Date
+
+`2026-09-26`
+
+### Milestone & Phase
+
+Milestone 4.7 Phase M4.7c-1 (Point-in-Time Rerun on real_v1) under Binding Implementation Plan Revision 11 (§7.3 stage `c-1`).
+
+### Objective
+
+Execute the frozen S&P 500 point-in-time rerun protocol on snapshot `real_v1` bound to preregistration `6ea218a6…1c9f` under Owner Decision O-4 local private-data authorization. Evaluate Benjamini-Yekutieli multiple-testing corrections across Family A (6 factors) and Family B (63 trials), compute purged CPCV/PBO, and evaluate the deterministic decision gate.
+
+### Preregistration & Bound Inputs
+
+- **Preregistration Path**: `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json`
+- **Registration SHA-256**: `6ea218a6…1c9f`
+- **Snapshot ID**: `real_v1`
+- **Manifest SHA-256**: `ffa76053…35c7`
+- **Census JSON SHA-256**: `608fd1b1…1c40`
+- **Holdout Status**: Sealed (`[2019-07-31, 2020-07-31)`), unaccessed.
+
+### Output Artifacts
+
+- **Markdown Report**: `reports/m4_7_sp500_pit_rerun.md` (SHA-256: `2de61b35…49ca6`)
+- **JSON Sidecar**: `reports/experiment_logs/m4_7_sp500_pit_rerun.json` (SHA-256: `07d8ab19…23b6`)
+- **All-Trials Ledger**: `reports/experiment_logs/m4_7_sp500_pit_rerun_trials.jsonl` (SHA-256: `eb366ab7…9b27`)
+
+### Execution & Gate Results
+
+- **Run Status**: `completed`, exit code 0, Class I stops: 0.
+- **Power Status**: `inadequate` (32 IC months supply matches registered minimum; observed |mean IC| below MDE for all Family A factors; `kill_reachable_projection: false`).
+- **Family A (6 factors)**: 0 BY rejections (all BY $q = 1.0$). Long-only excess returns over equal-weight PIT benchmark negative across all 6 factors (-0.252 to -0.010).
+- **Family B (63 trials)**: 55 evaluated, 8 composites invalid (insufficient IC months due to training warm-up). 0 BY rejections (all BY $q = 1.0$).
+- **CPCV / PBO**: 8 splits, 70 combinations, 23 holding periods. PBO >= 0.50 across all four families (0.586, 0.629, 0.500, 0.614); mean OOS Sharpe negative across all families.
+- **Decision Gate Outcome**: `extend_first`.
+- **Program Decision**: "Extend breadth or history under a new registration; the holdout stays sealed."
+
+### Next Action
+
+Independent audit review, squash-merge PR for M4.7c-1, and advance to Phase M4.7c-2 (decision log entry, roadmap close, and milestone conclusion).
+
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
