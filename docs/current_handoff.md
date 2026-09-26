@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-25 for the Milestone 4.7 stage a-0 statistical and portfolio core.
+Updated: 2026-09-26 for the controller alignment with Coordination Standard V8.5.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,23 +24,25 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `49eacdd4ce69fe1db9b779bfb7cc975d8b5950d3` (main after PR #261).
+  `2c07ee4db70bc90cd449382c69b63765de2eab7d` (main after PR #262).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #261: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #262: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
   square-root impact, M4.6 style risk attribution, the coordination standard
   V8.0 path (PR #256), the governance constitution (PR #257), the impact
   reconciliation and M4.6 timing fixes (PR #258), the Track A code
   retirement (PR #259), the owner-delegated decision record (PR #260), and
-  the typed CPCV geometry refusal and fail-closed DSR/Newey-West inputs (PR #261).
+  the typed CPCV geometry refusal and fail-closed DSR/Newey-West inputs (PR #261),
+  and the M4.7a-0 statistical and portfolio core on golden fixtures (PR #262).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88a6e049b63aa2ddeae8560fea08fda23e` (PR #200 merge),
   `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (PR #203 merge), and
-  `770cfe5415c371aba4fa67312ff23130ccec1785` (PR #260 merge).
+  `770cfe5415c371aba4fa67312ff23130ccec1785` (PR #260 merge), and
+  `49eacdd4ce69fe1db9b779bfb7cc975d8b5950d3` (PR #261 merge).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -59,7 +61,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Implementation is decoupled into pure golden-fixture core (Phase M4.7a-0),
   retrieval module (Phase M4.7a-1), universe build/census (Phase M4.7a-2), and
   runner integration (Phase M4.7b-1).
-- M4.7a-0 candidate (branch `claude/m4_7a0-engine-labels-and-wrapper`): the
+- M4.7a-0 (merged in PR #262): the
   engines accept the three consideration bases, record `terminal_basis_counts`
   and the v2 `terminal_settlement_contract`, and export
   `resolve_pit_universe_mask`; Family A factor functions and definitions;
@@ -80,16 +82,19 @@ rerun, is the active research milestone. The evidence ceiling remains
 
 ## Immediate Blockers Or Owner Decisions
 
-- No blocker for Phase M4.7a-0: all deliverables are pure functions over
-  pandas/NumPy arrays verified on deterministic synthetic golden fixtures.
+- No blocker for Phases M4.7a-1 and M4.7a-2: both run on deterministic
+  synthetic golden fixtures under their own cards.
 - Phase M4.7a-3 private data retrieval will require `EFR_EODHD_API_TOKEN` and
   standing data authority D1.
 
 ## Next Safe Action
 
-- CRITICAL-lane review of the M4.7a-0 candidate (two fresh formal reviewers)
-  and coordinator acceptance of its exact head; M4.7a-1 and M4.7a-2 proceed in
-  parallel under their own cards.
+- M4.7a-1 and M4.7a-2 proceed in parallel under their own cards; verify their
+  live branch and review state before dispatch.
+- This publication aligns `docs/codex_long_running_controller.md` with
+  Coordination Standard V8.5: review rounds and finding severity defer to
+  `coordinator.md` section 3, and merge eligibility counts unresolved
+  `MATERIAL` findings.
 
 ## Source Routing
 

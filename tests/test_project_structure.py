@@ -6544,11 +6544,13 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "metadata-only edits may omit it",
         "the review seats in `routing_table.json` supply the formal reviews",
         "`@codex review` is a retired channel",
-        "no actionable findings",
+        "report `MATERIAL: 0` or an explicit merge disposition",
         "no review thread remains unresolved",
         "all required checks and formal reviews pass",
         "No PR is technically merge-eligible while its current head has any "
-        "unresolved actionable finding from any review channel",
+        "unresolved `MATERIAL` finding from any review channel",
+        "Owner-accepted `MATERIAL` risk needs an explicit merge disposition and "
+        "never counts as zero",
         "PR-level comments or independent audits",
         "do not create a resolvable thread",
         "Pending, missing, or head-mismatched independent review evidence is "
@@ -6611,10 +6613,47 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
     ]:
         assert assigned_seat not in controller
 
-    assert "live Herdr+Pi coordination standard" in review_lifecycle
+    assert "live Herdr coordination standard" in review_lifecycle
     assert "routing_table.json" in review_lifecycle
     assert "## Predecessor PR Gate" in controller
     assert "## Protected Merge Eligibility" in controller
+
+
+def test_controller_defers_review_rounds_and_severity_to_coordination_standard() -> None:
+    controller = (
+        PROJECT_ROOT / "docs/codex_long_running_controller.md"
+    ).read_text(encoding="utf-8")
+    normalized = " ".join(controller.split())
+    review_lifecycle = " ".join(
+        _markdown_section(controller, "GitHub Review Lifecycle").split()
+    )
+    stop_conditions = " ".join(_markdown_section(controller, "Stop Conditions").split())
+
+    for retired_rule in [
+        "Herdr+Pi",
+        "review-loop analysis",
+        "fixer route",
+        "After two such reviews",
+        "Count completed formal reviews that returned P1 or P2",
+        "unresolved actionable finding",
+        "report no actionable findings",
+        "unresolved P1/high risk",
+    ]:
+        assert retired_rule not in normalized
+
+    for deferred_rule in [
+        "classified `MATERIAL` or `ADVISORY` under the materiality test in "
+        "`coordinator.md` section 3",
+        "blocking status comes from that classification alone",
+        "`ADVISORY` findings are recorded and never block merge",
+        "Review rounds, the review iteration limit, EXPERT escalation after that "
+        "limit, and the disposition of residual `MATERIAL` risk follow "
+        "`coordinator.md` section 3",
+        "This file sets no separate review-round count",
+    ]:
+        assert deferred_rule in review_lifecycle
+
+    assert "an unresolved `MATERIAL` finding or other high risk" in stop_conditions
 
 
 def test_agents_ablation_section_runs_after_each_completed_delivery() -> None:

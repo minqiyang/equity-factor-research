@@ -15,6 +15,40 @@ investment performance.
 
 ---
 
+## 2026-09-26 - The Controller Defers Review Rounds And Finding Severity To The Coordination Standard
+
+Context:
+
+- `docs/codex_long_running_controller.md` carried a two-review P1/P2 stop,
+  a review-loop analysis role, and a fixer route from Coordination Standard V7.
+  V8.5 sets a three-round review iteration limit followed by EXPERT, classifies
+  findings as `MATERIAL` or `ADVISORY`, and defines no review-loop analysis or
+  fixer route. The controller also blocked merge on any actionable finding,
+  while V8.5 lets `ADVISORY` findings proceed.
+
+Decision:
+
+- The coordination standard alone owns review rounds, the iteration limit,
+  EXPERT escalation, finding classification, and residual-risk disposition.
+  The controller points to `coordinator.md` section 3.
+- Merge eligibility requires zero unresolved `MATERIAL` findings, with an
+  explicit merge disposition for each owner-accepted `MATERIAL` finding.
+- P1 and P2 labels from the `AGENTS.md` review priorities rank review
+  attention; blocking status comes from the V8.5 classification.
+
+Rationale:
+
+- `AGENTS.md` assigns reviewer routing and dispatch to the coordination
+  standard; two sources with different loop limits and blocking rules gave a
+  coordinator conflicting instructions.
+
+Consequences:
+
+- A future change to review rounds or severity edits the coordination standard
+  only. Tests pin the deferral and the absence of the retired rules.
+
+---
+
 ## 2026-09-25 - Acceptance Of Milestone 4.7 Binding Implementation Plan Revision 11 And Ratification Of Premise VP-2 (Owner Item O-8)
 
 Context:

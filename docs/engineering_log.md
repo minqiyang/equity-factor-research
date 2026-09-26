@@ -12,6 +12,34 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - Controller alignment with Coordination Standard V8.5
+
+- Source: owner request following
+  `coord/reports/v8_review_20260923/eval_coordination_standard_opus.md`
+  (section 2.3, contradictions X1-X5). Baseline `2c07ee4`.
+- `docs/codex_long_running_controller.md` GitHub Review Lifecycle: removed the
+  two-review P1/P2 stop, the review-loop analysis role, and the fixer route,
+  none of which exist in V8.5 `routing_table.json`. Review rounds, the
+  three-round iteration limit, EXPERT escalation, and residual `MATERIAL`
+  risk now defer to `coordinator.md` section 3.
+- Severity: every finding is classified `MATERIAL` or `ADVISORY` under the
+  V8.5 materiality test; P1 and P2 labels from `AGENTS.md` rank review
+  attention only. Merge eligibility and the Stop Conditions count unresolved
+  `MATERIAL` findings; owner-accepted `MATERIAL` risk needs an explicit merge
+  disposition.
+- Naming: "Herdr+Pi" became "Herdr" in the controller and in the `AGENTS.md`
+  description in `scripts/repo_map.py`; `docs/repo_map.md` was regenerated.
+  Historical entries in `CHANGELOG.md` and the logs keep their original text.
+- Tests: `test_controller_applies_same_pr_lifecycle_authorization` and
+  `test_controller_does_not_assign_reviewer_seats` now pin the V8.5 wording;
+  new `test_controller_defers_review_rounds_and_severity_to_coordination_standard`
+  asserts that the retired rules stay absent and the deferral text stays present.
+- Out of scope: the owner's uncommitted tab-lifecycle and wait-duration edit
+  in the main checkout; it is compatible with V8.5 section 6 and stays with its
+  owner.
+
+---
+
 ## 2026-09-25 - M4.7a-0 statistical and portfolio core on golden fixtures
 
 - Source: `coord/v8_review_20260923/card_m4_7a0_engine_labels_and_wrapper.md`

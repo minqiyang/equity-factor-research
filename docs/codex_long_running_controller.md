@@ -96,9 +96,9 @@ re-enter this gate before acting on a different PR or changed scope.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI
   stabilize on the final stable current head, conduct formal review under the
-  live Herdr+Pi coordination standard. Reviewer routing, lane seats, quota, and
-  review-loop dispatch live in `coordinator.md`, `routing_table.json`, and
-  `model_bindings.json`. The reviewer is read-only on a clean root at that exact
+  live Herdr coordination standard. Reviewer routing, lane seats, quota, review
+  rounds, and finding resolution live in `coordinator.md`, `routing_table.json`,
+  and `model_bindings.json`. The reviewer is read-only on a clean root at that exact
   head, never the producer worktree.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
@@ -109,33 +109,30 @@ re-enter this gate before acting on a different PR or changed scope.
   spelling, date, count, or equivalent metadata-only edits may omit it.
 - Never repeat a request for an unchanged head. An actionable fix changes the
   head and requires validation, CI, and one new current-head review.
-- Count completed formal reviews that returned P1 or P2 on that PR. After two
-  such reviews, stop the review-and-fix loop. Dispatch the live coordination
-  standard's review-loop analysis on a clean read-only root, covering the whole
-  PR, exact head, open findings, and current contracts. Their reports go to the
-  coordinator. The coordinator then chooses, without inventing new authority:
-  EXPERT escalation for this task, continue in-scope fixes, or owner-class
-  acceptance/ignore of the remaining reported P1/P2 when the owner has
-  authorized that decision class.
-- After a keep-fixing decision and a landed in-scope fix, one additional formal
-  review of that new exact head is allowed. If it still reports P1/P2, the live
-  coordination standard's review-loop analysis judges whether to fix. If yes,
-  that standard's fixer route implements; if no, record ignore/accept. Do not
-  resume an unbounded review loop.
+- Every finding from any review channel is classified `MATERIAL` or
+  `ADVISORY` under the materiality test in `coordinator.md` section 3. A P1 or
+  P2 label from the `AGENTS.md` review priorities ranks review attention;
+  blocking status comes from that classification alone. `ADVISORY` findings
+  are recorded and never block merge.
+- Review rounds, the review iteration limit, EXPERT escalation after that
+  limit, and the disposition of residual `MATERIAL` risk follow
+  `coordinator.md` section 3. This file sets no separate review-round count.
 - A safe actionable finding may be fixed locally inside the already-authorized
   scope. After publishing and verifying the remediation, reply with its evidence
   and resolve only the addressed thread; leave an unverified or disputed thread
   open and stop. Publication, thread-write, and review-request actions still pass
   through the External Authorization Gate; remediation cannot expand the stage.
 - No PR is technically merge-eligible while its current head has any unresolved
-  actionable finding from any review channel, including PR-level comments or
-  independent audits that do not create a resolvable thread.
+  `MATERIAL` finding from any review channel, including PR-level comments or
+  independent audits that do not create a resolvable thread. Owner-accepted
+  `MATERIAL` risk needs an explicit merge disposition and never counts as zero.
 - For review-required PRs, the review seats in `routing_table.json` supply the
   formal reviews; GitHub `@codex review` is a retired channel. Pending, missing,
   or head-mismatched independent review evidence is ineligible. A
   review-required PR is technically merge-eligible only when required exact-head
-  independent reviews report no actionable findings, no review thread remains
-  unresolved, and all required checks and formal reviews pass.
+  independent reviews report `MATERIAL: 0` or an explicit merge disposition for
+  each owner-accepted `MATERIAL` finding, no review thread remains unresolved,
+  and all required checks and formal reviews pass.
 - Before claiming a provider, model, or quota is unavailable, probe it live in
   that same turn. Do not reuse an older pull request's limit message.
 - Merge wait requires the actual exact-head formal review body: pass or
@@ -146,7 +143,7 @@ re-enter this gate before acting on a different PR or changed scope.
 ## Post-Delivery Ablation
 
 Ablation experiments follow `AGENTS.md`. ABLATION dispatch lives in the live
-Herdr+Pi coordination standard. Revalidation of an ablated candidate follows
+Herdr coordination standard. Revalidation of an ablated candidate follows
 this file's ordinary QA and review gates; ablation revalidation itself does
 not trigger a recursive ablation loop.
 
@@ -224,8 +221,8 @@ action and requires separate explicit authorization.
 ## Stop Conditions
 
 Stop for missing authority; unclear tree/branch ownership; failed validation
-outside safe remediation; unresolved P1/high risk; unverifiable protection,
-checks, reviews, conflicts, or scope; destructive/security/privacy risk; or
+outside safe remediation; an unresolved `MATERIAL` finding or other high risk;
+unverifiable protection, checks, reviews, conflicts, or scope; destructive/security/privacy risk; or
 unresolved provenance, license, point-in-time, benchmark, cost, timing, or
 statistical choices. Also stop before unapproved vendor/private data,
 credentials, brokerage/orders, live behavior, or out-of-scope interpretation.
