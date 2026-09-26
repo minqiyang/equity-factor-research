@@ -12,6 +12,61 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-25 - M4.7a-1 retrieval and partition on a fake transport
+
+- Source: `coord/v8_review_20260923/card_m4_7a1_retrieval_and_partition.md`
+  under plan Revision 11 sections 1.3, 1.4, 1.5, and 7.2 (a-1). Baseline
+  `2c07ee4`. Every test drives the CLI through the injected transport; an
+  autouse fixture makes any real `urlopen` fail the test. No vendor file,
+  token, or private data was used.
+- `src/data/eodhd_retrieval.py` is the one module with network-capable
+  imports (`urllib.request`, `urllib.error`); T-STRUCT-1 walks the AST of every
+  module under `src`, `research`, and `scripts` and pins that allowlist. The
+  token is read once in `main`; `_request` raises `RetrievalTransportError`
+  after the `except` blocks close, so neither `__cause__` nor `__context__`
+  holds the `urllib` exception, and the message and 404 body have the raw,
+  `quote`, `quote(safe="")`, and `quote_plus` forms redacted. A test token
+  with `/`, space, `+`, `=`, and `&` makes the four forms distinct.
+- Manifest: one entry per `<table>/<CODE>.US` with the status, partition
+  statuses, role-keyed `authorized_files`, `provider_error_history`, and the
+  eod split-evidence pair; the per-code manifest replace is the only commit
+  point, and attempt files carry a microsecond UTC stamp. A stamp that would
+  reuse a committed path refuses. An entry is open when its status is not
+  terminal, any authorized file fails its hash, or (eod) its split evidence is
+  stale, so a plain resumed command repairs tampering and staleness.
+- Scale check: consecutive bars whose dates lie in the calendar file, compared
+  only when at most 20 calendar rows lie between them; a step above 15
+  percent needs a discovery split row within 5 calendar rows of the later bar.
+- `src/data/holdout_partition.py` derives the prospective seal from the
+  membership file (hash-verified through the manifest) and
+  `components_retrieved_utc_date`. Interpretation recorded for review:
+  `m*` itself must be in band; the plan's "later month-ends" read literally
+  would let an out-of-band month open the window.
+- Additions beyond the plan's vocabulary: `split_evidence_basis =
+  split_evidence_quarantined` for a quarantined discovery split partition
+  (a null basis failed open in ablation), and the refusals `data_dir_missing`,
+  `snapshot_id_invalid`, `manifest_missing`, and `coverage_start_undefined`.
+- Ablation: 17 guard removals each fail a targeted test and stay; the
+  log-line re-sanitize (log records carry only public URLs and typed fields),
+  a duplicate request-list computation, and a pre-refusal manifest commit
+  were removed. A 1,000-code fake-transport probe spent 34.4 s of local time
+  across splits, eod, and dividends plus 1.8 s in verify, with a 2.6 MB
+  compact manifest.
+- Tests: 68 new retrieval and seal tests plus T-STRUCT-1. The full suite runs
+  2,875 passed, 2 skipped, and 1 failed: the handoff-lag test reads `HEAD~1`,
+  which is `49eacdd` in the uncommitted tree; against the post-commit parent
+  `2c07ee4` its helper measures lag 0.
+
+## 2026-09-25 - Process Correction: Deferred Tab Closure And Extended Background Wait Durations
+
+- **Incident & Correction**: The owner identified two coordination process failures:
+  1. Premature tab/pane closure: Closing tabs or panes immediately upon stage or round completion prevents owner inspection of outputs and logs between rounds. The sole permitted time to close tabs/panes is when the next round actually starts, and only closing those confirmed no longer needed from the prior round.
+  2. Overly frequent background checks: Checking background tasks too quickly causes unnecessary churn. Background checks must lean towards longer wait intervals: if a task is expected to take 5 minutes, wait 10 minutes; if 10 minutes, wait 15–20 minutes. General execution and review tasks are typically 10 minutes or more.
+- **Durable Rule**:
+  - Tab lifecycle: Never close completed worker, reviewer, or QA tabs at the end of a round. Leave them open and intact for owner visibility until the subsequent round launches, at which point prior-round resources confirmed unneeded are retired.
+  - Wait duration scaling: Schedule background waits with substantial margin ($2\times$ estimated runtime for short tasks; 15–20 minutes for tasks estimated at $\sim 10$ minutes). Avoid short polling intervals.
+- **Owning Documents**: Rules recorded in `docs/codex_long_running_controller.md` under Process Failures and Waiting And Follow-Up.
+
 ## 2026-09-25 - M4.7a-0 statistical and portfolio core on golden fixtures
 
 - Source: `coord/v8_review_20260923/card_m4_7a0_engine_labels_and_wrapper.md`

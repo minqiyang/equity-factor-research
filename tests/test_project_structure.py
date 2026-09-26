@@ -1,3 +1,4 @@
+import ast
 from copy import deepcopy
 from datetime import date, datetime, timezone
 import hashlib
@@ -6784,3 +6785,77 @@ def test_generated_repo_map_references_canonical_ci_commands() -> None:
 
     repo_map_module = runpy.run_path(str(PROJECT_ROOT / "scripts/repo_map.py"))
     assert repo_map_module["build_repo_map"]() == repo_map
+
+
+NETWORK_MODULES = (
+    "urllib.request",
+    "urllib.error",
+    "http.client",
+    "http.server",
+    "socket",
+    "ssl",
+    "requests",
+    "httpx",
+    "aiohttp",
+    "websocket",
+    "websockets",
+    "yfinance",
+    "alpaca",
+    "alpaca_trade_api",
+    "ccxt",
+    "ib_insync",
+)
+NETWORK_ALLOWLIST = {"src/data/eodhd_retrieval.py"}
+
+
+def _imported_modules(tree: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            names.add(node.module)
+            names.update(f"{node.module}.{alias.name}" for alias in node.names)
+    return names
+
+
+def _network_imports(names: set[str]) -> set[str]:
+    return {
+        name
+        for name in names
+        if any(name == banned or name.startswith(f"{banned}.") for banned in NETWORK_MODULES)
+    }
+
+
+def test_t_struct_1_only_the_retrieval_module_imports_network_modules() -> None:
+    """M4.7 plan 1.3 T-STRUCT-1: exact dotted names and submodules; urllib.parse stays allowed."""
+
+    assert _network_imports({"urllib.parse", "urllib", "sslkeys", "requests_cache_free"}) == set()
+    assert _network_imports(
+        _imported_modules(ast.parse("from urllib import request\nimport http.client as c\nimport ssl"))
+    ) == {"urllib.request", "http.client", "ssl"}
+
+    offenders: dict[str, set[str]] = {}
+    scanned = 0
+    for root in ("src", "research", "scripts"):
+        for path in sorted((PROJECT_ROOT / root).rglob("*.py")):
+            relative = path.relative_to(PROJECT_ROOT).as_posix()
+            found = _network_imports(_imported_modules(ast.parse(path.read_text(encoding="utf-8"))))
+            scanned += 1
+            if found and relative not in NETWORK_ALLOWLIST:
+                offenders[relative] = found
+    assert scanned > 50
+    assert offenders == {}
+
+    retrieval = PROJECT_ROOT / "src/data/eodhd_retrieval.py"
+    allowed = _network_imports(_imported_modules(ast.parse(retrieval.read_text(encoding="utf-8"))))
+    assert allowed == {"urllib.request", "urllib.error"}
+
+    dependencies = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    declared = dependencies["project"]["dependencies"] + [
+        requirement
+        for group in dependencies["project"].get("optional-dependencies", {}).values()
+        for requirement in group
+    ]
+    declared_names = {re.split(r"[<>=!~\[ ;]", requirement, maxsplit=1)[0].lower() for requirement in declared}
+    assert declared_names.isdisjoint(set(NETWORK_MODULES))
