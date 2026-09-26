@@ -10,7 +10,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | --- | --- | --- |
 | `.agents/skills/` | Project-specific Codex Skills and workflow gates. | 2 mapped files |
 | `.github/` | Repository automation such as CI workflows. | 2 mapped files |
-| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 149 mapped files |
+| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 150 mapped files |
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 19 mapped files |
 | `src/backtest/` | Simulated long-only and long-short engines, market impact, style risk attribution, and metrics. | 7 mapped files |

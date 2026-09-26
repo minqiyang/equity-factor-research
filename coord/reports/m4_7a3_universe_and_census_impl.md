@@ -1,35 +1,121 @@
-# M4.7a-3 Implementation Report: Local Private Run Stopped At The Holdout Seal
+# M4.7a-3 Implementation Report: Option A Seal Rule, Local Private Run, And Blocked Coverage Census
 
 | Field | Value |
 | --- | --- |
-| Task/attempt | `m4_7a3-universe-and-census-a1` |
+| Task/attempt | `m4_7a3-universe-and-census-a1` (resumed after owner decision O-3) |
 | Card | `coord/v8_review_20260923/card_m4_7a3_universe_and_census.md` |
-| Plan | `coord/plans/m4_7_binding_plan.md` Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407` |
+| Plan | `coord/plans/m4_7_binding_plan.md` Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`, revised for the seal rule by owner decision O-3 Option A (`docs/decision_log.md`, 2026-09-26) |
 | Route, lane | `GENERAL_EXEC`, CRITICAL (structural: `ARCHITECTURE`, `SCHEMA_PROTOCOL_CONTRACT`, `SECURITY_AUTHORITY`) |
 | Author session | Claude Opus 5.5 (`claude-opus-5-5`) via Claude Code |
 | Base | `d15ef1d` (main after PR #266), verified live against `origin/main` |
 | Branch | `claude/m4_7a3-universe-census` |
 | Evidence ceiling | `DIAGNOSTIC_ONLY`; count-only aggregates; no network call |
-| Status | **STOPPED** at the seal: `holdout_overlaps_prior_exposure` (plan 7.2 a-3 stop condition, owner decision O-3) |
+| Status | Pipeline complete; census readiness **`blocked`** (R-CENSUS-1, 2, 8, 9; R-CENSUS-7 caveat); `vp2_revisit_required = true`; owner decisions O-7 and O-8 required |
 
 ## 1. Result
 
-Stage a-3 stopped at step 2 of the canonical sequence. `components` and
-`symbols` ran through the injected transport seam on the local EODHD
-acquisitions. The seal script then refused:
+The owner chose Option A for O-3. The seal rule now carries per-rule
+parameters, and the full canonical sequence ran on snapshot `real_v1`: seal,
+`calendar`, `splits`, `eod`, `dividends`, `verify`, the universe build, the
+terminal template, validation, projection, and the census. Retrieval is
+complete and snapshot integrity passes. The census readiness is `blocked`,
+because four readiness rules fail by margins that no Option A parameter
+addresses:
 
-```text
-holdout_overlaps_prior_exposure: holdout_end 2029-07-31 is after 2014-01-01
-```
+| Rule | Measured | Threshold | Main driver |
+| --- | --- | --- | --- |
+| R-CENSUS-1 in-band history | 6.92 years | 7 (Option A) | identity-adjusted counts confirm coverage from 2019-09-30, two months after the sealed 2019-07-31 |
+| R-CENSUS-2 common support | 20 gap windows; excluded 0.384 | 6; 0.05 | 19 windows from the 24 unresolved delistings in the window (none curated) |
+| R-CENSUS-8 IC supply | 32 months | 48 (Option A) | 16 IC months in dropped segments and 3 in gaps, from those windows |
+| R-CENSUS-9 unpriced member-days | 0.330 | 0.02 | 177,177 `entry_unusable_upper_bound` (143 entries without `StartDate`) and 83,718 `no_discovery_panel` (80 in-span refusals) |
+| R-CENSUS-7 holdout breadth | min 468 | tolerant band | caveat only |
 
-Plan 1.4 step 5 and the a-3 stop list in plan 7.2 route this refusal to the
-owner (O-3) and pause the stage with the typed reason. Every later command
-(`calendar`, `splits`, `eod`, `dividends`) refuses `holdout_seal_missing`
-without a seal, so the universe build, terminal curation, and census have no
-input. No seal, census JSON, census markdown, or readiness value exists, and
-this change commits none. No code was changed.
+R-CENSUS-3 (identity refusals 0.35 percent), R-CENSUS-4 (off-calendar
+0.0008 percent), R-CENSUS-5, R-CENSUS-6, and R-CENSUS-10 pass. I did not raise
+any cap other than the two Option A minima: reaching `ready` would need the
+excluded-fraction cap above 0.384 and the unpriced cap above 0.330, which is
+owner decision O-7, and the committed census states `blocked`.
 
-## 2. What ran
+The plan 7.2 stop on `blocked:*` readiness applies. The committed seal and
+census are the measured record of this snapshot; a-3 closes only after the
+owner acts on O-7 and O-8.
+
+## 2. Option A implementation (`eb8c5a5`)
+
+| File | Change |
+| --- | --- |
+| `src/data/holdout_partition.py` | `SEAL_RULES` keyed by `rule_version`: v1 (10-year holdout, cap 2014-01-01, 16 in-band years, 60 IC months) and Option A (1-year holdout, no cap, 7 in-band years, 48 IC months); `derive_holdout_window`, `build_prospective_seal`, and `write_prospective_seal` take the rule and `calendar_source`; `read_seal` refuses an unregistered rule; `read_holdout_end` reads through it |
+| `research/m4_7_holdout_seal.py` | `--rule-version` and `--calendar-source` |
+| `research/m4_7_coverage_census.py` | `derive_readiness(inputs, rule_version)` reads the minima from the seal rule and publishes `thresholds`; `calendar_source` from the seal; markdown header states the rule and calendar source |
+| `research/m4_7_universe_build.py` | `Snapshot.calendar_source` from the seal; build manifest label |
+| `research/m4_7_common_support.py`, `research/m4_7_sp500_pit_rerun.py` | `snapshot_support` takes `calendar_source`, so the census and the runner recompute the same `segments_sha256` |
+| `tests/test_m4_7_holdout_seal.py`, `tests/test_m4_7_coverage_census.py` | Option A window and seal fields, unknown-rule refusal, Option A readiness thresholds and edges |
+
+The default arguments keep every v1 seal and synthetic fixture unchanged
+apart from the new `calendar_source` field, whose default is the former
+hard-coded label. The Option A minima were fixed from dates alone before any
+census ran: 7 years is 1 holdout, 1 warm-up, and 5 discovery years; a one-year
+holdout on the `SPY.US` calendar allows at most 60 IC months with no gap
+window, and 48 is four years.
+
+## 3. Run on `real_v1`
+
+| Step | Outcome |
+| --- | --- |
+| Seal (Option A, `SPY.US_eod_dates_v1`) | holdout `[2019-07-31, 2020-07-31)`; prospective SHA-256 `93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882` |
+| `calendar` | 8,438 rows (1993-01-29 to 2026-08-07) |
+| `splits`, `eod`, `dividends` | each 815 `retrieved`, 4 `unavailable:missing_symbol`; 2 discovery `eod` partitions quarantined; no holdout quarantine |
+| `verify` | `retrieval_complete = true`; no hash mismatch, stale split evidence, or token leak |
+| Universe build | 818 intervals: 663 resolved, 143 `entry_missing_field`, 12 identity refusals; 882 permanent IDs; 83 episodes refused a panel (80 `split_basis_unverified:in_span_step_mismatch`, 2 `unexplained_deviation`, 1 `split_attribution_ambiguous`) |
+| Terminal evidence | 47 delisting candidates: 27 `unresolved`, 20 `deferred_holdout`; 0 engine events |
+| Census | `blocked`; JSON SHA-256 `5015a1d80389c8c69019d78011943765641935211a532dbe38ac7b9061095c5c`; confirmed seal SHA-256 `20e225205d25d2402cae78f066d6dbbb3f77622f78256652a4ffdf47e095125e`, confirmation `caveat` |
+
+Curation: no local source holds deal consideration terms. The cross-stream
+integration tree holds SEC Form 25 identity targets with few retrieved
+bodies, so every discovery candidate stays `unresolved` and enters `U`
+(R4, R6). Curating the 24 in-window events from public documents is the
+largest lever on R-CENSUS-2 and R-CENSUS-8 (O-5 curation capacity).
+
+Other census figures: discovery window `D0` 2021-08-31 to `D_last`
+2026-08-07; `max_reset_to_reset_rows` and segments in the public JSON;
+power projection `T_proj = 32`, `kill_reachable_projection = false`; IC
+months inside the static 50-name cohort window 100 percent and inside the
+historical evaluation window 6.25 percent; VP-1 `a1_volume_half =
+consistent` over 65 rows (plan stop not triggered); VP-2 exposure 178,859
+member-days with `S_D > 0.05` (22.5 percent of 795,198 eligible), so
+`vp2_revisit_required = true`.
+
+The in-span refusals carry 1,548 undeclared steps among 1,598 failing pairs,
+1,358 of them with residual in `(1e-3, 1e-2]`. The pattern is consistent with
+dividends applied to `adjusted_close` but absent from the 217 dividend tables
+that the local acquisition recorded as `EMPTY`; the pipeline reads an empty
+table as valid evidence of no rows.
+
+The census first ran on uncommitted code (`code_commit = 682e01f`). After the
+code commit the build, terminal, and census reran; the public JSON differs
+only in `code_commit`, now `eb8c5a5`.
+
+## 4. Owner decisions required
+
+1. **O-7 coverage shortfall** (R-CENSUS-2, R-CENSUS-8, R-CENSUS-9): curate the
+   24 unresolved in-window delistings from public documents; replace the empty
+   dividend tables with another source; decide the S9 upper-bound charge for
+   the 143 entries without `StartDate` (22.3 percent of eligible member-days by
+   itself); or register higher caps with their coverage cost stated.
+2. **O-8 re-decision** (VP-2): the census set `vp2_revisit_required`; the
+   ratification has expired, and b-2 needs a new disposition.
+3. **O-3 residual** (R-CENSUS-1): 6.92 in-band years against the declared 7,
+   from the identity-adjusted start 2019-09-30.
+4. **b-2 alignment**: the runner registration skeleton still carries
+   `MIN_IC_MONTHS = 60` and `calendar_source = GSPC.INDX_eod_dates_v1`; the
+   freeze must align both with the Option A seal.
+
+## 5. First pass: the v1 seal refusal
+
+`components` and `symbols` first ran under the v1 rule, and the seal refused
+`holdout_overlaps_prior_exposure` (holdout_end 2029-07-31 after 2014-01-01).
+
+### 5.1 What ran before the seal refusal
 
 ```mermaid
 flowchart LR
@@ -69,7 +155,7 @@ seam at 2026-08-07T00:24:58Z, the local response's acquisition time, so the
 open-interval rule of plan 1.4 step 1 uses the date the response was
 retrieved. The manifest's `snapshot.started_utc` carries the same instant.
 
-## 3. Measurements behind the refusal
+### 5.2 Measurements behind the v1 refusal
 
 Entry outcomes under the shared entry rule (`classify_membership_entries`):
 
@@ -114,110 +200,65 @@ well over a thousand distinct constituents since 1957; the counts climb
 steadily from 54 in 1957 to the band in 2019, which is the signature of a
 history that records current members and recent removals only. Imputing the
 143 missing start dates is prohibited (R6) and would still fail the seal rule.
-The shortfall is a vendor coverage limit of this membership source, and the
-M4.7 design (a sealed earliest decade ending by 2014-01-01 plus at least five
-discovery years) cannot be met from it.
-
-## 4. Owner decision required (O-3)
-
-Plan 7.6 O-3 names the choice between a shorter sealed window and breadth
-extension. Options that the measurements bear on:
-
-1. **Different membership source (new data authority).** A point-in-time
-   S&P 500 constituent history with full removals (for example, a licensed
-   index-membership file) replaces the components response; the plan's seal
-   and census run unchanged. This is the only option that keeps the plan's
-   sealed-decade design.
-2. **Plan revision to the seal rule.** For example, a holdout sealed after
-   the discovery window, or a shorter holdout. With the band starting
-   2019-07-31, about seven in-band years exist in total, which cannot supply
-   10 holdout years, 1 warm-up year, and 5 discovery years (R-CENSUS-1 needs
-   16). Any variant is a CRITICAL plan revision.
-3. **Survivor-cohort diagnostic.** Using the 675 retained entries as a
-   universe before 2019 is a static survivor-biased cohort; R2 permits it
-   only under `DIAGNOSTIC_ONLY` with the bias stated, and it never supports a
-   ranking, selection, promotion, or profitability claim.
-
-No option is chosen here; the choice is the owner's.
-
-## 5. Issues pre-identified for the resumed run
-
-These affect steps 3–6 when a-3 resumes and are recorded now so they are not
-rediscovered:
-
-- **Calendar source.** No local `GSPC.INDX` EOD response exists; the adapter
-  serves the `SPY.US` dates (8,438 bars, 1993-01-29 to 2026-08-07). The
-  universe build and census hard-code the label
-  `calendar_source = GSPC.INDX_eod_dates_v1`, so a census from this snapshot
-  would mislabel its calendar; R-CENSUS-5 would also need `coverage_start`
-  on or after 1993-01-29. A resumed run needs either a real `GSPC.INDX`
-  response or a label that states the substitution.
-- **Dividend coverage.** 217 of 815 local dividend requests are `EMPTY`,
-  including codes with long dividend histories whose raw response holds only
-  one post-cutoff row. The in-span step check (C73) will refuse episodes whose
-  adjusted series steps at undeclared distributions, and those member-days
-  count toward R-CENSUS-9.
-- **Code coverage.** The EOD acquisition holds 814 equity codes plus
-  `SPY.US`; membership codes absent from its ledger receive HTTP 404 and type
-  `unavailable:missing_symbol`.
+The shortfall is a vendor coverage limit of this membership source; the v1
+design (a sealed earliest decade ending by 2014-01-01 plus at least five
+discovery years) cannot be met from it, which led to owner decision O-3.
 
 ## 6. Committed files
 
 | File | Content |
 | --- | --- |
+| `src/data/holdout_partition.py`, `research/m4_7_holdout_seal.py`, `research/m4_7_coverage_census.py`, `research/m4_7_universe_build.py`, `research/m4_7_common_support.py`, `research/m4_7_sp500_pit_rerun.py` | Option A seal rule and declared calendar source (`eb8c5a5`) |
+| `tests/test_m4_7_holdout_seal.py`, `tests/test_m4_7_coverage_census.py` | Option A tests |
+| `reports/m4_7_coverage_census.json`, `reports/m4_7_coverage_census.md` | Public census aggregates, readiness `blocked` |
+| `docs/preregistrations/m4_7_holdout_seal_v1.json` | Option A seal with confirmation `caveat` |
+| `docs/decision_log.md` | O-3 Option A decision, parameters, result, open decisions |
+| `docs/engineering_log.md` | Run authorization and provenance; the stop; the resumed run |
+| `docs/current_handoff.md` | Refreshed to base `d15ef1d` |
+| `docs/repo_map.md` | Regenerated (mapped `docs/` file count) |
 | `coord/reports/m4_7a3_universe_and_census_impl.md` | This report |
-| `docs/engineering_log.md` | Run authorization, provenance, stop, and snapshot state |
-| `docs/current_handoff.md` | Refreshed to base `d15ef1d`; blocker and next action |
-
-Not committed, because they do not exist: `reports/m4_7_coverage_census.json`,
-`reports/m4_7_coverage_census.md`, `docs/preregistrations/m4_7_holdout_seal_v1.json`.
 
 ## 7. Privacy (R11)
 
-The repository receives count-only aggregates, SHA-256 digests, acquisition
-identifiers, and the typed refusal. No ticker, permanent ID, provider row,
-provider response, membership list, credential, or private absolute path is
-committed. The snapshot's byte scan finds no occurrence of the placeholder
-token.
+The public census and seal hold counts, fractions, month-level windows,
+hashes, and typed codes. A scan of the three public files finds no member
+code, permanent ID, or private path; the only exchange-suffixed strings are
+the benchmark calendar label `SPY.US_eod_dates_v1` and the seal's
+`dates/<CODE>.US.parquet` pattern. Provider rows, membership lists, the
+adapter, and the snapshot stay under `<private_data_root>`.
 
 ## 8. Verification
 
-Run on the committed head `d2995ad` (the amend changes this report only).
+Run on head `cc2cd7b` (the amend that adds this table changes this report only).
 
 | Check | Result |
 | --- | --- |
-| `.venv/bin/python -m pytest tests/test_governance_constitution.py tests/test_m4_7_*.py tests/test_project_structure.py` | 336 passed |
+| `.venv/bin/python -m pytest tests/test_governance_constitution.py tests/test_m4_7_*.py tests/test_project_structure.py tests/test_eodhd_retrieval.py` | 414 passed |
 | `ruff check . --exclude .venv` | all checks passed |
 | `git diff --check d15ef1d...HEAD` | clean |
-| Token byte scan of the private snapshot | no match |
+| Public-file privacy scan (member codes, `#E` IDs, private paths) | no match |
+| Census rerun after the code commit | public JSON identical except `code_commit` |
 
-`.venv/bin/pytest` run directly fails collection with
-`ModuleNotFoundError: research` because it omits the repository root from
-`sys.path`; `python -m pytest`, the CI invocation, includes it. Before the
-commit, `test_handoff_trails_its_base_by_at_most_one_merged_pr` failed,
-because it reads `HEAD~1` as the base tip; it passes on the committed head.
+`docs/repo_map.md` was regenerated with `scripts/repo_map.py`, because the
+committed seal adds one mapped file under `docs/`.
 
 ## 9. Ablation
 
-No repository code changed; the ablation covers the private adapter.
-
-- Simplification attempt (kept): the window filter's sentinel defaults for
-  absent `from` and `to` were removed, because the retrieval module always
-  sends `from` and the adapter always passes `--to` on table requests; the
-  filter now reads both keys directly. A clean rebuild of `components` and
-  `symbols` with the simplified adapter reproduced every manifest file hash
-  and the same seal refusal.
-- Guard-necessity checks (retained): the `from` half of the filter removes
-  the pre-1980 rows counted in section 2, so the written tables match the
-  request window the manifest records; the `status != "SUCCESS"` branch that
-  raises HTTP 404 is dead on this ledger (only `SUCCESS` and `EMPTY` occur)
-  and stays as a fail-closed guard against serving a failed response's bytes.
-- Limitation: the table-command paths of the adapter (`calendar`, `splits`,
-  `eod`, `dividends`) have not executed, because the seal refused first.
+- Guard-necessity check (retained): removing the unregistered-rule refusal
+  from `read_seal` fails `test_a_seal_with_an_unknown_rule_version_is_refused`,
+  and `derive_readiness` then raises an untyped `KeyError`.
+- Simplification attempt (rejected): a `date.max` sentinel for the Option A
+  cap removes the two `is None` branches with identical readiness, and fails
+  only `test_option_a_readiness_thresholds_follow_the_seal_rule`, because the
+  public thresholds would publish a fictitious cap `9999-12-31` instead of
+  `null`.
+- Private adapter (first pass): the window filter's sentinel defaults were
+  removed and a clean rebuild reproduced every manifest file hash; the `from`
+  filter and the non-`SUCCESS` 404 guard are retained. Its table paths have
+  now executed on the full run.
 
 ## 10. Next gate
 
-Owner decision O-3 on the membership shortfall. After the decision, a-3
-resumes from the private manifest: under option 1 with a new `components`
-retrieval into a fresh snapshot, under option 2 after the plan revision is
-accepted. M4.7b-2 (registration freeze) stays blocked on a-3.
+Owner decisions O-7 and O-8 (and the O-3 residual). After them, a-3 reruns
+the build and census from the private manifest; M4.7b-2 stays blocked on a-3
+and must align the runner registration with the Option A seal.

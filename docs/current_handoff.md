@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-26 for the Milestone 4.7 stage a-3 seal stop (owner decision O-3).
+Updated: 2026-09-26 for the Milestone 4.7 stage a-3 Option A run (census blocked).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -78,9 +78,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `coord/reports/m4_7a2_universe_and_census_impl.md`.
 - M4.7b-1 (PR #266): the runner in `research/m4_7_sp500_pit_rerun.py`, tested on
   the committed fixture universe; report `coord/reports/m4_7b1_runner_integration_impl.md`.
-- M4.7a-3 candidate (branch `claude/m4_7a3-universe-census`): owner-authorized local
-  run; `components` and `symbols` ran offline, then the seal refused
-  `holdout_overlaps_prior_exposure`; report `coord/reports/m4_7a3_universe_and_census_impl.md`.
+- M4.7a-3 candidate (branch `claude/m4_7a3-universe-census`): O-3 Option A seal rule
+  (one-year holdout, 7 in-band years, 48 IC months, declared `calendar_source`) and the
+  full offline run on `real_v1`; census `blocked`; report
+  `coord/reports/m4_7a3_universe_and_census_impl.md`.
 
 ## Current Research Gate Summary
 
@@ -93,15 +94,15 @@ rerun, is the active research milestone. The evidence ceiling remains
 
 ## Immediate Blockers Or Owner Decisions
 
-- O-3 (plan 7.6) blocks a-3: the local EODHD components response reaches the
-  band `[470, 530]` only at 2019-07-31, so `holdout_end` is 2029-07-31, after
-  2014-01-01; 143 of 818 entries lack `StartDate`. The owner chooses a full-history
-  membership source, a seal-rule plan revision, or a stated survivor diagnostic.
+- O-7 blocks a-3: census readiness `blocked` on R-CENSUS-2 (20 windows, excluded
+  0.384), R-CENSUS-8 (32 IC months), R-CENSUS-9 (unpriced 0.330), and R-CENSUS-1
+  (6.92 in-band years); 24 delistings uncurated; 143 entries lack `StartDate`.
+- O-8 re-decision: the census set `vp2_revisit_required` (22.5 percent `S_D > 0.05`).
 
 ## Next Safe Action
 
-- Owner decision O-3 on the membership shortfall; a-3 then resumes from the
-  private manifest. M4.7b-2 (registration freeze) stays blocked on a-3.
+- Owner decisions O-7 and O-8, then the a-3 build and census rerun; M4.7b-2 stays blocked
+  and must align the runner's `MIN_IC_MONTHS` and `calendar_source` with the seal.
 
 ## Source Routing
 

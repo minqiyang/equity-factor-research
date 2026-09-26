@@ -12,6 +12,53 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7a-3 resumed under Option A: pipeline complete, census blocked
+
+- Source: the owner's O-3 decision (Option A, recorded in
+  `docs/decision_log.md`), relayed by the coordinator on 2026-09-26, with the
+  same run authorization as the entry below.
+- Code (`eb8c5a5`): `SEAL_RULES` keyed by `rule_version` in
+  `src/data/holdout_partition.py` (v1 default; Option A one-year holdout, no
+  prior-exposure cap, 7 in-band years, 48 IC months); `read_seal` refuses an
+  unregistered rule; the seal script gains `--rule-version` and
+  `--calendar-source`; the seal record declares `calendar_source`, which
+  `Snapshot`, `snapshot_support` (both callers), the build manifest, and the
+  census read; `derive_readiness` takes the seal rule and publishes its
+  thresholds; the census markdown header states the rule and calendar source.
+  Tests: `test_option_a_seal_rule_seals_one_year_without_the_prior_exposure_cap`,
+  `test_a_seal_with_an_unknown_rule_version_is_refused`, and
+  `test_option_a_readiness_thresholds_follow_the_seal_rule`.
+- Run on `real_v1`: seal under Option A (holdout 2019-07-31 to 2020-07-31,
+  prospective SHA-256 `93ce6e5a…9882`); `calendar` 8,438 rows; `splits`,
+  `eod`, and `dividends` 815 `retrieved` and 4 `unavailable:missing_symbol`
+  each; `verify` `retrieval_complete = true`, no hash mismatch, no stale split
+  evidence, no token leak; two discovery `eod` partitions quarantined. Build:
+  663 intervals resolved, 83 episodes refused a panel (80
+  `in_span_step_mismatch`). Terminal: 47 candidates, 27 `unresolved` and 20
+  `deferred_holdout`; no local source holds deal terms (the cross-stream
+  integration tree holds Form 25 identity targets), so none is curated.
+- Census (code `eb8c5a5`, JSON SHA-256 `5015a1d8…5c5c`): readiness `blocked`
+  on R-CENSUS-1 (6.92 in-band years), R-CENSUS-2 (20 windows, excluded
+  0.384), R-CENSUS-8 (32 IC months), and R-CENSUS-9 (unpriced 0.330), with
+  the R-CENSUS-7 caveat; `vp2_revisit_required = true`. The R-CENSUS-9
+  numerator is 262,175 member-days: 177,177 `entry_unusable_upper_bound`
+  (143 entries times 1,239 rows), 83,718 `no_discovery_panel`, 1,239
+  `post_last_bar_deferred_holdout`, and 41 others. The in-span refusals carry
+  1,548 undeclared steps among 1,598 failing pairs, 1,358 of them with
+  residual in `(1e-3, 1e-2]`, consistent with dividends that the vendor
+  applied to `adjusted_close` but omitted from the 217 empty dividend tables.
+- A first census run on uncommitted code carried `code_commit = 682e01f`; the
+  build, terminal, and census reran after the code commit, and the public
+  JSON differs only in `code_commit`.
+- Not changed: every cap other than the two Option A minima. Raising the
+  R-CENSUS-2 or R-CENSUS-9 caps to reach `ready` is owner decision O-7.
+- Ablation: the unknown-rule refusal in `read_seal` is necessary (without it
+  the census raises an untyped `KeyError` and the refusal test fails); a
+  `date.max` sentinel for the Option A cap removes two `is None` branches
+  with identical readiness but publishes a fictitious `9999-12-31` cap, so
+  `None` stays.
+- Verification: see `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
 ## 2026-09-26 - M4.7a-3 owner-authorized local private data run
 
 - Authorization (O-4, a-3): the coordinator's GENERAL_EXEC dispatch of
