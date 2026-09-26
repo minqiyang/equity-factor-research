@@ -119,6 +119,9 @@ def test_long_terminal_cash_and_surviving_book_hand_oracle(kind, value):
         assert holdings(kind, book).loc[dates[5], "SEC_B"] == pytest.approx(
             -50 / expected_equity
         )
+    assert book.assumptions["terminal_settlement_contract"] == (
+        "prior_observed_close_to_consideration_at_completion_date_row_v2"
+    )
     assert len(book.terminal_event_log) == 1
     assert book.terminal_event_log[0]["incoming_weight"] == weight
     assert book.terminal_event_log[0]["cashflow"] == pytest.approx(expected_proceeds)

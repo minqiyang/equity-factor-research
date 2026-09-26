@@ -227,20 +227,48 @@ def newey_west_mean_tstat(
     elif isinstance(lags, bool) or not isinstance(lags, int) or lags < 0:
         raise ValueError("lags must be a non-negative integer")
 
-    mean = float(clean.mean())
-    residual = clean - mean
-    gamma0 = float(np.dot(residual, residual) / count)
-    hac = gamma0
+    hac = newey_west_long_run_variance(clean, lags)
+    if math.isnan(hac):
+        return math.nan
+    standard_error = math.sqrt(hac / count)
+    if standard_error == 0.0:
+        return math.nan
+    return float(float(clean.mean()) / standard_error)
+
+
+def newey_west_long_run_variance(values: np.ndarray | pd.Series, lags: int) -> float:
+    """Bartlett long-run variance ``gamma_0 + 2 * sum (1 - k / (q + 1)) * gamma_k``.
+
+    Each autocovariance ``gamma_k`` divides by the series length. Any NaN or
+    infinite value raises ``ValueError`` (PIT-009). An empty or constant
+    series, or a non-finite or non-positive estimate, returns ``NaN``
+    (undefined); the constant check keeps mean-subtraction rounding residue
+    from reading as a positive variance.
+    """
+
+    if isinstance(lags, bool) or not isinstance(lags, int) or lags < 0:
+        raise ValueError("lags must be a non-negative integer")
+    clean = _finite_series(values if isinstance(values, pd.Series) else pd.Series(values), name="values")
+    count = int(clean.size)
+    if count == 0 or np.all(clean == clean[0]):
+        return math.nan
+    residual = clean - float(clean.mean())
+    hac = float(np.dot(residual, residual) / count)
     for lag in range(1, lags + 1):
         gamma = float(np.dot(residual[lag:], residual[:-lag]) / count)
         weight = 1.0 - lag / (lags + 1.0)
         hac += 2.0 * weight * gamma
     if not math.isfinite(hac) or hac <= 0.0:
         return math.nan
-    standard_error = math.sqrt(hac / count)
-    if standard_error == 0.0:
+    return hac
+
+
+def mde_from_long_run_variance(lrv: float, count: int, z: float) -> float:
+    """Minimum detectable mean ``z * sqrt(lrv / count)``; ``NaN`` when undefined."""
+
+    if not math.isfinite(lrv) or lrv <= 0.0 or count < 1:
         return math.nan
-    return float(mean / standard_error)
+    return float(z * math.sqrt(lrv / count))
 
 
 def information_coefficient_summary(
@@ -666,6 +694,8 @@ __all__ = [
     "factor_quantile_spread",
     "factor_rank_information_coefficient",
     "information_coefficient_summary",
+    "mde_from_long_run_variance",
+    "newey_west_long_run_variance",
     "newey_west_mean_tstat",
     "probability_of_backtest_overfitting",
 ]

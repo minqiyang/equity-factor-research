@@ -1059,8 +1059,39 @@ bounded source rows; a one-row evaluation retains its existing typed refusal.
 
 The synthetic command `python -m research.pit_universe_delisting_demo` records
 static/PIT comparisons, identity reuse, cash settlement, and retained missing-
-evidence refusals. Delayed recoveries, unpriced receivables, stock or mixed
-consideration, and formal real-data lineage promotion remain open evidence gates.
+evidence refusals. Delayed recoveries, unpriced receivables, and formal
+real-data lineage promotion remain open evidence gates.
+
+### M4.7 consideration bases
+
+Milestone 4.7 stage a-0 widens the accepted `return_basis` literal to the
+frozen set `ACCEPTED_TERMINAL_BASES` in `src/backtest/portfolio.py`, which both
+engines use. The engine refuses every other string with
+`terminal_events_invalid`.
+
+| Consideration | Terminal return | `return_basis` |
+| --- | --- | --- |
+| Cash, or evidenced zero recovery (`-1`) | `c / P_ref - 1` | `prior_observed_close_to_cash` |
+| Stock | `r * P_acq(V) / P_ref - 1` | `prior_observed_close_to_stock_consideration_valued_at_completion_date_close` |
+| Mixed | `(c + r * P_acq(V)) / P_ref - 1` | `prior_observed_close_to_mixed_consideration_valued_at_completion_date_close` |
+
+`L` is the target's last observed bar (the event's `reference_date`), `S = L + 1`
+is the settlement row (the event's `effective_date`), and `P_ref` is the target
+raw close at `L`. The valuation row `V = row(completion_date)` satisfies
+`V in {L, S}`, so every price inside the terminal return is observable at the
+close of `V <= S`. The engine receives only the finished `terminal_return`.
+Settlement is unchanged: the engine credits cash on `S` with the arithmetic,
+turnover exclusion, cost treatment, and refusal codes of this M4.4 section.
+
+Both result types record `terminal_settlement_contract:
+prior_observed_close_to_consideration_at_completion_date_row_v2`, which
+replaces `prior_observed_close_to_cash_v1`, and `terminal_basis_counts`, the
+event count per accepted label with zero for absent labels. Event-free calls
+omit both keys. `resolve_pit_universe_mask(constituent_intervals,
+terminal_events, dates, assets, *, signal_lag_periods=1)` returns the exact
+mask `_resolve_pit_universe` hands the target builder after
+`_prepare_terminal_events`, so research code reads the engines' resolved
+universe by construction.
 
 ## M4.5 Optional Daily Market Impact and Self-Financing Cash
 

@@ -58,6 +58,28 @@ class UniverseMaskedSignalsResult:
     low_coverage_dates: tuple[pd.Timestamp, ...]
 
 
+def calculate_amihud_illiquidity(
+    returns: pd.DataFrame,
+    dollar_volume: pd.DataFrame,
+    window: int = 63,
+) -> pd.DataFrame:
+    """Mean of ``abs(return) / dollar_volume`` over the full ``window`` rows ending at ``t``.
+
+    ``dollar_volume`` must be split close times volume on one basis (R7). A
+    missing return, or a missing or zero dollar volume, makes that term missing,
+    and any missing term inside the window makes the value missing (R6).
+    """
+
+    _validate_positive_integer(window, "window")
+    return_panel = validate_panel_data(returns, name="returns")
+    turnover = _validate_volume_panel(dollar_volume)
+    if not return_panel.index.equals(turnover.index) or not return_panel.columns.equals(turnover.columns):
+        raise ValueError("returns and dollar_volume must share index and columns")
+
+    terms = return_panel.abs() / turnover.where(turnover.gt(0.0))
+    return terms.rolling(window, min_periods=window).mean()
+
+
 def rolling_average_daily_volume(
     volume: pd.DataFrame,
     *,
@@ -538,6 +560,7 @@ __all__ = [
     "LiquidityUniverseResult",
     "UniverseMaskedSignalsResult",
     "apply_universe_mask_to_signals",
+    "calculate_amihud_illiquidity",
     "average_daily_volume_eligibility",
     "average_dollar_volume_eligibility",
     "construct_liquidity_universe",

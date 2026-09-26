@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-25 - M4.7a-0 statistical and portfolio core on golden fixtures
+
+- Source: `coord/v8_review_20260923/card_m4_7a0_engine_labels_and_wrapper.md`
+  under plan Revision 11 section 7.2 (a-0). Baseline `49eacdd`. Synthetic
+  fixtures only; no vendor file, snapshot, or network access.
+- Engines: `_prepare_terminal_events` accepts the frozen
+  `ACCEPTED_TERMINAL_BASES` (cash, stock, and mixed completion-date labels)
+  and refuses every other string with `terminal_events_invalid`. Both result
+  types record `terminal_settlement_contract:
+  prior_observed_close_to_consideration_at_completion_date_row_v2` and
+  `terminal_basis_counts` (zero for absent labels); event-free calls omit
+  both. Settlement arithmetic is unchanged. `resolve_pit_universe_mask` wraps
+  `_prepare_terminal_events` and `_resolve_pit_universe` with no added logic.
+- Factors: `calculate_52_week_high_proximity`, `calculate_rolling_market_beta`
+  (ddof=1, full window, zero market variance undefined), and
+  `calculate_amihud_illiquidity` (zero or missing dollar volume makes the term
+  missing); `research/m4_7_family_a.py` freezes IDs, parameters, directions,
+  and `warmup_rows_f = (252, 251, 21, 252, 252, 63)`.
+- Statistics: `newey_west_long_run_variance` now carries the Bartlett
+  arithmetic that `newey_west_mean_tstat` calls; a constant series returns
+  undefined because mean subtraction of 0.05 left a 2.4e-34 positive residue.
+  `mde_from_long_run_variance` reproduces `MDE_f = 0.0331007` and
+  `MDE_single = 0.0245945`. `summarize_multiple_testing` gains `family_sizes`
+  and `statistic_key`; its default path produced byte-identical JSON against
+  the `49eacdd` implementation on an 11-record inventory.
+- Support core: `research/m4_7_common_support.py` computes `H(a)` from the
+  runs of the engine-resolved mask, `G_base`, gap windows (clipped to
+  `[D0, D_last]`), terminal-reset peeling, segments, `max_reset_to_reset_rows`,
+  `T_IC` with typed exclusions, terminal-aware labels keyed by `t = r - 1`, and
+  typed monthly Rank IC. The Round 2 counterexample peels to a segment ending
+  2024-05-14 and both engines plus the equal-weight benchmark complete there
+  and refuse `execution_price_invalid` at 2024-05-15.
+- Ablation: peeling runs one pass in date order; a 400-fixture fuzz matched
+  the literal repeat-until-stable loop 400/400, and the merge after peeling
+  never fired (removed). Eight guards were disabled one at a time; seven fail
+  a targeted test, and the Amihud zero-volume guard is behaviorally redundant
+  under pandas' rolling inf handling and stays to state the R6 rule.
+- `docs/current_handoff.md` restores the PR #180/#181 checkpoint sentence that
+  `test_cca1_correction_checkpoint_is_consistent_across_active_sources` pins.
+
 ## 2026-09-24 - AUDIT-M4-01 and AUDIT-M4-02 repair
 
 - Source: the M4.2–M4.4 pre-flight audit on `770cfe5`
