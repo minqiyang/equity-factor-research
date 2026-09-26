@@ -604,8 +604,30 @@ def _max_drawdown(equity: pd.Series) -> float:
     return float(-(equity / equity.cummax() - 1.0).min())
 
 
-def book_statistics(results: list[Any], book: str) -> dict[str, Any]:
-    """Pooled daily statistics over the measured rows and the per-segment record of plan 4.3."""
+def book_halves(net: pd.Series, boundary: str | None) -> dict[str, Any]:
+    """Descriptive half-sample statistics split at the factor's IC-half boundary (plan 4.4, 6.8).
+
+    ``boundary`` is the reset date of the first IC month of the second half.
+    A daily return dated on or before it ends a holding period that began
+    before that reset, so it belongs to the first half; later returns belong
+    to the second half.
+    """
+    if boundary is None:
+        return {"status": "undefined_no_ic_boundary", "boundary_reset_date": None}
+    cut = pd.Timestamp(boundary)
+
+    def describe(part: pd.Series) -> dict[str, Any]:
+        return {"rows": len(part), "mean_daily_net_return": float(part.mean()) if len(part) else None,
+                "annualized_volatility": float(part.std(ddof=1) * math.sqrt(252)) if len(part) > 1 else None,
+                "return_test": return_test_statistics(part, periods_per_year=252)}
+
+    first, second = net[net.index <= cut], net[net.index > cut]
+    status = "evaluated" if len(first) and len(second) else "undefined_boundary_outside_measured_rows"
+    return {"status": status, "boundary_reset_date": boundary, "first": describe(first), "second": describe(second)}
+
+
+def book_statistics(results: list[Any], book: str, boundary: str | None = None) -> tuple[dict[str, Any], pd.Series]:
+    """Pooled daily statistics over the measured rows, the per-segment record of plan 4.3, and the halves."""
     net = pd.concat([r.returns.iloc[1:] for r in results])
     held = [(r.net_holdings if book == "long_short" else r.holdings).iloc[-1] for r in results]
     segments = [{
@@ -623,14 +645,14 @@ def book_statistics(results: list[Any], book: str) -> dict[str, Any]:
         "pooled_max_drawdown": max(s["max_drawdown"] for s in segments),
         "hac_boundary_adjacency_pairs": (len(results) - 1) * int(test["hac_lags"]),
         "total_lag_products": len(net) * int(test["hac_lags"]),
-        "mean_daily_net_return": float(net.mean()),
+        "mean_daily_net_return": float(net.mean()), "halves": book_halves(net, boundary),
     }, net
 
 
 def book_trial(
     book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex, segments: Sequence[Any], *,
     cost: dict[str, float], intervals: pd.DataFrame, events: pd.DataFrame, spy: pd.Series, spy_daily: pd.Series,
-    equal_weight: pd.Series | None, objective: dict[str, Any],
+    equal_weight: pd.Series | None, objective: dict[str, Any], boundary: str | None = None,
 ) -> tuple[dict[str, Any], pd.Series | None, list[Any] | None]:
     """One book trial: a Class II error becomes a ``failed`` record; a Class I reason raises ``RunnerStop`` (plan 4.5).
 
@@ -640,7 +662,7 @@ def book_trial(
     try:
         results = run_segmented_book(book, prices, signal, calendar, segments, intervals=intervals, events=events,
                                      cost=cost, benchmark=spy if book == "long_only" else None)
-        fields, net = book_statistics(results, book)
+        fields, net = book_statistics(results, book, boundary)
     except (BacktestValidationError, ValueError, ArithmeticError) as exc:
         return _failure(exc), None, None
     fields["status"] = "evaluated"
@@ -782,13 +804,19 @@ def run_rerun(
     output_dir: Path | str, census_json: Path | str = CENSUS_JSON, seal_record: Path | str = SEAL_RECORD,
     code_commit: str | None = None,
 ) -> dict[str, Any]:
-    """Run the registered rerun and write the report, sidecar, and trials JSONL; return the sidecar."""
+    """Run the registered rerun and write the report, sidecar, and trials JSONL; return the sidecar.
+
+    The registration hash and protocol are checked before any output file is
+    opened. A refusal at that stage writes nothing, so the outputs of an
+    earlier run stay byte-identical, and returns the sidecar with
+    ``outputs_written = False``. Every later Class I stop writes the sidecar,
+    the report, and the trials recorded so far.
+    """
     out = Path(output_dir)
     registration_bytes = Path(registration_path).read_bytes()
     actual = sha256_bytes(registration_bytes)
     state: dict[str, Any] = {"header": {"registration_sha256": actual, "registration_sha256_expected": registration_sha256,
                                         "code_commit": code_commit if code_commit is not None else _code_commit()}}
-    trials = _Trials(out / TRIALS, actual, {})
     try:
         if actual != registration_sha256:
             raise RunnerStop("registration_hash_mismatch", "registration bytes differ from --registration-sha256")
@@ -797,6 +825,12 @@ def run_rerun(
             costs = check_registration(registration)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise RunnerStop("registration_invalid", f"{type(exc).__name__}: {exc}") from exc
+    except RunnerStop as stop:
+        return _clean({**_sidecar_head(), **state, "run_status": "stopped_before_inference", "outputs_written": False,
+                       "stop": {"reason": stop.reason, "detail": stop.detail, "trial": None,
+                                "trial_records_retained": 0}})
+    trials = _Trials(out / TRIALS, actual, {})
+    try:
         bound = bind_snapshot(Path(snapshot_dir), registration, Path(census_json), Path(seal_record))
         loaded = load_member_panels(bound)
         _execute(state, trials, registration, costs, bound, loaded, Path(snapshot_dir))
@@ -805,12 +839,16 @@ def run_rerun(
         state["run_status"] = "stopped_before_inference"
         state["stop"] = {"reason": stop.reason, "detail": stop.detail, "trial": stop.trial,
                          "trial_records_retained": len(trials.records)}
-    sidecar = _clean({"schema_version": "m4_7_sp500_pit_rerun_result_v1", "evidence_ceiling": "DIAGNOSTIC_ONLY",
-                      "formal_universe_evidence_eligible": False, "formal_terminal_evidence_eligible": False,
-                      **state, "trials_jsonl_sha256": sha256_bytes((out / TRIALS).read_bytes())})
+    sidecar = _clean({**_sidecar_head(), **state, "outputs_written": True,
+                      "trials_jsonl_sha256": sha256_bytes((out / TRIALS).read_bytes())})
     write_bytes(out / SIDECAR, (json.dumps(sidecar, sort_keys=True, indent=2, allow_nan=False) + "\n").encode())
     write_bytes(out / REPORT, render_report(sidecar).encode("utf-8"))
     return sidecar
+
+
+def _sidecar_head() -> dict[str, Any]:
+    return {"schema_version": "m4_7_sp500_pit_rerun_result_v1", "evidence_ceiling": "DIAGNOSTIC_ONLY",
+            "formal_universe_evidence_eligible": False, "formal_terminal_evidence_eligible": False}
 
 
 def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any], costs: dict[str, dict[str, float]],
@@ -961,7 +999,8 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                         try:
                             fields, net, results = book_trial(
                                 book, prices, signal, calendar, valid, cost=costs[cost_case], spy=spy,
-                                spy_daily=spy_daily, equal_weight=ew_net, objective=objective, **common)
+                                spy_daily=spy_daily, equal_weight=ew_net, objective=objective,
+                                boundary=(primary[factor_id].get("halves") or {}).get("boundary_reset_date"), **common)
                         except RunnerStop as stop:
                             stop.trial = f"{family}:{factor_id}:{book}:{cost_case}"
                             raise
@@ -1132,8 +1171,10 @@ def render_report(sidecar: dict[str, Any]) -> str:
         lines.append("")
     lines += ["## Family A books", "",
               "| Factor | Book | Cost case | Status | Mean daily net | HAC p | Turnover | Costs | Max drawdown | "
-              "Within DD budget | Excess vs SPY | Excess vs EW | Tracking error | IR | IR within | TE within |",
-              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+              "Within DD budget | Excess vs SPY | Excess vs EW | Tracking error | IR | IR within | TE within | Halves | "
+              "Half 1 mean net | Half 2 mean net |",
+              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- "
+              "| --- |"]
     for record in sidecar["books"].values():
         spy_x, ew_x = record.get("excess_vs_spy") or {}, record.get("excess_vs_equal_weight") or {}
         lines.append("| " + " | ".join(_fmt(v) for v in (
@@ -1142,13 +1183,18 @@ def render_report(sidecar: dict[str, Any]) -> str:
             record.get("pooled_turnover"), record.get("pooled_trading_costs"), record.get("pooled_max_drawdown"),
             record.get("max_drawdown_within_budget"), spy_x.get("excess_total_return"), ew_x.get("excess_total_return"),
             spy_x.get("tracking_error"), spy_x.get("information_ratio"), record.get("information_ratio_within_budget"),
-            record.get("tracking_error_within_budget"))) + " |")
+            record.get("tracking_error_within_budget"), (record.get("halves") or {}).get("status"),
+            ((record.get("halves") or {}).get("first") or {}).get("mean_daily_net_return"),
+            ((record.get("halves") or {}).get("second") or {}).get("mean_daily_net_return"))) + " |")
     lines += ["", f"- The zero-cost case is diagnostic only (R8). Family B books by status: "
                   f"{sidecar['family_b_books']['status_counts']}", "",
               "## Benchmarks", ""]
     ew = sidecar["benchmarks"]["equal_weight_pit"]
-    lines += [f"- Equal-weight PIT benchmark: status `{ew['status']}`, mean daily net {_fmt(ew['mean_daily_net_return'])}, "
-              f"excess total return over SPY {_fmt(ew['excess_vs_spy']['excess_total_return'])}",
+    ew_excess = (ew.get("excess_vs_spy") or {}) if ew.get("status") == "evaluated" else {}
+    lines += [f"- Equal-weight PIT benchmark: status `{ew.get('status', 'missing')}`"
+              + (f" ({ew.get('error_type')}: {ew.get('error')})" if ew.get("status") == "failed" else "")
+              + f", mean daily net {_fmt(ew.get('mean_daily_net_return'))}, excess total return over SPY "
+              f"{_fmt(ew_excess.get('excess_total_return'))}",
               f"- SPY.US#E1: status `{sidecar['benchmarks']['spy']['status']}`, mean daily return "
               f"{_fmt(sidecar['benchmarks']['spy']['return_test']['mean_return'])}", "",
               "## CPCV and PBO families", "",
@@ -1205,6 +1251,7 @@ def main(argv: list[str] | None = None) -> int:
     sidecar = run_rerun(snapshot_dir, registration_path=args.registration, registration_sha256=args.registration_sha256,
                         output_dir=args.output_dir, census_json=args.census_json, seal_record=args.seal_record)
     print(json.dumps({"run_status": sidecar["run_status"], "stop": sidecar.get("stop"),
+                      "outputs_written": sidecar["outputs_written"],
                       "outcome": sidecar.get("gate", {}).get("outcome")}, sort_keys=True))
     return 0 if sidecar["run_status"] == "completed" else 3
 

@@ -68,8 +68,9 @@ flowchart TD
     FAM --> IC["Primary Rank IC trials, coverage loss, warm-up bound;<br/>BY within A and B; union sensitivity 69"]
     IC --> BOOK["Equal-weight PIT benchmark; books per valid segment<br/>A: 3 cost cases x 2 books; B: primary x 2 books"]
     BOOK --> OUT["CPCV/PBO families, DSR, IID haircuts, exposure;<br/>gate; report, sidecar, trials JSONL"]
-    CHK -. Class I .-> STOP["stopped_before_inference<br/>sidecar, report, retained JSONL; exit 3"]
-    BIND -. Class I .-> STOP
+    REG -. Class I .-> PRE["pre-run refusal<br/>no output file touched; stop returned and printed; exit 3"]
+    CHK -. Class I .-> PRE
+    BIND -. Class I .-> STOP["stopped_before_inference<br/>sidecar, report, retained JSONL; exit 3"]
     LOAD -. Class I .-> STOP
     SUP -. Class I .-> STOP
     LAB -. Class I .-> STOP
@@ -248,3 +249,24 @@ another check masked each guard on the first design of the tests.
 CRITICAL-lane review by two fresh, model-diverse formal reviewers, the
 independent ABLATION pass, and coordinator acceptance of the exact head. b-2
 (registration freeze) follows a-3 and b-1 and needs the private census.
+
+## 10. Attempt 2 remediation
+
+Source: coordinator instruction `/private/tmp/m47b1_remediation_task.md`
+after the dual audit of `6dea917` (Seat 1: MATERIAL 1; Seat 2: MATERIAL 0).
+
+| Finding | Change | Test |
+| --- | --- | --- |
+| AUDIT1-M47B1-001 (MATERIAL, P1): a refused retry truncated the prior trials JSONL | `run_rerun` hashes the registration, compares it with `--registration-sha256`, parses it, and runs `check_registration` before any output file is opened. A refusal at that stage (`registration_hash_mismatch`, `registration_invalid`, or a family-size mismatch) writes nothing and returns the sidecar with `outputs_written = False`; the CLI prints the stop and exits 3. `_Trials` truncates the JSONL only after these checks pass; every later Class I stop still writes the sidecar, the report, and the trials recorded so far | `test_pre_run_refusals_leave_prior_outputs_byte_identical` (a seeded 231-record trials JSONL, sidecar, and report stay byte-identical under a wrong hash and under an invalid registration with a matching hash); `test_t_reg_2_hash_mismatch_is_class_one_before_any_trial` (the output directory stays empty); `test_cli_exit_codes` (printed stop, no sidecar) |
+| AUDIT1-M47B1-002 (ADVISORY, P2): a failed equal-weight benchmark crashed `render_report` | The benchmark line reads its fields only when the status is `evaluated`; a failed benchmark renders its status, error type, and message, and its metrics read `undefined` | `test_a_failed_equal_weight_benchmark_is_rendered_as_typed_status` (injected Class II failure; the run completes and the report carries every section) |
+| AUDIT1-M47B1-003 / ADV-1 (ADVISORY, P2): daily book halves were missing | `book_halves` splits a book's daily net returns at the factor's IC-half `boundary_reset_date` (plan 4.4, 6.8): a return dated on or before the boundary reset ends a holding period that began before it and belongs to the first half; later returns belong to the second half. Each half records rows, mean daily net return, annualized volatility, and `return_test_statistics` (typed status, observed Sharpe, HAC). The status is `undefined_no_ic_boundary` when the factor has no boundary (failed primary trial, the equal-weight benchmark) and `undefined_boundary_outside_measured_rows` when a half is empty. Every book trial carries `halves`; the Family A books table shows the status and both half means | `test_daily_book_halves_split_at_the_ic_boundary` (hand split, means, volatility, typed undefined cases); the acceptance test asserts that all 36 Family A books carry evaluated halves at their factor's boundary that cover every measured row |
+
+Regression checks, each fix reverted alone on a copy of the tree: creating
+the trials file before the hash check fails both byte-identity cases;
+restoring the unconditional benchmark field reads fails the benchmark test;
+moving the boundary row into the second half fails the halves test.
+
+Verification on the attempt 2 head: `tests/test_m4_7_sp500_pit_rerun.py`
+54 passed; `tests/test_governance_constitution.py` 21 passed; full
+suite 3,043 passed and 2 skipped; `ruff check . --exclude .venv` and
+`git diff --check` clean.

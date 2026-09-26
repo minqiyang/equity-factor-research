@@ -152,6 +152,11 @@ def test_b1_synthetic_end_to_end_rerun_meets_the_acceptance_row(e2e):
     assert len(books) == 36 and {r["status"] for r in books} == {"evaluated"}
     assert {(r["book"], r["cost_case"]) for r in books} == {(b, c) for b in ("long_short", "long_only")
                                                             for c in runner.COST_CASES}
+    boundaries = {r["factor_id"]: r["halves"]["boundary_reset_date"] for r in primary}
+    for record in books:
+        assert record["halves"]["status"] == "evaluated"
+        assert record["halves"]["boundary_reset_date"] == boundaries[record["factor_id"]]
+        assert record["halves"]["first"]["rows"] + record["halves"]["second"]["rows"] == record["measured_rows"]
     for row in sidecar["families"]["A"]["rows"].values():
         assert row["coverage_loss_estimate"] <= row["coverage_loss"]
         assert row["coverage_loss_beyond_estimate"] == row["coverage_loss"] - row["coverage_loss_estimate"]
@@ -262,19 +267,48 @@ def test_t_reg_2_hash_is_written_into_report_sidecar_and_every_trial(e2e):
 
 def test_t_reg_2_hash_mismatch_is_class_one_before_any_trial(pipeline, tmp_path):
     sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path, sha="f" * 64)
-    assert sidecar["run_status"] == "stopped_before_inference"
+    assert sidecar["run_status"] == "stopped_before_inference" and sidecar["outputs_written"] is False
     assert sidecar["stop"]["reason"] == "registration_hash_mismatch" and sidecar["stop"]["trial_records_retained"] == 0
     assert sidecar["header"]["registration_sha256"] == pipeline["sha"]
-    assert trial_lines(tmp_path) == [] and pipeline["sha"] in (tmp_path / runner.REPORT).read_text()
+    assert sidecar["header"]["registration_sha256_expected"] == "f" * 64
+    assert list(tmp_path.iterdir()) == []
 
 
-def test_cli_exit_codes(pipeline, tmp_path, monkeypatch):
+def _seed_prior_outputs(out: Path) -> dict[Path, bytes]:
+    """A prior run's 231-record trials JSONL, sidecar, and report."""
+    records = [json.dumps({"trial_id": f"{i:064x}", "status": "evaluated", "factor_id": f"F{i}"}, sort_keys=True)
+               for i in range(231)]
+    payloads = {out / runner.TRIALS: ("\n".join(records) + "\n").encode(),
+                out / runner.SIDECAR: b'{"run_status": "completed"}\n', out / runner.REPORT: b"# prior report\n"}
+    for path, payload in payloads.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    return payloads
+
+
+@pytest.mark.parametrize("wrong_hash", [True, False])
+def test_pre_run_refusals_leave_prior_outputs_byte_identical(pipeline, tmp_path, wrong_hash):
+    prior = _seed_prior_outputs(tmp_path / "out")
+    assert len((tmp_path / "out" / runner.TRIALS).read_text().splitlines()) == 231
+    if wrong_hash:
+        path, sha, reason = pipeline["registration_path"], "0" * 64, "registration_hash_mismatch"
+    else:
+        path, sha = _registered_copy(pipeline, tmp_path, _set(("timing", "label_contract"), "changed"))
+        reason = "registration_invalid"
+    sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path / "out", sha=sha, registration_path=path)
+    assert sidecar["stop"]["reason"] == reason and sidecar["outputs_written"] is False
+    assert {p: p.read_bytes() for p in prior} == prior
+
+
+def test_cli_exit_codes(pipeline, tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(runner, "CENSUS_JSON", pipeline["census_json"])
     args = ["--snapshot-id", "RUN", "--data-dir", str(pipeline["snapshot"].parent), "--registration",
             str(pipeline["registration_path"]), "--output-dir", str(tmp_path), "--census-json", str(pipeline["census_json"]),
             "--seal-record", str(pipeline["seal_record"])]
     assert runner.main([*args, "--registration-sha256", "0" * 64]) == 3
-    assert json.loads((tmp_path / runner.SIDECAR).read_text())["stop"]["reason"] == "registration_hash_mismatch"
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["stop"]["reason"] == "registration_hash_mismatch" and printed["outputs_written"] is False
+    assert not (tmp_path / runner.SIDECAR).exists()
     monkeypatch.delenv(DATA_DIR_ENV, raising=False)
     assert runner.main(["--snapshot-id", "RUN", "--registration-sha256", "0" * 64]) == 2
 
@@ -913,3 +947,48 @@ def test_failed_trials_keep_their_slots_and_the_gate_reads_evaluation_incomplete
     assert {v["unavailable_reason"] for v in sidecar["cpcv"].values()} == {
         "pbo_unavailable:insufficient_completed_strategies"}
     assert sidecar["cpcv"]["A_long_short"]["pbo_columns_missing_failed"] == 6
+
+
+def test_a_failed_equal_weight_benchmark_is_rendered_as_typed_status(pipeline, tmp_path, monkeypatch):
+    def failing_book(*args, **kwargs):
+        raise ValueError("equal-weight benchmark unavailable in this oracle")
+
+    _no_composites(monkeypatch)
+    monkeypatch.setattr(runner, "run_segmented_book", failing_book)
+    monkeypatch.setattr(runner, "book_trial", lambda *a, **k: (runner._failure(ValueError("book stub")), None, None))
+    sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path)
+    assert sidecar["run_status"] == "completed"
+    assert sidecar["benchmarks"]["equal_weight_pit"] == {
+        "status": "failed", "error_type": "ValueError", "error": "equal-weight benchmark unavailable in this oracle"}
+    report = (tmp_path / runner.REPORT).read_text()
+    assert "Equal-weight PIT benchmark: status `failed` (ValueError: equal-weight benchmark unavailable" in report
+    assert "mean daily net undefined, excess total return over SPY undefined" in report
+    assert report == runner.render_report(sidecar)
+    for heading in ("## CPCV and PBO families", "## Excluded event exposure", "## Decision gate", "## Limitations"):
+        assert heading in report
+
+
+def test_daily_book_halves_split_at_the_ic_boundary():
+    R = scheduled_reset_rows(SMALL)
+    d0 = int(R[R >= 253][0])
+    assets = [f"A{i:02d}" for i in range(20)]
+    prices = walks(SMALL, assets, 15)
+    table = intervals(SMALL, {a: 0 for a in assets})
+    s_mask = signal_eligibility(_mask(table, SMALL, assets), prices.notna())
+    signal = prices.pct_change(21).where(s_mask)
+    segments = [Segment(d0, d0 + 120, True), Segment(d0 + 140, len(SMALL) - 1, True)]
+    results = runner.run_segmented_book("long_short", prices, signal, SMALL, segments, intervals=table,
+                                        events=pd.DataFrame(), cost=PRIMARY)
+    boundary = SMALL[int(R[R > d0 + 160][0])]
+    stats, net = runner.book_statistics(results, "long_short", boundary.date().isoformat())
+    halves = stats["halves"]
+    first, second = net[net.index <= boundary], net[net.index > boundary]
+    assert halves["status"] == "evaluated" and halves["boundary_reset_date"] == boundary.date().isoformat()
+    assert (halves["first"]["rows"], halves["second"]["rows"]) == (len(first), len(second))
+    assert len(first) + len(second) == len(net) and len(first) > 121
+    assert halves["first"]["mean_daily_net_return"] == pytest.approx(first.mean(), abs=1e-15)
+    assert halves["second"]["annualized_volatility"] == pytest.approx(second.std(ddof=1) * math.sqrt(252))
+    assert halves["second"]["return_test"] == runner.return_test_statistics(second, periods_per_year=252)
+    assert runner.book_statistics(results, "long_short")[0]["halves"]["status"] == "undefined_no_ic_boundary"
+    early = runner.book_statistics(results, "long_short", SMALL[d0 - 5].date().isoformat())[0]["halves"]
+    assert early["status"] == "undefined_boundary_outside_measured_rows" and early["first"]["rows"] == 0

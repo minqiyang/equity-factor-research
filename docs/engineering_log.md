@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7b-1 attempt 2: prior outputs survive pre-run refusals, typed benchmark failure, book halves
+
+- Source: `/private/tmp/m47b1_remediation_task.md`, remediating the dual
+  audit of `6dea917` (AUDIT1-M47B1-001 MATERIAL; 002 and 003 ADVISORY).
+- 001: `run_rerun` checks the registration hash, parses the registration, and
+  runs `check_registration` before opening any output file. A refusal there
+  writes nothing (`outputs_written = False`, stop printed by the CLI, exit 3),
+  so a wrong `--registration-sha256` no longer truncates a prior 231-record
+  trials JSONL; the seeded prior JSONL, sidecar, and report stay
+  byte-identical.
+- 002: `render_report` renders a failed equal-weight benchmark as its typed
+  status with `undefined` metrics instead of raising `KeyError`.
+- 003: `book_halves` splits each book's daily net returns at the factor's IC
+  `boundary_reset_date` (returns dated on or before the boundary reset form
+  the first half) and records rows, mean, annualized volatility, and
+  `return_test_statistics` per half, with typed undefined statuses.
+- Each new test fails when its fix is reverted alone.
+- Verification: runner suite 54 passed; governance 21 passed; full
+  suite 3,043 passed and 2 skipped; `ruff` and `git diff --check` clean.
+
 ## 2026-09-26 - M4.7b-1 runner integration on the synthetic fixture universe
 
 - Source: `/private/tmp/m47b1_runner_task.md`, plan Revision 11 (SHA-256
