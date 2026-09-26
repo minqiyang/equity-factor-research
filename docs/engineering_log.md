@@ -12,6 +12,56 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7b-1 runner integration on the synthetic fixture universe
+
+- Source: `/private/tmp/m47b1_runner_task.md`, plan Revision 11 (SHA-256
+  `6541db93...`) sections 4, 6, 7.3, and Appendices A, B, C, E. Base
+  `de3172b` (main after PR #265). Report
+  `coord/reports/m4_7b1_runner_integration_impl.md`.
+- `research/m4_7_sp500_pit_rerun.py` gains the runner. `check_registration`
+  compares the fixed Appendix C blocks with `REGISTERED` and range-checks the
+  owner values (O-1 costs, O-6 objectives, O-3 choice). `bind_snapshot`
+  checks, before any panel is read: the registration hashes of the manifest,
+  interval CSV, security master, interval results, engine events, both seals,
+  and the census JSON; `discovery_inputs_sha256`; the terminal binding; the
+  inventory and panel hashes; `census/segments.json` against
+  `census/gap_windows.json`; `max_reset_to_reset_rows`; the holdout seal; and
+  `panel_split_table_present` (C64). The schedule is then recomputed from the
+  loaded panels' missing-value pattern and compared by digest.
+- Families: Family A on unmasked panels masked by `S_mask`; Family B on field
+  panels masked before every cross-sectional operator; composites fitted on
+  the terminal-aware labels keyed by `r - 1` with
+  `forward_holding_periods = max_reset_to_reset_rows`. Books run as one
+  bounded engine call per valid segment on member-only frames; SPY enters only
+  as `benchmark_prices`. The IC test, BY within each family and over the
+  union of 69, halves, MDE, `coverage_loss_f` with the warm-up bound, four
+  CPCV/PBO families, DSR, IID haircuts, excluded-event exposure, and the gate
+  feed the report, sidecar, and trials JSONL.
+- Class I reasons stop the run as `stopped_before_inference` with the
+  trials written so far retained; Class II errors keep the trial `failed` at
+  `p = 1`. New Class I code `registration_invalid:<field>` for protocol
+  departures that are not family-size mismatches.
+- Supporting seams: `snapshot_support` in `research/m4_7_common_support.py`
+  (shared by the census writer and the runner) and
+  `post_join_warmup_estimate` in `research/m4_7_coverage_census.py`; existing
+  outputs unchanged.
+- Fixture universe `tests/fixtures/m4_7/runner_scenario.py`: 104 anchors and
+  every case the b-1 acceptance row and T-SUP-5 name, on a weekly calendar so
+  the warm-up and 68 IC months fit in 591 rows. The first draft on a
+  1,980-row business-day calendar took 454 s per run (long-only provenance
+  validation dominated); the weekly calendar with one merged window takes
+  about 125 s.
+- Measured on the fixture: zero Class I stops; all 42 Family A trials
+  `evaluated`; warm-up bound satisfied; outcome `extend_first`
+  (`power_status = inadequate`); census readiness `blocked` by R-CENSUS-5
+  alone.
+- Ablation: 8 simplification attempts (5 kept, including the removal of a
+  Family A count check the family summary already enforces), 16 guard checks
+  (15 necessary; 4 needed new witness tests because another check masked
+  them).
+- Verification: runner suite 50 passed; existing M4.7 suites 100 passed;
+  full suite 3,039 passed and 2 skipped; `ruff` and `git diff --check` clean.
+
 ## 2026-09-26 - M4.7a-2 attempt 2: consideration fields, projection binding, and census robustness
 
 - Source: `/private/tmp/m47a2_remediation_task.md`, remediating the dual audit
