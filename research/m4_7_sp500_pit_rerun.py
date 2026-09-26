@@ -2,10 +2,16 @@
 
 Stage a-0 delivers the halves split, sign stability, the minimum detectable
 effect of an IC series, and the decision gate (plan sections 6.8 and 6.9).
-Stage b-1 binds a frozen registration to a snapshot, recomputes the common
-support from the loaded panels, runs both factor families on member-only
-engine frames over the valid segments, and writes the report, the JSON
+Stage b-1 binds a frozen registration to a snapshot, recomputes the support
+from the loaded panels, runs both factor families on member-only engine frames
+over one continuous evaluation window, and writes the report, the JSON
 sidecar, and the trials JSONL (plan sections 4, 6, 7.3, Appendix E).
+
+Registration v2 applies support v2 (``asset_level_holding_period_support_exclusion_v1``):
+a missing bar or an unevidenced disappearance removes only the affected asset
+from the reset whose holding period needs that bar, through the evaluation
+mask ``E = S_mask & ~X``. The v1 registration and its outputs stay unchanged as
+history; this runner refuses them at ``schema_version``.
 
 Every Class I reason of plan section 4.5 stops the run before inference with
 ``stopped_before_inference``; the trial records written so far stay in the
@@ -41,14 +47,13 @@ from features.cross_validation import combinatorial_purged_cross_validation_pbo,
 from features.diagnostics import deflated_sharpe_ratio, mde_from_long_run_variance, newey_west_long_run_variance
 from features.multiple_testing import return_test_statistics
 from research.m4_7_common_support import (
-    GAP_WINDOWS,
-    SEGMENTS,
+    SUPPORT_CONTRACT,
+    SUPPORT_FILE,
     SupportSchedule,
     _canonical,
     ic_month_set,
     monthly_rank_ic,
     reset_to_reset_labels,
-    signal_eligibility,
     snapshot_support,
 )
 from research.m4_7_coverage_census import _code_commit
@@ -159,13 +164,13 @@ def decide_gate(factors: Sequence[FactorGateInput], *, kill_reachable_projection
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-REGISTRATION_PATH = REPOSITORY_ROOT / "docs/preregistrations/m4_7_sp500_pit_rerun_v1.json"
-CENSUS_JSON = REPOSITORY_ROOT / "reports/m4_7_coverage_census.json"
-SEAL_RECORD = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1.json"
-REPORT = "reports/m4_7_sp500_pit_rerun.md"
-SIDECAR = "reports/experiment_logs/m4_7_sp500_pit_rerun.json"
-TRIALS = "reports/experiment_logs/m4_7_sp500_pit_rerun_trials.jsonl"
-LABEL_RECORDS = "rerun/label_records.json"
+REGISTRATION_PATH = REPOSITORY_ROOT / "docs/preregistrations/m4_7_sp500_pit_rerun_v2.json"
+CENSUS_JSON = REPOSITORY_ROOT / "reports/m4_7_coverage_census_v2.json"
+SEAL_RECORD = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json"
+REPORT = "reports/m4_7_sp500_pit_rerun_v2.md"
+SIDECAR = "reports/experiment_logs/m4_7_sp500_pit_rerun_v2.json"
+TRIALS = "reports/experiment_logs/m4_7_sp500_pit_rerun_v2_trials.jsonl"
+LABEL_RECORDS = "rerun/label_records_v2.json"
 BENCHMARK_ID = "SPY.US#E1"
 FAMILY_B_COMPOSITES = tuple(c for c in COMPOSITE_IDS if c != SECTOR_NEUTRAL_COMPOSITE)
 FAMILY_B_IDS = tuple(ALPHA_IDS) + FAMILY_B_COMPOSITES
@@ -191,7 +196,7 @@ VP_STATEMENTS = {
     "VP-2": "declared_distributions_applied_as_non_split_adjustments_by_the_registered_formula_and_no_other",
 }
 REGISTERED: dict[str, Any] = {
-    "schema_version": "m4_7_sp500_pit_rerun_v1",
+    "schema_version": "m4_7_sp500_pit_rerun_v2",
     "evidence_class": "DIAGNOSTIC_ONLY",
     "universe": {
         "index": "GSPC.INDX",
@@ -225,7 +230,7 @@ REGISTERED: dict[str, Any] = {
         "membership_open_end_date": "empty_null_absent_or_strictly_after_components_retrieved_utc_date_v2",
     },
     "holdout": {
-        "seal_record": "docs/preregistrations/m4_7_holdout_seal_v1.json",
+        "seal_record": "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json",
         "buffer_rows": 252,
         "retrieval_order": ["components", "symbols", "seal", "calendar", "splits", "eod", "dividends", "verify"],
     },
@@ -236,9 +241,10 @@ REGISTERED: dict[str, Any] = {
         "label_horizon": "next_scheduled_reset_row", "label_contract": "terminal_aware_reset_to_reset_forward_return_v2",
     },
     "common_support": {
-        "contract": "common_support_segments_open_terminal_holdings_v3", "terminal_reset_peeling": True,
-        "exclusion_cells_from_first_bar": True, "max_gap_windows": 25, "max_excluded_fraction": 0.45,
-        "min_segment_rows": 42,
+        "contract": SUPPORT_CONTRACT, "evaluation_window": "single_continuous_d0_to_d_last",
+        "exclusion_cell": "signal_eligible_asset_without_a_bar_in_its_reset_holding_period_v1",
+        "holding_period": "execution_reset_row_through_next_reset_row_or_terminal_settlement_row_minus_one",
+        "exclusion_applies_to": "ic_labels_ic_pairs_books_and_equal_weight_benchmark_not_signal_inputs",
     },
     "terminal": {
         "settlement_contract": "prior_observed_close_to_consideration_at_completion_date_row_v2",
@@ -269,7 +275,7 @@ REGISTERED: dict[str, Any] = {
     },
     "benchmarks": {
         "primary": "SPY.US#E1_adjusted_close_cost_free",
-        "secondary": "equal_weight_pit_universe_engine_constant_signal_zero_cost_same_segments",
+        "secondary": "equal_weight_pit_universe_engine_constant_signal_zero_cost_same_evaluation_mask",
     },
     "objective": {
         "target_information_ratio": 0.30, "tracking_error_budget_annualized": 0.08,
@@ -294,7 +300,7 @@ REGISTERED: dict[str, Any] = {
     },
 }
 SNAPSHOT_DIGESTS = ("manifest_sha256", "discovery_inputs_sha256", "interval_csv_sha256", "security_master_sha256",
-                    "interval_results_sha256", "engine_events_sha256", "segments_sha256", "seal_prospective_sha256",
+                    "interval_results_sha256", "engine_events_sha256", "support_sha256", "seal_prospective_sha256",
                     "seal_confirmed_sha256", "census_json_sha256")
 
 
@@ -381,8 +387,8 @@ def bind_snapshot(snapshot_dir: Path, registration: dict[str, Any], census_json:
     """Every check that precedes ``load_eod_cohort_panels``; returns the bound inputs.
 
     Hash bindings to the registration, the discovery-input and panel-hash
-    check, the terminal binding, the peeled schedule files, the holdout seal,
-    and the ``panel_split_table_present`` re-check (C64).
+    check, the terminal binding, the asset-level support file, the holdout
+    seal, and the ``panel_split_table_present`` re-check (C64).
     """
     try:
         snapshot = Snapshot.open(snapshot_dir)
@@ -405,26 +411,23 @@ def bind_snapshot(snapshot_dir: Path, registration: dict[str, Any], census_json:
         validation, _ = require_current_terminal(snapshot)
         inventory = read_derived_json(root, INVENTORY)
         require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
-        segments = read_derived_json(root, SEGMENTS)
-        windows = read_derived_json(root, GAP_WINDOWS)
+        support = read_derived_json(root, SUPPORT_FILE)
     except SnapshotRefusal as exc:
         raise RunnerStop(exc.code, str(exc)) from exc
     for record in inventory["files"]:
         path = root / "panel" / record["file"]
         if not path.is_file() or sha256_bytes(path.read_bytes()) != record["sha256"]:
             raise _stale(f"panel {record['symbol']}")
-    body = {k: v for k, v in segments.items() if k not in ("segments_sha256", "discovery_inputs_sha256")}
-    if (segments.get("discovery_inputs_sha256") != inputs or windows.get("discovery_inputs_sha256") != inputs
-            or segments.get("segments_sha256") != pinned["segments_sha256"]
-            or hashlib.sha256(_canonical(body)).hexdigest() != pinned["segments_sha256"]
-            or windows.get("gap_windows") != segments["gap_windows"]):
-        raise _stale(SEGMENTS)
+    body = {k: v for k, v in support.items() if k not in ("support_sha256", "discovery_inputs_sha256")}
+    if (support.get("discovery_inputs_sha256") != inputs or support.get("support_sha256") != pinned["support_sha256"]
+            or hashlib.sha256(_canonical(body)).hexdigest() != pinned["support_sha256"]):
+        raise _stale(SUPPORT_FILE)
     max_reset = registration["discovery"]["max_reset_to_reset_rows"]
-    if segments["max_reset_to_reset_rows"] != max_reset:
-        raise RunnerStop("census_runner_inconsistency:max_reset_span", "census/segments.json")
+    if support["max_reset_to_reset_rows"] != max_reset:
+        raise RunnerStop("census_runner_inconsistency:max_reset_span", SUPPORT_FILE)
     discovery = registration["discovery"]
     if (discovery.get("first_reset"), discovery.get("last_reset"), discovery.get("last_ic_month")) != (
-            segments["D0"], segments["D_last"], segments["D_end"]):
+            support["D0"], support["D_last"], support["D_end"]):
         raise RunnerStop("registration_invalid", "discovery window")
     if registration["universe"]["calendar_source"] != snapshot.calendar_source:
         raise RunnerStop("registration_invalid", "universe.calendar_source differs from the snapshot seal")
@@ -467,7 +470,7 @@ def load_member_panels(bound: dict[str, Any]) -> dict[str, Any]:
 
 
 def recompute_support(bound: dict[str, Any], loaded: dict[str, Any], registration: dict[str, Any]):
-    """Recompute ``X``, ``W``, and the segments from the loaded panel's missing-value pattern (plan 4.5).
+    """Recompute ``X`` and the evaluation window from the loaded panel's missing-value pattern (plan 4.5).
 
     The digest covers ``max_reset_to_reset_rows``, so one comparison checks both.
     """
@@ -476,7 +479,7 @@ def recompute_support(bound: dict[str, Any], loaded: dict[str, Any], registratio
     support = snapshot_support(loaded["calendar"], bound["snapshot"].holdout_end.isoformat(),
                                bound["snapshot"].calendar_source, loaded["intervals"], loaded["events"], bars,
                                loaded["master"], bound["inputs"], loaded["d0"])
-    if support.segments_sha256 != registration["snapshot"]["segments_sha256"]:
+    if support.support_sha256 != registration["snapshot"]["support_sha256"]:
         raise RunnerStop("census_runner_inconsistency:schedule_digest", "recomputed schedule differs from the census")
     return support
 
@@ -484,9 +487,9 @@ def recompute_support(bound: dict[str, Any], loaded: dict[str, Any], registratio
 # ---------------------------------------------------------------- signals, labels, and IC trials (plan 2.5, 4.6)
 
 
-def equal_weight_signal(s_mask: pd.DataFrame) -> pd.DataFrame:
-    """The equal-weight PIT benchmark signal: 1.0 where eligible with a bar, missing elsewhere (plan 2.5)."""
-    return s_mask.astype(float).where(s_mask)
+def equal_weight_signal(e_mask: pd.DataFrame) -> pd.DataFrame:
+    """The equal-weight PIT benchmark signal: 1.0 on the evaluation mask, missing elsewhere (plan 2.5)."""
+    return e_mask.astype(float).where(e_mask)
 
 
 def family_b_alphas(research: dict[str, pd.DataFrame], s_mask: pd.DataFrame) -> dict[str, pd.DataFrame | Exception]:
@@ -518,10 +521,14 @@ def family_b_composites(
     return {composite_id: panel.where(s_mask) for composite_id, panel in composites.items()}
 
 
-def ic_labels(prices: pd.DataFrame, s_mask: pd.DataFrame, schedule: SupportSchedule, ic_resets: tuple[int, ...],
+def ic_labels(prices: pd.DataFrame, e_mask: pd.DataFrame, schedule: SupportSchedule, ic_resets: tuple[int, ...],
               events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Terminal-aware labels with the label-bar guard: any guard reason is Class I (plan 4.6)."""
-    labels, records = reset_to_reset_labels(prices, s_mask, schedule.reset_rows, ic_resets,
+    """Terminal-aware labels on the evaluation mask with the label-bar guard (plan 4.6).
+
+    ``E`` holds only assets with a bar on every row of their holding period, so
+    a guard reason means the support and the loaded panels disagree: Class I.
+    """
+    labels, records = reset_to_reset_labels(prices, e_mask, schedule.reset_rows, ic_resets,
                                             events if len(events) else None)
     if len(records) and int(records[["missing_execution_bar", "missing_horizon_end_bar"]].to_numpy().sum()):
         raise RunnerStop("census_runner_inconsistency:label_bar_missing",
@@ -536,17 +543,17 @@ def ic_labels(prices: pd.DataFrame, s_mask: pd.DataFrame, schedule: SupportSched
     return labels, records
 
 
-def coverage_loss(signal: pd.DataFrame, s_mask: pd.DataFrame, ic_resets: tuple[int, ...]) -> dict[str, Any]:
-    """``coverage_loss_f``: eligible assets per IC month whose factor value at ``r - 1`` is missing."""
+def coverage_loss(signal: pd.DataFrame, e_mask: pd.DataFrame, ic_resets: tuple[int, ...]) -> dict[str, Any]:
+    """``coverage_loss_f``: evaluated assets per IC month whose factor value at ``r - 1`` is missing."""
     rows = [r - 1 for r in ic_resets]
-    eligible = s_mask.iloc[rows].to_numpy(dtype=bool)
+    eligible = e_mask.iloc[rows].to_numpy(dtype=bool)
     finite = signal.iloc[rows].notna().to_numpy() & eligible
     by_month = (eligible.sum(axis=1) - finite.sum(axis=1)).astype(int)
     dates = [signal.index[r].date().isoformat() for r in ic_resets]
     return {"total": int(by_month.sum()), "by_month": dict(zip(dates, by_month.tolist()))}
 
 
-def ic_evaluation(signal: pd.DataFrame, labels: pd.DataFrame, s_mask: pd.DataFrame,
+def ic_evaluation(signal: pd.DataFrame, labels: pd.DataFrame, e_mask: pd.DataFrame,
                   ic_resets: tuple[int, ...]) -> dict[str, Any]:
     """The primary Rank IC test of one factor with halves, MDE, and coverage loss (plan 4.6, 6.4, 6.8)."""
     months = monthly_rank_ic(signal, labels, ic_resets)
@@ -565,46 +572,42 @@ def ic_evaluation(signal: pd.DataFrame, labels: pd.DataFrame, s_mask: pd.DataFra
                    "second": {"months": len(second), "mean_ic": float(second.mean()) if len(second) else None}},
         "sign_stable": sign_stability(ic),
         "mde_f": mde_f, "mde_single": mde_single,
-        "coverage_loss": coverage_loss(signal, s_mask, ic_resets),
+        "coverage_loss": coverage_loss(signal, e_mask, ic_resets),
         "finite_pair_count_by_month": dict(zip((d.date().isoformat() for d in months["reset_date"]),
                                                months["finite_pair_count"].tolist())),
     }
 
 
-# ---------------------------------------------------------------- segmented books (plan 4.3, 4.4)
+# ---------------------------------------------------------------- books (plan 4.3, 4.4)
 
 
-def run_segmented_book(
-    book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex,
-    segments: Sequence[Any], *, intervals: pd.DataFrame, events: pd.DataFrame, cost: dict[str, float],
-    benchmark: pd.Series | None = None, top_pct: float = TOP_PCT,
-) -> list[Any]:
-    """One bounded engine call per valid segment; a Class I engine reason raises ``RunnerStop``.
+def run_book(
+    book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex, window: tuple[int, int], *,
+    intervals: pd.DataFrame, events: pd.DataFrame, cost: dict[str, float], benchmark: pd.Series | None = None,
+    top_pct: float = TOP_PCT,
+) -> Any:
+    """One engine call over the evaluation window ``(anchor, last)``; a Class I engine reason raises ``RunnerStop``.
 
     ``book`` is ``long_short`` (deciles, equal weight, gross leverage 1) or
-    ``long_only`` (``top_pct``, equal weight). Each segment starts from cash
-    at its anchor; the terminal row keeps its open holdings (TIMING-012).
+    ``long_only`` (``top_pct``, equal weight). The book starts from cash at
+    the anchor row ``d0 - 1``; the terminal row keeps its open holdings
+    (TIMING-012). ``signal`` carries the evaluation mask, so no held asset
+    lacks a bar inside its holding period.
     """
-    provenance = capture_backtest_source_provenance(prices, signal) if book == "long_only" else None
-    results = []
-    for segment in segments:
-        start, end = calendar[segment.anchor], calendar[segment.last]
-        common = dict(evaluation_start=start, evaluation_end=end, rebalance_frequency="ME", weighting_scheme="equal",
-                      turnover_penalty_lambda=0.0, constituent_intervals=intervals,
-                      terminal_events=events if len(events) else None, **cost)
-        try:
-            if book == "long_short":
-                results.append(run_long_short_backtest(prices, signal, quantiles=QUANTILES, gross_leverage=1.0,
-                                                       **common))
-            else:
-                results.append(run_long_only_backtest(
-                    prices, signal, source_provenance=provenance, top_pct=top_pct,
-                    benchmark_prices=None if benchmark is None else benchmark.loc[start:end], **common))
-        except BacktestValidationError as exc:
-            if exc.reason in CLASS_I_ENGINE:
-                raise RunnerStop(exc.reason, str(exc)) from exc
-            raise
-    return results
+    start, end = calendar[window[0]], calendar[window[1]]
+    common = dict(evaluation_start=start, evaluation_end=end, rebalance_frequency="ME", weighting_scheme="equal",
+                  turnover_penalty_lambda=0.0, constituent_intervals=intervals,
+                  terminal_events=events if len(events) else None, **cost)
+    try:
+        if book == "long_short":
+            return run_long_short_backtest(prices, signal, quantiles=QUANTILES, gross_leverage=1.0, **common)
+        return run_long_only_backtest(
+            prices, signal, source_provenance=capture_backtest_source_provenance(prices, signal), top_pct=top_pct,
+            benchmark_prices=None if benchmark is None else benchmark.loc[start:end], **common)
+    except BacktestValidationError as exc:
+        if exc.reason in CLASS_I_ENGINE:
+            raise RunnerStop(exc.reason, str(exc)) from exc
+        raise
 
 
 def _max_drawdown(equity: pd.Series) -> float:
@@ -633,45 +636,40 @@ def book_halves(net: pd.Series, boundary: str | None) -> dict[str, Any]:
     return {"status": status, "boundary_reset_date": boundary, "first": describe(first), "second": describe(second)}
 
 
-def book_statistics(results: list[Any], book: str, boundary: str | None = None) -> tuple[dict[str, Any], pd.Series]:
-    """Pooled daily statistics over the measured rows, the per-segment record of plan 4.3, and the halves."""
-    net = pd.concat([r.returns.iloc[1:] for r in results])
-    held = [(r.net_holdings if book == "long_short" else r.holdings).iloc[-1] for r in results]
-    segments = [{
-        "first_month": r.returns.index[1].strftime("%Y-%m"), "last_month": r.returns.index[-1].strftime("%Y-%m"),
-        "measured_rows": len(r.returns) - 1, "turnover": float(r.turnover.iloc[1:].sum()),
-        "trading_costs": float(r.total_trading_costs.iloc[1:].sum()), "max_drawdown": _max_drawdown(r.equity_curve),
-        "first_row_net_return": float(r.returns.iloc[1]), "terminal_row_trading_cost": float(r.total_trading_costs.iloc[-1]),
-        "terminal_open_positions": int((h.abs() > 0).sum()), "terminal_gross_exposure": float(h.abs().sum()),
-    } for r, h in zip(results, held)]
+def book_statistics(result: Any, book: str, boundary: str | None = None) -> tuple[dict[str, Any], pd.Series]:
+    """Daily statistics over the measured rows ``[d0, d_last]``, the terminal-row record of plan 4.3, and the halves."""
+    net = result.returns.iloc[1:]
+    held = (result.net_holdings if book == "long_short" else result.holdings).iloc[-1]
     test = return_test_statistics(net, periods_per_year=252)
     return {
-        "return_test": test, "measured_rows": len(net), "segments": segments,
-        "pooled_turnover": sum(s["turnover"] for s in segments),
-        "pooled_trading_costs": sum(s["trading_costs"] for s in segments),
-        "pooled_max_drawdown": max(s["max_drawdown"] for s in segments),
-        "hac_boundary_adjacency_pairs": (len(results) - 1) * int(test["hac_lags"]),
-        "total_lag_products": len(net) * int(test["hac_lags"]),
+        "return_test": test, "measured_rows": len(net),
+        "first_month": result.returns.index[1].strftime("%Y-%m"), "last_month": result.returns.index[-1].strftime("%Y-%m"),
+        "pooled_turnover": float(result.turnover.iloc[1:].sum()),
+        "pooled_trading_costs": float(result.total_trading_costs.iloc[1:].sum()),
+        "pooled_max_drawdown": _max_drawdown(result.equity_curve),
+        "first_row_net_return": float(result.returns.iloc[1]),
+        "terminal_row_trading_cost": float(result.total_trading_costs.iloc[-1]),
+        "terminal_open_positions": int((held.abs() > 0).sum()), "terminal_gross_exposure": float(held.abs().sum()),
         "mean_daily_net_return": float(net.mean()), "halves": book_halves(net, boundary),
     }, net
 
 
 def book_trial(
-    book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex, segments: Sequence[Any], *,
+    book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex, window: tuple[int, int], *,
     cost: dict[str, float], intervals: pd.DataFrame, events: pd.DataFrame, spy: pd.Series, spy_daily: pd.Series,
     equal_weight: pd.Series | None, objective: dict[str, Any], boundary: str | None = None,
-) -> tuple[dict[str, Any], pd.Series | None, list[Any] | None]:
+) -> tuple[dict[str, Any], pd.Series | None]:
     """One book trial: a Class II error becomes a ``failed`` record; a Class I reason raises ``RunnerStop`` (plan 4.5).
 
-    Returns the trial fields, the daily net returns on ``Mrows``, and the
-    per-segment engine results (both ``None`` when the trial failed).
+    Returns the trial fields and the daily net returns on ``Mrows`` (``None``
+    when the trial failed).
     """
     try:
-        results = run_segmented_book(book, prices, signal, calendar, segments, intervals=intervals, events=events,
-                                     cost=cost, benchmark=spy if book == "long_only" else None)
-        fields, net = book_statistics(results, book, boundary)
+        result = run_book(book, prices, signal, calendar, window, intervals=intervals, events=events, cost=cost,
+                          benchmark=spy if book == "long_only" else None)
+        fields, net = book_statistics(result, book, boundary)
     except (BacktestValidationError, ValueError, ArithmeticError) as exc:
-        return _failure(exc), None, None
+        return _failure(exc), None
     fields["status"] = "evaluated"
     fields["max_drawdown_within_budget"] = fields["pooled_max_drawdown"] <= objective["max_drawdown_budget"][book]
     if book == "long_only":
@@ -685,7 +683,7 @@ def book_trial(
             "tracking_error_within_budget": (None if tracking is None
                                              else tracking <= objective["tracking_error_budget_annualized"]),
         })
-    return fields, net, results
+    return fields, net
 
 
 def excess_metrics(net: pd.Series, reference: pd.Series) -> dict[str, Any]:
@@ -722,37 +720,6 @@ def cpcv_family(columns: dict[str, pd.Series | None], rows: pd.DatetimeIndex, ho
     return {**base, "status": "available", **{k: summary[k] for k in (
         "pbo", "prob_loss", "n_combinations", "mean_purged_samples", "mean_embargoed_samples",
         "mean_is_sharpe", "mean_oos_sharpe")}}
-
-
-def excluded_event_exposure(schedule: SupportSchedule, unresolved: dict[str, int], calendar: pd.DatetimeIndex,
-                            books: dict[str, list[Any]]) -> list[dict[str, Any]]:
-    """Per book and gap: each excluded asset held at the preceding segment's terminal row (plan 4.4).
-
-    ``books`` maps a trial label to its per-valid-segment engine results.
-    Public rows carry the gap's month, the reason type, the side, and the
-    signed weight, and no permanent ID (R11).
-    """
-    valid = [s for s in schedule.segments if s.valid]
-    cells = [(schedule.g_base.columns[c], int(r), "missing_bar")
-             for r, c in zip(*np.nonzero(schedule.g_base.to_numpy(dtype=bool)))]
-    cells += [(pid, row, "terminal_reset_missing_bar") for pid, row in schedule.g_term]
-    cells += [(pid, row, "unresolved_delisting") for pid, row in unresolved.items()]
-    out = []
-    for position, window in enumerate(schedule.windows):
-        preceding = next((k for k, s in enumerate(valid) if s.last == window.start - 1), None)
-        if preceding is None:
-            continue
-        assets = sorted({(pid, reason) for pid, row, reason in cells if window.start <= row <= window.end})
-        for trial, results in books.items():
-            result = results[preceding]
-            held = (result.net_holdings if hasattr(result, "net_holdings") else result.holdings).iloc[-1]
-            for pid, reason in assets:
-                weight = float(held.get(pid, 0.0))
-                if weight != 0.0:
-                    out.append({"gap_index": position, "gap_start_month": calendar[window.start].strftime("%Y-%m"),
-                                "trial": trial, "reason_type": reason, "side": "long" if weight > 0 else "short",
-                                "signed_weight": weight})
-    return out
 
 
 # ---------------------------------------------------------------- run (plan 7.3 b-1)
@@ -866,22 +833,22 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
     calendar, assets, research = loaded["calendar"], loaded["assets"], loaded["research"]
     prices, spy = research["adjusted_close"], loaded["spy"]
     support = recompute_support(bound, loaded, registration)
-    schedule, events, bars = support.schedule, support.events, support.bars
+    schedule, events = support.schedule, support.events
     horizon = registration["discovery"]["max_reset_to_reset_rows"]
     census, record = bound["census"], support.record()
     ic_resets, ic_excluded = ic_month_set(schedule)
-    valid = [s for s in schedule.segments if s.valid]
-    g_count = int(schedule.g_base.to_numpy().sum()) + len(schedule.g_term)
+    window = (schedule.d0 - 1, schedule.d_last)
     state["header"].update({
         "snapshot_id": registration["snapshot"]["snapshot_id"],
         "manifest_sha256": registration["snapshot"]["manifest_sha256"],
-        "segments_sha256": support.segments_sha256, "census_json_sha256": registration["snapshot"]["census_json_sha256"],
+        "support_sha256": support.support_sha256, "census_json_sha256": registration["snapshot"]["census_json_sha256"],
         "discovery_window": {"holdout_end": record["holdout_end"], "D0": record["D0"], "D_last": record["D_last"],
                              "D_end": record["D_end"]},
         "prior_exposure_overlap_fraction": {k: v["fraction_of_ic_months"] for k, v in
                                             census["discovery_overlap_with_prior_exposures"].items()},
-        "U": len(support.unresolved_in_window()), "G": g_count, "W": len(schedule.windows),
-        "excluded_rows": schedule.excluded_rows, "excluded_fraction": schedule.excluded_fraction,
+        "U": record["unresolved_in_window"], "X": record["excluded_cells"],
+        "signal_eligible_cells": record["signal_eligible_cells"], "excluded_fraction": record["excluded_fraction"],
+        "excluded_cells_by_reason": record["excluded_cells_by_reason"],
         "eligible_unpriced_member_day_fraction": census["price_coverage"]["eligible_unpriced_fraction"],
         "census_readiness": census["census_readiness"]["status"],
         "premises": {
@@ -897,14 +864,15 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
     })
     state["assumptions"] = {
         "timing_contract": registration["timing"]["contract"], "label_contract": registration["timing"]["label_contract"],
-        "window_splitting_contract": registration["common_support"]["contract"],
+        "support_contract": registration["common_support"]["contract"],
+        "evaluation_window": {"anchor": calendar[window[0]].date().isoformat(),
+                              "first_measured": calendar[schedule.d0].date().isoformat(),
+                              "last_measured": calendar[schedule.d_last].date().isoformat(),
+                              "evaluation_resets": record["evaluation_resets"]},
+        "support_exclusion_lookahead": "each excluded cell conditions on its own asset's bar availability over one "
+                                       "holding period; signal inputs never read the exclusion",
         "initialization_anchor_policy": "zero_return_zero_trade_all_cash_excluded_from_statistics",
         "terminal_row_policy": "include_return_trade_cost_open_holdings_no_future_return",
-        "segment_count": len(valid), "segment_terminal_reset_months": [calendar[s.last].strftime("%Y-%m") for s in valid],
-        "terminal_reset_cells": len(schedule.g_term), "excluded_rows": schedule.excluded_rows,
-        "excluded_fraction": schedule.excluded_fraction,
-        "gap_windows": [{"start_month": w["start"][:7], "end_month": w["end"][:7], "reason_types": w["reasons"],
-                         "peeled_rows": w["peeled_rows"]} for w in record["gap_windows"]],
         "settlement_lag_distribution": bound["validation"]["settlement_lag_distribution"],
         "cash_availability_idealization_rows_max": registration["terminal"]["cash_availability_idealization_rows_max"],
         "consideration_valuation_rule": registration["terminal"]["consideration_valuation_rule"],
@@ -912,23 +880,20 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
         "costs": costs, "impact_model": "none", "borrow_cost": "absent_from_the_long_short_engine",
         "first_discovery_date": calendar[schedule.d0].date().isoformat(),
         "market_beta_neutral_composite_market": "equal_weight_market_of_eligible_names",
-        "cpcv_boundary_conservatism": "segment concatenation purges labels that cannot overlap in calendar time",
         "engine_frame_columns": "member_permanent_ids_only", "member_columns": len(assets),
     }
-    context = {"segments_sha256": support.segments_sha256, "segment_count": len(valid),
-               "excluded_rows": schedule.excluded_rows}
-    trials.context = context
-    s_mask = signal_eligibility(support.mask, bars)
-    labels, label_records = ic_labels(prices, s_mask, schedule, ic_resets, events)
+    trials.context = {"support_sha256": support.support_sha256, "support_excluded_cells": record["excluded_cells"]}
+    s_mask, e_mask = schedule.s_mask, schedule.evaluation_mask
+    labels, label_records = ic_labels(prices, e_mask, schedule, ic_resets, events)
     write_bytes(snapshot_dir / LABEL_RECORDS, _canonical(_clean(label_records.reset_index().to_dict(orient="records"))))
-    eligible = s_mask.iloc[[r - 1 for r in ic_resets]].sum(axis=1)
+    breadth = schedule.breadth()
     state["labels"] = {
         "ic_month_supply": len(ic_resets),
         **{reason.replace("ic_month_", "ic_months_"): len(rows) for reason, rows in ic_excluded.items()},
         "terminal_aware_labels": int(label_records["terminal_aware_labels"].sum()) if len(label_records) else 0,
         "missing_execution_bar": 0, "missing_horizon_end_bar": 0,
-        "eligible_count_by_month": dict(zip((calendar[r].date().isoformat() for r in ic_resets),
-                                            eligible.astype(int).tolist())),
+        "breadth_by_month": {day.date().isoformat(): {k: int(v) for k, v in row.items()}
+                             for day, row in breadth.iterrows()},
     }
 
     signals: dict[str, dict[str, pd.DataFrame | Exception]] = {}
@@ -957,7 +922,7 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                 fields = _failure(signal)
             else:
                 try:
-                    fields = ic_evaluation(signal, labels, s_mask, ic_resets)
+                    fields = ic_evaluation(signal, labels, e_mask, ic_resets)
                 except (ValueError, ArithmeticError) as exc:
                     fields = _failure(exc)
             if family == "A" and "coverage_loss" in fields:
@@ -978,15 +943,13 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
     union_q = {row["specification"]["factor_id"]: row["adjusted_pvalues"]["hac"]["by"] for row in union["rows"]}
 
     common = dict(intervals=loaded["intervals"][loaded["intervals"]["permanent_id"].isin(assets)], events=events)
-    measured = calendar[np.concatenate([np.arange(s.first, s.last + 1) for s in valid])]
+    measured = calendar[schedule.d0:schedule.d_last + 1]
     spy_daily = spy.pct_change(fill_method=None).loc[measured]
-    exposure_books: dict[str, list[Any]] = {}
     ew_net: pd.Series | None = None
     try:
-        ew_results = run_segmented_book("long_only", prices, equal_weight_signal(s_mask), calendar, valid,
-                                        cost=costs["zero_cost_diagnostic_only"], top_pct=1.0, **common)
-        ew_stats, ew_net = book_statistics(ew_results, "long_only")
-        exposure_books["equal_weight_pit"] = ew_results
+        ew_result = run_book("long_only", prices, equal_weight_signal(e_mask), calendar, window,
+                             cost=costs["zero_cost_diagnostic_only"], top_pct=1.0, **common)
+        ew_stats, ew_net = book_statistics(ew_result, "long_only")
         ew_record = {"status": "evaluated", **ew_stats, "excess_vs_spy": excess_metrics(ew_net, spy_daily)}
     except RunnerStop as stop:
         stop.trial = "equal_weight_pit"
@@ -1004,19 +967,17 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                 for book in ("long_short", "long_only"):
                     signal, key = signals[family][factor_id], (factor_id, book, cost_case)
                     if isinstance(signal, Exception):
-                        fields, net, results = _failure(signal), None, None
+                        fields, net = _failure(signal), None
                     else:
                         try:
-                            fields, net, results = book_trial(
-                                book, prices, signal, calendar, valid, cost=costs[cost_case], spy=spy,
+                            fields, net = book_trial(
+                                book, prices, signal.where(e_mask), calendar, window, cost=costs[cost_case], spy=spy,
                                 spy_daily=spy_daily, equal_weight=ew_net, objective=objective,
                                 boundary=(primary[factor_id].get("halves") or {}).get("boundary_reset_date"), **common)
                         except RunnerStop as stop:
                             stop.trial = f"{family}:{factor_id}:{book}:{cost_case}"
                             raise
                     nets[key] = net
-                    if results is not None and cost_case == "primary":
-                        exposure_books[f"{family}:{factor_id}:{book}"] = results
                     books["|".join(key)] = trials.add(family, factor_id, "book_return", fields, book=book,
                                                       cost_case=cost_case)
 
@@ -1040,8 +1001,6 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                                           statistic_key="return_test")
     state["iid_sharpe_haircuts"] = {row["specification"]["factor_id"]: row["iid_haircuts"].get("by")
                                     for row in haircuts["rows"]}
-    state["excluded_event_exposure"] = excluded_event_exposure(schedule, support.unresolved_in_window(), calendar,
-                                                               exposure_books)
 
     state["families"] = {}
     for family, ids in (("A", FAMILY_A_IDS), ("B", FAMILY_B_IDS)):
@@ -1066,8 +1025,8 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
         state["families"][family] = {"family_size": FAMILY_SIZES[family], "rows": rows,
                                      "positive_by_rejections": sum(r["reject"] and (r["mean_ic"] or 0.0) > 0.0
                                                                    for r in rows.values())}
-    state["books"] = {key: {k: v for k, v in record.items() if k not in ("specification", "segments_sha256")}
-                      for key, record in books.items() if record["family"] == "A"}
+    state["books"] = {key: {k: v for k, v in trial.items() if k not in ("specification", "support_sha256")}
+                      for key, trial in books.items() if trial["family"] == "A"}
     state["family_b_books"] = {
         "status_counts": pd.Series([r["status"] for k, r in books.items() if r["family"] == "B"]).value_counts().to_dict()}
 
@@ -1101,10 +1060,10 @@ def _fmt(value: Any, digits: int = 6) -> str:
 
 
 def render_report(sidecar: dict[str, Any]) -> str:
-    """The markdown report: header, assumptions, families, segments, labels, books, PBO, and the gate."""
+    """The markdown report: header, assumptions, breadth, labels, families, books, PBO, and the gate."""
     header = sidecar.get("header", {})
     lines = [
-        "# M4.7 S&P 500 PIT Rerun",
+        "# M4.7 S&P 500 PIT Rerun (registration v2, asset-level support)",
         "",
         "Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or "
         "profitability claim; `formal_universe_evidence_eligible` and `formal_terminal_evidence_eligible` are false.",
@@ -1122,13 +1081,14 @@ def render_report(sidecar: dict[str, Any]) -> str:
     window, premises = header["discovery_window"], header["premises"]
     lines += [
         f"- Snapshot: `{header['snapshot_id']}`; manifest SHA-256 `{header['manifest_sha256']}`",
-        f"- segments_sha256: `{header['segments_sha256']}`; census JSON SHA-256 `{header['census_json_sha256']}`",
+        f"- support_sha256: `{header['support_sha256']}`; census JSON SHA-256 `{header['census_json_sha256']}`",
         f"- Discovery window: holdout end `{window['holdout_end']}`, D0 `{window['D0']}`, D_last `{window['D_last']}`, "
         f"D_end `{window['D_end']}`",
         "- Prior-exposure overlap fractions: " + ", ".join(
             f"{k} {_fmt(v)}" for k, v in header["prior_exposure_overlap_fraction"].items()),
-        f"- |U| = {header['U']}, |G| = {header['G']}, |W| = {header['W']}; excluded rows {header['excluded_rows']}, "
-        f"excluded fraction {_fmt(header['excluded_fraction'])}",
+        f"- |U| = {header['U']}; support-excluded cells |X| = {header['X']} of {header['signal_eligible_cells']} "
+        f"signal-eligible cells (fraction {_fmt(header['excluded_fraction'])}); by reason "
+        f"{header['excluded_cells_by_reason']}",
         f"- Eligible unpriced member-day fraction: {_fmt(header['eligible_unpriced_member_day_fraction'])}",
         f"- Census readiness: `{header['census_readiness']}`",
         f"- Holdout guard: first loaded date `{header['holdout_guard']['first_loaded_date']}`, "
@@ -1145,20 +1105,19 @@ def render_report(sidecar: dict[str, Any]) -> str:
         "",
         "## Assumptions",
         "",
-        *[f"- {key}: {_fmt(value)}" for key, value in sidecar["assumptions"].items() if key != "gap_windows"],
-        "",
-        "## Segments and gap windows (month granularity)",
-        "",
-        "| Start month | End month | Reason types | Peeled rows |",
-        "| --- | --- | --- | --- |",
-        *[f"| {w['start_month']} | {w['end_month']} | {', '.join(w['reason_types'])} | {w['peeled_rows']} |"
-          for w in sidecar["assumptions"]["gap_windows"]],
+        *[f"- {key}: {_fmt(value)}" for key, value in sidecar["assumptions"].items()],
         "",
     ]
     if "labels" in sidecar:
         labels = sidecar["labels"]
         lines += ["## Labels and IC months", "",
-                  *[f"- {k}: {v}" for k, v in labels.items() if k != "eligible_count_by_month"], ""]
+                  *[f"- {k}: {v}" for k, v in labels.items() if k != "breadth_by_month"], "",
+                  "## Monthly cross-sectional breadth", "",
+                  "A missing bar or an unevidenced disappearance excludes only the affected asset from the reset whose "
+                  "holding period needs that bar; every other asset and month stays evaluated.", "",
+                  "| Reset | Signal-eligible | Support-excluded | Evaluated |", "| --- | --- | --- | --- |",
+                  *[f"| {day} | {row['signal_eligible']} | {row['support_excluded']} | {row['evaluated']} |"
+                    for day, row in labels["breadth_by_month"].items()], ""]
     if sidecar["run_status"] != "completed":
         return "\n".join(lines) + "\n"
     for family in ("A", "B"):
@@ -1219,14 +1178,7 @@ def render_report(sidecar: dict[str, Any]) -> str:
         lines.append(f"- Family {family}: n_trials {value['n_trials']}, trial Sharpe variance "
                      f"{_fmt(value['trial_sharpe_variance'])}; values " + ", ".join(
                          f"{k} {_fmt(v)}" for k, v in value["values"].items()))
-    lines += ["- IID Sharpe haircuts (BY, disclosed as IID) are in the sidecar.", "",
-              "## Excluded event exposure", "",
-              "| Gap | Start month | Trial | Reason type | Side | Signed weight |", "| --- | --- | --- | --- | --- | --- |",
-              *[f"| {e['gap_index']} | {e['gap_start_month']} | {e['trial']} | {e['reason_type']} | {e['side']} | "
-                f"{_fmt(e['signed_weight'])} |" for e in sidecar["excluded_event_exposure"]],
-              "",
-              "Gap windows condition on the fact that an asset disappeared, halted, or joined with a missing bar; they "
-              "apply to every book and benchmark alike.", ""]
+    lines += ["- IID Sharpe haircuts (BY, disclosed as IID) are in the sidecar.", ""]
     gate = sidecar["gate"]
     lines += ["## Decision gate", "",
               f"- Outcome: `{gate['outcome']}`",
@@ -1239,7 +1191,10 @@ def render_report(sidecar: dict[str, Any]) -> str:
               "## Limitations", "",
               "- Borrow cost is absent from the long-short engine; the constant spread understates costs before 2001.",
               "- Terminal rows pay a cost for holdings that are never measured, which is conservative for the strategy.",
-              "- Family B carries no primary claim; short-horizon price-volume alphas lie outside the edge thesis.", ""]
+              "- Family B carries no primary claim; short-horizon price-volume alphas lie outside the edge thesis.",
+              f"- Each of the {header['X']} support-excluded cells conditions on its own asset's bar availability over "
+              "one holding period (a disappearance or a halt that has not yet happened at the signal row); IC pairs, "
+              "books, and the equal-weight benchmark omit those cells alike, and signal inputs never read them.", ""]
     return "\n".join(lines)
 
 

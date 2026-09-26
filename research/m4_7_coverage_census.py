@@ -3,9 +3,11 @@
 Runs after the universe build and the terminal projection and before any
 factor computation. Refuses ``derived_artifact_stale`` before any metric when
 a derived input no longer matches the current manifest (S7). Writes the
-private ``census/census_detail.json`` and support files into the snapshot,
-the public count-only ``reports/m4_7_coverage_census.{json,md}``, and the
-confirmed seal record. Every figure is ``DIAGNOSTIC_ONLY``; nothing here
+private ``census/census_detail_v2.json`` and ``census/asset_support.json``
+into the snapshot, the public count-only ``reports/m4_7_coverage_census_v2.{json,md}``,
+and the v2 confirmation of the seal record. Support v2 isolates a missing bar or
+an unevidenced disappearance to the affected asset and holding period; the v1
+census outputs and seal record stay unchanged as history. Every figure is ``DIAGNOSTIC_ONLY``; nothing here
 supports a ranking, selection, or profitability claim (R2, R10).
 
 Run as ``python -m research.m4_7_coverage_census --snapshot-id <ID>``.
@@ -37,9 +39,9 @@ from data.holdout_partition import (
     monthly_raw_counts,
     sha256_bytes,
 )
-from research.m4_7_common_support import ic_month_set, signal_eligibility, write_support_files
+from research.m4_7_common_support import SUPPORT_CONTRACT, ic_month_set, write_support_files
 from research.m4_7_family_a import FAMILY_A
-from research.m4_7_holdout_seal import REPOSITORY_SEAL, confirmed_seal_bytes
+from research.m4_7_holdout_seal import confirmed_seal_bytes
 from research.m4_7_terminal_evidence import CURATED, ENGINE_EVENTS, read_engine_events, require_current_terminal
 from research.m4_7_universe_build import (
     BENCHMARK,
@@ -70,11 +72,12 @@ from research.unchanging_price import report_unchanging_price_segments
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-REPORT_JSON = "m4_7_coverage_census.json"
-REPORT_MD = "m4_7_coverage_census.md"
-CENSUS_DETAIL = "census/census_detail.json"
+REPORT_JSON = "m4_7_coverage_census_v2.json"
+REPORT_MD = "m4_7_coverage_census_v2.md"
+CENSUS_DETAIL = "census/census_detail_v2.json"
+SEAL_CONFIRMATION = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json"
 IDENTITY_CAP, OFF_CALENDAR_CAP, UNPRICED_CAP = 0.05, 0.001, 0.02
-MAX_WINDOWS, MAX_EXCLUDED_FRACTION = 6, 0.05
+MAX_EXCLUDED_FRACTION = 0.05
 VP2_LEVEL, VP2_SHARE = 0.05, 0.01
 VOLUME_BASIS_BARS, VOLUME_BASIS_MIN_ROWS, VOLUME_BASIS_TAIL_SHARE = 20, 10, 0.20
 PRIOR_EXPOSURES = (("static_50_name_cohort", "2016-08-08", "2026-08-07"),
@@ -147,14 +150,16 @@ def derive_readiness(inputs: dict[str, Any], rule_version: str = SEAL_RULE_VERSI
     (``data.holdout_partition.SEAL_RULES``); the other caps are fixed. A failed
     R-CENSUS-1, 2, 8, or 9 whose value stays inside the rule's owner-accepted
     shortfall bounds is the caveat ``coverage_shortfall_accepted``; the rule's
-    ``passed`` flag still reports the registered threshold.
+    ``passed`` flag still reports the registered threshold. Under support v2,
+    R-CENSUS-2 reads the asset-level excluded fraction: support-excluded cells
+    over signal-eligible cells at the evaluation resets.
     """
     seal_rule = SEAL_RULES[rule_version]
     cap = None if seal_rule["latest_holdout_end"] is None else seal_rule["latest_holdout_end"].isoformat()
     overlaps = cap is not None and inputs["holdout_end"] > cap
     results = {
         "R-CENSUS-1": inputs["in_band_years"] >= seal_rule["min_in_band_years"] and not overlaps,
-        "R-CENSUS-2": inputs["gap_window_count"] <= MAX_WINDOWS and inputs["excluded_fraction"] <= MAX_EXCLUDED_FRACTION,
+        "R-CENSUS-2": inputs["excluded_fraction"] <= MAX_EXCLUDED_FRACTION,
         "R-CENSUS-3": inputs["identity_refusal_fraction"] <= IDENTITY_CAP,
         "R-CENSUS-4": inputs["off_calendar_fraction"] <= OFF_CALENDAR_CAP,
         "R-CENSUS-5": inputs["calendar_covers_coverage_start"] and inputs["benchmark_complete"],
@@ -167,8 +172,7 @@ def derive_readiness(inputs: dict[str, Any], rule_version: str = SEAL_RULE_VERSI
     bounds = seal_rule["accepted_shortfall"]
     accepted = {} if bounds is None else {
         "R-CENSUS-1": inputs["in_band_years"] >= bounds["min_in_band_years"] and not overlaps,
-        "R-CENSUS-2": (inputs["gap_window_count"] <= bounds["max_gap_windows"]
-                       and inputs["excluded_fraction"] <= bounds["max_excluded_fraction"]),
+        "R-CENSUS-2": inputs["excluded_fraction"] <= bounds["max_excluded_fraction"],
         "R-CENSUS-8": inputs["ic_month_supply"] >= bounds["min_ic_months"],
         "R-CENSUS-9": inputs["unpriced_fraction"] <= bounds["max_unpriced_fraction"],
     }
@@ -306,13 +310,13 @@ def run_census(
     mask = (resolve_pit_universe_mask(table, events if len(events) else None, calendar, member_pids)
             if member_pids else pd.DataFrame(index=calendar))
     breadth = _breadth(ctx, table, mask, seal)
-    coverage, detail_unpriced = _unpriced(ctx, mask, support)
+    coverage, detail_unpriced = _unpriced(ctx, mask)
     identity = _identity(ctx, membership)
     episodes = _episode_metrics(ctx, mask)
     ic_included, ic_excluded = ic_month_set(support.schedule)
     reset_dates = [support.calendar[r].date() for r in ic_included]
-    warmup = post_join_warmup_estimate(signal_eligibility(support.mask, support.bars), support.bars, ic_included)
     schedule = support.schedule
+    warmup = post_join_warmup_estimate(schedule.evaluation_mask, support.bars, ic_included)
     record = support.record()
     verify = snapshot.manifest.get("verify") or {}
     member_codes = membership_codes(membership)
@@ -323,7 +327,7 @@ def run_census(
     integrity = _integrity(snapshot, seal, verify)
     readiness_inputs = {
         "in_band_years": breadth["in_band_years"], "holdout_end": seal["holdout_end_exclusive"],
-        "gap_window_count": len(schedule.windows), "excluded_fraction": schedule.excluded_fraction,
+        "excluded_fraction": schedule.excluded_fraction,
         "identity_refusal_fraction": coverage["identity_refusal_fraction"],
         "off_calendar_fraction": off_calendar / coverage["member_days_all"] if coverage["member_days_all"] else 0.0,
         "calendar_covers_coverage_start": calendar[0].date().isoformat() <= coverage_start_sealed,
@@ -336,7 +340,7 @@ def run_census(
     status_counts = _table_status_counts(snapshot, membership)
     counters = snapshot.manifest.get("counters", {})
     public = {
-        "schema_version": "m4_7_coverage_census_v1",
+        "schema_version": "m4_7_coverage_census_v2",
         "evidence_ceiling": "DIAGNOSTIC_ONLY",
         "formal_universe_evidence_eligible": False,
         "snapshot_id": snapshot.manifest["snapshot"].get("id"),
@@ -353,17 +357,14 @@ def run_census(
                      "calendar_source": seal["calendar_source"],
                      "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows},
         "price_coverage": {**coverage["public"], **episodes["coverage"]},
-        "exclusion_set": {
-            "unresolved_events": len(support.unresolved_in_window()),
-            "missing_bar_cells": int(schedule.g_base.to_numpy().sum()), "terminal_reset_cells": len(schedule.g_term),
-            "gap_window_count": len(schedule.windows), "excluded_rows": schedule.excluded_rows,
-            "excluded_fraction": schedule.excluded_fraction, "segment_count": len(schedule.segments),
-            "min_segment_rows": min((s.rows for s in schedule.segments if s.valid), default=0),
-            "segments_sha256": support.segments_sha256,
-            "gap_windows": [{"start_month": w["start"][:7], "end_month": w["end"][:7], "reason_types": w["reasons"],
-                             "rows": _rows_between(support.calendar, w["start"], w["end"])} for w in record["gap_windows"]],
-            "segments": [{"first_month": s["first_row"][:7], "last_month": s["last_row"][:7],
-                          "measured_rows": s["measured_rows"], "valid": s["valid"]} for s in record["segments"]],
+        "asset_support": {
+            "support_contract": SUPPORT_CONTRACT, "unresolved_events": record["unresolved_in_window"],
+            "evaluation_resets": record["evaluation_resets"], "signal_eligible_cells": record["signal_eligible_cells"],
+            "excluded_cells": record["excluded_cells"], "excluded_fraction": record["excluded_fraction"],
+            "excluded_cells_by_reason": record["excluded_cells_by_reason"],
+            "evaluated_breadth": _breadth_summary(record["breadth"]),
+            "breadth_by_reset": record["breadth"],
+            "support_sha256": support.support_sha256,
         },
         "price_quality": episodes["quality"],
         "corporate_actions": {**episodes["corporate_actions"],
@@ -397,7 +398,7 @@ def run_census(
             "interval_results_sha256": sha256_bytes((root / INTERVAL_RESULTS).read_bytes()),
             "evidence_sha256": sha256_bytes((root / CURATED).read_bytes()) if (root / CURATED).is_file() else None,
             "engine_events_sha256": sha256_bytes((root / ENGINE_EVENTS).read_bytes()),
-            "segments_sha256": support.segments_sha256,
+            "support_sha256": support.support_sha256,
             "seal_prospective_sha256": sha256_bytes(seal_bytes_prospective),
         },
         "premises": {
@@ -414,7 +415,6 @@ def run_census(
         "interval_refusals": identity["detail"],
         "incomplete_codes_by_table_and_status": verify.get("incomplete_codes_by_table_and_status", {}),
         "unresolved": support.unresolved_in_window(),
-        "gap_windows": record["gap_windows"], "segments": record["segments"],
     }
     write_bytes(root / CENSUS_DETAIL, canonical_json(detail))
     reports = Path(reports_dir) if reports_dir is not None else REPOSITORY_ROOT / "reports"
@@ -427,13 +427,16 @@ def run_census(
         identity_adjusted_min_month_end_count=breadth["identity_adjusted_min_holdout_month_end_count"],
         integrity=_holdout_integrity(snapshot),
     )
-    seal_confirmed = write_bytes(Path(seal_out) if seal_out is not None else REPOSITORY_SEAL, confirmed)
+    seal_confirmed = write_bytes(Path(seal_out) if seal_out is not None else SEAL_CONFIRMATION, confirmed)
     return {"public": public, "detail": detail, "census_json_sha256": census_sha,
             "seal_prospective_sha256": sha256_bytes(seal_bytes_prospective), "seal_confirmed_sha256": seal_confirmed}
 
 
-def _rows_between(calendar: pd.DatetimeIndex, start: str, end: str) -> int:
-    return int(calendar.get_loc(pd.Timestamp(end)) - calendar.get_loc(pd.Timestamp(start)) + 1)
+def _breadth_summary(breadth: list[dict[str, Any]]) -> dict[str, Any]:
+    """Minimum, median, and maximum evaluated names over the evaluation resets."""
+    values = [row["evaluated"] for row in breadth]
+    return {"min": min(values, default=0), "median": float(np.median(values)) if values else 0.0,
+            "max": max(values, default=0)}
 
 
 def _code_commit() -> str | None:
@@ -488,7 +491,7 @@ def _interval_rows(ctx: Context, row: dict[str, Any]) -> np.ndarray:
     return np.arange(max(m_in, ctx.d0), min(m_out, ctx.d_last + 1))
 
 
-def _unpriced(ctx: Context, mask: pd.DataFrame, support) -> tuple[dict[str, Any], dict[str, dict[str, int]]]:
+def _unpriced(ctx: Context, mask: pd.DataFrame) -> tuple[dict[str, Any], dict[str, dict[str, int]]]:
     """Section 5.2 ``eligible_unpriced_member_days`` with R-CENSUS-3 and R-CENSUS-9 counts."""
     window = ctx.window
     masters = {r["permanent_id"]: r for r in ctx.master.to_dict(orient="records") if r["permanent_id"]}
@@ -497,12 +500,6 @@ def _unpriced(ctx: Context, mask: pd.DataFrame, support) -> tuple[dict[str, Any]
     detail: dict[str, dict[str, int]] = {}
     member_days = 0
     with_bar = 0
-    schedule = support.schedule
-    x_rows: dict[str, set[int]] = {}
-    for row, column in np.argwhere(schedule.g_base.to_numpy(dtype=bool)):
-        x_rows.setdefault(schedule.g_base.columns[column], set()).add(int(row) + ctx.i_h)
-    for pid, row in list(schedule.g_term) + list(support.unresolved.items()):
-        x_rows.setdefault(pid, set()).add(int(row) + ctx.i_h)
 
     def add(key: str, count: int, pid: str | None = None) -> None:
         if count:
@@ -521,9 +518,8 @@ def _unpriced(ctx: Context, mask: pd.DataFrame, support) -> tuple[dict[str, Any]
         first, last = _row(ctx.calendar, record["first_bar"]), _row(ctx.calendar, record["last_bar"])
         panel = ctx.panels.get(pid)
         panel_rows = set() if panel is None else set(ctx.calendar.get_indexer(panel.index[np.isfinite(panel["adjusted_close"])]))
-        excluded = x_rows.get(pid, set())
         for r in rows:
-            if r in panel_rows or r in excluded:
+            if r in panel_rows:
                 continue
             if panel is None:
                 add("post_last_bar_deferred_holdout" if last < ctx.i_h else "no_discovery_panel", 1, pid)
@@ -941,7 +937,7 @@ def render_markdown(public: dict[str, Any]) -> str:
     support = public["in_span_distribution_support"]
     volume = public["volume_basis_split_diagnostic"]
     coverage = public["price_coverage"]
-    exclusion = public["exclusion_set"]
+    exclusion = public["asset_support"]
     lines = [
         "# M4.7 Coverage Census",
         "",
@@ -961,7 +957,7 @@ def render_markdown(public: dict[str, Any]) -> str:
             f" ({', '.join(f['rule'] + ' ' + f['result'] for f in readiness['failures'])})" if readiness["failures"] else ""),
         f"- manifest_sha256: `{identity['manifest_sha256']}`",
         f"- discovery_inputs_sha256: `{identity['discovery_inputs_sha256']}`",
-        f"- segments_sha256: `{identity['segments_sha256']}`",
+        f"- support_sha256: `{identity['support_sha256']}` (`{exclusion['support_contract']}`)",
         "",
         "## Premises and owner disposition",
         "",
@@ -992,17 +988,25 @@ def render_markdown(public: dict[str, Any]) -> str:
         f"| Eligible unpriced member-days | {coverage['eligible_unpriced_member_days_total']} |",
         f"| Eligible unpriced fraction | {coverage['eligible_unpriced_fraction']:.6f} |",
         f"| Identity refusal fraction | {coverage['identity_refusal_fraction']:.6f} |",
-        f"| Gap windows | {exclusion['gap_window_count']} |",
-        f"| Excluded fraction | {exclusion['excluded_fraction']:.6f} |",
+        f"| Unresolved events in the window | {exclusion['unresolved_events']} |",
+        f"| Support-excluded cells | {exclusion['excluded_cells']} of {exclusion['signal_eligible_cells']} |",
+        f"| Support-excluded fraction | {exclusion['excluded_fraction']:.6f} |",
+        f"| Evaluated breadth (min, median, max) | {exclusion['evaluated_breadth']['min']}, "
+        f"{exclusion['evaluated_breadth']['median']:g}, {exclusion['evaluated_breadth']['max']} |",
         f"| IC month supply | {public['ic_supply']['ic_month_supply']} |",
         f"| Kill reachable (projection) | {public['power_projection']['kill_reachable_projection']} |",
         "",
-        "## Gap windows (month granularity)",
+        "## Asset-level support exclusions",
         "",
-        "| Start month | End month | Reasons | Rows |",
+        "A missing bar or an unevidenced disappearance excludes only the affected asset from the reset whose holding "
+        "period needs that bar. Each exclusion conditions on that asset's own bar availability over one holding period.",
+        "",
+        f"- Excluded cells by reason: {exclusion['excluded_cells_by_reason']}",
+        "",
+        "| Reset | Signal-eligible | Support-excluded | Evaluated |",
         "| --- | --- | --- | --- |",
-        *[f"| {w['start_month']} | {w['end_month']} | {', '.join(w['reason_types'])} | {w['rows']} |"
-          for w in exclusion["gap_windows"]],
+        *[f"| {row['reset_date']} | {row['signal_eligible']} | {row['support_excluded']} | {row['evaluated']} |"
+          for row in exclusion["breadth_by_reset"]],
         "",
         "## Holdout integrity (metadata)",
         "",

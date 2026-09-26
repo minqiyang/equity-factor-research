@@ -20,7 +20,7 @@ exact repeat and a genuine overlap; one episode with two exit classes; a
 delisted member on a reused listed code; a 404 member; a member whose reused
 code trades years later; a persistent split provider error; an episode ending
 in the holdout decade with a later discovery split; an episode continuous
-across ``holdout_end``; and the Round 2 and Round 3 peeling joiners.
+across ``holdout_end``; and two joiners whose only missing bar precedes their first reset.
 """
 
 from __future__ import annotations

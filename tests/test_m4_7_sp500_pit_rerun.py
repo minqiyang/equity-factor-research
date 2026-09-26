@@ -1,4 +1,4 @@
-"""M4.7 stage b-1 runner oracles (plan 7.3): T-TERM-7 (runner part), T-SUP-4..7, 9, 10, T-REG-1, 2, 4b, 6, 8..13.
+"""M4.7 runner oracles under registration v2: T-TERM-7 (runner part), T-SUP-4..7, 9, 10, T-REG-1, 2, 4b, 6, 8..13.
 
 The module fixture runs the committed fixture universe
 (``tests/fixtures/m4_7/runner_scenario.py``) through the merged a-1 and a-2
@@ -26,7 +26,6 @@ from fixtures.m4_7 import runner_scenario as scenario
 from m4_7_snapshot_support import Harness
 from research.m4_7_universe_build import DATA_DIR_ENV
 from research.m4_7_common_support import (
-    Segment,
     common_support_schedule,
     ic_month_set,
     max_reset_to_reset_rows,
@@ -66,6 +65,7 @@ def _record_engine_calls(patch: pytest.MonkeyPatch, calls: list[dict]) -> None:
                 "event_ids": [] if events is None else list(events["permanent_id"]),
                 "top_pct": kwargs.get("top_pct"), "cost": kwargs.get("transaction_cost_bps"),
                 "measured": result.returns.index[1:], "first_held": held.iloc[1], "terminal_held": held.iloc[-1],
+                "held": held.ne(0.0),
             })
             return result
         return call
@@ -124,10 +124,12 @@ def member_ids(snapshot):
 
 
 def books_of(e2e):
-    """Engine calls grouped into books: one call per valid segment, in the runner's order."""
-    count = e2e["sidecar"]["assumptions"]["segment_count"]
-    calls = e2e["calls"]
-    return [calls[i:i + count] for i in range(0, len(calls), count)]
+    """Engine calls in the runner's order: one call per book over the single evaluation window."""
+    return e2e["calls"]
+
+
+def support_record(snapshot):
+    return json.loads((snapshot / "census/asset_support.json").read_text())
 
 
 # ---------------------------------------------------------------- acceptance (plan 7.3 b-1)
@@ -142,10 +144,19 @@ def test_b1_synthetic_end_to_end_rerun_meets_the_acceptance_row(e2e):
     assert kinds == {"merger_or_acquisition", "rename_or_code_change"}
     master = pd.read_csv(e2e["snapshot"] / "identity/security_master.csv", dtype=str, keep_default_na=False)
     assert {"TICK.US#E1", "TICK.US#E2", "NEWL.US#E1", "PRIOR.US#E1", "JOIN.US#E1", "INDX.US#E1"} <= set(master["permanent_id"])
-    window = sidecar["assumptions"]["gap_windows"]
-    assert len(window) == 1 and window[0]["reason_types"] == ["missing_bar", "terminal_reset_missing_bar",
-                                                              "unresolved_delisting"]
-    assert sidecar["header"]["U"] == 1 and sidecar["labels"]["ic_month_supply"] >= runner.MIN_IC_MONTHS
+    header, labels = sidecar["header"], sidecar["labels"]
+    assert header["U"] == 1 and header["X"] == 4
+    assert header["excluded_cells_by_reason"] == {"missing_bar": 3, "unresolved_delisting": 1}
+    record = support_record(e2e["snapshot"])
+    assert [(pid, reason) for pid, _, reason in record["exclusions"]] == [
+        ("HALT.US#E1", "missing_bar"), ("RSTM.US#E1", "missing_bar"), ("RSTM.US#E1", "missing_bar"),
+        ("UNRES.US#E1", "unresolved_delisting")]
+    assert labels["ic_month_supply"] == record["evaluation_resets"] - 1 == 70
+    assert labels["ic_months_horizon_unmeasured"] == 1 and len(labels["breadth_by_month"]) == 71
+    assert sum(row["support_excluded"] for row in labels["breadth_by_month"].values()) == 4
+    breadth = labels["breadth_by_month"].values()
+    assert all(row["evaluated"] == row["signal_eligible"] - row["support_excluded"] for row in breadth)
+    assert min(row["evaluated"] for row in breadth) >= 100, [row["evaluated"] for row in breadth]
     primary = [r for r in trial_lines(e2e["out"]) if r["family"] == "A" and r["hypothesis"] == "rank_ic_mean"]
     books = [r for r in trial_lines(e2e["out"]) if r["family"] == "A" and r["hypothesis"] == "book_return"]
     assert len(primary) == 6 and {r["status"] for r in primary} == {"evaluated"}
@@ -174,9 +185,9 @@ def test_b1_synthetic_end_to_end_rerun_meets_the_acceptance_row(e2e):
                               "missing_execution_bar", "missing_horizon_end_bar", "label_exclusion_fraction"}
     assert sum(r["terminal_aware_labels"] for r in labels) == 4 == sidecar["labels"]["terminal_aware_labels"]
     report = (e2e["out"] / runner.REPORT).read_text()
-    for heading in ("## Premises", "## Assumptions", "## Segments and gap windows", "## Labels and IC months",
+    for heading in ("## Premises", "## Assumptions", "## Labels and IC months", "## Monthly cross-sectional breadth",
                     "## Family A primary tests", "## Family B primary tests", "## Family A books", "## Benchmarks",
-                    "## CPCV and PBO families", "## Excluded event exposure", "## Decision gate"):
+                    "## CPCV and PBO families", "## Decision gate", "## Limitations"):
         assert heading in report
 
 
@@ -236,13 +247,14 @@ def _set(path, value):
     (_set(("statistics", "power_projection", "kill_reachable"), True), "registration_invalid"),
     (_set(("statistics", "power_projection", "owner_decision_o3"), "undecided"), "registration_invalid"),
     (_set(("snapshot", "retrieval_complete"), False), "registration_invalid"),
-    (_set(("snapshot", "segments_sha256"), "0" * 63), "registration_invalid"),
+    (_set(("snapshot", "support_sha256"), "0" * 63), "registration_invalid"),
     (_set(("objective", "tracking_error_budget_annualized"), 0.3), "registration_invalid"),
     (_set(("objective", "target_information_ratio"), 0.0), "registration_invalid"),
     (_set(("objective", "max_drawdown_budget", "long_short"), 1.0), "registration_invalid"),
     (_set(("costs", "sensitivity_2x", "slippage_bps"), 6.0), "registration_invalid"),
     (_set(("costs", "zero_cost_diagnostic_only", "transaction_cost_bps"), 0.5), "registration_invalid"),
-    (_set(("common_support", "min_segment_rows"), 21), "registration_invalid"),
+    (_set(("common_support", "contract"), "common_support_segments_open_terminal_holdings_v3"), "registration_invalid"),
+    (_set(("schema_version",), "m4_7_sp500_pit_rerun_v1"), "registration_invalid"),
 ])
 def test_t_reg_1_departures_from_the_protocol_refuse(pipeline, change, reason):
     doc = copy.deepcopy(pipeline["registration"])
@@ -262,7 +274,7 @@ def test_t_reg_2_hash_is_written_into_report_sidecar_and_every_trial(e2e):
     assert json.loads((e2e["out"] / runner.SIDECAR).read_text())["header"]["registration_sha256"] == sha
     lines = trial_lines(e2e["out"])
     assert lines and all(r["registration_sha256"] == sha for r in lines)
-    assert all(r["segments_sha256"] == e2e["registration"]["snapshot"]["segments_sha256"] for r in lines)
+    assert all(r["support_sha256"] == e2e["registration"]["snapshot"]["support_sha256"] for r in lines)
 
 
 def test_t_reg_2_hash_mismatch_is_class_one_before_any_trial(pipeline, tmp_path):
@@ -360,7 +372,8 @@ def test_cli_exit_codes(pipeline, tmp_path, monkeypatch, capsys):
 
 def test_t_reg_8_cpcv_families_are_aligned_on_mrows(e2e):
     cpcv, sidecar = e2e["sidecar"]["cpcv"], e2e["sidecar"]
-    rows = sum(s["measured_rows"] for s in sidecar["books"]["MOM_12_1|long_short|primary"]["segments"])
+    rows = sidecar["books"]["MOM_12_1|long_short|primary"]["measured_rows"]
+    assert rows == len(e2e["calls"][0]["measured"])
     horizon = e2e["registration"]["discovery"]["max_reset_to_reset_rows"]
     assert set(cpcv) == {"A_long_short", "A_excess", "B_long_short", "B_excess"}
     for name, family in cpcv.items():
@@ -386,7 +399,7 @@ def test_t_reg_9_typed_statistics_and_the_header(e2e):
     assert {r["return_test"]["status"] for r in family_a} == {"ok"}
     header = e2e["sidecar"]["header"]
     for key in ("registration_sha256", "code_commit", "manifest_sha256", "discovery_window",
-                "prior_exposure_overlap_fraction", "U", "G", "W", "excluded_fraction",
+                "prior_exposure_overlap_fraction", "U", "X", "signal_eligible_cells", "excluded_fraction",
                 "eligible_unpriced_member_day_fraction"):
         assert header[key] is not None
     premises = header["premises"]
@@ -401,7 +414,7 @@ def test_t_reg_10_engine_frames_hold_member_permanent_ids_only(e2e):
     listed = {r["symbol"] for r in inventory["files"]}
     assert {BENCHMARK, "ACQ.US#E1"} <= listed and not {BENCHMARK, "ACQ.US#E1"} & set(members)
     calls = e2e["calls"]
-    assert len(calls) == (1 + 36 + 126) * e2e["sidecar"]["assumptions"]["segment_count"]
+    assert len(calls) == 1 + 36 + 126
     for call in calls:
         assert call["price_columns"] == members and call["signal_columns"] == members
         assert set(call["event_ids"]) <= set(members) and len(call["event_ids"]) == 4
@@ -421,19 +434,23 @@ def test_t_term_7_runner_assumptions_list_the_lag_distribution(e2e):
 # ---------------------------------------------------------------- T-SUP-4, 5 on the fixture universe
 
 
-def test_t_sup_4_books_and_benchmark_share_measured_rows_and_exposure_is_typed(e2e):
+def test_t_sup_4_books_and_benchmark_share_measured_rows_and_never_hold_an_excluded_cell(e2e):
     books = books_of(e2e)
-    rows = [pd.DatetimeIndex(np.concatenate([c["measured"] for c in book])) for book in books]
-    assert all(r.equals(rows[0]) for r in rows)
+    assert all(book["measured"].equals(books[0]["measured"]) for book in books)
+    window = e2e["sidecar"]["assumptions"]["evaluation_window"]
+    assert books[0]["measured"][0].date().isoformat() == window["first_measured"]
+    assert books[0]["measured"][-1].date().isoformat() == window["last_measured"]
     ew, momentum_ls, momentum_lo = books[0], books[1], books[2]
-    assert ew[0]["top_pct"] == 1.0 and momentum_ls[0]["kind"] == "long_short" and momentum_lo[0]["kind"] == "long_only"
-    assert not momentum_ls[0]["terminal_held"].equals(momentum_lo[0]["terminal_held"])
-    exposure = e2e["sidecar"]["excluded_event_exposure"]
-    ew_rows = [e for e in exposure if e["trial"] == "equal_weight_pit"]
-    assert {e["reason_type"] for e in ew_rows} == {"missing_bar", "unresolved_delisting"}
-    assert all(e["side"] == "long" and e["signed_weight"] > 0 for e in ew_rows)
-    assert {e["side"] for e in exposure if e["trial"].endswith("long_short")} <= {"long", "short"}
-    assert "permanent_id" not in json.dumps(exposure) and ".US#" not in json.dumps(exposure)
+    assert ew["top_pct"] == 1.0 and momentum_ls["kind"] == "long_short" and momentum_lo["kind"] == "long_only"
+    assert not momentum_ls["terminal_held"].equals(momentum_lo["terminal_held"])
+    record = support_record(e2e["snapshot"])
+    resets = [pd.Timestamp(row["reset_date"]) for row in record["breadth"]]
+    for pid, reset, _ in record["exclusions"]:
+        start = pd.Timestamp(reset)
+        following = [r for r in resets if r > start]
+        period = slice(start, following[0] - pd.Timedelta(days=1)) if following else slice(start, start)
+        for book in books:
+            assert not book["held"].loc[period, pid].any(), (pid, reset, book["kind"])
 
 
 def test_t_sup_4_cpcv_family_omits_failed_columns():
@@ -451,14 +468,20 @@ def test_t_sup_4_cpcv_family_omits_failed_columns():
     assert short["unavailable_reason"] == "insufficient_rows_for_split_count"
 
 
-def test_t_sup_5_every_book_completes_and_a_one_row_gap_member_is_held_around_the_window(e2e):
+def test_t_sup_5_every_book_completes_and_isolation_stays_asset_local(e2e):
     trials = trial_lines(e2e["out"])
     assert all(r["status"] == "evaluated" for r in trials if r["family"] == "A")
     assert e2e["sidecar"]["benchmarks"]["equal_weight_pit"]["status"] == "evaluated"
-    ew = books_of(e2e)[0]
-    assert ew[0]["terminal_held"]["RSTM.US#E1"] > 0 and ew[1]["first_held"]["RSTM.US#E1"] > 0
-    assert ew[0]["terminal_held"]["HALT.US#E1"] > 0 and ew[1]["first_held"]["HALT.US#E1"] > 0
-    assert ew[0]["terminal_held"]["JOIN.US#E1"] == 0 and ew[1]["first_held"]["JOIN.US#E1"] > 0
+    held = books_of(e2e)[0]["held"]
+    cal = scenario.CAL
+    reset, next_reset, after = cal[scenario.WINDOW_RESET], cal[scenario.RESET_MISSING], cal[scenario.RESET_MISSING + 5]
+    before = cal[scenario.WINDOW_RESET - 1]
+    for pid in ("HALT.US#E1", "RSTM.US#E1", "UNRES.US#E1"):
+        assert held.loc[before, pid] and not held.loc[reset, pid]
+    assert held.loc[next_reset, "HALT.US#E1"] and not held.loc[next_reset, "RSTM.US#E1"]
+    assert held.loc[after, "RSTM.US#E1"] and not held.loc[after:, "UNRES.US#E1"].any()
+    assert held.loc[next_reset, "JOIN.US#E1"] and held.loc[reset, "N001.US#E1"]
+    assert held.loc[reset].sum() == held.loc[before].sum() - 3 + int(held.loc[reset, "JOIN.US#E1"])
 
 
 # ---------------------------------------------------------------- T-SUP-6, T-SUP-9 stops on the fixture universe
@@ -483,12 +506,12 @@ def test_t_sup_6_a_missing_value_the_census_did_not_record_stops_the_run(pipelin
     assert "census_runner_inconsistency:schedule_digest" in runner.render_report(sidecar)
 
 
-def test_t_sup_9_class_one_inside_a_segment_stops_and_keeps_written_trials(pipeline, tmp_path, monkeypatch):
+def test_t_sup_9_class_one_inside_the_window_stops_and_keeps_written_trials(pipeline, tmp_path, monkeypatch):
     def failing_composites(*args, **kwargs):
         raise ValueError("composite construction unavailable in this oracle")
 
     def execution_failure(prices, signals, **kwargs):
-        raise BacktestValidationError("execution_price_invalid", "injected inside a segment")
+        raise BacktestValidationError("execution_price_invalid", "injected inside the window")
 
     monkeypatch.setattr(runner, "family_b_composites", failing_composites)
     monkeypatch.setattr(runner, "run_long_short_backtest", execution_failure)
@@ -567,7 +590,7 @@ def test_t_reg_13_stale_inputs_refuse_and_the_rebuilt_state_loads(pipeline, tmp_
     bound = runner.bind_snapshot(snapshot, doc, rebuilt["census_json"], rebuilt["seal_record"])
     loaded = runner.load_member_panels(bound)
     support = runner.recompute_support(bound, loaded, doc)
-    assert support.segments_sha256 == doc["snapshot"]["segments_sha256"] and len(loads) == 1
+    assert support.support_sha256 == doc["snapshot"]["support_sha256"] and len(loads) == 1
 
 
 # ---------------------------------------------------------------- small golden fixtures
@@ -603,38 +626,42 @@ def _mask(table, dates, assets, events=None):
     return resolve_pit_universe_mask(table, events, dates, assets)
 
 
-def test_t_sup_7_two_segment_hand_oracle():
+def test_t_sup_7_one_window_hand_oracle():
     R = scheduled_reset_rows(SMALL)
     d0 = int(R[R >= 253][0])
     gap = int(R[R > d0 + 120][0]) + 8
+    affected = int(R[R <= gap][-1])
     assets = [f"A{i:02d}" for i in range(20)]
     prices = walks(SMALL, assets, 7)
     prices.iloc[gap, 0] = np.nan
     table = intervals(SMALL, {a: 0 for a in assets})
     mask = _mask(table, SMALL, assets)
-    bars = prices.notna()
-    schedule = common_support_schedule(SMALL, bars, mask, {}, d0)
-    valid = [s for s in schedule.segments if s.valid]
-    assert len(valid) == 2 and len(schedule.windows) == 1
-    window = schedule.windows[0]
-    assert schedule.excluded_rows == window.end - window.start + 1
-    s_mask = signal_eligibility(mask, bars)
-    signal = pd.DataFrame(np.random.default_rng(8).normal(size=prices.shape), index=SMALL, columns=assets).where(s_mask)
+    schedule = common_support_schedule(SMALL, prices.notna(), mask, {}, d0)
+    assert schedule.reasons == (("A00", affected, "missing_bar"),)
+    assert schedule.evaluation_resets.tolist() == R[R >= d0].tolist()
+    raw = pd.DataFrame(np.random.default_rng(8).normal(size=prices.shape), index=SMALL, columns=assets)
+    raw["A00"] = 10.0
+    window = (d0 - 1, schedule.d_last)
     for book in ("long_only", "long_short"):
-        results = runner.run_segmented_book(book, prices, signal, SMALL, valid, intervals=table, events=pd.DataFrame(),
-                                            cost=PRIMARY, top_pct=0.25)
-        stats, net = runner.book_statistics(results, book)
-        assert len(net) == sum(s.rows for s in valid) and net.index.equals(SMALL[np.r_[valid[0].first:valid[0].last + 1,
-                                                                                       valid[1].first:valid[1].last + 1]])
-        for result, segment, record in zip(results, valid, stats["segments"]):
-            assert result.equity_curve.index[0] == SMALL[segment.anchor] and result.equity_curve.iloc[0] == 1.0
-            assert result.returns.iloc[0] == 0.0 and result.total_trading_costs.iloc[0] == 0.0
-            assert record["first_row_net_return"] == pytest.approx(-result.total_trading_costs.iloc[1], abs=1e-15)
-            assert record["terminal_open_positions"] > 0 and record["terminal_row_trading_cost"] > 0
-            assert result.returns.iloc[-1] == pytest.approx(
-                result.gross_returns.iloc[-1] - result.total_trading_costs.iloc[-1], abs=1e-15)
-        assert stats["pooled_trading_costs"] == pytest.approx(sum(r["trading_costs"] for r in stats["segments"]))
-        assert stats["hac_boundary_adjacency_pairs"] == stats["return_test"]["hac_lags"]
+        with pytest.raises(runner.RunnerStop) as stop:
+            runner.run_book(book, prices, raw.where(schedule.s_mask), SMALL, window, intervals=table,
+                            events=pd.DataFrame(), cost=PRIMARY, top_pct=0.25)
+        assert stop.value.reason == "incoming_price_invalid"
+        result = runner.run_book(book, prices, raw.where(schedule.evaluation_mask), SMALL, window, intervals=table,
+                                 events=pd.DataFrame(), cost=PRIMARY, top_pct=0.25)
+        stats, net = runner.book_statistics(result, book)
+        held = (result.net_holdings if book == "long_short" else result.holdings)["A00"]
+        following = int(R[R > affected][0])
+        assert (held.iloc[1:].loc[SMALL[affected]:SMALL[following - 1]] == 0.0).all()
+        assert (held.loc[SMALL[d0]:SMALL[affected - 1]] > 0).all() and held.loc[SMALL[following]] > 0
+        assert net.index.equals(SMALL[d0:schedule.d_last + 1]) and stats["measured_rows"] == len(net)
+        assert result.equity_curve.index[0] == SMALL[d0 - 1] and result.equity_curve.iloc[0] == 1.0
+        assert result.returns.iloc[0] == 0.0 and result.total_trading_costs.iloc[0] == 0.0
+        assert stats["first_row_net_return"] == pytest.approx(-result.total_trading_costs.iloc[1], abs=1e-15)
+        assert stats["terminal_open_positions"] > 0 and stats["terminal_row_trading_cost"] > 0
+        assert result.returns.iloc[-1] == pytest.approx(
+            result.gross_returns.iloc[-1] - result.total_trading_costs.iloc[-1], abs=1e-15)
+        assert stats["pooled_trading_costs"] == pytest.approx(float(result.total_trading_costs.iloc[1:].sum()))
 
 
 def test_t_sup_9_book_failures_are_trial_level_or_class_one(monkeypatch):
@@ -643,7 +670,7 @@ def test_t_sup_9_book_failures_are_trial_level_or_class_one(monkeypatch):
     table = intervals(SMALL, {a: 0 for a in assets})
     s_mask = signal_eligibility(_mask(table, SMALL, assets), prices.notna())
     signal = prices.pct_change(21).where(s_mask)
-    segment = [Segment(300, 400, True)]
+    window = (299, 400)
     spy = prices.mean(axis=1).rename(BENCHMARK)
     kwargs = dict(cost=PRIMARY, intervals=table, events=pd.DataFrame(), spy=spy,
                   spy_daily=spy.pct_change().iloc[300:401], equal_weight=None,
@@ -653,10 +680,10 @@ def test_t_sup_9_book_failures_are_trial_level_or_class_one(monkeypatch):
         raise BacktestValidationError("target_exposure_invalid", "injected")
 
     monkeypatch.setattr(runner, "run_long_short_backtest", exposure_failure)
-    fields, net, results = runner.book_trial("long_short", prices, signal, SMALL, segment, **kwargs)
+    fields, net = runner.book_trial("long_short", prices, signal, SMALL, window, **kwargs)
     assert fields["status"] == "failed" and fields["error_type"] == "BacktestValidationError" and net is None
     assert fields["error"].startswith("target_exposure_invalid")
-    fields_lo, net_lo, _ = runner.book_trial("long_only", prices, signal, SMALL, segment, **kwargs)
+    fields_lo, net_lo = runner.book_trial("long_only", prices, signal, SMALL, window, **kwargs)
     assert fields_lo["status"] == "evaluated" and fields_lo["excess_vs_equal_weight"] == {"status": "benchmark_failed"}
     records = [{"trial_id": "failed", "family": "A", "status": "failed", "specification": {"factor_id": "F0"}},
                *({"trial_id": f"ok{i}", "family": "A", "status": "completed", "specification": {"factor_id": f"F{i}"},
@@ -670,7 +697,7 @@ def test_t_sup_9_book_failures_are_trial_level_or_class_one(monkeypatch):
 
     monkeypatch.setattr(runner, "run_long_short_backtest", execution_failure)
     with pytest.raises(runner.RunnerStop) as stop:
-        runner.book_trial("long_short", prices, signal, SMALL, segment, **kwargs)
+        runner.book_trial("long_short", prices, signal, SMALL, window, **kwargs)
     assert stop.value.reason == "execution_price_invalid"
 
 
@@ -681,14 +708,14 @@ def test_t_sup_9_a_label_bar_missing_past_the_census_is_class_one():
     mask = _mask(table, SMALL, assets)
     schedule = common_support_schedule(SMALL, prices.notna(), mask, {}, int(scheduled_reset_rows(SMALL)[12]))
     resets, _ = ic_month_set(schedule)
-    s_mask = signal_eligibility(mask, prices.notna())
-    labels, records = runner.ic_labels(prices, s_mask, schedule, resets, pd.DataFrame())
+    e_mask = schedule.evaluation_mask
+    labels, records = runner.ic_labels(prices, e_mask, schedule, resets, pd.DataFrame())
     assert (records["label_exclusion_fraction"] == 0.0).all()
     for row_of in (lambda r: r, lambda r: int(schedule.reset_rows[schedule.reset_rows > r][0])):
         broken = prices.copy()
         broken.iloc[row_of(resets[3]), 2] = np.nan
         with pytest.raises(runner.RunnerStop) as stop:
-            runner.ic_labels(broken, s_mask, schedule, resets, pd.DataFrame())
+            runner.ic_labels(broken, e_mask, schedule, resets, pd.DataFrame())
         assert stop.value.reason == "census_runner_inconsistency:label_bar_missing"
 
 
@@ -705,11 +732,12 @@ def test_t_sup_10_ic_rows_and_book_holdings_align():
     mask = _mask(table, dates, assets)
     bars = prices.notna()
     schedule = common_support_schedule(dates, bars, mask, {}, d0)
-    valid = [s for s in schedule.segments if s.valid]
     resets, _ = ic_month_set(schedule)
     assert r_join in resets and not mask.iloc[r_join - 3]["JOIN"] and mask.iloc[r_join - 2]["JOIN"]
-    s_mask = signal_eligibility(mask, bars)
-    assert s_mask.iloc[r_join - 1]["JOIN"] and not s_mask.iloc[r_join - 1]["GAPM"]
+    s_mask = schedule.evaluation_mask
+    r_prev = int(schedule.reset_rows[schedule.reset_rows < r_join][-1])
+    assert schedule.reasons == (("GAPM", r_prev, "missing_bar"),)
+    assert s_mask.iloc[r_join - 1]["JOIN"] and not s_mask.iloc[r_join - 1]["GAPM"] and not s_mask.iloc[r_prev - 1]["GAPM"]
     rng = np.random.default_rng(12)
     raw = pd.DataFrame(rng.normal(size=prices.shape), index=dates, columns=assets)
     for r in resets:
@@ -717,11 +745,12 @@ def test_t_sup_10_ic_rows_and_book_holdings_align():
     signal = raw.where(s_mask)
     labels, _ = reset_to_reset_labels(prices, s_mask, schedule.reset_rows, resets, None)
 
+    window = (d0 - 1, schedule.d_last)
+
     def run(book, sig, **extra):
-        results = runner.run_segmented_book(book, prices, sig, dates, valid, intervals=table, events=pd.DataFrame(),
-                                            cost=ZERO, **extra)
-        held = pd.concat([(r.net_holdings if book == "long_short" else r.holdings) for r in results])
-        return results, held
+        result = runner.run_book(book, prices, sig, dates, window, intervals=table, events=pd.DataFrame(), cost=ZERO,
+                                 **extra)
+        return result, (result.net_holdings if book == "long_short" else result.holdings)
 
     _, ew = run("long_only", runner.equal_weight_signal(s_mask), top_pct=1.0)
     _, top = run("long_only", signal)
@@ -737,17 +766,16 @@ def test_t_sup_10_ic_rows_and_book_holdings_align():
         unselected = scores.drop(list(longs | shorts))
         assert longs and shorts and (longs | shorts) <= eligible
         assert scores[list(longs)].min() > unselected.max() and scores[list(shorts)].max() < unselected.min()
-    for segment in valid:
-        start, end = dates[segment.anchor], dates[segment.last]
-        single = run_long_only_backtest(prices, signal, source_provenance=capture_backtest_source_provenance(prices, signal),
-                                        evaluation_start=start, evaluation_end=end, top_n=1, constituent_intervals=table)
-        resolved = pd.DatetimeIndex(single.timing_metadata["resolved_rebalance_dates"])
-        for r in [r for r in resets if segment.first <= r <= segment.last]:
-            chosen = signal.iloc[r - 1].idxmax()
-            increment = prices.iloc[r + 1][chosen] / prices.iloc[r][chosen] - 1.0
-            assert single.gross_returns.loc[dates[r + 1]] == pytest.approx(increment, abs=1e-14)
-            h = int(schedule.reset_rows[schedule.reset_rows > r][0])
-            assert resolved[resolved > dates[r]][0] == dates[h]
+    single = run_long_only_backtest(prices, signal, source_provenance=capture_backtest_source_provenance(prices, signal),
+                                    evaluation_start=dates[window[0]], evaluation_end=dates[window[1]], top_n=1,
+                                    constituent_intervals=table)
+    resolved = pd.DatetimeIndex(single.timing_metadata["resolved_rebalance_dates"])
+    for r in resets:
+        chosen = signal.iloc[r - 1].idxmax()
+        increment = prices.iloc[r + 1][chosen] / prices.iloc[r][chosen] - 1.0
+        assert single.gross_returns.loc[dates[r + 1]] == pytest.approx(increment, abs=1e-14)
+        h = int(schedule.reset_rows[schedule.reset_rows > r][0])
+        assert resolved[resolved > dates[r]][0] == dates[h]
     moved = raw.copy()
     moved.iloc[list(resets)] = rng.normal(size=(len(resets), len(assets)))
     _, top_moved = run("long_only", moved.where(s_mask))
@@ -778,8 +806,8 @@ def test_t_reg_6_equal_weight_pit_benchmark_hand_oracle():
     events = cash_event(dates, "SET", r_settle, r_settle - 10, -0.2)
     mask = _mask(table, dates, assets, events)
     s_mask = signal_eligibility(mask, prices.notna())
-    [result] = runner.run_segmented_book("long_only", prices, runner.equal_weight_signal(s_mask), dates,
-                                         [Segment(p, q, True)], intervals=table, events=events, cost=ZERO, top_pct=1.0)
+    result = runner.run_book("long_only", prices, runner.equal_weight_signal(s_mask), dates, (p - 1, q),
+                             intervals=table, events=events, cost=ZERO, top_pct=1.0)
     resets = [int(r) for r in R if p <= r <= q] + ([q] if q not in R else [])
     for r in resets:
         support = set(result.holdings.columns[result.holdings.loc[dates[r]] > 0])
@@ -914,12 +942,13 @@ def test_binding_guards_refuse_before_loading(pipeline, tmp_path, monkeypatch):
     stop = rerun(pipeline, evidence, tmp_path / "o2")["stop"]
     assert stop["reason"] == "derived_artifact_stale:terminal_validation_evidence_mismatch"
 
-    windows = copy_snapshot(pipeline, tmp_path / "windows")
-    record = json.loads((windows / "census/gap_windows.json").read_text())
-    record["gap_windows"][0]["peeled_rows"] = 0
-    (windows / "census/gap_windows.json").write_text(json.dumps(record))
-    assert rerun(pipeline, windows, tmp_path / "o5")["stop"] == {
-        "reason": "derived_artifact_stale", "detail": "census/segments.json", "trial": None, "trial_records_retained": 0}
+    support = copy_snapshot(pipeline, tmp_path / "support")
+    record = json.loads((support / "census/asset_support.json").read_text())
+    record["exclusions"] = record["exclusions"][1:]
+    (support / "census/asset_support.json").write_text(json.dumps(record))
+    assert rerun(pipeline, support, tmp_path / "o5")["stop"] == {
+        "reason": "derived_artifact_stale", "detail": "census/asset_support.json", "trial": None,
+        "trial_records_retained": 0}
 
     path, sha = _registered_copy(pipeline, tmp_path, _set(("holdout", "holdout_end_exclusive"), "2004-12-31"))
     assert rerun(pipeline, pipeline["snapshot"], tmp_path / "o3", sha=sha, registration_path=path)["stop"]["reason"] == \
@@ -992,7 +1021,7 @@ def test_failed_trials_keep_their_slots_and_the_gate_reads_evaluation_incomplete
 
     _no_composites(monkeypatch)
     monkeypatch.setattr(runner, "family_a_signals", failing_family_a)
-    monkeypatch.setattr(runner, "book_trial", lambda *a, **k: (runner._failure(ValueError("book stub")), None, None))
+    monkeypatch.setattr(runner, "book_trial", lambda *a, **k: (runner._failure(ValueError("book stub")), None))
     sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path)
     assert sidecar["run_status"] == "completed" and sidecar["gate"]["outcome"] == "evaluation_incomplete"
     lines = trial_lines(tmp_path)
@@ -1010,8 +1039,8 @@ def test_a_failed_equal_weight_benchmark_is_rendered_as_typed_status(pipeline, t
         raise ValueError("equal-weight benchmark unavailable in this oracle")
 
     _no_composites(monkeypatch)
-    monkeypatch.setattr(runner, "run_segmented_book", failing_book)
-    monkeypatch.setattr(runner, "book_trial", lambda *a, **k: (runner._failure(ValueError("book stub")), None, None))
+    monkeypatch.setattr(runner, "run_book", failing_book)
+    monkeypatch.setattr(runner, "book_trial", lambda *a, **k: (runner._failure(ValueError("book stub")), None))
     sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path)
     assert sidecar["run_status"] == "completed"
     assert sidecar["benchmarks"]["equal_weight_pit"] == {
@@ -1020,7 +1049,8 @@ def test_a_failed_equal_weight_benchmark_is_rendered_as_typed_status(pipeline, t
     assert "Equal-weight PIT benchmark: status `failed` (ValueError: equal-weight benchmark unavailable" in report
     assert "mean daily net undefined, excess total return over SPY undefined" in report
     assert report == runner.render_report(sidecar)
-    for heading in ("## CPCV and PBO families", "## Excluded event exposure", "## Decision gate", "## Limitations"):
+    for heading in ("## Monthly cross-sectional breadth", "## CPCV and PBO families", "## Decision gate",
+                    "## Limitations"):
         assert heading in report
 
 
@@ -1032,9 +1062,8 @@ def test_daily_book_halves_split_at_the_ic_boundary():
     table = intervals(SMALL, {a: 0 for a in assets})
     s_mask = signal_eligibility(_mask(table, SMALL, assets), prices.notna())
     signal = prices.pct_change(21).where(s_mask)
-    segments = [Segment(d0, d0 + 120, True), Segment(d0 + 140, len(SMALL) - 1, True)]
-    results = runner.run_segmented_book("long_short", prices, signal, SMALL, segments, intervals=table,
-                                        events=pd.DataFrame(), cost=PRIMARY)
+    results = runner.run_book("long_short", prices, signal, SMALL, (d0 - 1, len(SMALL) - 1), intervals=table,
+                              events=pd.DataFrame(), cost=PRIMARY)
     boundary = SMALL[int(R[R > d0 + 160][0])]
     stats, net = runner.book_statistics(results, "long_short", boundary.date().isoformat())
     halves = stats["halves"]
@@ -1050,18 +1079,13 @@ def test_daily_book_halves_split_at_the_ic_boundary():
     assert early["status"] == "undefined_boundary_outside_measured_rows" and early["first"]["rows"] == 0
 
 
-def test_committed_real_data_preregistration_file():
-    """T-REG-1 on the frozen M4.7b-2 registration document."""
+def test_frozen_v1_registration_stays_history_and_the_runner_refuses_it():
+    """The v1 document keeps its gap-window contract and pins; the v2 runner refuses it at ``schema_version``."""
     repo_root = Path(__file__).resolve().parents[1]
-    path = repo_root / "docs/preregistrations/m4_7_sp500_pit_rerun_v1.json"
-    assert path.is_file(), f"Missing preregistration file: {path}"
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    costs = runner.check_registration(doc)
-    assert costs == runner.REGISTERED["costs"]
-    assert doc["snapshot"]["snapshot_id"] == "real_v1"
-    assert doc["discovery"]["ic_month_supply"] == 32
-    assert doc["discovery"]["max_reset_to_reset_rows"] == 23
-    assert doc["holdout"]["holdout_start"] == "2019-07-31"
-    assert doc["holdout"]["holdout_end_exclusive"] == "2020-07-31"
-    assert doc["universe"]["calendar_source"] == "SPY.US_eod_dates_v1"
-    assert doc["statistics"]["power_projection"]["owner_decision_o3"] == "proceed_as_registered"
+    doc = json.loads((repo_root / "docs/preregistrations/m4_7_sp500_pit_rerun_v1.json").read_text(encoding="utf-8"))
+    assert doc["schema_version"] == "m4_7_sp500_pit_rerun_v1" and doc["discovery"]["ic_month_supply"] == 32
+    assert doc["common_support"]["contract"] == "common_support_segments_open_terminal_holdings_v3"
+    assert doc["common_support"]["gap_window_count"] == 20 and "segments_sha256" in doc["snapshot"]
+    with pytest.raises(runner.RunnerStop) as stop:
+        runner.check_registration(doc)
+    assert (stop.value.reason, stop.value.detail) == ("registration_invalid", "schema_version")

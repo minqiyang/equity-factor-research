@@ -15,9 +15,11 @@ The calendar is weekly, so the 252-row warm-up and more than 60 IC months fit
 in 591 rows and every engine call stays small. Rows are positions on ``CAL``;
 ``I_H = 30`` is the first discovery row and ``D0 = 286`` (2008-11-28). The
 halt, the reset-row gap, the unresolved delisting, and the terminal-reset
-joiner share the month after the reset row 429, so their windows merge into
-one peeled window ``[430, 437]`` between two valid segments. No test opens a
-network connection or reads private data.
+joiner share the month after the reset row 429. Under support v2 they yield
+four asset-level exclusion cells (the halt and the unresolved delisting at
+429, the reset-row gap at 429 and 434) and the joiner none, while every
+other asset and all 71 resets stay evaluated. No test opens a network
+connection or reads private data.
 """
 
 from __future__ import annotations
@@ -148,7 +150,7 @@ def downstream(snapshot_dir: Path, out: Path) -> dict[str, Any]:
     census = run_census(snapshot_dir, reports_dir=out / "reports", seal_out=out / "seal" / "m4_7_holdout_seal_v1.json",
                         code_commit="fixture")
     return {"build": build, "validation": validation, "census": census,
-            "census_json": out / "reports" / "m4_7_coverage_census.json",
+            "census_json": out / "reports" / "m4_7_coverage_census_v2.json",
             "seal_record": out / "seal" / "m4_7_holdout_seal_v1.json"}
 
 
@@ -169,7 +171,7 @@ def registration(result: dict[str, Any], *, o3: str = "proceed_as_registered") -
     """The Appendix C document for the fixture snapshot: the registered protocol plus the census values."""
     public, census = result["census"]["public"], result["census"]
     identity = public["snapshot_identity"]
-    segments = json.loads((result["snapshot"] / "census/segments.json").read_text())
+    support = json.loads((result["snapshot"] / "census/asset_support.json").read_text())
     seal = json.loads(Path(result["seal_record"]).read_text())
     manifest = json.loads((result["snapshot"] / "manifest.json").read_text())
     doc = copy.deepcopy(REGISTERED)
@@ -177,21 +179,21 @@ def registration(result: dict[str, Any], *, o3: str = "proceed_as_registered") -
         "snapshot_id": public["snapshot_id"],
         **{key: identity[key] for key in ("manifest_sha256", "discovery_inputs_sha256", "interval_csv_sha256",
                                           "security_master_sha256", "interval_results_sha256", "engine_events_sha256",
-                                          "segments_sha256", "seal_prospective_sha256")},
+                                          "support_sha256", "seal_prospective_sha256")},
         "seal_confirmed_sha256": census["seal_confirmed_sha256"], "census_json_sha256": census["census_json_sha256"],
         "retrieval_complete": public["retrieval"]["retrieval_complete"],
         "components_retrieved_utc_date": manifest["snapshot"]["components_retrieved_utc_date"],
     }
     doc["holdout"].update(holdout_start=seal["holdout_start"], holdout_end_exclusive=seal["holdout_end_exclusive"])
-    horizon = segments["max_reset_to_reset_rows"]
+    horizon = support["max_reset_to_reset_rows"]
     doc["discovery"].update(
-        first_reset=segments["D0"], last_reset=segments["D_last"], last_ic_month=segments["D_end"],
+        first_reset=support["D0"], last_reset=support["D_last"], last_ic_month=support["D_end"],
         ic_month_supply=public["ic_supply"]["ic_month_supply"], max_reset_to_reset_rows=horizon,
         prior_exposure_overlap_fraction={k: v["fraction_of_ic_months"]
                                          for k, v in public["discovery_overlap_with_prior_exposures"].items()})
     doc["common_support"].update(
-        gap_window_count=public["exclusion_set"]["gap_window_count"],
-        excluded_fraction=public["exclusion_set"]["excluded_fraction"],
+        excluded_cells=public["asset_support"]["excluded_cells"],
+        excluded_fraction=public["asset_support"]["excluded_fraction"],
         eligible_unpriced_member_day_fraction=public["price_coverage"]["eligible_unpriced_fraction"])
     doc["statistics"]["power_projection"].update(
         kill_reachable_projection=public["power_projection"]["kill_reachable_projection"], owner_decision_o3=o3)
