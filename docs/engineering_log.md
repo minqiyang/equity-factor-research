@@ -12,6 +12,11 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7c-1 owner-authorized local point-in-time rerun on real_v1
+
+- Authorization (O-4, c-1): the coordinator relays the owner's standing and explicit authorization for the M4.7c-1 point-in-time rerun on snapshot `real_v1` using registration `6ea218a6…1c9f` (merged in PR #268 at commit `0d87d7e`). Scope: offline reads of existing local snapshot files; no network call, no credentials, no trading.
+- Objective: execute `research/m4_7_sp500_pit_rerun.py` bound to registration hash `6ea218a638dd2cba760ea22ebd4009bb184d4137233762f72a844454a10f1c9f` on snapshot `real_v1`. Output deliverables: markdown report, sidecar JSON, trials JSONL hash, and decision gate evaluation.
+
 ## 2026-09-26 - M4.7b-2 preregistration frozen for S&P 500 PIT rerun on real_v1
 
 - Source: Phase M4.7b-2 under Binding Implementation Plan Revision 11 (§7.3 stage `b-2`).
