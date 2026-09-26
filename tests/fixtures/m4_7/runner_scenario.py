@@ -160,7 +160,7 @@ def run_pipeline(base: Path, monkeypatch) -> dict[str, Any]:
     harness = Harness(base, monkeypatch, snapshot_id="RUN", vendor=build_vendor())
     consideration = base / "consideration_securities.txt"
     consideration.write_text("".join(f"{code}\n" for code in CONSIDERATION))
-    retrieve(harness, consideration)
+    retrieve(harness, consideration, REGISTERED["universe"]["calendar_source"])
     return {"harness": harness, "snapshot": harness.snapshot_dir, "base": base,
             **downstream(harness.snapshot_dir, base)}
 

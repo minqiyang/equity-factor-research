@@ -206,7 +206,7 @@ def test_t_reg_1_registration_matches_the_implemented_protocol(pipeline):
     assert universe["in_span_step_check"]["dividend_factor_formula"] == "prior_close_v1"
     premises = universe["vendor_data_premises"]
     assert {"VP-1", "VP-2"} <= set(premises) and premises["owner_item"] == "O-8"
-    assert premises["o8_disposition"] == "ratified" and "b_d" in premises["exposure"] and "s_d" in premises["exposure"]
+    assert premises["o8_disposition"] == "re_ratified_diagnostic_only" and "b_d" in premises["exposure"] and "s_d" in premises["exposure"]
     for objective in (doc["objective"],):
         assert objective["target_information_ratio"] > 0 and 0 < objective["tracking_error_budget_annualized"] <= 0.25
         assert all(0 < v < 1 for v in objective["max_drawdown_budget"].values())
@@ -929,6 +929,18 @@ def test_binding_guards_refuse_before_loading(pipeline, tmp_path, monkeypatch):
     assert rerun(pipeline, pipeline["snapshot"], tmp_path / "o4", sha=sha, registration_path=path)["stop"]["reason"] == \
         "census_runner_inconsistency:max_reset_span"
     assert loads == []
+
+
+def test_registered_calendar_source_must_match_the_snapshot_seal(pipeline, tmp_path, monkeypatch):
+    """The fixture seals ``SPY.US_eod_dates_v1``; a protocol registering another calendar refuses at binding."""
+    assert runner.REGISTERED["universe"]["calendar_source"] == "SPY.US_eod_dates_v1"
+    assert runner.MIN_IC_MONTHS == 32 and runner.MIN_HALF_MONTHS == 16
+    other = "GSPC.INDX_eod_dates_v1"
+    monkeypatch.setitem(runner.REGISTERED["universe"], "calendar_source", other)
+    path, sha = _registered_copy(pipeline, tmp_path, _set(("universe", "calendar_source"), other))
+    stop = rerun(pipeline, pipeline["snapshot"], tmp_path / "out", sha=sha, registration_path=path)["stop"]
+    assert (stop["reason"], stop["detail"]) == (
+        "registration_invalid", "universe.calendar_source differs from the snapshot seal")
 
 
 @pytest.mark.parametrize("edit, reason", [

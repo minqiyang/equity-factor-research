@@ -41,12 +41,18 @@ TOLERANCE_EXCEPTIONS = 3
 # (owner decision O-3, 2026-09-26) fits the 2019-2026 in-band history of the local
 # EODHD components response: a one-year holdout, no prior-exposure cap (the overlap
 # is stated in the seal record), and census minima of 7 in-band years (1 holdout,
-# 1 warm-up, 5 discovery) and 48 IC months.
+# 1 warm-up, 5 discovery) and 48 IC months. ``accepted_shortfall`` holds the bounds
+# the owner accepted under O-7 (2026-09-26) after the first Option A census: a
+# census value that misses its registered threshold but stays inside these bounds
+# reads ``ready_with_caveats:coverage_shortfall_accepted`` instead of ``blocked``.
 SEAL_RULES: dict[str, dict[str, Any]] = {
     SEAL_RULE_VERSION: {"holdout_years": 10, "latest_holdout_end": date(2014, 1, 1),
-                        "min_in_band_years": 16, "min_ic_months": 60},
+                        "min_in_band_years": 16, "min_ic_months": 60, "accepted_shortfall": None},
     SEAL_RULE_OPTION_A: {"holdout_years": 1, "latest_holdout_end": None,
-                         "min_in_band_years": 7, "min_ic_months": 48},
+                         "min_in_band_years": 7, "min_ic_months": 48,
+                         "accepted_shortfall": {"owner_decision": "O-7 2026-09-26", "min_in_band_years": 6.9,
+                                                "min_ic_months": 32, "max_gap_windows": 25,
+                                                "max_excluded_fraction": 0.45, "max_unpriced_fraction": 0.40}},
 }
 DEFAULT_CALENDAR_SOURCE = "GSPC.INDX_eod_dates_v1"
 RETRIEVAL_ORDER = (

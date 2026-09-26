@@ -16,6 +16,7 @@ from data.holdout_partition import (
     MEMBERSHIP_FILE,
     RETRIEVAL_ORDER,
     SEAL_RULE_OPTION_A,
+    SEAL_RULES,
     SnapshotRefusal,
     coverage_start,
     derive_holdout_window,
@@ -233,6 +234,10 @@ def test_option_a_seal_rule_seals_one_year_without_the_prior_exposure_cap(tmp_pa
     assert (record["rule_version"], record["calendar_source"]) == (SEAL_RULE_OPTION_A, "SPY.US_eod_dates_v1")
     assert read_holdout_end(snapshot) == date(2020, 1, 31)
     assert Snapshot.open(snapshot).calendar_source == "SPY.US_eod_dates_v1"
+    assert {key: SEAL_RULES[SEAL_RULE_OPTION_A][key] for key in ("holdout_years", "min_in_band_years", "min_ic_months")} == {
+        "holdout_years": 1, "min_in_band_years": 7, "min_ic_months": 48}
+    assert SEAL_RULES[SEAL_RULE_OPTION_A]["accepted_shortfall"]["min_ic_months"] == 32
+    assert SEAL_RULES["earliest_available_decade_from_raw_membership_counts_v1"]["accepted_shortfall"] is None
 
     default = tmp_path / "default"
     write_snapshot(default, membership())

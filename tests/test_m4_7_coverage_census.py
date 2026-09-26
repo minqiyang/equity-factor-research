@@ -251,16 +251,53 @@ def test_option_a_readiness_thresholds_follow_the_seal_rule():
     """Owner decision O-3: 7 in-band years, no prior-exposure cap, and 48 IC months under Option A."""
     option_a = {**CLEAN, "in_band_years": 7.0, "holdout_end": "2020-07-31", "ic_month_supply": 48}
     readiness = derive_readiness(option_a, SEAL_RULE_OPTION_A)
-    assert readiness["status"] == "ready"
-    assert readiness["thresholds"] == {"seal_rule_version": SEAL_RULE_OPTION_A, "min_in_band_years": 7,
-                                       "latest_holdout_end": None, "min_ic_months": 48}
-    assert derive_readiness({**option_a, "in_band_years": 6.9}, SEAL_RULE_OPTION_A)["failures"] == [
-        {"rule": "R-CENSUS-1", "result": "blocked:insufficient_in_band_history"}]
-    assert derive_readiness({**option_a, "ic_month_supply": 47}, SEAL_RULE_OPTION_A)["failures"] == [
-        {"rule": "R-CENSUS-8", "result": "blocked:insufficient_ic_months"}]
+    assert readiness["status"] == "ready" and readiness["failures"] == []
+    assert readiness["thresholds"] == {
+        "seal_rule_version": SEAL_RULE_OPTION_A, "min_in_band_years": 7, "latest_holdout_end": None,
+        "min_ic_months": 48, "accepted_shortfall": {
+            "owner_decision": "O-7 2026-09-26", "min_in_band_years": 6.9, "min_ic_months": 32,
+            "max_gap_windows": 25, "max_excluded_fraction": 0.45, "max_unpriced_fraction": 0.40}}
     assert derive_readiness(option_a)["failures"] == [
         {"rule": "R-CENSUS-1", "result": "blocked:holdout_overlaps_prior_exposure"},
         {"rule": "R-CENSUS-8", "result": "blocked:insufficient_ic_months"}]
+
+
+SHORTFALL = {**CLEAN, "in_band_years": 83 / 12, "holdout_end": "2020-07-31", "gap_window_count": 20,
+             "excluded_fraction": 0.384, "ic_month_supply": 32, "unpriced_fraction": 0.330,
+             "holdout_band_after_identity": False}
+
+
+def test_option_a_accepted_shortfall_reads_ready_with_caveats():
+    """Owner decision O-7: misses inside the accepted bounds are caveats; the registered verdicts stay visible."""
+    readiness = derive_readiness(SHORTFALL, SEAL_RULE_OPTION_A)
+    assert readiness["status"] == "ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity"
+    assert readiness["failures"] == [
+        {"rule": rule, "result": "ready_with_caveats:coverage_shortfall_accepted"}
+        for rule in ("R-CENSUS-1", "R-CENSUS-2")
+    ] + [{"rule": "R-CENSUS-7", "result": "ready_with_caveats:holdout_breadth_after_identity"}] + [
+        {"rule": rule, "result": "ready_with_caveats:coverage_shortfall_accepted"}
+        for rule in ("R-CENSUS-8", "R-CENSUS-9")]
+    assert [rule for rule, value in readiness["rules"].items() if not value["passed"]] == [
+        "R-CENSUS-1", "R-CENSUS-2", "R-CENSUS-7", "R-CENSUS-8", "R-CENSUS-9"]
+    only_shortfall = derive_readiness({**SHORTFALL, "holdout_band_after_identity": True}, SEAL_RULE_OPTION_A)
+    assert only_shortfall["status"] == "ready_with_caveats:coverage_shortfall_accepted"
+    edges = {"in_band_years": 6.9, "gap_window_count": 25, "excluded_fraction": 0.45, "ic_month_supply": 32,
+             "unpriced_fraction": 0.40}
+    assert derive_readiness({**SHORTFALL, **edges}, SEAL_RULE_OPTION_A)["status"].startswith("ready_with_caveats:")
+    assert derive_readiness(SHORTFALL)["status"] == "blocked"
+
+
+@pytest.mark.parametrize("change, rule, result", [
+    ({"in_band_years": 6.89}, "R-CENSUS-1", "blocked:insufficient_in_band_history"),
+    ({"gap_window_count": 26}, "R-CENSUS-2", "blocked:excluded_coverage"),
+    ({"excluded_fraction": 0.451}, "R-CENSUS-2", "blocked:excluded_coverage"),
+    ({"ic_month_supply": 31}, "R-CENSUS-8", "blocked:insufficient_ic_months"),
+    ({"unpriced_fraction": 0.401}, "R-CENSUS-9", "blocked:unpriced_eligible_member_days"),
+    ({"identity_refusal_fraction": 0.051}, "R-CENSUS-3", "blocked:identity_refusal_fraction"),
+])
+def test_option_a_shortfall_beyond_the_accepted_bounds_blocks(change, rule, result):
+    readiness = derive_readiness({**SHORTFALL, **change}, SEAL_RULE_OPTION_A)
+    assert readiness["status"] == "blocked" and {"rule": rule, "result": result} in readiness["failures"]
 
 
 def test_t_census_4_unusable_entry_charge_and_one_row_missing_bar(tmp_path, monkeypatch):
