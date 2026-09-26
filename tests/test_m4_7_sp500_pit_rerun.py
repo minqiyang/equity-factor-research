@@ -1048,3 +1048,20 @@ def test_daily_book_halves_split_at_the_ic_boundary():
     assert runner.book_statistics(results, "long_short")[0]["halves"]["status"] == "undefined_no_ic_boundary"
     early = runner.book_statistics(results, "long_short", SMALL[d0 - 5].date().isoformat())[0]["halves"]
     assert early["status"] == "undefined_boundary_outside_measured_rows" and early["first"]["rows"] == 0
+
+
+def test_committed_real_data_preregistration_file():
+    """T-REG-1 on the frozen M4.7b-2 registration document."""
+    repo_root = Path(__file__).resolve().parents[1]
+    path = repo_root / "docs/preregistrations/m4_7_sp500_pit_rerun_v1.json"
+    assert path.is_file(), f"Missing preregistration file: {path}"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    costs = runner.check_registration(doc)
+    assert costs == runner.REGISTERED["costs"]
+    assert doc["snapshot"]["snapshot_id"] == "real_v1"
+    assert doc["discovery"]["ic_month_supply"] == 32
+    assert doc["discovery"]["max_reset_to_reset_rows"] == 23
+    assert doc["holdout"]["holdout_start"] == "2019-07-31"
+    assert doc["holdout"]["holdout_end_exclusive"] == "2020-07-31"
+    assert doc["universe"]["calendar_source"] == "SPY.US_eod_dates_v1"
+    assert doc["statistics"]["power_projection"]["owner_decision_o3"] == "proceed_as_registered"

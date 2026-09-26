@@ -1324,6 +1324,58 @@ is refused (PIT-007).
 Keep as a `DIAGNOSTIC_ONLY` real-data pipeline check. Do not grant formal
 interpretation from this result.
 
+## 20260926-001-m47-sp500-pit-preregistration-freeze
+
+### Experiment ID
+
+`20260926-001-m47-sp500-pit-preregistration-freeze`
+
+### Date
+
+`2026-09-26`
+
+### Milestone & Phase
+
+Milestone 4.7 Phase M4.7b-2 (Registration Freeze) under Binding Implementation Plan Revision 11 (§7.3 stage `b-2`).
+
+### Objective
+
+Freeze the point-in-time rerun protocol for S&P 500 on snapshot `real_v1` prior to any discovery-window computation or inference. The frozen document binds all upstream artifact digests, holdout parameters, discovery window bounds, statistical tests, cost cases, and owner decisions.
+
+### Preregistration Artifact
+
+- **Document Path**: `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json`
+- **Schema Version**: `m4_7_sp500_pit_rerun_v1`
+- **Evidence Class**: `DIAGNOSTIC_ONLY`
+- **Registration SHA-256**: `6ea218a6…1c9f`
+
+### Bound Upstream Artifact Digests (`real_v1`)
+
+- `manifest_sha256`: `ffa76053…35c7`
+- `discovery_inputs_sha256`: `2395bc5a…03e7`
+- `interval_csv_sha256`: `303f161f…6088`
+- `security_master_sha256`: `c2191dbc…78d5`
+- `interval_results_sha256`: `4dea8819…0fef`
+- `engine_events_sha256`: `3ac2be6a…b54b`
+- `segments_sha256`: `6b014b13…5933`
+- `seal_prospective_sha256`: `93ce6e5a…9882`
+- `seal_confirmed_sha256`: `b7f9380f…f506`
+- `census_json_sha256`: `608fd1b1…1c40`
+- `components_retrieved_utc_date`: `2026-08-07`
+
+### Protocol Parameters & Owner Decisions
+
+- **Owner Decisions O-1, O-3, O-6**: Formally recorded in `docs/decision_log.md` (2026-09-26). O-3 power projection accepted under Option (i) (`proceed_as_registered`) with A9 contrary rejection confirmed (`non_survivor_confirmed_by_owner_o3`); O-1 costs (1/4 primary, 2/8 sensitivity, zero diagnostic) and O-6 objective budgets (IR 0.30, TE 0.08, drawdown 0.60/0.30 descriptive) confirmed standing defaults.
+- **Owner Decision O-3 (Option A Seal)**: 1-year holdout window `[2019-07-31, 2020-07-31)` with declared calendar source `SPY.US_eod_dates_v1`.
+- **Owner Decision O-7 (Coverage Shortfall)**: Directly bound in JSON: 32 IC months, 25 gap windows, 0.45 excluded fraction; transitively bound via census: 6.9 in-band years, 0.40 unpriced fraction.
+- **Owner Decision O-8 (VP-2 Re-ratification)**: Premise VP-2 re-ratified under `DIAGNOSTIC_ONLY` (`re_ratified_diagnostic_only`).
+- **Discovery Window**: `D0 = 2021-08-31`, `D_last = 2026-08-07`, `D_end = 2026-06-30` (32 IC months, 16 per half, 23 max reset-to-reset rows for CPCV).
+
+### Next Action
+
+Verify PR #268 protected merge to `main`, record the merge commit, verify owner O-4 private-data execution authorization in `docs/engineering_log.md`, and execute Phase M4.7c-1 `research/m4_7_sp500_pit_rerun.py` bound to registration hash `6ea218a6…1c9f` on snapshot `real_v1`.
+
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
