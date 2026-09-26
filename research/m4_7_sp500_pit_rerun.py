@@ -768,13 +768,16 @@ def _clean(value: Any) -> Any:
 
 
 class _Trials:
-    """Append-only trials JSONL: every record is written when its trial finishes (R9)."""
+    """Append-only trials JSONL: every record is written when its trial finishes (R9).
+
+    The file is truncated on the first ``add``; until then ``path`` is untouched,
+    so a refusal before any trial leaves a prior run's JSONL byte-identical.
+    """
 
     def __init__(self, path: Path, registration_sha256: str, context: dict[str, Any]) -> None:
         self.path, self.registration_sha256, self.context = path, registration_sha256, context
         self.records: list[dict[str, Any]] = []
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(b"")
+        self._initialized = False
 
     def add(self, family: str, factor_id: str, hypothesis: str, fields: dict[str, Any], *, book: str | None = None,
             cost_case: str | None = None) -> dict[str, Any]:
@@ -785,6 +788,10 @@ class _Trials:
         record = _clean({"trial_id": trial_id, "family": family, "factor_id": factor_id, "hypothesis": hypothesis,
                          "book": book, "cost_case": cost_case, "specification": specification,
                          "registration_sha256": self.registration_sha256, **self.context, **fields})
+        if not self._initialized:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_bytes(b"")
+            self._initialized = True
         with self.path.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
         self.records.append(record)
@@ -806,17 +813,17 @@ def run_rerun(
 ) -> dict[str, Any]:
     """Run the registered rerun and write the report, sidecar, and trials JSONL; return the sidecar.
 
-    The registration hash and protocol are checked before any output file is
-    opened. A refusal at that stage writes nothing, so the outputs of an
-    earlier run stay byte-identical, and returns the sidecar with
-    ``outputs_written = False``. Every later Class I stop writes the sidecar,
-    the report, and the trials recorded so far.
+    A Class I stop before the first trial record writes nothing, so the outputs
+    of an earlier run stay byte-identical, and returns the sidecar with
+    ``outputs_written = False``. A Class I stop after the first trial record
+    writes the sidecar, the report, and the trials recorded so far.
     """
     out = Path(output_dir)
     registration_bytes = Path(registration_path).read_bytes()
     actual = sha256_bytes(registration_bytes)
     state: dict[str, Any] = {"header": {"registration_sha256": actual, "registration_sha256_expected": registration_sha256,
                                         "code_commit": code_commit if code_commit is not None else _code_commit()}}
+    trials = _Trials(out / TRIALS, actual, {})
     try:
         if actual != registration_sha256:
             raise RunnerStop("registration_hash_mismatch", "registration bytes differ from --registration-sha256")
@@ -825,12 +832,6 @@ def run_rerun(
             costs = check_registration(registration)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise RunnerStop("registration_invalid", f"{type(exc).__name__}: {exc}") from exc
-    except RunnerStop as stop:
-        return _clean({**_sidecar_head(), **state, "run_status": "stopped_before_inference", "outputs_written": False,
-                       "stop": {"reason": stop.reason, "detail": stop.detail, "trial": None,
-                                "trial_records_retained": 0}})
-    trials = _Trials(out / TRIALS, actual, {})
-    try:
         bound = bind_snapshot(Path(snapshot_dir), registration, Path(census_json), Path(seal_record))
         loaded = load_member_panels(bound)
         _execute(state, trials, registration, costs, bound, loaded, Path(snapshot_dir))
@@ -839,6 +840,8 @@ def run_rerun(
         state["run_status"] = "stopped_before_inference"
         state["stop"] = {"reason": stop.reason, "detail": stop.detail, "trial": stop.trial,
                          "trial_records_retained": len(trials.records)}
+        if not trials.records:
+            return _clean({**_sidecar_head(), **state, "outputs_written": False})
     sidecar = _clean({**_sidecar_head(), **state, "outputs_written": True,
                       "trials_jsonl_sha256": sha256_bytes((out / TRIALS).read_bytes())})
     write_bytes(out / SIDECAR, (json.dumps(sidecar, sort_keys=True, indent=2, allow_nan=False) + "\n").encode())

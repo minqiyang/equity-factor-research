@@ -286,18 +286,60 @@ def _seed_prior_outputs(out: Path) -> dict[Path, bytes]:
     return payloads
 
 
-@pytest.mark.parametrize("wrong_hash", [True, False])
-def test_pre_run_refusals_leave_prior_outputs_byte_identical(pipeline, tmp_path, wrong_hash):
+def _hash_mismatch(pipeline, tmp_path, monkeypatch):
+    return pipeline["registration_path"], "0" * 64, pipeline["snapshot"]
+
+
+def _registration_change(change):
+    def prepare(pipeline, tmp_path, monkeypatch):
+        return (*_registered_copy(pipeline, tmp_path, change), pipeline["snapshot"])
+    return prepare
+
+
+def _unrecorded_missing_value(pipeline, tmp_path, monkeypatch):
+    real = runner.load_eod_cohort_panels
+
+    def inject(*args, **kwargs):
+        fields = real(*args, **kwargs)
+        for field in ("open", "high", "low", "close", "adjusted_close", "volume"):
+            fields[field].loc[fields["adjusted_close"].index[350], "N050.US#E1"] = np.nan
+        return fields
+
+    monkeypatch.setattr(runner, "load_eod_cohort_panels", inject)
+    return pipeline["registration_path"], pipeline["sha"], pipeline["snapshot"]
+
+
+@pytest.mark.parametrize("prepare, reason, detail", [
+    (_hash_mismatch, "registration_hash_mismatch", None),
+    (_registration_change(_set(("timing", "label_contract"), "changed")), "registration_invalid", None),
+    (_registration_change(_set(("snapshot", "snapshot_id"), "OTHER")), "registration_invalid", "snapshot.snapshot_id"),
+    (_registration_change(_set(("snapshot", "census_json_sha256"), "0" * 64)), "derived_artifact_stale", "census_json"),
+    (_unrecorded_missing_value, "census_runner_inconsistency:schedule_digest", None),
+], ids=["hash_mismatch", "check_registration", "bind_snapshot_id", "census_stale", "schedule_digest"])
+def test_pre_run_refusals_leave_prior_outputs_byte_identical(pipeline, tmp_path, monkeypatch, prepare, reason, detail):
     prior = _seed_prior_outputs(tmp_path / "out")
     assert len((tmp_path / "out" / runner.TRIALS).read_text().splitlines()) == 231
-    if wrong_hash:
-        path, sha, reason = pipeline["registration_path"], "0" * 64, "registration_hash_mismatch"
-    else:
-        path, sha = _registered_copy(pipeline, tmp_path, _set(("timing", "label_contract"), "changed"))
-        reason = "registration_invalid"
-    sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path / "out", sha=sha, registration_path=path)
-    assert sidecar["stop"]["reason"] == reason and sidecar["outputs_written"] is False
-    assert {p: p.read_bytes() for p in prior} == prior
+    path, sha, snapshot = prepare(pipeline, tmp_path, monkeypatch)
+    sidecar = rerun(pipeline, snapshot, tmp_path / "out", sha=sha, registration_path=path)
+    assert sidecar["run_status"] == "stopped_before_inference" and sidecar["outputs_written"] is False
+    assert sidecar["stop"]["reason"] == reason and sidecar["stop"]["trial_records_retained"] == 0
+    assert detail is None or sidecar["stop"]["detail"] == detail
+    assert "trials_jsonl_sha256" not in sidecar
+    assert {p: p.read_bytes() for p in prior} == prior and {f for f in (tmp_path / "out").rglob("*") if f.is_file()} == set(prior)
+
+
+def test_trials_file_is_untouched_until_the_first_record(tmp_path):
+    path = tmp_path / "out" / runner.TRIALS
+    runner._Trials(path, "a" * 64, {})
+    assert not (tmp_path / "out").exists()
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"prior\n")
+    trials = runner._Trials(path, "a" * 64, {})
+    assert path.read_bytes() == b"prior\n"
+    first = trials.add("A", "MOM_12_1", "rank_ic_mean", {"status": "evaluated"})
+    trials.add("A", "HIGH_52W", "rank_ic_mean", {"status": "evaluated"})
+    lines = [json.loads(line) for line in path.read_text().splitlines()]
+    assert [r["factor_id"] for r in lines] == ["MOM_12_1", "HIGH_52W"] and lines[0] == first
 
 
 def test_cli_exit_codes(pipeline, tmp_path, monkeypatch, capsys):
@@ -436,8 +478,9 @@ def test_t_sup_6_a_missing_value_the_census_did_not_record_stops_the_run(pipelin
     sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path)
     assert sidecar["run_status"] == "stopped_before_inference"
     assert sidecar["stop"]["reason"] == "census_runner_inconsistency:schedule_digest"
-    assert (tmp_path / runner.TRIALS).is_file() and trial_lines(tmp_path) == []
-    assert "census_runner_inconsistency:schedule_digest" in (tmp_path / runner.REPORT).read_text()
+    assert sidecar["outputs_written"] is False and sidecar["stop"]["trial_records_retained"] == 0
+    assert list(tmp_path.iterdir()) == []
+    assert "census_runner_inconsistency:schedule_digest" in runner.render_report(sidecar)
 
 
 def test_t_sup_9_class_one_inside_a_segment_stops_and_keeps_written_trials(pipeline, tmp_path, monkeypatch):
@@ -479,7 +522,7 @@ def test_t_reg_12_a_panel_split_table_refuses_before_loading(pipeline, tmp_path,
     loads = _spy_on_loads(monkeypatch)
     sidecar = rerun(pipeline, snapshot, tmp_path / "out")
     assert sidecar["stop"]["reason"] == "panel_split_table_present" and sidecar["stop"]["detail"] == pid
-    assert loads == [] and trial_lines(tmp_path / "out") == []
+    assert loads == [] and sidecar["outputs_written"] is False and not (tmp_path / "out").exists()
     inventory = json.loads((pipeline["snapshot"] / "panel/inventory_discovery.json").read_text())
     record = next(r for r in inventory["files"] if r["symbol"] == pid)
     panels = load_eod_cohort_panels(pipeline["snapshot"] / "panel", [pid],
@@ -502,7 +545,7 @@ def test_t_reg_13_stale_inputs_refuse_and_the_rebuilt_state_loads(pipeline, tmp_
     loads = _spy_on_loads(monkeypatch)
     sidecar = rerun(pipeline, snapshot, tmp_path / "stale")
     assert sidecar["stop"]["reason"] == "derived_artifact_stale" and loads == []
-    assert trial_lines(tmp_path / "stale") == []
+    assert sidecar["outputs_written"] is False and not (tmp_path / "stale").exists()
 
     altered = tmp_path / "altered"
     target = altered / "private" / pipeline["snapshot"].name
@@ -898,7 +941,8 @@ def test_loaded_calendar_and_benchmark_guards(pipeline, tmp_path, monkeypatch, e
     real = runner.load_eod_cohort_panels
     monkeypatch.setattr(runner, "load_eod_cohort_panels", lambda *a, **k: edit(real(*a, **k)))
     sidecar = rerun(pipeline, pipeline["snapshot"], tmp_path)
-    assert sidecar["stop"]["reason"] == reason and trial_lines(tmp_path) == []
+    assert sidecar["stop"]["reason"] == reason and sidecar["outputs_written"] is False
+    assert list(tmp_path.iterdir()) == []
 
 
 def _no_composites(monkeypatch):

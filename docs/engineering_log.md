@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7b-1 attempt 3: lazy trials file and complete pre-inference output preservation
+
+- Source: `/private/tmp/m47b1_remediation_task_a3.md`, remediating the Round 2
+  independent audit of `d1f79e1` (AUDIT2-M47B1-A2-001 MATERIAL P1; A2-003
+  ADVISORY).
+- A2-001: attempt 2 protected prior outputs only through `check_registration`;
+  a stop in `bind_snapshot`, `load_member_panels`, or `recompute_support`
+  still truncated the prior trials JSONL and rewrote the sidecar and report.
+  `_Trials` now truncates its JSONL on the first `add`, and `run_rerun` returns
+  the sidecar with `outputs_written = False` and writes no file whenever a
+  `RunnerStop` precedes the first trial record. A stop after the first record
+  writes the retained trials, sidecar, and report as before.
+- Simplification: the lazy file makes the attempt 2 two-`try` split redundant;
+  one `try` and one `not trials.records` branch replace it.
+- Tests: `test_pre_run_refusals_leave_prior_outputs_byte_identical` is
+  parametrized over `registration_hash_mismatch`, `registration_invalid`
+  (`check_registration` and `bind_snapshot`), `derived_artifact_stale`, and
+  `census_runner_inconsistency:schedule_digest`, each against a seeded
+  231-record prior bundle; `test_trials_file_is_untouched_until_the_first_record`
+  is new. Four tests that asserted an empty JSONL or a written report after a
+  pre-inference stop now assert that nothing is written.
+- Reverting the lazy truncation alone fails 11 tests; removing the
+  `not trials.records` branch alone fails 10.
+- A2-003: the implementation report records book halves as implemented per
+  plan 4.4 and 6.8, and the chained display equity curve and the
+  interior-missing-bar versus zero-volume attribution of
+  `coverage_loss_beyond_estimate_f` as deferred non-blocking diagnostics.
+- Verification: runner suite 58 passed; governance 21 passed; full suite
+  3,047 passed and 2 skipped; `ruff` and `git diff --check` clean.
+
 ## 2026-09-26 - M4.7b-1 attempt 2: prior outputs survive pre-run refusals, typed benchmark failure, book halves
 
 - Source: `/private/tmp/m47b1_remediation_task.md`, remediating the dual

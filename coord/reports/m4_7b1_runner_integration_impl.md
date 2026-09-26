@@ -270,3 +270,51 @@ Verification on the attempt 2 head: `tests/test_m4_7_sp500_pit_rerun.py`
 54 passed; `tests/test_governance_constitution.py` 21 passed; full
 suite 3,043 passed and 2 skipped; `ruff check . --exclude .venv` and
 `git diff --check` clean.
+
+Scope of AUDIT1-M47B1-003: daily book halves are implemented and verified per
+plan sections 4.4 and 6.8. Two diagnostic displays are deferred as
+non-blocking enhancements under the Milestone Admission and Walking Skeleton
+rules: the chained display equity curve across segments, and the attribution
+of `coverage_loss_beyond_estimate_f` to interior missing bars versus zero
+volume. Neither feeds the gate, a statistic, or a trial record; each waits for
+the milestone whose real-data result consumes it.
+
+## 11. Attempt 3 remediation
+
+Source: coordinator instruction `/private/tmp/m47b1_remediation_task_a3.md`
+after the Round 2 independent audit of `d1f79e1`.
+
+| Finding | Change | Test |
+| --- | --- | --- |
+| AUDIT2-M47B1-A2-001 (MATERIAL, P1): a refusal after the hash check (in `bind_snapshot`, `load_member_panels`, or `recompute_support`) still truncated the prior trials JSONL and rewrote the sidecar and report | `_Trials` truncates its JSONL on the first `add`; construction touches no file. `run_rerun` runs every stage in one `try`; a `RunnerStop` raised before the first trial record returns the sidecar with `run_status = stopped_before_inference`, `outputs_written = False`, and `trial_records_retained = 0` and writes no file. A stop after the first trial record writes the retained trials, the sidecar (`outputs_written = True`), and the report, as before | `test_pre_run_refusals_leave_prior_outputs_byte_identical`, parametrized over five stops: `registration_hash_mismatch`; `registration_invalid` in `check_registration` (`label_contract`); `registration_invalid` in `bind_snapshot` (`snapshot.snapshot_id`); `derived_artifact_stale` (`census_json_sha256`); `census_runner_inconsistency:schedule_digest` (an unrecorded missing value injected into the loaded panels). Each seeds a 231-record trials JSONL, sidecar, and report and asserts the three files stay byte-identical and no other file appears. `test_trials_file_is_untouched_until_the_first_record` covers `_Trials` directly |
+| AUDIT2-M47B1-A2-003 (ADVISORY): deferred diagnostics were unrecorded | Section 10 records book halves as implemented and verified per plan 4.4 and 6.8, and the chained display equity curve and the interior-missing-bar versus zero-volume attribution of `coverage_loss_beyond_estimate_f` as deferred non-blocking diagnostics | none (documentation) |
+
+Contract change for existing tests. A stop before the first trial record now
+writes nothing, so four tests that asserted an empty trials JSONL or a written
+report after such a stop assert the new contract instead:
+`test_t_sup_6_...` (empty output directory, `outputs_written = False`, and the
+stop reason in `render_report(sidecar)`), `test_t_reg_12_...` and
+`test_t_reg_13_...` (output directory absent), and
+`test_loaded_calendar_and_benchmark_guards` (empty output directory). Stops
+after the first trial record (`test_t_sup_9_class_one_...`,
+`test_warmup_bound_violation_is_class_one`,
+`test_family_a_trial_count_is_asserted_before_inference`) keep their
+retained-trial assertions unchanged.
+
+Simplification (ablation). With the trials file lazy, the attempt 2 split of
+`run_rerun` into a registration `try` that returned early and a second `try`
+after `_Trials` construction is redundant; one `try` and one
+`not trials.records` branch replace both, and the pre-inference sidecar keeps
+the same keys and values. Guard-necessity checks, each reverted alone on a
+copy of the tree: restoring the eager truncation in `_Trials.__init__` fails
+all five byte-identity cases, the direct `_Trials` test, and the four
+contract-change tests (11 failures); removing the `not trials.records` branch
+fails all five byte-identity cases and the four contract-change tests (10
+failures). The
+`_initialized` flag is retained as the task specifies; `not self.records` is
+behaviorally equivalent.
+
+Verification on the attempt 3 head: `tests/test_m4_7_sp500_pit_rerun.py`
+58 passed; `tests/test_governance_constitution.py` 21 passed; full suite
+3,047 passed and 2 skipped; `ruff check . --exclude .venv` and
+`git diff --check` clean.
