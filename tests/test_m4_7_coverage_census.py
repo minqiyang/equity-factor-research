@@ -597,3 +597,39 @@ def test_census_refuses_a_missing_derived_artifact(tmp_path, monkeypatch):
     with pytest.raises(SnapshotRefusal) as refused:
         run_census(harness.snapshot_dir, reports_dir=tmp_path / "r", seal_out=tmp_path / "s.json")
     assert (refused.value.code, str(refused.value)) == ("derived_artifact_missing", "derived_artifact_missing: terminal/terminal_validation.json")
+
+
+# ---------------------------------------------------------------- attempt 2 remediation (AUDIT1-M47A2-A1, AUDIT2 A2-09 (b), (d))
+
+
+def zero_turnover_code(zero_before: bool, zero_after: bool):
+    def volume(r):
+        if 465 <= r < 485 and zero_before or 485 <= r < 505 and zero_after:
+            return 0.0
+        return 2000.0
+    return (bars(rows(450, 521), close=lambda r: 50.0 if r >= 485 else 100.0, adjusted=50.0, volume=volume),
+            [{"date": day(485), "split": "2/1"}])
+
+
+def test_zero_median_turnover_rows_stay_typed_and_counted(tmp_path, monkeypatch):
+    codes = {"ZA.US": zero_turnover_code(False, True), "ZB.US": zero_turnover_code(True, False),
+             "ZC.US": zero_turnover_code(True, True), "ZOK.US": zero_turnover_code(False, False)}
+    entries, codes = anchors_with(**codes)
+    entries += [entry(code, day(455), day(500)) for code in ("ZA", "ZB", "ZC", "ZOK")]
+    _, result = census(tmp_path, monkeypatch, "zero", entries, codes)
+    diagnostic = result["public"]["volume_basis_split_diagnostic"]
+    assert diagnostic["rows_undefined_zero_median_turnover"] == 3 and diagnostic["rows"] == 1
+    assert diagnostic["median_ell"] == 0.0 and diagnostic["a1_volume_half"] == "insufficient"
+    mixed = volume_basis_diagnostic([(2.0, 0.0)] * 12 + [(2.0, None)] * 3)
+    assert (mixed["rows"], mixed["rows_undefined_zero_median_turnover"], mixed["a1_volume_half"]) == (12, 3, "consistent")
+
+
+def test_in_band_years_count_month_ends():
+    from research.m4_7_coverage_census import in_band_month_ends
+
+    assert in_band_month_ends(date(1990, 1, 31), date(2005, 12, 31)) == 192
+    assert in_band_month_ends(date(1990, 1, 31), date(2005, 12, 31)) / 12 == 16.0
+    assert in_band_month_ends(date(1990, 1, 31), date(2005, 11, 30)) == 191
+    assert in_band_month_ends(None, date(2005, 11, 30)) == 0 and in_band_month_ends(date(2006, 1, 31), date(2005, 1, 31)) == 0
+    assert derive_readiness({**CLEAN, "in_band_years": 192 / 12})["rules"]["R-CENSUS-1"]["passed"]
+    assert not derive_readiness({**CLEAN, "in_band_years": 191 / 12})["rules"]["R-CENSUS-1"]["passed"]

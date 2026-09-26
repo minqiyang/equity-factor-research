@@ -32,7 +32,7 @@ from data.holdout_partition import SEAL_FILE, SnapshotRefusal, coverage_start, m
 from research.m4_7_common_support import ic_month_set, signal_eligibility, write_support_files
 from research.m4_7_family_a import FAMILY_A
 from research.m4_7_holdout_seal import REPOSITORY_SEAL, confirmed_seal_bytes
-from research.m4_7_terminal_evidence import CURATED, ENGINE_EVENTS, VALIDATION, read_engine_events
+from research.m4_7_terminal_evidence import CURATED, ENGINE_EVENTS, read_engine_events, require_current_terminal
 from research.m4_7_universe_build import (
     BENCHMARK,
     BUILD_MANIFEST,
@@ -156,6 +156,13 @@ def derive_readiness(inputs: dict[str, Any]) -> dict[str, Any]:
             "inputs": inputs}
 
 
+def in_band_month_ends(start: date | None, last: date | None) -> int:
+    """Month-ends from the in-band start through the last month-end, inclusive; 192 month-ends are 16 years."""
+    if start is None or last is None or last < start:
+        return 0
+    return (last.year - start.year) * 12 + last.month - start.month + 1
+
+
 def tolerant_band(counts: list[int]) -> bool:
     """The seal's tolerant rule over a fixed window: at most 3 isolated exceptions inside the hard band."""
     band, hard = holdout_partition.BAND, holdout_partition.HARD_BAND
@@ -165,10 +172,17 @@ def tolerant_band(counts: list[int]) -> bool:
             and all(hard[0] <= counts[i] <= hard[1] for i in exceptions))
 
 
-def volume_basis_diagnostic(ells: list[tuple[float, float]]) -> dict[str, Any]:
-    """C79/C85: ``ells`` holds ``(ratio, ell)`` per eligible split row."""
-    values = np.array([ell for _, ell in ells], dtype=float)
-    large = [ell for ratio, ell in ells if abs(math.log(ratio)) >= math.log(2.0)]
+def volume_basis_diagnostic(ells: list[tuple[float, float | None]]) -> dict[str, Any]:
+    """C79/C85: ``ells`` holds ``(ratio, ell)`` per eligible split row.
+
+    ``ell`` is ``None`` when a 20-bar median dollar turnover on either side of
+    the split is zero, so its logarithm is undefined. Such rows stay typed and
+    counted under ``rows_undefined_zero_median_turnover``; they enter neither
+    the median, the tail share, nor the ten-row sufficiency count.
+    """
+    defined = [(ratio, ell) for ratio, ell in ells if ell is not None]
+    values = np.array([ell for _, ell in defined], dtype=float)
+    large = [ell for ratio, ell in defined if abs(math.log(ratio)) >= math.log(2.0)]
     share = (sum(ell > 0.5 for ell in large) / len(large)) if large else None
     if len(values) < VOLUME_BASIS_MIN_ROWS:
         verdict = "insufficient"
@@ -177,7 +191,8 @@ def volume_basis_diagnostic(ells: list[tuple[float, float]]) -> dict[str, Any]:
     else:
         verdict = "consistent"
     quartiles = np.quantile(values, [0.25, 0.5, 0.75]).tolist() if len(values) else [None] * 3
-    return {"rows": int(len(values)), "median_ell": quartiles[1], "quartiles_ell": [quartiles[0], quartiles[2]],
+    return {"rows": int(len(values)), "rows_undefined_zero_median_turnover": len(ells) - len(defined),
+            "median_ell": quartiles[1], "quartiles_ell": [quartiles[0], quartiles[2]],
             "rows_ratio_at_least_2": len(large), "share_ell_above_half_at_ratio_2": share, "a1_volume_half": verdict}
 
 
@@ -235,8 +250,7 @@ def run_census(
     require_current(snapshot, build.get("discovery_inputs_sha256"), BUILD_MANIFEST)
     inventory = read_derived_json(root, INVENTORY)
     require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
-    validation = read_derived_json(root, VALIDATION)
-    inputs_sha = require_current(snapshot, validation.get("discovery_inputs_sha256"), VALIDATION)
+    validation, inputs_sha = require_current_terminal(snapshot)
     support = write_support_files(root)
     calendar = snapshot.calendar()
     i_h, d0, d_last = discovery_window(calendar, snapshot.holdout_end)
@@ -420,8 +434,7 @@ def _breadth(ctx: Context, table: pd.DataFrame, mask: pd.DataFrame, seal: dict[s
     strict = coverage_start(monthly, 0)
     tail = [(m, n) for m, n in monthly if m >= sealed_start]
     tail_start = coverage_start(tail, holdout_partition.TOLERANCE_EXCEPTIONS)
-    last_month = monthly[-1][0] if monthly else sealed_start
-    in_band_years = (last_month - tail_start).days / 365.25 if tail_start is not None else 0.0
+    in_band_years = in_band_month_ends(tail_start, monthly[-1][0] if monthly else None) / 12
     holdout_counts = [n for m, n in monthly if sealed_start <= m < holdout_end]
     return {
         "members_per_date_by_year": by_year, "members_per_month_end": month_end,
@@ -700,7 +713,7 @@ def _history(ctx: Context) -> tuple[dict[str, int], int]:
     return dict(sorted(missing.items())), partial
 
 
-def _volume_ells(ctx: Context, checks: list[dict[str, Any]]) -> list[tuple[float, float]]:
+def _volume_ells(ctx: Context, checks: list[dict[str, Any]]) -> list[tuple[float, float | None]]:
     ells = []
     for check in checks:
         panel = ctx.panels.get(check["permanent_id"])
@@ -715,7 +728,9 @@ def _volume_ells(ctx: Context, checks: list[dict[str, Any]]) -> list[tuple[float
             position = int(dates.searchsorted(pd.Timestamp(split["date"])))
             before, after = turnover[max(0, position - VOLUME_BASIS_BARS):position], turnover[position:position + VOLUME_BASIS_BARS]
             if len(before) == VOLUME_BASIS_BARS and len(after) == VOLUME_BASIS_BARS:
-                ells.append((ratio, math.log(np.median(after) / np.median(before)) / math.log(ratio)))
+                medians = float(np.median(before)), float(np.median(after))
+                ell = math.log(medians[1] / medians[0]) / math.log(ratio) if min(medians) > 0 else None
+                ells.append((ratio, ell))
     return ells
 
 

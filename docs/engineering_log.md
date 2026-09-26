@@ -12,6 +12,47 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7a-2 attempt 2: consideration fields, projection binding, and census robustness
+
+- Source: `/private/tmp/m47a2_remediation_task.md`, remediating the dual audit
+  of candidate `eb139b2` (AUDIT1-M47A2-M1, M2, A1; AUDIT2 A2-01, A2-04, A2-05,
+  A2-06, A2-09 (b) and (d)).
+- M1 / A2-04: `validate` dispatches the terminal return strictly by
+  consideration type (cash `c / P_ref - 1`, stock `r * P_acq(V) / P_ref - 1`,
+  mixed `(c + r * P_acq(V)) / P_ref - 1`, worthless `-1`). A populated field
+  the type's formula does not use (cash on a stock or worthless row; a ratio
+  or acquirer on a cash or worthless row) is refused
+  `evidence_incomplete:contradictory_consideration_fields`; mixed requires a
+  positive cash and a positive stock component. The audit witness (stock,
+  cash 10, `r = 0.5`, `P_acq = 100`, `P_ref = 45`) is now refused instead of
+  accepted at `0.3333`.
+- M2 / A2-01: the validation report records `curated_evidence_sha256`;
+  `project` writes the table as a `# validation_report_sha256: <hash>` line
+  over the seven engine fields; `require_current_terminal` refuses
+  `derived_artifact_stale:terminal_validation_evidence_mismatch` when the
+  curated evidence changed after validation and
+  `derived_artifact_stale:terminal_events_engine_mismatch` unless the engine
+  table's bytes equal the projection of the current report. Support and
+  census call it before any mask or metric.
+- A2-05: the acquirer split check indexes `V` only for stock and mixed rows,
+  where `V <= S`; a cash or worthless deal completing after the calendar end
+  validates with its lag.
+- A1 / A2-09 (d): a zero 20-bar median turnover on either side of a split
+  makes `ell` undefined; such rows are counted under
+  `rows_undefined_zero_median_turnover` and stay out of the median, tail
+  share, and sufficiency count.
+- A2-09 (b): in-band years count month-ends inclusively, so 192 month-ends
+  read 16.0 years.
+- A2-06: an asymmetric witness (three `+ln 1.0009` steps, then one reverse)
+  is written at the last-bar anchor (`0.001799`) where a first-bar anchor
+  gives `0.002699`.
+- Each new test was checked against its regression: first-bar anchoring,
+  stock arithmetic using cash, removing either binding check, an unguarded
+  `log(0)`, and a `days / 365.25` year count each fail a new test.
+- Verification: targeted M4.7 suites 130 passed; governance constitution 21
+  passed; full suite 2,989 passed and 2 skipped; `ruff check . --exclude .venv`
+  and `git diff --check` clean.
+
 ## 2026-09-25 - M4.7a-2 seal script, universe build, terminal tooling, support wiring, and coverage census
 
 - Source: `coord/v8_review_20260923/card_m4_7a2_universe_and_census.md`, plan

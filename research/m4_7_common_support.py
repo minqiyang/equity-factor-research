@@ -390,12 +390,14 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     without an engine event; the frame columns are the member permanent IDs
     with a discovery panel. Refuses ``derived_artifact_stale`` when the
     inventory, a panel file, or the terminal validation report no longer
-    matches the current manifest (S7). Writes ``census/exclusion_set.json``,
+    matches the current manifest (S7), and refuses
+    ``derived_artifact_stale:terminal_events_engine_mismatch`` unless the
+    engine event table is the projection of the current validation report. Writes ``census/exclusion_set.json``,
     ``census/gap_windows.json``, and ``census/segments.json``.
     """
     from data.constituent_table import load_constituent_intervals_csv
     from data.holdout_partition import SnapshotRefusal, sha256_bytes
-    from research.m4_7_terminal_evidence import VALIDATION, read_engine_events
+    from research.m4_7_terminal_evidence import read_engine_events, require_current_terminal
     from research.m4_7_universe_build import (
         INTERVAL_CSV, INVENTORY, SECURITY_MASTER, Snapshot, _parquet, discovery_window, read_derived_json,
         require_current, write_bytes,
@@ -405,8 +407,7 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     root = snapshot.root
     inventory = read_derived_json(root, INVENTORY)
     inputs = require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
-    validation = read_derived_json(root, VALIDATION)
-    require_current(snapshot, validation.get("discovery_inputs_sha256"), VALIDATION)
+    require_current_terminal(snapshot)
     full = snapshot.calendar()
     i_h, d0, d_last = discovery_window(full, snapshot.holdout_end)
     if d0 > d_last:

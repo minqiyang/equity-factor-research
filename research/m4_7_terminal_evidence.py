@@ -16,6 +16,7 @@ Run as ``python -m research.m4_7_terminal_evidence {template,validate,project} -
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import math
 import sys
@@ -25,7 +26,7 @@ from typing import Any
 
 import pandas as pd
 
-from data.holdout_partition import SnapshotRefusal, parse_strict_date
+from data.holdout_partition import SnapshotRefusal, parse_strict_date, sha256_bytes
 from research.m4_7_universe_build import (
     BUILD_MANIFEST,
     INTERVAL_RESULTS,
@@ -62,6 +63,10 @@ BASIS = {
     "stock": "prior_observed_close_to_stock_consideration_valued_at_completion_date_close",
     "mixed": "prior_observed_close_to_mixed_consideration_valued_at_completion_date_close",
 }
+EVENTS_HEADER = "# validation_report_sha256: "
+CONTRADICTORY_FIELDS = "evidence_incomplete:contradictory_consideration_fields"
+EVENTS_MISMATCH = "derived_artifact_stale:terminal_events_engine_mismatch"
+EVIDENCE_MISMATCH = "derived_artifact_stale:terminal_validation_evidence_mismatch"
 CASH_LAG_MAX = 3
 STOCK_LAGS = (-1, 0)
 BASIS_TOLERANCE = 1e-6
@@ -107,7 +112,8 @@ def validate(snapshot_dir: Path | str) -> dict[str, Any]:
     path = snapshot.root / CURATED
     if not path.is_file():
         raise SnapshotRefusal("terminal_evidence_missing", CURATED)
-    curated = _read_csv(path)
+    evidence_bytes = path.read_bytes()
+    curated = pd.read_csv(io.BytesIO(evidence_bytes), dtype=str, keep_default_na=False)
     missing = [column for column in EVIDENCE_COLUMNS if column not in curated.columns]
     if missing or curated["event_id"].duplicated().any():
         raise SnapshotRefusal("terminal_evidence_invalid", f"columns {missing} or duplicate event_id")
@@ -141,6 +147,7 @@ def validate(snapshot_dir: Path | str) -> dict[str, Any]:
     report = {
         "schema_version": "m4_7_terminal_validation_v1",
         "discovery_inputs_sha256": inputs,
+        "curated_evidence_sha256": sha256_bytes(evidence_bytes),
         "counts": dict(sorted(counts.items())),
         "settlement_lag_distribution": _lag_distribution(results),
         "valuation_row_offsets": {
@@ -183,6 +190,38 @@ def _number(text: str) -> float | None:
     return value if math.isfinite(value) else None
 
 
+def _blank_or_zero(text: str) -> bool:
+    return not text.strip() or _number(text) == 0.0
+
+
+def _consideration_fault(kind: str, row: dict[str, Any], cash: float | None, ratio: float | None, acquirer: str) -> str | None:
+    """Required and forbidden term fields by consideration type (plan 3.2, 3.3).
+
+    A missing required component is ``evidence_incomplete``; a populated field
+    that the type's registered formula does not use is
+    ``evidence_incomplete:contradictory_consideration_fields``, so an unused
+    field can never change a payoff or disagree with its basis label.
+    """
+    stock_terms = ratio is not None and ratio > 0 and bool(acquirer)
+    if kind == "cash":
+        if cash is None or cash < 0:
+            return "evidence_incomplete"
+        if row["exchange_ratio"].strip() or acquirer:
+            return CONTRADICTORY_FIELDS
+    elif kind == "stock":
+        if not stock_terms:
+            return "evidence_incomplete"
+        if not _blank_or_zero(row["cash_per_share"]):
+            return CONTRADICTORY_FIELDS
+    elif kind == "mixed":
+        if not stock_terms or cash is None or cash <= 0:
+            return "evidence_incomplete"
+    elif kind == "evidenced_worthless":
+        if not _blank_or_zero(row["cash_per_share"]) or row["exchange_ratio"].strip() or acquirer:
+            return CONTRADICTORY_FIELDS
+    return None
+
+
 def _validate_row(
     snapshot: Snapshot, calendar: pd.DatetimeIndex, masters: dict[str, dict[str, Any]],
     row: dict[str, Any], last_bar: int,
@@ -195,15 +234,13 @@ def _validate_row(
     settlement = last_bar + 1
     timing = {"reference_date": calendar[last_bar].date().isoformat(),
               "effective_date": calendar[settlement].date().isoformat()}
-    complete = (
-        row["event_kind"] in EVENT_KINDS and kind in BASIS and announced is not None and completed is not None
-        and row["source_evidence"].strip()
-        and (kind not in ("cash", "mixed") or (cash is not None and cash >= 0))
-        and (kind not in ("stock", "mixed") or (ratio is not None and ratio > 0 and acquirer))
-    )
-    if not complete:
-        reason = "curation_unresolved" if kind == "unresolved" else "evidence_incomplete"
-        return _result(row, "unresolved", reason, **timing)
+    if kind == "unresolved":
+        return _result(row, "unresolved", "curation_unresolved", **timing)
+    complete = (row["event_kind"] in EVENT_KINDS and kind in BASIS and announced is not None
+                and completed is not None and row["source_evidence"].strip())
+    fault = "evidence_incomplete" if not complete else _consideration_fault(kind, row, cash, ratio, acquirer)
+    if fault is not None:
+        return _result(row, "unresolved", fault, **timing)
     if kind in ("cash", "mixed") and row["cash_currency"].strip() != "USD":
         return _result(row, "unresolved", "terminal_currency_unsupported", **timing)
     if pd.Timestamp(announced) > calendar[last_bar]:
@@ -216,7 +253,7 @@ def _validate_row(
         return _result(row, "unresolved", "settlement_lag_exceeds_3_rows", **timing)
     if kind in ("stock", "mixed") and lag not in STOCK_LAGS:
         return _result(row, "unresolved", "stock_consideration_lag_positive", **timing)
-    valuation = settlement + lag
+    valuation = settlement + lag  # V <= S for stock and mixed, so it indexes the calendar; cash never reads it
     acquirer_code = None
     if kind in ("stock", "mixed"):
         timing["valuation_row"] = calendar[valuation].date().isoformat()
@@ -237,19 +274,23 @@ def _validate_row(
     settle_day = calendar[settlement]
     target_actions = _dates(snapshot, "splits", code) | _dates(snapshot, "dividends", code)
     acquirer_splits = _dates(snapshot, "splits", acquirer_code) if acquirer_code else set()
-    if (abs(adjusted / p_ref - 1.0) > BASIS_TOLERANCE or settle_day in target_actions
-            or calendar[valuation] in acquirer_splits):
+    acquirer_split_on_v = acquirer_code is not None and calendar[valuation] in acquirer_splits
+    if abs(adjusted / p_ref - 1.0) > BASIS_TOLERANCE or settle_day in target_actions or acquirer_split_on_v:
         return _result(row, "unresolved", "terminal_basis_ambiguous", **timing)
+    acquirer_close = None
+    if acquirer_code is not None:
+        frame = _discovery_eod(snapshot, acquirer_code)
+        if frame is None or calendar[valuation] not in frame.index:
+            return _result(row, "unresolved", "acquirer_bar_missing", **timing)
+        acquirer_close = float(frame.loc[calendar[valuation], "close"])
     if kind == "evidenced_worthless":
         rho = -1.0
+    elif kind == "cash":
+        rho = cash / p_ref - 1.0
+    elif kind == "stock":
+        rho = ratio * acquirer_close / p_ref - 1.0
     else:
-        acquirer_close = 0.0
-        if acquirer_code:
-            frame = _discovery_eod(snapshot, acquirer_code)
-            if frame is None or calendar[valuation] not in frame.index:
-                return _result(row, "unresolved", "acquirer_bar_missing", **timing)
-            acquirer_close = float(frame.loc[calendar[valuation], "close"])
-        rho = ((cash or 0.0) + (ratio or 0.0) * acquirer_close) / p_ref - 1.0
+        rho = (cash + ratio * acquirer_close) / p_ref - 1.0
     if rho < -1.0:
         raise SnapshotRefusal("terminal_return_below_minus_one", row["event_id"])
     if rho > UNJUSTIFIED_RETURN and not row["notes"].strip():
@@ -284,22 +325,62 @@ def _lag_distribution(results: list[dict[str, Any]]) -> dict[str, dict[str, int]
     return {kind: dict(sorted(values.items())) for kind, values in sorted(distribution.items())}
 
 
-def project(snapshot_dir: Path | str) -> pd.DataFrame:
-    """Write the seven engine fields for every accepted row (plan 3.5)."""
-    snapshot = Snapshot.open(snapshot_dir)
-    report = read_derived_json(snapshot.root, VALIDATION)
-    require_current(snapshot, report.get("discovery_inputs_sha256"), VALIDATION)
+def engine_events_bytes(report_bytes: bytes) -> bytes:
+    """The projection of a validation report: a digest header line, then the seven engine fields of accepted rows."""
+    report = json.loads(report_bytes)
     rows = [{field: r[field] for field in ENGINE_FIELDS} for r in report["rows"] if r["status"] == "accepted"]
-    frame = pd.DataFrame(rows, columns=list(ENGINE_FIELDS))
-    write_bytes(snapshot.root / ENGINE_EVENTS, csv_bytes(frame))
-    return frame
+    header = f"{EVENTS_HEADER}{sha256_bytes(report_bytes)}\n".encode("utf-8")
+    return header + csv_bytes(pd.DataFrame(rows, columns=list(ENGINE_FIELDS)))
+
+
+def current_validation(snapshot: Snapshot) -> tuple[bytes, str]:
+    """The validation report's bytes, refused unless it matches the current manifest and curated evidence (S7)."""
+    path = snapshot.root / VALIDATION
+    if not path.is_file():
+        raise SnapshotRefusal("derived_artifact_missing", VALIDATION)
+    report_bytes = path.read_bytes()
+    report = json.loads(report_bytes)
+    inputs = require_current(snapshot, report.get("discovery_inputs_sha256"), VALIDATION)
+    evidence = snapshot.root / CURATED
+    if not evidence.is_file() or sha256_bytes(evidence.read_bytes()) != report.get("curated_evidence_sha256"):
+        raise SnapshotRefusal(EVIDENCE_MISMATCH, CURATED)
+    return report_bytes, inputs
+
+
+def require_current_terminal(snapshot: Snapshot) -> tuple[dict[str, Any], str]:
+    """Refuse unless the engine event table is exactly the projection of the current validation report.
+
+    Consumers call this before building masks, support, or census metrics, so
+    an event the current validation no longer accepts can never settle an asset.
+    """
+    report_bytes, inputs = current_validation(snapshot)
+    events = snapshot.root / ENGINE_EVENTS
+    if not events.is_file():
+        raise SnapshotRefusal("derived_artifact_missing", ENGINE_EVENTS)
+    if events.read_bytes() != engine_events_bytes(report_bytes):
+        raise SnapshotRefusal(EVENTS_MISMATCH, ENGINE_EVENTS)
+    return json.loads(report_bytes), inputs
+
+
+def project(snapshot_dir: Path | str) -> pd.DataFrame:
+    """Write the seven engine fields for every accepted row of the current validation report (plan 3.5)."""
+    snapshot = Snapshot.open(snapshot_dir)
+    report_bytes, _ = current_validation(snapshot)
+    payload = engine_events_bytes(report_bytes)
+    write_bytes(snapshot.root / ENGINE_EVENTS, payload)
+    return pd.read_csv(io.BytesIO(payload), skiprows=1, dtype=str, keep_default_na=False)
 
 
 def read_engine_events(snapshot_dir: Path | str) -> pd.DataFrame:
-    if not (Path(snapshot_dir) / ENGINE_EVENTS).is_file():
+    """Parse the engine event table below its digest header line."""
+    path = Path(snapshot_dir) / ENGINE_EVENTS
+    if not path.is_file():
         raise SnapshotRefusal("derived_artifact_missing", ENGINE_EVENTS)
-    frame = pd.read_csv(Path(snapshot_dir) / ENGINE_EVENTS, dtype={"event_id": str, "permanent_id": str,
-                                                                    "return_basis": str})
+    payload = path.read_bytes()
+    if not payload.startswith(EVENTS_HEADER.encode("utf-8")):
+        raise SnapshotRefusal(EVENTS_MISMATCH, ENGINE_EVENTS)
+    frame = pd.read_csv(io.BytesIO(payload), skiprows=1, dtype={"event_id": str, "permanent_id": str,
+                                                                 "return_basis": str})
     for column in ("effective_date", "known_at", "reference_date"):
         frame[column] = pd.to_datetime(frame[column])
     frame["terminal_return"] = frame["terminal_return"].astype(float)

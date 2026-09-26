@@ -22,7 +22,7 @@ from backtest.portfolio import (
     run_long_only_backtest,
 )
 from data.constituent_table import build_pit_membership_mask, load_constituent_intervals_csv
-from data.holdout_partition import SnapshotRefusal
+from data.holdout_partition import SnapshotRefusal, sha256_bytes
 from data.parquet_loader import load_eod_cohort_panels
 from m4_7_snapshot_support import CAL, I_H, Harness, bars, day, entry, interval_rows, record_reads, rows
 from research.m4_7_common_support import scheduled_reset_rows, signal_eligibility
@@ -176,7 +176,10 @@ def test_t_term_7_accepted_lags_by_type(tmp_path, monkeypatch):
 
 def test_t_term_8_projection_fields_and_rows(deals, tmp_path):
     snap, report = deals
-    events = pd.read_csv(snap / "terminal/terminal_events_engine.csv", dtype=str)
+    path = snap / "terminal/terminal_events_engine.csv"
+    header = path.read_text().splitlines()[0]
+    assert header == "# validation_report_sha256: " + sha256_bytes((snap / "terminal/terminal_validation.json").read_bytes())
+    events = pd.read_csv(path, skiprows=1, dtype=str)
     assert tuple(events.columns) == ENGINE_FIELDS and len(events) == 6
     for event in events.to_dict(orient="records"):
         s = CAL.get_loc(pd.Timestamp(event["effective_date"]))
@@ -343,8 +346,10 @@ def test_t_term_6_future_price_invariance(tmp_path, monkeypatch):
     assert master.loc[master["vendor_code"] == "ACQ.US", "role"].tolist() == ["acquirer_only"]
     later_snap, after = run("later", later)
     assert after == base
-    assert (later_snap / "terminal/terminal_events_engine.csv").read_bytes() == \
-        (base_snap / "terminal/terminal_events_engine.csv").read_bytes()
+    def event_rows(snap):
+        return (snap / "terminal/terminal_events_engine.csv").read_text().splitlines()[1:]
+
+    assert event_rows(later_snap) == event_rows(base_snap)
     moved_snap, moved = run("moved", base_closes, cash_lag=3)
     assert moved["CSH"] == base["CSH"]
     table, prices, events = engine_inputs(base_snap)
@@ -469,3 +474,126 @@ def test_t_term_11_holdout_boundary_deferral(tmp_path, monkeypatch):
     with pytest.raises(SnapshotRefusal) as refused:
         validate(snap)
     assert refused.value.code == "holdout_terms_forbidden"
+
+
+# ---------------------------------------------------------------- attempt 2 remediation (AUDIT1-M47A2-M1, M2; AUDIT2 A2-01, A2-04, A2-05)
+
+
+CONTRADICTORY = "evidence_incomplete:contradictory_consideration_fields"
+
+
+def test_consideration_fields_are_dispatched_strictly_by_type(tmp_path, monkeypatch):
+    """A-M1/A2-04: unused term fields are refused; each type uses only its registered formula."""
+    names = ["STKC", "STKZ", "CSHR", "CSHA", "MIXZ", "MIXN", "MIXE", "WRTC", "M2S", "CSHP", "MIXP"]
+    lasts = {name: I_H + 300 + 6 * k for k, name in enumerate(names)}
+    targets = {name: target(last, 45.0) for name, last in lasts.items()}
+    snap = terminal_snapshot(tmp_path, monkeypatch, "fields", targets, {"ACQ": {}})
+    acq = dict(acquirer="ACQ.US#E1")
+    mixed = curate("M2S", lasts["M2S"], "mixed", 0, cash=10, ratio=0.5, **acq)
+    write_curated(snap, [
+        curate("STKC", lasts["STKC"], "stock", 0, cash=10, ratio=0.5, **acq),
+        curate("STKZ", lasts["STKZ"], "stock", 0, cash=0, ratio=0.5, **acq),
+        curate("CSHR", lasts["CSHR"], "cash", 0, cash=50, ratio=0.5),
+        curate("CSHA", lasts["CSHA"], "cash", 0, cash=50, **acq),
+        curate("MIXZ", lasts["MIXZ"], "mixed", 0, cash=0, ratio=0.5, **acq),
+        curate("MIXN", lasts["MIXN"], "mixed", 0, cash=10, **acq),
+        curate("MIXE", lasts["MIXE"], "mixed", 0, cash=10, ratio=0.5, currency="EUR", **acq),
+        curate("WRTC", lasts["WRTC"], "evidenced_worthless", 0, cash=5),
+        {**mixed, "consideration_type": "stock"},
+        curate("CSHP", lasts["CSHP"], "cash", 0, cash=54),
+        curate("MIXP", lasts["MIXP"], "mixed", 0, cash=10, ratio=0.5, **acq),
+    ])
+    got = results(validate(snap))
+    assert {name: got[name]["validation_reason"] for name in names} == {
+        "STKC": CONTRADICTORY, "STKZ": None, "CSHR": CONTRADICTORY, "CSHA": CONTRADICTORY,
+        "MIXZ": "evidence_incomplete", "MIXN": "evidence_incomplete", "MIXE": "terminal_currency_unsupported",
+        "WRTC": CONTRADICTORY, "M2S": CONTRADICTORY, "CSHP": None, "MIXP": None,
+    }
+    assert got["STKZ"]["terminal_return"] == 0.5 * 100.0 / 45.0 - 1.0 and got["STKZ"]["return_basis"] == STOCK
+    assert got["CSHP"]["terminal_return"] == 54.0 / 45.0 - 1.0 and got["CSHP"]["return_basis"] == CASH
+    assert got["MIXP"]["terminal_return"] == (10.0 + 0.5 * 100.0) / 45.0 - 1.0 and got["MIXP"]["return_basis"] == MIXED
+    events = project(snap)
+    assert sorted(events["permanent_id"]) == ["CSHP.US#E1", "MIXP.US#E1", "STKZ.US#E1"]
+    table, prices, engine_events = engine_inputs(snap, exclude=tuple(f"{n}.US#E1" for n in names
+                                                                    if n not in ("STKZ", "CSHP", "MIXP")))
+    long_only, _ = run_books(table, prices, engine_events, CAL[I_H + 20], CAL[-1])
+    stock = next(r for r in long_only.terminal_event_log if r["permanent_id"] == "STKZ.US#E1")
+    s = CAL.get_loc(pd.Timestamp(stock["effective_date"]))
+    assert stock["cashflow"] == pytest.approx(long_only.equity_curve.loc[CAL[s - 1]] * stock["incoming_weight"] * (100.0 / 90.0))
+
+
+def test_valuation_row_is_never_indexed_past_the_calendar_end(tmp_path, monkeypatch):
+    """A2-05: deals completing after the last calendar row validate without an ``IndexError``."""
+    last = N - 2
+    targets = {name: target(last, 40.0) for name in ("CEND", "WEND", "SEND")}
+    snap = terminal_snapshot(tmp_path, monkeypatch, "calendar_end", targets, {"ACQ": {}})
+    after_end = "2007-01-05"
+
+    def at_end(code, kind, **terms):
+        return {**curate(code, last, kind, 0, **terms), "completion_date": after_end}
+
+    write_curated(snap, [at_end("CEND", "cash", cash=44), at_end("WEND", "evidenced_worthless",
+                                                                  event_kind="bankruptcy_or_liquidation"),
+                         at_end("SEND", "stock", ratio=1.0, acquirer="ACQ.US#E1")])
+    got = results(validate(snap))
+    assert (got["CEND"]["status"], got["CEND"]["settlement_lag_rows"]) == ("accepted", 1)
+    assert got["CEND"]["terminal_return"] == pytest.approx(0.1) and got["CEND"]["valuation_row"] is None
+    assert (got["WEND"]["status"], got["WEND"]["terminal_return"]) == ("accepted", -1.0)
+    assert got["SEND"]["validation_reason"] == "stock_consideration_lag_positive"
+
+
+def support_and_census(snap, out):
+    from research.m4_7_common_support import write_support_files
+    from research.m4_7_coverage_census import run_census
+
+    support = write_support_files(snap)
+    return support, run_census(snap, reports_dir=out / "reports", seal_out=out / "seal.json", code_commit="t")
+
+
+def refused(callable_, *args):
+    with pytest.raises(SnapshotRefusal) as caught:
+        callable_(*args)
+    return caught.value.code
+
+
+def test_engine_events_must_be_the_projection_of_the_current_validation(deals, tmp_path):
+    """A-M2/A2-01: support and census refuse a stale projection or a validation older than the evidence."""
+    from research.m4_7_common_support import write_support_files
+    from research.m4_7_coverage_census import run_census
+
+    snap, _ = deals
+    census = lambda: run_census(snap, reports_dir=tmp_path / "r", seal_out=tmp_path / "s.json")  # noqa: E731
+    support, before = support_and_census(snap, tmp_path / "before")
+    assert "STK0.US#E1" not in support.unresolved
+    stale = "derived_artifact_stale:terminal_events_engine_mismatch"
+    evidence_stale = "derived_artifact_stale:terminal_validation_evidence_mismatch"
+
+    edits = {
+        "accepted_to_unresolved": lambda rows_: [dict(r, curation_status="unresolved")
+                                                 if r["permanent_id"] == "STK0.US#E1" else r for r in rows_],
+        "changed_payoff": lambda rows_: [dict(r, cash_per_share="31") if r["permanent_id"] == "CSH.US#E1" else r
+                                         for r in rows_],
+        "deleted_row": lambda rows_: [r for r in rows_ if r["permanent_id"] != "WRT.US#E1"],
+    }
+    rows_ = deal_rows()
+    for name, edit in edits.items():
+        rows_ = edit(rows_)
+        write_curated(snap, rows_)
+        assert refused(write_support_files, snap) == evidence_stale, name
+        assert refused(project, snap) == evidence_stale, name
+        validate(snap)
+        assert refused(write_support_files, snap) == stale, name
+        assert refused(census) == stale, name
+        project(snap)
+        write_support_files(snap)
+    support, after = support_and_census(snap, tmp_path / "after")
+    assert support.unresolved_in_window() == {"STK0.US#E1": L_STK0 + 1 - I_H, "WRT.US#E1": L_WORT + 1 - I_H}
+    assert after["public"]["exclusion_set"]["unresolved_events"] == 2
+    assert before["public"]["exclusion_set"]["unresolved_events"] == 0
+    assert after["public"]["price_coverage"]["eligible_unpriced_member_days"]["after_unresolved_disappearance"] > 0
+
+    path = snap / "terminal/terminal_events_engine.csv"
+    lines = path.read_text().splitlines()
+    path.write_text("\n".join(lines[:-1]) + "\n")
+    assert refused(write_support_files, snap) == stale
+    assert refused(census) == stale

@@ -237,3 +237,30 @@ independent ABLATION pass, and coordinator acceptance of the exact head.
 M4.7a-3 needs the owner's explicit run authorization recorded in the
 engineering log before any private retrieval, build, or census. M4.7b-1 may
 start on the synthetic end-to-end fixture.
+
+## 10. Attempt 2 remediation
+
+Source: coordinator instruction `/private/tmp/m47a2_remediation_task.md`
+after the dual audit of `eb139b2` (Seat 1 GPT-6 Astra: 2 MATERIAL; Seat 2
+Opus 5.5: 0 MATERIAL).
+
+| Finding | Change | Test |
+| --- | --- | --- |
+| AUDIT1-M47A2-M1, AUDIT2 A2-04 | `research/m4_7_terminal_evidence.py`: per-type formula dispatch; unused populated fields refused `evidence_incomplete:contradictory_consideration_fields`; mixed needs positive cash and stock components | `test_consideration_fields_are_dispatched_strictly_by_type` (stock with cash, zero-cash stock, cash with ratio or acquirer, mixed without either component, mixed in EUR, worthless with cash, a mixed row retyped as stock, the three formula goldens, and the credited engine cash of the zero-cash stock event) |
+| AUDIT1-M47A2-M2, AUDIT2 A2-01 | Validation records `curated_evidence_sha256`; `project` writes `# validation_report_sha256: <hash>` above the seven fields; `require_current_terminal` refuses `derived_artifact_stale:terminal_validation_evidence_mismatch` and `derived_artifact_stale:terminal_events_engine_mismatch`; `write_support_files` and `run_census` call it first | `test_engine_events_must_be_the_projection_of_the_current_validation` (accepted-to-unresolved, changed payoff, deleted row, each refused before validation and before projection; after re-projection `U` holds both unresolved candidates and the census charges `after_unresolved_disappearance`; a hand-edited table refuses) |
+| AUDIT2 A2-05 | The acquirer split check reads `calendar[V]` only for stock and mixed (`V <= S`) | `test_valuation_row_is_never_indexed_past_the_calendar_end` |
+| AUDIT1-M47A2-A1, AUDIT2 A2-09 (d) | `_volume_ells` returns `ell = None` for a zero median on either side; `volume_basis_diagnostic` counts `rows_undefined_zero_median_turnover` outside the median, tail share, and sufficiency count | `test_zero_median_turnover_rows_stay_typed_and_counted` (zero after, before, and both; a complete census) |
+| AUDIT2 A2-06 | Test only; the code already anchors at the last bar | `test_t_uni_17_h_cumulative_drift_is_anchored_at_the_last_bar` (written at `0.001799`; the first-bar anchor gives `0.002699`) |
+| AUDIT2 A2-09 (b) | `in_band_month_ends` counts month-ends inclusively; `in_band_years = month-ends / 12` | `test_in_band_years_count_month_ends` (192 month-ends read 16.0 and pass R-CENSUS-1; 191 fail) |
+
+Regression checks: each new test fails when its fix is reverted in isolation
+(first-bar anchoring, stock arithmetic that reads cash, either binding check
+removed, an unguarded `log(0)`, and a `days / 365.25` year count).
+
+Verification on the remediation head: targeted M4.7 suites 130 passed;
+`tests/test_governance_constitution.py` 21 passed; full suite 2,989 passed
+and 2 skipped; `ruff check . --exclude .venv` and `git diff --check` clean.
+
+Not changed in this attempt: AUDIT2 A2-02, A2-03, A2-07, A2-08, A2-09 (a)
+and (c), and A2-10 remain open advisories outside the coordinator's
+attempt 2 scope.

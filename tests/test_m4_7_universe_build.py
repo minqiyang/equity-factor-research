@@ -1070,3 +1070,20 @@ def test_t_uni_12_round_trip_oracle_refuses_a_shifted_boundary_rule(tmp_path, mo
     with pytest.raises(SnapshotRefusal) as refused:
         build_universe(snap)
     assert refused.value.code == "interval_boundary_mismatch"
+
+
+def test_t_uni_17_h_cumulative_drift_is_anchored_at_the_last_bar(tmp_path, monkeypatch):
+    """A2-06: three +0.0009 steps then one -0.0009 step pass at the last-bar anchor and fail at a first-bar anchor."""
+    t = np.arange(160)
+    k = np.searchsorted([40, 80, 120], t, side="right") - (t >= 150)
+    y = 1.0009 ** (k - 2)
+    flat = np.full(160, 100.0)
+    codes = {"ASY.US": (single("ASY", START, flat, flat * y, 1000.0 / y), [])}
+    snap = snapshot(tmp_path, monkeypatch, "anchor", members(["ASY"]), codes)
+    check = check_of(snap, "ASY.US#E1")
+    assert check["refusal"] is None and check["in_span"] == "passed"
+    assert check["max_cumulative_drift"] == pytest.approx(2 * math.log(1.0009), abs=1e-12)
+    steps = np.log(y[1:] / y[:-1])
+    first_bar_anchor = np.max(np.abs(np.cumsum(steps)))
+    assert first_bar_anchor == pytest.approx(3 * math.log(1.0009), abs=1e-12) and first_bar_anchor > 2e-3
+    assert panel(snap, "ASY.US#E1")["split_factor"].eq(1.0).all()
