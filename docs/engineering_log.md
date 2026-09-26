@@ -12,6 +12,49 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7a-3 owner-authorized local private data run
+
+- Authorization (O-4, a-3): the coordinator's GENERAL_EXEC dispatch of
+  2026-09-26 (card `coord/v8_review_20260923/card_m4_7a3_universe_and_census.md`,
+  task `m4_7a3-universe-and-census-a1`) relays the owner's explicit run
+  authorization for the a-3 retrieval, build, curation, and census on the
+  locally stored EODHD acquisitions. Scope: offline reads of existing local
+  files; no network call, no vendor token, no new vendor request. The seal
+  invocation for snapshot `real_v1` passed this entry as its
+  `--authorization-reference`.
+- Provenance: membership from the local components response of acquisition
+  `snapshot_20260807T002458Z` (SHA-256 `42404317…2b56` of the gzip file);
+  symbol lists from the same acquisition; EOD, split, and dividend responses
+  from acquisition `snapshot_20260808T005805Z` (ledger run
+  `run_fcc24d677349eb755692f02f`, 815 codes, cutoff 2026-08-07). The private
+  adapter `build_local_eodhd_snapshot.py` (SHA-256 `6b7047a5…835d`, kept
+  outside the repository because T-STRUCT-1 confines `urllib.error` imports to
+  the retrieval module) calls `data.eodhd_retrieval.main(..., transport=...)`
+  under the placeholder token `local_offline_token`.
+- Executed: `components` (818 entries, `components_retrieved_utc_date`
+  2026-08-07 through the module's `clock` seam, the local response's
+  acquisition date) and `symbols` (18,184 listed and 32,555 delisted rows).
+  Manifest SHA-256 `34af1cba…de0c`; the token-leak byte scan finds no match.
+  A second clean build reproduces every manifest file hash and the refusal.
+- Stop: the seal script refuses `holdout_overlaps_prior_exposure`
+  (`holdout_end 2029-07-31 is after 2014-01-01`), a plan 7.2 a-3 stop
+  condition that goes to owner decision O-3. The raw month-end count first
+  enters the band `[470, 530]` at 2019-07-31 (470) and stays in band through
+  2026-07-31 (504); tolerant and strict `coverage_start` are both 2019-07-31.
+  Entry outcomes: 675 retained and 143 `entry_missing_field` (every one lacks
+  `StartDate`; `EndDate` 2008-09-16 to 2023-12-18). Counting those 143 as
+  members since inception, an upper bound, moves `coverage_start` to
+  2011-12-31 and `holdout_end` to 2021-12-31, still after 2014-01-01, so no
+  reading of this response satisfies the seal rule.
+- Not run: `calendar`, `splits`, `eod`, `dividends`, `verify`, the universe
+  build, terminal tooling, and the census, because each downstream command
+  refuses `holdout_seal_missing` without a seal. No seal, census, or readiness
+  file exists, so none is committed.
+- Private snapshot state: `<private_data_root>/sp500_pit_real_v1` holds the
+  manifest, membership, symbols, raw components and symbol responses, and the
+  retrieval log; a-3 resumes from this manifest after the owner acts.
+- Report: `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
 ## 2026-09-26 - M4.7b-1 attempt 3: lazy trials file and complete pre-inference output preservation
 
 - Source: `/private/tmp/m47b1_remediation_task_a3.md`, remediating the Round 2
