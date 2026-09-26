@@ -145,6 +145,58 @@ def read_holdout_end(snapshot_dir: Path) -> date:
     return holdout_end
 
 
+def classify_membership_entries(
+    frame: pd.DataFrame,
+    components_retrieved_utc_date: date,
+) -> list[dict[str, Any]]:
+    """Type every raw membership entry under the shared entry rule (C75, C87).
+
+    One record per raw row in raw-table order with ``code``, ``start``, ``end``
+    (``None`` when open), ``outcome`` (``retained``, ``entry_missing_field``,
+    ``entry_unparseable_date``, ``degenerate_interval``,
+    ``exact_duplicate_collapsed``, or ``raw_overlap``), and ``duplicate_of``
+    (the raw position of the retained copy). The seal and the universe build
+    both call this function, so they count the same entries.
+    """
+
+    records: list[dict[str, Any]] = []
+    first_copy: dict[tuple[str, date, date | None], int] = {}
+    for position, row in enumerate(frame.to_dict(orient="records")):
+        code, start_raw, end_raw = row.get("Code"), row.get("StartDate"), row.get("EndDate")
+        record: dict[str, Any] = {"position": position, "code": None, "start": None, "end": None, "duplicate_of": None}
+        records.append(record)
+        if _is_blank(code) or _is_blank(start_raw):
+            record["outcome"] = "entry_missing_field"
+            continue
+        start = parse_strict_date(start_raw)
+        end = None if _is_blank(end_raw) else parse_strict_date(end_raw)
+        if start is None or (not _is_blank(end_raw) and end is None):
+            record["outcome"] = "entry_unparseable_date"
+            continue
+        if end is not None and end > components_retrieved_utc_date:
+            end = None
+        record.update(code=str(code), start=start, end=end)
+        if end is not None and end <= start:
+            record["outcome"] = "degenerate_interval"
+            continue
+        triple = (str(code), start, end)
+        if triple in first_copy:
+            record.update(outcome="exact_duplicate_collapsed", duplicate_of=first_copy[triple])
+            continue
+        first_copy[triple] = position
+        record["outcome"] = "retained"
+
+    kept = [record for record in records if record["outcome"] == "retained"]
+    for i, left in enumerate(kept):
+        for right in kept[i + 1:]:
+            if left["code"] == right["code"] and _intersects(left["start"], left["end"], right["start"], right["end"]):
+                left["overlap"] = right["overlap"] = True
+    for record in kept:
+        if record.pop("overlap", False):
+            record["outcome"] = "raw_overlap"
+    return records
+
+
 def parse_membership_entries(
     frame: pd.DataFrame,
     components_retrieved_utc_date: date,
@@ -155,48 +207,12 @@ def parse_membership_entries(
     raw-table order and the count per typed outcome.
     """
 
-    counts = {
-        "raw_entries": int(len(frame)),
-        "entry_missing_field": 0,
-        "entry_unparseable_date": 0,
-        "degenerate_interval": 0,
-        "exact_duplicate_collapsed": 0,
-        "raw_overlap": 0,
-        "retained": 0,
-    }
-    parsed: list[tuple[str, date, date | None]] = []
-    seen: set[tuple[str, date, date | None]] = set()
-    for row in frame.to_dict(orient="records"):
-        code, start_raw, end_raw = row.get("Code"), row.get("StartDate"), row.get("EndDate")
-        if _is_blank(code) or _is_blank(start_raw):
-            counts["entry_missing_field"] += 1
-            continue
-        start = parse_strict_date(start_raw)
-        end = None if _is_blank(end_raw) else parse_strict_date(end_raw)
-        if start is None or (not _is_blank(end_raw) and end is None):
-            counts["entry_unparseable_date"] += 1
-            continue
-        if end is not None and end > components_retrieved_utc_date:
-            end = None
-        if end is not None and end <= start:
-            counts["degenerate_interval"] += 1
-            continue
-        triple = (str(code), start, end)
-        if triple in seen:
-            counts["exact_duplicate_collapsed"] += 1
-            continue
-        seen.add(triple)
-        parsed.append(triple)
-
-    overlapping: set[int] = set()
-    for i, (code_i, start_i, end_i) in enumerate(parsed):
-        for j in range(i + 1, len(parsed)):
-            code_j, start_j, end_j = parsed[j]
-            if code_i == code_j and _intersects(start_i, end_i, start_j, end_j):
-                overlapping.update((i, j))
-    counts["raw_overlap"] = len(overlapping)
-    retained = [entry for index, entry in enumerate(parsed) if index not in overlapping]
-    counts["retained"] = len(retained)
+    records = classify_membership_entries(frame, components_retrieved_utc_date)
+    counts = {"raw_entries": int(len(frame))}
+    for outcome in ("entry_missing_field", "entry_unparseable_date", "degenerate_interval",
+                    "exact_duplicate_collapsed", "raw_overlap", "retained"):
+        counts[outcome] = sum(1 for record in records if record["outcome"] == outcome)
+    retained = [(r["code"], r["start"], r["end"]) for r in records if r["outcome"] == "retained"]
     return retained, counts
 
 

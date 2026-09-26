@@ -10,13 +10,15 @@ labels of section 4.6, which read adjusted closes and signals by definition.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Mapping
 
 import numpy as np
 import pandas as pd
 
-from backtest.portfolio import _prepare_terminal_events
+from backtest.portfolio import _prepare_terminal_events, resolve_pit_universe_mask
 from features.diagnostics import factor_rank_information_coefficient
 
 
@@ -321,3 +323,141 @@ def _merge(windows: list[GapWindow]) -> list[GapWindow]:
 def _require_aligned(left: pd.DataFrame, right: pd.DataFrame) -> None:
     if not left.index.equals(right.index) or not left.columns.equals(right.columns):
         raise ValueError("panels must share index and columns")
+
+
+# ---------------------------------------------------------------- snapshot wiring (stage a-2)
+#
+# The functions below read a snapshot in the Appendix A layout. They import the
+# universe-build helpers lazily because that module imports the pure core above.
+
+
+EXCLUSION_SET = "census/exclusion_set.json"
+GAP_WINDOWS = "census/gap_windows.json"
+SEGMENTS = "census/segments.json"
+
+
+@dataclass(frozen=True)
+class SnapshotSupport:
+    """The support inputs read from a snapshot and the schedule derived from them."""
+
+    calendar: pd.DatetimeIndex
+    holdout_end: str
+    intervals: pd.DataFrame
+    events: pd.DataFrame
+    bars: pd.DataFrame
+    mask: pd.DataFrame
+    unresolved: dict[str, int]
+    schedule: SupportSchedule
+    discovery_inputs_sha256: str
+
+    def record(self) -> dict:
+        """The ``census/segments.json`` body of Appendix A without its digests."""
+        schedule, iso = self.schedule, [day.date().isoformat() for day in self.calendar]
+        included, _ = ic_month_set(schedule)
+        cell_rows = ([int(row) for row, _ in np.argwhere(schedule.g_base.to_numpy(dtype=bool))]
+                     + [row for _, row in schedule.g_term] + list(self.unresolved_in_window().values()))
+        windows = [{
+            "start": iso[w.start], "end": iso[w.end], "reasons": sorted(w.reasons),
+            "cell_count": sum(w.start <= row <= w.end for row in cell_rows), "peeled_rows": w.peeled_rows,
+        } for w in schedule.windows]
+        segments = [{
+            "anchor": iso[s.anchor], "first_row": iso[s.first], "last_row": iso[s.last], "measured_rows": s.rows,
+            "valid": s.valid, "drop_reason": None if s.valid else "segment_too_short",
+        } for s in schedule.segments]
+        return {
+            "calendar_source": "GSPC.INDX_eod_dates_v1", "holdout_end": self.holdout_end,
+            "D0": iso[schedule.d0], "D_last": iso[schedule.d_last], "D_end": iso[max(included)] if included else None,
+            "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows,
+            "reset_rows_sha256": hashlib.sha256(_canonical([iso[r] for r in schedule.reset_rows])).hexdigest(),
+            "gap_windows": windows, "segments": segments,
+            "excluded_rows": schedule.excluded_rows, "excluded_fraction": schedule.excluded_fraction,
+        }
+
+    @property
+    def segments_sha256(self) -> str:
+        return hashlib.sha256(_canonical(self.record())).hexdigest()
+
+    def unresolved_in_window(self) -> dict[str, int]:
+        return {pid: row for pid, row in sorted(self.unresolved.items())
+                if self.schedule.d0 <= row <= self.schedule.d_last}
+
+
+def write_support_files(snapshot_dir) -> SnapshotSupport:
+    """Wire the pure core to a snapshot and emit the three private support files (plan 4.1, 4.2).
+
+    Bar presence comes from the panel files, the mask from
+    ``resolve_pit_universe_mask``, and ``U`` from the delisting candidates
+    without an engine event; the frame columns are the member permanent IDs
+    with a discovery panel. Refuses ``derived_artifact_stale`` when the
+    inventory, a panel file, or the terminal validation report no longer
+    matches the current manifest (S7). Writes ``census/exclusion_set.json``,
+    ``census/gap_windows.json``, and ``census/segments.json``.
+    """
+    from data.constituent_table import load_constituent_intervals_csv
+    from data.holdout_partition import SnapshotRefusal, sha256_bytes
+    from research.m4_7_terminal_evidence import VALIDATION, read_engine_events
+    from research.m4_7_universe_build import (
+        INTERVAL_CSV, INVENTORY, SECURITY_MASTER, Snapshot, _parquet, discovery_window, read_derived_json,
+        require_current, write_bytes,
+    )
+
+    snapshot = Snapshot.open(snapshot_dir)
+    root = snapshot.root
+    inventory = read_derived_json(root, INVENTORY)
+    inputs = require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
+    validation = read_derived_json(root, VALIDATION)
+    require_current(snapshot, validation.get("discovery_inputs_sha256"), VALIDATION)
+    full = snapshot.calendar()
+    i_h, d0, d_last = discovery_window(full, snapshot.holdout_end)
+    if d0 > d_last:
+        raise SnapshotRefusal("discovery_window_undefined", "no scheduled reset after the warm-up rows")
+    calendar = full[i_h:]
+    intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
+    files = {record["symbol"]: record for record in inventory["files"]}
+    assets = sorted(set(intervals["permanent_id"]) & set(files))
+    bars = pd.DataFrame(False, index=calendar, columns=pd.Index(assets, dtype=object))
+    for pid in assets:
+        payload = (root / "panel" / files[pid]["file"]).read_bytes()
+        if sha256_bytes(payload) != files[pid]["sha256"]:
+            raise SnapshotRefusal("derived_artifact_stale", f"panel {pid}")
+        frame = _parquet(payload, files[pid]["file"], columns=["date", "adjusted_close"])
+        present = pd.DatetimeIndex(frame.loc[np.isfinite(frame["adjusted_close"]), "date"])
+        bars.loc[present.intersection(calendar), pid] = True
+    events = read_engine_events(root)
+    events = events[events["permanent_id"].isin(assets)].reset_index(drop=True)
+    if assets:
+        mask = resolve_pit_universe_mask(intervals[intervals["permanent_id"].isin(assets)],
+                                         events if len(events) else None, calendar, assets)
+    else:
+        mask = bars.copy()
+    master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
+    settled = set(events["permanent_id"])
+    unresolved = {
+        row["permanent_id"]: int(calendar.get_loc(pd.Timestamp(row["last_bar"]))) + 1
+        for row in master.to_dict(orient="records")
+        if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"
+        and row["permanent_id"] not in settled
+    }
+    schedule = common_support_schedule(calendar, bars, mask, unresolved, d0 - i_h)
+    support = SnapshotSupport(calendar, snapshot.holdout_end.isoformat(), intervals, events, bars, mask, unresolved,
+                              schedule, inputs)
+    iso = [day.date().isoformat() for day in support.calendar]
+    columns = list(schedule.g_base.columns)
+    base = sorted(np.argwhere(schedule.g_base.to_numpy(dtype=bool)).tolist(), key=lambda rc: (columns[rc[1]], rc[0]))
+    record = support.record()
+    exclusion = {
+        "discovery_inputs_sha256": support.discovery_inputs_sha256,
+        "g_base": [[columns[column], iso[row]] for row, column in base],
+        "g_term": [[pid, iso[row]] for pid, row in schedule.g_term],
+        "unresolved": [[pid, iso[row]] for pid, row in support.unresolved_in_window().items()],
+    }
+    write_bytes(root / EXCLUSION_SET, _canonical(exclusion))
+    write_bytes(root / GAP_WINDOWS, _canonical({"discovery_inputs_sha256": support.discovery_inputs_sha256,
+                                                "gap_windows": record["gap_windows"]}))
+    write_bytes(root / SEGMENTS, _canonical({**record, "discovery_inputs_sha256": support.discovery_inputs_sha256,
+                                             "segments_sha256": support.segments_sha256}))
+    return support
+
+
+def _canonical(payload) -> bytes:
+    return (json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8")

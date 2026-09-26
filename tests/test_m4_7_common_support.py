@@ -446,3 +446,38 @@ def test_empty_calendar_and_misaligned_panels_refuse():
         signal_eligibility(bars.rename(columns={"A": "B"}), bars)
     with pytest.raises(ValueError, match="calendar"):
         common_support_schedule(Y2024[1:], bars, bars, {}, 0)
+
+
+def readiness_after(schedule):
+    from research.m4_7_coverage_census import derive_readiness
+
+    clean = {
+        "in_band_years": 20.0, "holdout_end": "2000-01-31", "identity_refusal_fraction": 0.0, "off_calendar_fraction": 0.0,
+        "calendar_covers_coverage_start": True, "benchmark_complete": True, "snapshot_integrity": True,
+        "holdout_band_after_identity": True, "ic_month_supply": 120, "unpriced_fraction": 0.0, "retrieval_complete": True,
+    }
+    return derive_readiness({**clean, "gap_window_count": len(schedule.windows), "excluded_fraction": schedule.excluded_fraction})
+
+
+@pytest.mark.parametrize("count, status", [(7, "blocked"), (6, "ready")])
+def test_t_sup_3_window_cap_is_evaluated_on_the_schedule(count, status):
+    """Stage a-2: R-CENSUS-2 reads the peeled schedule's window count and excluded fraction."""
+    calendar = pd.bdate_range("2019-01-01", "2024-12-31", name="date")
+    R = scheduled_reset_rows(calendar)
+    bars = pd.DataFrame(True, index=calendar, columns=["A"])
+    for month in range(count):
+        bars.iloc[R[6 + 7 * month] - 2, 0] = False
+    mask = resolve_pit_universe_mask(intervals(calendar, {"A": 0}), None, calendar, ["A"])
+    schedule = common_support_schedule(calendar, bars, mask, {}, int(R[0]))
+    assert len(schedule.windows) == count and schedule.excluded_fraction < 0.05
+    assert readiness_after(schedule)["status"] == status
+
+
+def test_t_sup_3_caps_use_the_peeled_excluded_rows():
+    _, _, _, schedule = round2()
+    base = gap_windows(schedule.g_base, {}, schedule.reset_rows, schedule.d0, schedule.d_last)
+    unpeeled = support_segments(base, schedule.d0, schedule.d_last)
+    unpeeled_excluded = (schedule.d_last - schedule.d0 + 1) - sum(s.rows for s in unpeeled if s.valid)
+    assert schedule.excluded_rows == unpeeled_excluded + 1
+    readiness = readiness_after(schedule)
+    assert readiness["inputs"]["excluded_fraction"] == schedule.excluded_fraction

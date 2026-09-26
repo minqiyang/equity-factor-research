@@ -12,6 +12,55 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-25 - M4.7a-2 seal script, universe build, terminal tooling, support wiring, and coverage census
+
+- Source: `coord/v8_review_20260923/card_m4_7a2_universe_and_census.md`, plan
+  Revision 11 (SHA-256 `6541db93...`) sections 1.5, 1.6, 2, 3, 4.1, 4.2, 5, 7.2
+  a-2, and Appendices A, B, D, E. Base `76a0e43` (main after PR #264).
+- New modules: `research/m4_7_holdout_seal.py` (seal script over
+  `write_prospective_seal`, input verification, `confirmed_seal_bytes`),
+  `research/m4_7_universe_build.py` (E1-E6, per-interval E2 before code-level
+  rules, calendar-row boundaries checked against the M4.4 mask, exclusive exit
+  classes, episode attribution, the last-bar, in-span, cumulative, and
+  gap-dated checks, B_D and S_D, panels, inventory, `read_bar_dates`),
+  `research/m4_7_terminal_evidence.py` (`template`, `validate`, `project`),
+  the snapshot wiring `write_support_files` in `research/m4_7_common_support.py`,
+  and `research/m4_7_coverage_census.py` (metrics, R-CENSUS-1..10, VP-1 and
+  VP-2 diagnostics, power projection, public and private outputs, seal
+  confirmation).
+- `data.holdout_partition.classify_membership_entries` now types every raw
+  entry; `parse_membership_entries` and the universe build both call it, so the
+  seal and the build apply one entry rule (C75). The a-1 tests are unchanged
+  and pass.
+- Test design: every a-2 snapshot is written by the merged retrieval module
+  from a fake vendor (`tests/m4_7_snapshot_support.py`), so the suites read the
+  real Appendix A layout, manifest roles, and hashes. The committed
+  end-to-end fixture `tests/fixtures/m4_7/e2e_scenario.py` flows from
+  components JSON to a confirmed seal in about two seconds and runs every
+  valid segment through the long-only, long-short, and equal-weight books with
+  zero refusals.
+- Bug found during testing: the read recorder first mapped a `Path` source to
+  its `.name`, so nested reads were attributed to bare file names; it now
+  resolves the full path, and the recorder checks of T-UNI-6, T-UNI-15(g),
+  T-TERM-11, and T-SEAL-3 run on the corrected paths. Its patches now live in
+  a private `MonkeyPatch.context()` so they no longer undo the test's own
+  environment patches.
+- Interpretation recorded for review: E3 fires when two differently named
+  entries hold bars of one E1 episode in their own spans; this is the reading
+  under which T-UNI-3, T-UNI-8 (d), (e), (f), and T-UNI-16 (c) all hold.
+- Ablation: 14 guard removals were each run against targeted tests; 12 failed
+  on the first run, and the two without a witness (the census's build-manifest
+  staleness check and the step 5 round-trip oracle) received witness tests
+  that fail when the guard is removed. Kept simplifications: the unreachable
+  `retrieved_no_sidecar` subreason, a constant integrity check, the separate
+  read-only support reader (folded into `write_support_files`), and a
+  one-line seal-writer wrapper. Restored: dropping date parsing from
+  `read_engine_events` failed a test.
+- Verification on the committed head: `pytest` 2,983 passed and 2 skipped;
+  `tests/test_governance_constitution.py` 21 passed; `ruff check . --exclude
+  .venv` and `git diff --check` clean. Report:
+  `coord/reports/m4_7a2_universe_and_census_impl.md`.
+
 ## 2026-09-25 - M4.7a-1 repair a2: request windows, token container, transport and code guards
 
 - Source: `coord/v8_review_20260923/card_m4_7a1_repair_a2.md`, remediating the
