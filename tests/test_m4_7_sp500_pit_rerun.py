@@ -1079,6 +1079,25 @@ def test_daily_book_halves_split_at_the_ic_boundary():
     assert early["status"] == "undefined_boundary_outside_measured_rows" and early["first"]["rows"] == 0
 
 
+def test_committed_real_data_preregistration_file():
+    """T-REG-1 on the frozen registration v2 document (asset-level support on real_v1)."""
+    repo_root = Path(__file__).resolve().parents[1]
+    path = repo_root / "docs/preregistrations/m4_7_sp500_pit_rerun_v2.json"
+    assert path.is_file(), f"Missing preregistration file: {path}"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    costs = runner.check_registration(doc)
+    assert costs == runner.REGISTERED["costs"]
+    assert doc["snapshot"]["snapshot_id"] == "real_v1"
+    assert doc["common_support"]["contract"] == "asset_level_holding_period_support_exclusion_v1"
+    assert doc["discovery"]["ic_month_supply"] == 60
+    assert (doc["discovery"]["first_reset"], doc["discovery"]["last_ic_month"]) == ("2021-08-31", "2026-07-31")
+    assert doc["discovery"]["max_reset_to_reset_rows"] == 23
+    assert doc["holdout"]["holdout_start"] == "2019-07-31"
+    assert doc["holdout"]["holdout_end_exclusive"] == "2020-07-31"
+    assert doc["universe"]["calendar_source"] == "SPY.US_eod_dates_v1"
+    assert doc["statistics"]["power_projection"]["owner_decision_o3"] == "proceed_as_registered"
+
+
 def test_frozen_v1_registration_stays_history_and_the_runner_refuses_it():
     """The v1 document keeps its gap-window contract and pins; the v2 runner refuses it at ``schema_version``."""
     repo_root = Path(__file__).resolve().parents[1]
