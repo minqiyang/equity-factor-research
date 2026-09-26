@@ -6,6 +6,8 @@ a network connection.
 
 from __future__ import annotations
 
+import dataclasses
+import http.client
 import io
 import json
 import traceback
@@ -1091,3 +1093,184 @@ def test_plan_is_offline_and_projects_requests(harness: Harness, capsys: pytest.
     assert summary == {"codes": 4, "membership_known": True, "projected_duration_minutes": 0.05, "projected_requests": 16}
     assert len(lines) == 17 and all("api_token" not in line for line in lines)
     assert harness.vendor.urls == []
+
+
+# ---------------------------------------------------------------- repair a2 (candidate ed08d6c)
+
+
+def _windowed_eod(harness: Harness) -> None:
+    """EOD endpoints that honor ``from`` and ``to``, as the vendor does."""
+
+    def respond(url: str) -> bytes:
+        query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+        low = query.get("from", ["1980-01-01"])[0]
+        high = query.get("to", ["9999-12-31"])[0]
+        return body([bar(day) for day in CALENDAR if low <= day <= high])
+
+    for code in CODES:
+        harness.vendor.routes[f"eod/{code}"] = respond
+
+
+def _last_bar(harness: Harness, code: str) -> str:
+    return harness.frame("eod", code, "dates")["date"].max().date().isoformat()
+
+
+def test_m47a1_a1_m1_all_refresh_retrieves_the_extended_window(harness: Harness) -> None:
+    """Audit capsule: all --to <later> --refresh after a bounded retrieval."""
+
+    _windowed_eod(harness)
+    harness.prepare()
+    for command in ("splits", "eod", "dividends"):
+        assert harness.run(command, "--to", "2004-03-01") == 0
+    assert _last_bar(harness, "AAA.US") == "2004-03-01"
+    earlier = harness.entry("eod", "AAA.US")["authorized_files"]["dates"]
+
+    harness.vendor.urls.clear()
+    assert harness.run("all", "--to", "2004-06-30", "--refresh") == 0
+    assert _stage_order(harness.vendor.paths()) == ["splits", "eod", "div"]
+    assert len(harness.vendor.urls) == 3 * len(CODES)
+    for code in CODES:
+        for table in ("splits", "eod", "dividends"):
+            assert harness.entry(table, code)["request_window"] == {"from": "1980-01-01", "to": "2004-06-30"}
+        assert _last_bar(harness, code) == "2004-06-30"
+    assert harness.entry("eod", "AAA.US")["authorized_files"]["dates"]["sha256"] != earlier["sha256"]
+    verify = harness.manifest()["verify"]
+    assert verify["retrieval_complete"] is True and verify["artifact_hash_mismatch"] == []
+
+    harness.vendor.urls.clear()
+    assert harness.run("all", "--to", "2004-06-30") == 0
+    assert harness.vendor.urls == []
+
+    # With the window unchanged, --refresh alone still refetches every table.
+    assert harness.run("all", "--to", "2004-06-30", "--refresh") == 0
+    assert _stage_order(harness.vendor.paths()) == ["splits", "eod", "div"]
+    assert len(harness.vendor.urls) == 3 * len(CODES)
+
+
+def test_m47a1_a1_m1_changed_window_reopens_entries_without_refresh(harness: Harness) -> None:
+    _windowed_eod(harness)
+    harness.prepare()
+    for command in ("splits", "eod", "dividends"):
+        assert harness.run(command, "--to", "2004-03-01") == 0
+    assert harness.run("verify", "--to", "2004-03-01") == 0
+    assert harness.manifest()["verify"]["retrieval_complete"] is True
+
+    assert harness.run("verify", "--to", "2004-06-30") == 0
+    incomplete = harness.manifest()["verify"]["incomplete_codes_by_table_and_status"]
+    assert incomplete["eod"] == {code: "retrieved:request_window_mismatch" for code in CODES}
+    assert harness.manifest()["verify"]["retrieval_complete"] is False
+
+    harness.vendor.urls.clear()
+    assert harness.run("all", "--to", "2004-06-30") == 0
+    assert len(harness.vendor.urls) == 3 * len(CODES)
+    assert _last_bar(harness, "SPY.US") == "2004-06-30"
+    assert harness.manifest()["verify"]["retrieval_complete"] is True
+
+
+def test_m47a1_a1_m1_eod_refuses_a_window_the_calendar_does_not_cover(
+    harness: Harness, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert harness.run("components") == 0
+    assert harness.run("symbols") == 0
+    harness.seal()
+    assert harness.run("calendar", "--to", "2004-03-01") == 0
+    assert harness.run("splits") == 0
+    harness.vendor.urls.clear()
+    assert harness.run("eod") == 1
+    assert "calendar_window_insufficient" in capsys.readouterr().err
+    assert harness.run("eod", "--from", "1970-01-01", "--to", "2004-03-01") == 1
+    assert harness.vendor.urls == []
+    assert harness.run("splits", "--to", "2004-03-01") == 0
+    assert harness.run("eod", "--to", "2004-03-01") == 0
+
+
+def test_a1_session_holds_no_token(harness: Harness, monkeypatch: pytest.MonkeyPatch) -> None:
+    harness.full()
+    captured: list[retrieval.Session] = []
+    monkeypatch.setitem(retrieval.COMMANDS, "verify", lambda session: captured.append(session) or 0)
+    assert harness.run("verify") == 0
+    (session,) = captured
+    assert "token" not in {field.name for field in dataclasses.fields(retrieval.Session)}
+    _assert_token_free(repr(session), "repr(Session)")
+    for name, value in vars(session).items():
+        _assert_token_free(repr(value), f"Session.{name}")
+    assert session.contains_token(urllib.parse.quote_plus(TOKEN).encode()) is True
+    assert session.contains_token(b"clean") is False
+
+
+@pytest.mark.parametrize(
+    "raised",
+    [
+        lambda url: http.client.IncompleteRead(f"partial {url}".encode()),
+        lambda url: http.client.InvalidURL(f"URL can't contain control characters. {url!r}"),
+        lambda url: ValueError(f"unknown url type: {url}"),
+    ],
+)
+def test_a2_non_oserror_transport_failures_are_sanitized_without_chaining(raised) -> None:
+    def transport(url: str) -> bytes:
+        raise raised(url)
+
+    with pytest.raises(RetrievalTransportError) as caught:
+        _request("https://eodhd.com/api/eod/AAA.US?fmt=json", TOKEN, timeout=1, transport=transport)
+    error = caught.value
+    assert error.typed_outcome == "provider_error" and error.status is None
+    assert error.__cause__ is None and error.__context__ is None
+    _assert_token_free("".join(traceback.format_exception(error)) + repr(error.args), "exception")
+
+
+def test_a2_incomplete_read_is_retried_then_provider_error(
+    harness: Harness, capsys: pytest.CaptureFixture[str]
+) -> None:
+    harness.prepare()
+    harness.vendor.routes["splits/AAA.US"] = lambda url: http.client.IncompleteRead(f"cut {url}".encode())
+    assert harness.run("splits", "--retries", "1") == 0
+    assert harness.vendor.paths().count("splits/AAA.US") == 2
+    assert harness.entry("splits", "AAA.US")["status"] == "provider_error"
+    assert harness.entry("splits", "BBB.US")["status"] == "retrieved"
+    streams = capsys.readouterr()
+    _assert_token_free(streams.out + streams.err, "streams")
+
+
+def test_a3_invalid_vendor_codes_are_counted_and_never_reach_a_path_or_url(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(holdout_partition, "BAND", (2, 8))
+    monkeypatch.setattr(holdout_partition, "HARD_BAND", (1, 9))
+    bad = ["../../../../ESCAPE", "A B", "A/B", ".HIDDEN"]
+    entries = [
+        {"Code": code, "Name": code, "StartDate": "1993-12-15", "EndDate": None, "IsActiveNow": 1, "IsDelisted": 0}
+        for code in ["AAA", *bad]
+    ]
+    harness.vendor.routes["fundamentals/GSPC.INDX"] = components_body(entries)
+    harness.full()
+    for code in bad:
+        for table in ("splits", "eod", "dividends"):
+            entry = harness.entry(table, f"{code}.US")
+            assert entry["status"] == "unavailable:invalid_code"
+            assert entry["authorized_files"] == {}
+    requested = {path.split("/", 1)[1] for path in harness.vendor.paths() if "/" in path}
+    assert not requested & {f"{code}.US" for code in bad}
+    assert not [path for path in harness.tmp_path.rglob("*ESCAPE*")]
+    assert harness.verify()["retrieval_complete"] is True
+
+    harness.vendor.urls.clear()
+    assert harness.run("splits") == 0
+    assert harness.vendor.urls == []
+
+
+@pytest.mark.parametrize("code", ["../x.US", "A B.US", "A/B.US", "-X.US", "X.US\x00"])
+def test_a3_invalid_curated_or_option_codes_refuse_before_any_request(
+    harness: Harness, capsys: pytest.CaptureFixture[str], code: str
+) -> None:
+    harness.prepare()
+    committed = (harness.snapshot_dir / "manifest.json").read_bytes()
+    harness.vendor.urls.clear()
+    curated = harness.tmp_path / "curated.txt"
+    curated.write_text(f"AAA.US\n{code}\n", encoding="utf-8")
+    assert harness.run("splits", "--codes", str(curated)) == 1
+    assert "invalid_code" in capsys.readouterr().err
+    assert harness.run("all", "--consideration-securities", str(curated)) == 1
+    assert harness.run("splits", f"--benchmark={code}") == 1
+    assert "invalid_code" in capsys.readouterr().err
+    assert harness.vendor.urls == []
+    assert (harness.snapshot_dir / "manifest.json").read_bytes() == committed

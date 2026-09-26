@@ -12,6 +12,34 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-25 - M4.7a-1 repair a2: request windows, token container, transport and code guards
+
+- Source: `coord/v8_review_20260923/card_m4_7a1_repair_a2.md`, remediating the
+  dual audit of candidate `ed08d6c` (M47A1-A1-M1, A-1, A-2, A-3, A-5).
+- M47A1-A1-M1: `cmd_all` passes `--refresh` to each table. An entry whose
+  recorded `request_window` differs from the invocation's window is open, and
+  `verify` lists it as `<status>:request_window_mismatch`, so an extended
+  window is retrieved or reported incomplete. The audit capsule (`all --to
+  2004-06-30 --refresh` after a retrieval through 2004-03-01) now makes 12
+  requests and ends every code's sidecar on 2004-06-30. The calendar records
+  its window, and `eod` refuses `calendar_window_insufficient` when that
+  window does not cover the requested one, because bars beyond it would skip
+  the on-calendar scale check.
+- A-1: `Session` holds `request` and `contains_token` closures that `main`
+  builds over the token; no dataclass field holds it.
+- A-2: `_request` ends with `except Exception`, mapping `IncompleteRead`,
+  `InvalidURL`, and other non-`OSError` failures to a retried
+  `provider_error`, still raised after the handlers close.
+- A-3: codes must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`. A failing vendor code
+  becomes the terminal `unavailable:invalid_code` with no request and no file;
+  a failing curated line, `--index`, or `--benchmark` refuses `invalid_code`
+  before any request.
+- A-5: Claim 1 of `claims_m47a1.md` now states T-STRUCT-1's scope and limits.
+- Ablation: eight new guards each fail a targeted test when removed; the
+  first run showed `all --refresh` untested at an unchanged window, and a test
+  was added. An equality check before rewriting an invalid-code entry was
+  removed as redundant.
+
 ## 2026-09-25 - M4.7a-1 retrieval and partition on a fake transport
 
 - Source: `coord/v8_review_20260923/card_m4_7a1_retrieval_and_partition.md`

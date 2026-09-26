@@ -71,6 +71,7 @@ SCALE_STEP_THRESHOLD = 0.15
 SCALE_CHECK_MAX_GAP_ROWS = 20
 SPLIT_WINDOW_ROWS = 5
 PERSISTENT_PROVIDER_ERROR_DATES = 3
+CODE_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class RetrievalTransportError(Exception):
@@ -160,6 +161,9 @@ def _request(
             body = b""
     except (urllib.error.URLError, OSError, TimeoutError) as exc:
         reason = f"{type(exc).__name__} {exc}"
+    except Exception as exc:
+        # http.client.IncompleteRead, InvalidURL, and other non-OSError failures.
+        reason = f"{type(exc).__name__} {exc}"
     # Raised outside the handlers so the original exception is never chained.
     outcome = _outcome_for_status(status)
     message = _sanitize(f"{outcome}: {reason} for {url}", token)
@@ -174,10 +178,13 @@ def _public_url(path: str, params: dict[str, str | None]) -> str:
 
 @dataclass
 class Session:
+    """Per-invocation state. The token never becomes a field: ``request`` and
+    ``contains_token`` are closures that ``main`` builds over it (plan 1.3)."""
+
     args: argparse.Namespace
     snapshot_dir: Path
-    token: str | None
-    transport: Callable[[str], bytes] | None
+    request: Callable[[str, float], bytes]
+    contains_token: Callable[[bytes], bool]
     clock: Callable[[], datetime]
     sleep: Callable[[float], None]
     manifest: dict[str, Any] = field(default_factory=dict)
@@ -332,7 +339,7 @@ def _fetch(
         )
         attempt = {"table": table, "code": code, "request": url}
         try:
-            body = _request(url, session.token, timeout=args.timeout_seconds, transport=session.transport)
+            body = session.request(url, args.timeout_seconds)
         except RetrievalTransportError as exc:
             _log(session, {**attempt, "outcome": exc.typed_outcome, "http_status": exc.status})
             if exc.typed_outcome in ("credential_refused", "entitlement_refused"):
@@ -512,9 +519,23 @@ def _eod_stale(session: Session, code: str) -> bool:
     return _split_evidence(session, code) != recorded
 
 
+def _request_window(session: Session) -> dict[str, str | None]:
+    return {"from": session.args.date_from, "to": session.args.date_to}
+
+
+def _window_covers(outer: dict[str, str | None] | None, inner: dict[str, str | None]) -> bool:
+    """True when the ``outer`` window (the calendar's) contains ``inner``; ``--from`` is always set."""
+
+    if outer is None or str(outer["from"]) > str(inner["from"]):
+        return False
+    return outer["to"] is None or (inner["to"] is not None and inner["to"] <= outer["to"])
+
+
 def _is_open(session: Session, table: str, code: str) -> bool:
     entry = session.manifest["entries"].get(f"{table}/{code}")
     if entry is None or not _is_terminal(entry["status"]):
+        return True
+    if entry.get("request_window") != _request_window(session):
         return True
     if not _files_verify(session, entry["authorized_files"]):
         return True
@@ -547,7 +568,7 @@ def _retrieve_table(
     history = [] if previous is None else list(previous.get("provider_error_history", []))
     base: dict[str, Any] = {
         "provider_error_history": history,
-        "request_window": {"from": args.date_from, "to": args.date_to},
+        "request_window": _request_window(session),
     }
     if table == "eod":
         split_status = session.manifest["entries"][f"splits/{code}"]["status"]
@@ -674,12 +695,39 @@ def _request_list(session: Session) -> list[str]:
     return codes
 
 
+def _valid_code(code: str) -> bool:
+    """Vendor codes enter URL paths and file names only when they match ``CODE_PATTERN``."""
+
+    return isinstance(code, str) and CODE_PATTERN.fullmatch(code) is not None
+
+
+def _record_invalid_code(session: Session, table: str, code: str) -> None:
+    """A vendor code that fails ``CODE_PATTERN`` is a counted terminal status; no request, no file."""
+
+    entry: dict[str, Any] = {
+        "status": "unavailable:invalid_code",
+        "partition_statuses": {},
+        "authorized_files": {},
+        "provider_error_history": [],
+        "request_window": _request_window(session),
+    }
+    if table == "eod":
+        entry["split_evidence_basis"] = None
+        entry["split_table_sha256_at_eod_validation"] = None
+    _set_entry(session, table, code, entry)
+
+
 def _read_code_file(path: str) -> list[str]:
+    """Curated codes; any line failing ``CODE_PATTERN`` refuses the whole file."""
+
     codes: list[str] = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         code = line.strip()
-        if code and not code.startswith("#") and code not in codes:
-            codes.append(code)
+        if not code or code.startswith("#") or code in codes:
+            continue
+        if not _valid_code(code):
+            raise SnapshotRefusal("invalid_code", f"{path}: {code!r}")
+        codes.append(code)
     return codes
 
 
@@ -702,6 +750,12 @@ def _run_table(session: Session, table: str, codes_file: str | None, refresh: bo
     if table == "eod":
         if "calendar" not in session.manifest["files"]:
             raise SnapshotRefusal("calendar_required_before_eod")
+        calendar_window = session.manifest["files"]["calendar"].get("request_window")
+        if not _window_covers(calendar_window, _request_window(session)):
+            raise SnapshotRefusal(
+                "calendar_window_insufficient",
+                f"calendar window {calendar_window} does not cover {_request_window(session)}",
+            )
         missing = [code for code in codes if f"splits/{code}" not in session.manifest["entries"]]
         if missing:
             raise SnapshotRefusal("splits_required_before_eod", f"{len(missing)} codes have no split status")
@@ -710,6 +764,9 @@ def _run_table(session: Session, table: str, codes_file: str | None, refresh: bo
         )
         calendar_rows = {day: row for row, day in enumerate(pd.DatetimeIndex(calendar["date"]))}
     for code in codes:
+        if not _valid_code(code):
+            _record_invalid_code(session, table, code)
+            continue
         if refresh or _is_open(session, table, code):
             _retrieve_table(session, table, code, holdout_end, calendar_rows)
     _commit(session)
@@ -804,6 +861,7 @@ def cmd_calendar(session: Session) -> int:
         raise SnapshotRefusal(f"{prefix}{parsed}", f"eod/{index}")
     frame = pd.DataFrame({"date": _date_column(parsed[1])})
     files["calendar"] = _write_file(session, f"calendar/{index}.dates.parquet", _parquet_bytes(frame), len(frame))
+    files["calendar"]["request_window"] = _request_window(session)
     _commit(session)
     print(json.dumps({"calendar_rows": len(frame)}))
     return 0
@@ -835,7 +893,7 @@ def cmd_all(session: Session) -> int:
     if "calendar" not in files:
         cmd_calendar(session)
     for table in TABLES:
-        _run_table(session, table, None, False)
+        _run_table(session, table, None, session.args.refresh)
     return cmd_verify(session)
 
 
@@ -855,6 +913,8 @@ def cmd_verify(session: Session) -> int:
                 incomplete.setdefault(table, {})[code] = entry["status"]
             elif not _files_verify(session, entry["authorized_files"]):
                 incomplete.setdefault(table, {})[code] = f"{entry['status']}:artifact_hash_mismatch"
+            elif entry.get("request_window") != _request_window(session):
+                incomplete.setdefault(table, {})[code] = f"{entry['status']}:request_window_mismatch"
     stale = sorted(code for code in codes if f"splits/{code}" in manifest["entries"] and _eod_stale(session, code))
     leaks = _token_leaks(session)
     manifest["verify"] = {
@@ -880,10 +940,9 @@ def cmd_verify(session: Session) -> int:
 
 
 def _token_leaks(session: Session) -> list[str]:
-    needles = [form.encode("utf-8") for form in _redaction_forms(session.token)]
     leaks = []
     for path in sorted(session.snapshot_dir.rglob("*")):
-        if path.is_file() and any(needle in path.read_bytes() for needle in needles):
+        if path.is_file() and session.contains_token(path.read_bytes()):
             leaks.append(path.relative_to(session.snapshot_dir).as_posix())
     return leaks
 
@@ -898,6 +957,7 @@ def cmd_plan(session: Session) -> int:
         _public_url(f"eod/{args.index}", window),
     ]
     codes = _request_list(session) if session.manifest else [args.benchmark]
+    codes = [code for code in codes if _valid_code(code)]
     for table in TABLES:
         requests.extend(_public_url(f"{ENDPOINTS[table]}/{code}", window) for code in codes)
     for request in requests:
@@ -969,7 +1029,29 @@ def _snapshot_dir(args: argparse.Namespace) -> Path:
         raise SnapshotRefusal("data_dir_inside_repository", "the snapshot must live outside the repository")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.snapshot_id):
         raise SnapshotRefusal("snapshot_id_invalid", "use letters, digits, '_' or '-'")
+    for option, code in (("--index", args.index), ("--benchmark", args.benchmark)):
+        if not _valid_code(code):
+            raise SnapshotRefusal("invalid_code", f"{option} {code!r}")
     return data_dir / f"sp500_pit_{args.snapshot_id}"
+
+
+def _token_closures(
+    token: str | None,
+    transport: Callable[[str], bytes] | None,
+) -> tuple[Callable[[str, float], bytes], Callable[[bytes], bool]]:
+    """Bind the token into the request and leak-scan callables only."""
+
+    needles = [form.encode("utf-8") for form in _redaction_forms(token)]
+
+    def request(url_without_token: str, timeout: float) -> bytes:
+        if token is None:
+            raise RuntimeError("this command opens no network connection")
+        return _request(url_without_token, token, timeout=timeout, transport=transport)
+
+    def contains_token(payload: bytes) -> bool:
+        return any(needle in payload for needle in needles)
+
+    return request, contains_token
 
 
 def main(
@@ -988,11 +1070,12 @@ def main(
             return 2
     try:
         snapshot_dir = _snapshot_dir(args)
+        request, contains_token = _token_closures(token, transport)
         session = Session(
             args=args,
             snapshot_dir=snapshot_dir,
-            token=token,
-            transport=transport,
+            request=request,
+            contains_token=contains_token,
             clock=clock or (lambda: datetime.now(timezone.utc)),
             sleep=sleep or time.sleep,
         )
