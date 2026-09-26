@@ -38,8 +38,10 @@ from backtest.portfolio import (
     _validate_bounded_signal_values,
     _read_exact_integral_scalar,
     _read_finite_real_scalar,
+    TERMINAL_SETTLEMENT_CONTRACT,
     _prepare_terminal_events,
     _resolve_pit_universe,
+    _terminal_basis_counts,
     _terminal_settlement,
     _validate_terminal_target,
 )
@@ -516,7 +518,8 @@ def run_long_short_backtest(
             "formal_universe_evidence_eligible": False,
         } if constituent_intervals is not None else {}),
         **({
-            "terminal_settlement_contract": "prior_observed_close_to_cash_v1",
+            "terminal_settlement_contract": TERMINAL_SETTLEMENT_CONTRACT,
+            "terminal_basis_counts": _terminal_basis_counts(prepared_events),
             "formal_terminal_evidence_eligible": False,
             "terminal_settlement_fee": 0.0,
             "terminal_redemption_turnover": "excluded_from_ordinary_market_turnover",

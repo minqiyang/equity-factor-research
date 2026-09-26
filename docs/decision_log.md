@@ -15,6 +15,55 @@ investment performance.
 
 ---
 
+## 2026-09-25 - Acceptance Of Milestone 4.7 Binding Implementation Plan Revision 11 And Ratification Of Premise VP-2 (Owner Item O-8)
+
+Context:
+
+- Under Coordination Standard V8.5 Review Iteration Limit (section 3.3) and
+  Materiality Test, and following the Owner's four core directives:
+  1. Eliminate data perfectionism;
+  2. Eliminate over-engineering;
+  3. Break strong serial dependencies via pure functions and golden fixtures;
+  4. Actively prune Astra's adversarial over-engineered designs.
+- The EXPERT route (Claude Opus 5.5, `card_expert_streamline_m47_plan_a11.md`)
+  conducted a comprehensive streamlining and ablation pass on Revision 10,
+  producing Revision 11 and report
+  `coord/reports/v8_review_20260923/expert_streamline_m47_plan_opus.md`.
+- Deterministic regression suite verified: 2,716 passed, 2 skipped (100% green).
+
+Decision:
+
+- **Formal Plan Acceptance:** Milestone 4.7 Binding Implementation Plan
+  Revision 11 (`coord/plans/m4_7_binding_plan.md`, SHA-256
+  `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`, 3,237
+  lines, 359,329 bytes) is formally accepted as the operative binding plan.
+  Revision 10 is preserved byte-identical in
+  `coord/plans/archive/m4_7_binding_plan_r10.md` (SHA-256 `e07989ad...9f3a`).
+- **Owner Item O-8 Ratified (Premise VP-2):**
+  - **Decision:** Premise VP-2 (vendor applies each declared distribution as a
+    non-split adjustment by the registered prior-close formula, and no other) is
+    ratified as the registered basis for rows before an in-span declared
+    distribution. No per-episode withholding (M9-01's remedy) and no $B_D$ cap.
+  - **Scope:** Revision 11 candidate and the M4.7 rerun.
+  - **Claim limit:** Every M4.7 statement that uses dollar volume holds under
+    premise VP-2; report header discloses VP-2 with measured $B_D$ and $S_D$
+    exposure.
+  - **Expiry and revisit trigger:** The ratification expires when the a-3
+    census sets `vp2_revisit_required` (written member-days with $S_D > 0.05$
+    exceed 1 percent of eligible member-days); the owner then re-decides before
+    b-2 among keeping VP-2, an $S_D$ cap, or an independent event source. M9-01
+    and M10-01 close under this disposition.
+- **Rollout Decoupling Approved:**
+  - **Phase M4.7a-0:** Pure statistical and portfolio core implemented on
+    golden fixtures (dispatches immediately upon plan acceptance).
+  - **Phase M4.7a-1:** Retrieval module and holdout partition.
+  - **Phase M4.7a-2:** Seal script, universe build, evidence tooling, and
+    census on synthetic snapshot fixtures.
+  - **Phase M4.7b-1:** Runner integration on synthetic end-to-end fixture.
+  - Private data dependency is deferred to Phase M4.7a-3 and M4.7b-2.
+
+---
+
 ## 2026-09-23 - Owner Approval Of AUTHORITY.md And Four Delegated Decisions
 
 Context:

@@ -72,6 +72,31 @@ def calculate_realized_volatility(
     )
 
 
+def calculate_rolling_market_beta(
+    returns: pd.DataFrame,
+    market_returns: pd.Series,
+    window: int = 252,
+) -> pd.DataFrame:
+    """Calculate ``Cov(r_a, r_m) / Var(r_m)`` with ``ddof=1`` over a full window.
+
+    The window holds the ``window`` rows ending at the signal row ``t``. A
+    missing asset or market return inside the window, or a zero market
+    variance, makes the value ``NaN``. Returns are never filled.
+    """
+
+    _validate_window_periods(window)
+    if window < 2:
+        raise ValueError("window must be at least 2 for a ddof=1 beta")
+    return_panel = validate_panel_data(returns, name="returns")
+    if not isinstance(market_returns, pd.Series) or not market_returns.index.equals(return_panel.index):
+        raise ValueError("market_returns must be a Series on the returns index")
+    market = market_returns.astype(float)
+
+    covariance = return_panel.rolling(window, min_periods=window).cov(market)
+    variance = market.rolling(window, min_periods=window).var(ddof=1)
+    return covariance.div(variance.where(variance.gt(0.0)), axis=0)
+
+
 def _validate_window_periods(window_periods: int) -> None:
     if isinstance(window_periods, bool) or not isinstance(window_periods, int):
         raise TypeError("window_periods must be an integer")
@@ -95,4 +120,5 @@ __all__ = [
     "DEFAULT_DDOF",
     "DEFAULT_WINDOW_PERIODS",
     "calculate_realized_volatility",
+    "calculate_rolling_market_beta",
 ]

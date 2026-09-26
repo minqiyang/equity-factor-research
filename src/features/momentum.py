@@ -12,6 +12,7 @@ import pandas as pd
 
 DEFAULT_LOOKBACK_PERIODS = 252
 DEFAULT_SKIP_PERIODS = 21
+DEFAULT_HIGH_WINDOW_PERIODS = 252
 
 
 def calculate_12_1_momentum(
@@ -67,6 +68,26 @@ def calculate_12_1_momentum(
     momentum = end_prices / start_prices - 1.0
 
     return momentum.where(valid_anchors)
+
+
+def calculate_52_week_high_proximity(
+    prices: pd.DataFrame,
+    window: int = DEFAULT_HIGH_WINDOW_PERIODS,
+) -> pd.DataFrame:
+    """Calculate ``price[t] / max(price[t - window + 1 .. t])`` over a full window.
+
+    The window ends at the signal row ``t`` and holds ``window`` rows. Any
+    missing or non-positive price inside the window makes the value ``NaN``;
+    prices are never filled.
+    """
+
+    if isinstance(window, bool) or not isinstance(window, int) or window < 1:
+        raise ValueError("window must be a positive integer")
+    _validate_inputs(prices, window, 0)
+
+    numeric_prices = prices.astype(float)
+    positive = numeric_prices.where(numeric_prices.gt(0.0))
+    return positive / positive.rolling(window, min_periods=window).max()
 
 
 def _validate_inputs(

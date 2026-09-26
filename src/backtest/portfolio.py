@@ -431,10 +431,18 @@ def _prepare_tracked_mutation_column(
             )
 
 
+ACCEPTED_TERMINAL_BASES = frozenset({
+    "prior_observed_close_to_cash",
+    "prior_observed_close_to_stock_consideration_valued_at_completion_date_close",
+    "prior_observed_close_to_mixed_consideration_valued_at_completion_date_close",
+})
+TERMINAL_SETTLEMENT_CONTRACT = "prior_observed_close_to_consideration_at_completion_date_row_v2"
+
+
 def _prepare_terminal_events(
     events: pd.DataFrame | None, dates: pd.DatetimeIndex, assets: pd.Index,
 ) -> dict[pd.Timestamp, tuple[dict[str, Any], ...]]:
-    """Validate a declared prior-close-to-cash event for each permanent security."""
+    """Validate a declared prior-close-to-consideration event for each permanent security."""
     if events is None:
         return {}
     fields = {"event_id", "permanent_id", "effective_date", "known_at", "reference_date", "terminal_return", "return_basis"}
@@ -464,8 +472,8 @@ def _prepare_terminal_events(
         if record["known_at"] > date:
             raise BacktestValidationError("terminal_events_invalid", "cash settlement terms must be known by the effective close")
         if (value is None or value < -1.0 or not isinstance(record["return_basis"], str)
-                or record["return_basis"] != "prior_observed_close_to_cash"):
-            raise BacktestValidationError("terminal_events_invalid", "terminal return requires a finite complete-window return >= -1 and explicit cash basis")
+                or record["return_basis"] not in ACCEPTED_TERMINAL_BASES):
+            raise BacktestValidationError("terminal_events_invalid", "terminal return requires a finite complete-window return >= -1 and an accepted consideration basis")
         record["terminal_return"] = value
         grouped.setdefault(date, []).append(record)
     return {date: tuple(records) for date, records in grouped.items()}
@@ -493,6 +501,31 @@ def _resolve_pit_universe(
             unavailable = (dates >= effective) & (cutoffs >= record["known_at"])
             mask.loc[unavailable, record["permanent_id"]] = False
     return mask
+
+
+def _terminal_basis_counts(events: dict[pd.Timestamp, tuple[dict[str, Any], ...]]) -> dict[str, int]:
+    counts = dict.fromkeys(sorted(ACCEPTED_TERMINAL_BASES), 0)
+    for records in events.values():
+        for record in records:
+            counts[record["return_basis"]] += 1
+    return counts
+
+
+def resolve_pit_universe_mask(
+    constituent_intervals: ValidatedConstituentIntervals | pd.DataFrame,
+    terminal_events: pd.DataFrame | None,
+    dates: pd.DatetimeIndex,
+    assets: list[str],
+    *,
+    signal_lag_periods: int = 1,
+) -> pd.DataFrame:
+    """Return the engines' resolved PIT universe: membership minus settled identities."""
+    columns = pd.Index(assets)
+    return _resolve_pit_universe(
+        constituent_intervals=constituent_intervals, universe_mask=None,
+        dates=dates, assets=columns, signal_lag_periods=signal_lag_periods,
+        terminal_events=_prepare_terminal_events(terminal_events, dates, columns),
+    )
 
 
 def _terminal_settlement(
@@ -808,7 +841,8 @@ def run_long_only_backtest(
                 "formal_universe_evidence_eligible": False,
             } if constituent_intervals is not None else {}),
             **({
-                "terminal_settlement_contract": "prior_observed_close_to_cash_v1",
+                "terminal_settlement_contract": TERMINAL_SETTLEMENT_CONTRACT,
+                "terminal_basis_counts": _terminal_basis_counts(prepared_events),
                 "formal_terminal_evidence_eligible": False,
                 "terminal_settlement_fee": 0.0,
                 "terminal_redemption_turnover": "excluded_from_ordinary_market_turnover",

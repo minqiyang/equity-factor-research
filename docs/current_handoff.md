@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-24 for the AUDIT-M4-01 and AUDIT-M4-02 repair.
+Updated: 2026-09-25 for the Milestone 4.7 stage a-0 statistical and portfolio core.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,21 +24,23 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `770cfe5415c371aba4fa67312ff23130ccec1785` (main after PR #260).
+  `49eacdd4ce69fe1db9b779bfb7cc975d8b5950d3` (main after PR #261).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #260: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #261: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
   square-root impact, M4.6 style risk attribution, the coordination standard
   V8.0 path (PR #256), the governance constitution (PR #257), the impact
   reconciliation and M4.6 timing fixes (PR #258), the Track A code
-  retirement (PR #259), and the owner-delegated decision record (PR #260).
+  retirement (PR #259), the owner-delegated decision record (PR #260), and
+  the typed CPCV geometry refusal and fail-closed DSR/Newey-West inputs (PR #261).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
-  `425b7c88a6e049b63aa2ddeae8560fea08fda23e` (PR #200 merge), and
-  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (PR #203 merge).
+  `425b7c88a6e049b63aa2ddeae8560fea08fda23e` (PR #200 merge),
+  `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (PR #203 merge), and
+  `770cfe5415c371aba4fa67312ff23130ccec1785` (PR #260 merge).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -49,23 +51,23 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Owner decision 2026-09-23: adopt coordination standard V8.0 and every decision
-  of the strategic audit.
-- Governance streamlining: the V8.0 standard path, an `AGENTS.md` constitution
-  with invariants R1–R12, owner grants recorded in `AUTHORITY.md`, North Star
-  edge thesis and kill criteria, and a handoff freshness test.
-- Diagnostic corrections: the M4.5 relative post-trade tolerance, a capacity
-  report Sharpe guard for short books, real-data report benchmark excess and
-  code identity with long-short PBO, and a timing-contract M4.6 section. The
-  spread floor and changing-universe style attribution wait for M4.8.
-- Legacy Track A code retirement: the campaign runner, PIT manifest validator,
-  and ledger runtime leave the tree; tag `track-a-legacy-final` keeps them at
-  `8fa0055`.
-- M4.7 pre-flight repair (this branch, `claude/fix-audit-m4-defects`): the
-  real-data runner records a typed CPCV `unavailable_reason` for short split
-  geometry, renders both CPCV books in either state, and lets every other CPCV
-  `ValueError` propagate (AUDIT-M4-01). `deflated_sharpe_ratio` and
-  `newey_west_mean_tstat` refuse non-finite inputs (AUDIT-M4-02).
+- Milestone 4.7 Binding Implementation Plan Revision 11 (`coord/plans/m4_7_binding_plan.md`,
+  SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`,
+  3,237 lines) is formally accepted under Coordination Standard V8.5 and Owner
+  Directives 1–4.
+- Premise VP-2 is ratified (Owner Item O-8) in `docs/decision_log.md`.
+- Implementation is decoupled into pure golden-fixture core (Phase M4.7a-0),
+  retrieval module (Phase M4.7a-1), universe build/census (Phase M4.7a-2), and
+  runner integration (Phase M4.7b-1).
+- M4.7a-0 candidate (branch `claude/m4_7a0-engine-labels-and-wrapper`): the
+  engines accept the three consideration bases, record `terminal_basis_counts`
+  and the v2 `terminal_settlement_contract`, and export
+  `resolve_pit_universe_mask`; Family A factor functions and definitions;
+  `newey_west_long_run_variance`, `mde_from_long_run_variance`, and the
+  family-partitioned `summarize_multiple_testing`; the common-support core in
+  `research/m4_7_common_support.py`; the gate and halves in
+  `research/m4_7_sp500_pit_rerun.py`. Synthetic golden fixtures only; report
+  `coord/reports/m4_7a0_engine_labels_and_wrapper_impl.md`.
 
 ## Current Research Gate Summary
 
@@ -73,29 +75,21 @@ Milestone 4 diagnostic capabilities M4.0 through M4.6 are merged; see
 `docs/current_roadmap.md`. The static 50-name real-data diagnostic shows no
 detectable cross-sectional predictability and lacks statistical power. M4.7,
 a survivorship-reduced S&P 500 point-in-time universe with a pre-registered
-rerun, is the next research milestone. The evidence ceiling remains
+rerun, is the active research milestone. The evidence ceiling remains
 `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- The AUDIT-M4-01 and AUDIT-M4-02 repair PR needs its ELEVATED review seat;
-  the producing session dispatches none.
-- M4.7 implementation waits for its binding plan from the V8.0 DESIGN route.
-  The retrieval run needs the owner to set `EFR_EODHD_API_TOKEN` in its
-  environment.
-- Regenerating the committed real-data report needs explicit authorization to
-  read local private data.
+- No blocker for Phase M4.7a-0: all deliverables are pure functions over
+  pandas/NumPy arrays verified on deterministic synthetic golden fixtures.
+- Phase M4.7a-3 private data retrieval will require `EFR_EODHD_API_TOKEN` and
+  standing data authority D1.
 
 ## Next Safe Action
 
-- PR #260 (owner-delegated decision record) is merged at `770cfe5`. The
-  pre-flight `AUDIT` of M4.2–M4.4 returned CONCERNS with two MATERIAL findings
-  (`coord/reports/v8_review_20260923/audit_preflight_m42_m44_opus.md`).
-- The active task is the review and merge of the AUDIT-M4-01 and AUDIT-M4-02
-  repair PR at its exact head.
-- After that merge, M4.7 planning and execution follow: the DESIGN route for
-  the M4.7 binding plan, which also takes up advisories AUDIT-M4-07 and
-  AUDIT-M4-08.
+- CRITICAL-lane review of the M4.7a-0 candidate (two fresh formal reviewers)
+  and coordinator acceptance of its exact head; M4.7a-1 and M4.7a-2 proceed in
+  parallel under their own cards.
 
 ## Source Routing
 
