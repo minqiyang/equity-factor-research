@@ -21,7 +21,7 @@ process rules).
 
 | Check | Result |
 | --- | --- |
-| `pytest tests/test_eodhd_retrieval.py tests/test_m4_7_holdout_seal.py tests/test_project_structure.py -q` | 143 passed |
+| `pytest tests/test_eodhd_retrieval.py tests/test_m4_7_holdout_seal.py tests/test_project_structure.py -q` | 142 passed |
 | `pytest tests/test_governance_constitution.py -v` | 21 passed |
 | Full suite `pytest -q -n 8` | 2,890 passed, 2 skipped, 0 failed |
 | `ruff check . --exclude .venv` | All checks passed |
