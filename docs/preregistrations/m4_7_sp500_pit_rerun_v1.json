@@ -1,0 +1,338 @@
+{
+  "benchmarks": {
+    "primary": "SPY.US#E1_adjusted_close_cost_free",
+    "secondary": "equal_weight_pit_universe_engine_constant_signal_zero_cost_same_segments"
+  },
+  "books": {
+    "long_only": {
+      "benchmark": "SPY.US#E1",
+      "top_pct": 0.1,
+      "weighting": "equal"
+    },
+    "long_short": {
+      "gross_leverage": 1.0,
+      "quantiles": 10,
+      "weighting": "equal"
+    }
+  },
+  "common_support": {
+    "contract": "common_support_segments_open_terminal_holdings_v3",
+    "eligible_unpriced_member_day_fraction": 0.32969776080925756,
+    "excluded_fraction": 0.384180790960452,
+    "exclusion_cells_from_first_bar": true,
+    "gap_window_count": 20,
+    "max_excluded_fraction": 0.45,
+    "max_gap_windows": 25,
+    "min_segment_rows": 42,
+    "terminal_reset_peeling": true
+  },
+  "costs": {
+    "primary": {
+      "slippage_bps": 4.0,
+      "transaction_cost_bps": 1.0
+    },
+    "sensitivity_2x": {
+      "slippage_bps": 8.0,
+      "transaction_cost_bps": 2.0
+    },
+    "zero_cost_diagnostic_only": {
+      "slippage_bps": 0.0,
+      "transaction_cost_bps": 0.0
+    }
+  },
+  "decision_gate": {
+    "contrary_rejection_disposition": "non_survivor_confirmed_by_owner_o3",
+    "order": [
+      "evaluation_incomplete",
+      "proceed",
+      "survivor_without_confirmation",
+      "review_thesis",
+      "extend_first"
+    ],
+    "review_thesis_requires": "no_positive_survivor_and_every_realized_mde_at_or_below_0.02"
+  },
+  "discovery": {
+    "first_reset": "2021-08-31",
+    "halves": "contiguous_by_valid_ic_month_count_earlier_half_takes_remainder",
+    "ic_month_supply": 32,
+    "last_ic_month": "2026-06-30",
+    "last_reset": "2026-08-07",
+    "max_reset_to_reset_rows": 23,
+    "prior_exposure_overlap_fraction": {
+      "historical_evaluation": 0.0625,
+      "static_50_name_cohort": 1.0
+    }
+  },
+  "evidence_class": "DIAGNOSTIC_ONLY",
+  "families": {
+    "A": {
+      "factors": [
+        {
+          "direction": "higher_is_better",
+          "id": "MOM_12_1",
+          "params": {
+            "lookback_periods": 252,
+            "skip_periods": 21
+          },
+          "warmup_rows": 252
+        },
+        {
+          "direction": "higher_is_better",
+          "id": "HIGH_52W",
+          "params": {
+            "window": 252
+          },
+          "warmup_rows": 251
+        },
+        {
+          "direction": "higher_is_better",
+          "id": "REV_1M",
+          "params": {
+            "lookback_periods": 21
+          },
+          "warmup_rows": 21
+        },
+        {
+          "direction": "higher_is_better",
+          "id": "LOW_VOL_252",
+          "params": {
+            "ddof": 1,
+            "window_periods": 252
+          },
+          "warmup_rows": 252
+        },
+        {
+          "direction": "higher_is_better",
+          "id": "LOW_BETA_252",
+          "params": {
+            "window": 252
+          },
+          "warmup_rows": 252
+        },
+        {
+          "direction": "higher_is_better",
+          "id": "AMIHUD_ILLIQ_63",
+          "params": {
+            "window": 63
+          },
+          "warmup_rows": 63
+        }
+      ],
+      "family_size": 6
+    },
+    "B": {
+      "alpha_ids": [
+        "ALPHA_001",
+        "ALPHA_002",
+        "ALPHA_003",
+        "ALPHA_004",
+        "ALPHA_005",
+        "ALPHA_006",
+        "ALPHA_007",
+        "ALPHA_008",
+        "ALPHA_009",
+        "ALPHA_010",
+        "ALPHA_012",
+        "ALPHA_013",
+        "ALPHA_014",
+        "ALPHA_015",
+        "ALPHA_016",
+        "ALPHA_017",
+        "ALPHA_018",
+        "ALPHA_019",
+        "ALPHA_020",
+        "ALPHA_021",
+        "ALPHA_022",
+        "ALPHA_023",
+        "ALPHA_024",
+        "ALPHA_025",
+        "ALPHA_026",
+        "ALPHA_028",
+        "ALPHA_030",
+        "ALPHA_031",
+        "ALPHA_032",
+        "ALPHA_033",
+        "ALPHA_034",
+        "ALPHA_035",
+        "ALPHA_036",
+        "ALPHA_037",
+        "ALPHA_038",
+        "ALPHA_039",
+        "ALPHA_040",
+        "ALPHA_041",
+        "ALPHA_042",
+        "ALPHA_043",
+        "ALPHA_044",
+        "ALPHA_045",
+        "ALPHA_046",
+        "ALPHA_049",
+        "ALPHA_050",
+        "ALPHA_051",
+        "ALPHA_052",
+        "ALPHA_053",
+        "ALPHA_054",
+        "ALPHA_055",
+        "ALPHA_060",
+        "ALPHA_101"
+      ],
+      "composite_fitting_labels": "terminal_aware_reset_to_reset_forward_return_v2_keyed_by_signal_row",
+      "composite_ids": [
+        "EQUAL_WEIGHTED_COMPOSITE",
+        "IC_WEIGHTED_COMPOSITE",
+        "ICIR_WEIGHTED_COMPOSITE",
+        "CORRELATION_DISCOUNTED_COMPOSITE",
+        "ALPHA_PRODUCT_INTERACTION",
+        "CONDITIONAL_RANK_INTERACTION",
+        "NEUTRALIZED_IC_COMPOSITE",
+        "MARKET_BETA_NEUTRAL_COMPOSITE",
+        "REGIME_SWITCHING_COMPOSITE",
+        "RANDOM_FOREST_COMPOSITE",
+        "GRADIENT_BOOSTING_COMPOSITE"
+      ],
+      "family_size": 63
+    },
+    "union_sensitivity_size": 69
+  },
+  "holdout": {
+    "buffer_rows": 252,
+    "holdout_end_exclusive": "2020-07-31",
+    "holdout_start": "2019-07-31",
+    "retrieval_order": [
+      "components",
+      "symbols",
+      "seal",
+      "calendar",
+      "splits",
+      "eod",
+      "dividends",
+      "verify"
+    ],
+    "seal_record": "docs/preregistrations/m4_7_holdout_seal_v1.json"
+  },
+  "objective": {
+    "max_drawdown_budget": {
+      "long_only": 0.6,
+      "long_short": 0.3
+    },
+    "role_in_m4_7": "descriptive",
+    "target_information_ratio": 0.3,
+    "tracking_error_budget_annualized": 0.08
+  },
+  "schema_version": "m4_7_sp500_pit_rerun_v1",
+  "snapshot": {
+    "census_json_sha256": "608fd1b1dd633e8985ea07537f6a944777cb38d684e86e7c75ada11ddc2d1c40",
+    "components_retrieved_utc_date": "2026-08-07",
+    "discovery_inputs_sha256": "2395bc5af73dcffb8ab9d77acf9691ee9c83e08b03b8c107c275d08351c403e7",
+    "engine_events_sha256": "3ac2be6a20d2ece1800a628388e8982986026d4c1f582bd4495a447ce238b54b",
+    "interval_csv_sha256": "303f161f133038f795475ef893cc3eb07d77c426a04790239e2ddd8f9cac6088",
+    "interval_results_sha256": "4dea8819cff3d37f3a752c987916505adf8acdf305a46952f2208c88cb350fef",
+    "manifest_sha256": "ffa760532bc553a0f290c1bb04d4b1c0bd60163e6df70571737d6df3cc9335c7",
+    "retrieval_complete": true,
+    "seal_confirmed_sha256": "b7f9380fa5f128c65966a2984f2a81b635b3f3777f32878270fc977a93bff506",
+    "seal_prospective_sha256": "93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882",
+    "security_master_sha256": "c2191dbcc7c1d742128c2c382be2f303dadc7ea41e9a69527e6b5e52335078d5",
+    "segments_sha256": "6b014b13a9f5017e0f5d0b383079f16b5d2915a24fe9a8862fa14e88a8ba5933",
+    "snapshot_id": "real_v1"
+  },
+  "statistics": {
+    "cpcv": {
+      "embargo_periods": 5,
+      "holding_periods": 23,
+      "n_splits": 8
+    },
+    "economic_confirmation": "long_short_mean_daily_net_return_positive_at_primary_costs",
+    "family_control": "benjamini_yekutieli_0.05_within_family",
+    "mde": {
+      "alpha_eff_formula": "0.05 / (6 * H_6)",
+      "floor": 0.02,
+      "power": 0.8,
+      "single_test_reported": true,
+      "variance": "bartlett_long_run_variance"
+    },
+    "min_ic_months": 32,
+    "min_ic_pairs_per_month": 100,
+    "power_projection": {
+      "kill_reachable_projection": false,
+      "owner_decision_o3": "proceed_as_registered",
+      "prior_band": [
+        0.08,
+        0.1,
+        0.12
+      ]
+    },
+    "primary_test": "monthly_rank_ic_mean_two_sided_hac_bartlett_automatic_lag",
+    "sign_stability": "positive_mean_ic_in_both_halves_min_16_months_each",
+    "survivor": "by_reject_and_positive_mean_ic"
+  },
+  "terminal": {
+    "cash_availability_idealization_rows_max": 3,
+    "cash_settlement_lag_rows": [
+      -1,
+      3
+    ],
+    "consideration_valuation_rule": "acquirer_close_at_completion_date_row_v1",
+    "corporate_action_evidence_rule": "target_split_and_dividend_and_acquirer_split_discovery_partitions_required_else_unresolved",
+    "known_at_rule": "announcement_date_at_or_before_reference_row",
+    "rename_rule": "stock_consideration_into_successor_permanent_id",
+    "settlement_contract": "prior_observed_close_to_consideration_at_completion_date_row_v2",
+    "stock_consideration_lag_rows": [
+      -1,
+      0
+    ]
+  },
+  "timing": {
+    "contract": "after_close_signal_next_observed_close_v1",
+    "ic_execution_row": "reset_row",
+    "ic_signal_row": "reset_row_minus_one",
+    "label_contract": "terminal_aware_reset_to_reset_forward_return_v2",
+    "label_horizon": "next_scheduled_reset_row",
+    "rebalance": "ME",
+    "signal_lag_periods": 1
+  },
+  "universe": {
+    "bar_date_source": "dates_sidecar_v1",
+    "calendar_source": "SPY.US_eod_dates_v1",
+    "corporate_action_attribution": "episode_span_attribution_with_split_basis_in_span_step_and_cumulative_drift_checks_v3",
+    "corporate_action_tables": "date_first_partitioned_per_partition_validated_v1",
+    "engine_frame_columns": "member_permanent_ids_only",
+    "family_b_input_masking": "all_field_panels_masked_before_cross_sectional_operators_v1",
+    "identity_rules": [
+      "E1_gap_20_rows",
+      "E2_containment",
+      "E3_name_conflict",
+      "E4_isin_conflict",
+      "E5_discontinuity_ln2_discovery_rows",
+      "E6_delisted_and_listed_reuse_isin_continuity"
+    ],
+    "in_span_step_check": {
+      "cumulative_drift": "telescoped_sum_of_log_pair_ratios_to_last_bar_v1",
+      "cumulative_drift_tolerance": 0.002,
+      "dividend_evidence_unavailable": "every_pair_flat",
+      "dividend_factor": "one_minus_amount_over_own_basis_reference_price_v3",
+      "dividend_factor_formula": "prior_close_v1",
+      "event_order": "date_then_split_before_distribution",
+      "pairs": "consecutive_on_calendar_discovery_bars_of_the_episode",
+      "tolerance": 0.001
+    },
+    "index": "GSPC.INDX",
+    "interval_boundary_rule": "calendar_row_semantics_v1",
+    "membership_availability_basis": "vendor_effective_date_as_known_at_v1",
+    "membership_entries": "exact_duplicates_collapsed_overlaps_refused_union_under_r_census_9_unparseable_charged_worst_case_v2",
+    "membership_open_end_date": "empty_null_absent_or_strictly_after_components_retrieved_utc_date_v2",
+    "signal_row_eligibility": "resolved_universe_at_next_execution_row_and_cutoff_bar_present_v2",
+    "split_basis_check": {
+      "exact_tolerance": 1e-06,
+      "last_bar_support": "exact_declared_split_pattern_only_v2",
+      "non_split_factor_bound": "(0, 1]"
+    },
+    "split_evidence_scope": "discovery_partition_only_with_discontinuity_fallback",
+    "vendor_data_premises": {
+      "VP-1": "volume_carries_the_split_adjustment_of_prices_tested_by_volume_basis_split_diagnostic",
+      "VP-2": "declared_distributions_applied_as_non_split_adjustments_by_the_registered_formula_and_no_other",
+      "exposure": "in_span_distribution_support_with_b_d_and_s_d_quantiles",
+      "o8_disposition": "re_ratified_diagnostic_only",
+      "owner_item": "O-8",
+      "revisit_trigger": "s_d_above_0.05_on_more_than_1_percent_of_eligible_member_days"
+    }
+  }
+}

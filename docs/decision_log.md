@@ -15,6 +15,28 @@ investment performance.
 
 ---
 
+## 2026-09-26 - Owner Decisions O-1, O-3 (Power Projection & Contrary Rejection), And O-6 For S&P 500 PIT Registration Freeze
+
+Context:
+
+- Milestone 4.7 Phase M4.7b-2 requires freezing `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json` before discovery-window computation (§7.3 stage b-2).
+- The committed coverage census on `real_v1` yields `kill_reachable_projection = false` (32 IC months, projected MDE 0.067 at central prior 0.10 against 0.02 floor).
+- Under Plan §5.5 and §7.6, `kill_reachable_projection = false` triggers Owner Decision O-3 before stage b-2 with three options: (i) proceed as registered, (ii) change the North Star definition, or (iii) extend breadth or history before rerun.
+- Under Plan §6.9, the owner confirms the contrary-rejection disposition A9 (`non_survivor_confirmed_by_owner_o3`).
+- Under Plan §7.3 and §7.6, Owner Decisions O-1 (cost model) and O-6 (objective budgets) are answered or their registered defaults recorded.
+
+Decision:
+
+- **O-3 Power Branch**: The owner explicitly directs Option (i) (`proceed_as_registered`): proceed with the point-in-time rerun as registered without delaying for data expansion or modifying North Star criteria.
+- **O-3 A9 Contrary-Rejection Confirmation**: The owner confirms the reading that finding no survivor under family-partitioned BY is classified as `non_survivor_confirmed_by_owner_o3`.
+- **O-1 Costs (Registered Default Standing)**: Primary case: 1.0 bp transaction cost, 4.0 bps slippage per unit turnover; 2x sensitivity case: 2.0 bps transaction cost, 8.0 bps slippage; zero-cost diagnostic case: 0.0 bps / 0.0 bps.
+- **O-6 Objective Budgets (Registered Default Standing)**: Target Information Ratio 0.30; tracking-error budget 0.08; maximum drawdown budgets: 0.60 for long-only relative to equal-weight benchmark, 0.30 for long-short. Treated as descriptive flags.
+
+Consequences:
+
+- The frozen registration file `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json` (SHA-256 `6ea218a6…1c9f`) is confirmed with zero byte changes.
+- The rerun proceeds under `DIAGNOSTIC_ONLY` on snapshot `real_v1`.
+
 ## 2026-09-26 - Owner Decisions O-7 (Coverage Shortfall Accepted) And O-8 (VP-2 Re-ratified Under DIAGNOSTIC_ONLY)
 
 Context:

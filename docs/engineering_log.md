@@ -12,6 +12,15 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7b-2 preregistration frozen for S&P 500 PIT rerun on real_v1
+
+- Source: Phase M4.7b-2 under Binding Implementation Plan Revision 11 (§7.3 stage `b-2`).
+- Artifact: `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json` (SHA-256 `6ea218a638dd2cba760ea22ebd4009bb184d4137233762f72a844454a10f1c9f`).
+- Content: binds all upstream artifact digests from snapshot `real_v1` (manifest `ffa76053…`, discovery inputs `2395bc5a…`, interval CSV `303f161f…`, security master `c2191dbc…`, interval results `4dea8819…`, engine events `3ac2be6a…`, segments `6b014b13…`, prospective seal `93ce6e5a…`, confirmed seal `b7f9380f…`, census `608fd1b1…`).
+- Protocol bindings: calendar source `SPY.US_eod_dates_v1`, holdout `[2019-07-31, 2020-07-31)`, discovery window `D0 = 2021-08-31`, `D_last = 2026-08-07`, `D_end = 2026-06-30` (32 IC months, 16 per half, 23 max reset-to-reset rows for CPCV). Bounds: directly bound in JSON (max_gap_windows = 25, max_excluded_fraction = 0.45, min_ic_months = 32); transitively bound via census_json_sha256 (6.9 in-band years, 0.40 unpriced fraction). Owner decisions O-1 (primary 1/4 bps, 2x 2/8 bps, zero diagnostic), O-3 Option A seal (`proceed_as_registered`), O-6 objective budgets (IR 0.30, TE 0.08, drawdown 0.60/0.30), O-7 accepted shortfall bounds, O-8 premise VP-2 re-ratified under `DIAGNOSTIC_ONLY`.
+- Tests: `test_committed_real_data_preregistration_file` in `tests/test_m4_7_sp500_pit_rerun.py` validates the committed JSON against `check_registration(doc)` and schema expectations.
+- Ablation: attempted removal of schema validation check and registered hash validation in runner; rejected because fail-closed pre-inference check is required by invariant R9. Attempted simplification of registration JSON by removing optional benchmark label fields; rejected because explicit benchmark declarations are required by invariant R10. Guard retention: retained committed registration verification test in CI.
+
 ## 2026-09-26 - M4.7a-3 closed as ready_with_caveats under owner decisions O-7 and O-8
 
 - Source: the owner's O-7 and O-8 decisions (Option 1, recorded in
