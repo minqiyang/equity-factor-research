@@ -59,7 +59,7 @@ MAJOR_DIRS = [
 IMPORTANT_FILES = [
     (
         "AGENTS.md",
-        "Canonical external-action authority boundary, repository invariants R1-R12, and research-safety review standards. Reviewer routing lives in the live Herdr+Pi coordination standard.",
+        "Canonical external-action authority boundary, repository invariants R1-R12, and research-safety review standards. Reviewer routing lives in the live Herdr coordination standard.",
     ),
     (
         "AUTHORITY.md",
