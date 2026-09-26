@@ -15,7 +15,7 @@ from backtest.long_short import run_long_short_backtest
 from backtest.portfolio import capture_backtest_source_provenance, run_long_only_backtest
 from data import holdout_partition
 from data.constituent_table import load_constituent_intervals_csv
-from data.holdout_partition import SnapshotRefusal
+from data.holdout_partition import SEAL_RULE_OPTION_A, SnapshotRefusal
 from data.parquet_loader import load_eod_cohort_panels
 from fixtures.m4_7.e2e_scenario import JOIN2_MISSING, JOIN_MISSING, PEEL_OLD_MISSING, run_pipeline
 from m4_7_snapshot_support import CAL, I_H, Harness, bars, day, entry, rows
@@ -245,6 +245,22 @@ def test_t_census_4_ready_caveat_and_cap_edges():
     caveat = derive_readiness({**CLEAN, "holdout_band_after_identity": False})
     assert caveat["status"] == "ready_with_caveats:holdout_breadth_after_identity"
     assert not any("vp2" in key for key in derive_readiness(CLEAN)["inputs"])
+
+
+def test_option_a_readiness_thresholds_follow_the_seal_rule():
+    """Owner decision O-3: 7 in-band years, no prior-exposure cap, and 48 IC months under Option A."""
+    option_a = {**CLEAN, "in_band_years": 7.0, "holdout_end": "2020-07-31", "ic_month_supply": 48}
+    readiness = derive_readiness(option_a, SEAL_RULE_OPTION_A)
+    assert readiness["status"] == "ready"
+    assert readiness["thresholds"] == {"seal_rule_version": SEAL_RULE_OPTION_A, "min_in_band_years": 7,
+                                       "latest_holdout_end": None, "min_ic_months": 48}
+    assert derive_readiness({**option_a, "in_band_years": 6.9}, SEAL_RULE_OPTION_A)["failures"] == [
+        {"rule": "R-CENSUS-1", "result": "blocked:insufficient_in_band_history"}]
+    assert derive_readiness({**option_a, "ic_month_supply": 47}, SEAL_RULE_OPTION_A)["failures"] == [
+        {"rule": "R-CENSUS-8", "result": "blocked:insufficient_ic_months"}]
+    assert derive_readiness(option_a)["failures"] == [
+        {"rule": "R-CENSUS-1", "result": "blocked:holdout_overlaps_prior_exposure"},
+        {"rule": "R-CENSUS-8", "result": "blocked:insufficient_ic_months"}]
 
 
 def test_t_census_4_unusable_entry_charge_and_one_row_missing_bar(tmp_path, monkeypatch):

@@ -467,8 +467,9 @@ def recompute_support(bound: dict[str, Any], loaded: dict[str, Any], registratio
     """
     prices = loaded["research"]["adjusted_close"]
     bars = pd.DataFrame(np.isfinite(prices.to_numpy(dtype=float)), index=loaded["calendar"], columns=prices.columns)
-    support = snapshot_support(loaded["calendar"], bound["snapshot"].holdout_end.isoformat(), loaded["intervals"],
-                               loaded["events"], bars, loaded["master"], bound["inputs"], loaded["d0"])
+    support = snapshot_support(loaded["calendar"], bound["snapshot"].holdout_end.isoformat(),
+                               bound["snapshot"].calendar_source, loaded["intervals"], loaded["events"], bars,
+                               loaded["master"], bound["inputs"], loaded["d0"])
     if support.segments_sha256 != registration["snapshot"]["segments_sha256"]:
         raise RunnerStop("census_runner_inconsistency:schedule_digest", "recomputed schedule differs from the census")
     return support
