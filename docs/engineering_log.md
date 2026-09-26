@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - Phase M4.7c-2 decision record and Milestone 4.7 conclusion
+
+- Source: Phase M4.7c-2 under Binding Implementation Plan Revision 11 (§7.3 stage `c-2`).
+- Milestone 4.7 completion: all seven stages (pre-flight audit, data retrieval, universe build, exits and terminal tooling, coverage census, registration freeze, and point-in-time rerun on `real_v1`) are fully executed, verified, and audited with MATERIAL: 0 across all reviews.
+- Decision gate outcome `extend_first` recorded in `docs/decision_log.md` pursuant to plan §6.9, bound to registration `6ea218a6…1c9f` and result commit `a9c94dca59649dcb62af9b5d9fd65bde3400af45` (PR #269).
+- Program decision: "Extend breadth or history under a new registration; the holdout stays sealed." The 1-year holdout partition `[2019-07-31, 2020-07-31)` under `SPY.US_eod_dates_v1` remained unaccessed and sealed.
+- Roadmap status and imperfection backlog rows updated in `docs/current_roadmap.md`; handoff refreshed in `docs/current_handoff.md`.
+
 ## 2026-09-26 - M4.7c-1 owner-authorized local point-in-time rerun on real_v1
 
 - Authorization (O-4, c-1): the coordinator relays the owner's standing and explicit authorization for the M4.7c-1 point-in-time rerun on snapshot `real_v1` using registration `6ea218a6…1c9f` (merged in PR #268 at commit `0d87d7e`). Scope: offline reads of existing local snapshot files; no network call, no credentials, no trading.

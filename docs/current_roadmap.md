@@ -42,18 +42,17 @@ The program follows five primary milestones:
 | **1. Core Research & Synthetic Engine** | Data contracts, signal timing, portfolio accounting, synthetic demos, Track B first checkpoints | **Completed Baseline** | Core loaders, signal execution timing, drift-aware portfolio accounting, synthetic demos, and SQLite ledger first checkpoints (Path A PR #199, Path B PR #200). Historical Track A 14-trial run is REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved as immutable history. 2026-09-13 local diagnostic provided qualitative feasibility/planning context with documented caveats (outside Demo v0 acceptance; no tradability, universe-completeness, or holdout claim). |
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Implemented (synthetic fixtures)** | Official command `python -m research.demo_v0` reuses existing 12-1 momentum and frozen `SyntheticDemoConfig` values -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations; All-Attempt Case Logging records successes and failures. Synthetic fixtures only; no profitability claim; no private data. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic. Separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections stay in the backlog. |
 | **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Completed exploratory layer (M3-01 through M3-08, M3.9 regime composite, M3.10 hardening)** | M3.9 adds 52 WorldQuant-101 alphas with composite, neutralization, weighting, turnover-penalty, and regime layers; M3.10 resolves the M01–M11 causality and accounting audit. M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. M3-02 requires complete finite strictly positive price bars in Demo v0 and the M3-01 demo, and refuses a supplied zero-volume or missing volume panel without silent fill, clip, drop, or repair. M3-03 proves those demos count signal lag in observed source rows; a missing source row remains an omitted observation. Those demos keep the supplied observed index. M3-07 reports adjacent calendar-day spans and refuses panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Session and holiday status remains unverified. M3-04 proves those demos compute held returns from the supplied price series only and refuse a separate cash-dividend overlay (PIT-007). M3-05 proves those demos run on a longer synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official frozen `DEMO_V0_CONFIG` remains 756 rows. M3-06 counts unchanging-price segments on those demos and keeps every supplied bar. M3-08 implements supplied-event date membership and explicit no-table disclosure. Full economic dividend/split reconciliation against independent events remains deferred to a separately scoped Milestone 3/4 slice. All empirical runs remain explicitly caveated exploratory diagnostics. |
-| **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **In progress: diagnostic layer M4.0–M4.6 merged; formal promotion controls open** | M4.0 local 50-name real-data diagnostic; M4.1 walk-forward ML combination; M4.2 purged and embargoed CPCV; M4.3 multiple-testing diagnostics; M4.4 point-in-time membership and terminal cash; M4.5 optional square-root impact; M4.6 style risk attribution. M4.3–M4.6 carry synthetic evidence only. The next milestone is [M4.7](#milestone-47-survivorship-reduced-universe-and-pre-registered-rerun). Formal promotion still requires full point-in-time corporate action reconciliation, a survivorship-bias-free universe, complete all-trial accounting, and registered statistical controls; exploratory demos proceed without them. |
+| **4. Formal Research & Strict Lineage Controls** | Full auditability for formal promotion claims | **In progress: diagnostic layer M4.0–M4.7 merged; formal promotion controls open** | M4.0 local 50-name real-data diagnostic; M4.1 walk-forward ML combination; M4.2 purged and embargoed CPCV; M4.3 multiple-testing diagnostics; M4.4 point-in-time membership and terminal cash; M4.5 optional square-root impact; M4.6 style risk attribution; M4.7 S&P 500 point-in-time universe with preregistered rerun on real_v1 (PR #268, PR #269) completed with deterministic gate outcome `extend_first` (holdout remains sealed). Formal promotion still requires full point-in-time corporate action reconciliation, complete all-trial accounting, and registered statistical controls; exploratory demos proceed without them. |
 | **5. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
 
 ## Program Position
 
-- Current checkpoint: merged through PR #255 (M4.6). M4.0–M4.2 ran on the local
-  static 50-name survivor cohort; M4.3–M4.6 carry synthetic evidence only, and
-  the committed real-data report predates M4.3. That diagnostic shows no
-  detectable cross-sectional predictability: one of 64 factors reaches a
-  Newey-West |t| above 2, and PBO is 0.53. Its minimum detectable mean monthly
-  Rank IC is 0.049, above the 0.02–0.04 range of published factors. M4.7
-  addresses breadth and survivorship.
+- Current checkpoint: merged through PR #269 (M4.7c-1). M4.0–M4.2 ran on the local
+  static 50-name survivor cohort; M4.3–M4.6 carry synthetic evidence only.
+  Milestone 4.7 completes the first S&P 500 point-in-time universe rerun on
+  snapshot `real_v1` under preregistration `6ea218a6…1c9f` with 0 Class I stops.
+  The deterministic gate evaluates to `extend_first` (power inadequate, 0 BY
+  rejections in Family A or Family B, PBO >= 0.50, holdout partition sealed).
 - The following earlier program-position entries preserve the Stage 2/M3
   checkpoint and historical research evidence.
 - Last externally verified protected baseline:
@@ -156,46 +155,29 @@ M3-06 counts unchanging-price segments on those demos and keeps every
 supplied bar.
 M3-08 implements supplied-event date membership and explicit no-table disclosure. Full economic dividend/split reconciliation against independent events remains deferred to a separately scoped Milestone 3/4 slice.
 
-## Milestone 4.7: Survivorship-Reduced Universe And Pre-Registered Rerun
+## Milestone 4.7: Survivorship-Reduced Universe And Pre-Registered Rerun (Completed)
 
-M4.7 measures, with adequate power and without survivorship, whether any
-pre-registered monthly-horizon factor carries net-of-cost cross-sectional
-predictability in the S&P 500 point-in-time universe. The owner adopted this
-milestone on 2026-09-23. The owner's EODHD entitlement records
-`HistoricalTickerComponents` as available.
+Milestone 4.7 is completed. All seven stages (pre-flight audit, data retrieval module,
+universe build, delisting exits and terminal tooling, coverage census, registration freeze,
+and point-in-time rerun on real_v1) were implemented, audited with dual independent reviews
+(MATERIAL: 0), and merged through PR #269. The rerun executed with exit 0 and zero Class I stops.
+The deterministic gate evaluates to `extend_first` (power inadequate, zero BY rejections across
+Family A and Family B, PBO >= 0.50). The holdout window remains sealed and unaccessed.
+Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
-1. **Pre-flight audit.** The coordinator's `AUDIT` route reviews M4.2, M4.3,
-   and M4.4 before M4.7 relies on them.
-2. **Data.** Retrieval of historical constituents and EOD histories for every
-   ever-member, including delisted codes, runs under the existing plan and the
-   written terms. Raw data and the provider-derived membership table stay
-   outside the repository, under `EFR_EODHD_DATA_DIR`. The retrieval reads the
-   API token only from the `EFR_EODHD_API_TOKEN` environment variable, which the
-   owner sets at run time. It refuses when the variable is absent and never
-   writes the token to files, logs, or reports.
-3. **Universe.** Vendor effective dates map to M4.4 interval tables with
-   `known_at` equal to the effective date. Permanent IDs combine vendor code
-   and listing episode; ambiguous reuse fails closed and is counted.
-4. **Exits.** An index removal exits at the next scheduled reset at market
-   prices. A held delisting needs accepted terminal evidence, because both
-   engines refuse the whole run otherwise. The owner's evidence standard covers
-   cash consideration (documented terms), stock consideration (exchange-ratio
-   shares valued at the effective-date close), and unresolvable events (window
-   splitting with reported coverage).
-5. **Census.** Before any factor computation, record member-days with prices,
-   gaps, identity refusals, delisting events by consideration type, and members
-   per date against the index's roughly 500 constituents.
-6. **Pre-registration.** Family A (primary, at most ten monthly-horizon factors
-   from the edge thesis) and Family B (the WorldQuant-101 alphas and composites,
-   exploratory) are declared before results, with costs, benchmarks, and the
-   sealed holdout: the earliest available unexamined decade.
-7. **Rerun and gate.** The existing runner applies the universe mask,
-   Benjamini–Yekutieli control at 5%, CPCV/PBO on long-short and excess-return
-   families, and excess metrics. A Family A survivor that holds its sign in both
-   discovery halves advances to M4.8 (fundamentals, style risk on the
-   point-in-time universe, costs at the owner's scale). No survivor with a
-   minimum detectable Rank IC of 0.02 or better triggers the North Star kill
-   criteria; an underpowered null extends history or breadth first.
+1. **Pre-flight audit.** Completed (PR #257, PR #262).
+2. **Data.** Retrieval module implemented in `src/data/eodhd_retrieval.py` and
+   `src/data/holdout_partition.py` (PR #264).
+3. **Universe.** S&P 500 PIT membership intervals, permanent IDs, and
+   `resolve_pit_universe_mask` implemented in `research/m4_7_universe_build.py` (PR #265, PR #267).
+4. **Exits.** Delisting consideration types, terminal valuation, and corporate-action
+   attribution implemented in `research/m4_7_terminal_evidence.py` (PR #265, PR #267).
+5. **Census.** Coverage census and accepted shortfall bounds implemented in
+   `research/m4_7_coverage_census.py` (PR #265, PR #267).
+6. **Pre-registration.** Frozen in `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json`
+   (SHA-256 `6ea218a6…1c9f`) binding upstream digests, Owner Decisions O-1, O-3, O-6, O-7, O-8 (PR #268).
+7. **Rerun and gate.** Executed on snapshot `real_v1` with 0 Class I stops, BY corrections,
+   and deterministic decision gate outcome `extend_first` (PR #269).
 
 ## Imperfection Policy And Lightweight Backlog
 
@@ -215,13 +197,13 @@ status.
 | Factor zoo expansion (10+ factors, multi-factor models) | Features | Demo v0 uses one price-only factor; M3-01 adds three artificial synthetic panels | Demo v0 remains the single-factor official slice. M3-01 combines artificial quality, reversal, and momentum fixtures through existing helpers. Remaining zoo expansion stays deferred. | Optional factor-family expansion after the current Milestone 3 scope | Safe to defer remaining zoo expansion; M3-01 three-factor synthetic backtest is implemented |
 | Full 37-event ledger schema runtime coverage | Audit Ledger | The Path A/B SQLite runtime retired with the Track A code on 2026-09-23 (history at `8fa0055`); the frozen schema releases remain as data | Diagnostic runs append trial records with sample hash, specification, statistics, and status to a JSONL log. The run's code commit appears once per run in the experiment log and report; JSONL records carry no per-attempt commit, so attempts appended across commits need the run-level record to recover code identity. | A formal ledger requirement from a later milestone, or per-attempt commit binding | Safe to defer; runtime retired; per-attempt commit binding open |
 | Multi-factor risk calibration and coverage | Risk attribution | Estimated covariance and omitted residual correlations affect active-risk forecasts | M4.6 implements causal OLS/WLS style attribution and sample rolling covariance on complete synthetic panels. Rank deficiency and enabled terminal-event coverage refuse explicitly. Specific covariance is diagonal; geometric return linking, industries, dynamic regression universes, and empirical calibration remain open. Enabled attribution requires complete static price panels and market capitalization plus book-to-price inputs, which the price-only real-data pipeline lacks. | M4.8, after the M4.7 gate | Implemented diagnostic layer (PR #255); synthetic evidence only |
-| Real-data evidence freshness | Evidence | Committed real-data results predate M4.3–M4.6 | The committed real-data report was last regenerated at PR #249 (M4.2) and has no multiple-testing section. The runner now reports excess over the benchmark and over a zero-cost equal-weight cohort, tracking error, long-short PBO and CPCV, and the run's code commit. Regeneration reads local private data under explicit authorization. | Next authorized local-data run | Open; runner ready |
+| Real-data evidence freshness | Evidence | Committed real-data results predate M4.3–M4.6 | M4.7 executes and commits the S&P 500 point-in-time rerun on snapshot real_v1 under owner authorization O-4 with full multiple-testing diagnostics, CPCV/PBO, and excess metrics against SPY and the equal-weight PIT benchmark (PR #269). | M4.7 rerun (PR #269) | Completed in M4.7 (PR #269); DIAGNOSTIC_ONLY |
 | Impact-model spread floor | Cost Realism | `SquareRootImpactModel.fixed_bps` defaults to 0, and an active model forces legacy slippage to 0 | The committed capacity demo sets a 2 bps fixed component. A default-constructed model prices small liquid trades near commission only. M4.8 calibrates spread, commission, and borrow at the owner's scale and enforces a positive spread. | M4.8 cost calibration | Deferred to its first real-data consumer |
-| Delisting terminal evidence for held securities | Economic Correctness | An unevidenced held delisting refuses the whole run in both engines | Point-in-time universes contain acquired and delisted members. M4.4 supports immediate-cash terminal returns; stock and mixed consideration need the owner's evidence standard (M4.7 step 4). | M4.7 census | Open; M4.7 prerequisite |
+| Delisting terminal evidence for held securities | Economic Correctness | An unevidenced held delisting refuses the whole run in both engines | Point-in-time universes contain acquired and delisted members. M4.7 implements terminal evidence tooling, validation, and corporate-action attribution (PR #265, PR #267). | M4.7 universe & census | Implemented in M4.7 (PR #265, PR #267) |
 | Advanced multiple-testing statistics | Statistics | Multiplicity and adaptive research affect inference | Existing DSR uses run-family Sharpe dispersion. M4.3 adds Bonferroni, Holm, BH and BY over all semantic book trials, primary HAC BY diagnostics, and explicitly conditional IID Sharpe haircuts. Undefined and conflicting trials retain family slots. Historical search completeness, finite-sample HAC calibration, and empirical-population Harvey-Liu simulation remain open. | Stronger formal research claims and accepted historical-family evidence | Implemented diagnostic layer; DIAGNOSTIC_ONLY; formal promotion limits remain |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities. M4.4 requires identity-backed interval tables and exact permanent-ID axes in its optional PIT path; synthetic ticker-reassignment tests preserve separate security returns. External identity evidence remains caller-supplied. | Never deferrable | **BLOCKING (Cannot Defer)**; optional runtime enforcement implemented |
-| Future-membership selection & survivor-cohort filtering | Sample Honesty | Severe upward performance bias from hindsight selection | Invariant R2: eligibility uses only membership known at decision time. A static survivor cohort is permitted only under `DIAGNOSTIC_ONLY`, with the bias stated in each report header, and never supports ranking, selection, promotion, or profitability claims. M4.4 freezes membership using explicit start/end availability at the lagged source close. Its synthetic declarations establish causal simulation behavior; M4.7 supplies the first real point-in-time universe. | Never deferrable | **BLOCKING (Cannot Defer)**; synthetic availability-aware masking implemented; real universe in M4.7 |
+| Future-membership selection & survivor-cohort filtering | Sample Honesty | Severe upward performance bias from hindsight selection | Invariant R2: eligibility uses only membership known at decision time. A static survivor cohort is permitted only under `DIAGNOSTIC_ONLY`, with the bias stated in each report header, and never supports ranking, selection, promotion, or profitability claims. M4.7 implements S&P 500 point-in-time membership intervals and resolve_pit_universe_mask executed on real_v1 (PR #267, PR #269). | Never deferrable | **BLOCKING (Cannot Defer)**; point-in-time universe implemented and executed in M4.7 |
 | Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Disappearance & delisting payoffs (PIT-006) | Economic Correctness | Unrealistic liquidation economics | Must not default to last-price exit or zero payoff at asset disappearance; if accepted terminal evidence is absent, the affected window blocks. M4.4 implements an explicitly supplied complete prior-close-to-cash return, one-time signed cash settlement, and holding clearance in both engines. Missing reference prices, unknown settlement terms, and frozen-target collisions refuse. An unevidenced held disappearance refuses the whole run. Delayed payments, receivable valuation, and stock consideration remain open. | Never deferrable | **BLOCKING (Cannot Defer)**; immediate-cash synthetic accounting implemented |
 | Dividend double counting (PIT-007) | Return Correctness | Double-counted total returns | Must not add cash dividends on top of already adjusted return series; corporate action adjustments must be consistent. Demo v0 and the M3-01 demo compute held returns from the supplied price series only and refuse a separate cash-dividend overlay. M3-08 refuses supplied event dates absent from the declared source index. Full economic corporate-action reconciliation remains separately scoped Milestone 3/4 work. | Never deferrable | **BLOCKING (Cannot Defer)**; Demo v0 and M3-01 overlay refusal is implemented |
