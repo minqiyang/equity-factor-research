@@ -40,7 +40,7 @@ MAJOR_DIRS = [
     ("scripts", "Workflow tooling; scripts here must not fetch data or trade."),
     ("src/features", "Factor calculations, validation, normalization, combination, and diagnostics."),
     ("src/backtest", "Simulated long-only and long-short engines, market impact, style risk attribution, and metrics."),
-    ("src/data", "Strict local CSV and Parquet loaders, point-in-time constituent tables, blue-chip cohort spec, and metadata review helpers."),
+    ("src/data", "Strict local CSV and Parquet loaders, point-in-time constituent tables, blue-chip cohort spec, metadata review helpers, the M4.7 holdout seal, and the EODHD retrieval CLI (the one network-capable module)."),
     (
         "src/ledger",
         "Frozen Stage 4B ledger schema releases bound by accepted contracts; data only. The Track A runtime retired on 2026-09-23 and remains in history at 8fa0055.",

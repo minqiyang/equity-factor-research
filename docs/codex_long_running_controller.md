@@ -189,6 +189,8 @@ first recorded the rule.
 | Ending the coordinator process while an authorized PR waits for its exact-head review body | `00f1b3d` (2026-09-14) |
 | Asking the owner for a second create-PR or merge command after an owner-requested in-scope change is complete | `932d576` (2026-09-15) |
 | Asking the owner to issue an already-determined next command during authorized unattended work, including running a demo or starting the next roadmap slice | `4859cab` (2026-09-16) |
+| Closing tabs or panes immediately upon round completion instead of deferring closure until the next round launches and confirms they are unneeded | `2c07ee4` (2026-09-25) |
+| Short polling or checking background tasks without sufficient wait margin (under-waiting relative to task runtime) | `2c07ee4` (2026-09-25) |
 
 Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
 own incident record and owner confirmation.
@@ -197,6 +199,15 @@ own incident record and owner confirmation.
 
 - Report an unchanged external gate once and pause; define no polling schedule,
   except as below.
+- Tab and pane visibility lifecycle: Never close completed worker, reviewer, or
+  QA tabs at the end of a round. The sole permitted time to close tabs or panes
+  is when the next round actually launches, and only closing those confirmed no
+  longer needed from the prior round. This preserves full terminal history and
+  output visibility for owner inspection between rounds.
+- Background wait duration: Lean towards longer background wait intervals rather
+  than frequent checks. For tasks estimated at 5 minutes, schedule a 10-minute wait;
+  for tasks estimated at 10 minutes, schedule 15–20 minutes. General execution and
+  formal review seats typically require at least 10 minutes or more.
 - When an authorized PR has a requested exact-head review outstanding, keep the
   coordinator session alive and re-check until the exact-head independent review body
   exists: pass, findings, or an explicit current limit. Do not end the process
