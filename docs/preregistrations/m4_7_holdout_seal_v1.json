@@ -67,7 +67,7 @@
   "calendar_source": "SPY.US_eod_dates_v1",
   "classification": "sealed_holdout",
   "confirmation": {
-    "census_json_sha256": "5015a1d80389c8c69019d78011943765641935211a532dbe38ac7b9061095c5c",
+    "census_json_sha256": "608fd1b1dd633e8985ea07537f6a944777cb38d684e86e7c75ada11ddc2d1c40",
     "identity_adjusted_min_month_end_count": 468,
     "seal_prospective_sha256": "93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882",
     "status": "caveat"

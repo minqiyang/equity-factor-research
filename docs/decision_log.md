@@ -15,6 +15,64 @@ investment performance.
 
 ---
 
+## 2026-09-26 - Owner Decisions O-7 (Coverage Shortfall Accepted) And O-8 (VP-2 Re-ratified Under DIAGNOSTIC_ONLY)
+
+Context:
+
+- The first Option A census on `real_v1` (JSON SHA-256 `5015a1d8…5c5c`, code
+  `eb8c5a5`, entry below) was `blocked` on R-CENSUS-1 (6.92 in-band years
+  against 7), R-CENSUS-2 (20 gap windows and excluded fraction 0.384 against 6
+  and 0.05, from peeling 24 uncurated delistings), R-CENSUS-8 (32 IC months
+  against 48), and R-CENSUS-9 (unpriced fraction 0.330 against 0.02), and set
+  `vp2_revisit_required` (22.5 percent of eligible member-days with
+  `S_D > 0.05`).
+- The owner chose Option 1 for O-7 and O-8 under Owner Directives 1 (no data
+  perfectionism), 2 (no over-engineering), and 3 (break serial dependencies).
+
+Decision:
+
+- **O-7:** the measured coverage shortfall on the local EODHD data is
+  accepted as `ready_with_caveats:coverage_shortfall_accepted`, including
+  R-CENSUS-1 at 6.92 in-band years against the declared 7 (the
+  identity-adjusted continuous count starts 2019-09-30). Implementation:
+  `SEAL_RULES[SEAL_RULE_OPTION_A]["accepted_shortfall"]` holds the accepted
+  bounds (6.9 in-band years, 32 IC months, 25 gap windows, excluded fraction
+  0.45, unpriced fraction 0.40). A miss of a registered threshold inside the
+  bounds reads as the caveat; each rule keeps `passed = false` against its
+  registered threshold, so the census shows both the miss and the acceptance.
+  A value beyond a bound stays `blocked`.
+- **O-8:** premise VP-2 is re-ratified under `DIAGNOSTIC_ONLY` for the M4.7
+  rerun, including the 22.5 percent of eligible member-days with
+  `S_D > 0.05`. The runner registers `o8_disposition =
+  re_ratified_diagnostic_only`.
+- **Runner alignment for b-2 and c-1:** `MIN_IC_MONTHS = 32`,
+  `MIN_HALF_MONTHS = 16` (sign stability `min_16_months_each`),
+  `calendar_source = SPY.US_eod_dates_v1`, and registered support caps of 25
+  gap windows and excluded fraction 0.45. `bind_snapshot` refuses
+  `registration_invalid` when the registered calendar source differs from the
+  snapshot seal.
+
+Result (census JSON SHA-256 `608fd1b1…1c40`, code `9fd7734`):
+
+- Readiness `ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity`;
+  every measured value equals the blocked census.
+- Seal confirmed SHA-256 `b7f9380f…f506`, confirmation `caveat`; the
+  prospective seal `93ce6e5a…9882` is unchanged.
+
+Consequences and limitations:
+
+- These bounds were set after the first census measured the shortfall; the
+  blocked census stays in history at commit `cfcbb91`. Every M4.7 result on
+  `real_v1` stays `DIAGNOSTIC_ONLY` and supports no ranking, selection,
+  promotion, or profitability claim.
+- With 32 IC months the power projection gives `kill_reachable_projection =
+  false` (projected MDE 0.067 at the central prior 0.10); the gate applies
+  realized power, and a `review_thesis` outcome is unlikely to be reachable.
+- The 24 uncurated delistings remain in `U`, and 83,718 member-days of
+  episodes refused by the in-span check remain unpriced; curation or a
+  dividend source can reduce both in a later snapshot.
+- M4.7b-2 (registration freeze) is the next stage.
+
 ## 2026-09-26 - Owner Decision O-3 Option A: One-Year Seal Rule For The 2019-2026 EODHD Membership History
 
 Context:

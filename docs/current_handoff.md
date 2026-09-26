@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-26 for the Milestone 4.7 stage a-3 Option A run (census blocked).
+Updated: 2026-09-26 for the Milestone 4.7 stage a-3 census (ready with caveats).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -80,8 +80,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   the committed fixture universe; report `coord/reports/m4_7b1_runner_integration_impl.md`.
 - M4.7a-3 candidate (branch `claude/m4_7a3-universe-census`): O-3 Option A seal rule
   (one-year holdout, 7 in-band years, 48 IC months, declared `calendar_source`) and the
-  full offline run on `real_v1`; census `blocked`; report
-  `coord/reports/m4_7a3_universe_and_census_impl.md`.
+  full offline run on `real_v1`; O-7 accepted shortfall and O-8 VP-2 re-ratification;
+  census `ready_with_caveats`; report `coord/reports/m4_7a3_universe_and_census_impl.md`.
 
 ## Current Research Gate Summary
 
@@ -94,15 +94,13 @@ rerun, is the active research milestone. The evidence ceiling remains
 
 ## Immediate Blockers Or Owner Decisions
 
-- O-7 blocks a-3: census readiness `blocked` on R-CENSUS-2 (20 windows, excluded
-  0.384), R-CENSUS-8 (32 IC months), R-CENSUS-9 (unpriced 0.330), and R-CENSUS-1
-  (6.92 in-band years); 24 delistings uncurated; 143 entries lack `StartDate`.
-- O-8 re-decision: the census set `vp2_revisit_required` (22.5 percent `S_D > 0.05`).
+- No blocker for M4.7b-2. Census `ready_with_caveats:coverage_shortfall_accepted,
+  holdout_breadth_after_identity` (O-7); VP-2 re-ratified under `DIAGNOSTIC_ONLY` (O-8).
 
 ## Next Safe Action
 
-- Owner decisions O-7 and O-8, then the a-3 build and census rerun; M4.7b-2 stays blocked
-  and must align the runner's `MIN_IC_MONTHS` and `calendar_source` with the seal.
+- M4.7b-2 registration freeze pinning census `608fd1b1…1c40`, confirmed seal
+  `b7f9380f…f506`, and the runner's Option A protocol (32 IC months, SPY calendar).
 
 ## Source Routing
 

@@ -8,11 +8,11 @@
   "census_readiness": {
     "failures": [
       {
-        "result": "blocked:insufficient_in_band_history",
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
         "rule": "R-CENSUS-1"
       },
       {
-        "result": "blocked:excluded_coverage",
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
         "rule": "R-CENSUS-2"
       },
       {
@@ -20,11 +20,11 @@
         "rule": "R-CENSUS-7"
       },
       {
-        "result": "blocked:insufficient_ic_months",
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
         "rule": "R-CENSUS-8"
       },
       {
-        "result": "blocked:unpriced_eligible_member_days",
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
         "rule": "R-CENSUS-9"
       }
     ],
@@ -75,15 +75,23 @@
         "passed": false
       }
     },
-    "status": "blocked",
+    "status": "ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity",
     "thresholds": {
+      "accepted_shortfall": {
+        "max_excluded_fraction": 0.45,
+        "max_gap_windows": 25,
+        "max_unpriced_fraction": 0.4,
+        "min_ic_months": 32,
+        "min_in_band_years": 6.9,
+        "owner_decision": "O-7 2026-09-26"
+      },
       "latest_holdout_end": null,
       "min_ic_months": 48,
       "min_in_band_years": 7,
       "seal_rule_version": "earliest_available_year_from_raw_membership_counts_option_a_v1"
     }
   },
-  "code_commit": "eb8c5a5997e06cfce6054ece04eddb52efcc5124",
+  "code_commit": "9fd77349408f43ec22e564ae06c9ab8ec26fa476",
   "corporate_actions": {
     "corporate_action_partitions_quarantined": {
       "dividends_discovery_quarantined": 0,

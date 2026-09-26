@@ -1,44 +1,46 @@
-# M4.7a-3 Implementation Report: Option A Seal Rule, Local Private Run, And Blocked Coverage Census
+# M4.7a-3 Implementation Report: Option A Seal Rule, Local Private Run, And Coverage Census (Ready With Caveats)
 
 | Field | Value |
 | --- | --- |
-| Task/attempt | `m4_7a3-universe-and-census-a1` (resumed after owner decision O-3) |
+| Task/attempt | `m4_7a3-universe-and-census-a1` (resumed after owner decisions O-3, O-7, and O-8) |
 | Card | `coord/v8_review_20260923/card_m4_7a3_universe_and_census.md` |
-| Plan | `coord/plans/m4_7_binding_plan.md` Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`, revised for the seal rule by owner decision O-3 Option A (`docs/decision_log.md`, 2026-09-26) |
+| Plan | `coord/plans/m4_7_binding_plan.md` Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`, revised for the seal rule by owner decision O-3 Option A and for the coverage shortfall by O-7 (`docs/decision_log.md`, 2026-09-26) |
 | Route, lane | `GENERAL_EXEC`, CRITICAL (structural: `ARCHITECTURE`, `SCHEMA_PROTOCOL_CONTRACT`, `SECURITY_AUTHORITY`) |
 | Author session | Claude Opus 5.5 (`claude-opus-5-5`) via Claude Code |
 | Base | `d15ef1d` (main after PR #266), verified live against `origin/main` |
 | Branch | `claude/m4_7a3-universe-census` |
 | Evidence ceiling | `DIAGNOSTIC_ONLY`; count-only aggregates; no network call |
-| Status | Pipeline complete; census readiness **`blocked`** (R-CENSUS-1, 2, 8, 9; R-CENSUS-7 caveat); `vp2_revisit_required = true`; owner decisions O-7 and O-8 required |
+| Status | Complete: census readiness **`ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity`**; VP-2 re-ratified under `DIAGNOSTIC_ONLY` (O-8) |
 
 ## 1. Result
 
-The owner chose Option A for O-3. The seal rule now carries per-rule
-parameters, and the full canonical sequence ran on snapshot `real_v1`: seal,
-`calendar`, `splits`, `eod`, `dividends`, `verify`, the universe build, the
-terminal template, validation, projection, and the census. Retrieval is
-complete and snapshot integrity passes. The census readiness is `blocked`,
-because four readiness rules fail by margins that no Option A parameter
-addresses:
+Stage a-3 is complete. The owner chose Option A for O-3, and after the first
+Option A census measured a coverage shortfall, Option 1 for O-7 (accept the
+shortfall) and O-8 (re-ratify VP-2 under `DIAGNOSTIC_ONLY`). The full
+canonical sequence ran on snapshot `real_v1`, and the committed census reads:
 
-| Rule | Measured | Threshold | Main driver |
-| --- | --- | --- | --- |
-| R-CENSUS-1 in-band history | 6.92 years | 7 (Option A) | identity-adjusted counts confirm coverage from 2019-09-30, two months after the sealed 2019-07-31 |
-| R-CENSUS-2 common support | 20 gap windows; excluded 0.384 | 6; 0.05 | 19 windows from the 24 unresolved delistings in the window (none curated) |
-| R-CENSUS-8 IC supply | 32 months | 48 (Option A) | 16 IC months in dropped segments and 3 in gaps, from those windows |
-| R-CENSUS-9 unpriced member-days | 0.330 | 0.02 | 177,177 `entry_unusable_upper_bound` (143 entries without `StartDate`) and 83,718 `no_discovery_panel` (80 in-span refusals) |
-| R-CENSUS-7 holdout breadth | min 468 | tolerant band | caveat only |
+```text
+ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity
+```
+
+| Rule | Measured | Registered threshold | O-7 accepted bound | Result |
+| --- | --- | --- | --- | --- |
+| R-CENSUS-1 in-band history | 6.92 years | 7 | 6.9 | shortfall accepted |
+| R-CENSUS-2 common support | 20 windows; excluded 0.384 | 6; 0.05 | 25; 0.45 | shortfall accepted |
+| R-CENSUS-7 holdout breadth | min 468 | tolerant band | none | caveat |
+| R-CENSUS-8 IC supply | 32 months | 48 | 32 | shortfall accepted |
+| R-CENSUS-9 unpriced member-days | 0.330 | 0.02 | 0.40 | shortfall accepted |
 
 R-CENSUS-3 (identity refusals 0.35 percent), R-CENSUS-4 (off-calendar
-0.0008 percent), R-CENSUS-5, R-CENSUS-6, and R-CENSUS-10 pass. I did not raise
-any cap other than the two Option A minima: reaching `ready` would need the
-excluded-fraction cap above 0.384 and the unpriced cap above 0.330, which is
-owner decision O-7, and the committed census states `blocked`.
+0.0008 percent), R-CENSUS-5, R-CENSUS-6, and R-CENSUS-10 pass their
+registered thresholds. Each shortfall rule keeps `passed = false` in the
+public JSON, so the registered miss and the owner acceptance both stay
+visible. The first Option A census, `blocked` on the same measurements,
+stays in history at `cfcbb91`.
 
-The plan 7.2 stop on `blocked:*` readiness applies. The committed seal and
-census are the measured record of this snapshot; a-3 closes only after the
-owner acts on O-7 and O-8.
+The evidence ceiling is `DIAGNOSTIC_ONLY`. With 32 IC months the power
+projection gives `kill_reachable_projection = false`; every IC month lies
+inside the static 50-name cohort's prior-exposure window.
 
 ## 2. Option A implementation (`eb8c5a5`)
 
@@ -68,7 +70,7 @@ window, and 48 is four years.
 | `verify` | `retrieval_complete = true`; no hash mismatch, stale split evidence, or token leak |
 | Universe build | 818 intervals: 663 resolved, 143 `entry_missing_field`, 12 identity refusals; 882 permanent IDs; 83 episodes refused a panel (80 `split_basis_unverified:in_span_step_mismatch`, 2 `unexplained_deviation`, 1 `split_attribution_ambiguous`) |
 | Terminal evidence | 47 delisting candidates: 27 `unresolved`, 20 `deferred_holdout`; 0 engine events |
-| Census | `blocked`; JSON SHA-256 `5015a1d80389c8c69019d78011943765641935211a532dbe38ac7b9061095c5c`; confirmed seal SHA-256 `20e225205d25d2402cae78f066d6dbbb3f77622f78256652a4ffdf47e095125e`, confirmation `caveat` |
+| Census (first Option A run) | `blocked`; JSON SHA-256 `5015a1d80389c8c69019d78011943765641935211a532dbe38ac7b9061095c5c`; superseded by the O-7 rerun in section 4 |
 
 Curation: no local source holds deal consideration terms. The cross-stream
 integration tree holds SEC Form 25 identity targets with few retrieved
@@ -95,20 +97,36 @@ The census first ran on uncommitted code (`code_commit = 682e01f`). After the
 code commit the build, terminal, and census reran; the public JSON differs
 only in `code_commit`, now `eb8c5a5`.
 
-## 4. Owner decisions required
+## 4. Owner decisions O-7 and O-8 and the calibration (`9fd7734`)
 
-1. **O-7 coverage shortfall** (R-CENSUS-2, R-CENSUS-8, R-CENSUS-9): curate the
-   24 unresolved in-window delistings from public documents; replace the empty
-   dividend tables with another source; decide the S9 upper-bound charge for
-   the 143 entries without `StartDate` (22.3 percent of eligible member-days by
-   itself); or register higher caps with their coverage cost stated.
-2. **O-8 re-decision** (VP-2): the census set `vp2_revisit_required`; the
-   ratification has expired, and b-2 needs a new disposition.
-3. **O-3 residual** (R-CENSUS-1): 6.92 in-band years against the declared 7,
-   from the identity-adjusted start 2019-09-30.
-4. **b-2 alignment**: the runner registration skeleton still carries
-   `MIN_IC_MONTHS = 60` and `calendar_source = GSPC.INDX_eod_dates_v1`; the
-   freeze must align both with the Option A seal.
+The first Option A census (`5015a1d8…5c5c`, code `eb8c5a5`) was `blocked`
+on R-CENSUS-1, 2, 8, and 9 and set `vp2_revisit_required`. The owner then
+decided:
+
+- **O-7:** accept the shortfall as `ready_with_caveats:coverage_shortfall_accepted`,
+  including 6.92 in-band years against 7.
+- **O-8:** re-ratify VP-2 under `DIAGNOSTIC_ONLY`, covering the 22.5 percent
+  of eligible member-days with `S_D > 0.05`.
+
+| File | Change |
+| --- | --- |
+| `src/data/holdout_partition.py` | `accepted_shortfall` per seal rule (Option A bounds above; v1 none) |
+| `research/m4_7_coverage_census.py` | a miss inside the bounds is the caveat `coverage_shortfall_accepted`; status composes every caveat; thresholds publish the bounds; markdown names each failing rule |
+| `research/m4_7_sp500_pit_rerun.py` | `MIN_IC_MONTHS = 32`, `MIN_HALF_MONTHS = 16`, `CALENDAR_SOURCE = SPY.US_eod_dates_v1`, support caps 25 and 0.45, `O8_DISPOSITION = re_ratified_diagnostic_only`; `bind_snapshot` refuses a registered calendar source that differs from the snapshot seal |
+| `tests/fixtures/m4_7/e2e_scenario.py`, `tests/fixtures/m4_7/runner_scenario.py` | the runner fixture seals with the registered calendar source |
+| tests | accepted-shortfall caveat, six beyond-bound blocks, the calendar-source guard, seal-rule values; the sign-stability and MDE edges moved to 16 and 32 |
+
+The census reran from `9fd7734` on unchanged build and terminal artifacts:
+JSON SHA-256 `608fd1b1dd633e8985ea07537f6a944777cb38d684e86e7c75ada11ddc2d1c40`,
+confirmed seal SHA-256 `b7f9380fa5f128c65966a2984f2a81b635b3f3777f32878270fc977a93bff506`
+(confirmation `caveat`; prospective seal unchanged). Against the blocked
+census only the four rule results, the status, the thresholds block, and
+`code_commit` changed.
+
+Limitations that the acceptance leaves in place: the 24 uncurated
+delistings stay in `U`; 83,718 member-days of in-span refusals and the
+177,177-member-day charge for the 143 entries without `StartDate` stay
+unpriced; the bounds were set after the shortfall was measured.
 
 ## 5. First pass: the v1 seal refusal
 
@@ -208,11 +226,11 @@ discovery years) cannot be met from it, which led to owner decision O-3.
 
 | File | Content |
 | --- | --- |
-| `src/data/holdout_partition.py`, `research/m4_7_holdout_seal.py`, `research/m4_7_coverage_census.py`, `research/m4_7_universe_build.py`, `research/m4_7_common_support.py`, `research/m4_7_sp500_pit_rerun.py` | Option A seal rule and declared calendar source (`eb8c5a5`) |
-| `tests/test_m4_7_holdout_seal.py`, `tests/test_m4_7_coverage_census.py` | Option A tests |
-| `reports/m4_7_coverage_census.json`, `reports/m4_7_coverage_census.md` | Public census aggregates, readiness `blocked` |
+| `src/data/holdout_partition.py`, `research/m4_7_holdout_seal.py`, `research/m4_7_coverage_census.py`, `research/m4_7_universe_build.py`, `research/m4_7_common_support.py`, `research/m4_7_sp500_pit_rerun.py` | Option A seal rule and declared calendar source (`eb8c5a5`); O-7 bounds and runner calibration (`9fd7734`) |
+| `tests/test_m4_7_holdout_seal.py`, `tests/test_m4_7_coverage_census.py`, `tests/test_m4_7_sp500_pit_rerun.py`, `tests/test_m4_7_decision.py`, `tests/test_m4_7_family_a.py`, `tests/fixtures/m4_7/*.py` | Option A, O-7, and runner tests |
+| `reports/m4_7_coverage_census.json`, `reports/m4_7_coverage_census.md` | Public census aggregates, readiness `ready_with_caveats` |
 | `docs/preregistrations/m4_7_holdout_seal_v1.json` | Option A seal with confirmation `caveat` |
-| `docs/decision_log.md` | O-3 Option A decision, parameters, result, open decisions |
+| `docs/decision_log.md` | O-3 Option A; O-7 and O-8 |
 | `docs/engineering_log.md` | Run authorization and provenance; the stop; the resumed run |
 | `docs/current_handoff.md` | Refreshed to base `d15ef1d` |
 | `docs/repo_map.md` | Regenerated (mapped `docs/` file count) |
@@ -229,20 +247,30 @@ adapter, and the snapshot stay under `<private_data_root>`.
 
 ## 8. Verification
 
-Run on head `cc2cd7b` (the amend that adds this table changes this report only).
+Run on head `0cf2645` (the amend that adds this table changes this report only).
 
 | Check | Result |
 | --- | --- |
-| `.venv/bin/python -m pytest tests/test_governance_constitution.py tests/test_m4_7_*.py tests/test_project_structure.py tests/test_eodhd_retrieval.py` | 414 passed |
+| `.venv/bin/python -m pytest tests/test_governance_constitution.py tests/test_m4_7_*.py tests/test_project_structure.py tests/test_eodhd_retrieval.py` | 422 passed |
 | `ruff check . --exclude .venv` | all checks passed |
 | `git diff --check d15ef1d...HEAD` | clean |
 | Public-file privacy scan (member codes, `#E` IDs, private paths) | no match |
-| Census rerun after the code commit | public JSON identical except `code_commit` |
-
-`docs/repo_map.md` was regenerated with `scripts/repo_map.py`, because the
-committed seal adds one mapped file under `docs/`.
+| Census rerun from `9fd7734` against the blocked census | only rule results, status, thresholds, and `code_commit` differ |
+| `docs/repo_map.md` regeneration | unchanged in this round |
 
 ## 9. Ablation
+
+O-7 round (`9fd7734`):
+
+- Guard-necessity check (retained): removing the runner's calendar-source
+  guard fails `test_registered_calendar_source_must_match_the_snapshot_seal`.
+- Simplification attempt (rejected): overwriting the registered thresholds
+  with the accepted values removes the caveat branch, but the census then
+  reports R-CENSUS-1, 2, 8, and 9 as passed and the status as
+  `ready_with_caveats:holdout_breadth_after_identity` alone, hiding the
+  shortfall that O-7 names.
+
+Option A round (`eb8c5a5`):
 
 - Guard-necessity check (retained): removing the unregistered-rule refusal
   from `read_seal` fails `test_a_seal_with_an_unknown_rule_version_is_refused`,
@@ -259,6 +287,7 @@ committed seal adds one mapped file under `docs/`.
 
 ## 10. Next gate
 
-Owner decisions O-7 and O-8 (and the O-3 residual). After them, a-3 reruns
-the build and census from the private manifest; M4.7b-2 stays blocked on a-3
-and must align the runner registration with the Option A seal.
+M4.7b-2: freeze `docs/preregistrations/m4_7_sp500_pit_rerun_v1.json` with the
+Option A seal, `census_json_sha256` `608fd1b1…1c40`, `seal_confirmed_sha256`
+`b7f9380f…f506`, the runner's calibrated protocol, and the O-1, O-3, and O-6
+values, before any discovery-window computation.

@@ -12,6 +12,42 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7a-3 closed as ready_with_caveats under owner decisions O-7 and O-8
+
+- Source: the owner's O-7 and O-8 decisions (Option 1, recorded in
+  `docs/decision_log.md`), relayed by the coordinator on 2026-09-26.
+- Code (`9fd7734`): `SEAL_RULES` gains `accepted_shortfall` (Option A: 6.9
+  in-band years, 32 IC months, 25 gap windows, excluded 0.45, unpriced 0.40;
+  v1: none). `derive_readiness` maps a R-CENSUS-1, 2, 8, or 9 miss inside the
+  bounds to `ready_with_caveats:coverage_shortfall_accepted`, keeps each
+  rule's registered `passed` flag, composes the status from every caveat, and
+  publishes the bounds; the census markdown names each failing rule. The
+  runner registers `MIN_IC_MONTHS = 32`, `MIN_HALF_MONTHS = 16`,
+  `SPY.US_eod_dates_v1`, support caps 25 and 0.45, and
+  `o8_disposition = re_ratified_diagnostic_only`, and `bind_snapshot`
+  refuses a registered calendar source that differs from the snapshot seal;
+  the runner fixture seals with the registered calendar source.
+- Tests: `test_option_a_accepted_shortfall_reads_ready_with_caveats`, six
+  beyond-bound cases in `test_option_a_shortfall_beyond_the_accepted_bounds_blocks`,
+  `test_registered_calendar_source_must_match_the_snapshot_seal`, and the
+  Option A seal-rule assertions. `test_sign_stability_needs_sixteen_months_per_half`
+  and `test_t_reg_5_halves_and_ic_mde` moved their edges from 24 and 60 to
+  the owner-set 16 and 32; `test_t_census_4_readiness_truth_table` still
+  checks the v1 rule at 60 IC months and 16 in-band years.
+- Census rerun on `real_v1` from `9fd7734` (build and terminal artifacts
+  unchanged): readiness
+  `ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity`,
+  JSON SHA-256 `608fd1b1…1c40`; confirmed seal `b7f9380f…f506`. Against the
+  blocked census only the four rule results, the status, the thresholds block,
+  and `code_commit` changed.
+- Ablation: removing the runner calendar-source guard fails its test, so the
+  guard stays. Simplification attempt (rejected): overwriting the registered
+  thresholds with the accepted values removes the caveat branch but reports
+  R-CENSUS-1, 2, 8, and 9 as passed and the status as
+  `ready_with_caveats:holdout_breadth_after_identity` alone, hiding the
+  shortfall that O-7 names.
+- Verification: see `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
 ## 2026-09-26 - M4.7a-3 resumed under Option A: pipeline complete, census blocked
 
 - Source: the owner's O-3 decision (Option A, recorded in

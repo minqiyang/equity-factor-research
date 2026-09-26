@@ -3,11 +3,12 @@
 Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or profitability claim.
 
 - Snapshot id: `real_v1`
-- Code commit: `eb8c5a5997e06cfce6054ece04eddb52efcc5124`
+- Code commit: `9fd77349408f43ec22e564ae06c9ab8ec26fa476`
 - Seal: prospective SHA-256 `93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882`; holdout end `2020-07-31`
 - Seal rule: `earliest_available_year_from_raw_membership_counts_option_a_v1` (minimum in-band years 7, latest holdout end None, minimum IC months 48)
+- Owner-accepted shortfall bounds: {'owner_decision': 'O-7 2026-09-26', 'min_in_band_years': 6.9, 'min_ic_months': 32, 'max_gap_windows': 25, 'max_excluded_fraction': 0.45, 'max_unpriced_fraction': 0.4}
 - Calendar source: `SPY.US_eod_dates_v1`
-- Readiness: `blocked` (blocked:insufficient_in_band_history, blocked:excluded_coverage, ready_with_caveats:holdout_breadth_after_identity, blocked:insufficient_ic_months, blocked:unpriced_eligible_member_days)
+- Readiness: `ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity` (R-CENSUS-1 ready_with_caveats:coverage_shortfall_accepted, R-CENSUS-2 ready_with_caveats:coverage_shortfall_accepted, R-CENSUS-7 ready_with_caveats:holdout_breadth_after_identity, R-CENSUS-8 ready_with_caveats:coverage_shortfall_accepted, R-CENSUS-9 ready_with_caveats:coverage_shortfall_accepted)
 - manifest_sha256: `ffa760532bc553a0f290c1bb04d4b1c0bd60163e6df70571737d6df3cc9335c7`
 - discovery_inputs_sha256: `2395bc5af73dcffb8ab9d77acf9691ee9c83e08b03b8c107c275d08351c403e7`
 - segments_sha256: `6b014b13a9f5017e0f5d0b383079f16b5d2915a24fe9a8862fa14e88a8ba5933`
