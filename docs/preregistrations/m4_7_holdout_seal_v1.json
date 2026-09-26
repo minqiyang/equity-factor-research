@@ -1,0 +1,141 @@
+{
+  "authorization_reference": "2026-09-26 - M4.7a-3 owner-authorized local private data run",
+  "automated_integrity_checks_over_holdout_rows": {
+    "checks": [
+      "date_structure",
+      "positive_prices",
+      "non_negative_volume",
+      "ohlc_relations",
+      "split_ratio_positive_finite",
+      "dividend_value_non_negative_finite"
+    ],
+    "date_structure_refusals": {
+      "dividends": 0,
+      "eod": 0,
+      "splits": 0
+    },
+    "design_impact": "none_by_construction",
+    "files_passed": {
+      "dividends": 815,
+      "eod": 815,
+      "splits": 815
+    },
+    "files_quarantined": {
+      "dividends": 0,
+      "eod": 0,
+      "splits": 0
+    }
+  },
+  "band": [
+    470,
+    530
+  ],
+  "bar_date_source": {
+    "columns": [
+      "date"
+    ],
+    "files": "dates/<CODE>.US.parquet",
+    "purposes": [
+      "E1",
+      "E2",
+      "E6",
+      "exit_class",
+      "first_bar",
+      "last_bar",
+      "bar_presence"
+    ],
+    "reader": "read_bar_dates",
+    "written_before_value_validation": true
+  },
+  "byte_scans": [
+    {
+      "files": [
+        "raw/**",
+        "eod/**",
+        "splits/**",
+        "dividends/**",
+        "dates/**",
+        "calendar/**",
+        "manifest.json",
+        "retrieval_log.jsonl"
+      ],
+      "parsing": "none",
+      "scan": "token_leak_scan",
+      "values_interpreted": "none"
+    }
+  ],
+  "calendar_source": "SPY.US_eod_dates_v1",
+  "classification": "sealed_holdout",
+  "confirmation": {
+    "census_json_sha256": "608fd1b1dd633e8985ea07537f6a944777cb38d684e86e7c75ada11ddc2d1c40",
+    "identity_adjusted_min_month_end_count": 468,
+    "seal_prospective_sha256": "93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882",
+    "status": "caveat"
+  },
+  "coverage_start_rule": "coverage_start_tolerant_3_isolated_v1",
+  "coverage_start_strict": "2019-07-31",
+  "entry_counts": {
+    "degenerate_interval": 0,
+    "entry_missing_field": 143,
+    "entry_unparseable_date": 0,
+    "exact_duplicate_collapsed": 0,
+    "raw_entries": 818,
+    "raw_overlap": 0,
+    "retained": 675
+  },
+  "holdout_end_exclusive": "2020-07-31",
+  "holdout_start": "2019-07-31",
+  "holdout_value_files_never_opened_downstream": [
+    "raw/eod/*.json",
+    "raw/index/GSPC.INDX.eod.json",
+    "raw/splits/*.json",
+    "raw/dividends/*.json",
+    "eod/holdout/*",
+    "splits/holdout/*",
+    "dividends/holdout/*",
+    "quarantine/**"
+  ],
+  "inputs": {
+    "components_raw_sha256": "a5cb356f71666bf04e2db5a3e016cd17fcf72272cd50036cc90bc813981040ad",
+    "components_retrieved_utc_date": "2026-08-07"
+  },
+  "metadata_fields_accessed": [
+    "Code",
+    "Name",
+    "StartDate",
+    "EndDate",
+    "IsActiveNow",
+    "IsDelisted",
+    "manifest.snapshot.components_retrieved_utc_date"
+  ],
+  "prior_exposures": [
+    {
+      "kind": "static_50_name_cohort",
+      "window": "2016-08-08..2026-08-07"
+    },
+    {
+      "kind": "csv_validation",
+      "window": "2018-01-02..2026-06-26"
+    },
+    {
+      "kind": "historical_evaluation",
+      "window": "2025-05-01..2026-05-31"
+    }
+  ],
+  "retrieval_order": [
+    "components",
+    "symbols",
+    "seal",
+    "calendar",
+    "splits",
+    "eod",
+    "dividends",
+    "verify"
+  ],
+  "rule_version": "earliest_available_year_from_raw_membership_counts_option_a_v1",
+  "schema_version": "m4_7_holdout_seal_v1",
+  "sealed_at": "2026-09-26T18:08:49Z",
+  "sealing_actor": "GENERAL_EXEC",
+  "tolerance_exceptions": 3,
+  "value_fields_accessed": []
+}

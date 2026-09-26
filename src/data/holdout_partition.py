@@ -32,12 +32,29 @@ MANIFEST_FILE = "manifest.json"
 MEMBERSHIP_FILE = "membership/historical_components_raw.parquet"
 SEAL_SCHEMA_VERSION = "m4_7_holdout_seal_v1"
 SEAL_RULE_VERSION = "earliest_available_decade_from_raw_membership_counts_v1"
+SEAL_RULE_OPTION_A = "earliest_available_year_from_raw_membership_counts_option_a_v1"
 COVERAGE_START_RULE = "coverage_start_tolerant_3_isolated_v1"
 BAND = (470, 530)
 HARD_BAND = (450, 560)
 TOLERANCE_EXCEPTIONS = 3
-HOLDOUT_YEARS = 10
-LATEST_HOLDOUT_END = date(2014, 1, 1)
+# Parameters per seal rule. The v1 decade rule is the plan 1.4 default. Option A
+# (owner decision O-3, 2026-09-26) fits the 2019-2026 in-band history of the local
+# EODHD components response: a one-year holdout, no prior-exposure cap (the overlap
+# is stated in the seal record), and census minima of 7 in-band years (1 holdout,
+# 1 warm-up, 5 discovery) and 48 IC months. ``accepted_shortfall`` holds the bounds
+# the owner accepted under O-7 (2026-09-26) after the first Option A census: a
+# census value that misses its registered threshold but stays inside these bounds
+# reads ``ready_with_caveats:coverage_shortfall_accepted`` instead of ``blocked``.
+SEAL_RULES: dict[str, dict[str, Any]] = {
+    SEAL_RULE_VERSION: {"holdout_years": 10, "latest_holdout_end": date(2014, 1, 1),
+                        "min_in_band_years": 16, "min_ic_months": 60, "accepted_shortfall": None},
+    SEAL_RULE_OPTION_A: {"holdout_years": 1, "latest_holdout_end": None,
+                         "min_in_band_years": 7, "min_ic_months": 48,
+                         "accepted_shortfall": {"owner_decision": "O-7 2026-09-26", "min_in_band_years": 6.9,
+                                                "min_ic_months": 32, "max_gap_windows": 25,
+                                                "max_excluded_fraction": 0.45, "max_unpriced_fraction": 0.40}},
+}
+DEFAULT_CALENDAR_SOURCE = "GSPC.INDX_eod_dates_v1"
 RETRIEVAL_ORDER = (
     "components",
     "symbols",
@@ -132,8 +149,8 @@ def read_authorized_parquet(
     return pd.read_parquet(io.BytesIO(payload), engine="pyarrow")
 
 
-def read_holdout_end(snapshot_dir: Path) -> date:
-    """Return the sealed ``holdout_end_exclusive``; refuse when no seal exists."""
+def read_seal(snapshot_dir: Path) -> dict[str, Any]:
+    """Return the seal record; refuse when no well-formed seal exists."""
 
     path = Path(snapshot_dir) / SEAL_FILE
     if not path.is_file():
@@ -142,7 +159,15 @@ def read_holdout_end(snapshot_dir: Path) -> date:
     holdout_end = parse_strict_date(record.get("holdout_end_exclusive"))
     if record.get("schema_version") != SEAL_SCHEMA_VERSION or holdout_end is None:
         raise SnapshotRefusal("holdout_seal_missing", "seal record is not m4_7_holdout_seal_v1")
-    return holdout_end
+    if record.get("rule_version") not in SEAL_RULES:
+        raise SnapshotRefusal("holdout_seal_missing", f"unknown seal rule {record.get('rule_version')!r}")
+    return record
+
+
+def read_holdout_end(snapshot_dir: Path) -> date:
+    """Return the sealed ``holdout_end_exclusive``; refuse when no seal exists."""
+
+    return date.fromisoformat(read_seal(snapshot_dir)["holdout_end_exclusive"])
 
 
 def classify_membership_entries(
@@ -267,8 +292,9 @@ def coverage_start(counts: list[tuple[date, int]], tolerance: int) -> date | Non
 def derive_holdout_window(
     frame: pd.DataFrame,
     components_retrieved_utc_date: date,
+    rule_version: str = SEAL_RULE_VERSION,
 ) -> dict[str, Any]:
-    """Derive the holdout window; refuse a window ending after 2014-01-01."""
+    """Derive the holdout window under ``rule_version``; refuse a window ending after its cap."""
 
     entries, entry_counts = parse_membership_entries(frame, components_retrieved_utc_date)
     counts = monthly_raw_counts(entries, components_retrieved_utc_date)
@@ -276,11 +302,13 @@ def derive_holdout_window(
     strict = coverage_start(counts, 0)
     if tolerant is None:
         raise SnapshotRefusal("coverage_start_undefined", "no month-end meets the band rule")
-    holdout_end = _add_years_to_month_end(tolerant, HOLDOUT_YEARS)
-    if holdout_end > LATEST_HOLDOUT_END:
+    rule = SEAL_RULES[rule_version]
+    holdout_end = _add_years_to_month_end(tolerant, rule["holdout_years"])
+    cap = rule["latest_holdout_end"]
+    if cap is not None and holdout_end > cap:
         raise SnapshotRefusal(
             "holdout_overlaps_prior_exposure",
-            f"holdout_end {holdout_end.isoformat()} is after {LATEST_HOLDOUT_END.isoformat()}",
+            f"holdout_end {holdout_end.isoformat()} is after {cap.isoformat()}",
         )
     return {
         "holdout_start": tolerant.isoformat(),
@@ -298,12 +326,14 @@ def build_prospective_seal(
     sealed_at: str,
     sealing_actor: str,
     authorization_reference: str,
+    rule_version: str = SEAL_RULE_VERSION,
+    calendar_source: str = DEFAULT_CALENDAR_SOURCE,
 ) -> dict[str, Any]:
     """Assemble the plan 5.4 seal record with ``confirmation.status = pending``."""
 
     return {
         "schema_version": SEAL_SCHEMA_VERSION,
-        "rule_version": SEAL_RULE_VERSION,
+        "rule_version": rule_version,
         "coverage_start_rule": COVERAGE_START_RULE,
         "holdout_start": window["holdout_start"],
         "holdout_end_exclusive": window["holdout_end_exclusive"],
@@ -311,6 +341,7 @@ def build_prospective_seal(
         "band": list(BAND),
         "tolerance_exceptions": TOLERANCE_EXCEPTIONS,
         "entry_counts": window["entry_counts"],
+        "calendar_source": calendar_source,
         "sealed_at": sealed_at,
         "sealing_actor": sealing_actor,
         "authorization_reference": authorization_reference,
@@ -397,6 +428,8 @@ def write_prospective_seal(
     sealed_at: str,
     sealing_actor: str,
     authorization_reference: str,
+    rule_version: str = SEAL_RULE_VERSION,
+    calendar_source: str = DEFAULT_CALENDAR_SOURCE,
 ) -> tuple[dict[str, Any], str]:
     """Derive and write ``holdout_seal_v1.json``; return the record and its SHA-256.
 
@@ -416,7 +449,7 @@ def write_prospective_seal(
         raise SnapshotRefusal("holdout_seal_missing", "components membership is not retrieved")
     payload = read_authorized_bytes(snapshot_dir, MEMBERSHIP_FILE, manifest)
     frame = pd.read_parquet(io.BytesIO(payload), engine="pyarrow")
-    window = derive_holdout_window(frame, retrieved)
+    window = derive_holdout_window(frame, retrieved, rule_version)
     record = build_prospective_seal(
         window,
         components_raw_sha256=sha256_bytes(payload),
@@ -424,6 +457,8 @@ def write_prospective_seal(
         sealed_at=sealed_at,
         sealing_actor=sealing_actor,
         authorization_reference=authorization_reference,
+        rule_version=rule_version,
+        calendar_source=calendar_source,
     )
     body = seal_bytes(record)
     temporary = target.with_name(target.name + ".tmp")

@@ -1,0 +1,5243 @@
+{
+  "calendar": {
+    "calendar_rows": 8438,
+    "calendar_source": "SPY.US_eod_dates_v1",
+    "max_reset_to_reset_rows": 23,
+    "off_calendar_bar_rows": 6
+  },
+  "census_readiness": {
+    "failures": [
+      {
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
+        "rule": "R-CENSUS-1"
+      },
+      {
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
+        "rule": "R-CENSUS-2"
+      },
+      {
+        "result": "ready_with_caveats:holdout_breadth_after_identity",
+        "rule": "R-CENSUS-7"
+      },
+      {
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
+        "rule": "R-CENSUS-8"
+      },
+      {
+        "result": "ready_with_caveats:coverage_shortfall_accepted",
+        "rule": "R-CENSUS-9"
+      }
+    ],
+    "inputs": {
+      "benchmark_complete": true,
+      "calendar_covers_coverage_start": true,
+      "excluded_fraction": 0.384180790960452,
+      "gap_window_count": 20,
+      "holdout_band_after_identity": false,
+      "holdout_end": "2020-07-31",
+      "ic_month_supply": 32,
+      "identity_refusal_fraction": 0.003493795630499783,
+      "in_band_years": 6.916666666666667,
+      "off_calendar_fraction": 7.518928903514598e-06,
+      "retrieval_complete": true,
+      "snapshot_integrity": true,
+      "unpriced_fraction": 0.32969776080925756
+    },
+    "rules": {
+      "R-CENSUS-1": {
+        "passed": false
+      },
+      "R-CENSUS-10": {
+        "passed": true
+      },
+      "R-CENSUS-2": {
+        "passed": false
+      },
+      "R-CENSUS-3": {
+        "passed": true
+      },
+      "R-CENSUS-4": {
+        "passed": true
+      },
+      "R-CENSUS-5": {
+        "passed": true
+      },
+      "R-CENSUS-6": {
+        "passed": true
+      },
+      "R-CENSUS-7": {
+        "passed": false
+      },
+      "R-CENSUS-8": {
+        "passed": false
+      },
+      "R-CENSUS-9": {
+        "passed": false
+      }
+    },
+    "status": "ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity",
+    "thresholds": {
+      "accepted_shortfall": {
+        "max_excluded_fraction": 0.45,
+        "max_gap_windows": 25,
+        "max_unpriced_fraction": 0.4,
+        "min_ic_months": 32,
+        "min_in_band_years": 6.9,
+        "owner_decision": "O-7 2026-09-26"
+      },
+      "latest_holdout_end": null,
+      "min_ic_months": 48,
+      "min_in_band_years": 7,
+      "seal_rule_version": "earliest_available_year_from_raw_membership_counts_option_a_v1"
+    }
+  },
+  "code_commit": "9fd77349408f43ec22e564ae06c9ab8ec26fa476",
+  "corporate_actions": {
+    "corporate_action_partitions_quarantined": {
+      "dividends_discovery_quarantined": 0,
+      "dividends_holdout_quarantined": 0,
+      "eod_discovery_quarantined": 2,
+      "eod_holdout_quarantined": 0,
+      "splits_discovery_quarantined": 0,
+      "splits_holdout_quarantined": 0
+    },
+    "discontinuities_without_split": 0,
+    "discovery_years": {
+      "2020": {
+        "dividend_rows": 642,
+        "split_rows": 8
+      },
+      "2021": {
+        "dividend_rows": 1474,
+        "split_rows": 21
+      },
+      "2022": {
+        "dividend_rows": 1538,
+        "split_rows": 18
+      },
+      "2023": {
+        "dividend_rows": 1556,
+        "split_rows": 7
+      },
+      "2024": {
+        "dividend_rows": 1563,
+        "split_rows": 24
+      },
+      "2025": {
+        "dividend_rows": 1578,
+        "split_rows": 12
+      },
+      "2026": {
+        "dividend_rows": 886,
+        "split_rows": 12
+      }
+    },
+    "dividend_rows": 9237,
+    "dividend_tables_by_status": {
+      "retrieved": 815,
+      "unavailable:missing_symbol": 4
+    },
+    "e5_not_evaluated_holdout_rows": 2054,
+    "split_evidence_basis_counts": {
+      "discovery_split_table": 815,
+      "none": 4
+    },
+    "split_rows": 102,
+    "split_tables_by_status": {
+      "retrieved": 815,
+      "unavailable:missing_symbol": 4
+    },
+    "splits_without_discontinuity": 22
+  },
+  "discovery_overlap_with_prior_exposures": {
+    "historical_evaluation": {
+      "fraction_of_ic_months": 0.0625,
+      "note": "the prior exposure covered 50 names",
+      "window": "2025-05-01..2026-05-31"
+    },
+    "static_50_name_cohort": {
+      "fraction_of_ic_months": 1.0,
+      "note": "the prior exposure covered 50 names",
+      "window": "2016-08-08..2026-08-07"
+    }
+  },
+  "discovery_window": {
+    "D0": "2021-08-31",
+    "D_end": "2026-06-30",
+    "D_last": "2026-08-07",
+    "holdout_end": "2020-07-31"
+  },
+  "ever_members": {
+    "acquirer_only_ids": 0,
+    "episodes_per_code": {
+      "1": 800,
+      "2": 6,
+      "22": 1,
+      "3": 2,
+      "31": 1,
+      "4": 1,
+      "7": 1
+    },
+    "ever_member_codes": 818,
+    "intervals_per_episode": {
+      "1": 663
+    },
+    "membership_intervals": 818,
+    "permanent_ids": 882
+  },
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "exclusion_set": {
+    "excluded_fraction": 0.384180790960452,
+    "excluded_rows": 476,
+    "gap_window_count": 20,
+    "gap_windows": [
+      {
+        "end_month": "2021-12",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 11,
+        "start_month": "2021-12"
+      },
+      {
+        "end_month": "2022-03",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 23,
+        "start_month": "2022-02"
+      },
+      {
+        "end_month": "2022-06",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 14,
+        "start_month": "2022-06"
+      },
+      {
+        "end_month": "2022-10",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 19,
+        "start_month": "2022-10"
+      },
+      {
+        "end_month": "2022-12",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 3,
+        "start_month": "2022-12"
+      },
+      {
+        "end_month": "2023-03",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 15,
+        "start_month": "2023-03"
+      },
+      {
+        "end_month": "2023-04",
+        "reason_types": [
+          "missing_bar"
+        ],
+        "rows": 15,
+        "start_month": "2023-04"
+      },
+      {
+        "end_month": "2023-05",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 19,
+        "start_month": "2023-05"
+      },
+      {
+        "end_month": "2023-10",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 11,
+        "start_month": "2023-10"
+      },
+      {
+        "end_month": "2024-05",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 19,
+        "start_month": "2024-05"
+      },
+      {
+        "end_month": "2024-11",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 3,
+        "start_month": "2024-11"
+      },
+      {
+        "end_month": "2024-12",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 8,
+        "start_month": "2024-12"
+      },
+      {
+        "end_month": "2025-05",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 8,
+        "start_month": "2025-05"
+      },
+      {
+        "end_month": "2025-07",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 19,
+        "start_month": "2025-07"
+      },
+      {
+        "end_month": "2025-09",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 21,
+        "start_month": "2025-08"
+      },
+      {
+        "end_month": "2025-12",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 22,
+        "start_month": "2025-11"
+      },
+      {
+        "end_month": "2026-02",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 15,
+        "start_month": "2026-02"
+      },
+      {
+        "end_month": "2026-04",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 16,
+        "start_month": "2026-04"
+      },
+      {
+        "end_month": "2026-05",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 14,
+        "start_month": "2026-05"
+      },
+      {
+        "end_month": "2026-08",
+        "reason_types": [
+          "unresolved_delisting"
+        ],
+        "rows": 1,
+        "start_month": "2026-08"
+      }
+    ],
+    "min_segment_rows": 42,
+    "missing_bar_cells": 1,
+    "segment_count": 21,
+    "segments": [
+      {
+        "first_month": "2021-08",
+        "last_month": "2021-12",
+        "measured_rows": 74,
+        "valid": true
+      },
+      {
+        "first_month": "2021-12",
+        "last_month": "2022-02",
+        "measured_rows": 39,
+        "valid": false
+      },
+      {
+        "first_month": "2022-03",
+        "last_month": "2022-06",
+        "measured_rows": 48,
+        "valid": true
+      },
+      {
+        "first_month": "2022-06",
+        "last_month": "2022-10",
+        "measured_rows": 66,
+        "valid": true
+      },
+      {
+        "first_month": "2022-10",
+        "last_month": "2022-12",
+        "measured_rows": 39,
+        "valid": false
+      },
+      {
+        "first_month": "2022-12",
+        "last_month": "2023-03",
+        "measured_rows": 47,
+        "valid": true
+      },
+      {
+        "first_month": "2023-03",
+        "last_month": "2023-04",
+        "measured_rows": 4,
+        "valid": false
+      },
+      {
+        "first_month": "2023-04",
+        "last_month": "2023-05",
+        "measured_rows": 3,
+        "valid": false
+      },
+      {
+        "first_month": "2023-05",
+        "last_month": "2023-10",
+        "measured_rows": 95,
+        "valid": true
+      },
+      {
+        "first_month": "2023-10",
+        "last_month": "2024-05",
+        "measured_rows": 127,
+        "valid": true
+      },
+      {
+        "first_month": "2024-05",
+        "last_month": "2024-11",
+        "measured_rows": 123,
+        "valid": true
+      },
+      {
+        "first_month": "2024-11",
+        "last_month": "2024-12",
+        "measured_rows": 13,
+        "valid": false
+      },
+      {
+        "first_month": "2024-12",
+        "last_month": "2025-05",
+        "measured_rows": 94,
+        "valid": true
+      },
+      {
+        "first_month": "2025-05",
+        "last_month": "2025-07",
+        "measured_rows": 23,
+        "valid": false
+      },
+      {
+        "first_month": "2025-07",
+        "last_month": "2025-08",
+        "measured_rows": 21,
+        "valid": false
+      },
+      {
+        "first_month": "2025-09",
+        "last_month": "2025-11",
+        "measured_rows": 42,
+        "valid": true
+      },
+      {
+        "first_month": "2025-12",
+        "last_month": "2026-02",
+        "measured_rows": 24,
+        "valid": false
+      },
+      {
+        "first_month": "2026-02",
+        "last_month": "2026-04",
+        "measured_rows": 27,
+        "valid": false
+      },
+      {
+        "first_month": "2026-04",
+        "last_month": "2026-05",
+        "measured_rows": 6,
+        "valid": false
+      },
+      {
+        "first_month": "2026-05",
+        "last_month": "2026-08",
+        "measured_rows": 47,
+        "valid": true
+      },
+      {
+        "first_month": "2026-08",
+        "last_month": "2026-08",
+        "measured_rows": 1,
+        "valid": false
+      }
+    ],
+    "segments_sha256": "6b014b13a9f5017e0f5d0b383079f16b5d2915a24fe9a8862fa14e88a8ba5933",
+    "terminal_reset_cells": 0,
+    "unresolved_events": 24
+  },
+  "exits": {
+    "delisting_candidate_episodes": 47,
+    "delisting_candidate_intervals": 47,
+    "exits_by_class": {
+      "delisting_candidate": 47,
+      "disappearance_outside_membership": 24,
+      "index_removal_still_trading": 592
+    },
+    "exits_by_class_by_year": {
+      "2012": {
+        "disappearance_outside_membership": 2
+      },
+      "2014": {
+        "disappearance_outside_membership": 1,
+        "index_removal_still_trading": 1
+      },
+      "2015": {
+        "delisting_candidate": 4,
+        "disappearance_outside_membership": 1,
+        "index_removal_still_trading": 1
+      },
+      "2016": {
+        "delisting_candidate": 6,
+        "disappearance_outside_membership": 2,
+        "index_removal_still_trading": 7
+      },
+      "2017": {
+        "delisting_candidate": 2,
+        "disappearance_outside_membership": 5,
+        "index_removal_still_trading": 7
+      },
+      "2018": {
+        "delisting_candidate": 4,
+        "disappearance_outside_membership": 2,
+        "index_removal_still_trading": 7
+      },
+      "2019": {
+        "delisting_candidate": 2,
+        "disappearance_outside_membership": 3,
+        "index_removal_still_trading": 6
+      },
+      "2020": {
+        "delisting_candidate": 1,
+        "disappearance_outside_membership": 3,
+        "index_removal_still_trading": 4
+      },
+      "2021": {
+        "delisting_candidate": 4,
+        "disappearance_outside_membership": 2,
+        "index_removal_still_trading": 9
+      },
+      "2022": {
+        "delisting_candidate": 6,
+        "index_removal_still_trading": 8
+      },
+      "2023": {
+        "delisting_candidate": 3,
+        "disappearance_outside_membership": 2,
+        "index_removal_still_trading": 7
+      },
+      "2024": {
+        "delisting_candidate": 3,
+        "disappearance_outside_membership": 1,
+        "index_removal_still_trading": 12
+      },
+      "2025": {
+        "delisting_candidate": 7,
+        "index_removal_still_trading": 12
+      },
+      "2026": {
+        "delisting_candidate": 5,
+        "index_removal_still_trading": 511
+      }
+    }
+  },
+  "formal_universe_evidence_eligible": false,
+  "holdout_metrics_scope": "metadata_only",
+  "ic_supply": {
+    "ic_month_supply": 32,
+    "ic_months_horizon_unmeasured": 10,
+    "ic_months_in_dropped_segment": 16,
+    "ic_months_in_gap": 3
+  },
+  "identity": {
+    "entry_refusals_by_code": {
+      "entry_missing_field": 143
+    },
+    "exact_duplicate_entries_collapsed": 0,
+    "identity_refusals_by_code": {
+      "ambiguous_reuse_discontinuity": {
+        "intervals": 2,
+        "member_days": 310
+      },
+      "no_containing_episode": {
+        "intervals": 2,
+        "member_days": 2478
+      },
+      "no_containing_episode:no_bars_in_interval": {
+        "intervals": 5,
+        "member_days": 2
+      },
+      "no_containing_episode:no_vendor_bars:missing_symbol": {
+        "intervals": 3,
+        "member_days": 14
+      }
+    },
+    "name_mismatch_recorded": 0,
+    "rekeyed_rename_candidate_member_days": 0,
+    "rekeyed_rename_candidates": 0
+  },
+  "in_span_distribution_support": {
+    "b_d": {
+      "max": 0.06158019855770058,
+      "median": 0.004605331893814403,
+      "p90": 0.013300995098455408
+    },
+    "fraction_of_eligible_member_days": 0.6910429527269197,
+    "member_days": 427068,
+    "member_days_s_d_above_0_05": 178859,
+    "s_d": {
+      "max": 0.3690846735460174,
+      "median": 0.026009951257084055,
+      "p90": 0.12368797276555338
+    },
+    "written_episodes_with_declared_distribution_pair": 452
+  },
+  "membership_breadth": {
+    "coverage_start_confirmed": "2019-09-30",
+    "coverage_start_sealed": "2019-07-31",
+    "coverage_start_strict": "2019-09-30",
+    "identity_adjusted_min_holdout_month_end_count": 468,
+    "in_band_years": 6.916666666666667,
+    "members_per_date_by_year": {
+      "1993": {
+        "dates_below_band": 234,
+        "max": 131,
+        "median": 128.0,
+        "min": 0
+      },
+      "1994": {
+        "dates_below_band": 252,
+        "max": 138,
+        "median": 135.0,
+        "min": 131
+      },
+      "1995": {
+        "dates_below_band": 252,
+        "max": 146,
+        "median": 144.0,
+        "min": 138
+      },
+      "1996": {
+        "dates_below_band": 254,
+        "max": 148,
+        "median": 148.0,
+        "min": 146
+      },
+      "1997": {
+        "dates_below_band": 253,
+        "max": 161,
+        "median": 153.0,
+        "min": 148
+      },
+      "1998": {
+        "dates_below_band": 252,
+        "max": 173,
+        "median": 167.0,
+        "min": 162
+      },
+      "1999": {
+        "dates_below_band": 252,
+        "max": 183,
+        "median": 178.0,
+        "min": 173
+      },
+      "2000": {
+        "dates_below_band": 252,
+        "max": 193,
+        "median": 186.0,
+        "min": 183
+      },
+      "2001": {
+        "dates_below_band": 248,
+        "max": 202,
+        "median": 197.0,
+        "min": 193
+      },
+      "2002": {
+        "dates_below_band": 252,
+        "max": 215,
+        "median": 204.0,
+        "min": 202
+      },
+      "2003": {
+        "dates_below_band": 252,
+        "max": 221,
+        "median": 218.0,
+        "min": 215
+      },
+      "2004": {
+        "dates_below_band": 252,
+        "max": 227,
+        "median": 224.0,
+        "min": 221
+      },
+      "2005": {
+        "dates_below_band": 252,
+        "max": 234,
+        "median": 228.5,
+        "min": 227
+      },
+      "2006": {
+        "dates_below_band": 251,
+        "max": 243,
+        "median": 239.0,
+        "min": 234
+      },
+      "2007": {
+        "dates_below_band": 251,
+        "max": 259,
+        "median": 249.0,
+        "min": 243
+      },
+      "2008": {
+        "dates_below_band": 253,
+        "max": 279,
+        "median": 264.0,
+        "min": 259
+      },
+      "2009": {
+        "dates_below_band": 252,
+        "max": 297,
+        "median": 288.0,
+        "min": 280
+      },
+      "2010": {
+        "dates_below_band": 252,
+        "max": 311,
+        "median": 304.0,
+        "min": 297
+      },
+      "2011": {
+        "dates_below_band": 252,
+        "max": 328,
+        "median": 317.0,
+        "min": 311
+      },
+      "2012": {
+        "dates_below_band": 250,
+        "max": 343,
+        "median": 334.5,
+        "min": 328
+      },
+      "2013": {
+        "dates_below_band": 252,
+        "max": 362,
+        "median": 351.0,
+        "min": 343
+      },
+      "2014": {
+        "dates_below_band": 252,
+        "max": 376,
+        "median": 370.5,
+        "min": 362
+      },
+      "2015": {
+        "dates_below_band": 252,
+        "max": 398,
+        "median": 384.5,
+        "min": 376
+      },
+      "2016": {
+        "dates_below_band": 252,
+        "max": 421,
+        "median": 412.5,
+        "min": 398
+      },
+      "2017": {
+        "dates_below_band": 251,
+        "max": 444,
+        "median": 434.0,
+        "min": 421
+      },
+      "2018": {
+        "dates_below_band": 251,
+        "max": 458,
+        "median": 450.0,
+        "min": 443
+      },
+      "2019": {
+        "dates_below_band": 183,
+        "max": 474,
+        "median": 466.0,
+        "min": 458
+      },
+      "2020": {
+        "dates_below_band": 0,
+        "max": 484,
+        "median": 479.0,
+        "min": 474
+      },
+      "2021": {
+        "dates_below_band": 0,
+        "max": 492,
+        "median": 489.0,
+        "min": 484
+      },
+      "2022": {
+        "dates_below_band": 0,
+        "max": 496,
+        "median": 494.0,
+        "min": 492
+      },
+      "2023": {
+        "dates_below_band": 0,
+        "max": 502,
+        "median": 498.0,
+        "min": 495
+      },
+      "2024": {
+        "dates_below_band": 0,
+        "max": 503,
+        "median": 501.0,
+        "min": 501
+      },
+      "2025": {
+        "dates_below_band": 0,
+        "max": 503,
+        "median": 502.0,
+        "min": 502
+      },
+      "2026": {
+        "dates_below_band": 0,
+        "max": 503,
+        "median": 502.0,
+        "min": 502
+      }
+    },
+    "members_per_month_end": [
+      {
+        "count": 53,
+        "month": "1957-03",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-04",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-05",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-06",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-07",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-08",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-09",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-10",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-11",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1957-12",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1958-01",
+        "status": "below_band"
+      },
+      {
+        "count": 53,
+        "month": "1958-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1958-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1959-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1960-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1961-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1962-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-05",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-06",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-07",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-08",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-09",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-10",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-11",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1963-12",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1964-01",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1964-02",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1964-03",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1964-04",
+        "status": "below_band"
+      },
+      {
+        "count": 54,
+        "month": "1964-05",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-06",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-07",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-08",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-09",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-10",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-11",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1964-12",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1965-01",
+        "status": "below_band"
+      },
+      {
+        "count": 55,
+        "month": "1965-02",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-03",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-04",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-05",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-06",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-07",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-08",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-09",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-10",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-11",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1965-12",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-01",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-02",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-03",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-04",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-05",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-06",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-07",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-08",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-09",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-10",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-11",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1966-12",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-01",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-02",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-03",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-04",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-05",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-06",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-07",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-08",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-09",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-10",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-11",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1967-12",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-01",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-02",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-03",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-04",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-05",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-06",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-07",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-08",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-09",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-10",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-11",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1968-12",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1969-01",
+        "status": "below_band"
+      },
+      {
+        "count": 57,
+        "month": "1969-02",
+        "status": "below_band"
+      },
+      {
+        "count": 58,
+        "month": "1969-03",
+        "status": "below_band"
+      },
+      {
+        "count": 58,
+        "month": "1969-04",
+        "status": "below_band"
+      },
+      {
+        "count": 58,
+        "month": "1969-05",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-06",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-07",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-08",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-09",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-10",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-11",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1969-12",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1970-01",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1970-02",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1970-03",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1970-04",
+        "status": "below_band"
+      },
+      {
+        "count": 59,
+        "month": "1970-05",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-06",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-07",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-08",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-09",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-10",
+        "status": "below_band"
+      },
+      {
+        "count": 60,
+        "month": "1970-11",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1970-12",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-01",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-02",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-03",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-04",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-05",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-06",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-07",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-08",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-09",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-10",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-11",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1971-12",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-01",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-02",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-03",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-04",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-05",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-06",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-07",
+        "status": "below_band"
+      },
+      {
+        "count": 61,
+        "month": "1972-08",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1972-09",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1972-10",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1972-11",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1972-12",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1973-01",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1973-02",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1973-03",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1973-04",
+        "status": "below_band"
+      },
+      {
+        "count": 63,
+        "month": "1973-05",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-06",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-07",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-08",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-09",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-10",
+        "status": "below_band"
+      },
+      {
+        "count": 64,
+        "month": "1973-11",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1973-12",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-01",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-02",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-03",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-04",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-05",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-06",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-07",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-08",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-09",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-10",
+        "status": "below_band"
+      },
+      {
+        "count": 65,
+        "month": "1974-11",
+        "status": "below_band"
+      },
+      {
+        "count": 66,
+        "month": "1974-12",
+        "status": "below_band"
+      },
+      {
+        "count": 66,
+        "month": "1975-01",
+        "status": "below_band"
+      },
+      {
+        "count": 66,
+        "month": "1975-02",
+        "status": "below_band"
+      },
+      {
+        "count": 67,
+        "month": "1975-03",
+        "status": "below_band"
+      },
+      {
+        "count": 67,
+        "month": "1975-04",
+        "status": "below_band"
+      },
+      {
+        "count": 67,
+        "month": "1975-05",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-06",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-07",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-08",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-09",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-10",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-11",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1975-12",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1976-01",
+        "status": "below_band"
+      },
+      {
+        "count": 68,
+        "month": "1976-02",
+        "status": "below_band"
+      },
+      {
+        "count": 69,
+        "month": "1976-03",
+        "status": "below_band"
+      },
+      {
+        "count": 69,
+        "month": "1976-04",
+        "status": "below_band"
+      },
+      {
+        "count": 69,
+        "month": "1976-05",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-06",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-07",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-08",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-09",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-10",
+        "status": "below_band"
+      },
+      {
+        "count": 77,
+        "month": "1976-11",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1976-12",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-01",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-02",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-03",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-04",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-05",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-06",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-07",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-08",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-09",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-10",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-11",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1977-12",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-01",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-02",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-03",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-04",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-05",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-06",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-07",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-08",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-09",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-10",
+        "status": "below_band"
+      },
+      {
+        "count": 79,
+        "month": "1978-11",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1978-12",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1979-01",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1979-02",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1979-03",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1979-04",
+        "status": "below_band"
+      },
+      {
+        "count": 80,
+        "month": "1979-05",
+        "status": "below_band"
+      },
+      {
+        "count": 81,
+        "month": "1979-06",
+        "status": "below_band"
+      },
+      {
+        "count": 81,
+        "month": "1979-07",
+        "status": "below_band"
+      },
+      {
+        "count": 81,
+        "month": "1979-08",
+        "status": "below_band"
+      },
+      {
+        "count": 81,
+        "month": "1979-09",
+        "status": "below_band"
+      },
+      {
+        "count": 82,
+        "month": "1979-10",
+        "status": "below_band"
+      },
+      {
+        "count": 82,
+        "month": "1979-11",
+        "status": "below_band"
+      },
+      {
+        "count": 83,
+        "month": "1979-12",
+        "status": "below_band"
+      },
+      {
+        "count": 83,
+        "month": "1980-01",
+        "status": "below_band"
+      },
+      {
+        "count": 83,
+        "month": "1980-02",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-03",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-04",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-05",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-06",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-07",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-08",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-09",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-10",
+        "status": "below_band"
+      },
+      {
+        "count": 84,
+        "month": "1980-11",
+        "status": "below_band"
+      },
+      {
+        "count": 86,
+        "month": "1980-12",
+        "status": "below_band"
+      },
+      {
+        "count": 86,
+        "month": "1981-01",
+        "status": "below_band"
+      },
+      {
+        "count": 86,
+        "month": "1981-02",
+        "status": "below_band"
+      },
+      {
+        "count": 87,
+        "month": "1981-03",
+        "status": "below_band"
+      },
+      {
+        "count": 87,
+        "month": "1981-04",
+        "status": "below_band"
+      },
+      {
+        "count": 87,
+        "month": "1981-05",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-06",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-07",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-08",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-09",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-10",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-11",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1981-12",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-01",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-02",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-03",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-04",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-05",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-06",
+        "status": "below_band"
+      },
+      {
+        "count": 89,
+        "month": "1982-07",
+        "status": "below_band"
+      },
+      {
+        "count": 90,
+        "month": "1982-08",
+        "status": "below_band"
+      },
+      {
+        "count": 92,
+        "month": "1982-09",
+        "status": "below_band"
+      },
+      {
+        "count": 93,
+        "month": "1982-10",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1982-11",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1982-12",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-01",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-02",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-03",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-04",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-05",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-06",
+        "status": "below_band"
+      },
+      {
+        "count": 94,
+        "month": "1983-07",
+        "status": "below_band"
+      },
+      {
+        "count": 95,
+        "month": "1983-08",
+        "status": "below_band"
+      },
+      {
+        "count": 96,
+        "month": "1983-09",
+        "status": "below_band"
+      },
+      {
+        "count": 96,
+        "month": "1983-10",
+        "status": "below_band"
+      },
+      {
+        "count": 98,
+        "month": "1983-11",
+        "status": "below_band"
+      },
+      {
+        "count": 98,
+        "month": "1983-12",
+        "status": "below_band"
+      },
+      {
+        "count": 98,
+        "month": "1984-01",
+        "status": "below_band"
+      },
+      {
+        "count": 99,
+        "month": "1984-02",
+        "status": "below_band"
+      },
+      {
+        "count": 99,
+        "month": "1984-03",
+        "status": "below_band"
+      },
+      {
+        "count": 100,
+        "month": "1984-04",
+        "status": "below_band"
+      },
+      {
+        "count": 101,
+        "month": "1984-05",
+        "status": "below_band"
+      },
+      {
+        "count": 101,
+        "month": "1984-06",
+        "status": "below_band"
+      },
+      {
+        "count": 101,
+        "month": "1984-07",
+        "status": "below_band"
+      },
+      {
+        "count": 101,
+        "month": "1984-08",
+        "status": "below_band"
+      },
+      {
+        "count": 102,
+        "month": "1984-09",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1984-10",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1984-11",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1984-12",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1985-01",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1985-02",
+        "status": "below_band"
+      },
+      {
+        "count": 103,
+        "month": "1985-03",
+        "status": "below_band"
+      },
+      {
+        "count": 105,
+        "month": "1985-04",
+        "status": "below_band"
+      },
+      {
+        "count": 106,
+        "month": "1985-05",
+        "status": "below_band"
+      },
+      {
+        "count": 106,
+        "month": "1985-06",
+        "status": "below_band"
+      },
+      {
+        "count": 107,
+        "month": "1985-07",
+        "status": "below_band"
+      },
+      {
+        "count": 107,
+        "month": "1985-08",
+        "status": "below_band"
+      },
+      {
+        "count": 108,
+        "month": "1985-09",
+        "status": "below_band"
+      },
+      {
+        "count": 109,
+        "month": "1985-10",
+        "status": "below_band"
+      },
+      {
+        "count": 110,
+        "month": "1985-11",
+        "status": "below_band"
+      },
+      {
+        "count": 110,
+        "month": "1985-12",
+        "status": "below_band"
+      },
+      {
+        "count": 110,
+        "month": "1986-01",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-02",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-03",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-04",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-05",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-06",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-07",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-08",
+        "status": "below_band"
+      },
+      {
+        "count": 111,
+        "month": "1986-09",
+        "status": "below_band"
+      },
+      {
+        "count": 112,
+        "month": "1986-10",
+        "status": "below_band"
+      },
+      {
+        "count": 112,
+        "month": "1986-11",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1986-12",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-01",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-02",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-03",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-04",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-05",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-06",
+        "status": "below_band"
+      },
+      {
+        "count": 113,
+        "month": "1987-07",
+        "status": "below_band"
+      },
+      {
+        "count": 114,
+        "month": "1987-08",
+        "status": "below_band"
+      },
+      {
+        "count": 114,
+        "month": "1987-09",
+        "status": "below_band"
+      },
+      {
+        "count": 114,
+        "month": "1987-10",
+        "status": "below_band"
+      },
+      {
+        "count": 114,
+        "month": "1987-11",
+        "status": "below_band"
+      },
+      {
+        "count": 115,
+        "month": "1987-12",
+        "status": "below_band"
+      },
+      {
+        "count": 115,
+        "month": "1988-01",
+        "status": "below_band"
+      },
+      {
+        "count": 115,
+        "month": "1988-02",
+        "status": "below_band"
+      },
+      {
+        "count": 116,
+        "month": "1988-03",
+        "status": "below_band"
+      },
+      {
+        "count": 117,
+        "month": "1988-04",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-05",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-06",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-07",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-08",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-09",
+        "status": "below_band"
+      },
+      {
+        "count": 118,
+        "month": "1988-10",
+        "status": "below_band"
+      },
+      {
+        "count": 119,
+        "month": "1988-11",
+        "status": "below_band"
+      },
+      {
+        "count": 119,
+        "month": "1988-12",
+        "status": "below_band"
+      },
+      {
+        "count": 120,
+        "month": "1989-01",
+        "status": "below_band"
+      },
+      {
+        "count": 120,
+        "month": "1989-02",
+        "status": "below_band"
+      },
+      {
+        "count": 120,
+        "month": "1989-03",
+        "status": "below_band"
+      },
+      {
+        "count": 121,
+        "month": "1989-04",
+        "status": "below_band"
+      },
+      {
+        "count": 121,
+        "month": "1989-05",
+        "status": "below_band"
+      },
+      {
+        "count": 121,
+        "month": "1989-06",
+        "status": "below_band"
+      },
+      {
+        "count": 121,
+        "month": "1989-07",
+        "status": "below_band"
+      },
+      {
+        "count": 122,
+        "month": "1989-08",
+        "status": "below_band"
+      },
+      {
+        "count": 123,
+        "month": "1989-09",
+        "status": "below_band"
+      },
+      {
+        "count": 123,
+        "month": "1989-10",
+        "status": "below_band"
+      },
+      {
+        "count": 123,
+        "month": "1989-11",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1989-12",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-01",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-02",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-03",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-04",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-05",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-06",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-07",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-08",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-09",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-10",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-11",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1990-12",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-01",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-02",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-03",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-04",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-05",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-06",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-07",
+        "status": "below_band"
+      },
+      {
+        "count": 124,
+        "month": "1991-08",
+        "status": "below_band"
+      },
+      {
+        "count": 125,
+        "month": "1991-09",
+        "status": "below_band"
+      },
+      {
+        "count": 125,
+        "month": "1991-10",
+        "status": "below_band"
+      },
+      {
+        "count": 125,
+        "month": "1991-11",
+        "status": "below_band"
+      },
+      {
+        "count": 125,
+        "month": "1991-12",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-01",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-02",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-03",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-04",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-05",
+        "status": "below_band"
+      },
+      {
+        "count": 126,
+        "month": "1992-06",
+        "status": "below_band"
+      },
+      {
+        "count": 127,
+        "month": "1992-07",
+        "status": "below_band"
+      },
+      {
+        "count": 127,
+        "month": "1992-08",
+        "status": "below_band"
+      },
+      {
+        "count": 127,
+        "month": "1992-09",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1992-10",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1992-11",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1992-12",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-01",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-02",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-03",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-04",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-05",
+        "status": "below_band"
+      },
+      {
+        "count": 128,
+        "month": "1993-06",
+        "status": "below_band"
+      },
+      {
+        "count": 129,
+        "month": "1993-07",
+        "status": "below_band"
+      },
+      {
+        "count": 129,
+        "month": "1993-08",
+        "status": "below_band"
+      },
+      {
+        "count": 129,
+        "month": "1993-09",
+        "status": "below_band"
+      },
+      {
+        "count": 130,
+        "month": "1993-10",
+        "status": "below_band"
+      },
+      {
+        "count": 130,
+        "month": "1993-11",
+        "status": "below_band"
+      },
+      {
+        "count": 131,
+        "month": "1993-12",
+        "status": "below_band"
+      },
+      {
+        "count": 132,
+        "month": "1994-01",
+        "status": "below_band"
+      },
+      {
+        "count": 132,
+        "month": "1994-02",
+        "status": "below_band"
+      },
+      {
+        "count": 133,
+        "month": "1994-03",
+        "status": "below_band"
+      },
+      {
+        "count": 133,
+        "month": "1994-04",
+        "status": "below_band"
+      },
+      {
+        "count": 133,
+        "month": "1994-05",
+        "status": "below_band"
+      },
+      {
+        "count": 134,
+        "month": "1994-06",
+        "status": "below_band"
+      },
+      {
+        "count": 136,
+        "month": "1994-07",
+        "status": "below_band"
+      },
+      {
+        "count": 136,
+        "month": "1994-08",
+        "status": "below_band"
+      },
+      {
+        "count": 138,
+        "month": "1994-09",
+        "status": "below_band"
+      },
+      {
+        "count": 138,
+        "month": "1994-10",
+        "status": "below_band"
+      },
+      {
+        "count": 138,
+        "month": "1994-11",
+        "status": "below_band"
+      },
+      {
+        "count": 138,
+        "month": "1994-12",
+        "status": "below_band"
+      },
+      {
+        "count": 138,
+        "month": "1995-01",
+        "status": "below_band"
+      },
+      {
+        "count": 140,
+        "month": "1995-02",
+        "status": "below_band"
+      },
+      {
+        "count": 142,
+        "month": "1995-03",
+        "status": "below_band"
+      },
+      {
+        "count": 142,
+        "month": "1995-04",
+        "status": "below_band"
+      },
+      {
+        "count": 144,
+        "month": "1995-05",
+        "status": "below_band"
+      },
+      {
+        "count": 144,
+        "month": "1995-06",
+        "status": "below_band"
+      },
+      {
+        "count": 145,
+        "month": "1995-07",
+        "status": "below_band"
+      },
+      {
+        "count": 145,
+        "month": "1995-08",
+        "status": "below_band"
+      },
+      {
+        "count": 145,
+        "month": "1995-09",
+        "status": "below_band"
+      },
+      {
+        "count": 145,
+        "month": "1995-10",
+        "status": "below_band"
+      },
+      {
+        "count": 145,
+        "month": "1995-11",
+        "status": "below_band"
+      },
+      {
+        "count": 146,
+        "month": "1995-12",
+        "status": "below_band"
+      },
+      {
+        "count": 146,
+        "month": "1996-01",
+        "status": "below_band"
+      },
+      {
+        "count": 146,
+        "month": "1996-02",
+        "status": "below_band"
+      },
+      {
+        "count": 147,
+        "month": "1996-03",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-04",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-05",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-06",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-07",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-08",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-09",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-10",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-11",
+        "status": "below_band"
+      },
+      {
+        "count": 148,
+        "month": "1996-12",
+        "status": "below_band"
+      },
+      {
+        "count": 149,
+        "month": "1997-01",
+        "status": "below_band"
+      },
+      {
+        "count": 149,
+        "month": "1997-02",
+        "status": "below_band"
+      },
+      {
+        "count": 149,
+        "month": "1997-03",
+        "status": "below_band"
+      },
+      {
+        "count": 149,
+        "month": "1997-04",
+        "status": "below_band"
+      },
+      {
+        "count": 151,
+        "month": "1997-05",
+        "status": "below_band"
+      },
+      {
+        "count": 153,
+        "month": "1997-06",
+        "status": "below_band"
+      },
+      {
+        "count": 154,
+        "month": "1997-07",
+        "status": "below_band"
+      },
+      {
+        "count": 156,
+        "month": "1997-08",
+        "status": "below_band"
+      },
+      {
+        "count": 157,
+        "month": "1997-09",
+        "status": "below_band"
+      },
+      {
+        "count": 158,
+        "month": "1997-10",
+        "status": "below_band"
+      },
+      {
+        "count": 159,
+        "month": "1997-11",
+        "status": "below_band"
+      },
+      {
+        "count": 162,
+        "month": "1997-12",
+        "status": "below_band"
+      },
+      {
+        "count": 163,
+        "month": "1998-01",
+        "status": "below_band"
+      },
+      {
+        "count": 163,
+        "month": "1998-02",
+        "status": "below_band"
+      },
+      {
+        "count": 163,
+        "month": "1998-03",
+        "status": "below_band"
+      },
+      {
+        "count": 164,
+        "month": "1998-04",
+        "status": "below_band"
+      },
+      {
+        "count": 165,
+        "month": "1998-05",
+        "status": "below_band"
+      },
+      {
+        "count": 165,
+        "month": "1998-06",
+        "status": "below_band"
+      },
+      {
+        "count": 167,
+        "month": "1998-07",
+        "status": "below_band"
+      },
+      {
+        "count": 169,
+        "month": "1998-08",
+        "status": "below_band"
+      },
+      {
+        "count": 169,
+        "month": "1998-09",
+        "status": "below_band"
+      },
+      {
+        "count": 171,
+        "month": "1998-10",
+        "status": "below_band"
+      },
+      {
+        "count": 172,
+        "month": "1998-11",
+        "status": "below_band"
+      },
+      {
+        "count": 173,
+        "month": "1998-12",
+        "status": "below_band"
+      },
+      {
+        "count": 174,
+        "month": "1999-01",
+        "status": "below_band"
+      },
+      {
+        "count": 174,
+        "month": "1999-02",
+        "status": "below_band"
+      },
+      {
+        "count": 174,
+        "month": "1999-03",
+        "status": "below_band"
+      },
+      {
+        "count": 174,
+        "month": "1999-04",
+        "status": "below_band"
+      },
+      {
+        "count": 175,
+        "month": "1999-05",
+        "status": "below_band"
+      },
+      {
+        "count": 178,
+        "month": "1999-06",
+        "status": "below_band"
+      },
+      {
+        "count": 179,
+        "month": "1999-07",
+        "status": "below_band"
+      },
+      {
+        "count": 179,
+        "month": "1999-08",
+        "status": "below_band"
+      },
+      {
+        "count": 179,
+        "month": "1999-09",
+        "status": "below_band"
+      },
+      {
+        "count": 181,
+        "month": "1999-10",
+        "status": "below_band"
+      },
+      {
+        "count": 182,
+        "month": "1999-11",
+        "status": "below_band"
+      },
+      {
+        "count": 183,
+        "month": "1999-12",
+        "status": "below_band"
+      },
+      {
+        "count": 183,
+        "month": "2000-01",
+        "status": "below_band"
+      },
+      {
+        "count": 183,
+        "month": "2000-02",
+        "status": "below_band"
+      },
+      {
+        "count": 184,
+        "month": "2000-03",
+        "status": "below_band"
+      },
+      {
+        "count": 184,
+        "month": "2000-04",
+        "status": "below_band"
+      },
+      {
+        "count": 184,
+        "month": "2000-05",
+        "status": "below_band"
+      },
+      {
+        "count": 186,
+        "month": "2000-06",
+        "status": "below_band"
+      },
+      {
+        "count": 186,
+        "month": "2000-07",
+        "status": "below_band"
+      },
+      {
+        "count": 187,
+        "month": "2000-08",
+        "status": "below_band"
+      },
+      {
+        "count": 187,
+        "month": "2000-09",
+        "status": "below_band"
+      },
+      {
+        "count": 187,
+        "month": "2000-10",
+        "status": "below_band"
+      },
+      {
+        "count": 189,
+        "month": "2000-11",
+        "status": "below_band"
+      },
+      {
+        "count": 193,
+        "month": "2000-12",
+        "status": "below_band"
+      },
+      {
+        "count": 193,
+        "month": "2001-01",
+        "status": "below_band"
+      },
+      {
+        "count": 193,
+        "month": "2001-02",
+        "status": "below_band"
+      },
+      {
+        "count": 195,
+        "month": "2001-03",
+        "status": "below_band"
+      },
+      {
+        "count": 196,
+        "month": "2001-04",
+        "status": "below_band"
+      },
+      {
+        "count": 196,
+        "month": "2001-05",
+        "status": "below_band"
+      },
+      {
+        "count": 197,
+        "month": "2001-06",
+        "status": "below_band"
+      },
+      {
+        "count": 197,
+        "month": "2001-07",
+        "status": "below_band"
+      },
+      {
+        "count": 199,
+        "month": "2001-08",
+        "status": "below_band"
+      },
+      {
+        "count": 199,
+        "month": "2001-09",
+        "status": "below_band"
+      },
+      {
+        "count": 200,
+        "month": "2001-10",
+        "status": "below_band"
+      },
+      {
+        "count": 201,
+        "month": "2001-11",
+        "status": "below_band"
+      },
+      {
+        "count": 202,
+        "month": "2001-12",
+        "status": "below_band"
+      },
+      {
+        "count": 203,
+        "month": "2002-01",
+        "status": "below_band"
+      },
+      {
+        "count": 203,
+        "month": "2002-02",
+        "status": "below_band"
+      },
+      {
+        "count": 203,
+        "month": "2002-03",
+        "status": "below_band"
+      },
+      {
+        "count": 203,
+        "month": "2002-04",
+        "status": "below_band"
+      },
+      {
+        "count": 203,
+        "month": "2002-05",
+        "status": "below_band"
+      },
+      {
+        "count": 204,
+        "month": "2002-06",
+        "status": "below_band"
+      },
+      {
+        "count": 211,
+        "month": "2002-07",
+        "status": "below_band"
+      },
+      {
+        "count": 212,
+        "month": "2002-08",
+        "status": "below_band"
+      },
+      {
+        "count": 212,
+        "month": "2002-09",
+        "status": "below_band"
+      },
+      {
+        "count": 212,
+        "month": "2002-10",
+        "status": "below_band"
+      },
+      {
+        "count": 213,
+        "month": "2002-11",
+        "status": "below_band"
+      },
+      {
+        "count": 215,
+        "month": "2002-12",
+        "status": "below_band"
+      },
+      {
+        "count": 215,
+        "month": "2003-01",
+        "status": "below_band"
+      },
+      {
+        "count": 215,
+        "month": "2003-02",
+        "status": "below_band"
+      },
+      {
+        "count": 218,
+        "month": "2003-03",
+        "status": "below_band"
+      },
+      {
+        "count": 218,
+        "month": "2003-04",
+        "status": "below_band"
+      },
+      {
+        "count": 218,
+        "month": "2003-05",
+        "status": "below_band"
+      },
+      {
+        "count": 218,
+        "month": "2003-06",
+        "status": "below_band"
+      },
+      {
+        "count": 219,
+        "month": "2003-07",
+        "status": "below_band"
+      },
+      {
+        "count": 219,
+        "month": "2003-08",
+        "status": "below_band"
+      },
+      {
+        "count": 220,
+        "month": "2003-09",
+        "status": "below_band"
+      },
+      {
+        "count": 220,
+        "month": "2003-10",
+        "status": "below_band"
+      },
+      {
+        "count": 221,
+        "month": "2003-11",
+        "status": "below_band"
+      },
+      {
+        "count": 221,
+        "month": "2003-12",
+        "status": "below_band"
+      },
+      {
+        "count": 221,
+        "month": "2004-01",
+        "status": "below_band"
+      },
+      {
+        "count": 222,
+        "month": "2004-02",
+        "status": "below_band"
+      },
+      {
+        "count": 222,
+        "month": "2004-03",
+        "status": "below_band"
+      },
+      {
+        "count": 223,
+        "month": "2004-04",
+        "status": "below_band"
+      },
+      {
+        "count": 223,
+        "month": "2004-05",
+        "status": "below_band"
+      },
+      {
+        "count": 223,
+        "month": "2004-06",
+        "status": "below_band"
+      },
+      {
+        "count": 224,
+        "month": "2004-07",
+        "status": "below_band"
+      },
+      {
+        "count": 225,
+        "month": "2004-08",
+        "status": "below_band"
+      },
+      {
+        "count": 226,
+        "month": "2004-09",
+        "status": "below_band"
+      },
+      {
+        "count": 226,
+        "month": "2004-10",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2004-11",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2004-12",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2005-01",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2005-02",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2005-03",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2005-04",
+        "status": "below_band"
+      },
+      {
+        "count": 227,
+        "month": "2005-05",
+        "status": "below_band"
+      },
+      {
+        "count": 228,
+        "month": "2005-06",
+        "status": "below_band"
+      },
+      {
+        "count": 229,
+        "month": "2005-07",
+        "status": "below_band"
+      },
+      {
+        "count": 231,
+        "month": "2005-08",
+        "status": "below_band"
+      },
+      {
+        "count": 231,
+        "month": "2005-09",
+        "status": "below_band"
+      },
+      {
+        "count": 233,
+        "month": "2005-10",
+        "status": "below_band"
+      },
+      {
+        "count": 234,
+        "month": "2005-11",
+        "status": "below_band"
+      },
+      {
+        "count": 234,
+        "month": "2005-12",
+        "status": "below_band"
+      },
+      {
+        "count": 235,
+        "month": "2006-01",
+        "status": "below_band"
+      },
+      {
+        "count": 236,
+        "month": "2006-02",
+        "status": "below_band"
+      },
+      {
+        "count": 236,
+        "month": "2006-03",
+        "status": "below_band"
+      },
+      {
+        "count": 238,
+        "month": "2006-04",
+        "status": "below_band"
+      },
+      {
+        "count": 238,
+        "month": "2006-05",
+        "status": "below_band"
+      },
+      {
+        "count": 239,
+        "month": "2006-06",
+        "status": "below_band"
+      },
+      {
+        "count": 239,
+        "month": "2006-07",
+        "status": "below_band"
+      },
+      {
+        "count": 240,
+        "month": "2006-08",
+        "status": "below_band"
+      },
+      {
+        "count": 240,
+        "month": "2006-09",
+        "status": "below_band"
+      },
+      {
+        "count": 240,
+        "month": "2006-10",
+        "status": "below_band"
+      },
+      {
+        "count": 243,
+        "month": "2006-11",
+        "status": "below_band"
+      },
+      {
+        "count": 243,
+        "month": "2006-12",
+        "status": "below_band"
+      },
+      {
+        "count": 244,
+        "month": "2007-01",
+        "status": "below_band"
+      },
+      {
+        "count": 245,
+        "month": "2007-02",
+        "status": "below_band"
+      },
+      {
+        "count": 247,
+        "month": "2007-03",
+        "status": "below_band"
+      },
+      {
+        "count": 248,
+        "month": "2007-04",
+        "status": "below_band"
+      },
+      {
+        "count": 248,
+        "month": "2007-05",
+        "status": "below_band"
+      },
+      {
+        "count": 248,
+        "month": "2007-06",
+        "status": "below_band"
+      },
+      {
+        "count": 250,
+        "month": "2007-07",
+        "status": "below_band"
+      },
+      {
+        "count": 250,
+        "month": "2007-08",
+        "status": "below_band"
+      },
+      {
+        "count": 252,
+        "month": "2007-09",
+        "status": "below_band"
+      },
+      {
+        "count": 256,
+        "month": "2007-10",
+        "status": "below_band"
+      },
+      {
+        "count": 257,
+        "month": "2007-11",
+        "status": "below_band"
+      },
+      {
+        "count": 259,
+        "month": "2007-12",
+        "status": "below_band"
+      },
+      {
+        "count": 259,
+        "month": "2008-01",
+        "status": "below_band"
+      },
+      {
+        "count": 259,
+        "month": "2008-02",
+        "status": "below_band"
+      },
+      {
+        "count": 261,
+        "month": "2008-03",
+        "status": "below_band"
+      },
+      {
+        "count": 261,
+        "month": "2008-04",
+        "status": "below_band"
+      },
+      {
+        "count": 261,
+        "month": "2008-05",
+        "status": "below_band"
+      },
+      {
+        "count": 264,
+        "month": "2008-06",
+        "status": "below_band"
+      },
+      {
+        "count": 266,
+        "month": "2008-07",
+        "status": "below_band"
+      },
+      {
+        "count": 268,
+        "month": "2008-08",
+        "status": "below_band"
+      },
+      {
+        "count": 273,
+        "month": "2008-09",
+        "status": "below_band"
+      },
+      {
+        "count": 275,
+        "month": "2008-10",
+        "status": "below_band"
+      },
+      {
+        "count": 278,
+        "month": "2008-11",
+        "status": "below_band"
+      },
+      {
+        "count": 280,
+        "month": "2008-12",
+        "status": "below_band"
+      },
+      {
+        "count": 282,
+        "month": "2009-01",
+        "status": "below_band"
+      },
+      {
+        "count": 282,
+        "month": "2009-02",
+        "status": "below_band"
+      },
+      {
+        "count": 285,
+        "month": "2009-03",
+        "status": "below_band"
+      },
+      {
+        "count": 285,
+        "month": "2009-04",
+        "status": "below_band"
+      },
+      {
+        "count": 285,
+        "month": "2009-05",
+        "status": "below_band"
+      },
+      {
+        "count": 286,
+        "month": "2009-06",
+        "status": "below_band"
+      },
+      {
+        "count": 289,
+        "month": "2009-07",
+        "status": "below_band"
+      },
+      {
+        "count": 290,
+        "month": "2009-08",
+        "status": "below_band"
+      },
+      {
+        "count": 291,
+        "month": "2009-09",
+        "status": "below_band"
+      },
+      {
+        "count": 291,
+        "month": "2009-10",
+        "status": "below_band"
+      },
+      {
+        "count": 292,
+        "month": "2009-11",
+        "status": "below_band"
+      },
+      {
+        "count": 297,
+        "month": "2009-12",
+        "status": "below_band"
+      },
+      {
+        "count": 298,
+        "month": "2010-01",
+        "status": "below_band"
+      },
+      {
+        "count": 300,
+        "month": "2010-02",
+        "status": "below_band"
+      },
+      {
+        "count": 301,
+        "month": "2010-03",
+        "status": "below_band"
+      },
+      {
+        "count": 302,
+        "month": "2010-04",
+        "status": "below_band"
+      },
+      {
+        "count": 302,
+        "month": "2010-05",
+        "status": "below_band"
+      },
+      {
+        "count": 304,
+        "month": "2010-06",
+        "status": "below_band"
+      },
+      {
+        "count": 305,
+        "month": "2010-07",
+        "status": "below_band"
+      },
+      {
+        "count": 306,
+        "month": "2010-08",
+        "status": "below_band"
+      },
+      {
+        "count": 306,
+        "month": "2010-09",
+        "status": "below_band"
+      },
+      {
+        "count": 306,
+        "month": "2010-10",
+        "status": "below_band"
+      },
+      {
+        "count": 307,
+        "month": "2010-11",
+        "status": "below_band"
+      },
+      {
+        "count": 311,
+        "month": "2010-12",
+        "status": "below_band"
+      },
+      {
+        "count": 311,
+        "month": "2011-01",
+        "status": "below_band"
+      },
+      {
+        "count": 312,
+        "month": "2011-02",
+        "status": "below_band"
+      },
+      {
+        "count": 313,
+        "month": "2011-03",
+        "status": "below_band"
+      },
+      {
+        "count": 315,
+        "month": "2011-04",
+        "status": "below_band"
+      },
+      {
+        "count": 315,
+        "month": "2011-05",
+        "status": "below_band"
+      },
+      {
+        "count": 316,
+        "month": "2011-06",
+        "status": "below_band"
+      },
+      {
+        "count": 319,
+        "month": "2011-07",
+        "status": "below_band"
+      },
+      {
+        "count": 319,
+        "month": "2011-08",
+        "status": "below_band"
+      },
+      {
+        "count": 320,
+        "month": "2011-09",
+        "status": "below_band"
+      },
+      {
+        "count": 322,
+        "month": "2011-10",
+        "status": "below_band"
+      },
+      {
+        "count": 323,
+        "month": "2011-11",
+        "status": "below_band"
+      },
+      {
+        "count": 329,
+        "month": "2011-12",
+        "status": "below_band"
+      },
+      {
+        "count": 329,
+        "month": "2012-01",
+        "status": "below_band"
+      },
+      {
+        "count": 329,
+        "month": "2012-02",
+        "status": "below_band"
+      },
+      {
+        "count": 329,
+        "month": "2012-03",
+        "status": "below_band"
+      },
+      {
+        "count": 330,
+        "month": "2012-04",
+        "status": "below_band"
+      },
+      {
+        "count": 333,
+        "month": "2012-05",
+        "status": "below_band"
+      },
+      {
+        "count": 335,
+        "month": "2012-06",
+        "status": "below_band"
+      },
+      {
+        "count": 336,
+        "month": "2012-07",
+        "status": "below_band"
+      },
+      {
+        "count": 336,
+        "month": "2012-08",
+        "status": "below_band"
+      },
+      {
+        "count": 337,
+        "month": "2012-09",
+        "status": "below_band"
+      },
+      {
+        "count": 340,
+        "month": "2012-10",
+        "status": "below_band"
+      },
+      {
+        "count": 340,
+        "month": "2012-11",
+        "status": "below_band"
+      },
+      {
+        "count": 343,
+        "month": "2012-12",
+        "status": "below_band"
+      },
+      {
+        "count": 344,
+        "month": "2013-01",
+        "status": "below_band"
+      },
+      {
+        "count": 345,
+        "month": "2013-02",
+        "status": "below_band"
+      },
+      {
+        "count": 345,
+        "month": "2013-03",
+        "status": "below_band"
+      },
+      {
+        "count": 345,
+        "month": "2013-04",
+        "status": "below_band"
+      },
+      {
+        "count": 348,
+        "month": "2013-05",
+        "status": "below_band"
+      },
+      {
+        "count": 350,
+        "month": "2013-06",
+        "status": "below_band"
+      },
+      {
+        "count": 352,
+        "month": "2013-07",
+        "status": "below_band"
+      },
+      {
+        "count": 352,
+        "month": "2013-08",
+        "status": "below_band"
+      },
+      {
+        "count": 355,
+        "month": "2013-09",
+        "status": "below_band"
+      },
+      {
+        "count": 356,
+        "month": "2013-10",
+        "status": "below_band"
+      },
+      {
+        "count": 357,
+        "month": "2013-11",
+        "status": "below_band"
+      },
+      {
+        "count": 362,
+        "month": "2013-12",
+        "status": "below_band"
+      },
+      {
+        "count": 363,
+        "month": "2014-01",
+        "status": "below_band"
+      },
+      {
+        "count": 363,
+        "month": "2014-02",
+        "status": "below_band"
+      },
+      {
+        "count": 363,
+        "month": "2014-03",
+        "status": "below_band"
+      },
+      {
+        "count": 365,
+        "month": "2014-04",
+        "status": "below_band"
+      },
+      {
+        "count": 368,
+        "month": "2014-05",
+        "status": "below_band"
+      },
+      {
+        "count": 369,
+        "month": "2014-06",
+        "status": "below_band"
+      },
+      {
+        "count": 371,
+        "month": "2014-07",
+        "status": "below_band"
+      },
+      {
+        "count": 372,
+        "month": "2014-08",
+        "status": "below_band"
+      },
+      {
+        "count": 374,
+        "month": "2014-09",
+        "status": "below_band"
+      },
+      {
+        "count": 374,
+        "month": "2014-10",
+        "status": "below_band"
+      },
+      {
+        "count": 375,
+        "month": "2014-11",
+        "status": "below_band"
+      },
+      {
+        "count": 376,
+        "month": "2014-12",
+        "status": "below_band"
+      },
+      {
+        "count": 377,
+        "month": "2015-01",
+        "status": "below_band"
+      },
+      {
+        "count": 377,
+        "month": "2015-02",
+        "status": "below_band"
+      },
+      {
+        "count": 382,
+        "month": "2015-03",
+        "status": "below_band"
+      },
+      {
+        "count": 383,
+        "month": "2015-04",
+        "status": "below_band"
+      },
+      {
+        "count": 383,
+        "month": "2015-05",
+        "status": "below_band"
+      },
+      {
+        "count": 383,
+        "month": "2015-06",
+        "status": "below_band"
+      },
+      {
+        "count": 388,
+        "month": "2015-07",
+        "status": "below_band"
+      },
+      {
+        "count": 389,
+        "month": "2015-08",
+        "status": "below_band"
+      },
+      {
+        "count": 393,
+        "month": "2015-09",
+        "status": "below_band"
+      },
+      {
+        "count": 394,
+        "month": "2015-10",
+        "status": "below_band"
+      },
+      {
+        "count": 398,
+        "month": "2015-11",
+        "status": "below_band"
+      },
+      {
+        "count": 398,
+        "month": "2015-12",
+        "status": "below_band"
+      },
+      {
+        "count": 399,
+        "month": "2016-01",
+        "status": "below_band"
+      },
+      {
+        "count": 402,
+        "month": "2016-02",
+        "status": "below_band"
+      },
+      {
+        "count": 405,
+        "month": "2016-03",
+        "status": "below_band"
+      },
+      {
+        "count": 408,
+        "month": "2016-04",
+        "status": "below_band"
+      },
+      {
+        "count": 412,
+        "month": "2016-05",
+        "status": "below_band"
+      },
+      {
+        "count": 412,
+        "month": "2016-06",
+        "status": "below_band"
+      },
+      {
+        "count": 413,
+        "month": "2016-07",
+        "status": "below_band"
+      },
+      {
+        "count": 413,
+        "month": "2016-08",
+        "status": "below_band"
+      },
+      {
+        "count": 416,
+        "month": "2016-09",
+        "status": "below_band"
+      },
+      {
+        "count": 419,
+        "month": "2016-10",
+        "status": "below_band"
+      },
+      {
+        "count": 419,
+        "month": "2016-11",
+        "status": "below_band"
+      },
+      {
+        "count": 421,
+        "month": "2016-12",
+        "status": "below_band"
+      },
+      {
+        "count": 422,
+        "month": "2017-01",
+        "status": "below_band"
+      },
+      {
+        "count": 423,
+        "month": "2017-02",
+        "status": "below_band"
+      },
+      {
+        "count": 430,
+        "month": "2017-03",
+        "status": "below_band"
+      },
+      {
+        "count": 432,
+        "month": "2017-04",
+        "status": "below_band"
+      },
+      {
+        "count": 432,
+        "month": "2017-05",
+        "status": "below_band"
+      },
+      {
+        "count": 434,
+        "month": "2017-06",
+        "status": "below_band"
+      },
+      {
+        "count": 439,
+        "month": "2017-07",
+        "status": "below_band"
+      },
+      {
+        "count": 441,
+        "month": "2017-08",
+        "status": "below_band"
+      },
+      {
+        "count": 443,
+        "month": "2017-09",
+        "status": "below_band"
+      },
+      {
+        "count": 443,
+        "month": "2017-10",
+        "status": "below_band"
+      },
+      {
+        "count": 443,
+        "month": "2017-11",
+        "status": "below_band"
+      },
+      {
+        "count": 443,
+        "month": "2017-12",
+        "status": "below_band"
+      },
+      {
+        "count": 444,
+        "month": "2018-01",
+        "status": "below_band"
+      },
+      {
+        "count": 444,
+        "month": "2018-02",
+        "status": "below_band"
+      },
+      {
+        "count": 447,
+        "month": "2018-03",
+        "status": "below_band"
+      },
+      {
+        "count": 447,
+        "month": "2018-04",
+        "status": "below_band"
+      },
+      {
+        "count": 448,
+        "month": "2018-05",
+        "status": "below_band"
+      },
+      {
+        "count": 450,
+        "month": "2018-06",
+        "status": "below_band"
+      },
+      {
+        "count": 451,
+        "month": "2018-07",
+        "status": "below_band"
+      },
+      {
+        "count": 451,
+        "month": "2018-08",
+        "status": "below_band"
+      },
+      {
+        "count": 452,
+        "month": "2018-09",
+        "status": "below_band"
+      },
+      {
+        "count": 453,
+        "month": "2018-10",
+        "status": "below_band"
+      },
+      {
+        "count": 455,
+        "month": "2018-11",
+        "status": "below_band"
+      },
+      {
+        "count": 458,
+        "month": "2018-12",
+        "status": "below_band"
+      },
+      {
+        "count": 460,
+        "month": "2019-01",
+        "status": "below_band"
+      },
+      {
+        "count": 461,
+        "month": "2019-02",
+        "status": "below_band"
+      },
+      {
+        "count": 462,
+        "month": "2019-03",
+        "status": "below_band"
+      },
+      {
+        "count": 463,
+        "month": "2019-04",
+        "status": "below_band"
+      },
+      {
+        "count": 463,
+        "month": "2019-05",
+        "status": "below_band"
+      },
+      {
+        "count": 465,
+        "month": "2019-06",
+        "status": "below_band"
+      },
+      {
+        "count": 468,
+        "month": "2019-07",
+        "status": "below_band"
+      },
+      {
+        "count": 469,
+        "month": "2019-08",
+        "status": "below_band"
+      },
+      {
+        "count": 471,
+        "month": "2019-09",
+        "status": "in_band"
+      },
+      {
+        "count": 471,
+        "month": "2019-10",
+        "status": "in_band"
+      },
+      {
+        "count": 472,
+        "month": "2019-11",
+        "status": "in_band"
+      },
+      {
+        "count": 474,
+        "month": "2019-12",
+        "status": "in_band"
+      },
+      {
+        "count": 474,
+        "month": "2020-01",
+        "status": "in_band"
+      },
+      {
+        "count": 474,
+        "month": "2020-02",
+        "status": "in_band"
+      },
+      {
+        "count": 474,
+        "month": "2020-03",
+        "status": "in_band"
+      },
+      {
+        "count": 476,
+        "month": "2020-04",
+        "status": "in_band"
+      },
+      {
+        "count": 477,
+        "month": "2020-05",
+        "status": "in_band"
+      },
+      {
+        "count": 479,
+        "month": "2020-06",
+        "status": "in_band"
+      },
+      {
+        "count": 479,
+        "month": "2020-07",
+        "status": "in_band"
+      },
+      {
+        "count": 479,
+        "month": "2020-08",
+        "status": "in_band"
+      },
+      {
+        "count": 481,
+        "month": "2020-09",
+        "status": "in_band"
+      },
+      {
+        "count": 483,
+        "month": "2020-10",
+        "status": "in_band"
+      },
+      {
+        "count": 483,
+        "month": "2020-11",
+        "status": "in_band"
+      },
+      {
+        "count": 484,
+        "month": "2020-12",
+        "status": "in_band"
+      },
+      {
+        "count": 485,
+        "month": "2021-01",
+        "status": "in_band"
+      },
+      {
+        "count": 485,
+        "month": "2021-02",
+        "status": "in_band"
+      },
+      {
+        "count": 487,
+        "month": "2021-03",
+        "status": "in_band"
+      },
+      {
+        "count": 488,
+        "month": "2021-04",
+        "status": "in_band"
+      },
+      {
+        "count": 489,
+        "month": "2021-05",
+        "status": "in_band"
+      },
+      {
+        "count": 489,
+        "month": "2021-06",
+        "status": "in_band"
+      },
+      {
+        "count": 489,
+        "month": "2021-07",
+        "status": "in_band"
+      },
+      {
+        "count": 489,
+        "month": "2021-08",
+        "status": "in_band"
+      },
+      {
+        "count": 491,
+        "month": "2021-09",
+        "status": "in_band"
+      },
+      {
+        "count": 491,
+        "month": "2021-10",
+        "status": "in_band"
+      },
+      {
+        "count": 491,
+        "month": "2021-11",
+        "status": "in_band"
+      },
+      {
+        "count": 492,
+        "month": "2021-12",
+        "status": "in_band"
+      },
+      {
+        "count": 492,
+        "month": "2022-01",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-02",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-03",
+        "status": "in_band"
+      },
+      {
+        "count": 495,
+        "month": "2022-04",
+        "status": "in_band"
+      },
+      {
+        "count": 495,
+        "month": "2022-05",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-06",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-07",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-08",
+        "status": "in_band"
+      },
+      {
+        "count": 494,
+        "month": "2022-09",
+        "status": "in_band"
+      },
+      {
+        "count": 495,
+        "month": "2022-10",
+        "status": "in_band"
+      },
+      {
+        "count": 495,
+        "month": "2022-11",
+        "status": "in_band"
+      },
+      {
+        "count": 495,
+        "month": "2022-12",
+        "status": "in_band"
+      },
+      {
+        "count": 496,
+        "month": "2023-01",
+        "status": "in_band"
+      },
+      {
+        "count": 496,
+        "month": "2023-02",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-03",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-04",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-05",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-06",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-07",
+        "status": "in_band"
+      },
+      {
+        "count": 498,
+        "month": "2023-08",
+        "status": "in_band"
+      },
+      {
+        "count": 500,
+        "month": "2023-09",
+        "status": "in_band"
+      },
+      {
+        "count": 500,
+        "month": "2023-10",
+        "status": "in_band"
+      },
+      {
+        "count": 500,
+        "month": "2023-11",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2023-12",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-01",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-02",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-03",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-04",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-05",
+        "status": "in_band"
+      },
+      {
+        "count": 501,
+        "month": "2024-06",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2024-07",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2024-08",
+        "status": "in_band"
+      },
+      {
+        "count": 503,
+        "month": "2024-09",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2024-10",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2024-11",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2024-12",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-01",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-02",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-03",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-04",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-05",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-06",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-07",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-08",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-09",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-10",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-11",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2025-12",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-01",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-02",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-03",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-04",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-05",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-06",
+        "status": "in_band"
+      },
+      {
+        "count": 502,
+        "month": "2026-07",
+        "status": "in_band"
+      }
+    ]
+  },
+  "power_projection": {
+    "H_6": 2.45,
+    "T_proj": 32,
+    "alpha_eff": 0.003401360544217687,
+    "band": [
+      {
+        "mde_eff": 0.053323581746959794,
+        "mde_single": 0.03962039811599345,
+        "months_for_mde_eff_0_02": 228,
+        "months_for_mde_single_0_02": 126,
+        "s": 0.08
+      },
+      {
+        "mde_eff": 0.06665447718369975,
+        "mde_single": 0.04952549764499182,
+        "months_for_mde_eff_0_02": 356,
+        "months_for_mde_single_0_02": 197,
+        "s": 0.1
+      },
+      {
+        "mde_eff": 0.0799853726204397,
+        "mde_single": 0.05943059717399018,
+        "months_for_mde_eff_0_02": 512,
+        "months_for_mde_single_0_02": 283,
+        "s": 0.12
+      }
+    ],
+    "kill_reachable_projection": false,
+    "note": "declared prior band for the monthly Rank IC standard deviation; the gate applies realized power",
+    "z_eff": 3.7705466250430484,
+    "z_single": 2.8015852181129683
+  },
+  "premises": {
+    "O-8": "ratified; revisit when member-days with S_D > 0.05 exceed 1 percent of eligible member-days",
+    "VP-1": "served volume carries the split product the prices carry; tested by volume_basis_split_diagnostic",
+    "VP-2": "declared distributions are applied as non-split adjustments by the prior-close formula and no other; ratified under owner item O-8; exposure measured by B_D and S_D",
+    "rounding_selection": "rounding refusals at low adjusted levels select on later splits"
+  },
+  "price_coverage": {
+    "codes_missing_history": {
+      "discovery_partition_quarantined:unverified_split": 1,
+      "retrieved_no_discovery_panel": 113,
+      "unavailable:missing_symbol": 3
+    },
+    "codes_partial_history": 5,
+    "cumulative_basis_drift_refusals_with_declared_distribution": {
+      "episodes": 0,
+      "member_days": 0
+    },
+    "dividend_rows_amount_undefined": 0,
+    "eligible_member_days": 795198,
+    "eligible_unpriced_fraction": 0.32969776080925756,
+    "eligible_unpriced_member_days": {
+      "after_unresolved_disappearance": 25,
+      "entry_unusable_upper_bound": 177177,
+      "no_bars_in_interval": 2,
+      "no_discovery_panel": 83718,
+      "no_vendor_bars:missing_symbol": 14,
+      "post_last_bar_deferred_holdout": 1239
+    },
+    "eligible_unpriced_member_days_total": 262175,
+    "episodes_without_panel_by_reason": {
+      "split_attribution_ambiguous": {
+        "episodes": 1,
+        "member_days": 0
+      },
+      "split_basis_unverified:in_span_step_mismatch": {
+        "episodes": 80,
+        "member_days": 82479
+      },
+      "split_basis_unverified:unexplained_deviation": {
+        "episodes": 2,
+        "member_days": 0
+      }
+    },
+    "failing_pairs_by_dividend_evidence": {
+      "unavailable": 0,
+      "valid": 1598
+    },
+    "failing_pairs_by_kind": {
+      "declared_dividend_pair": 45,
+      "declared_split_pair": 5,
+      "undeclared_step": 1548
+    },
+    "failing_pairs_by_residual_bucket": {
+      "(1e-2,0.15]": 240,
+      "(1e-3,1e-2]": 1358,
+      ">0.15": 0
+    },
+    "identity_refusal_fraction": 0.003493795630499783,
+    "identity_refused_member_days": 2788,
+    "in_span_step_check_by_outcome": {
+      "cumulative_drift": 0,
+      "mismatch": 80,
+      "not_evaluated_no_discovery_bar": 158,
+      "not_evaluated_split_basis_refused": 3,
+      "passed": 639
+    },
+    "member_days_missing_bar": 1280,
+    "member_days_refused_while_dividend_evidence_unavailable": 0,
+    "member_days_total": 618005,
+    "member_days_with_bar": 616725,
+    "refused_max_cumulative_drift_by_bucket": {
+      "(2e-3,1e-2]": 0,
+      ">1e-2": 0
+    },
+    "rounding_refusals_by_min_adjusted_level": {
+      "<0.1": 0,
+      ">=1": 56516,
+      "[0.1,1)": 0
+    },
+    "split_basis_check_by_outcome": {
+      "applied_exact": 3,
+      "not_evaluated_no_discovery_bar": 158,
+      "refused": 3,
+      "unapplied_exact": 716
+    },
+    "split_basis_refusals_with_later_distribution": 2,
+    "split_rows_after_final_bar": {
+      "attributed_applied": 3,
+      "excluded_unapplied": 0,
+      "not_evaluated_no_discovery_bar": 0,
+      "refused": 1
+    },
+    "split_rows_before_first_bar": 1,
+    "split_rows_unattributed": 0,
+    "written_max_cumulative_drift_by_bucket": {
+      "(1e-3,2e-3]": 2,
+      "(1e-4,1e-3]": 70,
+      "[0,1e-4]": 567
+    }
+  },
+  "price_quality": {
+    "discovery_years": {
+      "2020": {
+        "unchanging_price_segments": 258,
+        "zero_volume_member_days": 0
+      },
+      "2021": {
+        "unchanging_price_segments": 556,
+        "zero_volume_member_days": 1
+      },
+      "2022": {
+        "unchanging_price_segments": 481,
+        "zero_volume_member_days": 4
+      },
+      "2023": {
+        "unchanging_price_segments": 644,
+        "zero_volume_member_days": 2
+      },
+      "2024": {
+        "unchanging_price_segments": 678,
+        "zero_volume_member_days": 0
+      },
+      "2025": {
+        "unchanging_price_segments": 611,
+        "zero_volume_member_days": 5
+      },
+      "2026": {
+        "unchanging_price_segments": 261,
+        "zero_volume_member_days": 14
+      }
+    },
+    "unchanging_price_segments": {
+      "assets_affected": 504,
+      "max_run_length": 12,
+      "segment_count": 3498
+    },
+    "zero_volume_member_days": 26
+  },
+  "retrieval": {
+    "incomplete_counts_by_table_and_status": {},
+    "persistent_provider_error_member_days": 0,
+    "retrieval_complete": true,
+    "table_status_counts": {
+      "dividends": {
+        "retrieved": 815,
+        "unavailable:missing_symbol": 4
+      },
+      "eod": {
+        "retrieved": 815,
+        "unavailable:missing_symbol": 4
+      },
+      "splits": {
+        "retrieved": 815,
+        "unavailable:missing_symbol": 4
+      }
+    }
+  },
+  "schema_version": "m4_7_coverage_census_v1",
+  "snapshot_id": "real_v1",
+  "snapshot_identity": {
+    "discovery_inputs_sha256": "2395bc5af73dcffb8ab9d77acf9691ee9c83e08b03b8c107c275d08351c403e7",
+    "engine_events_sha256": "3ac2be6a20d2ece1800a628388e8982986026d4c1f582bd4495a447ce238b54b",
+    "evidence_sha256": "500d2dd883f003a4d2863b2e52d741b94efc827131b4b3bab82ef06268d39f09",
+    "interval_csv_sha256": "303f161f133038f795475ef893cc3eb07d77c426a04790239e2ddd8f9cac6088",
+    "interval_results_sha256": "4dea8819cff3d37f3a752c987916505adf8acdf305a46952f2208c88cb350fef",
+    "manifest_sha256": "ffa760532bc553a0f290c1bb04d4b1c0bd60163e6df70571737d6df3cc9335c7",
+    "seal_prospective_sha256": "93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882",
+    "security_master_sha256": "c2191dbcc7c1d742128c2c382be2f303dadc7ea41e9a69527e6b5e52335078d5",
+    "segments_sha256": "6b014b13a9f5017e0f5d0b383079f16b5d2915a24fe9a8862fa14e88a8ba5933"
+  },
+  "terminal_evidence": {
+    "accepted": 0,
+    "attributed_applied_delisting_candidates": 0,
+    "curated": 0,
+    "deferred_holdout": 20,
+    "delistings_by_consideration_type": {
+      "unresolved": 47
+    },
+    "delistings_by_event_kind": {
+      "unresolved": 47
+    },
+    "settlement_lag_distribution": {},
+    "unresolved_by_reason": {
+      "curation_unresolved": 27
+    },
+    "valuation_row_offsets": {
+      "L": 0,
+      "S": 0
+    }
+  },
+  "volume_basis_split_diagnostic": {
+    "a1_volume_half": "consistent",
+    "median_ell": -0.08284632211045026,
+    "quartiles_ell": [
+      -0.2184114885966268,
+      0.05615093377636009
+    ],
+    "rows": 65,
+    "rows_ratio_at_least_2": 52,
+    "rows_undefined_zero_median_turnover": 0,
+    "share_ell_above_half_at_ratio_2": 0.0
+  },
+  "vp2_revisit_required": true,
+  "warm_up_estimate": {
+    "estimate_scope": "family_a_first_bar_warmup",
+    "post_join_warmup_estimate": {
+      "AMIHUD_ILLIQ_63": 7,
+      "HIGH_52W": 37,
+      "LOW_BETA_252": 38,
+      "LOW_VOL_252": 38,
+      "MOM_12_1": 38,
+      "REV_1M": 1
+    },
+    "unit": "eligible_asset_months"
+  }
+}

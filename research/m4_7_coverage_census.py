@@ -28,7 +28,15 @@ import pandas as pd
 from scipy.stats import norm
 
 from data import holdout_partition
-from data.holdout_partition import SEAL_FILE, SnapshotRefusal, coverage_start, monthly_raw_counts, sha256_bytes
+from data.holdout_partition import (
+    SEAL_FILE,
+    SEAL_RULE_VERSION,
+    SEAL_RULES,
+    SnapshotRefusal,
+    coverage_start,
+    monthly_raw_counts,
+    sha256_bytes,
+)
 from research.m4_7_common_support import ic_month_set, signal_eligibility, write_support_files
 from research.m4_7_family_a import FAMILY_A
 from research.m4_7_holdout_seal import REPOSITORY_SEAL, confirmed_seal_bytes
@@ -65,10 +73,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 REPORT_JSON = "m4_7_coverage_census.json"
 REPORT_MD = "m4_7_coverage_census.md"
 CENSUS_DETAIL = "census/census_detail.json"
-IN_BAND_YEARS = 16
-LATEST_HOLDOUT_END = "2014-01-01"
 IDENTITY_CAP, OFF_CALENDAR_CAP, UNPRICED_CAP = 0.05, 0.001, 0.02
-MAX_WINDOWS, MAX_EXCLUDED_FRACTION, MIN_IC_MONTHS = 6, 0.05, 60
+MAX_WINDOWS, MAX_EXCLUDED_FRACTION = 6, 0.05
 VP2_LEVEL, VP2_SHARE = 0.05, 0.01
 VOLUME_BASIS_BARS, VOLUME_BASIS_MIN_ROWS, VOLUME_BASIS_TAIL_SHARE = 20, 10, 0.20
 PRIOR_EXPOSURES = (("static_50_name_cohort", "2016-08-08", "2026-08-07"),
@@ -82,6 +88,7 @@ FAILURE_CODES = {
     "R-CENSUS-5": "blocked:calendar_source_missing",
     "R-CENSUS-6": "blocked:snapshot_integrity",
     "R-CENSUS-7": "ready_with_caveats:holdout_breadth_after_identity",
+    "shortfall": "ready_with_caveats:coverage_shortfall_accepted",
     "R-CENSUS-8": "blocked:insufficient_ic_months",
     "R-CENSUS-9": "blocked:unpriced_eligible_member_days",
     "R-CENSUS-10": "blocked:retrieval_incomplete",
@@ -133,38 +140,60 @@ def prior_exposure_overlap(ic_month_dates: list[date]) -> dict[str, Any]:
     }
 
 
-def derive_readiness(inputs: dict[str, Any]) -> dict[str, Any]:
-    """Plan 5.3: every rule's inputs and result; ``ready`` needs all ten rules."""
+def derive_readiness(inputs: dict[str, Any], rule_version: str = SEAL_RULE_VERSION) -> dict[str, Any]:
+    """Plan 5.3: every rule's inputs and result; ``ready`` needs all ten rules.
+
+    The in-band, prior-exposure, and IC-month minima come from the seal rule
+    (``data.holdout_partition.SEAL_RULES``); the other caps are fixed. A failed
+    R-CENSUS-1, 2, 8, or 9 whose value stays inside the rule's owner-accepted
+    shortfall bounds is the caveat ``coverage_shortfall_accepted``; the rule's
+    ``passed`` flag still reports the registered threshold.
+    """
+    seal_rule = SEAL_RULES[rule_version]
+    cap = None if seal_rule["latest_holdout_end"] is None else seal_rule["latest_holdout_end"].isoformat()
+    overlaps = cap is not None and inputs["holdout_end"] > cap
     results = {
-        "R-CENSUS-1": inputs["in_band_years"] >= IN_BAND_YEARS and inputs["holdout_end"] <= LATEST_HOLDOUT_END,
+        "R-CENSUS-1": inputs["in_band_years"] >= seal_rule["min_in_band_years"] and not overlaps,
         "R-CENSUS-2": inputs["gap_window_count"] <= MAX_WINDOWS and inputs["excluded_fraction"] <= MAX_EXCLUDED_FRACTION,
         "R-CENSUS-3": inputs["identity_refusal_fraction"] <= IDENTITY_CAP,
         "R-CENSUS-4": inputs["off_calendar_fraction"] <= OFF_CALENDAR_CAP,
         "R-CENSUS-5": inputs["calendar_covers_coverage_start"] and inputs["benchmark_complete"],
         "R-CENSUS-6": inputs["snapshot_integrity"],
         "R-CENSUS-7": inputs["holdout_band_after_identity"],
-        "R-CENSUS-8": inputs["ic_month_supply"] >= MIN_IC_MONTHS,
+        "R-CENSUS-8": inputs["ic_month_supply"] >= seal_rule["min_ic_months"],
         "R-CENSUS-9": inputs["unpriced_fraction"] <= UNPRICED_CAP,
         "R-CENSUS-10": inputs["retrieval_complete"],
+    }
+    bounds = seal_rule["accepted_shortfall"]
+    accepted = {} if bounds is None else {
+        "R-CENSUS-1": inputs["in_band_years"] >= bounds["min_in_band_years"] and not overlaps,
+        "R-CENSUS-2": (inputs["gap_window_count"] <= bounds["max_gap_windows"]
+                       and inputs["excluded_fraction"] <= bounds["max_excluded_fraction"]),
+        "R-CENSUS-8": inputs["ic_month_supply"] >= bounds["min_ic_months"],
+        "R-CENSUS-9": inputs["unpriced_fraction"] <= bounds["max_unpriced_fraction"],
     }
     failures = []
     for rule, passed in results.items():
         if passed:
             continue
-        code = FAILURE_CODES[rule]
-        if rule == "R-CENSUS-1" and inputs["holdout_end"] > LATEST_HOLDOUT_END:
+        code = FAILURE_CODES["shortfall"] if accepted.get(rule) else FAILURE_CODES[rule]
+        if rule == "R-CENSUS-1" and overlaps:
             code = "blocked:holdout_overlaps_prior_exposure"
         if rule == "R-CENSUS-5" and inputs["calendar_covers_coverage_start"]:
             code = "blocked:benchmark_gap"
         failures.append({"rule": rule, "result": code})
+    caveats = sorted({f["result"].split(":", 1)[1] for f in failures if f["result"].startswith("ready_with_caveats:")})
     if not failures:
         status = "ready"
-    elif [f["rule"] for f in failures] == ["R-CENSUS-7"]:
-        status = FAILURE_CODES["R-CENSUS-7"]
+    elif len(caveats) == len({f["result"] for f in failures}):
+        status = "ready_with_caveats:" + ",".join(caveats)
     else:
         status = "blocked"
-    return {"status": status, "failures": failures, "rules": {rule: {"passed": bool(ok)} for rule, ok in results.items()},
-            "inputs": inputs}
+    thresholds = {"seal_rule_version": rule_version, "min_in_band_years": seal_rule["min_in_band_years"],
+                  "latest_holdout_end": cap, "min_ic_months": seal_rule["min_ic_months"],
+                  "accepted_shortfall": bounds}
+    return {"status": status, "failures": failures, "rules": {name: {"passed": bool(ok)} for name, ok in results.items()},
+            "inputs": inputs, "thresholds": thresholds}
 
 
 def in_band_month_ends(start: date | None, last: date | None) -> int:
@@ -303,7 +332,7 @@ def run_census(
         "ic_month_supply": len(ic_included), "unpriced_fraction": coverage["unpriced_fraction"],
         "retrieval_complete": bool(verify.get("retrieval_complete", False)),
     }
-    readiness = derive_readiness(readiness_inputs)
+    readiness = derive_readiness(readiness_inputs, seal["rule_version"])
     status_counts = _table_status_counts(snapshot, membership)
     counters = snapshot.manifest.get("counters", {})
     public = {
@@ -321,7 +350,7 @@ def run_census(
         "ever_members": identity["ever_members"],
         "identity": identity["identity"],
         "calendar": {"off_calendar_bar_rows": off_calendar, "calendar_rows": len(calendar),
-                     "calendar_source": "GSPC.INDX_eod_dates_v1",
+                     "calendar_source": seal["calendar_source"],
                      "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows},
         "price_coverage": {**coverage["public"], **episodes["coverage"]},
         "exclusion_set": {
@@ -923,8 +952,13 @@ def render_markdown(public: dict[str, Any]) -> str:
         f"- Code commit: `{public['code_commit']}`",
         f"- Seal: prospective SHA-256 `{identity['seal_prospective_sha256']}`; holdout end "
         f"`{public['discovery_window']['holdout_end']}`",
+        f"- Seal rule: `{readiness['thresholds']['seal_rule_version']}` (minimum in-band years "
+        f"{readiness['thresholds']['min_in_band_years']}, latest holdout end "
+        f"{readiness['thresholds']['latest_holdout_end']}, minimum IC months {readiness['thresholds']['min_ic_months']})",
+        f"- Owner-accepted shortfall bounds: {readiness['thresholds']['accepted_shortfall']}",
+        f"- Calendar source: `{public['calendar']['calendar_source']}`",
         f"- Readiness: `{readiness['status']}`" + (
-            f" ({', '.join(f['result'] for f in readiness['failures'])})" if readiness["failures"] else ""),
+            f" ({', '.join(f['rule'] + ' ' + f['result'] for f in readiness['failures'])})" if readiness["failures"] else ""),
         f"- manifest_sha256: `{identity['manifest_sha256']}`",
         f"- discovery_inputs_sha256: `{identity['discovery_inputs_sha256']}`",
         f"- segments_sha256: `{identity['segments_sha256']}`",

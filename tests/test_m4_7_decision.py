@@ -163,10 +163,11 @@ def test_t_reg_7_realized_power_decides_regardless_of_projection():
             "extend_first")
 
 
-def test_sign_stability_needs_twenty_four_months_per_half():
-    assert sign_stability(pd.Series(np.full(47, 0.01))) is None
-    assert sign_stability(pd.Series(np.full(48, 0.01))) is True
-    assert sign_stability(pd.Series(np.r_[np.full(24, 0.01), np.full(24, -0.01)])) is False
+def test_sign_stability_needs_sixteen_months_per_half():
+    """Option A calibration (O-7): each half needs ``MIN_HALF_MONTHS = 16``."""
+    assert sign_stability(pd.Series(np.full(31, 0.01))) is None
+    assert sign_stability(pd.Series(np.full(32, 0.01))) is True
+    assert sign_stability(pd.Series(np.r_[np.full(16, 0.01), np.full(16, -0.01)])) is False
 
 
 def test_decide_gate_requires_six_factors():

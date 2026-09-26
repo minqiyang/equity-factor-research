@@ -15,6 +15,129 @@ investment performance.
 
 ---
 
+## 2026-09-26 - Owner Decisions O-7 (Coverage Shortfall Accepted) And O-8 (VP-2 Re-ratified Under DIAGNOSTIC_ONLY)
+
+Context:
+
+- The first Option A census on `real_v1` (JSON SHA-256 `5015a1d8…5c5c`, code
+  `eb8c5a5`, entry below) was `blocked` on R-CENSUS-1 (6.92 in-band years
+  against 7), R-CENSUS-2 (20 gap windows and excluded fraction 0.384 against 6
+  and 0.05, from peeling 24 uncurated delistings), R-CENSUS-8 (32 IC months
+  against 48), and R-CENSUS-9 (unpriced fraction 0.330 against 0.02), and set
+  `vp2_revisit_required` (22.5 percent of eligible member-days with
+  `S_D > 0.05`).
+- The owner chose Option 1 for O-7 and O-8 under Owner Directives 1 (no data
+  perfectionism), 2 (no over-engineering), and 3 (break serial dependencies).
+
+Decision:
+
+- **O-7:** the measured coverage shortfall on the local EODHD data is
+  accepted as `ready_with_caveats:coverage_shortfall_accepted`, including
+  R-CENSUS-1 at 6.92 in-band years against the declared 7 (the
+  identity-adjusted continuous count starts 2019-09-30). Implementation:
+  `SEAL_RULES[SEAL_RULE_OPTION_A]["accepted_shortfall"]` holds the accepted
+  bounds (6.9 in-band years, 32 IC months, 25 gap windows, excluded fraction
+  0.45, unpriced fraction 0.40). A miss of a registered threshold inside the
+  bounds reads as the caveat; each rule keeps `passed = false` against its
+  registered threshold, so the census shows both the miss and the acceptance.
+  A value beyond a bound stays `blocked`.
+- **O-8:** premise VP-2 is re-ratified under `DIAGNOSTIC_ONLY` for the M4.7
+  rerun, including the 22.5 percent of eligible member-days with
+  `S_D > 0.05`. The runner registers `o8_disposition =
+  re_ratified_diagnostic_only`.
+- **Runner alignment for b-2 and c-1:** `MIN_IC_MONTHS = 32`,
+  `MIN_HALF_MONTHS = 16` (sign stability `min_16_months_each`),
+  `calendar_source = SPY.US_eod_dates_v1`, and registered support caps of 25
+  gap windows and excluded fraction 0.45. `bind_snapshot` refuses
+  `registration_invalid` when the registered calendar source differs from the
+  snapshot seal.
+
+Result (census JSON SHA-256 `608fd1b1…1c40`, code `9fd7734`):
+
+- Readiness `ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity`;
+  every measured value equals the blocked census.
+- Seal confirmed SHA-256 `b7f9380f…f506`, confirmation `caveat`; the
+  prospective seal `93ce6e5a…9882` is unchanged.
+
+Consequences and limitations:
+
+- These bounds were set after the first census measured the shortfall; the
+  blocked census stays in history at commit `cfcbb91`. Every M4.7 result on
+  `real_v1` stays `DIAGNOSTIC_ONLY` and supports no ranking, selection,
+  promotion, or profitability claim.
+- With 32 IC months the power projection gives `kill_reachable_projection =
+  false` (projected MDE 0.067 at the central prior 0.10); the gate applies
+  realized power, and a `review_thesis` outcome is unlikely to be reachable.
+- The 24 uncurated delistings remain in `U`, and 83,718 member-days of
+  episodes refused by the in-span check remain unpriced; curation or a
+  dividend source can reduce both in a later snapshot.
+- M4.7b-2 (registration freeze) is the next stage.
+
+## 2026-09-26 - Owner Decision O-3 Option A: One-Year Seal Rule For The 2019-2026 EODHD Membership History
+
+Context:
+
+- The M4.7a-3 local run on snapshot `real_v1` stopped at the seal with
+  `holdout_overlaps_prior_exposure` (engineering log, 2026-09-26). The local
+  EODHD components response holds 818 entries; 675 are retained and 143 lack
+  `StartDate`. The raw month-end count enters the band `[470, 530]` at
+  2019-07-31 and stays in band through 2026-07-31, about 7.0 years, while the
+  v1 rule needs a 10-year holdout ending by 2014-01-01 and 16 in-band years.
+- The owner reviewed the stop report and chose Option A (plan revision to the
+  seal rule) under Owner Directives 1 (no data perfectionism) and 2 (no
+  over-engineering), and accepted a declared calendar-source label for the
+  `SPY.US` date substitution.
+
+Decision:
+
+- Seal rules are keyed by `rule_version` in `data.holdout_partition.SEAL_RULES`.
+  The v1 decade rule stays the default. Option A,
+  `earliest_available_year_from_raw_membership_counts_option_a_v1`, applies
+  the unchanged tolerant `coverage_start` rule and sets:
+  - holdout: one year from `coverage_start`;
+  - prior-exposure cap: none; the overlap is stated (the seal record keeps its
+    `prior_exposures`, and the census reports 100 percent of IC months inside
+    the static 50-name cohort window);
+  - census minima: 7 in-band years (1 holdout, 1 warm-up, 5 discovery) and 48
+    IC months (R-CENSUS-1 and R-CENSUS-8). Every other cap is unchanged.
+- The seal record declares `calendar_source`; `real_v1` declares
+  `SPY.US_eod_dates_v1`. The build manifest, support record, runner support
+  recomputation, and census read it from the seal.
+- The parameters were fixed and committed (`eb8c5a5`) before the census ran.
+
+Result on `real_v1` (census JSON SHA-256 `5015a1d8…5c5c`, code `eb8c5a5`):
+
+- Seal: holdout `[2019-07-31, 2020-07-31)`, prospective SHA-256
+  `93ce6e5a…9882`, confirmed SHA-256 `20e22520…125e`, confirmation `caveat`
+  (identity-adjusted minimum holdout month-end count 468).
+- Discovery window: `D0` 2021-08-31, `D_last` 2026-08-07.
+- Readiness: `blocked`. R-CENSUS-1 in-band years 6.92 below 7 (the
+  identity-adjusted count confirms coverage from 2019-09-30); R-CENSUS-2 20 gap
+  windows and excluded fraction 0.384 against 6 and 0.05; R-CENSUS-8 32 IC
+  months against 48; R-CENSUS-9 unpriced eligible member-day fraction 0.330
+  against 0.02; R-CENSUS-7 caveat. R-CENSUS-3, 4, 5, 6, and 10 pass.
+- `|U|` 24 unresolved events in the window (27 discovery candidates, none
+  curated; 20 `deferred_holdout`), `|W|` 20, `|G_base|` 1 cell, `|G_term|` 0.
+  Settlement lag distribution: empty (zero accepted events).
+- Power projection: `T_proj` 32, `kill_reachable_projection` false.
+- Premises: VP-1 `a1_volume_half = consistent` (65 rows); VP-2
+  `vp2_revisit_required = true` (178,859 member-days with `S_D > 0.05`, 22.5
+  percent of eligible member-days), which expires the O-8 ratification.
+
+Consequences:
+
+- a-3 is not closed. The plan 7.2 stop on `blocked:*` readiness applies, and
+  the thresholds of R-CENSUS-2 and R-CENSUS-9 stay unchanged pending the owner.
+- Open owner decisions: O-7 (coverage shortfall: curation of the 24
+  unresolved delistings from public documents, a replacement dividend source
+  for the in-span step refusals, and the S9 `entry_unusable_upper_bound`
+  charge of 177,177 member-days from the 143 entries without `StartDate`, or
+  higher registered caps with their coverage cost stated); O-8 re-decision
+  (VP-2); O-3 residual (R-CENSUS-1 at 6.92 years against the declared 7).
+- The runner keeps `MIN_IC_MONTHS = 60` and `calendar_source =
+  GSPC.INDX_eod_dates_v1` in its registration skeleton; b-2 must align both
+  with the Option A seal before the freeze.
+
 ## 2026-09-25 - Acceptance Of Milestone 4.7 Binding Implementation Plan Revision 11 And Ratification Of Premise VP-2 (Owner Item O-8)
 
 Context:

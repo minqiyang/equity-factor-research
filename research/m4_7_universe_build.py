@@ -40,8 +40,8 @@ from data.holdout_partition import (
     classify_membership_entries,
     parse_strict_date,
     read_authorized_bytes,
-    read_holdout_end,
     read_manifest,
+    read_seal,
     sha256_bytes,
 )
 from data.parquet_loader import compute_cumulative_split_factor, load_symbol_splits
@@ -88,16 +88,19 @@ NO_BARS_CAPPED = ("no_containing_episode:no_vendor_bars:", "no_containing_episod
 
 @dataclass
 class Snapshot:
-    """A snapshot directory, its manifest, and the sealed ``holdout_end``."""
+    """A snapshot directory, its manifest, and the sealed ``holdout_end`` and ``calendar_source``."""
 
     root: Path
     manifest: dict[str, Any]
     holdout_end: date
+    calendar_source: str
 
     @classmethod
     def open(cls, root: Path | str) -> "Snapshot":
         root = Path(root)
-        return cls(root=root, manifest=read_manifest(root), holdout_end=read_holdout_end(root))
+        seal = read_seal(root)
+        return cls(root=root, manifest=read_manifest(root), holdout_end=date.fromisoformat(seal["holdout_end_exclusive"]),
+                   calendar_source=seal["calendar_source"])
 
     def entry(self, table: str, code: str) -> dict[str, Any] | None:
         return self.manifest.get("entries", {}).get(f"{table}/{code}")
@@ -762,7 +765,7 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
         "membership_availability_basis": "vendor_effective_date_as_known_at_v1",
         "interval_semantics": "half_open_start_inclusive_end_exclusive_v1",
         "interval_boundary_rule": "calendar_row_semantics_v1",
-        "calendar_source": "GSPC.INDX_eod_dates_v1",
+        "calendar_source": snapshot.calendar_source,
         "bar_date_source": "dates_sidecar_v1",
         "corporate_action_attribution": "episode_span_attribution_with_split_basis_in_span_step_and_cumulative_drift_checks_v3",
         "dividend_factor_formula": "prior_close_v1",

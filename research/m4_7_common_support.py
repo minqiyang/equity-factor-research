@@ -342,6 +342,7 @@ class SnapshotSupport:
 
     calendar: pd.DatetimeIndex
     holdout_end: str
+    calendar_source: str
     intervals: pd.DataFrame
     events: pd.DataFrame
     bars: pd.DataFrame
@@ -365,7 +366,7 @@ class SnapshotSupport:
             "valid": s.valid, "drop_reason": None if s.valid else "segment_too_short",
         } for s in schedule.segments]
         return {
-            "calendar_source": "GSPC.INDX_eod_dates_v1", "holdout_end": self.holdout_end,
+            "calendar_source": self.calendar_source, "holdout_end": self.holdout_end,
             "D0": iso[schedule.d0], "D_last": iso[schedule.d_last], "D_end": iso[max(included)] if included else None,
             "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows,
             "reset_rows_sha256": hashlib.sha256(_canonical([iso[r] for r in schedule.reset_rows])).hexdigest(),
@@ -425,8 +426,8 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
         present = pd.DatetimeIndex(frame.loc[np.isfinite(frame["adjusted_close"]), "date"])
         bars.loc[present.intersection(calendar), pid] = True
     master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
-    support = snapshot_support(calendar, snapshot.holdout_end.isoformat(), intervals, read_engine_events(root), bars,
-                               master, inputs, d0 - i_h)
+    support = snapshot_support(calendar, snapshot.holdout_end.isoformat(), snapshot.calendar_source, intervals,
+                               read_engine_events(root), bars, master, inputs, d0 - i_h)
     schedule = support.schedule
     iso = [day.date().isoformat() for day in support.calendar]
     columns = list(schedule.g_base.columns)
@@ -447,8 +448,8 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
 
 
 def snapshot_support(
-    calendar: pd.DatetimeIndex, holdout_end: str, intervals: pd.DataFrame, events: pd.DataFrame,
-    bars: pd.DataFrame, master: pd.DataFrame, inputs: str, d0: int,
+    calendar: pd.DatetimeIndex, holdout_end: str, calendar_source: str, intervals: pd.DataFrame,
+    events: pd.DataFrame, bars: pd.DataFrame, master: pd.DataFrame, inputs: str, d0: int,
 ) -> SnapshotSupport:
     """The schedule of sections 4.1-4.2 from a bar-presence matrix whose columns are the member permanent IDs.
 
@@ -472,7 +473,8 @@ def snapshot_support(
         and row["permanent_id"] not in settled
     }
     schedule = common_support_schedule(calendar, bars, mask, unresolved, d0)
-    return SnapshotSupport(calendar, holdout_end, intervals, events, bars, mask, unresolved, schedule, inputs)
+    return SnapshotSupport(calendar, holdout_end, calendar_source, intervals, events, bars, mask, unresolved, schedule,
+                           inputs)
 
 
 def _canonical(payload) -> bytes:

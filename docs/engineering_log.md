@@ -12,6 +12,132 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7a-3 closed as ready_with_caveats under owner decisions O-7 and O-8
+
+- Source: the owner's O-7 and O-8 decisions (Option 1, recorded in
+  `docs/decision_log.md`), relayed by the coordinator on 2026-09-26.
+- Code (`9fd7734`): `SEAL_RULES` gains `accepted_shortfall` (Option A: 6.9
+  in-band years, 32 IC months, 25 gap windows, excluded 0.45, unpriced 0.40;
+  v1: none). `derive_readiness` maps a R-CENSUS-1, 2, 8, or 9 miss inside the
+  bounds to `ready_with_caveats:coverage_shortfall_accepted`, keeps each
+  rule's registered `passed` flag, composes the status from every caveat, and
+  publishes the bounds; the census markdown names each failing rule. The
+  runner registers `MIN_IC_MONTHS = 32`, `MIN_HALF_MONTHS = 16`,
+  `SPY.US_eod_dates_v1`, support caps 25 and 0.45, and
+  `o8_disposition = re_ratified_diagnostic_only`, and `bind_snapshot`
+  refuses a registered calendar source that differs from the snapshot seal;
+  the runner fixture seals with the registered calendar source.
+- Tests: `test_option_a_accepted_shortfall_reads_ready_with_caveats`, six
+  beyond-bound cases in `test_option_a_shortfall_beyond_the_accepted_bounds_blocks`,
+  `test_registered_calendar_source_must_match_the_snapshot_seal`, and the
+  Option A seal-rule assertions. `test_sign_stability_needs_sixteen_months_per_half`
+  and `test_t_reg_5_halves_and_ic_mde` moved their edges from 24 and 60 to
+  the owner-set 16 and 32; `test_t_census_4_readiness_truth_table` still
+  checks the v1 rule at 60 IC months and 16 in-band years.
+- Census rerun on `real_v1` from `9fd7734` (build and terminal artifacts
+  unchanged): readiness
+  `ready_with_caveats:coverage_shortfall_accepted,holdout_breadth_after_identity`,
+  JSON SHA-256 `608fd1b1…1c40`; confirmed seal `b7f9380f…f506`. Against the
+  blocked census only the four rule results, the status, the thresholds block,
+  and `code_commit` changed.
+- Ablation: removing the runner calendar-source guard fails its test, so the
+  guard stays. Simplification attempt (rejected): overwriting the registered
+  thresholds with the accepted values removes the caveat branch but reports
+  R-CENSUS-1, 2, 8, and 9 as passed and the status as
+  `ready_with_caveats:holdout_breadth_after_identity` alone, hiding the
+  shortfall that O-7 names.
+- Verification: see `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
+## 2026-09-26 - M4.7a-3 resumed under Option A: pipeline complete, census blocked
+
+- Source: the owner's O-3 decision (Option A, recorded in
+  `docs/decision_log.md`), relayed by the coordinator on 2026-09-26, with the
+  same run authorization as the entry below.
+- Code (`eb8c5a5`): `SEAL_RULES` keyed by `rule_version` in
+  `src/data/holdout_partition.py` (v1 default; Option A one-year holdout, no
+  prior-exposure cap, 7 in-band years, 48 IC months); `read_seal` refuses an
+  unregistered rule; the seal script gains `--rule-version` and
+  `--calendar-source`; the seal record declares `calendar_source`, which
+  `Snapshot`, `snapshot_support` (both callers), the build manifest, and the
+  census read; `derive_readiness` takes the seal rule and publishes its
+  thresholds; the census markdown header states the rule and calendar source.
+  Tests: `test_option_a_seal_rule_seals_one_year_without_the_prior_exposure_cap`,
+  `test_a_seal_with_an_unknown_rule_version_is_refused`, and
+  `test_option_a_readiness_thresholds_follow_the_seal_rule`.
+- Run on `real_v1`: seal under Option A (holdout 2019-07-31 to 2020-07-31,
+  prospective SHA-256 `93ce6e5a…9882`); `calendar` 8,438 rows; `splits`,
+  `eod`, and `dividends` 815 `retrieved` and 4 `unavailable:missing_symbol`
+  each; `verify` `retrieval_complete = true`, no hash mismatch, no stale split
+  evidence, no token leak; two discovery `eod` partitions quarantined. Build:
+  663 intervals resolved, 83 episodes refused a panel (80
+  `in_span_step_mismatch`). Terminal: 47 candidates, 27 `unresolved` and 20
+  `deferred_holdout`; no local source holds deal terms (the cross-stream
+  integration tree holds Form 25 identity targets), so none is curated.
+- Census (code `eb8c5a5`, JSON SHA-256 `5015a1d8…5c5c`): readiness `blocked`
+  on R-CENSUS-1 (6.92 in-band years), R-CENSUS-2 (20 windows, excluded
+  0.384), R-CENSUS-8 (32 IC months), and R-CENSUS-9 (unpriced 0.330), with
+  the R-CENSUS-7 caveat; `vp2_revisit_required = true`. The R-CENSUS-9
+  numerator is 262,175 member-days: 177,177 `entry_unusable_upper_bound`
+  (143 entries times 1,239 rows), 83,718 `no_discovery_panel`, 1,239
+  `post_last_bar_deferred_holdout`, and 41 others. The in-span refusals carry
+  1,548 undeclared steps among 1,598 failing pairs, 1,358 of them with
+  residual in `(1e-3, 1e-2]`, consistent with dividends that the vendor
+  applied to `adjusted_close` but omitted from the 217 empty dividend tables.
+- A first census run on uncommitted code carried `code_commit = 682e01f`; the
+  build, terminal, and census reran after the code commit, and the public
+  JSON differs only in `code_commit`.
+- Not changed: every cap other than the two Option A minima. Raising the
+  R-CENSUS-2 or R-CENSUS-9 caps to reach `ready` is owner decision O-7.
+- Ablation: the unknown-rule refusal in `read_seal` is necessary (without it
+  the census raises an untyped `KeyError` and the refusal test fails); a
+  `date.max` sentinel for the Option A cap removes two `is None` branches
+  with identical readiness but publishes a fictitious `9999-12-31` cap, so
+  `None` stays.
+- Verification: see `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
+## 2026-09-26 - M4.7a-3 owner-authorized local private data run
+
+- Authorization (O-4, a-3): the coordinator's GENERAL_EXEC dispatch of
+  2026-09-26 (card `coord/v8_review_20260923/card_m4_7a3_universe_and_census.md`,
+  task `m4_7a3-universe-and-census-a1`) relays the owner's explicit run
+  authorization for the a-3 retrieval, build, curation, and census on the
+  locally stored EODHD acquisitions. Scope: offline reads of existing local
+  files; no network call, no vendor token, no new vendor request. The seal
+  invocation for snapshot `real_v1` passed this entry as its
+  `--authorization-reference`.
+- Provenance: membership from the local components response of acquisition
+  `snapshot_20260807T002458Z` (SHA-256 `42404317…2b56` of the gzip file);
+  symbol lists from the same acquisition; EOD, split, and dividend responses
+  from acquisition `snapshot_20260808T005805Z` (ledger run
+  `run_fcc24d677349eb755692f02f`, 815 codes, cutoff 2026-08-07). The private
+  adapter `build_local_eodhd_snapshot.py` (SHA-256 `6b7047a5…835d`, kept
+  outside the repository because T-STRUCT-1 confines `urllib.error` imports to
+  the retrieval module) calls `data.eodhd_retrieval.main(..., transport=...)`
+  under the placeholder token `local_offline_token`.
+- Executed: `components` (818 entries, `components_retrieved_utc_date`
+  2026-08-07 through the module's `clock` seam, the local response's
+  acquisition date) and `symbols` (18,184 listed and 32,555 delisted rows).
+  Manifest SHA-256 `34af1cba…de0c`; the token-leak byte scan finds no match.
+  A second clean build reproduces every manifest file hash and the refusal.
+- Stop: the seal script refuses `holdout_overlaps_prior_exposure`
+  (`holdout_end 2029-07-31 is after 2014-01-01`), a plan 7.2 a-3 stop
+  condition that goes to owner decision O-3. The raw month-end count first
+  enters the band `[470, 530]` at 2019-07-31 (470) and stays in band through
+  2026-07-31 (504); tolerant and strict `coverage_start` are both 2019-07-31.
+  Entry outcomes: 675 retained and 143 `entry_missing_field` (every one lacks
+  `StartDate`; `EndDate` 2008-09-16 to 2023-12-18). Counting those 143 as
+  members since inception, an upper bound, moves `coverage_start` to
+  2011-12-31 and `holdout_end` to 2021-12-31, still after 2014-01-01, so no
+  reading of this response satisfies the seal rule.
+- Not run: `calendar`, `splits`, `eod`, `dividends`, `verify`, the universe
+  build, terminal tooling, and the census, because each downstream command
+  refuses `holdout_seal_missing` without a seal. No seal, census, or readiness
+  file exists, so none is committed.
+- Private snapshot state: `<private_data_root>/sp500_pit_real_v1` holds the
+  manifest, membership, symbols, raw components and symbol responses, and the
+  retrieval log; a-3 resumes from this manifest after the owner acts.
+- Report: `coord/reports/m4_7a3_universe_and_census_impl.md`.
+
 ## 2026-09-26 - M4.7b-1 attempt 3: lazy trials file and complete pre-inference output preservation
 
 - Source: `/private/tmp/m47b1_remediation_task_a3.md`, remediating the Round 2

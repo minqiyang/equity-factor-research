@@ -34,6 +34,7 @@ from typing import Any
 import pandas as pd
 
 from data import holdout_partition
+from data.holdout_partition import DEFAULT_CALENDAR_SOURCE
 from m4_7_snapshot_support import CAL, I_H, Harness, Vendor, bars, day, entry, rows
 from research.m4_7_common_support import write_support_files
 from research.m4_7_coverage_census import run_census
@@ -239,11 +240,11 @@ def curated_rows() -> list[dict[str, str]]:
     ]
 
 
-def retrieve(harness: Harness, consideration_file: Path) -> None:
+def retrieve(harness: Harness, consideration_file: Path, calendar_source: str = DEFAULT_CALENDAR_SOURCE) -> None:
     """Retrieval through the seal: ``components``, ``symbols``, seal, ``calendar``, and the three tables."""
     assert harness.run("components") == 0 and harness.run("symbols") == 0
     seal_snapshot(harness.snapshot_dir, sealing_actor="coordinator", authorization_reference="fixture-log-entry",
-                  clock=harness.clock)
+                  clock=harness.clock, calendar_source=calendar_source)
     assert harness.run("calendar") == 0
     assert harness.run("splits", "--codes", str(consideration_file)) == 0
     for _ in range(3):

@@ -9,7 +9,9 @@ exactly ``manifest.json`` and ``membership/historical_components_raw.parquet``
 changing any prospective field, so the three digests stay acyclic (C33).
 
 Run as ``python -m research.m4_7_holdout_seal --snapshot-id <ID> --sealing-actor <role>
---authorization-reference <engineering-log entry>``.
+--authorization-reference <engineering-log entry> [--rule-version <rule>] [--calendar-source <label>]``.
+``--rule-version`` selects a ``data.holdout_partition.SEAL_RULES`` entry; ``--calendar-source``
+declares, before any calendar retrieval, the series that serves as the trading calendar.
 """
 
 from __future__ import annotations
@@ -22,7 +24,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 from data.holdout_partition import (
+    DEFAULT_CALENDAR_SOURCE,
     MEMBERSHIP_FILE,
+    SEAL_RULE_VERSION,
+    SEAL_RULES,
     SnapshotRefusal,
     read_manifest,
     seal_bytes,
@@ -41,6 +46,8 @@ def seal_snapshot(
     sealing_actor: str,
     authorization_reference: str,
     clock: Callable[[], datetime] | None = None,
+    rule_version: str = SEAL_RULE_VERSION,
+    calendar_source: str = DEFAULT_CALENDAR_SOURCE,
 ) -> tuple[dict[str, Any], str]:
     """Write the prospective seal and verify its inputs and bytes; return the record and its SHA-256."""
     now = (clock or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc)
@@ -49,6 +56,8 @@ def seal_snapshot(
         sealed_at=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         sealing_actor=sealing_actor,
         authorization_reference=authorization_reference,
+        rule_version=rule_version,
+        calendar_source=calendar_source,
     )
     manifest = read_manifest(Path(snapshot_dir))
     expected = {
@@ -92,10 +101,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--data-dir", default=None)
     parser.add_argument("--sealing-actor", required=True)
     parser.add_argument("--authorization-reference", required=True)
+    parser.add_argument("--rule-version", choices=sorted(SEAL_RULES), default=SEAL_RULE_VERSION)
+    parser.add_argument("--calendar-source", default=DEFAULT_CALENDAR_SOURCE)
     args = parser.parse_args(argv)
     try:
         record, prospective = seal_snapshot(snapshot_dir_from_args(args), sealing_actor=args.sealing_actor,
-                                            authorization_reference=args.authorization_reference)
+                                            authorization_reference=args.authorization_reference,
+                                            rule_version=args.rule_version, calendar_source=args.calendar_source)
     except SnapshotRefusal as exc:
         print(str(exc), file=sys.stderr)
         return 1

@@ -199,5 +199,6 @@ def test_t_reg_5_halves_and_ic_mde():
     lrv = newey_west_long_run_variance(ic, lags)
     assert mde_f == pytest.approx(Z_EFF * math.sqrt(lrv / 240), abs=1e-15)
     assert mde_single == pytest.approx(Z_SINGLE * math.sqrt(lrv / 240), abs=1e-15)
-    assert ic_minimum_detectable_effect(ic.iloc[:59]) == (None, None)
+    assert ic_minimum_detectable_effect(ic.iloc[:31]) == (None, None)
+    assert all(value is not None for value in ic_minimum_detectable_effect(ic.iloc[:32]))
     assert ic_minimum_detectable_effect(pd.Series(np.full(120, 0.03))) == (None, None)

@@ -15,6 +15,8 @@ import pytest
 from data.holdout_partition import (
     MEMBERSHIP_FILE,
     RETRIEVAL_ORDER,
+    SEAL_RULE_OPTION_A,
+    SEAL_RULES,
     SnapshotRefusal,
     coverage_start,
     derive_holdout_window,
@@ -216,6 +218,44 @@ def test_t_seal_1_refusals(tmp_path: Path) -> None:
     assert not (snapshot / "holdout_seal_v1.json").exists()
 
 
+def test_option_a_seal_rule_seals_one_year_without_the_prior_exposure_cap(tmp_path: Path) -> None:
+    """Owner decision O-3: the v1 rule refuses a 2019 coverage start; Option A seals one year."""
+    late = membership(shift_years=29)
+    with pytest.raises(SnapshotRefusal) as refused:
+        derive_holdout_window(late, RETRIEVED)
+    assert refused.value.code == "holdout_overlaps_prior_exposure"
+    window = derive_holdout_window(late, RETRIEVED, SEAL_RULE_OPTION_A)
+    assert (window["holdout_start"], window["holdout_end_exclusive"]) == ("2019-01-31", "2020-01-31")
+
+    snapshot = tmp_path / "option_a"
+    write_snapshot(snapshot, late)
+    record, _ = write_prospective_seal(snapshot, sealed_at="x", sealing_actor="x", authorization_reference="x",
+                                       rule_version=SEAL_RULE_OPTION_A, calendar_source="SPY.US_eod_dates_v1")
+    assert (record["rule_version"], record["calendar_source"]) == (SEAL_RULE_OPTION_A, "SPY.US_eod_dates_v1")
+    assert read_holdout_end(snapshot) == date(2020, 1, 31)
+    assert Snapshot.open(snapshot).calendar_source == "SPY.US_eod_dates_v1"
+    assert {key: SEAL_RULES[SEAL_RULE_OPTION_A][key] for key in ("holdout_years", "min_in_band_years", "min_ic_months")} == {
+        "holdout_years": 1, "min_in_band_years": 7, "min_ic_months": 48}
+    assert SEAL_RULES[SEAL_RULE_OPTION_A]["accepted_shortfall"]["min_ic_months"] == 32
+    assert SEAL_RULES["earliest_available_decade_from_raw_membership_counts_v1"]["accepted_shortfall"] is None
+
+    default = tmp_path / "default"
+    write_snapshot(default, membership())
+    record, _ = write_prospective_seal(default, sealed_at="x", sealing_actor="x", authorization_reference="x")
+    assert record["calendar_source"] == "GSPC.INDX_eod_dates_v1"
+    assert record["rule_version"] == "earliest_available_decade_from_raw_membership_counts_v1"
+
+
+def test_a_seal_with_an_unknown_rule_version_is_refused(tmp_path: Path) -> None:
+    write_snapshot(tmp_path, membership())
+    write_prospective_seal(tmp_path, sealed_at="x", sealing_actor="x", authorization_reference="x")
+    seal = json.loads((tmp_path / "holdout_seal_v1.json").read_text())
+    (tmp_path / "holdout_seal_v1.json").write_text(json.dumps({**seal, "rule_version": "unregistered"}))
+    with pytest.raises(SnapshotRefusal) as refused:
+        read_holdout_end(tmp_path)
+    assert refused.value.code == "holdout_seal_missing"
+
+
 # ---------------------------------------------------------------- stage a-2: seal script, read recorder, perturbation, hashes
 
 
@@ -231,6 +271,7 @@ from fixtures.m4_7.e2e_scenario import (  # noqa: E402
 )
 from m4_7_snapshot_support import CAL, Harness, record_reads  # noqa: E402
 from research.m4_7_holdout_seal import confirmed_seal_bytes, seal_snapshot  # noqa: E402
+from research.m4_7_universe_build import Snapshot  # noqa: E402
 from data import holdout_partition  # noqa: E402
 
 

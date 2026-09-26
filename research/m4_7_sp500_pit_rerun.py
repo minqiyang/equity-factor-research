@@ -72,8 +72,12 @@ from research.multiple_testing_diagnostics import summarize_multiple_testing
 from research.real_data_multifactor_diagnostic import COMPOSITE_IDS, _build_composites, build_adjusted_research_panels
 
 
-MIN_IC_MONTHS = 60
-MIN_HALF_MONTHS = 24
+# Option A calibration (owner decisions O-3 and O-7, 2026-09-26): the 2019-2026
+# history supplies 32 IC months, so each half needs 16.
+MIN_IC_MONTHS = 32
+MIN_HALF_MONTHS = 16
+CALENDAR_SOURCE = "SPY.US_eod_dates_v1"
+O8_DISPOSITION = "re_ratified_diagnostic_only"
 ADEQUATE_MDE = 0.02
 ALPHA = 0.05
 POWER = 0.80
@@ -100,7 +104,7 @@ def split_halves(values: pd.Series) -> tuple[pd.Series, pd.Series]:
 
 
 def sign_stability(ic: pd.Series) -> bool | None:
-    """True when both halves have a positive mean; ``None`` when a half has fewer than 24 months."""
+    """True when both halves have a positive mean; ``None`` when a half has fewer than ``MIN_HALF_MONTHS``."""
     first, second = split_halves(ic)
     if len(second) < MIN_HALF_MONTHS:
         return None
@@ -191,7 +195,7 @@ REGISTERED: dict[str, Any] = {
     "evidence_class": "DIAGNOSTIC_ONLY",
     "universe": {
         "index": "GSPC.INDX",
-        "calendar_source": "GSPC.INDX_eod_dates_v1",
+        "calendar_source": CALENDAR_SOURCE,
         "bar_date_source": "dates_sidecar_v1",
         "membership_availability_basis": "vendor_effective_date_as_known_at_v1",
         "interval_boundary_rule": "calendar_row_semantics_v1",
@@ -215,7 +219,7 @@ REGISTERED: dict[str, Any] = {
         "vendor_data_premises": {
             **VP_STATEMENTS, "exposure": "in_span_distribution_support_with_b_d_and_s_d_quantiles",
             "revisit_trigger": "s_d_above_0.05_on_more_than_1_percent_of_eligible_member_days",
-            "owner_item": "O-8", "o8_disposition": "ratified"},
+            "owner_item": "O-8", "o8_disposition": O8_DISPOSITION},
         "membership_entries":
             "exact_duplicates_collapsed_overlaps_refused_union_under_r_census_9_unparseable_charged_worst_case_v2",
         "membership_open_end_date": "empty_null_absent_or_strictly_after_components_retrieved_utc_date_v2",
@@ -233,7 +237,7 @@ REGISTERED: dict[str, Any] = {
     },
     "common_support": {
         "contract": "common_support_segments_open_terminal_holdings_v3", "terminal_reset_peeling": True,
-        "exclusion_cells_from_first_bar": True, "max_gap_windows": 6, "max_excluded_fraction": 0.05,
+        "exclusion_cells_from_first_bar": True, "max_gap_windows": 25, "max_excluded_fraction": 0.45,
         "min_segment_rows": 42,
     },
     "terminal": {
@@ -276,7 +280,7 @@ REGISTERED: dict[str, Any] = {
         "family_control": "benjamini_yekutieli_0.05_within_family",
         "survivor": "by_reject_and_positive_mean_ic",
         "economic_confirmation": "long_short_mean_daily_net_return_positive_at_primary_costs",
-        "sign_stability": "positive_mean_ic_in_both_halves_min_24_months_each",
+        "sign_stability": "positive_mean_ic_in_both_halves_min_16_months_each",
         "min_ic_months": MIN_IC_MONTHS, "min_ic_pairs_per_month": 100,
         "mde": {"power": POWER, "alpha_eff_formula": "0.05 / (6 * H_6)", "variance": "bartlett_long_run_variance",
                 "floor": ADEQUATE_MDE, "single_test_reported": True},
@@ -422,6 +426,8 @@ def bind_snapshot(snapshot_dir: Path, registration: dict[str, Any], census_json:
     if (discovery.get("first_reset"), discovery.get("last_reset"), discovery.get("last_ic_month")) != (
             segments["D0"], segments["D_last"], segments["D_end"]):
         raise RunnerStop("registration_invalid", "discovery window")
+    if registration["universe"]["calendar_source"] != snapshot.calendar_source:
+        raise RunnerStop("registration_invalid", "universe.calendar_source differs from the snapshot seal")
     seal = json.loads(Path(seal_record).read_bytes())
     holdout = registration["holdout"]
     sealed = (seal.get("holdout_start"), seal.get("holdout_end_exclusive"))
@@ -467,8 +473,9 @@ def recompute_support(bound: dict[str, Any], loaded: dict[str, Any], registratio
     """
     prices = loaded["research"]["adjusted_close"]
     bars = pd.DataFrame(np.isfinite(prices.to_numpy(dtype=float)), index=loaded["calendar"], columns=prices.columns)
-    support = snapshot_support(loaded["calendar"], bound["snapshot"].holdout_end.isoformat(), loaded["intervals"],
-                               loaded["events"], bars, loaded["master"], bound["inputs"], loaded["d0"])
+    support = snapshot_support(loaded["calendar"], bound["snapshot"].holdout_end.isoformat(),
+                               bound["snapshot"].calendar_source, loaded["intervals"], loaded["events"], bars,
+                               loaded["master"], bound["inputs"], loaded["d0"])
     if support.segments_sha256 != registration["snapshot"]["segments_sha256"]:
         raise RunnerStop("census_runner_inconsistency:schedule_digest", "recomputed schedule differs from the census")
     return support
@@ -882,7 +889,7 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
             "in_span_distribution_support_fraction":
                 census["in_span_distribution_support"]["fraction_of_eligible_member_days"],
             "b_d": census["in_span_distribution_support"]["b_d"], "s_d": census["in_span_distribution_support"]["s_d"],
-            "vp2_revisit_required": census["vp2_revisit_required"], "o8_disposition": "ratified",
+            "vp2_revisit_required": census["vp2_revisit_required"], "o8_disposition": O8_DISPOSITION,
             "rounding_statement": ROUNDING_STATEMENT},
         "holdout_guard": {"holdout_end_exclusive": record["holdout_end"],
                           "first_loaded_date": calendar[0].date().isoformat(),

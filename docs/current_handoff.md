@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-26 for the Milestone 4.7 stage b-1 runner integration candidate.
+Updated: 2026-09-26 for the Milestone 4.7 stage a-3 census (ready with caveats).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,10 +24,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `de3172bc6dbd2831b15c60f73586969e055b25bd` (main after PR #265).
+  `d15ef1d49bcc4c757832d2185e5624eebceab5cb` (main after PR #266).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #265: M4.0 local real-data 50-name diagnostic, M4.1
+- Merged through PR #266: M4.0 local real-data 50-name diagnostic, M4.1
   walk-forward ML combination, M4.2 purged CPCV, M4.3 multiple-testing
   diagnostics, M4.4 point-in-time membership and terminal cash, M4.5 optional
   square-root impact, M4.6 style risk attribution, the coordination standard
@@ -36,8 +36,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   retirement (PR #259), the owner-delegated decision record (PR #260), and
   the typed CPCV geometry refusal and fail-closed DSR/Newey-West inputs (PR #261),
   the M4.7a-0 statistical and portfolio core on golden fixtures (PR #262),
-  the M4.7a-1 EODHD retrieval and holdout partition modules (PR #264), and
-  the M4.7a-2 PIT universe build, terminal tooling, and coverage census (PR #265).
+  the M4.7a-1 EODHD retrieval and holdout partition modules (PR #264),
+  the M4.7a-2 PIT universe build, terminal tooling, and coverage census (PR #265),
+  and the M4.7b-1 runner integration on the synthetic fixture universe (PR #266).
 - M4.3 through M4.6 carry synthetic evidence only; the committed real-data
   report predates M4.3.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
@@ -45,8 +46,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `e76ddb4efe916b5d733e6b583b05c13b2f3ff85d` (PR #203 merge), and
   `770cfe5415c371aba4fa67312ff23130ccec1785` (PR #260 merge),
   `49eacdd4ce69fe1db9b779bfb7cc975d8b5950d3` (PR #261 merge),
-  `2c07ee4db70bc90cd449382c69b63765de2eab7d` (PR #262 merge), and
-  `76a0e43a04d665853c8a88b356dfdb63bad4f978` (PR #264 merge).
+  `2c07ee4db70bc90cd449382c69b63765de2eab7d` (PR #262 merge),
+  `76a0e43a04d665853c8a88b356dfdb63bad4f978` (PR #264 merge), and
+  `de3172bc6dbd2831b15c60f73586969e055b25bd` (PR #265 merge).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -74,11 +76,12 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - M4.7a-2 (PR #265): the seal script, universe build, terminal tooling, support
   wiring, and coverage census under `research/m4_7_*.py`; report
   `coord/reports/m4_7a2_universe_and_census_impl.md`.
-- M4.7b-1 candidate (branch `claude/m4_7b1-runner-integration`): the runner in
-  `research/m4_7_sp500_pit_rerun.py` (registration binding, snapshot and schedule
-  checks, both families, segmented books, CPCV, gate, report, sidecar, trials),
-  tested on the committed fixture universe `tests/fixtures/m4_7/runner_scenario.py`;
-  no network call and no private data; report `coord/reports/m4_7b1_runner_integration_impl.md`.
+- M4.7b-1 (PR #266): the runner in `research/m4_7_sp500_pit_rerun.py`, tested on
+  the committed fixture universe; report `coord/reports/m4_7b1_runner_integration_impl.md`.
+- M4.7a-3 candidate (branch `claude/m4_7a3-universe-census`): O-3 Option A seal rule
+  (one-year holdout, 7 in-band years, 48 IC months, declared `calendar_source`) and the
+  full offline run on `real_v1`; O-7 accepted shortfall and O-8 VP-2 re-ratification;
+  census `ready_with_caveats`; report `coord/reports/m4_7a3_universe_and_census_impl.md`.
 
 ## Current Research Gate Summary
 
@@ -91,18 +94,13 @@ rerun, is the active research milestone. The evidence ceiling remains
 
 ## Immediate Blockers Or Owner Decisions
 
-- No blocker for Phase M4.7b-1: every test runs on synthetic snapshots
-  written by the merged retrieval module from a fake vendor.
-- Phase M4.7a-3 private data retrieval requires `EFR_EODHD_API_TOKEN`,
-  standing data authority D1, and the owner's run authorization.
+- No blocker for M4.7b-2. Census `ready_with_caveats:coverage_shortfall_accepted,
+  holdout_breadth_after_identity` (O-7); VP-2 re-ratified under `DIAGNOSTIC_ONLY` (O-8).
 
 ## Next Safe Action
 
-- CRITICAL-lane review of the M4.7b-1 candidate (two fresh formal reviewers),
-  the ABLATION pass, and coordinator acceptance of its exact head. M4.7a-3
-  (private retrieval, build, curation, census) needs the owner's explicit run
-  authorization recorded in the engineering log; M4.7b-2 (registration freeze)
-  follows a-3 and b-1.
+- M4.7b-2 registration freeze pinning census `608fd1b1…1c40`, confirmed seal
+  `b7f9380f…f506`, and the runner's Option A protocol (32 IC months, SPY calendar).
 
 ## Source Routing
 
