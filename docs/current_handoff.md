@@ -1,7 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-27 for the M4.8 Stage B candidate (causal engines, locked capital, terminal schema v3,
-and the segment runner, integrated with merged Stage A on synthetic fixtures).
+Updated: 2026-09-27 for the M4.8 Stage C record (private point-in-time membership curation on real_v1 and
+gate G1).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -25,18 +25,19 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `bfdca57a9ff7ed71460d6c65b460887840978ef3` (main after PR #272).
+  `f416af8c5196844052c20cb6ebf580c39ab765fa` (main after PR #273).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #272: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
   M4.7b-2 preregistration freeze on real_v1, M4.7c-1 point-in-time rerun on real_v1
-  (`extend_first`), the M4.7c-2 decision record, M4.7 support v2 with the registration v2 rerun, and M4.8
-  Stage A (partition rule v2, seal carry, segment-local validation, census v3 code).
+  (`extend_first`), the M4.7c-2 decision record, M4.7 support v2 with the registration v2 rerun, M4.8
+  Stage A (partition rule v2, seal carry, segment-local validation, census v3 code), and M4.8 Stage B (causal
+  engines, locked capital, terminal schema v3, segment runner).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
   `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270),
-  `dcf7b86a` (PR #271), and `bfdca57a` (PR #272).
+  `dcf7b86a` (PR #271), `bfdca57a` (PR #272), and `f416af8c` (PR #273).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -47,42 +48,40 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m4_8b-engine` delivers M4.8 Stage B under the accepted binding plan Revision 3
-  (`bd1bf587…bf3e`), on synthetic fixtures only:
-  - `src/backtest/portfolio.py`, `src/backtest/long_short.py`: `halt_gap_return_v1` (H-1..H-9) with
-    `self_financing_locked_capital_v1` and the halt ledger.
-  - `src/features/diagnostics.py`: `segment_aware_bartlett_long_run_variance`.
-  - `research/m4_7_common_support.py`: `causal_signal_eligibility_mask_v3`, typed labels, `P_r`, the residual,
-    claim demand, the -100 percent bound events, and the rule v2 support file.
-  - `research/m4_7_terminal_evidence.py`: M4.8 scope classes, schema v3, two-pass validation, the census v3
-    terminal summary, and rule v2 segment dispatch.
-  - `research/m4_7_sp500_pit_rerun.py`: `support_contract_retired`, registration v3 checks with family and bound
-    hashes, the rule v2 binder and per-side loader, per-segment execution, and the v3 report.
-  - SL-7 dispositions, the integration record, and the attempt b2 remediation (review findings M48B-A1-M01,
-    M48B-A1-M02, M48B-A1-A01, A2-B-ADV-1, A2-B-ADV-3) and attempt b3 (M48B-A1-M03 / A2-B2-M01, A2-B2-ADV-1,
-    M48B-A1-A02) in `docs/engineering_log.md` (2026-09-27 entries).
-- The registration v2 code path gives byte-identical engine outputs, label records, and support file on the
-  synthetic fixtures against `bfdca57`.
+- Candidate branch `claude/m4_8c-membership` records M4.8 Stage C under the accepted binding plan Revision 3
+  (`bd1bf587…bf3e`), sections 2.3, 2.4, 5.1, and 7.3. No repository code changes.
+  - Private curation files (under `<private_data_root>`, never committed): 182 supplement rows (142
+    `start_date_fill`, 30 `absent_member_add`, 10 `date_correction` typed `correction_not_primary`), 358
+    reconstructed changes, and 17 S&P DJI factsheet line counts, from public documents under O48-1(a).
+  - Public census output `reports/m4_8_membership_census.{json,md}` (counts and hashes only).
+  - Records: `docs/engineering_log.md` and `docs/decision_log.md` (2026-09-27 Stage C entries).
+- `real_v1` and every committed M4.7 and M4.8 artifact stay byte-identical.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
 Milestone 4.7 is completed; see `docs/current_roadmap.md`. Registration v2 on real_v1 records the
 gate outcome `extend_first` (60 IC months; Family A MDE_f 0.0437-0.1293 against the 0.02 floor).
-M4.8 Stage A is merged and Stage B is a candidate, both on synthetic fixtures; no real-data M4.8 result
-exists. The holdout
+M4.8 Stages A and B are merged (synthetic fixtures). Stage C gate G1 on real_v1 membership metadata passed:
+`coverage_start_pre` = `D0_pre` = 2014-04-30, 62 pre-segment IC months, unresolved-change fraction 0.0154,
+R3-2c 0.0082. The pass rests on curation convention C-1 (the as-traded reading gives R3-2c 0.0104) and on
+floor anchors (no December factsheet exists). No price value was read. The holdout
 window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- O48-1 (public-document retrieval) is needed before Stage C.
-- The Stage B candidate (PR #273, attempt b3) needs its CRITICAL re-review and ablation acceptance before merge.
-- Owner item: the frozen registration v2 validator accepts a cash completion dated after the calendar end
-  (review A2-05, disclosed in the 2026-09-27 b2 engineering-log entry); schema v3 refuses it.
+- Owner confirmation of Stage C curation convention C-1 (absent members keyed by the snapshot code of the same
+  security); it decides R3-2c (0.0082 against 0.0104 under the literal as-traded reading).
+- Owner disposition of the 10 M-2 discrepancy lines (vendor start dates the public lists and all 17 S&P DJI
+  factsheet counts contradict): accept as the R3-10 caveat, revise M-2 by plan revision, or seek primary sources.
+- The Stage C record needs its CRITICAL two-seat review before Stage D builds real_v2.
+- Owner item carried: the frozen registration v2 validator accepts a cash completion dated after the calendar end
+  (review A2-05); schema v3 refuses it.
 
 ## Next Safe Action
 
-- Coordinator dispatches the CRITICAL review of the Stage B PR; Stage C membership curation waits for O48-1.
+- Coordinator dispatches the CRITICAL review of the Stage C record; after the owner confirms C-1 and the M-2
+  disposition, Stage D builds real_v2 with the curated files.
 
 ## Source Routing
 

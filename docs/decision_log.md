@@ -15,6 +15,44 @@ investment performance.
 
 ---
 
+## 2026-09-27 - M4.8 Stage C: O48-1(a) Retrieval, Curation Conventions, and Gate G1 Record
+
+Context:
+
+- Plan `m4_8_binding_plan` Revision 3 (`bd1bf587…bf3e`) section 7.3 gates Stage D on G1. The Stage C card
+  (`coord/v8_review_20260923/card_m4_8c_membership.md`, task `m4_8c-membership-a1`) states owner directive O48-1(a):
+  public-document retrieval (SEC EDGAR, S&P DJI announcements and factsheets, public changes lists with
+  corroboration). O48-1(b) (EODHD retrieval) is not granted.
+
+Decision:
+
+- Stage C used O48-1(a) only; no EODHD request was made. Curated files stay under `<private_data_root>`.
+- Gate G1 record on `real_v1` metadata and the curated files: `passed`. `coverage_start_pre` = `D0_pre` =
+  2014-04-30, `r_pre_last` 2019-05-31, `pre_ic_months` 62, unresolved-change fraction 0.01544 (cap 0.02), R3-2c
+  0.00820 (cap 0.01), all seven required anchors pass on the 500-line floor. Curated file SHA-256: supplement
+  `d209b13d…c6dc606`, changes `19bc49c9…14a8fa89`, counts `bc78c556…4ffb280`; public census `1ef23a17…d766cce`.
+- Candidate conventions pending owner confirmation before Stage D:
+  - C-1 `eodhd_code_same_security_v1`: an absent member is keyed by the snapshot code holding the same security's
+    bars; the as-traded ticker otherwise; `<ticker>_old` when the as-traded code belongs to another security. Under
+    the literal as-traded reading R3-2c is 0.01044 and G1 blocks (`unpriced_absent_members`).
+  - M-2 applied as written: 10 vendor start dates that both public lists contradict stay in force as unadjudicated
+    discrepancies, because no S&P DJI announcement states those addition dates. All 17 published factsheet counts
+    equal `n_cur` plus these lines. With every anchor modelled that way, the coverage start moves to 2016-10-31 with
+    32 IC months, so the pass also rests on the floor-anchor slack (plan section 10).
+
+Rationale:
+
+- C-1 matches the vendor table's own keying of renamed lines and keeps each security's bars; the `_old` guard stops
+  a reused code from pricing one company with another's bars (ablation: bare codes refuse 3 real members and price
+  one with another company's bars).
+
+Follow-up:
+
+- Owner: confirm C-1; choose the M-2 disposition (accept as the R3-10 caveat, revise M-2 by plan revision, or seek
+  primary sources). CRITICAL two-seat review of the Stage C record before Stage D.
+
+---
+
 ## 2026-09-26 - Owner Risk Acceptance: Support v2 Look-Ahead Exclusion (AUDIT1-M01, ADV-1)
 
 Context:

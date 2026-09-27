@@ -12,6 +12,40 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage C: point-in-time membership curation on real_v1 and gate G1
+
+- Source: plan Revision 3 (`bd1bf587…bf3e`) sections 2.3, 2.4, 5.1, 7.3; card `m4_8c-membership-a1`; O48-1(a).
+  Report: `coord/reports/m4_8c_membership_impl.md`. Base `f416af8` (PR #273). No repository code changed.
+- Sources (retrieved 2026-09-27, stored privately with SHA-256 indexes): the Wikipedia changes table (revision
+  1376064088) and constituents list (revision 1376729338); the fja05680/sp500 daily component file (commit
+  `a2430f2`); 122 of 153 cited S&P DJI and news documents (27 returned 403, 4 returned 404); 100 archived S&P 500
+  monthly factsheets. Every effective date comes from its S&P DJI announcement when one parse agrees with the lists
+  within 7 rows (18 disagreements reviewed against the text, one parser error overridden). Wikipedia records
+  announcement dates on some rows (checked for two 2012 rows).
+- Curated files (private): 182 supplement rows (142 `start_date_fill` valid, 30 `absent_member_add` valid with 10
+  priced and 20 unpriced and 0 `identity_refused`, 10 `date_correction` typed `correction_not_primary`); 358 changes
+  (265 `sp_dji_announcement`, 93 `public_changes_list`; 325 vendor matches, 28 supplement matches, 5 unresolved); 21
+  list events excluded with typed reasons (11 ticker changes, 4 S&P DJI continuations, 4 source artifacts, 2 spin-off
+  placeholders); 17 factsheet line counts. Zero fatal schema or rule errors.
+- Census (`membership-census --snapshot-id real_v1 --curated-dir <private>`): `n_cur` rises from 321 to 492 at
+  2011-08-31 and from 467 to 504 at 2019-06-30. `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last`
+  2019-05-31; `pre_ic_months` 62; R3-2a 0.01544; R3-2c 5,336 / 650,629 = 0.00820; required anchors 7 of 7 on the
+  floor; late undated entries 10 in the seal window and 10 in the warm-up. **Gate G1: passed.** Public output
+  `reports/m4_8_membership_census.json` SHA-256 `1ef23a17a549263f3780a92911e9189d8c1a039ad4b2526fa41e79760d766cce`.
+- Check: at all 17 published month-ends, published count = `n_cur` + active M-2 discrepancy lines (Δ −7 to −2).
+- Decisive sensitivities (diagnostics): the literal as-traded code reading gives R3-2c 0.01044 (G1 blocked);
+  modelled anchors equal to `n_cur` plus discrepancy lines give a 2016-10-31 start with 32 IC months (G1 blocked).
+  Both are owner items in `docs/decision_log.md`.
+- Ablation: simplification attempt (list dates in place of announcement dates) changes 31 dates and no census
+  output; the announcement dates stay as the correct `known_at` dates. Guard check: bare codes in place of the six
+  `_old` codes refuse 3 real members and price one member with another company's bars; the guard stays.
+- Findings outside scope: one line absent from the vendor table spans 2015-07-02 to 2024-07-08, so the registration
+  v2 post-holdout universe omitted it; one vendor entry acquired in 2020 has no end date. Plan gap: M-5 and M-7 see
+  code reuse only on overlapping dates.
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3284 passed, 2 skipped (pre-existing `longdouble` skips).
+- Process note: the first Wikipedia request sent a contact address in its user agent; later requests used a
+  generic user agent.
+
 ## 2026-09-27 - M4.8 Stage B attempt b3: panel-root split discovery closed (PR #273)
 
 - Source: Seat 1 AUDIT round 2 (`MATERIAL: 1, ADVISORY: 1`) and Seat 2 AUDIT_2 round 2 (`MATERIAL: 1, ADVISORY: 1`)
