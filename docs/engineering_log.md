@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage B attempt b3: panel-root split discovery closed (PR #273)
+
+- Source: Seat 1 AUDIT round 2 (`MATERIAL: 1, ADVISORY: 1`) and Seat 2 AUDIT_2 round 2 (`MATERIAL: 1, ADVISORY: 1`)
+  on `ffc4c06`; card `v8-exec-m48b-b3`. Both seats confirmed M48B-A1-M01, M48B-A1-M02, and M48B-A1-A01 resolved.
+- M48B-A1-M03 / A2-B2-M01 (R7, R9, R10): b2 moved the v3 loader call to `load_eod_cohort_panels(root / "panel", ...)`.
+  That loader passes its own directory to `load_symbol_splits`, which searches a request ledger,
+  `normalized/splits/`, `splits/`, and `<symbol>_splits.parquet` under it and overrides the panel `split_factor`.
+  The C64 guard still checked `panel/<side>` only, so an unregistered split table at the panel root changed both
+  segments' split basis (both seats measured 16 changed trial records and about 12 percent book equity) while the
+  registration verified. `_refuse_split_sources` now calls `load_symbol_splits` on `panel/` and on `panel/<side>`
+  for every inventory record, in `bind_snapshot_v3` and again before each segment load in `load_segment_runs`; a
+  found table or a ledger error refuses `panel_split_table_present` before any panel load or output. The loader
+  call, the per-side mapping, and the access-log derivation are unchanged.
+- A2-B2-ADV-1: the `inventory_member_missing` check in `load_segment_runs` could not fire (the loader raises
+  `FileNotFoundError` for an unmapped symbol and reindexes panels to the requested symbols); it is removed. The b2
+  entry below describes it as written at b2; the M02 protection is the registered inventory digest.
+- M48B-A1-A02: the implementation report checklist and the claims file now state the M01 repair by consideration
+  type: cash and worthless completions and delayed payments after the calendar keep `terms_valid` with their
+  timing failure; stock and mixed completions after the calendar return `acquirer_bar_missing` with
+  `terms_invalid`. The frozen v1 validator keeps its A2-05 reading as a disclosed owner follow-up.
+- Tests: 8 new in `tests/test_m4_8_integration_v3.py` (root `splits/`, root `<pid>_splits`, root
+  `normalized/splits/`, side `splits/`, root ledger, root ledger with a missing file, a table planted after binding,
+  and the unplanted control with its access logs). With the b3 test file on an archive of `ffc4c06`, the five root
+  cases and the post-binding case fail; the side case and the control pass. Full suite 3284 passed, 2 skipped
+  (pre-existing `longdouble` skips); ruff clean.
+- Byte identity against `bfdca57`: 18 of 18 engine digests; the v2 synthetic rerun's label records,
+  `census/asset_support.json`, `terminal/terminal_validation.json`, and `terminal/terminal_events_engine.csv`
+  byte-identical; sidecar, 231 trials, and report equal after removing the `code_commit`-dependent digests.
+
 ## 2026-09-27 - M4.8 Stage B attempt b2: review remediation (PR #273)
 
 - Source: Seat 1 AUDIT (`MATERIAL: 2, ADVISORY: 1`) and Seat 2 AUDIT_2 (`MATERIAL: 0, ADVISORY: 3`) on `8a2b453`;

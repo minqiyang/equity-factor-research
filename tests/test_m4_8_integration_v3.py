@@ -260,3 +260,61 @@ def test_adv1_the_support_access_log_reports_a_wrong_side_open(chain):
     rows = calendar[segment.feature_floor_row:segment.last_book_row + 1]
     _, opened = segment_bars(chain["snap"], _redirected_inventory(chain), segment.side, ["W00.US#E1"], rows)
     assert opened == ["discovery_pre"]
+
+
+# ---------------------------------------------------------------- M48B-A1-M03: no split table outside the registered inventory
+
+
+def _plant_split(snap, relative, pid="W00.US#E1"):
+    target = snap / "panel" / relative.format(pid=pid)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"date": pd.to_datetime(["2020-08-28"]), "ratio": [2.0]}).to_parquet(target, index=False)
+
+
+def _plant_ledger(snap, prefix="", pid="W00.US#E1", with_file=True):
+    import sqlite3
+
+    logs = snap / "panel" / prefix / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(logs / "eod_request_ledger.sqlite3") as conn:
+        conn.execute("CREATE TABLE request (request_id TEXT, endpoint_kind TEXT, endpoint_role TEXT, "
+                     "provider_symbol TEXT)")
+        conn.execute("INSERT INTO request VALUES ('R-1', 'SPLITS', 'SPLITS', ?)", (pid,))
+    if with_file:
+        _plant_split(snap, f"{prefix}/normalized/splits/R-1.parquet".lstrip("/"))
+
+
+@pytest.mark.parametrize("plant", [
+    lambda snap: _plant_split(snap, "splits/{pid}.parquet"),
+    lambda snap: _plant_split(snap, "{pid}_splits.parquet"),
+    lambda snap: _plant_split(snap, "normalized/splits/{pid}.parquet"),
+    lambda snap: _plant_split(snap, "discovery_post/splits/{pid}.parquet"),
+    lambda snap: _plant_ledger(snap),
+    lambda snap: _plant_ledger(snap, with_file=False),
+], ids=["root_splits_dir", "root_symbol_splits", "root_normalized", "side_splits_dir", "root_ledger",
+        "root_ledger_missing_file"])
+def test_m03_a_split_table_outside_the_inventory_refuses_before_any_panel_load(chain, tmp_path, monkeypatch, plant):
+    snap = _copy(chain, tmp_path)
+    plant(snap)
+    sidecar, loads = _rerun_on(chain, snap, tmp_path, monkeypatch)
+    assert sidecar["stop"]["reason"] == "panel_split_table_present" and "W00.US#E1" in sidecar["stop"]["detail"]
+    assert sidecar["outputs_written"] is False and loads == [] and not (tmp_path / "out").exists()
+
+
+def test_m03_a_split_table_planted_after_binding_refuses_before_the_segment_load(chain, tmp_path, monkeypatch):
+    snap = _copy(chain, tmp_path)
+    bound = runner.bind_snapshot_v3(snap, chain["doc"], chain["census_json"])
+    _plant_split(snap, "{pid}_splits.parquet")
+    loads: list[str] = []
+    original = runner.load_eod_cohort_panels
+    monkeypatch.setattr(runner, "load_eod_cohort_panels",
+                        lambda directory, symbols, **kw: loads.append(str(directory)) or original(directory, symbols, **kw))
+    with pytest.raises(runner.RunnerStop) as stop:
+        runner.load_segment_runs(bound)
+    assert stop.value.reason == "panel_split_table_present" and loads == []
+
+
+def test_m03_the_unplanted_copy_still_completes(chain, tmp_path, monkeypatch):
+    sidecar, loads = _rerun_on(chain, _copy(chain, tmp_path), tmp_path, monkeypatch)
+    assert sidecar["run_status"] == "completed" and len(loads) == 2
+    assert sidecar["header"]["segment_access_logs"] == {"pre": ["discovery_pre"], "post": ["discovery_post"]}

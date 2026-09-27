@@ -1669,8 +1669,7 @@ def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_js
         path = root / "panel" / record["file"]
         if not path.is_file() or sha256_bytes(path.read_bytes()) != record["sha256"]:
             raise _stale(f"panel {record['file']}")
-        if load_symbol_splits(root / "panel" / record["side"], record["symbol"]) is not None:
-            raise RunnerStop("panel_split_table_present", record["file"])
+    _refuse_split_sources(root, inventory["files"])
     holdout = registration["holdout"]
     if (carry["holdout_start"], carry["holdout_end_exclusive"]) != (
             holdout.get("holdout_start"), holdout.get("holdout_end_exclusive")):
@@ -1681,15 +1680,40 @@ def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_js
             "calendar": calendar, "segments": segments, "census": json.loads(Path(census_json).read_bytes())}
 
 
+V3_LOADER_DIRECTORY = "panel"
+
+
+def _refuse_split_sources(root: Path, records: Sequence[dict[str, Any]]) -> None:
+    """C64 for the v3 loader: no split table reachable from any directory the loader or a side layout exposes.
+
+    ``load_eod_cohort_panels`` passes its own directory to ``load_symbol_splits``,
+    which searches a request ledger, ``normalized/splits``, ``splits``, and
+    ``<symbol>_splits`` below it and overrides the panel ``split_factor``. The
+    check calls that same function on ``panel/`` (the loader's directory) and on
+    ``panel/<side>``, so a split table outside the registered inventory refuses
+    ``panel_split_table_present`` before any panel load (M48B-A1-M03).
+    """
+    for record in records:
+        for directory in (root / V3_LOADER_DIRECTORY, root / V3_LOADER_DIRECTORY / record["side"]):
+            try:
+                found = load_symbol_splits(directory, record["symbol"])
+            except (OSError, ValueError) as exc:
+                raise RunnerStop("panel_split_table_present", f"{record['symbol']}: {exc}") from exc
+            if found is not None:
+                raise RunnerStop("panel_split_table_present",
+                                 f"{record['symbol']} under {directory.relative_to(root).as_posix()}")
+
+
 def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str, list[str]]]:
     """One ``SegmentRun`` per segment from the bound inventory's panel files for its side (SL-1, B-1; seam I-1).
 
-    The loader opens exactly the files the registered inventory names, whose
-    hashes ``bind_snapshot_v3`` verified. The returned access log, which census
-    v3 rule R3-9 reads, is the set of side directories of those opened paths
-    (A2-B-ADV-1). A registered member the loaded panels lack refuses
-    ``inventory_member_missing``. Fields keep rows up to the segment's last book
-    row; ``_segment_calendar`` refuses any row on the other side or in the seal.
+    The loader opens the EOD files the registered inventory names, whose hashes
+    ``bind_snapshot_v3`` verified, and ``_refuse_split_sources`` runs again just
+    before each load, so the loader's split discovery finds no table (C64). The
+    returned access log, which census v3 rule R3-9 reads, is the set of side
+    directories of the opened EOD paths (A2-B-ADV-1). Fields keep rows up to the
+    segment's last book row; ``_segment_calendar`` refuses any row on the other
+    side or in the seal.
     """
     root, calendar = bound["snapshot"].root, bound["calendar"]
     intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
@@ -1702,13 +1726,12 @@ def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str
             raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} has no {segment.side} panel")
         assets = sorted(set(intervals["permanent_id"]) & set(records) - {BENCHMARK_ID})
         opened = [records[pid]["file"] for pid in assets + [BENCHMARK_ID]]
+        _refuse_split_sources(root, [records[pid] for pid in assets + [BENCHMARK_ID]])
         with tempfile.TemporaryDirectory() as scratch:
             mapping = Path(scratch) / "inventory.json"
             mapping.write_text(json.dumps({"files": [{"symbol": pid, "file": records[pid]["file"]}
                                                      for pid in assets + [BENCHMARK_ID]]}), encoding="utf-8")
-            loaded = load_eod_cohort_panels(root / "panel", assets + [BENCHMARK_ID], inventory_path=mapping)
-        if set(loaded["adjusted_close"].columns) != set(assets + [BENCHMARK_ID]):
-            raise RunnerStop("inventory_member_missing", segment.segment_id)
+            loaded = load_eod_cohort_panels(root / V3_LOADER_DIRECTORY, assets + [BENCHMARK_ID], inventory_path=mapping)
         last = calendar[segment.last_book_row]
         fields = {k: v.loc[v.index <= last] for k, v in loaded.items() if isinstance(v, pd.DataFrame)}
         own = events[events["permanent_id"].isin(assets) & events["effective_date"].isin(

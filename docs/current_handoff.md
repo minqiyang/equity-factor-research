@@ -59,7 +59,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   - `research/m4_7_sp500_pit_rerun.py`: `support_contract_retired`, registration v3 checks with family and bound
     hashes, the rule v2 binder and per-side loader, per-segment execution, and the v3 report.
   - SL-7 dispositions, the integration record, and the attempt b2 remediation (review findings M48B-A1-M01,
-    M48B-A1-M02, M48B-A1-A01, A2-B-ADV-1, A2-B-ADV-3) in `docs/engineering_log.md` (2026-09-27 entries).
+    M48B-A1-M02, M48B-A1-A01, A2-B-ADV-1, A2-B-ADV-3) and attempt b3 (M48B-A1-M03 / A2-B2-M01, A2-B2-ADV-1,
+    M48B-A1-A02) in `docs/engineering_log.md` (2026-09-27 entries).
 - The registration v2 code path gives byte-identical engine outputs, label records, and support file on the
   synthetic fixtures against `bfdca57`.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
@@ -75,7 +76,7 @@ window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`
 ## Immediate Blockers Or Owner Decisions
 
 - O48-1 (public-document retrieval) is needed before Stage C.
-- The Stage B candidate (PR #273, attempt b2) needs its CRITICAL re-review and ablation acceptance before merge.
+- The Stage B candidate (PR #273, attempt b3) needs its CRITICAL re-review and ablation acceptance before merge.
 - Owner item: the frozen registration v2 validator accepts a cash completion dated after the calendar end
   (review A2-05, disclosed in the 2026-09-27 b2 engineering-log entry); schema v3 refuses it.
 
