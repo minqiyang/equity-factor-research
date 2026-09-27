@@ -12,14 +12,13 @@ import pandas as pd
 import pytest
 
 from backtest.long_short import run_long_short_backtest
-from backtest.portfolio import capture_backtest_source_provenance, run_long_only_backtest
+from backtest.portfolio import BacktestValidationError, capture_backtest_source_provenance, run_long_only_backtest
 from data import holdout_partition
 from data.constituent_table import load_constituent_intervals_csv
 from data.holdout_partition import SEAL_RULE_OPTION_A, SnapshotRefusal
 from data.parquet_loader import load_eod_cohort_panels
 from fixtures.m4_7.e2e_scenario import JOIN2_MISSING, JOIN_MISSING, PEEL_OLD_MISSING, run_pipeline
 from m4_7_snapshot_support import CAL, I_H, Harness, bars, day, entry, rows
-from research.m4_7_common_support import signal_eligibility
 from research.m4_7_coverage_census import (
     derive_readiness,
     power_projection,
@@ -109,8 +108,8 @@ def e2e(tmp_path_factory):
 
 def test_t_census_2_public_outputs_carry_no_security_level_content(e2e):
     base = e2e["base"]
-    public_json = (base / "reports/m4_7_coverage_census.json").read_text()
-    public_md = (base / "reports/m4_7_coverage_census.md").read_text()
+    public_json = (base / "reports/m4_7_coverage_census_v2.json").read_text()
+    public_md = (base / "reports/m4_7_coverage_census_v2.md").read_text()
     master = pd.read_csv(e2e["snapshot"] / "identity/security_master.csv", dtype=str, keep_default_na=False)
     for text in (public_json, public_md):
         assert ".US#E" not in text and ".US" not in text
@@ -118,9 +117,10 @@ def test_t_census_2_public_outputs_carry_no_security_level_content(e2e):
             assert not re.search(rf"\b{re.escape(code.removesuffix('.US'))}\b", text), code
     public = json.loads(public_json)
     day_level = re.compile(r"\d{4}-\d{2}-\d{2}")
-    for record in public["exclusion_set"]["gap_windows"] + public["exclusion_set"]["segments"]:
-        assert not day_level.search(json.dumps(record))
-    assert {"start_month", "end_month", "reason_types", "rows"} == set(public["exclusion_set"]["gap_windows"][0])
+    support = public["asset_support"]
+    assert "exclusions" not in support and support["excluded_cells"] >= 1
+    assert all(set(row) == {"reset_date", "signal_eligible", "support_excluded", "evaluated"}
+               for row in support["breadth_by_reset"])
 
     def keys(value):
         if isinstance(value, dict):
@@ -133,8 +133,9 @@ def test_t_census_2_public_outputs_carry_no_security_level_content(e2e):
 
     value_fields = {"open", "high", "low", "close", "adjusted_close", "volume", "price", "terminal_return", "returns", "rho"}
     assert not value_fields & set(keys(public))
-    detail = json.loads((e2e["snapshot"] / "census/census_detail.json").read_text())
-    assert all(day_level.fullmatch(window["start"]) for window in detail["gap_windows"])
+    private = json.loads((e2e["snapshot"] / "census/asset_support.json").read_text())
+    assert all(".US#E" in pid and day_level.fullmatch(reset) for pid, reset, _ in private["exclusions"])
+    assert (e2e["snapshot"] / "census/census_detail_v2.json").is_file()
 
 
 def test_t_census_3_holdout_years_are_metadata_only(tmp_path, monkeypatch):
@@ -164,48 +165,56 @@ def equal_weight(s_mask):
     return s_mask.astype(float).where(s_mask)
 
 
-def test_a2_end_to_end_fixture_flows_and_every_book_completes_on_the_peeled_schedule(e2e):
+def test_a2_end_to_end_fixture_flows_and_every_book_completes_on_one_window(e2e):
     snap, support = e2e["snapshot"], e2e["support"]
+    schedule = support.schedule
     seal = json.loads((e2e["base"] / "seal/m4_7_holdout_seal_v1.json").read_text())
     assert seal["confirmation"]["status"] == "confirmed" and seal["holdout_end_exclusive"] == "2003-12-31"
     assert e2e["validation"]["counts"] == {"accepted": 6, "curation_unresolved": 1, "deferred_holdout": 1}
-    windows = [(w.start, w.end, sorted(w.reasons), w.peeled_rows) for w in support.schedule.windows]
-    peel = next(w for w in windows if "terminal_reset_missing_bar" in w[2])
-    assert (peel[0] + I_H, peel[3]) == (JOIN2_MISSING, 2)
-    assert set(support.schedule.g_term) == {("JOIN.US#E1", JOIN_MISSING - I_H), ("JOIN2.US#E1", JOIN2_MISSING - I_H)}
-    assert PEEL_OLD_MISSING - I_H in [row for row in np.flatnonzero(support.schedule.g_base["A02.US#E1"].to_numpy())]
-    census_exclusion = e2e["census"]["public"]["exclusion_set"]
-    assert census_exclusion["excluded_rows"] == support.schedule.excluded_rows
-    assert census_exclusion["gap_window_count"] == len(support.schedule.windows)
-    segments = json.loads((snap / "census/segments.json").read_text())
-    assert segments["segments_sha256"] == support.segments_sha256 == census_exclusion["segments_sha256"]
-    assert segments["segments"][0]["last_row"] == day(JOIN2_MISSING - 1) and segments["D0"] == day(412)
+    R = schedule.evaluation_resets
+    old_reset = int(R[R <= PEEL_OLD_MISSING - I_H][-1])
+    assert ("A02.US#E1", old_reset, "missing_bar") in schedule.reasons
+    assert [cell for cell in schedule.reasons if cell[0] == "A02.US#E1"] == [("A02.US#E1", old_reset, "missing_bar")]
+    first_join = min(int(r) for r in R if schedule.s_mask.iloc[r - 1][["JOIN.US#E1", "JOIN2.US#E1"]].any())
+    assert JOIN2_MISSING < JOIN_MISSING < first_join + I_H
+    assert not schedule.exclusions[["JOIN.US#E1", "JOIN2.US#E1"]].any().any()
+    assert {pid for pid, _, reason in schedule.reasons if reason == "unresolved_delisting"} <= set(support.unresolved)
+    census_support = e2e["census"]["public"]["asset_support"]
+    assert census_support["excluded_cells"] == len(schedule.reasons)
+    assert census_support["evaluation_resets"] == len(R) and census_support["unresolved_events"] == len(
+        support.unresolved_in_window())
+    record = json.loads((snap / "census/asset_support.json").read_text())
+    assert record["support_sha256"] == support.support_sha256 == census_support["support_sha256"]
+    assert record["D0"] == day(412) and record["ic_month_supply"] == len(R) - 1
     table = load_constituent_intervals_csv(snap / "membership/constituent_intervals.csv")
     assets = list(support.bars.columns)
     panels = load_eod_cohort_panels(snap / "panel", assets, inventory_path=snap / "panel/inventory_discovery.json")
     prices = panels["adjusted_close"].reindex(support.calendar)
     events = read_engine_events(snap)
     events = events[events["permanent_id"].isin(assets)].reset_index(drop=True)
-    s_mask = signal_eligibility(support.mask, support.bars)
-    scores = s_mask.astype(float).where(s_mask).mul(np.arange(len(assets), 0, -1), axis=1)
-    settled, executable = set(), set()
-    for segment in (s for s in support.schedule.segments if s.valid):
-        span = support.calendar[segment.first:segment.last + 1]
-        executable |= set(events.loc[events["effective_date"].isin(span), "permanent_id"])
-        start, end = support.calendar[segment.anchor], support.calendar[segment.last]
-        common = dict(evaluation_start=start, evaluation_end=end, rebalance_frequency="ME", constituent_intervals=table,
-                      terminal_events=events, transaction_cost_bps=1.0, slippage_bps=4.0)
+    common = dict(evaluation_start=support.calendar[schedule.d0 - 1], evaluation_end=support.calendar[schedule.d_last],
+                  rebalance_frequency="ME", constituent_intervals=table, terminal_events=events,
+                  transaction_cost_bps=1.0, slippage_bps=4.0)
+
+    def books(mask):
+        scores = mask.astype(float).where(mask).mul(np.arange(len(assets), 0, -1), axis=1)
         top = run_long_only_backtest(prices, scores, source_provenance=capture_backtest_source_provenance(prices, scores),
                                      top_pct=0.1, **common)
-        benchmark_signal = equal_weight(s_mask)
+        benchmark_signal = equal_weight(mask)
         benchmark = run_long_only_backtest(prices, benchmark_signal, top_pct=1.0, **{**common, "transaction_cost_bps": 0.0,
                                            "slippage_bps": 0.0}, source_provenance=capture_backtest_source_provenance(
                                                prices, benchmark_signal))
-        spread = run_long_short_backtest(prices, scores, quantiles=2, **common)
-        for book in (top, benchmark, spread):
-            assert np.isfinite(book.equity_curve.to_numpy()).all()
-        settled |= {record["permanent_id"] for record in benchmark.terminal_event_log}
-    assert settled == executable == set(events["permanent_id"])
+        return top, benchmark, run_long_short_backtest(prices, scores, quantiles=2, **common)
+
+    with pytest.raises(BacktestValidationError, match="price_invalid"):
+        books(schedule.s_mask)
+    top, benchmark, spread = books(schedule.evaluation_mask)
+    for book in (top, benchmark, spread):
+        assert np.isfinite(book.equity_curve.to_numpy()).all()
+        assert len(book.returns) == schedule.d_last - schedule.d0 + 2
+    window = support.calendar[schedule.d0:schedule.d_last + 1]
+    executable = set(events.loc[events["effective_date"].isin(window), "permanent_id"])
+    assert {record["permanent_id"] for record in benchmark.terminal_event_log} == executable == set(events["permanent_id"])
     assert set(events["return_basis"].value_counts().to_dict().values()) == {1, 2, 3}
 
 
@@ -213,7 +222,7 @@ def test_a2_end_to_end_fixture_flows_and_every_book_completes_on_the_peeled_sche
 
 
 CLEAN = {
-    "in_band_years": 20.0, "holdout_end": "2000-01-31", "gap_window_count": 3, "excluded_fraction": 0.01,
+    "in_band_years": 20.0, "holdout_end": "2000-01-31", "excluded_fraction": 0.01,
     "identity_refusal_fraction": 0.01, "off_calendar_fraction": 0.0, "calendar_covers_coverage_start": True,
     "benchmark_complete": True, "snapshot_integrity": True, "holdout_band_after_identity": True,
     "ic_month_supply": 120, "unpriced_fraction": 0.01, "retrieval_complete": True,
@@ -223,8 +232,7 @@ CLEAN = {
 @pytest.mark.parametrize("change, rule, result", [
     ({"in_band_years": 15.0}, "R-CENSUS-1", "blocked:insufficient_in_band_history"),
     ({"holdout_end": "2014-02-28"}, "R-CENSUS-1", "blocked:holdout_overlaps_prior_exposure"),
-    ({"gap_window_count": 7}, "R-CENSUS-2", "blocked:excluded_coverage"),
-    ({"gap_window_count": 6, "excluded_fraction": 0.051}, "R-CENSUS-2", "blocked:excluded_coverage"),
+    ({"excluded_fraction": 0.051}, "R-CENSUS-2", "blocked:excluded_coverage"),
     ({"identity_refusal_fraction": 0.051}, "R-CENSUS-3", "blocked:identity_refusal_fraction"),
     ({"off_calendar_fraction": 0.0011}, "R-CENSUS-4", "blocked:calendar_divergence"),
     ({"calendar_covers_coverage_start": False}, "R-CENSUS-5", "blocked:calendar_source_missing"),
@@ -241,7 +249,8 @@ def test_t_census_4_readiness_truth_table(change, rule, result):
 
 def test_t_census_4_ready_caveat_and_cap_edges():
     assert derive_readiness(CLEAN)["status"] == "ready"
-    assert derive_readiness({**CLEAN, "gap_window_count": 6, "excluded_fraction": 0.049})["status"] == "ready"
+    assert derive_readiness({**CLEAN, "excluded_fraction": 0.05})["status"] == "ready"
+    assert "gap_window_count" not in derive_readiness(CLEAN)["inputs"]
     caveat = derive_readiness({**CLEAN, "holdout_band_after_identity": False})
     assert caveat["status"] == "ready_with_caveats:holdout_breadth_after_identity"
     assert not any("vp2" in key for key in derive_readiness(CLEAN)["inputs"])
@@ -262,7 +271,7 @@ def test_option_a_readiness_thresholds_follow_the_seal_rule():
         {"rule": "R-CENSUS-8", "result": "blocked:insufficient_ic_months"}]
 
 
-SHORTFALL = {**CLEAN, "in_band_years": 83 / 12, "holdout_end": "2020-07-31", "gap_window_count": 20,
+SHORTFALL = {**CLEAN, "in_band_years": 83 / 12, "holdout_end": "2020-07-31",
              "excluded_fraction": 0.384, "ic_month_supply": 32, "unpriced_fraction": 0.330,
              "holdout_band_after_identity": False}
 
@@ -281,7 +290,7 @@ def test_option_a_accepted_shortfall_reads_ready_with_caveats():
         "R-CENSUS-1", "R-CENSUS-2", "R-CENSUS-7", "R-CENSUS-8", "R-CENSUS-9"]
     only_shortfall = derive_readiness({**SHORTFALL, "holdout_band_after_identity": True}, SEAL_RULE_OPTION_A)
     assert only_shortfall["status"] == "ready_with_caveats:coverage_shortfall_accepted"
-    edges = {"in_band_years": 6.9, "gap_window_count": 25, "excluded_fraction": 0.45, "ic_month_supply": 32,
+    edges = {"in_band_years": 6.9, "excluded_fraction": 0.45, "ic_month_supply": 32,
              "unpriced_fraction": 0.40}
     assert derive_readiness({**SHORTFALL, **edges}, SEAL_RULE_OPTION_A)["status"].startswith("ready_with_caveats:")
     assert derive_readiness(SHORTFALL)["status"] == "blocked"
@@ -289,7 +298,6 @@ def test_option_a_accepted_shortfall_reads_ready_with_caveats():
 
 @pytest.mark.parametrize("change, rule, result", [
     ({"in_band_years": 6.89}, "R-CENSUS-1", "blocked:insufficient_in_band_history"),
-    ({"gap_window_count": 26}, "R-CENSUS-2", "blocked:excluded_coverage"),
     ({"excluded_fraction": 0.451}, "R-CENSUS-2", "blocked:excluded_coverage"),
     ({"ic_month_supply": 31}, "R-CENSUS-8", "blocked:insufficient_ic_months"),
     ({"unpriced_fraction": 0.401}, "R-CENSUS-9", "blocked:unpriced_eligible_member_days"),
@@ -309,9 +317,12 @@ def test_t_census_4_unusable_entry_charge_and_one_row_missing_bar(tmp_path, monk
     assert coverage["eligible_member_days"] == coverage["member_days_total"] + SPAN
     assert failing(result)["R-CENSUS-9"] == "blocked:unpriced_eligible_member_days"
     assert result["public"]["identity"]["entry_refusals_by_code"] == {"entry_missing_field": 1}
-    exclusion = json.loads((harness.snapshot_dir / "census/exclusion_set.json").read_text())
-    assert exclusion["g_base"] == [["GAP1.US#E1", day(600)]]
-    assert result["public"]["exclusion_set"]["gap_window_count"] == 1
+    support = json.loads((harness.snapshot_dir / "census/asset_support.json").read_text())
+    resets = [int(CAL.get_loc(pd.Timestamp(row["reset_date"]))) for row in support["breadth"]]
+    held_from = CAL[max(r for r in resets if r <= 600)].date().isoformat()
+    assert support["exclusions"] == [["GAP1.US#E1", held_from, "missing_bar"]]
+    assert result["public"]["asset_support"]["excluded_cells"] == 1
+    assert result["public"]["asset_support"]["evaluation_resets"] == len(resets)
 
 
 def test_t_census_5_power_projection_reference_table():
@@ -354,12 +365,11 @@ def test_t_census_7_eligible_unpriced_member_days_by_reason(tmp_path, monkeypatc
     harness, result = census(tmp_path, monkeypatch, "c7", entries, codes)
     assert unpriced(result) == {
         "no_discovery_panel": 100, "pre_first_bar": 9, "post_last_bar_deferred_holdout": 40,
-        "after_unresolved_disappearance": 731 - 701, "no_vendor_bars:missing_symbol": 50, "no_bars_in_interval": 60,
+        "after_unresolved_disappearance": 731 - 700, "no_vendor_bars:missing_symbol": 50, "no_bars_in_interval": 60,
     }
-    exclusion = json.loads((harness.snapshot_dir / "census/exclusion_set.json").read_text())
-    assert exclusion["unresolved"] == [["UNR.US#E1", day(701)]]
-    in_x = {pid for pid, _ in exclusion["g_base"] + exclusion["g_term"]}
-    assert not in_x & {"QUAR.US#E1", "PRE.US#E1", "HOLD.US#E1", "DLST.US#E1"}
+    assert result["detail"]["unresolved"] == {"UNR.US#E1": 701 - I_H}
+    support = json.loads((harness.snapshot_dir / "census/asset_support.json").read_text())
+    assert [(pid, reason) for pid, _, reason in support["exclusions"]] == [("UNR.US#E1", "unresolved_delisting")]
 
 
 # ---------------------------------------------------------------- T-CENSUS-8
@@ -623,7 +633,7 @@ def test_t_census_10_f_premise_exposure_and_report_header(tmp_path, monkeypatch)
     assert round(support["s_d"]["max"], 4) == 0.1006 and support["s_d"]["max"] == pytest.approx(-8 * math.log(0.9875))
     assert support["member_days_s_d_above_0_05"] == eight_rows[4] - 430
     assert result["public"]["vp2_revisit_required"] is True
-    header = (tmp_path / "c10f_out/reports/m4_7_coverage_census.md").read_text()
+    header = (tmp_path / "c10f_out/reports/m4_7_coverage_census_v2.md").read_text()
     for phrase in ("VP-1", "VP-2", "B_D max", "S_D max", "O-8", "vp2_revisit_required: True", "DIAGNOSTIC_ONLY"):
         assert phrase in header
 

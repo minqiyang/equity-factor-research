@@ -53,6 +53,10 @@ The program follows five primary milestones:
   snapshot `real_v1` under preregistration `6ea218a6…1c9f` with 0 Class I stops.
   The deterministic gate evaluates to `extend_first` (power inadequate, 0 BY
   rejections in Family A or Family B, PBO >= 0.50, holdout partition sealed).
+- Support v2 (owner correction, branch `claude/breadth-support-isolation-fix`): asset-level
+  holding-period isolation replaces the global gap-window schedule. Registration v2 (`4a6f8b5a…e7dc`)
+  on real_v1 evaluates all 61 resets and 60 IC months at 424-433 names per reset; Family A MDE_f
+  0.0437-0.1293; outcome stays `extend_first`.
 - The following earlier program-position entries preserve the Stage 2/M3
   checkpoint and historical research evidence.
 - Last externally verified protected baseline:
@@ -178,6 +182,11 @@ Evidence ceiling remains `DIAGNOSTIC_ONLY`.
    (SHA-256 `6ea218a6…1c9f`) binding upstream digests, Owner Decisions O-1, O-3, O-6, O-7, O-8 (PR #268).
 7. **Rerun and gate.** Executed on snapshot `real_v1` with 0 Class I stops, BY corrections,
    and deterministic decision gate outcome `extend_first` (PR #269).
+8. **Support v2 (owner correction).** Asset-level holding-period isolation
+   (`asset_level_holding_period_support_exclusion_v1`) replaces the v1 gap windows and segments. A missing
+   bar or unevidenced delisting excludes only the affected asset-period (27 cells of 26,237 on real_v1).
+   Registration v2 restores 60 IC months (v1: 32) and 424-433 evaluated names per reset; MDE_f
+   0.0437-0.1293 stays above 0.02, so the outcome stays `extend_first`. v1 artifacts remain unchanged.
 
 ## Imperfection Policy And Lightweight Backlog
 
@@ -202,6 +211,7 @@ status.
 | Delisting terminal evidence for held securities | Economic Correctness | An unevidenced held delisting refuses the whole run in both engines | Point-in-time universes contain acquired and delisted members. M4.7 implements terminal evidence tooling, validation, and corporate-action attribution (PR #265, PR #267). | M4.7 universe & census | Implemented in M4.7 (PR #265, PR #267) |
 | Advanced multiple-testing statistics | Statistics | Multiplicity and adaptive research affect inference | Existing DSR uses run-family Sharpe dispersion. M4.3 adds Bonferroni, Holm, BH and BY over all semantic book trials, primary HAC BY diagnostics, and explicitly conditional IID Sharpe haircuts. Undefined and conflicting trials retain family slots. Historical search completeness, finite-sample HAC calibration, and empirical-population Harvey-Liu simulation remain open. | Stronger formal research claims and accepted historical-family evidence | Implemented diagnostic layer; DIAGNOSTIC_ONLY; formal promotion limits remain |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
+| Support v2 look-ahead exclusion (R1) | Timing / Invariants | Retrospective asset exclusion at r-1 for mid-month missing bar / unevidenced delisting | Confined to 27 cells of 26,237 (0.103%) on real_v1; DIAGNOSTIC_ONLY ceiling; zero ranking/selection/profitability claim; owner-accepted risk | Revisit immediately if any rerun produces a Family A BY survivor, or if excluded fraction exceeds 0.005; expires at next registration freeze | Owner-accepted, expires at next registration freeze |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities. M4.4 requires identity-backed interval tables and exact permanent-ID axes in its optional PIT path; synthetic ticker-reassignment tests preserve separate security returns. External identity evidence remains caller-supplied. | Never deferrable | **BLOCKING (Cannot Defer)**; optional runtime enforcement implemented |
 | Future-membership selection & survivor-cohort filtering | Sample Honesty | Severe upward performance bias from hindsight selection | Invariant R2: eligibility uses only membership known at decision time. A static survivor cohort is permitted only under `DIAGNOSTIC_ONLY`, with the bias stated in each report header, and never supports ranking, selection, promotion, or profitability claims. M4.7 implements S&P 500 point-in-time membership intervals and resolve_pit_universe_mask executed on real_v1 (PR #267, PR #269). | Never deferrable | **BLOCKING (Cannot Defer)**; point-in-time universe implemented and executed in M4.7 |
 | Silent fill, clip, drop, or data repair (PIT-009) | Data Honesty | Fabricated price history or distorted returns | Must fail closed or explicitly preserve missingness; never silently forward-fill, interpolate, clip, or drop bad bars | Never deferrable | **BLOCKING (Cannot Defer)** |

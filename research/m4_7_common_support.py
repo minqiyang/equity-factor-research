@@ -1,18 +1,21 @@
-"""Common evaluation support for the M4.7 S&P 500 PIT rerun (plan section 4).
+"""Asset-level evaluation support for the M4.7 S&P 500 PIT rerun (plan section 4, support v2).
 
 Pure functions over a discovery calendar, its scheduled reset rows, a bar
 presence matrix ``B``, the engine-resolved universe ``M``
-(``backtest.portfolio.resolve_pit_universe_mask``), and the engine event
-table. Rows are integer positions on the calendar. Nothing here reads vendor
-files or depends on a holding, signal, price value, or outcome, except the
-labels of section 4.6, which read adjusted closes and signals by definition.
+(``backtest.portfolio.resolve_pit_universe_mask``), and the settled terminal
+rows. Rows are integer positions on the calendar. A missing bar or an
+unevidenced disappearance excludes only the affected asset from the reset whose
+holding period needs that bar; every other asset, row, and month stays in the
+single evaluation window ``[d0, d_last]``. Nothing here reads vendor files or
+depends on a holding, signal, price value, or outcome, except the labels of
+section 4.6, which read adjusted closes and signals by definition.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Mapping
 
 import numpy as np
@@ -22,45 +25,45 @@ from backtest.portfolio import _prepare_terminal_events, resolve_pit_universe_ma
 from features.diagnostics import factor_rank_information_coefficient
 
 
-MIN_SEGMENT_ROWS = 42
+SUPPORT_CONTRACT = "asset_level_holding_period_support_exclusion_v1"
 MIN_IC_PAIRS = 100
-
-
-@dataclass
-class GapWindow:
-    start: int
-    end: int
-    reasons: set[str] = field(default_factory=set)
-    peeled_rows: int = 0
-
-
-@dataclass(frozen=True)
-class Segment:
-    first: int
-    last: int
-    valid: bool
-
-    @property
-    def anchor(self) -> int:
-        return self.first - 1
-
-    @property
-    def rows(self) -> int:
-        return self.last - self.first + 1
 
 
 @dataclass(frozen=True)
 class SupportSchedule:
+    """The evaluation window, ``S_mask``, and the asset-level exclusion cells ``X`` at signal rows ``r - 1``."""
+
     reset_rows: np.ndarray
     d0: int
     d_last: int
-    g_base: pd.DataFrame
-    g_term: tuple[tuple[str, int], ...]
-    windows: tuple[GapWindow, ...]
-    segments: tuple[Segment, ...]
-    excluded_rows: int
-    excluded_fraction: float
+    s_mask: pd.DataFrame
+    exclusions: pd.DataFrame
+    reasons: tuple[tuple[str, int, str], ...]
     max_reset_to_reset_rows: int
+
+    @property
+    def evaluation_resets(self) -> np.ndarray:
+        return self.reset_rows[(self.reset_rows >= self.d0) & (self.reset_rows <= self.d_last)]
+
+    @property
+    def evaluation_mask(self) -> pd.DataFrame:
+        """``E = S_mask & ~X``: the cells that IC pairs, labels, books, and benchmarks read."""
+        return self.s_mask & ~self.exclusions
+
+    def breadth(self) -> pd.DataFrame:
+        """Per evaluation reset: signal-eligible, support-excluded, and evaluated asset counts."""
+        rows = self.evaluation_resets - 1
+        eligible = self.s_mask.to_numpy(dtype=bool)[rows].sum(axis=1)
+        excluded = self.exclusions.to_numpy(dtype=bool)[rows].sum(axis=1)
+        return pd.DataFrame({"signal_eligible": eligible, "support_excluded": excluded,
+                             "evaluated": eligible - excluded},
+                            index=pd.Index(self.s_mask.index[self.evaluation_resets], name="reset_date"))
+
+    @property
+    def excluded_fraction(self) -> float:
+        breadth = self.breadth()
+        eligible = int(breadth["signal_eligible"].sum())
+        return int(breadth["support_excluded"].sum()) / eligible if eligible else 0.0
 
 
 def scheduled_reset_rows(calendar: pd.DatetimeIndex) -> np.ndarray:
@@ -75,102 +78,37 @@ def signal_eligibility(mask: pd.DataFrame, bars: pd.DataFrame) -> pd.DataFrame:
     return mask.astype(bool).shift(-1, fill_value=False) & bars.astype(bool)
 
 
-def holding_cells(mask: pd.DataFrame, reset_rows: np.ndarray, d_last: int) -> pd.DataFrame:
-    """``H(a)``: ``[R_entry, R_exit]`` over each membership run of ``M`` with ``R_entry < R_exit``."""
-    values = mask.to_numpy(dtype=bool)
-    held = np.zeros_like(values)
-    rows = len(values)
-    for column in range(values.shape[1]):
-        present = np.concatenate(([False], values[:, column], [False]))
-        edges = np.flatnonzero(present[1:] != present[:-1])
-        for m_in, m_out in zip(edges[::2], edges[1::2]):
-            entry = _first_reset_at_or_after(reset_rows, m_in)
-            exit_ = _first_reset_at_or_after(reset_rows, m_out) if m_out < rows else None
-            exit_ = d_last if exit_ is None else exit_
-            if entry is not None and entry < exit_:
-                held[entry:exit_ + 1, column] = True
-    return pd.DataFrame(held, index=mask.index, columns=mask.columns)
+def support_exclusions(
+    s_mask: pd.DataFrame, bars: pd.DataFrame, reset_rows: np.ndarray, d0: int, d_last: int,
+    settled_rows: Mapping[str, int], unresolved_rows: Mapping[str, int],
+) -> tuple[pd.DataFrame, tuple[tuple[str, int, str], ...]]:
+    """``X``: signal-eligible cells ``(r - 1, i)`` whose holding period lacks a bar of ``i``.
 
-
-def base_exclusion_cells(
-    bars: pd.DataFrame, mask: pd.DataFrame, reset_rows: np.ndarray, d_last: int,
-) -> pd.DataFrame:
-    """``G_base``: held cells between an asset's first and last bar whose bar is missing."""
-    _require_aligned(mask, bars)
-    present = bars.to_numpy(dtype=bool)
-    seen = np.maximum.accumulate(present, axis=0)
-    seen_later = np.maximum.accumulate(present[::-1], axis=0)[::-1]
-    inside = seen & seen_later
-    cells = holding_cells(mask, reset_rows, d_last).to_numpy(dtype=bool) & inside & ~present
-    return pd.DataFrame(cells, index=bars.index, columns=bars.columns)
-
-
-def gap_windows(
-    g_base: pd.DataFrame, unresolved_rows: Mapping[str, int], reset_rows: np.ndarray,
-    d0: int, d_last: int,
-) -> list[GapWindow]:
-    """Steps 1-2: one ``Gamma(m) = [m, R2(m) - 1]`` per missing run and ``U`` entry, merged."""
-    starts: list[tuple[int, str]] = []
-    values = g_base.to_numpy(dtype=bool)
-    for column in range(values.shape[1]):
-        present = np.concatenate(([False], values[:, column]))
-        starts.extend((int(m), "missing_bar") for m in np.flatnonzero(present[1:] & ~present[:-1]))
-    starts.extend(
-        (int(row), "unresolved_delisting") for row in unresolved_rows.values() if d0 <= row <= d_last
-    )
-    windows = []
-    for m, reason in starts:
-        r2 = _first_reset_at_or_after(reset_rows, m + 1)
-        windows.append(GapWindow(m, d_last if r2 is None else r2 - 1, {reason}))
-    return [
-        GapWindow(max(w.start, d0), min(w.end, d_last), w.reasons)
-        for w in _merge(windows) if w.end >= d0 and w.start <= d_last
-    ]
-
-
-def peel_terminal_resets(
-    windows: list[GapWindow], mask: pd.DataFrame, bars: pd.DataFrame, d0: int,
-) -> tuple[list[GapWindow], tuple[tuple[str, int], ...]]:
-    """Step 4: move a window's start to ``q`` while an asset is selectable at ``q`` without a bar.
-
-    A peel changes only the segment that precedes its own window, so one pass
-    in date order reaches the fixed point, and the ``q > p`` stop leaves at
-    least one segment row, so no two windows become adjacent.
+    The holding period of reset ``r`` runs from its execution row ``r`` through
+    the next scheduled reset ``h`` (``r`` itself at the last reset), where the
+    engine sells. It ends at ``e - 1`` when ``i`` settles a terminal event at a
+    row ``e`` in ``(r, h]``, because the engine pays the terminal return at
+    ``e``. The reason is ``unresolved_delisting`` when ``i``'s disappearance
+    row in ``U`` falls inside the period and ``missing_bar`` otherwise.
     """
-    _require_aligned(mask, bars)
-    selectable = mask.to_numpy(dtype=bool)
+    _require_aligned(s_mask, bars)
+    eligible = s_mask.to_numpy(dtype=bool)
     present = bars.to_numpy(dtype=bool)
-    assets = list(mask.columns)
-    peeled = [GapWindow(w.start, w.end, set(w.reasons), w.peeled_rows) for w in windows]
-    cells: list[tuple[str, int]] = []
-    for position, window in enumerate(peeled):
-        p = d0 if position == 0 else peeled[position - 1].end + 1
-        q = window.start - 1
-        while q > p:
-            hits = np.flatnonzero(selectable[q] & present[q - 1] & ~present[q])
-            if hits.size == 0:
-                break
-            cells.extend((assets[column], q) for column in hits)
-            window.reasons.add("terminal_reset_missing_bar")
-            window.peeled_rows += 1
-            window.start = q
-            q -= 1
-    return peeled, tuple(cells)
-
-
-def support_segments(
-    windows: list[GapWindow], d0: int, d_last: int, *, min_rows: int = MIN_SEGMENT_ROWS,
-) -> tuple[Segment, ...]:
-    """Steps 3 and 5: maximal runs of ``[d0, d_last]`` outside ``W``; valid when ``q - p + 1 >= min_rows``."""
-    segments = []
-    cursor = d0
-    for window in windows:
-        if window.start > cursor:
-            segments.append(Segment(cursor, window.start - 1, window.start - cursor >= min_rows))
-        cursor = max(cursor, window.end + 1)
-    if cursor <= d_last:
-        segments.append(Segment(cursor, d_last, d_last - cursor + 1 >= min_rows))
-    return tuple(segments)
+    assets = list(bars.columns)
+    settled = np.array([settled_rows.get(asset, -1) for asset in assets], dtype=int)
+    lost = np.array([unresolved_rows.get(asset, -1) for asset in assets], dtype=int)
+    excluded = np.zeros_like(present)
+    reasons: list[tuple[str, int, str]] = []
+    resets = reset_rows[(reset_rows >= d0) & (reset_rows <= d_last)]
+    for position, r in enumerate(resets.tolist()):
+        h = int(resets[position + 1]) if position + 1 < len(resets) else r
+        end = np.where((settled > r) & (settled <= h), settled - 1, h)
+        missing = ~present[r:h + 1] & (np.arange(r, h + 1)[:, None] <= end[None, :])
+        for column in np.flatnonzero(eligible[r - 1] & missing.any(axis=0)):
+            excluded[r - 1, column] = True
+            reason = "unresolved_delisting" if r <= lost[column] <= end[column] else "missing_bar"
+            reasons.append((assets[column], r, reason))
+    return pd.DataFrame(excluded, index=bars.index, columns=bars.columns), tuple(reasons)
 
 
 def max_reset_to_reset_rows(reset_rows: np.ndarray, d0: int, d_last: int) -> int:
@@ -182,51 +120,28 @@ def max_reset_to_reset_rows(reset_rows: np.ndarray, d0: int, d_last: int) -> int
 
 def common_support_schedule(
     calendar: pd.DatetimeIndex, bars: pd.DataFrame, mask: pd.DataFrame,
-    unresolved_rows: Mapping[str, int], d0: int,
+    unresolved_rows: Mapping[str, int], d0: int, settled_rows: Mapping[str, int] | None = None,
 ) -> SupportSchedule:
-    """Sections 4.1-4.2 end to end: ``X``, ``W``, peeling, segments, and exclusions."""
+    """Sections 4.1-4.2 under support v2: one window ``[d0, d_last]`` and the asset-level cells ``X``."""
     if not bars.index.equals(calendar):
         raise ValueError("bars must be indexed by the calendar")
     reset_rows = scheduled_reset_rows(calendar)
-    if d0 not in set(reset_rows.tolist()):
-        raise ValueError("d0 must be a scheduled reset row")
+    if d0 < 1 or d0 not in set(reset_rows.tolist()):
+        raise ValueError("d0 must be a scheduled reset row after the first calendar row")
     d_last = int(reset_rows[-1])
-    g_base = base_exclusion_cells(bars, mask, reset_rows, d_last)
-    windows, g_term = peel_terminal_resets(
-        gap_windows(g_base, unresolved_rows, reset_rows, d0, d_last), mask, bars, d0,
-    )
-    segments = support_segments(windows, d0, d_last)
-    span = d_last - d0 + 1
-    excluded = span - sum(segment.rows for segment in segments if segment.valid)
+    s_mask = signal_eligibility(mask, bars)
+    exclusions, reasons = support_exclusions(s_mask, bars, reset_rows, d0, d_last, settled_rows or {},
+                                             unresolved_rows)
     return SupportSchedule(
-        reset_rows=reset_rows, d0=d0, d_last=d_last, g_base=g_base, g_term=g_term,
-        windows=tuple(windows), segments=segments, excluded_rows=excluded,
-        excluded_fraction=excluded / span,
+        reset_rows=reset_rows, d0=d0, d_last=d_last, s_mask=s_mask, exclusions=exclusions, reasons=reasons,
         max_reset_to_reset_rows=max_reset_to_reset_rows(reset_rows, d0, d_last),
     )
 
 
 def ic_month_set(schedule: SupportSchedule) -> tuple[tuple[int, ...], dict[str, tuple[int, ...]]]:
-    """``T_IC`` (fully measured holding periods) and the typed month-end exclusions."""
-    included: list[int] = []
-    excluded: dict[str, list[int]] = {
-        "ic_month_in_gap": [], "ic_month_in_dropped_segment": [], "ic_month_horizon_unmeasured": [],
-    }
-    resets = schedule.reset_rows
-    for position, r in enumerate(resets):
-        if not schedule.d0 <= r <= schedule.d_last:
-            continue
-        following = int(resets[position + 1]) if position + 1 < len(resets) else None
-        segment = next((s for s in schedule.segments if s.first <= r <= s.last), None)
-        if segment is None:
-            excluded["ic_month_in_gap"].append(int(r))
-        elif not segment.valid:
-            excluded["ic_month_in_dropped_segment"].append(int(r))
-        elif r < segment.last and following is not None and following <= segment.last:
-            included.append(int(r))
-        else:
-            excluded["ic_month_horizon_unmeasured"].append(int(r))
-    return tuple(included), {reason: tuple(rows) for reason, rows in excluded.items()}
+    """``T_IC``: every evaluation reset with a following reset; the last reset's horizon is unmeasured."""
+    resets = [int(r) for r in schedule.evaluation_resets]
+    return tuple(resets[:-1]), {"ic_month_horizon_unmeasured": tuple(resets[-1:])}
 
 
 def reset_to_reset_labels(
@@ -302,24 +217,6 @@ def monthly_rank_ic(
     }, index=pd.Index(signal.index[rows], name="signal_date"))
 
 
-def _first_reset_at_or_after(reset_rows: np.ndarray, row: int) -> int | None:
-    position = int(np.searchsorted(reset_rows, row, side="left"))
-    return int(reset_rows[position]) if position < len(reset_rows) else None
-
-
-def _merge(windows: list[GapWindow]) -> list[GapWindow]:
-    merged: list[GapWindow] = []
-    for window in sorted(windows, key=lambda w: (w.start, w.end)):
-        if merged and window.start <= merged[-1].end + 1:
-            last = merged[-1]
-            last.end = max(last.end, window.end)
-            last.reasons |= window.reasons
-            last.peeled_rows += window.peeled_rows
-        else:
-            merged.append(GapWindow(window.start, window.end, set(window.reasons), window.peeled_rows))
-    return merged
-
-
 def _require_aligned(left: pd.DataFrame, right: pd.DataFrame) -> None:
     if not left.index.equals(right.index) or not left.columns.equals(right.columns):
         raise ValueError("panels must share index and columns")
@@ -331,9 +228,7 @@ def _require_aligned(left: pd.DataFrame, right: pd.DataFrame) -> None:
 # universe-build helpers lazily because that module imports the pure core above.
 
 
-EXCLUSION_SET = "census/exclusion_set.json"
-GAP_WINDOWS = "census/gap_windows.json"
-SEGMENTS = "census/segments.json"
+SUPPORT_FILE = "census/asset_support.json"
 
 
 @dataclass(frozen=True)
@@ -352,30 +247,35 @@ class SnapshotSupport:
     discovery_inputs_sha256: str
 
     def record(self) -> dict:
-        """The ``census/segments.json`` body of Appendix A without its digests."""
+        """The private ``census/asset_support.json`` body without its digests.
+
+        ``exclusions`` lists ``[permanent_id, reset date, reason]`` per cell of
+        ``X``; the file stays inside the snapshot (R11). Every other field is a
+        count or a date.
+        """
         schedule, iso = self.schedule, [day.date().isoformat() for day in self.calendar]
         included, _ = ic_month_set(schedule)
-        cell_rows = ([int(row) for row, _ in np.argwhere(schedule.g_base.to_numpy(dtype=bool))]
-                     + [row for _, row in schedule.g_term] + list(self.unresolved_in_window().values()))
-        windows = [{
-            "start": iso[w.start], "end": iso[w.end], "reasons": sorted(w.reasons),
-            "cell_count": sum(w.start <= row <= w.end for row in cell_rows), "peeled_rows": w.peeled_rows,
-        } for w in schedule.windows]
-        segments = [{
-            "anchor": iso[s.anchor], "first_row": iso[s.first], "last_row": iso[s.last], "measured_rows": s.rows,
-            "valid": s.valid, "drop_reason": None if s.valid else "segment_too_short",
-        } for s in schedule.segments]
+        breadth = schedule.breadth()
+        reasons = pd.Series([reason for _, _, reason in schedule.reasons], dtype=object)
         return {
-            "calendar_source": self.calendar_source, "holdout_end": self.holdout_end,
-            "D0": iso[schedule.d0], "D_last": iso[schedule.d_last], "D_end": iso[max(included)] if included else None,
+            "support_contract": SUPPORT_CONTRACT, "calendar_source": self.calendar_source,
+            "holdout_end": self.holdout_end, "D0": iso[schedule.d0], "D_last": iso[schedule.d_last],
+            "D_end": iso[max(included)] if included else None,
             "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows,
             "reset_rows_sha256": hashlib.sha256(_canonical([iso[r] for r in schedule.reset_rows])).hexdigest(),
-            "gap_windows": windows, "segments": segments,
-            "excluded_rows": schedule.excluded_rows, "excluded_fraction": schedule.excluded_fraction,
+            "evaluation_resets": len(schedule.evaluation_resets), "ic_month_supply": len(included),
+            "signal_eligible_cells": int(breadth["signal_eligible"].sum()),
+            "excluded_cells": int(breadth["support_excluded"].sum()),
+            "excluded_fraction": schedule.excluded_fraction,
+            "excluded_cells_by_reason": {str(k): int(v) for k, v in sorted(reasons.value_counts().items())},
+            "unresolved_in_window": len(self.unresolved_in_window()),
+            "breadth": [{"reset_date": day.date().isoformat(), **{k: int(v) for k, v in row.items()}}
+                        for day, row in breadth.iterrows()],
+            "exclusions": [[pid, iso[row], reason] for pid, row, reason in sorted(schedule.reasons)],
         }
 
     @property
-    def segments_sha256(self) -> str:
+    def support_sha256(self) -> str:
         return hashlib.sha256(_canonical(self.record())).hexdigest()
 
     def unresolved_in_window(self) -> dict[str, int]:
@@ -384,7 +284,7 @@ class SnapshotSupport:
 
 
 def write_support_files(snapshot_dir) -> SnapshotSupport:
-    """Wire the pure core to a snapshot and emit the three private support files (plan 4.1, 4.2).
+    """Wire the pure core to a snapshot and emit the private support file (plan 4.1, 4.2, support v2).
 
     Bar presence comes from the panel files, the mask from
     ``resolve_pit_universe_mask``, and ``U`` from the delisting candidates
@@ -393,8 +293,8 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     inventory, a panel file, or the terminal validation report no longer
     matches the current manifest (S7), and refuses
     ``derived_artifact_stale:terminal_events_engine_mismatch`` unless the
-    engine event table is the projection of the current validation report. Writes ``census/exclusion_set.json``,
-    ``census/gap_windows.json``, and ``census/segments.json``.
+    engine event table is the projection of the current validation report.
+    Writes ``census/asset_support.json``.
     """
     from data.constituent_table import load_constituent_intervals_csv
     from data.holdout_partition import SnapshotRefusal, sha256_bytes
@@ -428,22 +328,8 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
     support = snapshot_support(calendar, snapshot.holdout_end.isoformat(), snapshot.calendar_source, intervals,
                                read_engine_events(root), bars, master, inputs, d0 - i_h)
-    schedule = support.schedule
-    iso = [day.date().isoformat() for day in support.calendar]
-    columns = list(schedule.g_base.columns)
-    base = sorted(np.argwhere(schedule.g_base.to_numpy(dtype=bool)).tolist(), key=lambda rc: (columns[rc[1]], rc[0]))
-    record = support.record()
-    exclusion = {
-        "discovery_inputs_sha256": support.discovery_inputs_sha256,
-        "g_base": [[columns[column], iso[row]] for row, column in base],
-        "g_term": [[pid, iso[row]] for pid, row in schedule.g_term],
-        "unresolved": [[pid, iso[row]] for pid, row in support.unresolved_in_window().items()],
-    }
-    write_bytes(root / EXCLUSION_SET, _canonical(exclusion))
-    write_bytes(root / GAP_WINDOWS, _canonical({"discovery_inputs_sha256": support.discovery_inputs_sha256,
-                                                "gap_windows": record["gap_windows"]}))
-    write_bytes(root / SEGMENTS, _canonical({**record, "discovery_inputs_sha256": support.discovery_inputs_sha256,
-                                             "segments_sha256": support.segments_sha256}))
+    write_bytes(root / SUPPORT_FILE, _canonical({**support.record(), "discovery_inputs_sha256": inputs,
+                                                 "support_sha256": support.support_sha256}))
     return support
 
 
@@ -451,12 +337,13 @@ def snapshot_support(
     calendar: pd.DatetimeIndex, holdout_end: str, calendar_source: str, intervals: pd.DataFrame,
     events: pd.DataFrame, bars: pd.DataFrame, master: pd.DataFrame, inputs: str, d0: int,
 ) -> SnapshotSupport:
-    """The schedule of sections 4.1-4.2 from a bar-presence matrix whose columns are the member permanent IDs.
+    """The support schedule from a bar-presence matrix whose columns are the member permanent IDs.
 
-    The mask comes from ``resolve_pit_universe_mask`` over the member events
-    and ``U`` from the delisting candidates without an engine event. The
-    census passes bars read from the panel files; the runner passes the
-    loaded panel's missing-value pattern (plan 4.5).
+    The mask comes from ``resolve_pit_universe_mask`` over the member events,
+    the settled rows from the engine events, and ``U`` from the delisting
+    candidates without an engine event. The census passes bars read from the
+    panel files; the runner passes the loaded panel's missing-value pattern
+    (plan 4.5).
     """
     assets = list(bars.columns)
     events = events[events["permanent_id"].isin(assets)].reset_index(drop=True)
@@ -465,14 +352,15 @@ def snapshot_support(
                                          events if len(events) else None, calendar, assets)
     else:
         mask = bars.copy()
-    settled = set(events["permanent_id"])
+    settled = {row["permanent_id"]: int(calendar.get_loc(pd.Timestamp(row["effective_date"])))
+               for row in events.to_dict(orient="records")}
     unresolved = {
         row["permanent_id"]: int(calendar.get_loc(pd.Timestamp(row["last_bar"]))) + 1
         for row in master.to_dict(orient="records")
         if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"
         and row["permanent_id"] not in settled
     }
-    schedule = common_support_schedule(calendar, bars, mask, unresolved, d0)
+    schedule = common_support_schedule(calendar, bars, mask, unresolved, d0, settled)
     return SnapshotSupport(calendar, holdout_end, calendar_source, intervals, events, bars, mask, unresolved, schedule,
                            inputs)
 

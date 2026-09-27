@@ -400,14 +400,14 @@ def discovery_projection(base: Path) -> tuple[dict[str, bytes], dict[str, bytes]
             record.pop("automated_integrity_checks_over_holdout_rows")
             record["confirmation"].pop("census_json_sha256")
             payload = json.dumps(record, sort_keys=True).encode()
-        elif relative.endswith("reports/m4_7_coverage_census.json"):
+        elif relative.endswith("reports/m4_7_coverage_census_v2.json"):
             record = json.loads(payload)
             record["snapshot_identity"].pop("manifest_sha256")
             quarantined = record["corporate_actions"]["corporate_action_partitions_quarantined"]
             record["corporate_actions"]["corporate_action_partitions_quarantined"] = {
                 k: v for k, v in quarantined.items() if "holdout" not in k}
             payload = json.dumps(record, sort_keys=True).encode()
-        elif relative.endswith("reports/m4_7_coverage_census.md"):
+        elif relative.endswith("reports/m4_7_coverage_census_v2.md"):
             payload = "\n".join(line for line in payload.decode().splitlines()
                                 if "manifest_sha256" not in line and "_holdout_quarantined" not in line).encode()
         files[relative] = payload
@@ -454,7 +454,7 @@ def test_t_seal_4_holdout_perturbation_changes_only_holdout_scoped_paths(tmp_pat
 def test_t_seal_5_hash_identities_are_acyclic(tmp_path, monkeypatch):
     result = run_pipeline(tmp_path / "hashes", monkeypatch)
     snapshot_seal = (result["snapshot"] / "holdout_seal_v1.json").read_bytes()
-    census_path = tmp_path / "hashes" / "reports" / "m4_7_coverage_census.json"
+    census_path = tmp_path / "hashes" / "reports" / "m4_7_coverage_census_v2.json"
     committed = (tmp_path / "hashes" / "seal" / "m4_7_holdout_seal_v1.json").read_bytes()
     census = json.loads(census_path.read_bytes())
     prospective = sha256_bytes(snapshot_seal)

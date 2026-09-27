@@ -588,8 +588,8 @@ def test_engine_events_must_be_the_projection_of_the_current_validation(deals, t
         write_support_files(snap)
     support, after = support_and_census(snap, tmp_path / "after")
     assert support.unresolved_in_window() == {"STK0.US#E1": L_STK0 + 1 - I_H, "WRT.US#E1": L_WORT + 1 - I_H}
-    assert after["public"]["exclusion_set"]["unresolved_events"] == 2
-    assert before["public"]["exclusion_set"]["unresolved_events"] == 0
+    assert after["public"]["asset_support"]["unresolved_events"] == 2
+    assert before["public"]["asset_support"]["unresolved_events"] == 0
     assert after["public"]["price_coverage"]["eligible_unpriced_member_days"]["after_unresolved_disappearance"] > 0
 
     path = snap / "terminal/terminal_events_engine.csv"
