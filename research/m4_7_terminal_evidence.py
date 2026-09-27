@@ -10,6 +10,14 @@ and enter the unresolved set ``U`` of the common support; nothing is filled
 settlement row lies at or before the first discovery row is
 ``deferred_holdout`` and no value of it is read.
 
+Registration v3 (M4.8 plan 3.1-3.6) passes the discovery segments: a candidate
+is in scope when its settlement row ``s`` satisfies
+``first_reset_row < s <= last_book_row`` for a segment, ``deferred_holdout``
+narrows to the seal window, and every other row is
+``outside_discovery_holding_windows``. Schema v3 adds the accession, terms
+availability, payment timing, and second-check columns, and ``validate`` runs a
+terms pass and a projection pass with the four timing bounds.
+
 Run as ``python -m research.m4_7_terminal_evidence {template,validate,project} --snapshot-id <ID>``.
 """
 
@@ -24,6 +32,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from data.holdout_partition import SnapshotRefusal, parse_strict_date, sha256_bytes
@@ -71,6 +80,16 @@ CASH_LAG_MAX = 3
 STOCK_LAGS = (-1, 0)
 BASIS_TOLERANCE = 1e-6
 UNJUSTIFIED_RETURN = 1.5
+V3_COLUMNS = ("source_accession", "source_form", "terms_known_at", "payment_timing", "payment_date",
+              "payment_source_accession", "second_check")
+EVIDENCE_COLUMNS_V3 = EVIDENCE_COLUMNS + V3_COLUMNS
+TERM_COLUMNS_V3 = TERM_COLUMNS + V3_COLUMNS[:-1]
+PAYMENT_TIMINGS = frozenset({"at_completion_evidenced", "delayed_evidenced", "unknown"})
+PAYMENT_LAG_MAX = 3
+SECOND_CHECK_FRACTION = 0.2
+SECOND_CHECK_SEED = 20260927
+IN_SCOPE, DEFERRED, OUTSIDE = "in_scope", "deferred_holdout", "outside_discovery_holding_windows"
+V3_LABELS = ("stock_consideration_converted_at_completion_close_v1", "terms_known_at_bound_v1", "payment_timing_v1")
 
 
 def _load(snapshot_dir: Path | str) -> tuple[Snapshot, pd.DatetimeIndex, int, pd.DataFrame, str]:
@@ -87,27 +106,68 @@ def _read_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, dtype=str, keep_default_na=False)
 
 
-def write_template(snapshot_dir: Path | str) -> pd.DataFrame:
-    """One template row per candidate permanent ID; ``deferred_holdout`` when ``S <= i_H`` (plan 3.1)."""
+def event_scope(settlement: int, segments: tuple[Any, ...], seal_rows: tuple[int, int]) -> tuple[str, Any]:
+    """M4.8 plan 3.1: ``(scope, segment)`` of a settlement row on the full calendar.
+
+    ``segments`` carry ``first_reset_row`` and ``last_book_row``; ``seal_rows``
+    is ``(row(holdout_start), row(holdout_end))``.
+    """
+    for segment in segments:
+        if segment.first_reset_row < settlement <= segment.last_book_row:
+            return IN_SCOPE, segment
+    if seal_rows[0] <= settlement < seal_rows[1]:
+        return DEFERRED, None
+    return OUTSIDE, None
+
+
+def _seal_rows(calendar: pd.DatetimeIndex, holdout_start: date, i_h: int) -> tuple[int, int]:
+    return int(calendar.searchsorted(pd.Timestamp(holdout_start))), i_h
+
+
+def write_template(
+    snapshot_dir: Path | str, *, segments: tuple[Any, ...] | None = None, holdout_start: date | None = None,
+) -> pd.DataFrame:
+    """One template row per candidate permanent ID (plan 3.1).
+
+    Without ``segments`` a row is ``deferred_holdout`` when ``S <= i_H``; with
+    them (schema v3) it carries its M4.8 scope class and the v3 columns.
+    """
     snapshot, calendar, i_h, master, inputs = _load(snapshot_dir)
+    columns = EVIDENCE_COLUMNS if segments is None else EVIDENCE_COLUMNS_V3
+    seal_rows = None if segments is None else _seal_rows(calendar, holdout_start, i_h)
     rows = []
     for record in master.to_dict(orient="records"):
         if record["permanent_id"] and record["has_delisting_candidate_interval"] == "True":
             settlement = calendar.get_loc(pd.Timestamp(record["last_bar"])) + 1
+            if segments is None:
+                status = "deferred_holdout" if settlement <= i_h else "unresolved"
+            else:
+                scope = event_scope(settlement, segments, seal_rows)[0]
+                status = "unresolved" if scope == IN_SCOPE else scope
             rows.append({
-                **dict.fromkeys(EVIDENCE_COLUMNS, ""),
+                **dict.fromkeys(columns, ""),
                 "event_id": f"TE-{record['permanent_id']}-{calendar[settlement].date().isoformat()}",
                 "permanent_id": record["permanent_id"],
-                "curation_status": "deferred_holdout" if settlement <= i_h else "unresolved",
+                "curation_status": status,
                 "discovery_inputs_sha256": inputs,
             })
-    frame = pd.DataFrame(rows, columns=[*EVIDENCE_COLUMNS, "discovery_inputs_sha256"])
+    frame = pd.DataFrame(rows, columns=[*columns, "discovery_inputs_sha256"])
     write_bytes(snapshot.root / TEMPLATE, csv_bytes(frame))
     return frame
 
 
-def validate(snapshot_dir: Path | str) -> dict[str, Any]:
-    """Apply the section 3.6 codes to the curated table and write the validation report."""
+def validate(
+    snapshot_dir: Path | str, *, segments: tuple[Any, ...] | None = None, holdout_start: date | None = None,
+    second_check_seed: int = SECOND_CHECK_SEED,
+) -> dict[str, Any]:
+    """Apply the section 3.6 codes to the curated table and write the validation report.
+
+    With ``segments`` the schema v3 two-pass validation of M4.8 plan 3.6 runs
+    instead (``validate_v3``).
+    """
+    if segments is not None:
+        return validate_v3(snapshot_dir, segments=segments, holdout_start=holdout_start,
+                           second_check_seed=second_check_seed)
     snapshot, calendar, i_h, master, inputs = _load(snapshot_dir)
     path = snapshot.root / CURATED
     if not path.is_file():
@@ -299,13 +359,248 @@ def _validate_row(
                    known_at=announced.isoformat(), **timing)
 
 
-def _discovery_eod(snapshot: Snapshot, code: str) -> pd.DataFrame | None:
-    frame = snapshot.read_discovery("eod", code)
+def validate_v3(
+    snapshot_dir: Path | str, *, segments: tuple[Any, ...], holdout_start: date,
+    second_check_seed: int = SECOND_CHECK_SEED,
+) -> dict[str, Any]:
+    """Schema v3 two-pass validation (M4.8 plan 3.1-3.6); writes the validation report.
+
+    Every in-scope curated row runs the terms pass (the carried checks and the
+    v3 schema rules, without the four timing bounds) and, when terms-valid, the
+    projection pass with the timing bounds, since ``terminal_claim_v1`` is not
+    built. Rows whose only failures are timing bounds keep ``terms_pass =
+    terms_valid`` and list ``timing_failures``; ``common_support.claim_demand``
+    counts those that are residual. Values are read from the side of the
+    settlement row's segment only.
+    """
+    snapshot, calendar, i_h, master, inputs = _load(snapshot_dir)
+    if holdout_start is None:
+        raise SnapshotRefusal("terminal_evidence_invalid", "schema v3 validation needs holdout_start")
+    seal_rows = _seal_rows(calendar, holdout_start, i_h)
+    path = snapshot.root / CURATED
+    if not path.is_file():
+        raise SnapshotRefusal("terminal_evidence_missing", CURATED)
+    evidence_bytes = path.read_bytes()
+    curated = pd.read_csv(io.BytesIO(evidence_bytes), dtype=str, keep_default_na=False)
+    missing = [column for column in EVIDENCE_COLUMNS_V3 if column not in curated.columns]
+    if missing or curated["event_id"].duplicated().any():
+        raise SnapshotRefusal("terminal_evidence_invalid", f"columns {missing} or duplicate event_id")
+    masters = {r["permanent_id"]: r for r in master.to_dict(orient="records") if r["permanent_id"]}
+    candidates = _candidates(snapshot)
+    results = []
+    for row in curated.to_dict(orient="records"):
+        pid = row["permanent_id"]
+        if pid not in masters or pid not in candidates:
+            raise SnapshotRefusal("terminal_evidence_invalid", f"{row['event_id']}: not a resolved delisting candidate")
+        last_bar = calendar.get_loc(pd.Timestamp(masters[pid]["last_bar"]))
+        settlement = last_bar + 1
+        scope, segment = event_scope(settlement, segments, seal_rows)
+        if scope != IN_SCOPE:
+            if scope == DEFERRED and any(row[column].strip() for column in TERM_COLUMNS_V3):
+                raise SnapshotRefusal("holdout_terms_forbidden", row["event_id"])
+            results.append(_result_v3(row, scope, None, None))
+            continue
+        if row["curation_status"] != "curated":
+            results.append(_result_v3(row, "unresolved", "curation_unresolved", segment))
+        elif _implied_settlement(row["event_id"], pid) != calendar[settlement].date():
+            results.append(_result_v3(row, "unresolved", "reference_not_last_bar", segment))
+        else:
+            results.append(_validate_row_v3(snapshot, calendar, masters, row, last_bar, segment))
+    second_check = _second_check_sample(results, second_check_seed)
+    report = {
+        "schema_version": "m4_8_terminal_validation_v3",
+        "discovery_inputs_sha256": inputs,
+        "curated_evidence_sha256": sha256_bytes(evidence_bytes),
+        "claim_contract": "timing_bounds_v1",
+        "labels": list(V3_LABELS),
+        "counts": _count(results, lambda r: r["validation_reason"] or r["status"]),
+        "counts_by": {key: _count(results, lambda r, key=key: str(r[key] or "")) for key in (
+            "event_kind", "consideration_type", "payment_timing", "segment_id", "scope")},
+        "timing_only_failures": sum(1 for r in results if r["terms_pass"] == "terms_valid" and r["timing_failures"]),
+        "settlement_lag_distribution": _lag_distribution(results),
+        "terms_availability_lag_days": _count([r for r in results if r["terms_availability_lag_days"] is not None],
+                                              lambda r: _lag_bucket(r["terms_availability_lag_days"])),
+        "second_check": second_check,
+        "rows": results,
+    }
+    write_bytes(snapshot.root / VALIDATION, canonical_json(report))
+    return report
+
+
+def _count(rows: list[dict[str, Any]], key) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        counts[key(row)] = counts.get(key(row), 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _lag_bucket(days: int) -> str:
+    return "0" if days == 0 else "1-30" if days <= 30 else "31-90" if days <= 90 else ">90"
+
+
+def _result_v3(row: dict[str, Any], status: str, reason: str | None, segment: Any, **fields: Any) -> dict[str, Any]:
+    scope = status if status in (DEFERRED, OUTSIDE) else IN_SCOPE
+    return _result(row, status, reason, **{
+        "scope": scope, "segment_id": None if segment is None else segment.segment_id, "terms_pass": None,
+        "timing_failures": [], "payment_timing": row.get("payment_timing", "") or None, "terms_known_at": None,
+        "terms_availability_lag_days": None, "payment_lag_rows": None, "second_check": row.get("second_check", ""),
+        **fields})
+
+
+def _second_check_sample(results: list[dict[str, Any]], seed: int) -> dict[str, Any]:
+    """Plan 3.5: a seeded 20 percent sample of in-scope curated rows plus the mandatory re-derivations."""
+    curated = sorted(r["event_id"] for r in results if r["scope"] == IN_SCOPE and r["validation_reason"] not in (
+        "curation_unresolved", "reference_not_last_bar"))
+    count = math.ceil(SECOND_CHECK_FRACTION * len(curated))
+    sampled = sorted(np.random.default_rng(seed).choice(curated, size=count, replace=False).tolist()) if count else []
+    mandatory = sorted(r["event_id"] for r in results if r["event_id"] in curated and (
+        (r["terminal_return"] is not None and abs(r["terminal_return"]) > 0.5)
+        or (r["terms_availability_lag_days"] or 0) > 0))
+    required = sorted(set(sampled) | set(mandatory))
+    by_id = {r["event_id"]: r for r in results}
+    return {"seed": seed, "sample_fraction": SECOND_CHECK_FRACTION, "sampled_event_ids": sampled,
+            "mandatory_event_ids": mandatory, "required_event_ids": required,
+            "pending": sum(1 for event_id in required if not by_id[event_id]["second_check"].strip())}
+
+
+def _read(snapshot: Snapshot, table: str, code: str, side: str | None) -> pd.DataFrame | None:
+    """A discovery read confined to one side (SL-1); ``side`` is ``None`` for a one-side rule v1 snapshot."""
+    return snapshot.read_discovery(table, code) if side is None else snapshot.read_discovery(table, code, side=side)
+
+
+def _v3_schema_fault(kind: str, row: dict[str, Any], announced: date) -> str | None:
+    """Plan 3.3 required fields; a blank field never defaults to another value."""
+    if not row["source_accession"].strip():
+        return "evidence_incomplete:source_accession_missing"
+    if not row["terms_known_at"].strip():
+        return "evidence_incomplete:terms_known_at_missing"
+    terms = parse_strict_date(row["terms_known_at"])
+    if terms is None:
+        return "evidence_incomplete:terms_known_at_unparseable"
+    if terms < announced:
+        return "evidence_incomplete:terms_known_at_before_announcement"
+    timing = row["payment_timing"].strip()
+    if not timing:
+        return "evidence_incomplete:payment_timing_missing"
+    if (timing not in PAYMENT_TIMINGS) if kind in ("cash", "mixed") else timing != "not_applicable":
+        return "evidence_incomplete:payment_timing_invalid"
+    if timing == "delayed_evidenced":
+        if not row["payment_date"].strip():
+            return "evidence_incomplete:payment_date_missing"
+        if parse_strict_date(row["payment_date"]) is None:
+            return "evidence_incomplete:payment_date_unparseable"
+        if not row["payment_source_accession"].strip():
+            return "evidence_incomplete:payment_source_accession_missing"
+    elif row["payment_date"].strip():
+        return "evidence_incomplete:payment_date_not_applicable"
+    if row["second_check"].strip() not in ("", "agree", "disagree"):
+        return "evidence_incomplete:second_check_invalid"
+    return None
+
+
+def _validate_row_v3(
+    snapshot: Snapshot, calendar: pd.DatetimeIndex, masters: dict[str, dict[str, Any]],
+    row: dict[str, Any], last_bar: int, segment: Any,
+) -> dict[str, Any]:
+    """Terms pass, then the projection pass with the four timing bounds (plan 3.4, 3.6)."""
+    kind, side = row["consideration_type"], segment.side
+    code = masters[row["permanent_id"]]["vendor_code"]
+    announced, completed = parse_strict_date(row["announcement_date"]), parse_strict_date(row["completion_date"])
+    cash, ratio = _number(row["cash_per_share"]), _number(row["exchange_ratio"])
+    acquirer = row["acquirer_permanent_id"].strip()
+    settlement = last_bar + 1
+    reference = calendar[last_bar]
+    timing: dict[str, Any] = {"reference_date": reference.date().isoformat(),
+                              "effective_date": calendar[settlement].date().isoformat()}
+
+    def unresolved(reason: str, **fields: Any) -> dict[str, Any]:
+        return _result_v3(row, "unresolved", reason, segment, terms_pass="terms_invalid", **timing, **fields)
+
+    if kind == "unresolved":
+        return unresolved("curation_unresolved")
+    complete = (row["event_kind"] in EVENT_KINDS and kind in BASIS and announced is not None
+                and completed is not None and row["source_evidence"].strip())
+    fault = "evidence_incomplete" if not complete else (_v3_schema_fault(kind, row, announced)
+                                                       or _consideration_fault(kind, row, cash, ratio, acquirer))
+    if fault is not None:
+        return unresolved(fault)
+    terms = parse_strict_date(row["terms_known_at"])
+    timing.update(terms_known_at=terms.isoformat(), terms_availability_lag_days=(terms - announced).days)
+    if kind in ("cash", "mixed") and row["cash_currency"].strip() != "USD":
+        return unresolved("terminal_currency_unsupported")
+    if row["payment_timing"].strip() == "unknown":
+        return unresolved("payment_timing_unknown")
+    if row["second_check"].strip() == "disagree":
+        return unresolved("second_check_disagree")
+    if pd.Timestamp(announced) > reference:
+        return unresolved("known_at_after_reference")
+    completion_row = int(calendar.searchsorted(pd.Timestamp(completed)))
+    lag = completion_row - settlement
+    timing["settlement_lag_rows"] = lag
+    if lag < -1:
+        return unresolved("settlement_lag_negative")
+    acquirer_code = None
+    if kind in ("stock", "mixed"):
+        record = masters.get(acquirer)
+        valuation = calendar[completion_row] if completion_row < len(calendar) else None
+        timing["valuation_row"] = None if valuation is None else valuation.date().isoformat()
+        dates = None if record is None else read_bar_dates(snapshot, record["vendor_code"])
+        if (valuation is None or record is None or record["resolution"] != "resolved" or dates is None
+                or valuation not in dates or not record["first_bar"] <= timing["valuation_row"] <= record["last_bar"]
+                or completion_row > segment.feature_ceiling_row):
+            return unresolved("acquirer_bar_missing")
+        acquirer_code = record["vendor_code"]
+    tables = [("splits", code), ("dividends", code)] + ([("splits", acquirer_code)] if acquirer_code else [])
+    if not all(snapshot.evidence_valid(table, table_code) for table, table_code in tables):
+        return unresolved("terminal_basis_ambiguous:corporate_action_evidence_missing",
+                          corporate_action_evidence_status="missing")
+    timing["corporate_action_evidence_status"] = "valid"
+    target = _discovery_eod(snapshot, code, side)
+    p_ref, adjusted = float(target.loc[reference, "close"]), float(target.loc[reference, "adjusted_close"])
+    target_actions = _dates(snapshot, "splits", code, side) | _dates(snapshot, "dividends", code, side)
+    acquirer_splits = _dates(snapshot, "splits", acquirer_code, side) if acquirer_code else set()
+    valuation_day = calendar[completion_row] if acquirer_code else None
+    if (abs(adjusted / p_ref - 1.0) > BASIS_TOLERANCE or calendar[settlement] in target_actions
+            or (acquirer_code is not None and valuation_day in acquirer_splits)):
+        return unresolved("terminal_basis_ambiguous")
+    acquirer_close = None
+    if acquirer_code is not None:
+        frame = _discovery_eod(snapshot, acquirer_code, side)
+        if frame is None or valuation_day not in frame.index:
+            return unresolved("acquirer_bar_missing")
+        acquirer_close = float(frame.loc[valuation_day, "close"])
+    rho = (-1.0 if kind == "evidenced_worthless" else cash / p_ref - 1.0 if kind == "cash"
+           else ratio * acquirer_close / p_ref - 1.0 if kind == "stock" else (cash + ratio * acquirer_close) / p_ref - 1.0)
+    if rho < -1.0:
+        raise SnapshotRefusal("terminal_return_below_minus_one", row["event_id"])
+    if rho > UNJUSTIFIED_RETURN and not row["notes"].strip():
+        return unresolved("terminal_return_unjustified", terminal_return=rho)
+    failures = []
+    if kind in ("cash", "evidenced_worthless") and lag > CASH_LAG_MAX:
+        failures.append("settlement_lag_exceeds_3_rows")
+    if kind in ("stock", "mixed") and lag not in STOCK_LAGS:
+        failures.append("stock_consideration_lag_positive")
+    if terms > reference.date():
+        failures.append("terms_known_after_reference")
+    if row["payment_timing"].strip() == "delayed_evidenced":
+        timing["payment_lag_rows"] = int(calendar.searchsorted(pd.Timestamp(parse_strict_date(row["payment_date"])))) \
+            - settlement
+        if timing["payment_lag_rows"] > PAYMENT_LAG_MAX:
+            failures.append("payment_lag_exceeds_bound")
+    if failures:
+        return _result_v3(row, "unresolved", failures[0], segment, terms_pass="terms_valid", timing_failures=failures,
+                          terminal_return=rho, **timing)
+    return _result_v3(row, "accepted", None, segment, terms_pass="terms_valid", terminal_return=rho,
+                      return_basis=BASIS[kind], known_at=max(announced, terms).isoformat(), **timing)
+
+
+def _discovery_eod(snapshot: Snapshot, code: str, side: str | None = None) -> pd.DataFrame | None:
+    frame = _read(snapshot, "eod", code, side)
     return None if frame is None else frame.assign(date=pd.DatetimeIndex(frame["date"])).set_index("date")
 
 
-def _dates(snapshot: Snapshot, table: str, code: str) -> set[pd.Timestamp]:
-    frame = snapshot.read_discovery(table, code)
+def _dates(snapshot: Snapshot, table: str, code: str, side: str | None = None) -> set[pd.Timestamp]:
+    frame = _read(snapshot, table, code, side)
     if frame is None:
         return set()
     if table == "dividends":

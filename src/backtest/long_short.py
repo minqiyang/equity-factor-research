@@ -38,8 +38,19 @@ from backtest.portfolio import (
     _validate_bounded_signal_values,
     _read_exact_integral_scalar,
     _read_finite_real_scalar,
+    HALT_GAP_POLICY,
+    LOCKED_EXPOSURE_TOLERANCE,
     TERMINAL_SETTLEMENT_CONTRACT,
+    _halt_gap_returns,
+    _halt_ledger_summary,
+    _halt_price_values,
+    _locked_postcost_weights,
+    _locked_target,
+    _new_halt_ledger,
     _prepare_terminal_events,
+    _record_halts,
+    _require_no_open_halt,
+    _require_terminal_reference_bars,
     _resolve_pit_universe,
     _terminal_basis_counts,
     _terminal_settlement,
@@ -92,6 +103,7 @@ class LongShortBacktestResult:
     pending_trade_shares: pd.DataFrame
     cancelled_trade_shares: pd.DataFrame
     risk_attribution: PortfolioRiskAttribution | None = None
+    halt_ledger: dict[str, Any] | None = None
 
 
 def run_long_short_backtest(
@@ -121,6 +133,7 @@ def run_long_short_backtest(
     gross_leverage: float = 1.0,
     max_position_weight: float | None = None,
     periods_per_year: int = 252,
+    missing_price_policy: str = "raise",
 ) -> LongShortBacktestResult:
     """Run a dollar-neutral long-short quantile spread backtest.
 
@@ -132,6 +145,11 @@ def run_long_short_backtest(
 
     Signals are lagged by signal_lag_periods (default 1), enforcing the
     after-close/next-observed-close lookahead-free research contract.
+
+    ``missing_price_policy`` is ``raise`` or ``halt_gap_return_v1`` (M4.8 plan
+    4.3): a held asset without a close keeps its last mark and realizes the gap
+    at its next close, and scheduled rows with a locked or untradeable cell
+    match the two legs under ``self_financing_locked_capital_v1``.
     """
 
     _validate_long_short_inputs(
@@ -151,6 +169,11 @@ def run_long_short_backtest(
         periods_per_year=periods_per_year,
     )
 
+    if missing_price_policy not in {"raise", HALT_GAP_POLICY}:
+        raise ValueError(f"missing_price_policy must be 'raise' or '{HALT_GAP_POLICY}'")
+    halt = missing_price_policy == HALT_GAP_POLICY
+    if halt and impact_model is not None:
+        raise BacktestValidationError("halt_policy_impact_model_unsupported", f"{HALT_GAP_POLICY} requires impact_model None")
     if max_position_weight is not None:
         cap = _read_finite_real_scalar(max_position_weight)
         if cap is None or cap <= 0.0 or cap > 1.0:
@@ -177,6 +200,8 @@ def run_long_short_backtest(
     sub_prices = prices.loc[accounting_dates]
     sub_signals = _validate_bounded_signal_values(signals.loc[accounting_dates])
     prepared_events = _prepare_terminal_events(terminal_events, prices.index, prices.columns)
+    if halt:
+        _require_terminal_reference_bars(prepared_events, prices)
     universe_mask = _resolve_pit_universe(
         constituent_intervals=constituent_intervals, universe_mask=universe_mask,
         dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
@@ -188,6 +213,10 @@ def run_long_short_backtest(
         evaluation_end=eval_end, signal_lag_periods=signal_lag_periods,
         slippage_bps=slippage_bps,
     )
+    halt_ledger = _new_halt_ledger() if halt else None
+    if halt:
+        price_values, close_valid = _halt_price_values(sub_prices)
+        marks = np.where(close_valid[0], price_values[0], np.nan)
     lagged_signals = sub_signals.shift(signal_lag_periods)
     rebalance_dates = _get_rebalance_dates(accounting_dates, rebalance_frequency)
 
@@ -253,15 +282,25 @@ def run_long_short_backtest(
         terminal_returns = {record["permanent_id"]: record["terminal_return"] for record in events_today}
 
         # Validate held endpoints before valuation, drift, or any liquidation.
-        held_returns = _calculate_held_asset_returns(
-            previous_prices=previous_prices,
-            current_prices=current_prices,
-            previous_holdings=current_net,
-            previous_date=prev_date,
-            current_date=date,
-            missing_price_policy="raise",
-            terminal_returns=terminal_returns or None,
-        )
+        if halt:
+            values, halted = _halt_gap_returns(
+                marks=marks, current=price_values[i], valid=close_valid[i],
+                weights=current_net.to_numpy(dtype=float),
+                terminal={columns.get_loc(asset): value for asset, value in terminal_returns.items()},
+                date=date, columns=columns,
+            )
+            _record_halts(halt_ledger, halted, date, columns)
+            held_returns = pd.Series(values, index=columns, dtype=float)
+        else:
+            held_returns = _calculate_held_asset_returns(
+                previous_prices=previous_prices,
+                current_prices=current_prices,
+                previous_holdings=current_net,
+                previous_date=prev_date,
+                current_date=date,
+                missing_price_policy="raise",
+                terminal_returns=terminal_returns or None,
+            )
         with np.errstate(over="ignore", invalid="ignore"):
             weighted = (current_net * held_returns).to_numpy(dtype=float)
             period_gross = float(np.sum(weighted))
@@ -409,6 +448,13 @@ def run_long_short_backtest(
             _validate_terminal_target(target_net, settled, date=date)
             actual_target = target_net
         current_net = pretrade_net
+        locked_row = None
+        if halt and actual_target is not None:
+            actual_target, locked_row = _locked_target(
+                intended=actual_target, pretrade=pretrade_net, valid=close_valid[i], date=date,
+                ledger=halt_ledger, budgets={1: half_leverage, -1: half_leverage},
+            )
+            target_net = actual_target
         row_turnover = row_tx_cost = row_slip_cost = row_total_cost = 0.0
         if impact_model is not None:
             previous_equity = float(equity[i - 1])
@@ -450,6 +496,11 @@ def run_long_short_backtest(
             current_net = target_net
             executed_values[i] = signed_trades.to_numpy() * equity[i - 1] * gross_multiplier
             participation[i, executed_values[i] != 0] = np.nan
+            if locked_row is not None:
+                current_net = pd.Series(_locked_postcost_weights(
+                    executable=target_net.to_numpy(dtype=float), locked=locked_row["locked_mask"],
+                    cost=row_total_cost / gross_multiplier, date=date), index=columns, dtype=float)
+                _type_locked_exposure(halt_ledger, locked_row, current_net, float(gross_leverage))
 
         period_net = period_gross - row_total_cost
         if impact_model is not None:
@@ -471,6 +522,8 @@ def run_long_short_backtest(
         net_values[i] = current_net.to_numpy(dtype=float)
         long_values[i] = np.where(net_values[i] < 0.0, 0.0, net_values[i])
         short_values[i] = -np.where(net_values[i] > 0.0, 0.0, net_values[i])
+    if halt:
+        _require_no_open_halt(net_values[-1], close_valid[-1], accounting_dates[-1], columns)
 
     long_holdings = pd.DataFrame(long_values, index=accounting_dates, columns=columns)
     short_holdings = pd.DataFrame(short_values, index=accounting_dates, columns=columns)
@@ -531,6 +584,8 @@ def run_long_short_backtest(
                              volume_basis=impact_volume_basis),
         **({"dollar_neutral": False, "target_dollar_neutral": True}
            if impact_model is not None else {}),
+        **({"missing_price_policy": missing_price_policy, **_halt_ledger_summary(halt_ledger),
+            "dollar_neutral": False, "target_dollar_neutral": True} if halt else {}),
     }
 
     return LongShortBacktestResult(
@@ -538,7 +593,7 @@ def run_long_short_backtest(
             risk_model, prices=sub_prices, holdings=net_holdings,
             gross_returns=gross_returns, net_returns=net_returns,
             trading_costs=total_costs, periods_per_year=periods_per_year,
-            terminal_events=terminal_events, missing_price_policy="raise",
+            terminal_events=terminal_events, missing_price_policy=missing_price_policy,
         ),
         equity_curve=equity,
         returns=net_returns,
@@ -562,7 +617,19 @@ def run_long_short_backtest(
                                slippage_dollars=impact_dollars if impact_model is not None else None),
         terminal_cashflows=pd.DataFrame(terminal_cashflows, index=accounting_dates, columns=columns),
         terminal_event_log=tuple(terminal_event_log),
+        halt_ledger=halt_ledger,
     )
+
+
+def _type_locked_exposure(ledger: dict[str, Any], row: dict[str, Any], weights: pd.Series, gross: float) -> None:
+    """H-3d: type post-cost net and gross departures at an execution row with a non-empty ``K_t``."""
+    if not row["locked"]:
+        return
+    net, excess = float(weights.sum()), float(weights.abs().sum()) - gross
+    if abs(net) > LOCKED_EXPOSURE_TOLERANCE:
+        ledger["typed_exposure_rows"].append({"date": row["date"], "type": "locked_net_exposure", "value": net})
+    if excess > LOCKED_EXPOSURE_TOLERANCE:
+        ledger["typed_exposure_rows"].append({"date": row["date"], "type": "locked_gross_excess", "value": excess})
 
 
 def _validate_long_short_inputs(

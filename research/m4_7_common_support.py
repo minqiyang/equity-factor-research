@@ -1,4 +1,4 @@
-"""Asset-level evaluation support for the M4.7 S&P 500 PIT rerun (plan section 4, support v2).
+"""Evaluation support for the S&P 500 PIT reruns: support v2 (M4.7) and the causal mask v3 (M4.8).
 
 Pure functions over a discovery calendar, its scheduled reset rows, a bar
 presence matrix ``B``, the engine-resolved universe ``M``
@@ -9,6 +9,13 @@ holding period needs that bar; every other asset, row, and month stays in the
 single evaluation window ``[d0, d_last]``. Nothing here reads vendor files or
 depends on a holding, signal, price value, or outcome, except the labels of
 section 4.6, which read adjusted closes and signals by definition.
+
+Registration v3 (M4.8 plan 4.1, 4.2, 4.6, 4.8) retires the exclusion cells:
+``causal_support_schedule`` sets ``E(r - 1) = S_mask(r - 1)`` and reads no bar
+after the signal row. Missing labels are typed, ``potentially_held`` builds the
+factor-independent superset ``P_r``, and ``residual_disappearances`` lists the
+held-possible stops without an accepted settlement. ``support_exclusions``
+serves registration v2 only.
 """
 
 from __future__ import annotations
@@ -26,7 +33,13 @@ from features.diagnostics import factor_rank_information_coefficient
 
 
 SUPPORT_CONTRACT = "asset_level_holding_period_support_exclusion_v1"
+CAUSAL_SUPPORT_CONTRACT = "causal_signal_eligibility_mask_v3"
+RESIDUAL_BOUND_CASE = "residual_disappearance_minus_100pct_bound_v1"
 MIN_IC_PAIRS = 100
+MISSING_EXECUTION_HALT = "missing_execution_bar:halt"
+MISSING_HORIZON_HALT = "missing_horizon_end_bar:halt"
+MISSING_HORIZON_DISAPPEARANCE = "missing_horizon_end_bar:unresolved_disappearance"
+TYPED_LABEL_REASONS = (MISSING_EXECUTION_HALT, MISSING_HORIZON_HALT, MISSING_HORIZON_DISAPPEARANCE)
 
 
 @dataclass(frozen=True)
@@ -138,6 +151,94 @@ def common_support_schedule(
     )
 
 
+def causal_support_schedule(
+    calendar: pd.DatetimeIndex, bars: pd.DataFrame, mask: pd.DataFrame, d0: int,
+) -> SupportSchedule:
+    """``causal_signal_eligibility_mask_v3``: ``E(r - 1) = S_mask(r - 1)`` over ``[d0, d_last]`` (M4.8 plan 4.1).
+
+    ``d_last`` is the calendar's last scheduled reset, so a segment calendar
+    ending at its last book row gives that row. No cell reads a bar dated after
+    its signal row; ``exclusions`` is empty.
+    """
+    if not bars.index.equals(calendar):
+        raise ValueError("bars must be indexed by the calendar")
+    reset_rows = scheduled_reset_rows(calendar)
+    if d0 < 1 or d0 not in set(reset_rows.tolist()):
+        raise ValueError("d0 must be a scheduled reset row after the first calendar row")
+    d_last = int(reset_rows[-1])
+    s_mask = signal_eligibility(mask, bars)
+    return SupportSchedule(
+        reset_rows=reset_rows, d0=d0, d_last=d_last, s_mask=s_mask,
+        exclusions=pd.DataFrame(False, index=bars.index, columns=bars.columns), reasons=(),
+        max_reset_to_reset_rows=max_reset_to_reset_rows(reset_rows, d0, d_last),
+    )
+
+
+def potentially_held(schedule: SupportSchedule, bars: pd.DataFrame) -> dict[int, np.ndarray]:
+    """``P_r = S_mask(r - 1) | {a in P_prev(r) : no close at r}`` per evaluation reset (M4.8 plan 4.6).
+
+    ``P_prev`` is empty at the first reset. The set depends on no factor, so it
+    covers every book and the equal-weight benchmark, including locks carried
+    under H-3.
+    """
+    _require_aligned(schedule.s_mask, bars)
+    eligible, present = schedule.s_mask.to_numpy(dtype=bool), bars.to_numpy(dtype=bool)
+    sets: dict[int, np.ndarray] = {}
+    previous = np.zeros(len(bars.columns), dtype=bool)
+    for r in schedule.evaluation_resets.tolist():
+        previous = eligible[r - 1] | (previous & ~present[r])
+        sets[int(r)] = previous
+    return sets
+
+
+def residual_disappearances(
+    schedule: SupportSchedule, bars: pd.DataFrame, accepted: set[str] | frozenset[str],
+    candidates: Mapping[str, int],
+) -> tuple[tuple[str, int, int], ...]:
+    """``census_zero_residual_v2`` parts 1 and 2: ``(permanent_id, stop_row, reset_row)`` sorted (M4.8 plan 4.6).
+
+    A stop at row ``s`` belongs to the window ``(r, h(r)]`` of consecutive
+    evaluation resets. Part 1 takes each candidate settlement row in
+    ``(d0, d_last]``; part 2 takes each asset whose last bar ``l < d_last``
+    leaves it without a bar through the last book row (``s = l + 1``). A stop
+    is residual when its asset lies in ``P_r`` of that window and has no
+    accepted settlement.
+    """
+    held = potentially_held(schedule, bars)
+    resets = schedule.evaluation_resets.tolist()
+    present = bars.to_numpy(dtype=bool)[: schedule.d_last + 1]
+    stops: set[tuple[str, int]] = {(pid, int(row)) for pid, row in candidates.items()
+                                   if pid in bars.columns and schedule.d0 < row <= schedule.d_last}
+    for column, pid in enumerate(bars.columns):
+        rows = np.flatnonzero(present[:, column])
+        if rows.size and rows[-1] < schedule.d_last:
+            stops.add((pid, int(rows[-1]) + 1))
+    residual = []
+    for pid, stop in sorted(stops):
+        window = [r for r, h in zip(resets, resets[1:]) if r < stop <= h]
+        if window and pid not in accepted and held[window[0]][bars.columns.get_loc(pid)]:
+            residual.append((pid, stop, window[0]))
+    return tuple(residual)
+
+
+def claim_demand(validation_rows: list[dict], residual: tuple[tuple[str, int, int], ...]) -> dict[str, object]:
+    """Claim demand (M4.8 plan 3.6): residual candidates whose only failures are projection-pass timing bounds."""
+    timing_only = {row["permanent_id"] for row in validation_rows
+                   if row.get("terms_pass") == "terms_valid" and row.get("timing_failures")}
+    demand = len({pid for pid, _, _ in residual} & timing_only)
+    return {"claim_demand": demand,
+            "claim_contract": "claim_not_built:no_consumer" if demand == 0 else "stage_e2_required"}
+
+
+def residual_bound_events(residual: tuple[tuple[str, int, int], ...], calendar: pd.DatetimeIndex) -> pd.DataFrame:
+    """``residual_disappearance_minus_100pct_bound_v1``: each residual stop settles at ``rho = -1`` at its row (4.8)."""
+    rows = [{"event_id": f"RB-{pid}-{calendar[stop].date().isoformat()}", "permanent_id": pid,
+             "effective_date": calendar[stop], "known_at": calendar[stop - 1], "reference_date": calendar[stop - 1],
+             "terminal_return": -1.0, "return_basis": "prior_observed_close_to_cash"} for pid, stop, _ in residual]
+    return pd.DataFrame(rows, columns=["event_id", "permanent_id", "effective_date", "known_at", "reference_date",
+                                       "terminal_return", "return_basis"])
+
+
 def ic_month_set(schedule: SupportSchedule) -> tuple[tuple[int, ...], dict[str, tuple[int, ...]]]:
     """``T_IC``: every evaluation reset with a following reset; the last reset's horizon is unmeasured."""
     resets = [int(r) for r in schedule.evaluation_resets]
@@ -146,13 +247,17 @@ def ic_month_set(schedule: SupportSchedule) -> tuple[tuple[int, ...], dict[str, 
 
 def reset_to_reset_labels(
     adjusted_close: pd.DataFrame, s_mask: pd.DataFrame, reset_rows: np.ndarray,
-    label_resets: tuple[int, ...], engine_events: pd.DataFrame | None,
+    label_resets: tuple[int, ...], engine_events: pd.DataFrame | None, *, typed: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Terminal-aware labels keyed by the signal row ``t = r - 1`` (section 4.6).
 
     Returns the label frame (missing off label rows and outside ``Elig(r)``)
     and one record per reset date with ``eligible_count``, the terminal-aware
-    label count, and the counts of the two typed guard reasons.
+    label count, and the counts of the two typed guard reasons. With ``typed``
+    (registration v3, M4.8 plan 4.2) a missing execution bar is checked first
+    and the counts are ``TYPED_LABEL_REASONS``: a missing horizon bar is a halt
+    when the asset has a later bar in the panel and an unresolved
+    disappearance otherwise.
     """
     _require_aligned(s_mask, adjusted_close)
     calendar = pd.DatetimeIndex(adjusted_close.index)
@@ -174,11 +279,17 @@ def reset_to_reset_labels(
             raise ValueError("every label reset needs a following scheduled reset")
         t, e, h = r - 1, r, int(following[0])
         counts = {"eligible_count": 0, "terminal_aware_labels": 0,
-                  "missing_execution_bar": 0, "missing_horizon_end_bar": 0}
+                  **dict.fromkeys(TYPED_LABEL_REASONS if typed else ("missing_execution_bar",
+                                                                     "missing_horizon_end_bar"), 0)}
         for column in np.flatnonzero(eligible[t]):
             counts["eligible_count"] += 1
             event = events.get(adjusted_close.columns[column])
-            if event is not None and e < event[0] <= h:
+            if typed and not np.isfinite(prices[e, column]):
+                counts[MISSING_EXECUTION_HALT] += 1
+            elif typed and not (event is not None and e < event[0] <= h) and not np.isfinite(prices[h, column]):
+                later = np.isfinite(prices[h + 1:, column]).any()
+                counts[MISSING_HORIZON_HALT if later else MISSING_HORIZON_DISAPPEARANCE] += 1
+            elif event is not None and e < event[0] <= h:
                 labels[t, column] = prices[event[1], column] / prices[e, column] * (1.0 + event[2]) - 1.0
                 counts["terminal_aware_labels"] += 1
             elif np.isfinite(prices[e, column]) and np.isfinite(prices[h, column]):

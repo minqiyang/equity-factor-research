@@ -12,6 +12,84 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage B: causal engine hardening, locked capital, terminal schema v3, segment runner
+
+- Source: Milestone 4.8 Binding Implementation Plan Revision 3 (`bd1bf587…0bf3e`), §7.2 Stage B, card
+  `m4_8b-engine-a1`, base `dcf7b86`. All work runs on synthetic fixtures; no real or private data was read.
+- Engines (`src/backtest/portfolio.py`, `src/backtest/long_short.py`): `missing_price_policy="halt_gap_return_v1"`
+  marks a held asset at its last observed close, returns 0 on each `unmarked_halt_row`, and realizes the gap at
+  the next close (H-1, H-2). Scheduled rows with a locked held asset or an untradeable target use
+  `self_financing_locked_capital_v1` (H-3): locked values stay exact, `phi_l = min(1, max(b_l − lam_l, 0) / W'_l)`,
+  the long-short legs match at `v = min(A_long, A_short)`, and the free sleeve `1 − net(K_t)` pays the row cost.
+  Long-short execution rows with a non-empty `K_t` type `locked_net_exposure` and `locked_gross_excess`. H-5
+  (`unresolved_disappearance`), H-8 (`terminal_reference_bar_missing`), and H-9
+  (`halt_policy_impact_model_unsupported`) refuse. Rows without a locked or untradeable cell take the `raise`
+  path (H-3g). The ledger (`halt_ledger`) records unmarked rows, untradeable cells, `K_t`, `lam_l`, `phi_l`,
+  intended and executable targets, and typed rows.
+- Support and labels (`research/m4_7_common_support.py`): `causal_signal_eligibility_mask_v3` sets
+  `E(r − 1) = S_mask(r − 1)`; `potentially_held` builds `P_r`; `residual_disappearances` implements
+  `census_zero_residual_v2` parts 1–2; `claim_demand` counts residual candidates whose only failures are timing
+  bounds; `residual_bound_events` builds the −100 percent case. `reset_to_reset_labels(typed=True)` types
+  `missing_execution_bar:halt`, `missing_horizon_end_bar:halt`, and
+  `missing_horizon_end_bar:unresolved_disappearance` and drops those pairs.
+- Terminal evidence (`research/m4_7_terminal_evidence.py`): `event_scope` classifies each settlement row as
+  in scope (`first_reset_row < s <= last_book_row`), `deferred_holdout` (seal window only), or
+  `outside_discovery_holding_windows`. Schema v3 adds `source_accession`, `source_form`, `terms_known_at`,
+  `payment_timing`, `payment_date`, `payment_source_accession`, and `second_check`. `validate_v3` runs the terms
+  pass and the projection pass with the four timing bounds and writes `timing_failures`, a seeded second-check
+  sample, and counts by reason, kind, consideration type, payment timing, segment, and scope. The engine
+  `known_at` is `max(announcement_date, terms_known_at)`.
+- Runner (`research/m4_7_sp500_pit_rerun.py`): `check_registration` refuses any non-v2 registration that binds
+  `asset_level_holding_period_support_exclusion_v1` (`support_contract_retired`). `REGISTERED_V3` and
+  `check_registration_v3` bind the v3 protocol with Family A and B canonical hashes equal to registration v2;
+  `verify_bound_hashes` checks the bound snapshot files. `run_segments` executes each book and benchmark with one
+  engine call per segment from its anchor row, fits Family B composites once per segment, concatenates the IC
+  and daily net series with `segment_id`, tests Rank IC with `segment_aware_bartlett_hac_v1`
+  (`src/features/diagnostics.py`), and reports per-segment descriptive statistics, prior-exposure overlap from
+  the three seal v1 windows, the calendar-unexposed pre subsample (at 30 or more valid months), the look count,
+  and the vacuous −100 percent case. `_segment_calendar` refuses `seal_bracket_computation_forbidden` for any
+  input row on the other side or inside the seal. `run_rerun` refuses a v3 registration with
+  `segment_side_loader_unavailable` until Stage A's per-side loaders build `SegmentRun` inputs.
+- Consumer inventory (SL-7), command `rg -n -i '\bi_h\b|holdout_end|holdout_start|discovery_window|read_holdout_end|partition_of'`,
+  counting matching lines: base `dcf7b86` terminal evidence 8, common support 10, runner 14 (32, as the plan
+  states); HEAD 20, 10, 19. Dispositions by category:
+  - Window derivation (`discovery_window` import and calls: terminal evidence `:37`, `:81`, `:83`; common
+    support `:303`, `:313`, `:315`, `:330`; runner `:69`, `:466`): kept for rule v1 snapshots and registration v2
+    (plan SL-7 row "Window derivation"); v3 rows come from `discovery_segments` through `SegmentRun` and
+    `event_scope`.
+  - Discovery value slices (common support `:316`; runner `:452`, `:453`): kept for the single-side v2 path; v3
+    loads one side per segment and `_segment_calendar` enforces it.
+  - Terminal scoping (terminal evidence `:91`, `:92`, `:101`, `:111`, `:131`): v1 deferral kept; v3 scope classes
+    in `write_template(segments=...)` and `validate_v3`.
+  - Seal rule and overlap guards (runner `:436`, `:437`, `:438`, `:861`, `:863`): kept in the v2 binder; v3 refuses
+    `holdout_overlap_refused` in `check_registration_v3` and `seal_bracket_computation_forbidden` per segment.
+  - Records and reports (common support `:239`, `:262`, `:329`, `:337`, `:364`; runner `:479`, `:845`, `:1079`,
+    `:1081`, `:1085`): kept for the v2 support digest and report; v3 header and report carry segment fields.
+  - Semantic consumers outside the pattern: `support_exclusions` (v2 only; T-CAUSAL-5), the untyped label guard
+    and its Class I stop (v2 only), `MIN_IC_MONTHS` 32/16 (v3 60/30), the carried LRV (v3 segment-aware), and the
+    single-file discovery reads (v3 side-aware seam).
+  - Integration seams for the Stage A rebase: `SegmentRun` construction from `discovery_segments` and per-side
+    loaders; `read_discovery(..., side=...)`; census v3 consumption of `P_r`, the residual, and claim demand; the
+    terminal CLI v3 arguments.
+- Plan tension resolved: T-LAB-1..4 lists `missing_horizon_end_bar:terminal_claim_pending`; §7 Stage E2 assigns
+  claim labels to the conditional E2 candidate, and AGENTS.md admits no capability without a consumer. Stage B
+  types the three labels reachable without `terminal_claim_v1`; the claim-pending label lands in E2 (T-CLAIM-8).
+- Contract change applied to one carried test (plan §8.3): in `test_t_reg_1_departures_from_the_protocol_refuse`
+  the v2 document relabeled `m4_7_sp500_pit_rerun_v1` now refuses `support_contract_retired` (T-RET3-2) in
+  place of `registration_invalid`.
+- Verification: 82 new tests (engine 28, support and terminal 16, runner 38). T-CAUSAL-1..3 run 200 seeded
+  draws per book. Against an archive of `dcf7b86`, 18 of 18 engine digests (`raise`, `zero_return`,
+  long-short) are byte-identical, and the registration v2 synthetic rerun gives byte-identical label records
+  and equal sidecar, 231 trials, and report after removing the digests that depend on the fixture manifest's
+  recorded `code_commit`. Full suite and ruff results: 3137 passed, 2 skipped (pre-existing `longdouble` skips) in 740.40 s; `ruff check . --exclude .venv` clean.
+- Ablation: S1 (kept) merges the two locked-target wrappers into `portfolio._locked_target` (−24 lines, 97
+  targeted tests green). Rejected with failing oracles: S2 always-typed labels, S3 cash-absorbs-cost, S4 no
+  H-3g fast return, S5 no one-segment HAC branch (kept as a guard; 0 of 1176 stress cases differ on macOS
+  arm64, and the branch makes the exact one-segment identity hold on every BLAS). Necessary guards: H-8 check,
+  seal-bracket guard, residual stop before inference, H-5 refusal.
+- Needs follow-up: Stage A rebase and wiring of the four seams; `docs/current_handoff.md` refresh at PR
+  creation; CRITICAL gate review.
+
 ## 2026-09-27 - M4.8 Stage A attempt a3: approved public terminal schema (PR #272)
 
 - Source: Seat 1 AUDIT round 2 (M48A-A1-M02 OPEN MATERIAL) and Seat 2 AUDIT_2 round 2 (A2-R2-ADV-1) on `143dede`;
