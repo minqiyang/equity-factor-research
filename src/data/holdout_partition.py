@@ -7,9 +7,17 @@ split, dividend, or index-level file is read, and the window is derived
 without the wall clock, so unchanged inputs yield the same window.
 
 This module also holds the network-free half of the snapshot contract (plan
-1.3, S7): strict ``YYYY-MM-DD`` parsing, the partition rule at
-``holdout_end``, and manifest-authorized, hash-verified reads. It opens no
-network connection.
+1.3, S7): strict ``YYYY-MM-DD`` parsing, the partition rules, and
+manifest-authorized, hash-verified reads. It opens no network connection.
+
+Partition rule v1 (``real_v1``) makes every row before ``holdout_end``
+holdout. Partition rule v2 (M4.8 plan 2.2, ``sealed_window_only_partition_v2``)
+makes only ``[holdout_start, holdout_end)`` holdout and writes discovery rows to
+two side files, ``discovery_pre`` and ``discovery_post``. A v2 snapshot carries
+the seal v1 window through ``holdout_seal_v2.json``
+(``carried_forward_sealed_window_v1``); the carried window comes from the seal
+v1 bytes only, so no count-based derivation may run on such a snapshot
+(``seal_window_recompute_forbidden``).
 """
 
 from __future__ import annotations
@@ -20,6 +28,7 @@ import io
 import json
 import os
 import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -28,6 +37,24 @@ import pandas as pd
 
 
 SEAL_FILE = "holdout_seal_v1.json"
+SEAL_CARRY_FILE = "holdout_seal_v2.json"
+SEAL_CARRY_SCHEMA_VERSION = "m4_8_holdout_seal_carry_v2"
+SEAL_CARRY_RULE = "carried_forward_sealed_window_v1"
+# Plan 2.2: the carry record binds these three hashes. The first two docs files
+# are committed; the prospective file lives in the private real_v1 snapshot.
+SEAL_V1_DOCS_PATH = "docs/preregistrations/m4_7_holdout_seal_v1.json"
+SEAL_V1_DOCS_SHA256 = "b7f9380fa5f128c65966a2984f2a81b635b3f3777f32878270fc977a93bff506"
+SEAL_V1_PROSPECTIVE_SHA256 = "93ce6e5ad003927dbf7f1521c26aca6a17844cb3061a44f7885a5584612e9882"
+SEAL_V1_CONFIRMATION_V2_PATH = "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json"
+SEAL_V1_CONFIRMATION_V2_SHA256 = "8e9e7b0267d689d9bef22ef681aac3b18230373724fe3f0f6cf4e6fa209388ae"
+# The window those bytes hold; every carry record read must restate it (a forged window refuses).
+SEAL_V1_WINDOW = {"holdout_start": "2019-07-31", "holdout_end_exclusive": "2020-07-31",
+                  "calendar_source": "SPY.US_eod_dates_v1"}
+PARTITION_RULE_V1 = "holdout_before_holdout_end_partition_v1"
+PARTITION_RULE_V2 = "sealed_window_only_partition_v2"
+DISCOVERY_LAYOUT_V2 = "side_partitioned_discovery_v1"
+PRE_SIDE_VOLUME_BASIS = "pre_seal_volume_share_basis_v1"
+SIDES = ("discovery_pre", "discovery_post")
 MANIFEST_FILE = "manifest.json"
 MEMBERSHIP_FILE = "membership/historical_components_raw.parquet"
 SEAL_SCHEMA_VERSION = "m4_7_holdout_seal_v1"
@@ -90,9 +117,79 @@ def parse_strict_date(value: Any) -> date | None:
 
 
 def partition_of(day: date, holdout_end: date) -> str:
-    """Rows dated before ``holdout_end`` are holdout; the rest are discovery."""
+    """Rule v1: rows dated before ``holdout_end`` are holdout; the rest are discovery."""
 
     return "holdout" if day < holdout_end else "discovery"
+
+
+def side_of(day: date, holdout_start: date, holdout_end: date) -> str:
+    """Rule v2 (plan 2.2): ``holdout`` inside the seal window, else the discovery side file."""
+
+    if day < holdout_start:
+        return "discovery_pre"
+    return "holdout" if day < holdout_end else "discovery_post"
+
+
+@dataclass(frozen=True)
+class PartitionWindow:
+    """The seal window a snapshot partitions on, and the rule that reads it."""
+
+    rule: str
+    holdout_start: date
+    holdout_end: date
+    calendar_source: str
+    seal_file: str
+
+    @property
+    def partitions(self) -> tuple[str, ...]:
+        return rule_partitions(self.rule)
+
+    def partition(self, day: date) -> str:
+        if self.rule == PARTITION_RULE_V1:
+            return partition_of(day, self.holdout_end)
+        return side_of(day, self.holdout_start, self.holdout_end)
+
+
+def rule_partitions(rule: str) -> tuple[str, ...]:
+    """Partition file roles per rule: one discovery file under v1, two side files under v2."""
+
+    return ("discovery", "holdout") if rule == PARTITION_RULE_V1 else (*SIDES, "holdout")
+
+
+def declared_partition_rule(manifest: dict[str, Any]) -> str:
+    """The manifest's declared rule; a snapshot that declares none uses rule v1 (plan 2.2)."""
+
+    rule = manifest.get("snapshot", {}).get("partition_rule", PARTITION_RULE_V1)
+    if rule not in (PARTITION_RULE_V1, PARTITION_RULE_V2):
+        raise SnapshotRefusal("partition_rule_unknown", str(rule))
+    return rule
+
+
+def read_partition_window(snapshot_dir: Path, manifest: dict[str, Any] | None = None) -> PartitionWindow:
+    """Dispatch on the seal file: the carry record selects rule v2, the v1 seal rule v1.
+
+    With ``manifest``, the manifest's declared rule must agree with the seal
+    (``partition_rule_mismatch``); downstream readers pass it, the partitioner
+    records the declaration before it partitions.
+    """
+
+    root = Path(snapshot_dir)
+    if (root / SEAL_CARRY_FILE).is_file() and (root / SEAL_FILE).is_file():
+        raise SnapshotRefusal("holdout_seal_ambiguous", f"{SEAL_FILE} and {SEAL_CARRY_FILE}")
+    if (root / SEAL_CARRY_FILE).is_file():
+        record = read_seal_carry(root)
+        window = PartitionWindow(PARTITION_RULE_V2, date.fromisoformat(record["holdout_start"]),
+                                 date.fromisoformat(record["holdout_end_exclusive"]), record["calendar_source"],
+                                 SEAL_CARRY_FILE)
+    else:
+        record = read_seal(root)
+        window = PartitionWindow(PARTITION_RULE_V1, date.fromisoformat(record["holdout_start"]),
+                                 date.fromisoformat(record["holdout_end_exclusive"]), record["calendar_source"],
+                                 SEAL_FILE)
+    if manifest is not None and declared_partition_rule(manifest) != window.rule:
+        raise SnapshotRefusal("partition_rule_mismatch",
+                              f"manifest declares {declared_partition_rule(manifest)}, seal selects {window.rule}")
+    return window
 
 
 def sha256_bytes(payload: bytes) -> str:
@@ -168,6 +265,134 @@ def read_holdout_end(snapshot_dir: Path) -> date:
     """Return the sealed ``holdout_end_exclusive``; refuse when no seal exists."""
 
     return date.fromisoformat(read_seal(snapshot_dir)["holdout_end_exclusive"])
+
+
+def build_seal_carry_record(
+    seal_v1_bytes: bytes,
+    confirmation_v2_bytes: bytes,
+    *,
+    written_at: str,
+    writing_actor: str,
+    authorization_reference: str,
+    private_prospective_bytes: bytes | None = None,
+) -> dict[str, Any]:
+    """Plan 2.2: the carry record for a rule v2 snapshot, verified against the three bound hashes.
+
+    The window, calendar source, and prior exposures come from the seal v1
+    bytes and from nothing else. A docs file or a present private prospective
+    file with another hash refuses ``seal_carry_source_mismatch``.
+    """
+
+    checks = (("seal_v1_docs", seal_v1_bytes, SEAL_V1_DOCS_SHA256),
+              ("seal_v1_confirmation_v2", confirmation_v2_bytes, SEAL_V1_CONFIRMATION_V2_SHA256))
+    if private_prospective_bytes is not None:
+        checks += (("seal_v1_prospective", private_prospective_bytes, SEAL_V1_PROSPECTIVE_SHA256),)
+    for name, payload, expected in checks:
+        if sha256_bytes(payload) != expected:
+            raise SnapshotRefusal("seal_carry_source_mismatch", f"{name} SHA-256 differs from the bound hash")
+    seal = json.loads(seal_v1_bytes)
+    confirmation = json.loads(confirmation_v2_bytes)
+    for name, record in (("seal_v1_docs", seal), ("seal_v1_confirmation_v2", confirmation)):
+        if record.get("confirmation", {}).get("seal_prospective_sha256") != SEAL_V1_PROSPECTIVE_SHA256:
+            raise SnapshotRefusal("seal_carry_source_mismatch", f"{name} embeds another prospective hash")
+    if any(record.get(key) != value for record in (seal, confirmation) for key, value in SEAL_V1_WINDOW.items()):
+        raise SnapshotRefusal("seal_carry_source_mismatch", "seal v1 bytes and the bound window disagree")
+    return {
+        "schema_version": SEAL_CARRY_SCHEMA_VERSION,
+        "rule_version": SEAL_CARRY_RULE,
+        "holdout_start": seal["holdout_start"],
+        "holdout_end_exclusive": seal["holdout_end_exclusive"],
+        "calendar_source": seal["calendar_source"],
+        "carried_from": {
+            "seal_v1_docs_path": SEAL_V1_DOCS_PATH,
+            "seal_v1_docs_sha256": SEAL_V1_DOCS_SHA256,
+            "seal_v1_prospective_sha256": SEAL_V1_PROSPECTIVE_SHA256,
+            "seal_v1_confirmation_v2_path": SEAL_V1_CONFIRMATION_V2_PATH,
+            "seal_v1_confirmation_v2_sha256": SEAL_V1_CONFIRMATION_V2_SHA256,
+            "private_prospective_verified": private_prospective_bytes is not None,
+        },
+        "prior_exposures": seal["prior_exposures"],
+        "prior_exposure_status": "carried_stated_v1",
+        "partition_rule": PARTITION_RULE_V2,
+        "discovery_layout": DISCOVERY_LAYOUT_V2,
+        "pre_side_volume_basis": PRE_SIDE_VOLUME_BASIS,
+        "seal_bracket_computation_forbidden": True,
+        "seal_bracket_scope": "every_computation_downstream_of_the_partitioner",
+        "partitioner_value_access": [{
+            "table": "splits", "field": "ratio", "rows": "dated_on_or_after_holdout_start",
+            "purpose": PRE_SIDE_VOLUME_BASIS,
+            "design_impact": "pre-side volume is divided by the product of these ratios; no ratio, factor, or "
+                             "count derived from them is written to a discovery file or a public output",
+        }],
+        "value_fields_accessed_downstream": [],
+        "holdout_value_files_never_opened_downstream": [
+            "raw/**", "eod/holdout/*", "splits/holdout/*", "dividends/holdout/*", "quarantine/**",
+        ],
+        "classification": "carried_seal_with_stated_prior_exposures",
+        "written_at": written_at,
+        "writing_actor": writing_actor,
+        "authorization_reference": authorization_reference,
+    }
+
+
+def write_seal_carry(
+    snapshot_dir: Path,
+    *,
+    seal_v1_path: Path,
+    confirmation_v2_path: Path,
+    written_at: str,
+    writing_actor: str,
+    authorization_reference: str,
+    private_prospective_path: Path | None = None,
+) -> tuple[dict[str, Any], str]:
+    """Write ``holdout_seal_v2.json`` into a snapshot; return the record and its SHA-256."""
+
+    snapshot_dir = Path(snapshot_dir)
+    target = snapshot_dir / SEAL_CARRY_FILE
+    if target.exists():
+        raise SnapshotRefusal("snapshot_file_exists", SEAL_CARRY_FILE)
+    if (snapshot_dir / SEAL_FILE).exists():
+        raise SnapshotRefusal("holdout_seal_ambiguous", f"{SEAL_FILE} exists in a rule v2 snapshot")
+    record = build_seal_carry_record(
+        Path(seal_v1_path).read_bytes(), Path(confirmation_v2_path).read_bytes(),
+        written_at=written_at, writing_actor=writing_actor, authorization_reference=authorization_reference,
+        private_prospective_bytes=None if private_prospective_path is None else Path(private_prospective_path).read_bytes(),
+    )
+    body = seal_bytes(record)
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(target.name + ".tmp")
+    temporary.write_bytes(body)
+    os.replace(temporary, target)
+    return record, sha256_bytes(body)
+
+
+def read_seal_carry(snapshot_dir: Path) -> dict[str, Any]:
+    """Return the carry record; refuse a record that is not a well-formed carried seal."""
+
+    path = Path(snapshot_dir) / SEAL_CARRY_FILE
+    if not path.is_file():
+        raise SnapshotRefusal("holdout_seal_missing", SEAL_CARRY_FILE)
+    record = json.loads(path.read_bytes())
+    carried = record.get("carried_from", {})
+    well_formed = (
+        record.get("schema_version") == SEAL_CARRY_SCHEMA_VERSION
+        and record.get("rule_version") == SEAL_CARRY_RULE
+        and record.get("partition_rule") == PARTITION_RULE_V2
+        and all(record.get(key) == value for key, value in SEAL_V1_WINDOW.items())
+        and carried.get("seal_v1_docs_sha256") == SEAL_V1_DOCS_SHA256
+        and carried.get("seal_v1_prospective_sha256") == SEAL_V1_PROSPECTIVE_SHA256
+        and carried.get("seal_v1_confirmation_v2_sha256") == SEAL_V1_CONFIRMATION_V2_SHA256
+    )
+    if not well_formed:
+        raise SnapshotRefusal("holdout_seal_missing", f"{SEAL_CARRY_FILE} is not a carried_forward_sealed_window_v1 record")
+    return record
+
+
+def refuse_carried_window_recompute(snapshot_dir: Path) -> None:
+    """Plan 2.2: a count-based window derivation on a carried seal refuses ``seal_window_recompute_forbidden``."""
+
+    if (Path(snapshot_dir) / SEAL_CARRY_FILE).exists():
+        raise SnapshotRefusal("seal_window_recompute_forbidden", f"{SEAL_CARRY_FILE} declares {SEAL_CARRY_RULE}")
 
 
 def classify_membership_entries(
@@ -438,6 +663,7 @@ def write_prospective_seal(
     """
 
     snapshot_dir = Path(snapshot_dir)
+    refuse_carried_window_recompute(snapshot_dir)
     target = snapshot_dir / SEAL_FILE
     if target.exists():
         raise SnapshotRefusal("snapshot_file_exists", SEAL_FILE)

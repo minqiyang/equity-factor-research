@@ -1,4 +1,4 @@
-"""Coverage census, readiness, power projection, and seal confirmation for M4.7 (plan section 5).
+"""Coverage census, readiness, power projection, and seal confirmation for M4.7 (plan section 5) and M4.8.
 
 Runs after the universe build and the terminal projection and before any
 factor computation. Refuses ``derived_artifact_stale`` before any metric when
@@ -11,6 +11,15 @@ census outputs and seal record stay unchanged as history. Every figure is ``DIAG
 supports a ranking, selection, or profitability claim (R2, R10).
 
 Run as ``python -m research.m4_7_coverage_census --snapshot-id <ID>``.
+
+M4.8 (plan section 5) adds two subcommands. ``membership-census`` reads
+membership metadata and the private curation files only and fixes
+``coverage_start_pre``, ``D0_pre``, and gate G1. ``census-v3`` runs on a rule
+v2 snapshot after the universe build and takes the terminal summary and the
+per-segment access logs from the later stages; it writes the private detail and
+the count-only public ``reports/m4_8_coverage_census_v3.{json,md}``. Both
+refuse to publish a payload that holds a code, a name, or a private path
+(T-PUB-1).
 """
 
 from __future__ import annotations
@@ -18,10 +27,11 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -37,12 +47,20 @@ from data.holdout_partition import (
     SnapshotRefusal,
     coverage_start,
     monthly_raw_counts,
+    parse_strict_date,
     sha256_bytes,
 )
-from research.m4_7_common_support import SUPPORT_CONTRACT, ic_month_set, write_support_files
+from research import m4_8_membership
+from research.m4_7_common_support import SUPPORT_CONTRACT, ic_month_set, scheduled_reset_rows, write_support_files
 from research.m4_7_family_a import FAMILY_A
 from research.m4_7_holdout_seal import confirmed_seal_bytes
-from research.m4_7_terminal_evidence import CURATED, ENGINE_EVENTS, read_engine_events, require_current_terminal
+from research.m4_7_terminal_evidence import (
+    CURATED,
+    ENGINE_EVENTS,
+    EVENT_KINDS,
+    read_engine_events,
+    require_current_terminal,
+)
 from research.m4_7_universe_build import (
     BENCHMARK,
     BUILD_MANIFEST,
@@ -53,9 +71,11 @@ from research.m4_7_universe_build import (
     REKEY_STATUSES,
     SECURITY_MASTER,
     TABLES,
+    Segment,
     Snapshot,
     _parquet,
     canonical_json,
+    discovery_segments,
     discovery_window,
     membership_codes,
     normalized_eod_subreason,
@@ -63,6 +83,8 @@ from research.m4_7_universe_build import (
     read_derived_json,
     request_list,
     require_current,
+    reset_in_month,
+    segment_ic_resets,
     snapshot_dir_from_args,
     write_bytes,
 )
@@ -287,7 +309,12 @@ def run_census(
     seal_out: Path | str | None = None,
     code_commit: str | None = None,
 ) -> dict[str, Any]:
-    """Compute the census and write every output; return the public JSON, the detail, and the digests."""
+    """Compute the census and write every output; return the public JSON, the detail, and the digests.
+
+    The v2 census derives coverage starts from counts, so it refuses on a
+    carried seal (``seal_window_recompute_forbidden``); census v3 serves rule v2.
+    """
+    holdout_partition.refuse_carried_window_recompute(Path(snapshot_dir))
     snapshot = Snapshot.open(snapshot_dir)
     root = snapshot.root
     build = read_derived_json(root, BUILD_MANIFEST)
@@ -709,7 +736,7 @@ def _episode_metrics(ctx: Context, mask: pd.DataFrame) -> dict[str, Any]:
         "coverage": coverage,
         "distribution_support": distribution_support,
         "vp2_revisit_required": bool(eligible and above > VP2_SHARE * eligible),
-        "volume_basis": volume_basis_diagnostic(_volume_ells(ctx, checks)),
+        "volume_basis": volume_basis_diagnostic(_volume_ells(ctx.panels, checks)),
         "quality": _quality(ctx, mask),
         "corporate_actions": _corporate_actions(ctx),
         "exits": _exits(ctx),
@@ -741,10 +768,11 @@ def _history(ctx: Context) -> tuple[dict[str, int], int]:
     return dict(sorted(missing.items())), partial
 
 
-def _volume_ells(ctx: Context, checks: list[dict[str, Any]]) -> list[tuple[float, float | None]]:
+def _volume_ells(panels: dict[str, pd.DataFrame], checks: list[dict[str, Any]]) -> list[tuple[float, float | None]]:
+    """VP-1 input: per attributed split of ratio 1.25 or more, the 20-bar median dollar-turnover elasticity."""
     ells = []
     for check in checks:
-        panel = ctx.panels.get(check["permanent_id"])
+        panel = panels.get(check["permanent_id"])
         if panel is None or check["refusal"] is not None:
             continue
         turnover = (panel["close"] / panel["split_factor"] * panel["volume"]).to_numpy()
@@ -928,6 +956,681 @@ def _holdout_integrity(snapshot: Snapshot) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------- M4.8 membership census and census v3 (plan 5)
+
+
+MEMBERSHIP_REPORT = "m4_8_membership_census"
+MEMBERSHIP_DETAIL = "membership_census_detail.json"
+CENSUS_V3_REPORT = "m4_8_coverage_census_v3"
+CENSUS_V3_DETAIL = "census/census_detail_v3.json"
+MIN_PRE_IC_MONTHS, MIN_TOTAL_IC_MONTHS = 34, 60
+R3_2C_CAP, R3_3_CAP, R3_5_CAP, R3_10_CAP = 0.01, 0.05, 0.001, 0.05
+UNEXPOSED_BEFORE = date(2016, 8, 8)
+READINESS_V3 = (
+    ("R3-1", "blocked:insufficient_pre_segment"),
+    ("R3-2a", "blocked:unresolved_membership_changes"),
+    ("R3-2b", "blocked:anchor_count_delta"),
+    ("R3-2c", "blocked:unpriced_absent_members"),
+    ("R3-3", "blocked:unpriced_eligible_member_days"),
+    ("R3-4", "blocked:residual_unevidenced_disappearance"),
+    ("R3-5", "ready_with_caveats:halt_frequency"),
+    ("R3-6", ""),
+    ("R3-7", "blocked:insufficient_ic_months"),
+    ("R3-8", "ready_with_caveats:vp2_revisit"),
+    ("R3-9", "blocked:seal_carry_mismatch"),
+    ("R3-10", "ready_with_caveats:membership_discrepancies"),
+)
+
+
+def derive_readiness_v3(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Plan 5.3: rules R3-1..R3-10 in table order.
+
+    ``ready`` when every rule passes; ``ready_with_caveats:<rules>`` when only
+    caveat rules fail; otherwise ``blocked:<code>`` of the first failing
+    blocking rule. Every failing rule is listed. R3-2c and R3-3 take one
+    fraction per segment, and a ``None`` fraction (zero denominator,
+    ``not_evaluable``) fails. R3-6 applies the M4.7 rules R-CENSUS-3..7 and 10
+    with their codes.
+    """
+    m47 = {
+        "R-CENSUS-3": inputs["identity_refusal_fraction"] <= IDENTITY_CAP,
+        "R-CENSUS-4": inputs["off_calendar_fraction"] <= OFF_CALENDAR_CAP,
+        "R-CENSUS-5": inputs["calendar_covers_coverage_start"] and inputs["benchmark_complete"],
+        "R-CENSUS-6": inputs["snapshot_integrity"],
+        "R-CENSUS-7": inputs["holdout_band_after_identity"],
+        "R-CENSUS-10": inputs["retrieval_complete"],
+    }
+
+    def per_segment(values: dict[str, float | None], cap: float) -> bool:
+        return bool(values) and all(value is not None and value <= cap for value in values.values())
+
+    fraction = inputs["unresolved_change_fraction"]
+    results = {
+        "R3-1": inputs["pre_ic_months"] >= MIN_PRE_IC_MONTHS,
+        "R3-2a": fraction is not None and fraction <= m4_8_membership.MAX_UNRESOLVED_CHANGE_FRACTION,
+        "R3-2b": not inputs["failing_anchors"],
+        "R3-2c": per_segment(inputs["unpriced_absent_fraction"], R3_2C_CAP),
+        "R3-3": per_segment(inputs["unpriced_eligible_fraction"], R3_3_CAP),
+        "R3-4": inputs["residual_count"] == 0,
+        "R3-5": inputs["untradeable_fraction"] <= R3_5_CAP,
+        "R3-6": all(m47.values()),
+        "R3-7": inputs["total_ic_months"] >= MIN_TOTAL_IC_MONTHS,
+        "R3-8": not inputs["vp2_revisit_required"],
+        "R3-9": inputs["seal_carry_passed"],
+        "R3-10": inputs["discrepancy_fraction"] <= R3_10_CAP,
+    }
+    failures = []
+    for rule, code in READINESS_V3:
+        if results[rule]:
+            continue
+        if rule != "R3-6":
+            failures.append({"rule": rule, "result": code})
+            continue
+        for sub, passed in m47.items():
+            if not passed:
+                result = FAILURE_CODES[sub]
+                if sub == "R-CENSUS-5" and inputs["calendar_covers_coverage_start"]:
+                    result = "blocked:benchmark_gap"
+                failures.append({"rule": f"R3-6/{sub}", "result": result})
+    blocked = [f["result"] for f in failures if f["result"].startswith("blocked:")]
+    caveats = list(dict.fromkeys(f["result"].split(":", 1)[1] for f in failures))
+    status = blocked[0] if blocked else ("ready_with_caveats:" + ",".join(caveats) if failures else "ready")
+    return {"status": status, "failures": failures, "rules": {rule: {"passed": bool(ok)} for rule, ok in results.items()},
+            "r3_6_rules": {rule: {"passed": bool(ok)} for rule, ok in m47.items()}, "inputs": inputs}
+
+
+_ABSOLUTE_PATH = re.compile(r"(?<![\w.])/(?:Users|private|home|tmp|var|Volumes|mnt)/")
+
+
+def known_codes(snapshot: Snapshot, private_paths: tuple[Path, ...] = ()) -> set[str]:
+    """Vendor member codes, requested codes, and every curated supplement code the snapshot or a private directory holds."""
+    codes = set(membership_codes(snapshot.read_file("membership"))) | set(snapshot.manifest.get("requested_codes", []))
+    for directory in (snapshot.root / "membership", *private_paths):
+        if (Path(directory) / m4_8_membership.SUPPLEMENT_FILE).is_file():
+            supplement = m4_8_membership.read_curated(directory).supplement
+            codes |= {str(code) for code in supplement["code"] if str(code).strip()}
+    return codes
+
+
+def public_leak_scan(text: str, snapshot: Snapshot, private_paths: tuple[Path, ...] = ()) -> list[str]:
+    """T-PUB-1: the codes, names, and private paths a public payload holds (an empty list passes).
+
+    ``<Code>.US`` forms always count; a bare code counts at three or more
+    characters as a whole token; a vendor name counts at six or more characters.
+    Codes include curated-only absent members; any absolute path under a user,
+    private, temporary, or volume root counts as a path.
+    """
+    found = []
+    for path in (snapshot.root, *private_paths):
+        if str(path) in text:
+            found.append(f"path:{path.name}")
+    if _ABSOLUTE_PATH.search(text):
+        found.append("path:absolute")
+    membership = snapshot.read_file("membership")
+    for code in sorted(known_codes(snapshot, private_paths)):
+        bare = code.removesuffix(".US")
+        if code in text or (len(bare) >= 3 and re.search(rf"(?<![A-Za-z0-9_]){re.escape(bare)}(?![A-Za-z0-9_])", text)):
+            found.append("code")
+    lowered = text.casefold()
+    for name in {str(n) for n in membership["Name"] if isinstance(n, str) and len(n.strip()) >= 6}:
+        if name.casefold() in lowered:
+            found.append("name")
+    return sorted(set(found))
+
+
+# Plan 3.7 and 4.6: the approved public terminal schema (R11, M48A-A1-M02). Every public field is either a
+# declared scalar count or a map whose keys come from a declared vocabulary; a field, key, or bucket outside it
+# refuses. Stage E extends these declarations when it adds a published count.
+TERMINAL_SCALAR_COUNTS = frozenset({
+    "residual_count", "in_scope_candidates", "curated", "accepted", "unresolved", "deferred_holdout",
+    "outside_discovery_holding_windows", "claim_demand", "contingent_component_excluded",
+})
+TERMINAL_REASONS = frozenset({
+    # Carried M4.7 validation reasons (research/m4_7_terminal_evidence.py).
+    "curation_unresolved", "reference_not_last_bar", "evidence_incomplete",
+    "evidence_incomplete:contradictory_consideration_fields", "terminal_currency_unsupported",
+    "known_at_after_reference", "settlement_lag_negative", "settlement_lag_exceeds_3_rows",
+    "stock_consideration_lag_positive", "acquirer_bar_missing", "terminal_basis_ambiguous",
+    "terminal_basis_ambiguous:corporate_action_evidence_missing", "terminal_return_unjustified",
+    "terminal_return_below_minus_one", "holdout_terms_forbidden", "terminal_evidence_invalid",
+    # Registration v3 reasons (plan 3.2-3.5).
+    "unresolved:terms_known_after_reference", "unresolved:payment_timing_unknown",
+    "unresolved:payment_lag_exceeds_bound", "unresolved:election_terms_unstated", "unresolved:second_check_disagree",
+    *(f"evidence_incomplete:{field}_missing" for field in (
+        "source_accession", "terms_known_at", "payment_timing", "payment_date", "payment_source_accession")),
+})
+CONSIDERATION_KEYS = frozenset({"cash", "stock", "mixed", "evidenced_worthless", "unresolved"})
+SETTLEMENT_LAG_BUCKETS = frozenset({"<-1", "-1", "0", "1", "2", "3", ">3"})
+DAY_LAG_BUCKETS = frozenset({"0", "1", "2-5", "6-20", "21-60", ">60"})
+TERMINAL_COUNT_MAPS: dict[str, frozenset[str]] = {
+    "by_status": frozenset({"accepted", "unresolved", "deferred_holdout", "outside_discovery_holding_windows"}),
+    "unresolved_by_reason": TERMINAL_REASONS,
+    "by_event_kind": EVENT_KINDS | {"unresolved"},
+    "by_consideration_type": CONSIDERATION_KEYS,
+    "by_payment_timing": frozenset({"at_completion_evidenced", "delayed_evidenced", "unknown", "not_applicable"}),
+    "by_segment": frozenset({"pre", "post"}),
+    "valuation_row_offsets": frozenset({"L", "S"}),
+    "terms_availability_lag_distribution": DAY_LAG_BUCKETS,
+    "claim_realization_lag_distribution": DAY_LAG_BUCKETS,
+}
+TERMINAL_NESTED_MAPS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
+    "settlement_lag_distribution": (CONSIDERATION_KEYS, SETTLEMENT_LAG_BUCKETS),
+}
+
+
+def aggregate_terminal_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    """The public projection of a terminal summary under the approved schema (R11, M48A-A1-M02).
+
+    Each field must be a declared scalar count, a declared count map whose keys
+    lie in that map's vocabulary, or a declared nested count map. Values are
+    non-negative integers. Any other field (a raw vendor row, an individual
+    terminal row, a per-asset map), key, bucket, or value type refuses
+    ``terminal_summary_not_aggregate`` before any public or private write.
+    ``residual_count`` is required.
+    """
+
+    def count(value: Any) -> bool:
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+    def count_map(value: Any, keys: frozenset[str]) -> bool:
+        return isinstance(value, dict) and all(key in keys and count(v) for key, v in value.items())
+
+    if not isinstance(summary, dict):
+        raise SnapshotRefusal("terminal_summary_not_aggregate", "the summary is not a mapping")
+    public: dict[str, Any] = {}
+    for field, value in summary.items():
+        if field in TERMINAL_SCALAR_COUNTS and count(value):
+            public[field] = value
+        elif field in TERMINAL_COUNT_MAPS and count_map(value, TERMINAL_COUNT_MAPS[field]):
+            public[field] = dict(sorted(value.items()))
+        elif field in TERMINAL_NESTED_MAPS and isinstance(value, dict) and all(
+                outer in TERMINAL_NESTED_MAPS[field][0] and count_map(inner, TERMINAL_NESTED_MAPS[field][1])
+                for outer, inner in value.items()):
+            public[field] = {outer: dict(sorted(inner.items())) for outer, inner in sorted(value.items())}
+        else:
+            raise SnapshotRefusal("terminal_summary_not_aggregate", "a field lies outside the approved aggregate schema")
+    if "residual_count" not in public:
+        raise SnapshotRefusal("terminal_summary_incomplete", "residual_count")
+    return dict(sorted(public.items()))
+
+
+def _write_public(reports: Path, stem: str, public: dict[str, Any], markdown: str, snapshot: Snapshot,
+                  private_paths: tuple[Path, ...]) -> str:
+    body = canonical_json(public)
+    leaks = public_leak_scan(body.decode("utf-8") + markdown, snapshot, private_paths)
+    if leaks:
+        raise SnapshotRefusal("public_output_leak", ", ".join(leaks))
+    digest = write_bytes(reports / f"{stem}.json", body)
+    write_bytes(reports / f"{stem}.md", markdown.encode("utf-8"))
+    return digest
+
+
+def _month_end_before(day: date) -> date:
+    return day.replace(day=1) - timedelta(days=1)
+
+
+def _member_rows(calendar: pd.DatetimeIndex, start: date, end: date | None) -> tuple[int, int]:
+    """``[m_in, m_out)``: the calendar-row membership of an effective-date interval under the one-row signal lag."""
+    m_in = int(calendar.searchsorted(pd.Timestamp(start))) + 1
+    m_out = len(calendar) if end is None else int(calendar.searchsorted(pd.Timestamp(end))) + 1
+    return m_in, m_out
+
+
+def _rows_inside(interval: tuple[int, int], first: int, last: int) -> int:
+    return max(0, min(interval[1], last + 1) - max(interval[0], first))
+
+
+def membership_census(snapshot: Snapshot, curated: m4_8_membership.Curated) -> dict[str, Any]:
+    """Plan 5.1 ``membership-census``: coverage, anchors, changes, supplement counts, and gate G1 (metadata only)."""
+    calendar = snapshot.calendar()
+    retrieved = snapshot.components_retrieved()
+    holdout_start, holdout_end = snapshot.holdout_start, snapshot.holdout_end
+    vendor = snapshot.read_file("membership")
+    records = m4_8_membership.validate_supplement(curated.supplement, vendor, calendar)
+    augmented = m4_8_membership.apply_supplement(vendor, records, retrieved)
+    by_id = {r["supplement_id"]: r for r in records}
+    entries, match_entries = [], []
+    for classified, row in zip(holdout_partition.classify_membership_entries(augmented, retrieved),
+                               augmented.to_dict(orient="records")):
+        if classified["outcome"] != "retained":
+            continue
+        ref = str(row["raw_row"])
+        record = by_id.get(ref)
+        name = row.get("Name")
+        entry = {"ref": ref, "kind": "supplement" if record else "vendor_entry", "code": f"{classified['code']}.US",
+                 "start": classified["start"], "end": classified["end"], "name": name if isinstance(name, str) else ""}
+        if record is not None:
+            bar_dates = read_bar_dates(snapshot, entry["code"])
+            bar_rows = np.array([] if bar_dates is None else calendar.get_indexer(bar_dates), dtype=int)
+            m_in, m_out = _member_rows(calendar, entry["start"], entry["end"])
+            record["priced"] = entry["priced"] = m4_8_membership.absent_member_priced(bar_rows[bar_rows >= 0], m_in - 1, m_out - 1)
+        entries.append(entry)
+        match_entries.append(entry)
+    for record in records:
+        if record["status"] == "valid" and record["action"] != "absent_member_add":
+            match_entries.append({"ref": record["supplement_id"], "kind": "supplement", "code": record["code"],
+                                  "start": record["start"], "end": record["end"]})
+    changes = m4_8_membership.match_changes(curated.changes, match_entries, calendar)
+    counts = m4_8_membership.month_end_counts([(e["code"], e["start"], e["end"]) for e in entries], calendar,
+                                              m4_8_membership.COVERAGE_FLOOR, retrieved)
+    last_anchor = _month_end_before(holdout_start)
+    coverage = m4_8_membership.curated_coverage_start_v2(
+        counts, m4_8_membership.published_anchors(curated.anchors), changes,
+        reconstruction_end=holdout_start, last_anchor=last_anchor)
+    for anchor in coverage["anchors"]:
+        if anchor["kind"] == "anchor_floor_500" and anchor["as_of"] is not None:
+            day = date.fromisoformat(anchor["as_of"])
+            anchor["dual_class_lines"] = m4_8_membership.dual_class_lines(
+                [e["name"] for e in entries if e["start"] <= day and (e["end"] is None or e["end"] > day)])
+    pre, pre_ic_months, r3_2c = None, 0, {"unpriced_absent_member_days": 0, "eligible_member_days": 0, "fraction": None}
+    if coverage["coverage_start_pre"] is not None:
+        d0_pre = calendar[reset_in_month(calendar, date.fromisoformat(coverage["coverage_start_pre"]))].date()
+        try:
+            pre = discovery_segments(calendar, holdout_start, holdout_end, d0_pre)[0]
+        except SnapshotRefusal:
+            pre = None
+    if pre is not None:
+        pre_ic_months = int(len(segment_ic_resets(calendar, pre)))
+        eligible = unpriced = 0
+        for entry in entries:
+            days = _rows_inside(_member_rows(calendar, entry["start"], entry["end"]), pre.first_reset_row, pre.last_book_row)
+            eligible += days
+            unpriced += days if entry.get("priced") is False else 0
+        r3_2c = {"unpriced_absent_member_days": unpriced, "eligible_member_days": eligible,
+                 "fraction": unpriced / eligible if eligible else None}
+    conditions = {"coverage_start_pre_exists": coverage["coverage_start_pre"] is not None,
+                  "pre_ic_months_at_least_34": pre_ic_months >= MIN_PRE_IC_MONTHS,
+                  "r3_2c_pre_passes": r3_2c["fraction"] is not None and r3_2c["fraction"] <= R3_2C_CAP}
+    g1 = ("passed" if all(conditions.values()) else coverage["status"] if not conditions["coverage_start_pre_exists"]
+          else "blocked:insufficient_pre_segment" if not conditions["pre_ic_months_at_least_34"]
+          else "blocked:unpriced_absent_members")
+    post_first = discovery_window(calendar, holdout_end)[1]
+    warm_up_end = calendar[min(post_first, len(calendar) - 1)].date()
+    late = {"seal_window": 0, "post_holdout_warm_up": 0}
+    for row in vendor.to_dict(orient="records"):
+        end = parse_strict_date(row.get("EndDate"))
+        if parse_strict_date(row.get("StartDate")) is None and end is not None and holdout_start <= end <= warm_up_end:
+            late["seal_window" if end < holdout_end else "post_holdout_warm_up"] += 1
+    discrepancies = m4_8_membership.discrepancy_rows(records)
+    absent = [r for r in records if r["action"] == "absent_member_add"]
+    match_counts: dict[str, int] = {}
+    reasons: dict[str, int] = {}
+    for change in changes:
+        match_counts[change["match"]] = match_counts.get(change["match"], 0) + 1
+        if change["match"] == "unresolved":
+            reasons[change["reason"]] = reasons.get(change["reason"], 0) + 1
+    public = {
+        "schema_version": "m4_8_membership_census_v1",
+        "evidence_ceiling": "DIAGNOSTIC_ONLY",
+        "coverage_rule": m4_8_membership.COVERAGE_RULE,
+        "coverage_status": coverage["status"],
+        "coverage_start_pre": coverage["coverage_start_pre"],
+        "D0_pre": None if pre is None else calendar[pre.first_reset_row].date().isoformat(),
+        "r_pre_last": None if pre is None else calendar[pre.last_ic_reset_row].date().isoformat(),
+        "pre_ic_months": pre_ic_months,
+        "n_cur_by_month_end": [{"month_end": c["month_end"].isoformat(),
+                                "as_of": None if c["as_of"] is None else c["as_of"].isoformat(), "n_cur": c["n_cur"]}
+                               for c in counts],
+        "anchors": coverage["anchors"],
+        "failing_anchors": coverage["failing_anchors"],
+        "unresolved_change_fraction": coverage["unresolved_change_fraction"],
+        "reconstructed_changes": {"total": len(changes), "by_match": dict(sorted(match_counts.items())),
+                                  "unresolved_by_reason": dict(sorted(reasons.items()))},
+        "supplement_counts_by_action_and_status": m4_8_membership.supplement_counts(records),
+        "absent_members": {
+            "priced": sum(1 for r in absent if r["status"] == "valid" and r.get("priced")),
+            "unpriced": sum(1 for r in absent if r["status"] == "valid" and r.get("priced") is False),
+            "identity_refused": sum(1 for r in absent if r["status"] == "identity_refused"),
+        },
+        "corrections": {"confirmed": int((discrepancies["adjudication"] == "membership_date_corrected_primary_v1").sum()),
+                        "unadjudicated_discrepancies": int((discrepancies["adjudication"] == "unadjudicated").sum())},
+        "late_undated_entries": late,
+        "r3_2c_pre": r3_2c,
+        "gate_g1": {"status": g1, "conditions": conditions},
+        "curated_file_sha256": curated.sha256,
+    }
+    detail = {
+        "supplement": [{key: (value.isoformat() if isinstance(value, date) else value) for key, value in r.items()
+                        if key != "discrepancies"} for r in records],
+        "changes": [{**c, "effective_date": None if c["effective_date"] is None else c["effective_date"].isoformat()}
+                    for c in changes],
+    }
+    return {"public": public, "detail": detail, "discrepancies": discrepancies, "changes": changes,
+            "records": records, "entries": entries, "coverage": coverage}
+
+
+def run_membership_census(
+    snapshot_dir: Path | str,
+    curated_dir: Path | str,
+    *,
+    reports_dir: Path | str | None = None,
+) -> dict[str, Any]:
+    """Write the private detail and discrepancy file beside the curation files and the public counts."""
+    snapshot = Snapshot.open(snapshot_dir)
+    curated_dir = Path(curated_dir)
+    result = membership_census(snapshot, m4_8_membership.read_curated(curated_dir))
+    write_bytes(curated_dir / MEMBERSHIP_DETAIL, canonical_json(result["detail"]))
+    write_bytes(curated_dir / m4_8_membership.DISCREPANCIES_FILE,
+                result["discrepancies"].to_csv(index=False, lineterminator="\n").encode("utf-8"))
+    reports = Path(reports_dir) if reports_dir is not None else REPOSITORY_ROOT / "reports"
+    public = result["public"]
+    markdown = "\n".join([
+        "# M4.8 Membership Census", "",
+        "Evidence ceiling: `DIAGNOSTIC_ONLY`. Membership metadata and curated files only; no price value was read.", "",
+        f"- Coverage rule: `{public['coverage_rule']}`; status `{public['coverage_status']}`",
+        f"- coverage_start_pre: `{public['coverage_start_pre']}`; D0_pre: `{public['D0_pre']}`; "
+        f"pre IC months: {public['pre_ic_months']}",
+        f"- Unresolved change fraction: {public['unresolved_change_fraction']}",
+        f"- Gate G1: `{public['gate_g1']['status']}`",
+        f"- Failing anchors: {len(public['failing_anchors'])}", ""])
+    result["public_sha256"] = _write_public(reports, MEMBERSHIP_REPORT, public, markdown, snapshot, (curated_dir,))
+    return result
+
+
+def potentially_held(s_mask: np.ndarray, bars: np.ndarray, resets: list[int]) -> dict[int, np.ndarray]:
+    """Plan 4.6 ``P_r = S_mask(r - 1) ∪ {a in P_prev(r) : no close at r}``; ``P_prev`` is empty at the first reset."""
+    held: dict[int, np.ndarray] = {}
+    previous = np.zeros(bars.shape[1], dtype=bool)
+    for r in resets:
+        previous = s_mask[r - 1] | (previous & ~bars[r])
+        held[r] = previous
+    return held
+
+
+def halt_counts(held: dict[int, np.ndarray], bars: np.ndarray, horizons: dict[int, int]) -> dict[str, int]:
+    """Plan 5.2 halts from bar presence: untradeable execution cells and unmarked rows inside a bar run."""
+    has_before = np.maximum.accumulate(bars, axis=0)
+    has_after = np.maximum.accumulate(bars[::-1], axis=0)[::-1]
+    inside_run = ~bars & np.vstack([np.zeros((1, bars.shape[1]), bool), has_before[:-1]]) & \
+        np.vstack([has_after[1:], np.zeros((1, bars.shape[1]), bool)])
+    untradeable = cells = unmarked = 0
+    for r, assets in held.items():
+        cells += int(assets.sum())
+        untradeable += int((assets & ~bars[r]).sum())
+        h = horizons[r]
+        unmarked += int((inside_run[r + 1:h + 1] & assets[None, :]).sum())
+    return {"potentially_held_cells": cells, "untradeable_execution_cells": untradeable, "unmarked_halt_rows": unmarked}
+
+
+def seal_carry_check(snapshot: Snapshot, build: dict[str, Any], segment_access_logs: dict[str, list[str]] | None,
+                     repository_root: Path = REPOSITORY_ROOT) -> dict[str, Any]:
+    """R3-9: the carried window equals the seal v1 byte-derived window, the bound hashes verify, and no read crossed."""
+    record = holdout_partition.read_seal_carry(snapshot.root)
+    try:
+        rebuilt = holdout_partition.build_seal_carry_record(
+            (repository_root / holdout_partition.SEAL_V1_DOCS_PATH).read_bytes(),
+            (repository_root / holdout_partition.SEAL_V1_CONFIRMATION_V2_PATH).read_bytes(),
+            written_at=record["written_at"], writing_actor=record["writing_actor"],
+            authorization_reference=record["authorization_reference"])
+        hashes = True
+    except SnapshotRefusal:
+        rebuilt, hashes = {}, False
+    sides = {"pre": "discovery_pre", "post": "discovery_post"}
+    checks = {
+        "window_equals_seal_v1_bytes": hashes and all(record[key] == rebuilt[key] for key in
+                                                      ("holdout_start", "holdout_end_exclusive", "calendar_source")),
+        "carried_from_hashes_verify": hashes,
+        "no_holdout_partition_open": build.get("access_log", {}).get("holdout_partition_opens", 1) == 0,
+        "segment_logs_open_own_side_only": segment_access_logs is not None and set(segment_access_logs) == set(sides)
+        and all(set(opened) <= {sides[segment]} for segment, opened in segment_access_logs.items()),
+    }
+    return {"passed": all(checks.values()), "checks": checks}
+
+
+def _side_panels(root: Path, inventory: dict[str, Any]) -> dict[tuple[str, str], pd.DataFrame]:
+    panels = {}
+    for record in inventory["files"]:
+        payload = (root / "panel" / record["file"]).read_bytes()
+        if sha256_bytes(payload) != record["sha256"]:
+            raise SnapshotRefusal("derived_artifact_stale", f"panel {record['file']}")
+        frame = _parquet(payload, record["file"])
+        panels[(record["side"], record["symbol"])] = frame.assign(date=pd.DatetimeIndex(frame["date"])).set_index("date")
+    return panels
+
+
+def _segment_metrics(
+    segment: Segment, calendar: pd.DatetimeIndex, mask: pd.DataFrame, panels: dict[tuple[str, str], pd.DataFrame],
+    intervals: pd.DataFrame, build: dict[str, Any], membership: dict[str, Any], support: pd.DataFrame,
+) -> dict[str, Any]:
+    """Plan 5.2 per segment: member-days by cause (R3-2c, R3-3 with M-8), volume basis, IC supply, exposure, halts,
+    VP-1 (the volume half diagnostic on the segment's side panels), and VP-2."""
+    first, last, side = segment.first_reset_row, segment.last_book_row, segment.side
+    rows = np.arange(first, last + 1)
+    unpriced_absent_refs = {r["supplement_id"] for r in membership["records"] if r.get("priced") is False}
+    reasons: dict[str, int] = {}
+    member_days = identity_days = absent_unpriced = 0
+    bars = np.zeros((len(calendar), len(mask.columns)), dtype=bool)
+    volume_days: dict[str, int] = {}
+    volume_basis = build.get("pre_side_volume_basis_by_code", {})
+    for column, pid in enumerate(mask.columns):
+        panel = panels.get((side, pid))
+        if panel is not None:
+            bars[calendar.get_indexer(panel.index[np.isfinite(panel["adjusted_close"])]), column] = True
+        eligible = mask[pid].to_numpy()[rows]
+        member_days += int(eligible.sum())
+        missing = eligible & ~bars[rows, column]
+        if missing.any():
+            key = "no_side_panel" if panel is None else "missing_bar_on_side"
+            reasons[key] = reasons.get(key, 0) + int(missing.sum())
+        status = volume_basis.get(pid.split("#", 1)[0], "")
+        if side == "discovery_pre" and status.startswith("volume_basis_unverified:"):
+            volume_days[status] = volume_days.get(status, 0) + int(eligible.sum())
+    refused = 0
+    overlap_rows: dict[str, set[int]] = {}
+    for row in intervals.to_dict(orient="records"):
+        resolution = row["resolution"]
+        if resolution in ("resolved", "exact_duplicate_collapsed", "degenerate_interval"):
+            continue
+        if resolution in ("entry_missing_field", "entry_unparseable_date"):
+            # M-4: an entry left undated keeps the M4.7 worst-case charge over the whole segment.
+            reasons["entry_unusable_upper_bound"] = reasons.get("entry_unusable_upper_bound", 0) + len(rows)
+            refused += len(rows)
+            continue
+        if not row["m_in"]:
+            continue
+        m_in = int(calendar.get_loc(pd.Timestamp(row["m_in"])))
+        m_out = len(calendar) if not row["m_out"] else int(calendar.get_loc(pd.Timestamp(row["m_out"])))
+        if resolution == "raw_overlap":
+            overlap_rows.setdefault(row["vendor_code"], set()).update(range(max(m_in, first), min(m_out, last + 1)))
+            continue
+        days = _rows_inside((m_in, m_out), first, last)
+        if row["census_cap"] == "R-CENSUS-3":
+            identity_days += days
+            continue
+        reasons[resolution] = reasons.get(resolution, 0) + days
+        refused += days
+        if str(row["raw_row"]) in unpriced_absent_refs:
+            absent_unpriced += days
+    overlap = sum(len(cells) for cells in overlap_rows.values())
+    if overlap:
+        reasons["raw_overlap"] = overlap
+        refused += overlap
+    for record in membership["records"]:
+        if record["status"] == "identity_refused":
+            # M-5: a refused absent member stays out of the universe and its member-days are charged to R3-3.
+            days = _rows_inside(_member_rows(calendar, record["start"], record["end"]), first, last)
+            reasons["absent_member_identity_refused"] = reasons.get("absent_member_identity_refused", 0) + days
+            refused += days
+    coverage_start = membership["coverage"]["coverage_start_pre"]
+    coverage_row = int(calendar.searchsorted(pd.Timestamp(coverage_start))) if coverage_start else first
+    m8 = m4_8_membership.m8_charges(membership["changes"], calendar, first, last, coverage_row)
+    if m8:
+        reasons["m8_unresolved_change_charge"] = m8
+    eligible_total = member_days + refused
+    unpriced_total = sum(reasons.values())
+    resets = segment_ic_resets(calendar, segment)
+    all_resets = scheduled_reset_rows(calendar)
+    horizons = {int(r): int(all_resets[np.searchsorted(all_resets, r) + 1]) for r in resets}
+    s_mask = (mask.shift(-1, fill_value=False).to_numpy(dtype=bool) & bars)
+    halts = halt_counts(potentially_held(s_mask, bars, [int(r) for r in resets]), bars, horizons)
+    reset_dates = [calendar[r].date() for r in resets]
+    side_panels = {pid: frame for (panel_side, pid), frame in panels.items() if panel_side == side}
+    volume_premise = volume_basis_diagnostic(
+        _volume_ells(side_panels, [check for check in build["episode_checks"] if check.get("side") == side]))
+    own = support[(support["date"] >= calendar[first]) & (support["date"] <= calendar[last])]
+    s_d_days = 0
+    for column, pid in enumerate(mask.columns):
+        eligible_dates = calendar[rows][mask[pid].to_numpy()[rows] & bars[rows, column]]
+        values = own[own["permanent_id"] == pid].set_index("date")["s_d"].reindex(eligible_dates).fillna(0.0)
+        s_d_days += int((values > VP2_LEVEL).sum())
+    return {
+        "segment_id": segment.segment_id,
+        "ic_months": int(len(resets)),
+        "eligible_member_days": eligible_total,
+        "eligible_unpriced_member_days": dict(sorted(reasons.items())),
+        "eligible_unpriced_member_days_total": unpriced_total,
+        "unpriced_eligible_fraction": unpriced_total / eligible_total if eligible_total else None,
+        "unpriced_absent_member_days": absent_unpriced,
+        "unpriced_absent_fraction": absent_unpriced / eligible_total if eligible_total else None,
+        "identity_refused_member_days": identity_days,
+        "m8_unresolved_change_charge": m8,
+        "volume_basis_unverified": {"codes": sum(1 for s in volume_basis.values() if s.startswith("volume_basis_unverified:"))
+                                    if side == "discovery_pre" else 0,
+                                    "eligible_member_days": sum(volume_days.values())},
+        "volume_basis_unverified_by_reason": dict(sorted(volume_days.items())),
+        "halts": halts,
+        "prior_exposure_overlap": prior_exposure_overlap(reset_dates),
+        "calendar_unexposed_ic_months": sum(1 for r in resets if calendar[horizons[int(r)]].date() < UNEXPOSED_BEFORE),
+        "member_days_s_d_above_0_05": s_d_days,
+        "vp2_revisit_required": bool(eligible_total and s_d_days > VP2_SHARE * eligible_total),
+        "volume_basis_split_diagnostic": volume_premise,
+    }
+
+
+def run_census_v3(
+    snapshot_dir: Path | str,
+    *,
+    terminal_summary: dict[str, Any],
+    segment_access_logs: dict[str, list[str]] | None,
+    reports_dir: Path | str | None = None,
+    repository_root: Path = REPOSITORY_ROOT,
+) -> dict[str, Any]:
+    """Plan 5.1-5.3 census v3 on a rule v2 snapshot; returns the public JSON, the detail, and the digest.
+
+    ``terminal_summary`` carries the terminal and residual counts from the
+    two-pass validation (Stage E), at least ``residual_count``; only its
+    projection under the approved schema (``aggregate_terminal_summary``) reaches the public JSON;
+    ``segment_access_logs`` maps ``pre`` and ``post`` to the sides each
+    segment's run opened (Stage H runner logs).
+    """
+    snapshot = Snapshot.open(snapshot_dir)
+    if snapshot.partition_rule != holdout_partition.PARTITION_RULE_V2:
+        raise SnapshotRefusal("census_v3_requires_rule_v2", snapshot.partition_rule)
+    terminal = aggregate_terminal_summary(terminal_summary)
+    root = snapshot.root
+    build = read_derived_json(root, BUILD_MANIFEST)
+    require_current(snapshot, build.get("discovery_inputs_sha256"), BUILD_MANIFEST)
+    inventory = read_derived_json(root, INVENTORY)
+    require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
+    calendar = snapshot.calendar()
+    segments = discovery_segments(calendar, snapshot.holdout_start, snapshot.holdout_end, date.fromisoformat(build["d0_pre"]))
+    membership = membership_census(snapshot, m4_8_membership.read_curated(root / "membership"))
+    table = load_constituent_intervals_csv(root / INTERVAL_CSV).data
+    pids = sorted(set(table["permanent_id"]))
+    mask = resolve_pit_universe_mask(table, None, calendar, pids) if pids else pd.DataFrame(index=calendar)
+    intervals = _read_csv(root / INTERVAL_RESULTS)
+    panels = _side_panels(root, inventory)
+    support = pd.read_parquet(root / DISTRIBUTION_SUPPORT)
+    support = support.assign(date=pd.DatetimeIndex(support["date"]))
+    per_segment = {s.segment_id: _segment_metrics(s, calendar, mask, panels, intervals, build, membership, support)
+                   for s in segments}
+    seal = seal_carry_check(snapshot, build, segment_access_logs, repository_root)
+    verify = snapshot.manifest.get("verify") or {}
+    member_codes = membership_codes(snapshot.read_file("membership"))
+    off_calendar = sum(count for code, count in build["off_calendar_bar_rows"].items() if code in member_codes)
+    member_days_all = sum(m["eligible_member_days"] + m["identity_refused_member_days"] for m in per_segment.values())
+    spy = {s.side: panels.get((s.side, f"{BENCHMARK}#E1")) for s in segments}
+    benchmark_complete = all(
+        spy[s.side] is not None and calendar[s.anchor_row:s.last_book_row + 1].isin(
+            spy[s.side].index[np.isfinite(spy[s.side]["adjusted_close"])]).all() for s in segments)
+    holdout_counts = [c["n_cur"] for c in membership["public"]["n_cur_by_month_end"]
+                      if snapshot.holdout_start.isoformat() <= c["month_end"] < snapshot.holdout_end.isoformat()]
+    dated_pre = sum(1 for e in membership["entries"] if e["kind"] == "vendor_entry" and _rows_inside(
+        _member_rows(calendar, e["start"], e["end"]), segments[0].first_reset_row, segments[0].last_book_row))
+    halts_cells = sum(m["halts"]["potentially_held_cells"] for m in per_segment.values())
+    inputs = {
+        "pre_ic_months": per_segment["pre"]["ic_months"],
+        "unresolved_change_fraction": membership["public"]["unresolved_change_fraction"],
+        "failing_anchors": membership["public"]["failing_anchors"],
+        "unpriced_absent_fraction": {k: m["unpriced_absent_fraction"] for k, m in per_segment.items()},
+        "unpriced_eligible_fraction": {k: m["unpriced_eligible_fraction"] for k, m in per_segment.items()},
+        "residual_count": terminal["residual_count"],
+        "untradeable_fraction": (sum(m["halts"]["untradeable_execution_cells"] for m in per_segment.values()) / halts_cells
+                                 if halts_cells else 0.0),
+        "identity_refusal_fraction": (sum(m["identity_refused_member_days"] for m in per_segment.values()) / member_days_all
+                                      if member_days_all else 0.0),
+        "off_calendar_fraction": off_calendar / member_days_all if member_days_all else 0.0,
+        "calendar_covers_coverage_start": membership["public"]["coverage_start_pre"] is not None
+        and calendar[0].date().isoformat() <= membership["public"]["coverage_start_pre"],
+        "benchmark_complete": bool(benchmark_complete),
+        "snapshot_integrity": bool(verify) and not verify.get("token_leak_detected", ["unverified"])
+        and not verify.get("artifact_hash_mismatch", ["unverified"]) and not verify.get("split_evidence_stale", ["unverified"])
+        and all(status == "valid" or (status.startswith("quarantined:") and len(status) > len("quarantined:"))
+                for entry in snapshot.manifest.get("entries", {}).values()
+                for status in entry.get("partition_statuses", {}).values()),
+        "holdout_band_after_identity": bool(holdout_counts) and tolerant_band(holdout_counts),
+        "retrieval_complete": bool(verify.get("retrieval_complete", False)),
+        "total_ic_months": sum(m["ic_months"] for m in per_segment.values()),
+        "vp2_revisit_required": any(m["vp2_revisit_required"] for m in per_segment.values()),
+        "seal_carry_passed": seal["passed"],
+        "discrepancy_fraction": (membership["public"]["corrections"]["unadjudicated_discrepancies"] / dated_pre
+                                 if dated_pre else 0.0),
+    }
+    readiness = derive_readiness_v3(inputs)
+    public_segments = {k: {key: value for key, value in m.items() if key != "volume_basis_unverified_by_reason"}
+                       for k, m in per_segment.items()}
+    public = {
+        "schema_version": "m4_8_coverage_census_v3",
+        "evidence_ceiling": "DIAGNOSTIC_ONLY",
+        "formal_universe_evidence_eligible": False,
+        "snapshot_id": snapshot.manifest["snapshot"].get("id"),
+        "partition_rule": snapshot.partition_rule,
+        "seal": {"rule_version": holdout_partition.SEAL_CARRY_RULE, "holdout_start": snapshot.holdout_start.isoformat(),
+                 "holdout_end_exclusive": snapshot.holdout_end.isoformat(), "carry_check": seal,
+                 "description": "carried seal with stated prior exposures"},
+        "segments": build["segments"],
+        "membership": {key: membership["public"][key] for key in (
+            "coverage_status", "coverage_start_pre", "D0_pre", "pre_ic_months", "anchors", "unresolved_change_fraction",
+            "reconstructed_changes", "supplement_counts_by_action_and_status", "absent_members", "corrections",
+            "late_undated_entries", "gate_g1", "curated_file_sha256")},
+        "identity": {"seal_gap_identity_split": build.get("seal_gap_identity_split", 0),
+                     "segment_anchor_checks": build.get("segment_anchor_checks", 0),
+                     "pre_side_split_rows_after_anchor": build.get("pre_side_split_rows_after_anchor", 0),
+                     "interval_resolution_counts": build["interval_resolution_counts"],
+                     "episode_panel_refusal_counts": build["episode_panel_refusal_counts"]},
+        "per_segment": public_segments,
+        "terminal_evidence": terminal,
+        "ic_supply": {"total_ic_months": inputs["total_ic_months"],
+                      **{f"{k}_ic_months": m["ic_months"] for k, m in per_segment.items()}},
+        "power_projection": power_projection(inputs["total_ic_months"]),
+        "census_readiness": readiness,
+        "snapshot_identity": {"manifest_sha256": sha256_bytes((root / "manifest.json").read_bytes()),
+                              "discovery_inputs_sha256": build["discovery_inputs_sha256"],
+                              "seal_carry_sha256": sha256_bytes((root / holdout_partition.SEAL_CARRY_FILE).read_bytes()),
+                              "interval_csv_sha256": sha256_bytes((root / INTERVAL_CSV).read_bytes())},
+    }
+    detail = {"discovery_inputs_sha256": build["discovery_inputs_sha256"],
+              "volume_basis_unverified_by_reason": {k: m["volume_basis_unverified_by_reason"] for k, m in per_segment.items()},
+              "membership": membership["detail"]}
+    write_bytes(root / CENSUS_V3_DETAIL, canonical_json(detail))
+    reports = Path(reports_dir) if reports_dir is not None else REPOSITORY_ROOT / "reports"
+    markdown = "\n".join([
+        "# M4.8 Coverage Census v3", "",
+        "Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or "
+        "profitability claim. The holdout is a carried seal with stated prior exposures.", "",
+        f"- Readiness: `{readiness['status']}`" + (
+            f" ({', '.join(f['rule'] + ' ' + f['result'] for f in readiness['failures'])})" if readiness["failures"] else ""),
+        *[f"- Segment `{s['segment_id']}`: first reset {s['first_reset_row']}, last IC reset {s['last_ic_reset_row']}, "
+          f"last book row {s['last_book_row']}, IC months {s['ic_months']}" for s in build["segments"]],
+        f"- Total IC months: {inputs['total_ic_months']}",
+        *[f"- VP-1 volume half `{k}`: `{m['volume_basis_split_diagnostic']['a1_volume_half']}` over "
+          f"{m['volume_basis_split_diagnostic']['rows']} split rows" for k, m in per_segment.items()],
+        "", "| Rule | Passed |", "| --- | --- |",
+        *[f"| {rule} | {value['passed']} |" for rule, value in readiness["rules"].items()], ""])
+    digest = _write_public(reports, CENSUS_V3_REPORT, public, markdown, snapshot, ())
+    return {"public": public, "detail": detail, "census_json_sha256": digest}
+
+
 # ---------------------------------------------------------------- report
 
 
@@ -1017,7 +1720,44 @@ def render_markdown(public: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _m48_main(argv: list[str]) -> int:
+    """``membership-census`` and ``census-v3`` subcommands (plan 5.1)."""
+    parser = argparse.ArgumentParser(prog="python -m research.m4_7_coverage_census")
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name in ("membership-census", "census-v3"):
+        sub = commands.add_parser(name)
+        sub.add_argument("--snapshot-id", required=True)
+        sub.add_argument("--data-dir", default=None)
+        sub.add_argument("--reports-dir", default=None)
+        if name == "membership-census":
+            sub.add_argument("--curated-dir", required=True, help="private directory holding the three curation files")
+        else:
+            sub.add_argument("--terminal-summary", required=True, help="JSON counts from the two-pass terminal validation")
+            sub.add_argument("--segment-access-log", default=None, help="JSON {segment_id: [sides opened]}")
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "membership-census":
+            result = run_membership_census(snapshot_dir_from_args(args), args.curated_dir, reports_dir=args.reports_dir)
+            summary = {"gate_g1": result["public"]["gate_g1"]["status"], "D0_pre": result["public"]["D0_pre"],
+                       "public_sha256": result["public_sha256"]}
+        else:
+            logs = None if args.segment_access_log is None else json.loads(Path(args.segment_access_log).read_bytes())
+            result = run_census_v3(snapshot_dir_from_args(args),
+                                   terminal_summary=json.loads(Path(args.terminal_summary).read_bytes()),
+                                   segment_access_logs=logs, reports_dir=args.reports_dir)
+            summary = {"census_readiness": result["public"]["census_readiness"]["status"],
+                       "census_json_sha256": result["census_json_sha256"]}
+    except SnapshotRefusal as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(summary, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] in ("membership-census", "census-v3"):
+        return _m48_main(argv)
     parser = argparse.ArgumentParser(prog="python -m research.m4_7_coverage_census")
     parser.add_argument("--snapshot-id", required=True)
     parser.add_argument("--data-dir", default=None)

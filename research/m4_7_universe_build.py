@@ -11,7 +11,15 @@ discovery partitions. No holdout partition, quarantine file, or raw vendor
 response is opened. Every refusal is typed and counted; nothing is filled,
 clipped, or repaired (R6).
 
-Run as ``python -m research.m4_7_universe_build --snapshot-id <ID>``.
+A rule v2 snapshot (M4.8 plan 2.2, 2.5, 2.7) has two discovery sides around the
+carried seal. Every value-reading check runs on one side (SL-1): the pre side
+anchors seal-touching codes at their last pre-side bar (SL-2, SL-3), seal gaps
+split identity (SL-4, SL-5), the benchmark follows the same rules (SL-6), and
+per-ID panels are written per side. The curated membership supplement joins
+the vendor table (M-1..M-7), and the build takes ``D0_pre`` from the membership
+census to fix the two discovery segments.
+
+Run as ``python -m research.m4_7_universe_build --snapshot-id <ID> [--d0-pre YYYY-MM-DD]``.
 """
 
 from __future__ import annotations
@@ -35,16 +43,21 @@ import pandas as pd
 
 from data.constituent_table import build_pit_membership_mask, load_constituent_intervals_csv
 from data.holdout_partition import (
+    PARTITION_RULE_V1,
+    PARTITION_RULE_V2,
     SEAL_FILE,
+    SIDES,
     SnapshotRefusal,
     classify_membership_entries,
+    declared_partition_rule,
     parse_strict_date,
     read_authorized_bytes,
     read_manifest,
-    read_seal,
+    read_partition_window,
     sha256_bytes,
 )
 from data.parquet_loader import compute_cumulative_split_factor, load_symbol_splits
+from research import m4_8_membership
 from research.m4_7_common_support import scheduled_reset_rows
 
 
@@ -88,19 +101,36 @@ NO_BARS_CAPPED = ("no_containing_episode:no_vendor_bars:", "no_containing_episod
 
 @dataclass
 class Snapshot:
-    """A snapshot directory, its manifest, and the sealed ``holdout_end`` and ``calendar_source``."""
+    """A snapshot directory, its manifest, its partition rule, and the sealed window and ``calendar_source``.
+
+    ``access_log`` records the table, code, side, and path of every discovery
+    partition opened through ``read_discovery`` (plan 2.2).
+    """
 
     root: Path
     manifest: dict[str, Any]
     holdout_end: date
     calendar_source: str
+    holdout_start: date | None = None
+    partition_rule: str = PARTITION_RULE_V1
+    seal_file: str = SEAL_FILE
+    access_log: list[dict[str, str]] = field(default_factory=list)
 
     @classmethod
     def open(cls, root: Path | str) -> "Snapshot":
         root = Path(root)
-        seal = read_seal(root)
-        return cls(root=root, manifest=read_manifest(root), holdout_end=date.fromisoformat(seal["holdout_end_exclusive"]),
-                   calendar_source=seal["calendar_source"])
+        window = read_partition_window(root)
+        manifest = read_manifest(root)
+        if declared_partition_rule(manifest) != window.rule:
+            raise SnapshotRefusal("partition_rule_mismatch",
+                                  f"manifest declares {declared_partition_rule(manifest)}, seal selects {window.rule}")
+        return cls(root=root, manifest=manifest, holdout_end=window.holdout_end, calendar_source=window.calendar_source,
+                   holdout_start=window.holdout_start, partition_rule=window.rule, seal_file=window.seal_file)
+
+    @property
+    def sides(self) -> tuple[str, ...]:
+        """Discovery partition roles: ``discovery`` under rule v1, the two side files under rule v2."""
+        return ("discovery",) if self.partition_rule == PARTITION_RULE_V1 else SIDES
 
     def entry(self, table: str, code: str) -> dict[str, Any] | None:
         return self.manifest.get("entries", {}).get(f"{table}/{code}")
@@ -109,21 +139,33 @@ class Snapshot:
         entry = self.entry(table, code)
         return "absent" if entry is None else str(entry["status"])
 
-    def discovery_status(self, table: str, code: str) -> str:
+    def discovery_status(self, table: str, code: str, side: str = "discovery") -> str:
         entry = self.entry(table, code)
-        return "" if entry is None else str(entry.get("partition_statuses", {}).get("discovery", ""))
+        return "" if entry is None else str(entry.get("partition_statuses", {}).get(side, ""))
 
-    def evidence_valid(self, table: str, code: str) -> bool:
+    def evidence_valid(self, table: str, code: str, side: str = "discovery") -> bool:
         """``retrieved`` with a valid discovery partition: readable corporate-action evidence."""
-        return self.status(table, code) == "retrieved" and self.discovery_status(table, code) == "valid"
+        return self.status(table, code) == "retrieved" and self.discovery_status(table, code, side) == "valid"
 
-    def read_discovery(self, table: str, code: str) -> pd.DataFrame | None:
-        """The discovery partition of ``table`` for ``code``, or ``None`` when it has no valid file."""
+    def read_discovery(self, table: str, code: str, side: str = "discovery") -> pd.DataFrame | None:
+        """The discovery partition of ``table`` for ``code`` on ``side``, or ``None`` when it has no valid file.
+
+        A side the snapshot's rule does not define refuses ``partition_side_invalid``,
+        so a rule v2 consumer names the side it opens.
+        """
+        if side not in self.sides:
+            raise SnapshotRefusal("partition_side_invalid", f"{side} under {self.partition_rule}")
         entry = self.entry(table, code)
-        if entry is None or "discovery" not in entry.get("authorized_files", {}):
+        if entry is None or side not in entry.get("authorized_files", {}):
             return None
-        record = entry["authorized_files"]["discovery"]
+        record = entry["authorized_files"][side]
+        self.access_log.append({"table": table, "code": code, "side": side, "path": record["path"]})
         return _parquet(read_authorized_bytes(self.root, record["path"], self.manifest), record["path"])
+
+    def has_later_row(self, code: str) -> bool:
+        """R3-A4: any split or dividend row of ``code`` dated on or after ``holdout_start`` (a date-only flag)."""
+        return any((self.entry(table, code) or {}).get("has_row_on_or_after_holdout_start", False)
+                   for table in ("splits", "dividends"))
 
     def read_file(self, key: str) -> pd.DataFrame:
         record = self.manifest["files"][key]
@@ -182,8 +224,10 @@ def discovery_inputs_sha256(snapshot: Snapshot, membership: pd.DataFrame | None 
         for table in TABLES:
             entry = snapshot.entry(table, code) or {}
             roles = entry.get("authorized_files", {})
-            rows.append([code, table, entry.get("status", "absent"),
-                         roles.get("dates", {}).get("sha256"), roles.get("discovery", {}).get("sha256")])
+            rows.append([code, table, entry.get("status", "absent"), roles.get("dates", {}).get("sha256"),
+                         *[roles.get(side, {}).get("sha256") for side in snapshot.sides]])
+    if snapshot.partition_rule == PARTITION_RULE_V2:
+        head.append(m4_8_membership.read_curated(snapshot.root / "membership").sha256)
     return sha256_bytes(canonical_json({"inputs": head, "entries": sorted(rows)}))
 
 
@@ -225,13 +269,81 @@ def parquet_bytes(frame: pd.DataFrame) -> bytes:
 
 
 def discovery_window(calendar: pd.DatetimeIndex, holdout_end: date) -> tuple[int, int, int]:
-    """``(i_H, D0, D_last)`` as rows of the full calendar (plan 4.1)."""
+    """Rule v1: ``(i_H, D0, D_last)`` as rows of the full calendar (M4.7 plan 4.1)."""
     i_h = int(calendar.searchsorted(pd.Timestamp(holdout_end)))
     resets = scheduled_reset_rows(calendar)
     d_last = int(resets[-1]) if len(resets) else len(calendar) - 1
     later = resets[resets >= i_h + WARMUP_ROWS + 1]
     d0 = int(later[0]) if len(later) else d_last + 1
     return i_h, d0, d_last
+
+
+@dataclass(frozen=True)
+class Segment:
+    """One discovery segment as calendar rows (plan 2.5 and the section 7 interface).
+
+    ``side`` is the discovery side file the segment opens; ``anchor_row`` is its
+    first accounting row (all cash, no trade); features may read rows
+    ``[feature_floor_row, feature_ceiling_row]`` only.
+    """
+
+    segment_id: str
+    side: str
+    anchor_row: int
+    first_reset_row: int
+    last_ic_reset_row: int
+    last_book_row: int
+    feature_floor_row: int
+    feature_ceiling_row: int
+
+
+def reset_in_month(calendar: pd.DatetimeIndex, day: date) -> int:
+    """The scheduled reset row in the calendar month of ``day`` (plan 2.4 rule 6)."""
+    resets = scheduled_reset_rows(calendar)
+    month = pd.Timestamp(day).to_period("M")
+    inside = [int(r) for r in resets if calendar[r].to_period("M") == month]
+    if not inside:
+        raise SnapshotRefusal("reset_missing_in_month", str(month))
+    return inside[0]
+
+
+def segment_ic_resets(calendar: pd.DatetimeIndex, segment: Segment) -> np.ndarray:
+    """The scheduled resets in ``[first_reset_row, last_ic_reset_row]``: the segment's IC months (T-SEG-3)."""
+    resets = scheduled_reset_rows(calendar)
+    return resets[(resets >= segment.first_reset_row) & (resets <= segment.last_ic_reset_row)]
+
+
+def discovery_segments(
+    calendar: pd.DatetimeIndex,
+    holdout_start: date,
+    holdout_end: date,
+    d0_pre: date,
+) -> tuple[Segment, ...]:
+    """Rule v2: the pre-holdout and post-holdout segments (plan 2.4 rules 6-8, 2.5).
+
+    The pre segment starts at the reset in the calendar month of ``d0_pre``; its
+    last IC reset is the last reset whose horizon (the next reset) lies strictly
+    before ``holdout_start``, and its last book row is that horizon. The post
+    segment keeps the M4.7 window: first reset at least 252 rows after
+    ``holdout_end``, last IC reset the last reset with a horizon. A segment
+    without an IC reset refuses ``discovery_segment_empty``.
+    """
+    resets = scheduled_reset_rows(calendar)
+    hs_row = int(calendar.searchsorted(pd.Timestamp(holdout_start)))
+    he_row = int(calendar.searchsorted(pd.Timestamp(holdout_end)))
+    horizons = dict(zip(resets[:-1].tolist(), resets[1:].tolist()))
+    first_pre = reset_in_month(calendar, d0_pre)
+    pre_ic = [r for r, h in horizons.items() if first_pre <= r and h < hs_row]
+    later = resets[resets >= he_row + WARMUP_ROWS + 1]
+    first_post = int(later[0]) if len(later) else None
+    post_ic = [r for r in horizons if first_post is not None and r >= first_post]
+    if first_pre < 1 or not pre_ic or not post_ic:
+        raise SnapshotRefusal("discovery_segment_empty", "a segment holds no IC reset")
+    pre = Segment("pre", "discovery_pre", first_pre - 1, first_pre, pre_ic[-1], horizons[pre_ic[-1]], 0,
+                  horizons[pre_ic[-1]])
+    post = Segment("post", "discovery_post", first_post - 1, first_post, post_ic[-1], horizons[post_ic[-1]], he_row,
+                   horizons[post_ic[-1]])
+    return pre, post
 
 
 def normalize_name(value: Any) -> str:
@@ -450,6 +562,7 @@ class Episode:
     evidence: list[str] = field(default_factory=list)
     panel_refusal: str = ""
     intervals: list[dict[str, Any]] = field(default_factory=list)
+    parent: int = 0
 
     @property
     def first(self) -> int:
@@ -465,6 +578,31 @@ def _episodes(rows: np.ndarray, code: str, role: str) -> list[Episode]:
         return []
     breaks = np.flatnonzero(np.diff(rows) - 1 > E1_GAP_ROWS) + 1
     return [Episode(code, k, part, role) for k, part in enumerate(np.split(rows, breaks), start=1)]
+
+
+def _seal_gaps(a: np.ndarray, b: np.ndarray, hs_row: int, he_row: int) -> np.ndarray:
+    """Bar-date gaps ``(a, b)`` with an endpoint inside ``[hs_row, he_row)`` or spanning it (SL-5)."""
+    return (b - a > 1) & (((a >= hs_row) & (a < he_row)) | ((b >= hs_row) & (b < he_row)) | ((a < hs_row) & (b >= he_row)))
+
+
+def seal_gap_split(eps: list[Episode], hs_row: int, he_row: int) -> tuple[list[Episode], int]:
+    """``seal_gap_identity_split_v1``: split E1 episodes at seal gaps; return the episodes and the split count.
+
+    E5 cannot evaluate a gap with an endpoint in the seal, so such a gap starts
+    a new permanent ID. The count includes E1 breaks whose gap touches the seal
+    (a ticker reused inside the seal). Episodes are renumbered in date order and
+    keep their E1 episode as ``parent``.
+    """
+    split: list[Episode] = []
+    count = 0
+    for position, ep in enumerate(eps):
+        if position:
+            count += int(_seal_gaps(np.array([eps[position - 1].last]), np.array([ep.first]), hs_row, he_row)[0])
+        breaks = np.flatnonzero(_seal_gaps(ep.rows[:-1], ep.rows[1:], hs_row, he_row)) + 1
+        count += len(breaks)
+        for part in np.split(ep.rows, breaks):
+            split.append(Episode(ep.code, len(split) + 1, part, ep.role, parent=ep.k))
+    return split, count
 
 
 def _row(calendar: pd.DatetimeIndex, day: date | pd.Timestamp) -> int:
@@ -495,22 +633,45 @@ def interval_keys(frame: pd.DataFrame, records: list[dict[str, Any]]) -> list[st
     return keys
 
 
-def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
-    """Run plan 1.6 steps 1-7 on the snapshot and write every universe artifact."""
+def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict[str, Any]:
+    """Run plan 1.6 steps 1-7 on the snapshot and write every universe artifact.
+
+    A rule v2 snapshot needs ``d0_pre`` (the membership census output) to fix
+    its two segments; a rule v1 snapshot ignores it.
+    """
     snapshot = Snapshot.open(snapshot_dir)
     root = snapshot.root
     calendar = snapshot.calendar()
     n_rows = len(calendar)
-    i_h, d0, d_last = discovery_window(calendar, snapshot.holdout_end)
+    v2 = snapshot.partition_rule == PARTITION_RULE_V2
+    segments: tuple[Segment, ...] = ()
+    if v2:
+        if d0_pre is None:
+            raise SnapshotRefusal("d0_pre_required", "a rule v2 snapshot needs D0_pre from the membership census")
+        segments = discovery_segments(calendar, snapshot.holdout_start, snapshot.holdout_end, d0_pre)
+        hs_row, i_h = _row(calendar, snapshot.holdout_start), _row(calendar, snapshot.holdout_end)
+        d0, d_last = segments[0].first_reset_row, segments[-1].last_book_row
+        spans = [(segment.first_reset_row, segment.last_book_row) for segment in segments]
+        side_rows = {"discovery_pre": (0, hs_row), "discovery_post": (i_h, n_rows)}
+    else:
+        i_h, d0, d_last = discovery_window(calendar, snapshot.holdout_end)
+        spans = [(d0, d_last)]
+        side_rows = {"discovery": (i_h, n_rows)}
     resets = scheduled_reset_rows(calendar)
     retrieved = snapshot.components_retrieved()
-    membership = snapshot.read_file("membership")
+    raw_membership = snapshot.read_file("membership")
+    membership = raw_membership
+    supplement: list[dict[str, Any]] = []
+    if v2:
+        curated = m4_8_membership.read_curated(root / "membership")
+        supplement = m4_8_membership.validate_supplement(curated.supplement, raw_membership, calendar)
+        membership = m4_8_membership.apply_supplement(raw_membership, supplement, retrieved)
     records = classify_membership_entries(membership, retrieved)
     keys = interval_keys(membership, records)
     raw_rows = membership["raw_row"].tolist() if "raw_row" in membership else list(range(len(membership)))
     listed = _symbol_map(snapshot.read_file("symbols_listed"))
     delisted = _symbol_map(snapshot.read_file("symbols_delisted"))
-    inputs_sha = discovery_inputs_sha256(snapshot, membership)
+    inputs_sha = discovery_inputs_sha256(snapshot, raw_membership)
 
     members = membership_codes(membership)
     roles = {code: "member" for code in members}
@@ -526,8 +687,16 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
         rows = np.array(sorted(calendar_set[d] for d in dates if d in calendar_set), dtype=int)
         code_rows[code] = rows
         inside = (dates >= pd.Timestamp(snapshot.holdout_end)) & (dates <= calendar[-1])
+        if v2:
+            inside |= (dates >= calendar[0]) & (dates < pd.Timestamp(snapshot.holdout_start))
         off_calendar[code] = int(sum(1 for d, keep in zip(dates, inside) if keep and d not in calendar_set))
-    episodes = {code: _episodes(code_rows[code], code, roles[code]) for code in roles}
+    e1_episodes = {code: _episodes(code_rows[code], code, roles[code]) for code in roles}
+    episodes = e1_episodes
+    seal_splits: dict[str, int] = {}
+    if v2:
+        episodes = {}
+        for code, eps in e1_episodes.items():
+            episodes[code], seal_splits[code] = seal_gap_split(eps, hs_row, i_h)
 
     # Entries: typed outcomes, boundary rows, and E2 per interval (C52, C60, C62).
     starts_by_date: dict[date, list[tuple[str, str]]] = {}
@@ -567,9 +736,9 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
         if outcome != "retained":
             entry["resolution"] = outcome
             if outcome == "raw_overlap":
-                entry["member_days_disc"] = _member_days(entry, d0, d_last, n_rows)
+                entry["member_days_disc"] = _member_days(entry, spans, n_rows)
             continue
-        entry["member_days_disc"] = _member_days(entry, d0, d_last, n_rows)
+        entry["member_days_disc"] = _member_days(entry, spans, n_rows)
         rows = code_rows[code]
         in_span = rows[(rows >= rs) & (rows < re_)]
         entry["bars_in_span"] = int(in_span.size)
@@ -592,7 +761,8 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
                 entry["evidence"].append(f"first_bar={_date(calendar, int(rows[0]))}")
             continue
         touched = [ep for ep in episodes[code] if ((ep.rows >= rs) & (ep.rows < re_)).any()]
-        if len(touched) > 1:
+        siblings = v2 and len({ep.parent for ep in touched}) == 1
+        if len(touched) > 1 and not siblings:
             entry["resolution"] = "ambiguous_reuse_gap"
         elif rs < touched[0].first - E1_GAP_ROWS:
             entry["resolution"] = "no_containing_episode"
@@ -600,26 +770,39 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
             entry["resolution"] = "resolved"
             entry["episode"] = touched[0]
             touched[0].intervals.append(entry)
+            # SL-5: an interval over a seal gap attaches to each split ID by date.
+            for position, ep in enumerate(touched[1:], start=2):
+                piece = {**entry, "interval_id": f"{key}#seal_split_{position}", "evidence": [], "seal_piece": True,
+                         "start_date": _date(calendar, ep.first), "start": calendar[ep.first].date()}
+                _set_rows(piece, ep.first, re_, record["end"], resets, d_last, n_rows, spans, rows)
+                entry.update(end_date=_date(calendar, ep.first), end=calendar[ep.first].date(), seal_split_end=True)
+                _set_rows(entry, entry["rs"], ep.first, entry["end"], resets, d_last, n_rows, spans, rows)
+                piece["episode"] = ep
+                ep.intervals.append(piece)
+                entries.append(piece)
+                entry = piece
 
-    # Code-level rules E3-E6 (C60); rule E5 reads discovery values and attributed split rows.
-    split_frames = {code: (snapshot.read_discovery("splits", code) if snapshot.evidence_valid("splits", code) else None)
-                    for code in roles}
-    eod_frames: dict[str, pd.DataFrame | None] = {}
+    # Code-level rules E3-E6 (C60); rule E5 reads discovery values and attributed split rows, one side at a time.
+    split_frames = {code: {side: (snapshot.read_discovery("splits", code, side)
+                                  if snapshot.evidence_valid("splits", code, side) else None)
+                           for side in snapshot.sides} for code in roles}
+    eod_frames: dict[str, dict[str, pd.DataFrame | None]] = {}
     e5_not_evaluated: dict[str, int] = {}
     name_mismatches = 0
     for code in roles:
-        code_entries = [e for e in entries if e["vendor_code"] == code and e["start"] is not None]
+        code_entries = [e for e in entries if e["vendor_code"] == code and e["start"] is not None and not e.get("seal_piece")]
         fired: list[tuple[str, str]] = []
         eps = episodes[code]
-        continuous = len(eps) == 1
+        continuous = len(e1_episodes[code]) == 1
         if eps:
-            if _e3_fires(code_entries, eps):
+            if _e3_fires(code_entries, e1_episodes[code]):
                 fired.append(("E3", "ambiguous_reuse_continuous_history"))
             isin_l, isin_d = listed.get(code, {}).get("isin"), delisted.get(code, {}).get("isin")
             if isin_l and isin_d and isin_l != isin_d and continuous:
                 fired.append(("E4", "ambiguous_reuse_isin_conflict"))
-            eod_frames[code] = _discovery_bars(snapshot, code, calendar_set)
-            e5, skipped = _e5_fires(eps, eod_frames[code], split_frames[code], calendar, i_h)
+            eod_frames[code] = {side: _discovery_bars(snapshot, code, calendar_set, side) for side in snapshot.sides}
+            e5, skipped = _e5_fires(eps, [(*side_rows[side], eod_frames[code][side], split_frames[code][side])
+                                          for side in snapshot.sides], calendar)
             e5_not_evaluated[code] = skipped
             if e5:
                 fired.append(("E5", "ambiguous_reuse_discontinuity"))
@@ -657,86 +840,143 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
         ep = e.pop("episode")
         if ep is not None and e["resolution"] == "resolved":
             e["permanent_id"] = ep.permanent_id
-            e["exit_class"] = exit_class(ep.last, e["R_exit"], d_last)
+            # A piece that ends at a seal gap ends by identity split (SL-5), never by a disappearance.
+            e["exit_class"] = "seal_gap_identity_split" if e.get("seal_split_end") else exit_class(ep.last, e["R_exit"], d_last)
 
     # Step 6: split-basis, in-span, cumulative, and gap checks; panel write (C45, C55, C67, C72, C73, C82).
     panel_root = root / PANEL_DIR
-    shutil.rmtree(panel_root / "discovery", ignore_errors=True)
+    for side in snapshot.sides:
+        shutil.rmtree(panel_root / side, ignore_errors=True)
     counters = _new_counters()
+    if v2:
+        counters.update(segment_anchor_checks=0, pre_side_split_rows_after_anchor=0,
+                        seal_gap_identity_split=sum(seal_splits.values()))
+    pre_ceiling = segments[0].feature_ceiling_row if v2 else n_rows
     episode_checks: list[dict[str, Any]] = []
     support_frames: list[pd.DataFrame] = []
-    written: dict[str, str] = {}
+    written: dict[str, tuple[str, str, str]] = {}
     for code, eps in episodes.items():
-        splits = split_frames[code]
-        split_dates = pd.DatetimeIndex([]) if splits is None else pd.DatetimeIndex(splits["date"])
-        ratios = pd.DataFrame({"date": split_dates, "ratio": [] if splits is None else splits["ratio"].astype(float)})
-        dividend_ok = snapshot.evidence_valid("dividends", code)
-        dividends = dividend_amounts(snapshot.read_discovery("dividends", code) if dividend_ok else None, split_dates)
-        bar_dates = [(calendar[ep.first], calendar[ep.last]) for ep in eps]
-        attributed: dict[int, list[int]] = {ep.k: [] for ep in eps}
-        gap_rows: dict[int, int] = {}
-        post_final = []
-        for index, day in enumerate(split_dates):
-            spot = next((k for k, (first, last) in enumerate(bar_dates) if first <= day <= last), None)
-            if spot is not None:
-                attributed[eps[spot].k].append(index)
-            elif eps and day > bar_dates[-1][1]:
-                post_final.append(index)
-            elif eps and day < bar_dates[0][0]:
-                counters["split_rows_before_first_bar"][code] = counters["split_rows_before_first_bar"].get(code, 0) + 1
-            elif eps:
-                preceding = max(k for k, (_, last) in enumerate(bar_dates) if last < day)
-                gap_rows[eps[preceding].k] = gap_rows.get(eps[preceding].k, 0) + 1
-                counters["split_rows_unattributed"] += 1
-        frame = eod_frames.get(code)
-        for ep in eps:
-            if ep.resolution != "resolved":
+        evaluated: set[int] = set()
+        for side in snapshot.sides:
+            lo, hi = side_rows[side]
+            prefix = f"{side}:" if v2 else ""
+            side_eps = [ep for ep in eps if ((ep.rows >= lo) & (ep.rows < hi)).any()] if v2 else eps
+            if not side_eps:
                 continue
-            final = ep is eps[-1]
-            has_discovery_bar = ep.last >= i_h
-            if not has_discovery_bar:
+            spans_side = ([(int(ep.rows[(ep.rows >= lo) & (ep.rows < hi)][0]), int(ep.rows[(ep.rows >= lo) & (ep.rows < hi)][-1]))
+                           for ep in side_eps] if v2 else [(ep.first, ep.last) for ep in eps])
+            splits = split_frames[code][side]
+            split_dates = pd.DatetimeIndex([]) if splits is None else pd.DatetimeIndex(splits["date"])
+            ratios = pd.DataFrame({"date": split_dates, "ratio": [] if splits is None else splits["ratio"].astype(float)})
+            dividend_ok = snapshot.evidence_valid("dividends", code, side)
+            amount_splits = split_dates
+            if side == "discovery_pre" and (snapshot.entry("splits", code) or {}).get("has_row_on_or_after_holdout_start"):
+                # A later split makes a missing unadjustedValue undefined, as a later discovery split does under v1.
+                amount_splits = split_dates.append(pd.DatetimeIndex([pd.Timestamp(snapshot.holdout_start)]))
+            dividends = dividend_amounts(snapshot.read_discovery("dividends", code, side) if dividend_ok else None,
+                                         amount_splits)
+            anchor = None
+            after_anchor = 1.0
+            if side == "discovery_pre" and ((code_rows[code] >= hs_row).any() or snapshot.has_later_row(code)):
+                # SL-2: anchor at the code's last pre-side bar; later pre-side action rows cannot enter a(t) / a(tau).
+                anchor = int(code_rows[code][code_rows[code] < hs_row].max())
+                keep = np.asarray(split_dates <= calendar[anchor])
+                counters["pre_side_split_rows_after_anchor"] += int((~keep).sum())
+                # SL-8: served volume keeps the pre-side splits dated in (tau, holdout_start), since the partitioner
+                # divides out only the splits on or after holdout_start. The panel split factor takes them too, so
+                # close / split_factor * volume = close * raw_volume on every written row (R7).
+                after_anchor = float(np.prod(ratios["ratio"].to_numpy(dtype=float)[~keep]))
+                split_dates, ratios = split_dates[keep], ratios[keep].reset_index(drop=True)
+                dividends = dividends[dividends["date"] <= calendar[anchor]]
+            bar_dates = [(calendar[first], calendar[last]) for first, last in spans_side]
+            attributed: dict[int, list[int]] = {ep.k: [] for ep in side_eps}
+            gap_rows: dict[int, int] = {}
+            post_final = []
+            for index, day in enumerate(split_dates):
+                spot = next((k for k, (first, last) in enumerate(bar_dates) if first <= day <= last), None)
+                if spot is not None:
+                    attributed[side_eps[spot].k].append(index)
+                elif side_eps and day > bar_dates[-1][1]:
+                    post_final.append(index)
+                elif side_eps and day < bar_dates[0][0]:
+                    counters["split_rows_before_first_bar"][code] = counters["split_rows_before_first_bar"].get(code, 0) + 1
+                elif side_eps:
+                    preceding = max(k for k, (_, last) in enumerate(bar_dates) if last < day)
+                    gap_rows[side_eps[preceding].k] = gap_rows.get(side_eps[preceding].k, 0) + 1
+                    counters["split_rows_unattributed"] += 1
+            frame = eod_frames.get(code, {}).get(side)
+            for ep, (first, last) in zip(side_eps, spans_side):
+                if ep.resolution != "resolved":
+                    continue
+                final = ep is side_eps[-1]
+                has_discovery_bar = v2 or ep.last >= i_h
+                if not has_discovery_bar:
+                    ep.evidence.append("split_basis:not_evaluated:no_discovery_bar")
+                    counters["split_basis_check_by_outcome"]["not_evaluated_no_discovery_bar"] += 1
+                    counters["in_span_step_check_by_outcome"]["not_evaluated_no_discovery_bar"] += 1
+                    if final and post_final:
+                        counters["split_rows_after_final_bar"]["not_evaluated_no_discovery_bar"] += len(post_final)
+                    continue
+                evaluated.add(ep.k)
+                if frame is None:
+                    ep.evidence.append(f"{prefix}split_basis:not_evaluated:{side}_partition_"
+                                       f"{snapshot.discovery_status('eod', code, side) or 'missing'}")
+                    continue
+                bars = frame[(frame.index >= calendar[max(first, lo)]) & (frame.index <= calendar[last])]
+                check_bars = bars
+                if anchor is not None:
+                    a_tau = frame.loc[calendar[anchor], "adjusted_close"] / frame.loc[calendar[anchor], "close"]
+                    check_bars = bars.assign(adjusted_close=bars["adjusted_close"] / a_tau)
+                    counters["segment_anchor_checks"] += 1
+                after_last = split_dates > calendar[last]
+                check = evaluate_episode(
+                    check_bars, ratios.iloc[attributed[ep.k]], ratios[after_last], dividends,
+                    dividend_evidence=dividend_ok, final=final, gap_split_after=ep.k in gap_rows,
+                )
+                _record_check(ep, check, counters, final, len(post_final), dividend_ok, prefix)
+                episode_checks.append({
+                    "permanent_id": ep.permanent_id, "vendor_code": code, "episode": ep.k,
+                    "split_basis": check.split_basis, "outcome": check.outcome, "refusal": check.refusal,
+                    "in_span": check.in_span, "pairs": check.pairs, "dividend_pairs": check.dividend_pairs,
+                    "failing_pairs": check.failing, "max_cumulative_drift": check.max_cumulative_drift,
+                    "later_distribution": check.later_distribution, "dividend_evidence": dividend_ok,
+                    "min_adjusted_close": float(bars["adjusted_close"].min()),
+                    "attributed_splits": [{"date": split_dates[i].date().isoformat(), "ratio": float(ratios["ratio"].iloc[i])}
+                                          for i in attributed[ep.k]],
+                    "max_b_d": None if check.b_d is None else float(check.b_d[0]),
+                    "max_s_d": None if check.s_d is None else float(check.s_d[0]),
+                    **({"side": side, "segment_anchor": anchor is not None} if v2 else {}),
+                })
+                if check.refusal is not None:
+                    ep.panel_refusal = ";".join(filter(None, (ep.panel_refusal, f"{prefix}{check.refusal}")))
+                    continue
+                # SL-3: pre-side panels end at the pre segment's feature ceiling; an anchored panel is normalized
+                # to its own last row, so no stored value carries a(tau) or any action dated after that row.
+                kept = np.asarray(bars.index <= calendar[min(pre_ceiling, n_rows - 1)]) if side == "discovery_pre" else \
+                    np.ones(len(bars), dtype=bool)
+                if not kept.any():
+                    ep.evidence.append(f"{prefix}panel_not_written:after_feature_ceiling")
+                    continue
+                panel_rows = frame.loc[bars.index[kept]]
+                if anchor is not None:
+                    panel_rows = panel_rows.assign(adjusted_close=panel_rows["adjusted_close"]
+                                                   / (panel_rows["adjusted_close"].iloc[-1] / panel_rows["close"].iloc[-1]))
+                panel = panel_rows.reset_index()
+                panel["symbol"] = code
+                panel["permanent_id"] = ep.permanent_id
+                panel["split_factor"] = check.factor.to_numpy()[kept] * after_anchor
+                relative = f"{side}/{ep.permanent_id}.parquet"
+                written[relative] = (ep.permanent_id, side, write_bytes(panel_root / relative, parquet_bytes(panel)))
+                if check.dividend_pairs:
+                    support_frames.append(pd.DataFrame({"permanent_id": ep.permanent_id, "date": bars.index[kept],
+                                                        "b_d": check.b_d[kept], "s_d": check.s_d[kept]}))
+        for ep in eps:
+            if v2 and ep.resolution == "resolved" and ep.k not in evaluated:
                 ep.evidence.append("split_basis:not_evaluated:no_discovery_bar")
                 counters["split_basis_check_by_outcome"]["not_evaluated_no_discovery_bar"] += 1
                 counters["in_span_step_check_by_outcome"]["not_evaluated_no_discovery_bar"] += 1
-                if final and post_final:
-                    counters["split_rows_after_final_bar"]["not_evaluated_no_discovery_bar"] += len(post_final)
-                continue
-            if frame is None:
-                ep.evidence.append(f"split_basis:not_evaluated:discovery_partition_{snapshot.discovery_status('eod', code) or 'missing'}")
-                continue
-            bars = frame[(frame.index >= calendar[max(ep.first, i_h)]) & (frame.index <= calendar[ep.last])]
-            after_last = split_dates > calendar[ep.last]
-            check = evaluate_episode(
-                bars, ratios.iloc[attributed[ep.k]], ratios[after_last], dividends,
-                dividend_evidence=dividend_ok, final=final, gap_split_after=ep.k in gap_rows,
-            )
-            _record_check(ep, check, counters, final, len(post_final), dividend_ok)
-            episode_checks.append({
-                "permanent_id": ep.permanent_id, "vendor_code": code, "episode": ep.k,
-                "split_basis": check.split_basis, "outcome": check.outcome, "refusal": check.refusal,
-                "in_span": check.in_span, "pairs": check.pairs, "dividend_pairs": check.dividend_pairs,
-                "failing_pairs": check.failing, "max_cumulative_drift": check.max_cumulative_drift,
-                "later_distribution": check.later_distribution, "dividend_evidence": dividend_ok,
-                "min_adjusted_close": float(bars["adjusted_close"].min()),
-                "attributed_splits": [{"date": split_dates[i].date().isoformat(), "ratio": float(ratios["ratio"].iloc[i])}
-                                      for i in attributed[ep.k]],
-                "max_b_d": None if check.b_d is None else float(check.b_d[0]),
-                "max_s_d": None if check.s_d is None else float(check.s_d[0]),
-            })
-            if check.refusal is not None:
-                ep.panel_refusal = check.refusal
-                continue
-            panel = frame.loc[bars.index].reset_index()
-            panel["symbol"] = code
-            panel["permanent_id"] = ep.permanent_id
-            panel["split_factor"] = check.factor.to_numpy()
-            relative = f"discovery/{ep.permanent_id}.parquet"
-            written[ep.permanent_id] = write_bytes(panel_root / relative, parquet_bytes(panel))
-            if check.dividend_pairs:
-                support_frames.append(pd.DataFrame({"permanent_id": ep.permanent_id, "date": bars.index,
-                                                    "b_d": check.b_d, "s_d": check.s_d}))
 
-    for pid in sorted(written):
+    for pid in sorted({pid for pid, _, _ in written.values()}):
         if load_symbol_splits(panel_root, pid) is not None:
             raise SnapshotRefusal("panel_split_table_present", pid)
 
@@ -756,7 +996,8 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
     outputs[DISTRIBUTION_SUPPORT] = write_bytes(root / DISTRIBUTION_SUPPORT, parquet_bytes(support))
     inventory = {
         "discovery_inputs_sha256": inputs_sha,
-        "files": [{"symbol": pid, "file": f"discovery/{pid}.parquet", "sha256": written[pid]} for pid in sorted(written)],
+        "files": [{"symbol": pid, "file": relative, "sha256": sha, **({"side": side} if v2 else {})}
+                  for relative, (pid, side, sha) in sorted(written.items())],
     }
     outputs[INVENTORY] = write_bytes(root / INVENTORY, canonical_json(inventory))
 
@@ -785,12 +1026,48 @@ def build_universe(snapshot_dir: Path | str) -> dict[str, Any]:
         "episode_checks": episode_checks,
         "input_sha256": {key: snapshot.manifest["files"][key]["sha256"]
                          for key in ("calendar", "membership", "symbols_listed", "symbols_delisted")},
-        "seal_sha256": sha256_bytes((root / SEAL_FILE).read_bytes()),
+        "seal_sha256": sha256_bytes((root / snapshot.seal_file).read_bytes()),
         "output_sha256": dict(sorted(outputs.items())),
         "discovery_inputs_sha256": inputs_sha,
     }
+    if v2:
+        del build_manifest["discovery_window"]
+        build_manifest.update(_v2_build_fields(snapshot, calendar, segments, d0_pre, roles))
     write_bytes(root / BUILD_MANIFEST, canonical_json(build_manifest))
     return build_manifest
+
+
+def _v2_build_fields(
+    snapshot: Snapshot, calendar: pd.DatetimeIndex, segments: tuple[Segment, ...], d0_pre: date | None,
+    roles: dict[str, str],
+) -> dict[str, Any]:
+    """Rule v2 build-manifest fields: segments, validation rules, volume basis, and the access log."""
+    volume_basis = {code: str((snapshot.entry("eod", code) or {}).get("pre_side_volume_basis", "absent"))
+                    for code in roles}
+    opens: dict[str, int] = {}
+    for record in snapshot.access_log:
+        key = f"{record['table']}/{record['side']}"
+        opens[key] = opens.get(key, 0) + 1
+    return {
+        "schema_version": "m4_8_membership_build_manifest_v2",
+        "membership_availability_basis": "effective_date_as_known_at_v1",
+        "partition_rule": snapshot.partition_rule,
+        "discovery_layout": "side_partitioned_discovery_v1",
+        "holdout_start": None if snapshot.holdout_start is None else snapshot.holdout_start.isoformat(),
+        "d0_pre": None if d0_pre is None else d0_pre.isoformat(),
+        "segments": [{"segment_id": s.segment_id, "side": s.side, "anchor_row": _date(calendar, s.anchor_row),
+                      "first_reset_row": _date(calendar, s.first_reset_row),
+                      "last_ic_reset_row": _date(calendar, s.last_ic_reset_row),
+                      "last_book_row": _date(calendar, s.last_book_row),
+                      "feature_floor_row": _date(calendar, s.feature_floor_row),
+                      "feature_ceiling_row": _date(calendar, s.feature_ceiling_row),
+                      "ic_months": int(len(segment_ic_resets(calendar, s)))} for s in segments],
+        "universe_validation": ["segment_anchor_normalized_basis_v1", "seal_gap_identity_split_v1",
+                                "pre_seal_volume_share_basis_v1"],
+        "pre_side_volume_basis_by_code": dict(sorted(volume_basis.items())),
+        "access_log": {"opens_by_table_and_side": dict(sorted(opens.items())),
+                       "holdout_partition_opens": sum(1 for r in snapshot.access_log if r["side"] == "holdout")},
+    }
 
 
 def exit_class(last_bar: int, r_exit: int, d_last: int) -> str:
@@ -802,9 +1079,22 @@ def exit_class(last_bar: int, r_exit: int, d_last: int) -> str:
     return "disappearance_outside_membership"
 
 
-def _member_days(entry: dict[str, Any], d0: int, d_last: int, n_rows: int) -> int:
+def _member_days(entry: dict[str, Any], spans: list[tuple[int, int]], n_rows: int) -> int:
+    """Member-days inside the discovery spans ``[first, last]`` (one span under rule v1, one per segment under v2)."""
     m_out = n_rows if entry["m_out"] is None else entry["m_out"]
-    return max(0, min(m_out, d_last + 1) - max(entry["m_in"], d0))
+    return sum(max(0, min(m_out, last + 1) - max(entry["m_in"], first)) for first, last in spans)
+
+
+def _set_rows(
+    entry: dict[str, Any], rs: int, re_: int, end: date | None, resets: np.ndarray, d_last: int, n_rows: int,
+    spans: list[tuple[int, int]], bar_rows: np.ndarray,
+) -> None:
+    """Boundary rows of a seal-split interval piece ``[rs, re_)`` (SL-5), by the rules of the vendor entries."""
+    exit_reset = None if end is None else _first_reset_at_or_after(resets, re_ + 1)
+    entry.update(rs=rs, re=re_, m_in=rs + 1, m_out=None if end is None else re_ + 1,
+                 R_entry=_first_reset_at_or_after(resets, rs + 1), R_exit=d_last if exit_reset is None else exit_reset,
+                 bars_in_span=int(((bar_rows >= rs) & (bar_rows < re_)).sum()))
+    entry["member_days_disc"] = _member_days(entry, spans, n_rows)
 
 
 def _symbol_map(frame: pd.DataFrame) -> dict[str, dict[str, Any]]:
@@ -817,8 +1107,10 @@ def _symbol_map(frame: pd.DataFrame) -> dict[str, dict[str, Any]]:
     return mapping
 
 
-def _discovery_bars(snapshot: Snapshot, code: str, calendar_set: dict[pd.Timestamp, int]) -> pd.DataFrame | None:
-    frame = snapshot.read_discovery("eod", code)
+def _discovery_bars(
+    snapshot: Snapshot, code: str, calendar_set: dict[pd.Timestamp, int], side: str = "discovery",
+) -> pd.DataFrame | None:
+    frame = snapshot.read_discovery("eod", code, side)
     if frame is None:
         return None
     frame = frame.assign(date=pd.DatetimeIndex(frame["date"])).set_index("date")
@@ -846,20 +1138,28 @@ def _e3_fires(code_entries: list[dict[str, Any]], eps: list[Episode]) -> bool:
 
 
 def _e5_fires(
-    eps: list[Episode], frame: pd.DataFrame | None, splits: pd.DataFrame | None,
-    calendar: pd.DatetimeIndex, i_h: int,
+    eps: list[Episode],
+    sides: list[tuple[int, int, pd.DataFrame | None, pd.DataFrame | None]],
+    calendar: pd.DatetimeIndex,
 ) -> tuple[bool, int]:
-    split_rows = [] if splits is None else [_row(calendar, day) for day in pd.DatetimeIndex(splits["date"])]
+    """E5 over each in-episode gap whose endpoints lie on one discovery side ``[lo, hi)`` (SL-4).
+
+    ``sides`` holds ``(lo, hi, eod_frame, split_frame)`` per side. A gap with an
+    endpoint outside every side (a holdout row) is skipped and counted.
+    """
     skipped = 0
     for ep in eps:
         gaps = np.flatnonzero(np.diff(ep.rows) > 1)
         for j in gaps:
             a, b = int(ep.rows[j]), int(ep.rows[j + 1])
-            if a < i_h:
+            side = next(((frame, splits) for lo, hi, frame, splits in sides if lo <= a and b < hi), None)
+            if side is None:
                 skipped += 1
                 continue
+            frame, splits = side
             if frame is None:
                 continue
+            split_rows = [] if splits is None else [_row(calendar, day) for day in pd.DatetimeIndex(splits["date"])]
             ratio = frame.loc[calendar[b], "adjusted_close"] / frame.loc[calendar[a], "adjusted_close"]
             near = any(a - E5_SPLIT_WINDOW_ROWS <= r <= b + E5_SPLIT_WINDOW_ROWS for r in split_rows)
             if abs(math.log(ratio)) > E5_LOG_THRESHOLD and not near:
@@ -894,7 +1194,7 @@ def residual_bucket(residual: float | None) -> str:
 
 
 def _record_check(ep: Episode, check: EpisodeCheck, counters: dict[str, Any], final: bool, post_rows: int,
-                  dividend_ok: bool) -> None:
+                  dividend_ok: bool, prefix: str = "") -> None:
     basis = counters["split_basis_check_by_outcome"]
     if check.split_basis == "refused":
         basis["refused"] += 1
@@ -917,7 +1217,7 @@ def _record_check(ep: Episode, check: EpisodeCheck, counters: dict[str, Any], fi
                 f":dividend_evidence={'valid' if dividend_ok else 'unavailable'}")
     if final and post_rows:
         evidence += f":post_final_bar={check.outcome}"
-    ep.evidence.append(evidence)
+    ep.evidence.append(prefix + evidence)
     if check.split_basis == "refused":
         return
     in_span = (f"in_span_steps:{check.in_span}:pairs={check.pairs}:dividend_pairs={check.dividend_pairs}"
@@ -928,13 +1228,13 @@ def _record_check(ep: Episode, check: EpisodeCheck, counters: dict[str, Any], fi
         in_span += f":first_failing={first['date_a']}..{first['date_b']}:{first['kind']}"
     elif check.drift_date:
         in_span += f":largest_drift_row={check.drift_date}"
-    ep.evidence.append(in_span)
+    ep.evidence.append(prefix + in_span)
     if check.refusal is None:
         drift = check.max_cumulative_drift
         bucket = "[0,1e-4]" if drift <= 1e-4 else "(1e-4,1e-3]" if drift <= 1e-3 else "(1e-3,2e-3]"
         counters["written_max_cumulative_drift_by_bucket"][bucket] += 1
         if check.dividend_pairs:
-            ep.evidence.append(f"distribution_support:max_b_d={check.b_d[0]:.6f}:max_s_d={check.s_d[0]:.6f}")
+            ep.evidence.append(f"{prefix}distribution_support:max_b_d={check.b_d[0]:.6f}:max_s_d={check.s_d[0]:.6f}")
 
 
 def _counts(values: Any) -> dict[str, int]:
@@ -1033,9 +1333,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m research.m4_7_universe_build")
     parser.add_argument("--snapshot-id", required=True)
     parser.add_argument("--data-dir", default=None)
+    parser.add_argument("--d0-pre", type=date.fromisoformat, default=None,
+                        help="D0_pre from the membership census; required for a rule v2 snapshot")
     args = parser.parse_args(argv)
     try:
-        manifest = build_universe(snapshot_dir_from_args(args))
+        manifest = build_universe(snapshot_dir_from_args(args), args.d0_pre)
     except SnapshotRefusal as exc:
         print(str(exc), file=sys.stderr)
         return 1
