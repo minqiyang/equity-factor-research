@@ -12,6 +12,33 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage A attempt a3: approved public terminal schema (PR #272)
+
+- Source: Seat 1 AUDIT round 2 (M48A-A1-M02 OPEN MATERIAL) and Seat 2 AUDIT_2 round 2 (A2-R2-ADV-1) on `143dede`;
+  card `m4_8a-partition-a3`.
+- Defect: the a2 projection classified terminal-summary fields by value type and key spelling. A flat integer record
+  such as `raw_vendor_row` (OHLCV) or `terminal_row` (`cash_per_share`, `exchange_ratio`) and underscore-joined
+  identifier keys such as `by_asset: {unp_us_e1: 1}` reached public census JSON.
+- Fix: `aggregate_terminal_summary` now enforces an explicit approved schema in `research/m4_7_coverage_census.py`.
+  - `TERMINAL_SCALAR_COUNTS` declares the scalar counts.
+  - `TERMINAL_COUNT_MAPS` declares the count maps, each with a closed key vocabulary: statuses, the carried M4.7
+    and registration v3 reason codes, event kinds, consideration types, payment timings, segments, valuation
+    offsets, and day-lag buckets.
+  - `TERMINAL_NESTED_MAPS` declares `settlement_lag_distribution`, keyed by consideration type then by settlement
+    lag bucket.
+  - Any other field, key, bucket, or value type refuses `terminal_summary_not_aggregate` before any public or
+    private write. Stage E extends the declarations when it publishes a new count.
+- The closed vocabulary made the code-token check on keys and the key regex redundant; both were removed. The
+  leak scan (codes, curated-only codes, names, absolute paths) stays on every public payload.
+- Tests: both Seat 1 reproductions refuse through the API and the CLI with no report or detail written. So do Seat
+  2's four keys, an unknown reason or bucket inside an approved map, a non-count value, and a non-mapping summary.
+  A full-schema test accepts every declared field. Ten of the new cases fail on the `143dede` projection.
+- Ablation: G15b (projection bypass), G19 (declared scalars), G20 (map vocabularies), G21 (nested outer keys), and
+  G22 (unknown fields refuse) each fail tests when removed; G10, G17, and G18 were rerun and still fail when
+  removed. Kept simplification: dropping the key regex and code-token check. Evidence is frozen with SHA-256 in
+  `coord/reports/v8_review_20260923/m48a/producer_evidence_a3/`. The rule v1 fixture pipeline and the registration
+  v2 rerun stay byte-identical to `dcf7b86` (1,846 files).
+
 ## 2026-09-27 - M4.8 Stage A attempt a2: review remediation (PR #272)
 
 - Source: Seat 1 AUDIT (`MATERIAL: 2, ADVISORY: 3`) and Seat 2 AUDIT_2 (`MATERIAL: 0, ADVISORY: 4`) on candidate

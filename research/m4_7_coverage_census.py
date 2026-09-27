@@ -54,7 +54,13 @@ from research import m4_8_membership
 from research.m4_7_common_support import SUPPORT_CONTRACT, ic_month_set, scheduled_reset_rows, write_support_files
 from research.m4_7_family_a import FAMILY_A
 from research.m4_7_holdout_seal import confirmed_seal_bytes
-from research.m4_7_terminal_evidence import CURATED, ENGINE_EVENTS, read_engine_events, require_current_terminal
+from research.m4_7_terminal_evidence import (
+    CURATED,
+    ENGINE_EVENTS,
+    EVENT_KINDS,
+    read_engine_events,
+    require_current_terminal,
+)
 from research.m4_7_universe_build import (
     BENCHMARK,
     BUILD_MANIFEST,
@@ -1034,7 +1040,6 @@ def derive_readiness_v3(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
 _ABSOLUTE_PATH = re.compile(r"(?<![\w.])/(?:Users|private|home|tmp|var|Volumes|mnt)/")
-_AGGREGATE_KEY = re.compile(r"^(?:[a-z][a-z0-9_]*(?::[a-z0-9_]+)*|-?\d+)$")
 
 
 def known_codes(snapshot: Snapshot, private_paths: tuple[Path, ...] = ()) -> set[str]:
@@ -1073,32 +1078,77 @@ def public_leak_scan(text: str, snapshot: Snapshot, private_paths: tuple[Path, .
     return sorted(set(found))
 
 
-def aggregate_terminal_summary(summary: dict[str, Any], codes: set[str]) -> dict[str, Any]:
-    """The public projection of a terminal summary: aggregate counts only (R11, M48A-A1-M02).
+# Plan 3.7 and 4.6: the approved public terminal schema (R11, M48A-A1-M02). Every public field is either a
+# declared scalar count or a map whose keys come from a declared vocabulary; a field, key, or bucket outside it
+# refuses. Stage E extends these declarations when it adds a published count.
+TERMINAL_SCALAR_COUNTS = frozenset({
+    "residual_count", "in_scope_candidates", "curated", "accepted", "unresolved", "deferred_holdout",
+    "outside_discovery_holding_windows", "claim_demand", "contingent_component_excluded",
+})
+TERMINAL_REASONS = frozenset({
+    # Carried M4.7 validation reasons (research/m4_7_terminal_evidence.py).
+    "curation_unresolved", "reference_not_last_bar", "evidence_incomplete",
+    "evidence_incomplete:contradictory_consideration_fields", "terminal_currency_unsupported",
+    "known_at_after_reference", "settlement_lag_negative", "settlement_lag_exceeds_3_rows",
+    "stock_consideration_lag_positive", "acquirer_bar_missing", "terminal_basis_ambiguous",
+    "terminal_basis_ambiguous:corporate_action_evidence_missing", "terminal_return_unjustified",
+    "terminal_return_below_minus_one", "holdout_terms_forbidden", "terminal_evidence_invalid",
+    # Registration v3 reasons (plan 3.2-3.5).
+    "unresolved:terms_known_after_reference", "unresolved:payment_timing_unknown",
+    "unresolved:payment_lag_exceeds_bound", "unresolved:election_terms_unstated", "unresolved:second_check_disagree",
+    *(f"evidence_incomplete:{field}_missing" for field in (
+        "source_accession", "terms_known_at", "payment_timing", "payment_date", "payment_source_accession")),
+})
+CONSIDERATION_KEYS = frozenset({"cash", "stock", "mixed", "evidenced_worthless", "unresolved"})
+SETTLEMENT_LAG_BUCKETS = frozenset({"<-1", "-1", "0", "1", "2", "3", ">3"})
+DAY_LAG_BUCKETS = frozenset({"0", "1", "2-5", "6-20", "21-60", ">60"})
+TERMINAL_COUNT_MAPS: dict[str, frozenset[str]] = {
+    "by_status": frozenset({"accepted", "unresolved", "deferred_holdout", "outside_discovery_holding_windows"}),
+    "unresolved_by_reason": TERMINAL_REASONS,
+    "by_event_kind": EVENT_KINDS | {"unresolved"},
+    "by_consideration_type": CONSIDERATION_KEYS,
+    "by_payment_timing": frozenset({"at_completion_evidenced", "delayed_evidenced", "unknown", "not_applicable"}),
+    "by_segment": frozenset({"pre", "post"}),
+    "valuation_row_offsets": frozenset({"L", "S"}),
+    "terms_availability_lag_distribution": DAY_LAG_BUCKETS,
+    "claim_realization_lag_distribution": DAY_LAG_BUCKETS,
+}
+TERMINAL_NESTED_MAPS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
+    "settlement_lag_distribution": (CONSIDERATION_KEYS, SETTLEMENT_LAG_BUCKETS),
+}
 
-    A field is a non-negative integer count or a flat map from a lowercase
-    reason code (or an integer bucket such as a settlement lag) to such a count.
-    Anything else refuses ``terminal_summary_not_aggregate`` before any public
-    write: a list, a nested record, a string, a path, a permanent ID, or a key
-    equal to a known code. The summary needs ``residual_count``.
+
+def aggregate_terminal_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    """The public projection of a terminal summary under the approved schema (R11, M48A-A1-M02).
+
+    Each field must be a declared scalar count, a declared count map whose keys
+    lie in that map's vocabulary, or a declared nested count map. Values are
+    non-negative integers. Any other field (a raw vendor row, an individual
+    terminal row, a per-asset map), key, bucket, or value type refuses
+    ``terminal_summary_not_aggregate`` before any public or private write.
+    ``residual_count`` is required.
     """
-    lowered = {code.removesuffix(".US").casefold() for code in codes}
 
     def count(value: Any) -> bool:
         return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
-    def key_ok(key: Any) -> bool:
-        return (isinstance(key, str) and _AGGREGATE_KEY.match(key) is not None
-                and not any(part in lowered for part in key.split(":")))
+    def count_map(value: Any, keys: frozenset[str]) -> bool:
+        return isinstance(value, dict) and all(key in keys and count(v) for key, v in value.items())
 
+    if not isinstance(summary, dict):
+        raise SnapshotRefusal("terminal_summary_not_aggregate", "the summary is not a mapping")
     public: dict[str, Any] = {}
-    for key, value in summary.items():
-        if key_ok(key) and count(value):
-            public[key] = value
-        elif key_ok(key) and isinstance(value, dict) and all(key_ok(k) and count(v) for k, v in value.items()):
-            public[key] = dict(sorted(value.items()))
+    for field, value in summary.items():
+        if field in TERMINAL_SCALAR_COUNTS and count(value):
+            public[field] = value
+        elif field in TERMINAL_COUNT_MAPS and count_map(value, TERMINAL_COUNT_MAPS[field]):
+            public[field] = dict(sorted(value.items()))
+        elif field in TERMINAL_NESTED_MAPS and isinstance(value, dict) and all(
+                outer in TERMINAL_NESTED_MAPS[field][0] and count_map(inner, TERMINAL_NESTED_MAPS[field][1])
+                for outer, inner in value.items()):
+            public[field] = {outer: dict(sorted(inner.items())) for outer, inner in sorted(value.items())}
         else:
-            raise SnapshotRefusal("terminal_summary_not_aggregate", "a field holds a value other than aggregate counts")
+            raise SnapshotRefusal("terminal_summary_not_aggregate", "a field lies outside the approved aggregate schema")
     if "residual_count" not in public:
         raise SnapshotRefusal("terminal_summary_incomplete", "residual_count")
     return dict(sorted(public.items()))
@@ -1459,14 +1509,14 @@ def run_census_v3(
 
     ``terminal_summary`` carries the terminal and residual counts from the
     two-pass validation (Stage E), at least ``residual_count``; only its
-    aggregate projection (``aggregate_terminal_summary``) reaches the public JSON;
+    projection under the approved schema (``aggregate_terminal_summary``) reaches the public JSON;
     ``segment_access_logs`` maps ``pre`` and ``post`` to the sides each
     segment's run opened (Stage H runner logs).
     """
     snapshot = Snapshot.open(snapshot_dir)
     if snapshot.partition_rule != holdout_partition.PARTITION_RULE_V2:
         raise SnapshotRefusal("census_v3_requires_rule_v2", snapshot.partition_rule)
-    terminal = aggregate_terminal_summary(terminal_summary, known_codes(snapshot))
+    terminal = aggregate_terminal_summary(terminal_summary)
     root = snapshot.root
     build = read_derived_json(root, BUILD_MANIFEST)
     require_current(snapshot, build.get("discovery_inputs_sha256"), BUILD_MANIFEST)

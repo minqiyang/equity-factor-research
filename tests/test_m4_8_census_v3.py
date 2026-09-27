@@ -207,10 +207,10 @@ def test_t_pub_1_census_v3_refuses_a_terminal_summary_with_per_asset_detail_or_p
 def test_t_pub_1_census_v3_publishes_only_the_aggregate_projection(tmp_path, monkeypatch, capsys):
     harness = _census_fixture(tmp_path, monkeypatch, name="AGG")
     summary = {"unresolved_by_reason": {"unresolved:payment_timing_unknown": 2, "evidence_incomplete:terms_known_at_missing": 1},
-               "settlement_lag_distribution": {"-1": 1, "0": 4, "3": 1}, "residual_count": 0, "claim_demand": 0}
+               "settlement_lag_distribution": {"cash": {"-1": 1, "0": 4, "3": 1}}, "residual_count": 0, "claim_demand": 0}
     result = run_census_v3(harness.snapshot_dir, terminal_summary=summary, segment_access_logs=LOGS,
                            reports_dir=tmp_path / "reports")
-    assert result["public"]["terminal_evidence"] == aggregate_terminal_summary(summary, set())
+    assert result["public"]["terminal_evidence"] == aggregate_terminal_summary(summary)
     assert list(result["public"]["terminal_evidence"]) == ["claim_demand", "residual_count", "settlement_lag_distribution",
                                                           "unresolved_by_reason"]
     snapshot = Snapshot.open(harness.snapshot_dir)
@@ -263,3 +263,75 @@ def test_t_pub_1_the_public_writer_refuses_a_payload_that_holds_a_code_or_path(t
             _write_public(tmp_path / "reports", "probe", payload, "", snapshot, ())
         assert refused.value.code == "public_output_leak"
     assert not (tmp_path / "reports").exists()
+
+
+SEAT1_REPRODUCTIONS = [
+    {"residual_count": 0, "raw_vendor_row": {"open": 100, "high": 101, "low": 99, "close": 100, "volume": 1000}},
+    {"residual_count": 0, "terminal_row": {"cash_per_share": 25, "exchange_ratio": 1}},
+]
+UNAPPROVED_SUMMARIES = [
+    {"residual_count": 1, "by_asset": {"unp_us_e1": 1}},
+    {"residual_count": 1, "residual_unp": 1},
+    {"residual_count": 1, "unp1": 1},
+    {"residual_count": 1, "aaa_us_e1": 1},
+    {"residual_count": 1, "unresolved_by_reason": {"unp_us_e1": 1}},
+    {"residual_count": 1, "unresolved_by_reason": {"unresolved:unp": 1}},
+    {"residual_count": 1, "settlement_lag_distribution": {"cash": {"100": 1}}},
+    {"residual_count": 1, "settlement_lag_distribution": {"unp": {"0": 1}}},
+    {"residual_count": 1, "by_segment": {"pre": 1.5}},
+    {"residual_count": 1, "accepted": 2.0},
+    ["residual_count", 0],
+]
+
+
+@pytest.mark.parametrize("summary", SEAT1_REPRODUCTIONS + UNAPPROVED_SUMMARIES,
+                         ids=["raw_vendor_row", "terminal_row"] + [f"unapproved_{i}" for i in range(len(UNAPPROVED_SUMMARIES))])
+def test_t_pub_1_fields_outside_the_approved_schema_refuse_before_any_write(tmp_path, monkeypatch, summary):
+    # M48A-A1-M02 round 2 (Seat 1 reproductions) and A2-R2-ADV-1 (Seat 2 key channel).
+    harness = _census_fixture(tmp_path, monkeypatch, name="SCH")
+    with pytest.raises(SnapshotRefusal) as refused:
+        run_census_v3(harness.snapshot_dir, terminal_summary=summary, segment_access_logs=LOGS,
+                      reports_dir=tmp_path / "reports")
+    assert refused.value.code == "terminal_summary_not_aggregate"
+    assert not (tmp_path / "reports").exists()
+    assert not (harness.snapshot_dir / "census/census_detail_v3.json").exists()
+
+
+@pytest.mark.parametrize("summary", SEAT1_REPRODUCTIONS, ids=["raw_vendor_row", "terminal_row"])
+def test_t_pub_1_the_cli_refuses_seat1_reproductions_before_any_write(tmp_path, monkeypatch, capsys, summary):
+    harness = _census_fixture(tmp_path, monkeypatch, name="SCLI")
+    path = tmp_path / "summary.json"
+    path.write_text(json.dumps(summary))
+    logs = tmp_path / "logs.json"
+    logs.write_text(json.dumps(LOGS))
+    assert census_main(["census-v3", "--snapshot-id", "SCLI", "--data-dir", str(harness.data_dir), "--terminal-summary",
+                        str(path), "--segment-access-log", str(logs), "--reports-dir", str(tmp_path / "reports")]) == 1
+    assert "terminal_summary_not_aggregate" in capsys.readouterr().err
+    assert not (tmp_path / "reports").exists()
+    assert not (harness.snapshot_dir / "census/census_detail_v3.json").exists()
+
+
+def test_the_approved_schema_accepts_every_declared_field_and_nothing_else():
+    full = {
+        "residual_count": 0, "in_scope_candidates": 30, "curated": 28, "accepted": 25, "unresolved": 3,
+        "deferred_holdout": 2, "outside_discovery_holding_windows": 7, "claim_demand": 0,
+        "contingent_component_excluded": 1,
+        "by_status": {"accepted": 25, "unresolved": 3, "deferred_holdout": 2, "outside_discovery_holding_windows": 7},
+        "unresolved_by_reason": {"curation_unresolved": 1, "unresolved:payment_timing_unknown": 1,
+                                 "evidence_incomplete:source_accession_missing": 1},
+        "by_event_kind": {"merger_or_acquisition": 20, "bankruptcy_or_liquidation": 2, "unresolved": 3},
+        "by_consideration_type": {"cash": 15, "stock": 5, "mixed": 4, "evidenced_worthless": 1},
+        "by_payment_timing": {"at_completion_evidenced": 19, "delayed_evidenced": 1, "not_applicable": 5},
+        "by_segment": {"pre": 18, "post": 12},
+        "valuation_row_offsets": {"L": 2, "S": 7},
+        "terms_availability_lag_distribution": {"0": 3, "2-5": 10, ">60": 1},
+        "claim_realization_lag_distribution": {},
+        "settlement_lag_distribution": {"cash": {"-1": 1, "0": 14}, "stock": {"0": 5}},
+    }
+    assert aggregate_terminal_summary(full) == json.loads(json.dumps(full, sort_keys=True))
+    for field in full:
+        if field != "residual_count":
+            assert aggregate_terminal_summary({"residual_count": 0, field: full[field]})[field] == full[field]
+    with pytest.raises(SnapshotRefusal) as refused:
+        aggregate_terminal_summary({"accepted": 1})
+    assert refused.value.code == "terminal_summary_incomplete"
