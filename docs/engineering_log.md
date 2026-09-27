@@ -12,6 +12,50 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage B attempt b2: review remediation (PR #273)
+
+- Source: Seat 1 AUDIT (`MATERIAL: 2, ADVISORY: 1`) and Seat 2 AUDIT_2 (`MATERIAL: 0, ADVISORY: 3`) on `8a2b453`;
+  card `v8-exec-m48b-b2`.
+- M48B-A1-M01 (R1, R4, R10): `calendar.searchsorted` returns `len(calendar)` for a date after the last observed
+  row, and the schema v3 validator used that insertion point as a row. A delayed payment dated months after a settlement
+  in the last three rows passed the three-row bound, projected an immediate settlement, and zeroed claim demand.
+  `terminal_evidence.calendar_row` now returns no row for such a date. Under schema v3 a cash completion or a
+  delayed payment after the calendar stays `terms_valid` with the timing failure
+  (`settlement_lag_exceeds_3_rows` or `unresolved:payment_lag_exceeds_bound`), lag `None`, and the private detail
+  `completion_date_after_calendar` or `payment_date_after_calendar`; projection excludes it and `claim_demand`
+  counts it. A stock valuation date after the calendar stays `acquirer_bar_missing`.
+- Frozen v1 validator: registration v2's carried `_validate_row` keeps its accepted reading of a completion
+  after the last row (review A2-05; `tests/test_m4_7_terminal_evidence.py::test_valuation_row_is_never_indexed_past_the_calendar_end`
+  pins `accepted` with lag 1). Its validation report is bound by hash in the frozen registration v2, and plan
+  2.1 keeps M4.7 artifacts byte-identical, so b2 leaves it unchanged and records it as a disclosed defect of the
+  frozen v2 validator. A trial fix refused that case and failed the carried test; it was reverted.
+  Needs follow-up: an owner decision on whether the real_v1 validation report should be checked for accepted
+  rows whose completion date follows the calendar end (private data, authorization required).
+- M48B-A1-M02 (R2, R6, R9, R10): registration v3 now binds `inventory_sha256`
+  (`panel/inventory_discovery.json`, which carries every panel digest) and `build_manifest_sha256`.
+  `bind_snapshot_v3` parses the inventory from the verified bytes, and `load_segment_runs` opens exactly the files
+  that inventory names (through a per-side mapping), refusing `inventory_member_missing` if a registered member is
+  absent from the loaded panels. Removing one member entry or editing the build manifest now refuses
+  `derived_artifact_stale:inventory` or `derived_artifact_stale:build_manifest` before any panel load.
+- M48B-A1-A01 (R6): under `halt_gap_return_v1` only a missing close (NaN) is a halt. A present close that is not
+  finite positive refuses `incoming_price_invalid` on a held cell and `execution_price_invalid` on a target cell,
+  with date and asset, in both engines.
+- A2-B-ADV-1: the runner access log is the set of side directories of the files the loader opened, and
+  `segment_bars` returns the side directories it opened, which `write_support_files_v3` records as
+  `panel_sides_opened`. A post record pointed at a pre-side file now appears in both logs, and the segment refuses
+  `seal_bracket_computation_forbidden`.
+- A2-B-ADV-3: SL-7 at the b2 head matches 24 (terminal evidence), 10 (common support), and 21 (runner) lines,
+  55 in total, the same as `8a2b453`; b2 adds no matching line. The six integration-commit lines are the seal
+  carry window comparison in `bind_snapshot_v3` (two lines, Seal rule and overlap guards), the
+  `discovery_segments(... holdout_start, holdout_end ...)` call in `snapshot_segments` (Window derivation), and
+  the rule v2 `holdout_start` dispatch in `write_template`, in `validate`, and one docstring line (Terminal
+  scoping).
+- Tests: 23 new (M01 8, A01 10, M02 3, ADV-1 2); the I-1 loader spy now records the mapped inventory files. All
+  17 M01 and A01 witnesses fail on `8a2b453` and pass at b2. Full suite 3276 passed, 2 skipped (pre-existing `longdouble` skips); ruff clean.
+- Byte identity against `bfdca57`: 18 of 18 engine digests; the v2 synthetic rerun's label records,
+  `census/asset_support.json`, `terminal/terminal_validation.json`, and `terminal/terminal_events_engine.csv`
+  byte-identical; sidecar, 231 trials, and report equal after removing the `code_commit`-dependent digests.
+
 ## 2026-09-27 - M4.8 Stage B integration on merged Stage A (seams I-1..I-4)
 
 - Source: card `m4_8b-engine-integration`; `claude/m4_8b-engine` rebased onto `bfdca57` (PR #272). Only

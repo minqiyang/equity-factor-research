@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Mapping
 
@@ -450,21 +451,28 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
 SUPPORT_FILE_V3 = "census/asset_support_v3.json"
 
 
-def segment_bars(root, inventory: dict, side: str, pids: list[str], calendar: pd.DatetimeIndex) -> pd.DataFrame:
-    """Bar presence on one segment's calendar from that side's panel files only, hash-checked (SL-1, S7)."""
+def segment_bars(root, inventory: dict, side: str, pids: list[str],
+                 calendar: pd.DatetimeIndex) -> tuple[pd.DataFrame, list[str]]:
+    """Bar presence on one segment's calendar from that side's panel files, hash-checked (SL-1, S7).
+
+    Also returns the side directories of the files actually opened, the
+    segment's access log (A2-B-ADV-1).
+    """
     from data.holdout_partition import SnapshotRefusal, sha256_bytes
     from research.m4_7_universe_build import _parquet
 
     files = {record["symbol"]: record for record in inventory["files"] if record.get("side") == side}
     bars = pd.DataFrame(False, index=calendar, columns=pd.Index(pids, dtype=object))
+    opened: set[str] = set()
     for pid in pids:
+        opened.add(Path(files[pid]["file"]).parts[0])
         payload = (root / "panel" / files[pid]["file"]).read_bytes()
         if sha256_bytes(payload) != files[pid]["sha256"]:
             raise SnapshotRefusal("derived_artifact_stale", f"panel {files[pid]['file']}")
         frame = _parquet(payload, files[pid]["file"], columns=["date", "adjusted_close"])
         present = pd.DatetimeIndex(frame.loc[np.isfinite(frame["adjusted_close"]), "date"])
         bars.loc[present.intersection(calendar), pid] = True
-    return bars
+    return bars, sorted(opened)
 
 
 def write_support_files_v3(snapshot) -> dict:
@@ -498,7 +506,7 @@ def write_support_files_v3(snapshot) -> dict:
         calendar = full[segment.feature_floor_row:segment.last_book_row + 1]
         side_pids = {r["symbol"] for r in inventory["files"] if r.get("side") == segment.side}
         pids = sorted(set(intervals["permanent_id"]) & side_pids)
-        bars = segment_bars(root, inventory, segment.side, pids, calendar)
+        bars, opened = segment_bars(root, inventory, segment.side, pids, calendar)
         own = events[events["permanent_id"].isin(pids) & events["effective_date"].isin(calendar)].reset_index(drop=True)
         mask = (resolve_pit_universe_mask(intervals[intervals["permanent_id"].isin(pids)], own if len(own) else None,
                                           calendar, pids) if pids else bars.copy())
@@ -517,7 +525,7 @@ def write_support_files_v3(snapshot) -> dict:
             "potentially_held_cells": int(sum(int(v.sum()) for v in potentially_held(schedule, bars).values())),
             "residual_count": len(residual),
             "residual": [[pid, iso[stop], iso[reset]] for pid, stop, reset in residual],
-            "panel_sides_opened": [segment.side] if pids else [],
+            "panel_sides_opened": opened,
         }
     claim = claim_demand(report["rows"], tuple(residual_all))
     body = {"support_contract": CAUSAL_SUPPORT_CONTRACT, "partition_rule": snapshot.partition_rule,

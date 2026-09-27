@@ -29,6 +29,7 @@ import hashlib
 import json
 import math
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -419,7 +420,7 @@ SNAPSHOT_DIGESTS_V3 = ("manifest_sha256", "discovery_inputs_sha256", "seal_carry
                        "interval_csv_sha256", "interval_results_sha256", "membership_supplement_sha256",
                        "reconstructed_changes_sha256", "published_counts_sha256", "membership_discrepancies_sha256",
                        "terminal_evidence_sha256", "terminal_validation_sha256", "engine_events_sha256",
-                       "census_json_sha256")
+                       "census_json_sha256", "inventory_sha256", "build_manifest_sha256")
 
 
 class RunnerStop(Exception):
@@ -601,7 +602,8 @@ def bound_paths_v3(root: Path, census_json: Path) -> dict[str, Path]:
             "published_counts_sha256": membership / m4_8_membership.ANCHORS_FILE,
             "membership_discrepancies_sha256": membership / m4_8_membership.DISCREPANCIES_FILE,
             "terminal_evidence_sha256": root / CURATED, "terminal_validation_sha256": root / VALIDATION,
-            "engine_events_sha256": root / ENGINE_EVENTS, "census_json_sha256": Path(census_json)}
+            "engine_events_sha256": root / ENGINE_EVENTS, "census_json_sha256": Path(census_json),
+            "inventory_sha256": root / INVENTORY, "build_manifest_sha256": root / BUILD_MANIFEST}
 
 
 def verify_bound_hashes(doc: dict[str, Any], paths: dict[str, Path]) -> None:
@@ -1629,10 +1631,13 @@ def run_segments(
 def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_json: Path) -> dict[str, Any]:
     """Every registration v3 check that precedes a panel load (plan 6.1, Stage G; seam I-1).
 
-    A rule v2 snapshot; the registered file digests; the recomputed discovery
-    inputs; the current terminal projection, inventory, and build manifest;
-    every panel hash; the carried seal window against the registration; and no
-    split table beside a side panel.
+    A rule v2 snapshot; the registered file digests, including the per-side
+    panel inventory and the build manifest, so the frozen universe and every
+    panel digest are bound (M48B-A1-M02); the recomputed discovery inputs; the
+    current terminal projection, inventory, and build manifest; every panel
+    hash; the carried seal window against the registration; and no split table
+    beside a side panel. The inventory used downstream is parsed from the
+    verified bytes.
     """
     try:
         snapshot = Snapshot.open(snapshot_dir)
@@ -1647,9 +1652,12 @@ def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_js
     inputs = discovery_inputs_sha256(snapshot)
     if inputs != pinned["discovery_inputs_sha256"]:
         raise _stale("discovery_inputs")
+    inventory_bytes = (root / INVENTORY).read_bytes()
+    if sha256_bytes(inventory_bytes) != pinned["inventory_sha256"]:
+        raise _stale("inventory")
     try:
         validation, _ = require_current_terminal(snapshot)
-        inventory = read_derived_json(root, INVENTORY)
+        inventory = json.loads(inventory_bytes)
         require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
         require_current(snapshot, read_derived_json(root, BUILD_MANIFEST).get("discovery_inputs_sha256"), BUILD_MANIFEST)
         carry = read_seal_carry(root)
@@ -1674,10 +1682,13 @@ def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_js
 
 
 def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str, list[str]]]:
-    """One ``SegmentRun`` per segment from that side's panel files only (SL-1, B-1; seam I-1).
+    """One ``SegmentRun`` per segment from the bound inventory's panel files for its side (SL-1, B-1; seam I-1).
 
-    Returns the runs and the access log census v3 rule R3-9 reads: the panel
-    sides each segment opened. Fields keep rows up to the segment's last book
+    The loader opens exactly the files the registered inventory names, whose
+    hashes ``bind_snapshot_v3`` verified. The returned access log, which census
+    v3 rule R3-9 reads, is the set of side directories of those opened paths
+    (A2-B-ADV-1). A registered member the loaded panels lack refuses
+    ``inventory_member_missing``. Fields keep rows up to the segment's last book
     row; ``_segment_calendar`` refuses any row on the other side or in the seal.
     """
     root, calendar = bound["snapshot"].root, bound["calendar"]
@@ -1690,14 +1701,21 @@ def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str
         if BENCHMARK_ID not in records:
             raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} has no {segment.side} panel")
         assets = sorted(set(intervals["permanent_id"]) & set(records) - {BENCHMARK_ID})
-        loaded = load_eod_cohort_panels(root / "panel" / segment.side, assets + [BENCHMARK_ID])
+        opened = [records[pid]["file"] for pid in assets + [BENCHMARK_ID]]
+        with tempfile.TemporaryDirectory() as scratch:
+            mapping = Path(scratch) / "inventory.json"
+            mapping.write_text(json.dumps({"files": [{"symbol": pid, "file": records[pid]["file"]}
+                                                     for pid in assets + [BENCHMARK_ID]]}), encoding="utf-8")
+            loaded = load_eod_cohort_panels(root / "panel", assets + [BENCHMARK_ID], inventory_path=mapping)
+        if set(loaded["adjusted_close"].columns) != set(assets + [BENCHMARK_ID]):
+            raise RunnerStop("inventory_member_missing", segment.segment_id)
         last = calendar[segment.last_book_row]
         fields = {k: v.loc[v.index <= last] for k, v in loaded.items() if isinstance(v, pd.DataFrame)}
         own = events[events["permanent_id"].isin(assets) & events["effective_date"].isin(
             calendar[segment.feature_floor_row:segment.last_book_row + 1])].reset_index(drop=True)
         runs.append(SegmentRun(segment=segment, full_calendar=calendar, fields=fields, intervals=intervals,
                                events=own, master=master))
-        access[segment.segment_id] = sorted({records[pid]["side"] for pid in assets + [BENCHMARK_ID]})
+        access[segment.segment_id] = sorted({Path(file).parts[0] for file in opened})
     return runs, access
 
 

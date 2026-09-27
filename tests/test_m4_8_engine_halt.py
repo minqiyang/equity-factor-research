@@ -499,3 +499,34 @@ def test_t_hac_1_segment_aware_estimator():
     single = runner.segment_ic_test(ic, ["post"] * 94)
     assert single["hac_statistic"] == pytest.approx(
         runner.return_test_statistics(ic.reset_index(drop=True), periods_per_year=12)["hac_statistic"], rel=1e-12)
+
+
+# ---------------------------------------------------------------- M48B-A1-A01: a present invalid close is corrupt data
+
+
+@pytest.mark.parametrize("engine", ["long_only", "long_short"])
+@pytest.mark.parametrize("value", [0.0, -1.0, np.inf, -np.inf])
+def test_a01_a_present_invalid_held_close_refuses_and_a_missing_close_stays_a_halt(engine, value):
+    prices = walk(8, 1)
+    signals = ranked(prices, [f"A{i:02d}" for i in range(8)])
+    asset = "A00" if engine == "long_only" else "A07"
+    run = (lambda p: long_only(p, signals, top_n=2)) if engine == "long_only" else (lambda p: long_short(p, signals))
+    corrupt = prices.copy()
+    corrupt.iloc[30, corrupt.columns.get_loc(asset)] = value
+    with pytest.raises(BacktestValidationError) as refused:
+        run(corrupt)
+    assert (refused.value.reason, refused.value.date, refused.value.asset) == ("incoming_price_invalid", DATES[30], asset)
+    assert run(halt(prices, asset, 30, 31)).halt_ledger["unmarked_halt_rows"] == [(DATES[30], asset)]
+
+
+@pytest.mark.parametrize("engine", ["long_only", "long_short"])
+def test_a01_a_present_invalid_close_on_an_unheld_target_refuses_at_execution(engine):
+    prices = walk(8, 2)
+    order = [f"A{i:02d}" for i in range(8)]
+    later = ["A02", "A00", "A01", "A03", "A04", "A05", "A06", "A07"]  # A02 enters the long leg at R2
+    signals = ranked(prices, order, after=R2 - 3, later=later)
+    corrupt = prices.copy()
+    corrupt.iloc[R2, corrupt.columns.get_loc("A02")] = 0.0
+    with pytest.raises(BacktestValidationError) as refused:
+        long_only(corrupt, signals, top_n=2) if engine == "long_only" else long_short(corrupt, signals)
+    assert (refused.value.reason, refused.value.date, refused.value.asset) == ("execution_price_invalid", DATES[R2], "A02")

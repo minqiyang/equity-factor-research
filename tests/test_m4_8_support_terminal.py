@@ -451,3 +451,72 @@ def test_signal_eligibility_is_the_causal_evaluation_mask():
     assert schedule.s_mask.equals(signal_eligibility(mask, bars))
     included, unmeasured = ic_month_set(schedule)
     assert included[-1] == int(RESETS[-2]) and unmeasured == {"ic_month_horizon_unmeasured": (int(RESETS[-1]),)}
+
+
+# ---------------------------------------------------------------- M48B-A1-M01: dates after the last calendar row
+
+
+BEYOND = "2007-06-29"  # the fixture calendar ends 2006-12-29
+CAL_RESETS = scheduled_reset_rows(CAL)
+
+
+def _tail_snapshot(tmp_path, monkeypatch, last):
+    return terminal_snapshot(tmp_path, monkeypatch, f"tail{N - last}", {"TAIL": target(last, 20.0)})
+
+
+@pytest.mark.parametrize("last", [N - 4, N - 3, N - 2])  # settlement in each of the last three rows
+def test_m01_a_payment_after_the_calendar_is_a_timing_failure_with_claim_demand(tmp_path, monkeypatch, last):
+    snap = _tail_snapshot(tmp_path, monkeypatch, last)
+    write_v3(snap, [v3(curate("TAIL", last, "cash", cash=30), timing="delayed_evidenced", payment_date=BEYOND,
+                       payment_source="PA-1", second="agree")])
+    row = run_v3(snap)["rows"][0]
+    assert (row["status"], row["validation_reason"]) == ("unresolved", "unresolved:payment_lag_exceeds_bound")
+    assert row["terms_pass"] == "terms_valid" and row["timing_failures"] == ["unresolved:payment_lag_exceeds_bound"]
+    assert row["payment_lag_rows"] is None and row["validation_detail"] == "payment_date_after_calendar"
+    assert len(project(snap)) == 0
+    residual = (("TAIL.US#E1", last + 1, int(CAL_RESETS[CAL_RESETS < last + 1][-1])),)
+    assert claim_demand(run_v3(snap)["rows"], residual) == {"claim_demand": 1, "claim_contract": "stage_e2_required"}
+
+
+@pytest.mark.parametrize("last", [N - 4, N - 3, N - 2])
+def test_m01_a_cash_completion_after_the_calendar_is_a_timing_failure(tmp_path, monkeypatch, last):
+    snap = _tail_snapshot(tmp_path, monkeypatch, last)
+    row_ = v3(curate("TAIL", last, "cash", cash=30), second="agree")
+    row_["completion_date"] = BEYOND
+    write_v3(snap, [row_])
+    row = run_v3(snap)["rows"][0]
+    assert (row["validation_reason"], row["timing_failures"]) == (
+        "settlement_lag_exceeds_3_rows", ["settlement_lag_exceeds_3_rows"])
+    assert row["settlement_lag_rows"] is None and row["validation_detail"] == "completion_date_after_calendar"
+    assert len(project(snap)) == 0
+
+
+def test_m01_an_in_calendar_payment_at_the_last_row_keeps_the_carried_bound(tmp_path, monkeypatch):
+    snap = _tail_snapshot(tmp_path, monkeypatch, N - 4)
+    write_v3(snap, [v3(curate("TAIL", N - 4, "cash", cash=30), timing="delayed_evidenced", payment_date=day(N - 1),
+                       payment_source="PA-1", second="agree")])
+    row = run_v3(snap)["rows"][0]
+    assert row["status"] == "accepted" and row["payment_lag_rows"] == 2 and len(project(snap)) == 1
+
+
+def test_m01_the_unsettled_holding_refuses_the_book(tmp_path, monkeypatch):
+    last = N - 3
+    snap = _tail_snapshot(tmp_path, monkeypatch, last)
+    write_v3(snap, [v3(curate("TAIL", last, "cash", cash=30), timing="delayed_evidenced", payment_date=BEYOND,
+                       payment_source="PA-1", second="agree")])
+    run_v3(snap)
+    events = project(snap)
+    assert len(events) == 0
+    prices = pd.DataFrame(20.0 * np.exp(np.cumsum(np.random.default_rng(4).normal(0, 0.01, (N, 3)), axis=0)),
+                          index=CAL, columns=["TAIL.US#E1", "B", "C"])
+    prices.iloc[last + 1:, 0] = np.nan
+    signals = pd.DataFrame(1.0, index=CAL, columns=prices.columns)
+    table = pd.DataFrame({"symbol": prices.columns, "permanent_id": prices.columns, "start_date": CAL[0],
+                          "start_known_at": CAL[0], "end_date": pd.NaT, "end_known_at": pd.NaT})
+    from backtest.portfolio import BacktestValidationError
+    with pytest.raises(BacktestValidationError) as refused:
+        run_long_only_backtest(prices, signals, source_provenance=capture_backtest_source_provenance(prices, signals),
+                               evaluation_start=CAL[I_H + 20], evaluation_end=CAL[-1], top_pct=1.0,
+                               constituent_intervals=table, terminal_events=None,
+                               missing_price_policy="halt_gap_return_v1")
+    assert refused.value.reason == "unresolved_disappearance" and refused.value.asset == "TAIL.US#E1"

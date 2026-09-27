@@ -451,7 +451,7 @@ def run_long_short_backtest(
         locked_row = None
         if halt and actual_target is not None:
             actual_target, locked_row = _locked_target(
-                intended=actual_target, pretrade=pretrade_net, valid=close_valid[i], date=date,
+                intended=actual_target, pretrade=pretrade_net, current=price_values[i], valid=close_valid[i], date=date,
                 ledger=halt_ledger, budgets={1: half_leverage, -1: half_leverage},
             )
             target_net = actual_target

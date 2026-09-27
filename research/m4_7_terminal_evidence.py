@@ -134,6 +134,17 @@ def event_scope(settlement: int, segments: tuple[Any, ...], seal_rows: tuple[int
     return OUTSIDE, None
 
 
+def calendar_row(calendar: pd.DatetimeIndex, day: date) -> int | None:
+    """The first calendar row on or after ``day``; ``None`` when ``day`` falls after the last observed row.
+
+    ``searchsorted`` returns ``len(calendar)`` for such a date, an insertion point
+    that is no calendar row, so a lag measured from it would understate how far
+    the event lies beyond the snapshot (M48B-A1-M01).
+    """
+    row = int(calendar.searchsorted(pd.Timestamp(day)))
+    return row if row < len(calendar) else None
+
+
 def _seal_rows(calendar: pd.DatetimeIndex, holdout_start: date, i_h: int) -> tuple[int, int]:
     return int(calendar.searchsorted(pd.Timestamp(holdout_start))), i_h
 
@@ -326,6 +337,8 @@ def _validate_row(
         return _result(row, "unresolved", "terminal_currency_unsupported", **timing)
     if pd.Timestamp(announced) > calendar[last_bar]:
         return _result(row, "unresolved", "known_at_after_reference", **timing)
+    # Registration v2 keeps its frozen reading of a completion after the last row (review A2-05): the insertion
+    # point stands for the next row. Schema v3 maps such a date to no row (``calendar_row``, M48B-A1-M01).
     lag = int(calendar.searchsorted(pd.Timestamp(completed))) - settlement
     timing["settlement_lag_rows"] = lag
     if lag < -1:
@@ -593,15 +606,15 @@ def _validate_row_v3(
         return unresolved(SECOND_CHECK_DISAGREE)
     if pd.Timestamp(announced) > reference:
         return unresolved("known_at_after_reference")
-    completion_row = int(calendar.searchsorted(pd.Timestamp(completed)))
-    lag = completion_row - settlement
+    completion_row = calendar_row(calendar, completed)
+    lag = None if completion_row is None else completion_row - settlement
     timing["settlement_lag_rows"] = lag
-    if lag < -1:
+    if lag is not None and lag < -1:
         return unresolved("settlement_lag_negative")
     acquirer_code = None
     if kind in ("stock", "mixed"):
         record = masters.get(acquirer)
-        valuation = calendar[completion_row] if completion_row < len(calendar) else None
+        valuation = None if completion_row is None else calendar[completion_row]
         timing["valuation_row"] = None if valuation is None else valuation.date().isoformat()
         dates = None if record is None else read_bar_dates(snapshot, record["vendor_code"])
         if (valuation is None or record is None or record["resolution"] != "resolved" or dates is None
@@ -634,21 +647,25 @@ def _validate_row_v3(
         raise SnapshotRefusal("terminal_return_below_minus_one", row["event_id"])
     if rho > UNJUSTIFIED_RETURN and not row["notes"].strip():
         return unresolved("terminal_return_unjustified", terminal_return=rho)
-    failures = []
-    if kind in ("cash", "evidenced_worthless") and lag > CASH_LAG_MAX:
+    failures, beyond = [], []
+    if kind in ("cash", "evidenced_worthless") and (lag is None or lag > CASH_LAG_MAX):
         failures.append("settlement_lag_exceeds_3_rows")
+        if lag is None:
+            beyond.append("completion_date_after_calendar")
     if kind in ("stock", "mixed") and lag not in STOCK_LAGS:
         failures.append("stock_consideration_lag_positive")
     if terms > reference.date():
         failures.append(TERMS_LATE)
     if row["payment_timing"].strip() == "delayed_evidenced":
-        timing["payment_lag_rows"] = int(calendar.searchsorted(pd.Timestamp(parse_strict_date(row["payment_date"])))) \
-            - settlement
-        if timing["payment_lag_rows"] > PAYMENT_LAG_MAX:
+        payment_row = calendar_row(calendar, parse_strict_date(row["payment_date"]))
+        timing["payment_lag_rows"] = None if payment_row is None else payment_row - settlement
+        if payment_row is None or timing["payment_lag_rows"] > PAYMENT_LAG_MAX:
             failures.append(PAYMENT_LATE)
+            if payment_row is None:
+                beyond.append("payment_date_after_calendar")
     if failures:
         return _result_v3(row, "unresolved", failures[0], segment, terms_pass="terms_valid", timing_failures=failures,
-                          terminal_return=rho, **timing)
+                          terminal_return=rho, validation_detail=";".join(beyond) or None, **timing)
     return _result_v3(row, "accepted", None, segment, terms_pass="terms_valid", terminal_return=rho,
                       return_basis=BASIS[kind], known_at=max(announced, terms).isoformat(), **timing)
 

@@ -41,7 +41,8 @@ def chain(tmp_path_factory):
         original_load = runner.load_eod_cohort_panels
 
         def load(directory, symbols, **kwargs):
-            loads.append(Path(directory).name)
+            mapped = json.loads(Path(kwargs["inventory_path"]).read_text())["files"]
+            loads.append(sorted({Path(record["file"]).parts[0] for record in mapped}))
             return original_load(directory, symbols, **kwargs)
 
         patch.setattr(Snapshot, "read_discovery", read)
@@ -77,7 +78,7 @@ def test_i1_run_rerun_binds_a_rule_v2_snapshot_and_runs_each_segment_on_its_side
     sidecar = chain["sidecar"]
     assert sidecar["schema_version"] == "m4_8_sp500_pit_rerun_result_v3" and sidecar["run_status"] == "completed"
     assert sidecar["header"]["segment_access_logs"] == {"pre": ["discovery_pre"], "post": ["discovery_post"]}
-    assert chain["loads"] == ["discovery_pre", "discovery_post"]
+    assert chain["loads"] == [["discovery_pre"], ["discovery_post"]]  # the files the verified inventory names
     snapshot = Snapshot.open(chain["snap"])
     calendar = snapshot.calendar()
     build = json.loads((chain["snap"] / "membership/membership_build_manifest.json").read_text())
@@ -170,3 +171,92 @@ def test_i4_a_segment_input_with_a_row_from_the_other_side_refuses(segment_id, b
     with pytest.raises(runner.RunnerStop) as stop:
         runner.prepare_segment(bad, registered[segment_id], sup.registration()["holdout"], sup.horizon())
     assert stop.value.reason == "seal_bracket_computation_forbidden"
+
+
+# ---------------------------------------------------------------- M48B-A1-M02: the registered inventory binds the universe
+
+
+def _copy(chain, tmp_path):
+    import shutil
+
+    target = tmp_path / "private" / chain["snap"].name
+    shutil.copytree(chain["snap"], target)
+    return target
+
+
+def _rerun_on(chain, snap, tmp_path, monkeypatch):
+    loads: list[str] = []
+    original = runner.load_eod_cohort_panels
+    monkeypatch.setattr(runner, "load_eod_cohort_panels",
+                        lambda directory, symbols, **kw: loads.append(str(directory)) or original(directory, symbols, **kw))
+    path = tmp_path / "registration.json"
+    sha = it.write_registration(chain["doc"], path)
+    sidecar = runner.run_rerun(snap, registration_path=path, registration_sha256=sha, output_dir=tmp_path / "out",
+                               census_json=chain["census_json"], code_commit="fixture")
+    return sidecar, loads
+
+
+def test_m02_the_registration_binds_the_inventory_and_the_build_manifest(chain):
+    snapshot = chain["doc"]["snapshot"]
+    assert snapshot["inventory_sha256"] == runner.sha256_bytes((chain["snap"] / "panel/inventory_discovery.json").read_bytes())
+    assert snapshot["build_manifest_sha256"] == runner.sha256_bytes(
+        (chain["snap"] / "membership/membership_build_manifest.json").read_bytes())
+    assert chain["sidecar"]["header"]["segments"]["post"]["member_columns"] == 12  # the restored baseline run
+
+
+def test_m02_a_removed_inventory_member_refuses_before_any_panel_load(chain, tmp_path, monkeypatch):
+    snap = _copy(chain, tmp_path)
+    path = snap / "panel/inventory_discovery.json"
+    inventory = json.loads(path.read_bytes())
+    inventory["files"] = [r for r in inventory["files"]
+                          if not (r["symbol"] == "W00.US#E1" and r["side"] == "discovery_post")]
+    path.write_text(json.dumps(inventory, sort_keys=True))
+    sidecar, loads = _rerun_on(chain, snap, tmp_path, monkeypatch)
+    assert (sidecar["stop"]["reason"], sidecar["stop"]["detail"]) == ("derived_artifact_stale", "inventory")
+    assert sidecar["outputs_written"] is False and loads == [] and not (tmp_path / "out").exists()
+
+
+def test_m02_an_edited_build_manifest_refuses_before_any_panel_load(chain, tmp_path, monkeypatch):
+    snap = _copy(chain, tmp_path)
+    path = snap / "membership/membership_build_manifest.json"
+    path.write_bytes(path.read_bytes() + b"\n")
+    sidecar, loads = _rerun_on(chain, snap, tmp_path, monkeypatch)
+    assert (sidecar["stop"]["reason"], sidecar["stop"]["detail"]) == ("derived_artifact_stale", "build_manifest")
+    assert loads == []
+
+
+# ---------------------------------------------------------------- A2-B-ADV-1: access logs come from the opened paths
+
+
+def _redirected_inventory(chain):
+    """The post-side record of ``W00`` pointed at its pre-side file (with that file's digest)."""
+    inventory = json.loads((chain["snap"] / "panel/inventory_discovery.json").read_bytes())
+    pre = next(r for r in inventory["files"] if r["symbol"] == "W00.US#E1" and r["side"] == "discovery_pre")
+    for record in inventory["files"]:
+        if record["symbol"] == "W00.US#E1" and record["side"] == "discovery_post":
+            record.update(file=pre["file"], sha256=pre["sha256"])
+    return inventory
+
+
+def test_adv1_the_runner_access_log_reports_a_wrong_side_open_and_the_segment_refuses(chain):
+    bound = runner.bind_snapshot_v3(chain["snap"], chain["doc"], chain["census_json"])
+    runs, access = runner.load_segment_runs(bound)
+    assert access == {"pre": ["discovery_pre"], "post": ["discovery_post"]}
+    runs, access = runner.load_segment_runs({**bound, "inventory": _redirected_inventory(chain)})
+    assert access["post"] == ["discovery_post", "discovery_pre"]
+    registered = {s["segment_id"]: s for s in chain["doc"]["discovery"]["segments"]}
+    with pytest.raises(runner.RunnerStop) as stop:
+        runner.prepare_segment(runs[1], registered["post"], chain["doc"]["holdout"], chain["doc"]["discovery"][
+            "max_reset_to_reset_rows"])
+    assert stop.value.reason == "seal_bracket_computation_forbidden"
+
+
+def test_adv1_the_support_access_log_reports_a_wrong_side_open(chain):
+    from research.m4_7_common_support import segment_bars
+
+    snapshot = Snapshot.open(chain["snap"])
+    calendar = snapshot.calendar()
+    segment = runner.snapshot_segments(snapshot, calendar)[1]
+    rows = calendar[segment.feature_floor_row:segment.last_book_row + 1]
+    _, opened = segment_bars(chain["snap"], _redirected_inventory(chain), segment.side, ["W00.US#E1"], rows)
+    assert opened == ["discovery_pre"]

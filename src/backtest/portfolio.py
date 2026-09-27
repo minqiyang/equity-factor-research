@@ -589,7 +589,9 @@ def _halt_gap_returns(
 ) -> tuple[np.ndarray, np.ndarray]:
     """H-1, H-2, H-4: held-asset row returns against each asset's last observed close.
 
-    A held asset without a close keeps its mark and returns 0 (``unmarked_halt_row``);
+    Only a missing close (NaN) is a halt: a present close that is not finite
+    positive refuses ``incoming_price_invalid`` (R6, M48B-A1-A01). A held
+    asset without a close keeps its mark and returns 0 (``unmarked_halt_row``);
     at its next close it realizes ``P(t') / P(last observed) - 1``. With every mark
     equal to the previous close the arithmetic equals the ``raise`` path. ``marks``
     advances in place to every close observed at this row.
@@ -598,6 +600,10 @@ def _halt_gap_returns(
     settling = np.zeros(len(weights), dtype=bool)
     settling[list(terminal)] = True
     moving = held & ~settling
+    corrupt = moving & ~np.isnan(current) & ~valid
+    if corrupt.any():
+        raise BacktestValidationError("incoming_price_invalid", "a held close is present but not finite positive",
+                                      date=date, asset=columns[int(np.flatnonzero(corrupt)[0])])
     unmarked = ~(np.isfinite(marks) & (marks > 0.0))
     if (moving & unmarked).any():
         raise BacktestValidationError("incoming_price_invalid", "a held asset has no observed close to mark",
@@ -1342,7 +1348,8 @@ def _calculate_bounded_portfolio_path(
                 _validate_terminal_target(actual_target, settled, date=date)
                 if halt_ledger is not None:
                     actual_target, locked_row = _locked_target(
-                        intended=actual_target, pretrade=pretrade_weights, valid=close_valid[position],
+                        intended=actual_target, pretrade=pretrade_weights, current=price_values[position],
+                        valid=close_valid[position],
                         date=date, ledger=halt_ledger, budgets={1: 1.0},
                     )
                 signed_trades = actual_target - pretrade_weights
@@ -1438,18 +1445,23 @@ def _calculate_bounded_portfolio_path(
 
 
 def _locked_target(
-    *, intended: pd.Series, pretrade: pd.Series, valid: np.ndarray, date: pd.Timestamp, ledger: dict[str, Any],
-    budgets: dict[int, float],
+    *, intended: pd.Series, pretrade: pd.Series, current: np.ndarray, valid: np.ndarray, date: pd.Timestamp,
+    ledger: dict[str, Any], budgets: dict[int, float],
 ) -> tuple[pd.Series, dict[str, Any] | None]:
     """H-3 at a scheduled row of either engine: the executable target and its ledger row.
 
     Returns ``intended`` unchanged (the ``raise`` path, H-3g) when no held asset
     lacks a close and every selected name has one. ``budgets`` is ``{1: 1.0}``
     for the long-only book and benchmark and ``{1: g / 2, -1: g / 2}`` for the
-    long-short book.
+    long-short book. A target whose close is present but not finite positive
+    refuses ``execution_price_invalid``; only a missing close leaves it untradeable.
     """
     columns = intended.index
     weights, target = pretrade.to_numpy(dtype=float), intended.to_numpy(dtype=float)
+    corrupt = (target != 0.0) & ~np.isnan(current) & ~valid
+    if corrupt.any():
+        raise BacktestValidationError("execution_price_invalid", "a target close is present but not finite positive",
+                                      date=date, asset=columns[int(np.flatnonzero(corrupt)[0])])
     locked = (weights != 0.0) & ~valid
     untradeable = (target != 0.0) & ~valid & ~locked
     if not locked.any() and not untradeable.any():
