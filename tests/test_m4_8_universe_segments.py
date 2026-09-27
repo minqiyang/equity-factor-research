@@ -478,3 +478,38 @@ def test_a_pre_side_dividend_without_unadjusted_value_before_a_seal_split_is_typ
     assert build(snap)["dividend_rows_amount_undefined"] == 1
     failing = checks_of(snap, "AMT.US#E1")["discovery_pre"]["failing_pairs"]
     assert failing and failing[0]["residual"] is None
+
+
+@pytest.mark.parametrize("ratio, resume", [(2.0, HS_ROW + 1), (0.1, HS_ROW + 1), (2.0, HE_ROW + 5), (3.0, HS_ROW + 1)],
+                         ids=["forward_seal_gap", "reverse_seal_gap", "forward_post_resume", "forward_with_seal_split"])
+def test_a_pre_side_split_after_the_anchor_bar_keeps_dollar_volume_on_the_raw_basis(tmp_path, monkeypatch, ratio, resume):
+    # M48A-A1-M01 / A2-ADV-1: bars stop at HS_ROW - 11, a split row sits at HS_ROW - 5, and bars resume later.
+    tau = HS_ROW - 11
+    splits = {HS_ROW - 5: ratio}
+    if resume == HS_ROW + 1 and ratio == 3.0:
+        splits[HS_ROW + 60] = 2.0
+    rows = [*range(0, tau + 1), *range(resume, N_ROWS)]
+    base, raw_volume = (lambda r: 80.0 + 7.0 * math.sin(r / 9.0)), (lambda r: 1.0e5 + 37.0 * (r % 13))
+    eod, ratios = served_asset(splits, base, raw_volume, rows=rows)
+    harness = snapshot_v2(tmp_path, monkeypatch, "AFT", [entry("AFT", "2018-01-02")], {"AFT.US": (eod, ratios)})
+    snap = harness.snapshot_dir
+    manifest = build(snap)
+    assert manifest["pre_side_split_rows_after_anchor"] == 1 and manifest["seal_gap_identity_split"] == 1
+    assert manifest["pre_side_volume_basis_by_code"]["AFT.US"] == "pre_seal_volume_share_basis_v1"
+    assert checks_of(snap, "AFT.US#E1")["discovery_pre"]["refusal"] is None
+    frame = panel(snap, "discovery_pre", "AFT.US#E1").set_index("date")
+    assert frame.index.max() == CAL2[LAST_BOOK_PRE] < CAL2[tau]
+    before, _ = split_series(splits)
+    pre_rows = range(0, LAST_BOOK_PRE + 1)
+    fields = {name: pd.DataFrame({"AFT": frame[name]}) for name in
+              ("open", "high", "low", "close", "adjusted_close", "volume", "split_factor")}
+    research = build_adjusted_research_panels(fields)
+    oracle_dollar = pd.DataFrame({"AFT": [base(r) / before[r] * raw_volume(r) for r in pre_rows]}, index=frame.index)
+    np.testing.assert_allclose(research["dollar_volume"].to_numpy(), oracle_dollar.to_numpy(), rtol=1e-12)
+    np.testing.assert_allclose(frame["split_factor"].to_numpy(), np.full(len(pre_rows), ratio), rtol=1e-12)
+    oracle_returns = pd.DataFrame({"AFT": [math.nan] + [base(r) / base(r - 1) - 1.0 for r in pre_rows[1:]]},
+                                  index=frame.index)
+    ours = calculate_amihud_illiquidity(research["returns"], research["dollar_volume"], 63)
+    oracle = calculate_amihud_illiquidity(oracle_returns, oracle_dollar, 63)
+    assert ours.notna().to_numpy().sum() > 0
+    np.testing.assert_allclose(ours.to_numpy(), oracle.to_numpy(), rtol=1e-9, equal_nan=True)

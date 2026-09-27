@@ -9,11 +9,14 @@ import pytest
 from data.holdout_partition import SnapshotRefusal
 from m4_7_snapshot_support import entry
 from m4_8_snapshot_support import ALL_ROWS, HS_ROW, bars2, snapshot_v2, split_row, supplement_row
+from research.m4_7_universe_build import Snapshot
 from research.m4_7_coverage_census import (
+    aggregate_terminal_summary,
     derive_readiness_v3,
     halt_counts,
     main as census_main,
     potentially_held,
+    public_leak_scan,
     run_census_v3,
     run_membership_census,
 )
@@ -145,14 +148,15 @@ def test_t_pub_1_public_outputs_hold_no_code_name_or_private_path(tmp_path, monk
     for path in sorted(reports.iterdir()):
         text = path.read_text(encoding="utf-8")
         assert not [token for token in forbidden if token in text], path.name
-    with pytest.raises(SnapshotRefusal) as refused:
-        run_census_v3(harness.snapshot_dir, terminal_summary={"residual_count": 0, "note": "AAA.US"},
-                      segment_access_logs=LOGS, reports_dir=tmp_path / "leak")
-    assert refused.value.code == "public_output_leak" and not (tmp_path / "leak" / "m4_8_coverage_census_v3.json").exists()
-    with pytest.raises(SnapshotRefusal) as refused:
-        run_census_v3(harness.snapshot_dir, terminal_summary={"residual_count": 0, "note": str(harness.snapshot_dir)},
-                      segment_access_logs=LOGS, reports_dir=tmp_path / "leak")
-    assert refused.value.code == "public_output_leak"
+    for note in ("AAA.US", str(harness.snapshot_dir)):
+        with pytest.raises(SnapshotRefusal) as refused:
+            run_census_v3(harness.snapshot_dir, terminal_summary={"residual_count": 0, "note": note},
+                          segment_access_logs=LOGS, reports_dir=tmp_path / "leak")
+        assert refused.value.code == "terminal_summary_not_aggregate"
+        assert not (tmp_path / "leak" / "m4_8_coverage_census_v3.json").exists()
+    snapshot = Snapshot.open(harness.snapshot_dir)
+    assert public_leak_scan('{"x": "AAA.US"}', snapshot) == ["code"]
+    assert public_leak_scan(f'{{"x": "{harness.snapshot_dir}"}}', snapshot) == ["path:absolute", "path:sp500_pit_PUB"]
 
 
 def test_membership_census_command_writes_private_detail_and_public_counts(tmp_path, monkeypatch, capsys):
@@ -173,3 +177,89 @@ def test_membership_census_command_writes_private_detail_and_public_counts(tmp_p
     assert census_main(["census-v3", "--snapshot-id", "MCLI", "--data-dir", str(harness.data_dir), "--terminal-summary",
                         str(terminal), "--segment-access-log", str(logs), "--reports-dir", str(tmp_path / "reports")]) == 0
     assert json.loads(capsys.readouterr().out.strip().splitlines()[-1])["census_readiness"] == "blocked:insufficient_pre_segment"
+
+
+PRIVATE_EVIDENCE = "/private/vendor-evidence/terminal.csv"
+DETAIL_SUMMARIES = [
+    {"residual_count": 1, "unresolved": [{"permanent_id": "UNP.US#E1", "source_file": PRIVATE_EVIDENCE}]},
+    {"residual_count": 1, "unresolved_by_permanent_id": {"UNP.US#E1": 1}},
+    {"residual_count": 1, "evidence_file": PRIVATE_EVIDENCE},
+    {"residual_count": 0, "by_code": {"unp": 1}},
+    {"residual_count": 0, "unresolved:unp": 1},
+    {"residual_count": 0, "claims": {"pending": {"cash": 1}}},
+    {"residual_count": True},
+    {"residual_count": -1},
+]
+
+
+@pytest.mark.parametrize("summary", DETAIL_SUMMARIES, ids=[f"detail_{i}" for i in range(len(DETAIL_SUMMARIES))])
+def test_t_pub_1_census_v3_refuses_a_terminal_summary_with_per_asset_detail_or_paths(tmp_path, monkeypatch, summary):
+    # M48A-A1-M02: UNP.US is a curated-only absent member outside the vendor and requested code lists.
+    harness = _census_fixture(tmp_path, monkeypatch, name="DET")
+    with pytest.raises(SnapshotRefusal) as refused:
+        run_census_v3(harness.snapshot_dir, terminal_summary=summary, segment_access_logs=LOGS,
+                      reports_dir=tmp_path / "reports")
+    assert refused.value.code == "terminal_summary_not_aggregate"
+    assert not (tmp_path / "reports").exists()
+    assert not (harness.snapshot_dir / "census/census_detail_v3.json").exists()
+
+
+def test_t_pub_1_census_v3_publishes_only_the_aggregate_projection(tmp_path, monkeypatch, capsys):
+    harness = _census_fixture(tmp_path, monkeypatch, name="AGG")
+    summary = {"unresolved_by_reason": {"unresolved:payment_timing_unknown": 2, "evidence_incomplete:terms_known_at_missing": 1},
+               "settlement_lag_distribution": {"-1": 1, "0": 4, "3": 1}, "residual_count": 0, "claim_demand": 0}
+    result = run_census_v3(harness.snapshot_dir, terminal_summary=summary, segment_access_logs=LOGS,
+                           reports_dir=tmp_path / "reports")
+    assert result["public"]["terminal_evidence"] == aggregate_terminal_summary(summary, set())
+    assert list(result["public"]["terminal_evidence"]) == ["claim_demand", "residual_count", "settlement_lag_distribution",
+                                                          "unresolved_by_reason"]
+    snapshot = Snapshot.open(harness.snapshot_dir)
+    assert public_leak_scan('{"id": "UNP.US#E1"}', snapshot) == ["code"]
+    assert public_leak_scan(f'{{"file": "{PRIVATE_EVIDENCE}"}}', snapshot) == ["path:absolute"]
+    text = (tmp_path / "reports" / "m4_8_coverage_census_v3.json").read_text()
+    assert "UNP" not in text and "/private" not in text
+    detail = tmp_path / "detail.json"
+    detail.write_text(json.dumps(DETAIL_SUMMARIES[0]))
+    assert census_main(["census-v3", "--snapshot-id", "AGG", "--data-dir", str(harness.data_dir), "--terminal-summary",
+                        str(detail), "--reports-dir", str(tmp_path / "cli")]) == 1
+    assert "terminal_summary_not_aggregate" in capsys.readouterr().err
+
+
+def _split_volume_fixture(tmp_path, monkeypatch, name, adjusted_volume):
+    """Ten codes with a 2:1 pre-side split; raw volume doubles at the split, so dollar turnover is continuous."""
+    split = 150
+    codes, entries = {}, []
+    for i in range(10):
+        base = (lambda k: (lambda r: (100.0 + k) / (2.0 if r >= split else 1.0)))(i)
+        raw = (lambda k: (lambda r: (1000.0 + 10.0 * k) * (2.0 if r >= split else 1.0)))(i)
+        served = (lambda f: (lambda r: f(r) * (2.0 if r < split else 1.0)))(raw) if adjusted_volume else raw
+        eod = bars2(ALL_ROWS, close=base, adjusted=lambda r, f=base: f(r) / (2.0 if r < split else 1.0), volume=served)
+        codes[f"S{i:02d}.US"] = (eod, [split_row(split, "2/1")])
+        entries.append(entry(f"S{i:02d}", "2018-01-02"))
+    return snapshot_v2(tmp_path, monkeypatch, name, entries, codes)
+
+
+@pytest.mark.parametrize("adjusted_volume, verdict", [(True, "consistent"), (False, "contradicted")])
+def test_census_v3_reports_the_vp1_volume_half_per_segment(tmp_path, monkeypatch, adjusted_volume, verdict):
+    # M48A-A1-A01: VP-1 on the pre side's attributed splits; the post side holds no split.
+    harness = _split_volume_fixture(tmp_path, monkeypatch, f"VP{int(adjusted_volume)}", adjusted_volume)
+    result = run_census_v3(harness.snapshot_dir, terminal_summary={"residual_count": 0}, segment_access_logs=LOGS,
+                           reports_dir=tmp_path / "reports")
+    pre = result["public"]["per_segment"]["pre"]["volume_basis_split_diagnostic"]
+    post = result["public"]["per_segment"]["post"]["volume_basis_split_diagnostic"]
+    assert (pre["rows"], pre["a1_volume_half"]) == (10, verdict)
+    assert pre["median_ell"] == pytest.approx(0.0 if adjusted_volume else 1.0, abs=1e-9)
+    assert (post["rows"], post["a1_volume_half"]) == (0, "insufficient")
+    assert "VP-1 volume half `pre`" in (tmp_path / "reports" / "m4_8_coverage_census_v3.md").read_text()
+
+
+def test_t_pub_1_the_public_writer_refuses_a_payload_that_holds_a_code_or_path(tmp_path, monkeypatch):
+    from research.m4_7_coverage_census import _write_public
+
+    harness = _census_fixture(tmp_path, monkeypatch, name="WRT")
+    snapshot = Snapshot.open(harness.snapshot_dir)
+    for payload in ({"note": "UNP.US"}, {"note": "Alpha Holdings"}, {"note": PRIVATE_EVIDENCE}):
+        with pytest.raises(SnapshotRefusal) as refused:
+            _write_public(tmp_path / "reports", "probe", payload, "", snapshot, ())
+        assert refused.value.code == "public_output_leak"
+    assert not (tmp_path / "reports").exists()

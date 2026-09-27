@@ -52,7 +52,7 @@ from m4_8_snapshot_support import (
     split_row,
     write_curated,
 )
-from research.m4_7_coverage_census import membership_census, run_census
+from research.m4_7_coverage_census import membership_census, run_census, run_census_v3
 from research.m4_7_holdout_seal import seal_snapshot
 from research.m4_7_universe_build import Snapshot
 from research import m4_8_membership
@@ -266,6 +266,12 @@ def test_t_part_4_poisoned_holdout_files_leave_stage_a_outputs_byte_identical(tm
         files.update({p.relative_to(snap).as_posix(): p.read_bytes() for p in sorted((snap / "panel").rglob("*.parquet"))})
         census = membership_census(Snapshot.open(snap), m4_8_membership.read_curated(snap / "membership"))
         files["membership_census"] = json.dumps(census["public"], sort_keys=True).encode()
+        # A2-ADV-4: census v3 is outcome-blind to holdout files as well.
+        v3 = run_census_v3(snap, terminal_summary={"residual_count": 0}, reports_dir=tmp_path / "reports",
+                           segment_access_logs={"pre": ["discovery_pre"], "post": ["discovery_post"]})
+        files["census_v3_public"] = (tmp_path / "reports" / "m4_8_coverage_census_v3.json").read_bytes()
+        files["census_v3_detail"] = (snap / "census/census_detail_v3.json").read_bytes()
+        assert v3["public"]["seal"]["carry_check"]["passed"] is True
         return files
 
     before = outputs()

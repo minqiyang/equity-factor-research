@@ -730,7 +730,7 @@ def _episode_metrics(ctx: Context, mask: pd.DataFrame) -> dict[str, Any]:
         "coverage": coverage,
         "distribution_support": distribution_support,
         "vp2_revisit_required": bool(eligible and above > VP2_SHARE * eligible),
-        "volume_basis": volume_basis_diagnostic(_volume_ells(ctx, checks)),
+        "volume_basis": volume_basis_diagnostic(_volume_ells(ctx.panels, checks)),
         "quality": _quality(ctx, mask),
         "corporate_actions": _corporate_actions(ctx),
         "exits": _exits(ctx),
@@ -762,10 +762,11 @@ def _history(ctx: Context) -> tuple[dict[str, int], int]:
     return dict(sorted(missing.items())), partial
 
 
-def _volume_ells(ctx: Context, checks: list[dict[str, Any]]) -> list[tuple[float, float | None]]:
+def _volume_ells(panels: dict[str, pd.DataFrame], checks: list[dict[str, Any]]) -> list[tuple[float, float | None]]:
+    """VP-1 input: per attributed split of ratio 1.25 or more, the 20-bar median dollar-turnover elasticity."""
     ells = []
     for check in checks:
-        panel = ctx.panels.get(check["permanent_id"])
+        panel = panels.get(check["permanent_id"])
         if panel is None or check["refusal"] is not None:
             continue
         turnover = (panel["close"] / panel["split_factor"] * panel["volume"]).to_numpy()
@@ -1032,19 +1033,36 @@ def derive_readiness_v3(inputs: dict[str, Any]) -> dict[str, Any]:
             "r3_6_rules": {rule: {"passed": bool(ok)} for rule, ok in m47.items()}, "inputs": inputs}
 
 
+_ABSOLUTE_PATH = re.compile(r"(?<![\w.])/(?:Users|private|home|tmp|var|Volumes|mnt)/")
+_AGGREGATE_KEY = re.compile(r"^(?:[a-z][a-z0-9_]*(?::[a-z0-9_]+)*|-?\d+)$")
+
+
+def known_codes(snapshot: Snapshot, private_paths: tuple[Path, ...] = ()) -> set[str]:
+    """Vendor member codes, requested codes, and every curated supplement code the snapshot or a private directory holds."""
+    codes = set(membership_codes(snapshot.read_file("membership"))) | set(snapshot.manifest.get("requested_codes", []))
+    for directory in (snapshot.root / "membership", *private_paths):
+        if (Path(directory) / m4_8_membership.SUPPLEMENT_FILE).is_file():
+            supplement = m4_8_membership.read_curated(directory).supplement
+            codes |= {str(code) for code in supplement["code"] if str(code).strip()}
+    return codes
+
+
 def public_leak_scan(text: str, snapshot: Snapshot, private_paths: tuple[Path, ...] = ()) -> list[str]:
     """T-PUB-1: the codes, names, and private paths a public payload holds (an empty list passes).
 
     ``<Code>.US`` forms always count; a bare code counts at three or more
     characters as a whole token; a vendor name counts at six or more characters.
+    Codes include curated-only absent members; any absolute path under a user,
+    private, temporary, or volume root counts as a path.
     """
     found = []
     for path in (snapshot.root, *private_paths):
         if str(path) in text:
             found.append(f"path:{path.name}")
+    if _ABSOLUTE_PATH.search(text):
+        found.append("path:absolute")
     membership = snapshot.read_file("membership")
-    codes = set(membership_codes(membership)) | {code for code in snapshot.manifest.get("requested_codes", [])}
-    for code in sorted(codes):
+    for code in sorted(known_codes(snapshot, private_paths)):
         bare = code.removesuffix(".US")
         if code in text or (len(bare) >= 3 and re.search(rf"(?<![A-Za-z0-9_]){re.escape(bare)}(?![A-Za-z0-9_])", text)):
             found.append("code")
@@ -1053,6 +1071,37 @@ def public_leak_scan(text: str, snapshot: Snapshot, private_paths: tuple[Path, .
         if name.casefold() in lowered:
             found.append("name")
     return sorted(set(found))
+
+
+def aggregate_terminal_summary(summary: dict[str, Any], codes: set[str]) -> dict[str, Any]:
+    """The public projection of a terminal summary: aggregate counts only (R11, M48A-A1-M02).
+
+    A field is a non-negative integer count or a flat map from a lowercase
+    reason code (or an integer bucket such as a settlement lag) to such a count.
+    Anything else refuses ``terminal_summary_not_aggregate`` before any public
+    write: a list, a nested record, a string, a path, a permanent ID, or a key
+    equal to a known code. The summary needs ``residual_count``.
+    """
+    lowered = {code.removesuffix(".US").casefold() for code in codes}
+
+    def count(value: Any) -> bool:
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+    def key_ok(key: Any) -> bool:
+        return (isinstance(key, str) and _AGGREGATE_KEY.match(key) is not None
+                and not any(part in lowered for part in key.split(":")))
+
+    public: dict[str, Any] = {}
+    for key, value in summary.items():
+        if key_ok(key) and count(value):
+            public[key] = value
+        elif key_ok(key) and isinstance(value, dict) and all(key_ok(k) and count(v) for k, v in value.items()):
+            public[key] = dict(sorted(value.items()))
+        else:
+            raise SnapshotRefusal("terminal_summary_not_aggregate", "a field holds a value other than aggregate counts")
+    if "residual_count" not in public:
+        raise SnapshotRefusal("terminal_summary_incomplete", "residual_count")
+    return dict(sorted(public.items()))
 
 
 def _write_public(reports: Path, stem: str, public: dict[str, Any], markdown: str, snapshot: Snapshot,
@@ -1293,7 +1342,8 @@ def _segment_metrics(
     segment: Segment, calendar: pd.DatetimeIndex, mask: pd.DataFrame, panels: dict[tuple[str, str], pd.DataFrame],
     intervals: pd.DataFrame, build: dict[str, Any], membership: dict[str, Any], support: pd.DataFrame,
 ) -> dict[str, Any]:
-    """Plan 5.2 per segment: member-days by cause (R3-2c, R3-3 with M-8), volume basis, IC supply, exposure, halts, VP-2."""
+    """Plan 5.2 per segment: member-days by cause (R3-2c, R3-3 with M-8), volume basis, IC supply, exposure, halts,
+    VP-1 (the volume half diagnostic on the segment's side panels), and VP-2."""
     first, last, side = segment.first_reset_row, segment.last_book_row, segment.side
     rows = np.arange(first, last + 1)
     unpriced_absent_refs = {r["supplement_id"] for r in membership["records"] if r.get("priced") is False}
@@ -1364,6 +1414,9 @@ def _segment_metrics(
     s_mask = (mask.shift(-1, fill_value=False).to_numpy(dtype=bool) & bars)
     halts = halt_counts(potentially_held(s_mask, bars, [int(r) for r in resets]), bars, horizons)
     reset_dates = [calendar[r].date() for r in resets]
+    side_panels = {pid: frame for (panel_side, pid), frame in panels.items() if panel_side == side}
+    volume_premise = volume_basis_diagnostic(
+        _volume_ells(side_panels, [check for check in build["episode_checks"] if check.get("side") == side]))
     own = support[(support["date"] >= calendar[first]) & (support["date"] <= calendar[last])]
     s_d_days = 0
     for column, pid in enumerate(mask.columns):
@@ -1390,6 +1443,7 @@ def _segment_metrics(
         "calendar_unexposed_ic_months": sum(1 for r in resets if calendar[horizons[int(r)]].date() < UNEXPOSED_BEFORE),
         "member_days_s_d_above_0_05": s_d_days,
         "vp2_revisit_required": bool(eligible_total and s_d_days > VP2_SHARE * eligible_total),
+        "volume_basis_split_diagnostic": volume_premise,
     }
 
 
@@ -1404,15 +1458,15 @@ def run_census_v3(
     """Plan 5.1-5.3 census v3 on a rule v2 snapshot; returns the public JSON, the detail, and the digest.
 
     ``terminal_summary`` carries the terminal and residual counts from the
-    two-pass validation (Stage E), at least ``residual_count``;
+    two-pass validation (Stage E), at least ``residual_count``; only its
+    aggregate projection (``aggregate_terminal_summary``) reaches the public JSON;
     ``segment_access_logs`` maps ``pre`` and ``post`` to the sides each
     segment's run opened (Stage H runner logs).
     """
     snapshot = Snapshot.open(snapshot_dir)
     if snapshot.partition_rule != holdout_partition.PARTITION_RULE_V2:
         raise SnapshotRefusal("census_v3_requires_rule_v2", snapshot.partition_rule)
-    if "residual_count" not in terminal_summary:
-        raise SnapshotRefusal("terminal_summary_incomplete", "residual_count")
+    terminal = aggregate_terminal_summary(terminal_summary, known_codes(snapshot))
     root = snapshot.root
     build = read_derived_json(root, BUILD_MANIFEST)
     require_current(snapshot, build.get("discovery_inputs_sha256"), BUILD_MANIFEST)
@@ -1450,7 +1504,7 @@ def run_census_v3(
         "failing_anchors": membership["public"]["failing_anchors"],
         "unpriced_absent_fraction": {k: m["unpriced_absent_fraction"] for k, m in per_segment.items()},
         "unpriced_eligible_fraction": {k: m["unpriced_eligible_fraction"] for k, m in per_segment.items()},
-        "residual_count": int(terminal_summary["residual_count"]),
+        "residual_count": terminal["residual_count"],
         "untradeable_fraction": (sum(m["halts"]["untradeable_execution_cells"] for m in per_segment.values()) / halts_cells
                                  if halts_cells else 0.0),
         "identity_refusal_fraction": (sum(m["identity_refused_member_days"] for m in per_segment.values()) / member_days_all
@@ -1495,7 +1549,7 @@ def run_census_v3(
                      "interval_resolution_counts": build["interval_resolution_counts"],
                      "episode_panel_refusal_counts": build["episode_panel_refusal_counts"]},
         "per_segment": public_segments,
-        "terminal_evidence": terminal_summary,
+        "terminal_evidence": terminal,
         "ic_supply": {"total_ic_months": inputs["total_ic_months"],
                       **{f"{k}_ic_months": m["ic_months"] for k, m in per_segment.items()}},
         "power_projection": power_projection(inputs["total_ic_months"]),
@@ -1519,6 +1573,8 @@ def run_census_v3(
         *[f"- Segment `{s['segment_id']}`: first reset {s['first_reset_row']}, last IC reset {s['last_ic_reset_row']}, "
           f"last book row {s['last_book_row']}, IC months {s['ic_months']}" for s in build["segments"]],
         f"- Total IC months: {inputs['total_ic_months']}",
+        *[f"- VP-1 volume half `{k}`: `{m['volume_basis_split_diagnostic']['a1_volume_half']}` over "
+          f"{m['volume_basis_split_diagnostic']['rows']} split rows" for k, m in per_segment.items()],
         "", "| Rule | Passed |", "| --- | --- |",
         *[f"| {rule} | {value['passed']} |" for rule, value in readiness["rules"].items()], ""])
     digest = _write_public(reports, CENSUS_V3_REPORT, public, markdown, snapshot, ())

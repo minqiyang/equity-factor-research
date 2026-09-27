@@ -876,11 +876,16 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
             dividends = dividend_amounts(snapshot.read_discovery("dividends", code, side) if dividend_ok else None,
                                          amount_splits)
             anchor = None
+            after_anchor = 1.0
             if side == "discovery_pre" and ((code_rows[code] >= hs_row).any() or snapshot.has_later_row(code)):
                 # SL-2: anchor at the code's last pre-side bar; later pre-side action rows cannot enter a(t) / a(tau).
                 anchor = int(code_rows[code][code_rows[code] < hs_row].max())
                 keep = np.asarray(split_dates <= calendar[anchor])
                 counters["pre_side_split_rows_after_anchor"] += int((~keep).sum())
+                # SL-8: served volume keeps the pre-side splits dated in (tau, holdout_start), since the partitioner
+                # divides out only the splits on or after holdout_start. The panel split factor takes them too, so
+                # close / split_factor * volume = close * raw_volume on every written row (R7).
+                after_anchor = float(np.prod(ratios["ratio"].to_numpy(dtype=float)[~keep]))
                 split_dates, ratios = split_dates[keep], ratios[keep].reset_index(drop=True)
                 dividends = dividends[dividends["date"] <= calendar[anchor]]
             bar_dates = [(calendar[first], calendar[last]) for first, last in spans_side]
@@ -959,7 +964,7 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
                 panel = panel_rows.reset_index()
                 panel["symbol"] = code
                 panel["permanent_id"] = ep.permanent_id
-                panel["split_factor"] = check.factor.to_numpy()[kept]
+                panel["split_factor"] = check.factor.to_numpy()[kept] * after_anchor
                 relative = f"{side}/{ep.permanent_id}.parquet"
                 written[relative] = (ep.permanent_id, side, write_bytes(panel_root / relative, parquet_bytes(panel)))
                 if check.dividend_pairs:

@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage A attempt a2: review remediation (PR #272)
+
+- Source: Seat 1 AUDIT (`MATERIAL: 2, ADVISORY: 3`) and Seat 2 AUDIT_2 (`MATERIAL: 0, ADVISORY: 4`) on candidate
+  `10286d0`; remediation card `m4_8a-partition-a2`.
+- M48A-A1-M01 and A2-ADV-1 (R7): an anchored code with a pre-side split row dated in `(tau, holdout_start)` kept that
+  split in served volume, because the partitioner divides out only splits on or after `holdout_start`, while the
+  panel split factor dropped it. The pre-side panel split factor now carries the product of those ratios on every
+  written row, so `close / split_factor * volume = close * raw_volume` holds. The adjusted-close check ratios still
+  exclude them. New raw-basis oracles cover a forward 2:1 and a reverse 1:10 split in the interval with a seal-gap ID
+  split, a post-side resume, and a composed seal split; dollar volume matches at 1e-12 and nonzero-return Amihud at
+  1e-9. The oracles fail with the factor term removed.
+- M48A-A1-M02 (R11): `run_census_v3` publishes `aggregate_terminal_summary(terminal_summary)`. A public field is a
+  non-negative integer count or a flat map from a lowercase reason code or an integer bucket to such counts; any
+  list, nested record, string, path, permanent ID, or key equal to a known code refuses
+  `terminal_summary_not_aggregate` before any write. The leak scan now includes curated supplement codes and refuses
+  any absolute path under a user, private, temporary, or volume root. Tests cover a curated-only absent member and
+  an evidence path outside the snapshot through both the API and the CLI.
+- M48A-A1-A01: census v3 reports the VP-1 volume half per segment (`volume_basis_split_diagnostic`), tested on a
+  split-adjusted fixture (`consistent`, ell 0) and an unadjusted one (`contradicted`, ell 1).
+- M48A-A1-A02 and A2-ADV-2: Stage A carries `seal_bracket_computation_forbidden` as a carry-record flag and isolates
+  sides through per-side loaders, the access log, and the R3-9 check on segment logs. No Stage A code raises that
+  refusal; the runtime refusal and T-SEAL-BR-3 belong to Stage B, whose review verifies a code path that raises it.
+- A2-ADV-4: T-PART-4 also reruns census v3 before and after poisoning holdout files and compares its public and
+  private outputs byte for byte. A2-ADV-3 (common support fails open on rule v2) stays Stage B scope.
+- Ablation (A03): the a1 driver, results, and pre-ablation baseline, the a2 driver and results, and the fixture
+  identity manifests are frozen with SHA-256 in the coordinator evidence folder
+  `coord/reports/v8_review_20260923/m48a/producer_evidence_a2/`. The a2 run repeats S2, S3, and G1-G13 and adds
+  G14-G18 and S5; every guard fails at least one test when removed. G10 (the public writer's refusal) first passed
+  because the aggregate projection now stops the old injection route; a direct writer witness was added and G10 fails
+  it. The rule v1 fixture pipeline and the registration v2 rerun stay byte-identical to `dcf7b86` (1,846 files).
+
 ## 2026-09-27 - M4.8 Stage A: partition rule v2, seal carry, segment-local validation, census v3 code
 
 - Source: Milestone 4.8 Binding Implementation Plan Revision 3 (`coord/plans/m4_8_binding_plan.md`, SHA-256

@@ -56,6 +56,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   - `research/m4_7_universe_build.py`: `discovery_segments` and segment-local validation (SL-1..SL-6, SL-8).
   - `research/m4_7_coverage_census.py`: `membership-census`, `census-v3`, and readiness R3-1..R3-10.
   - SL-7 consumer inventory in `docs/engineering_log.md` (2026-09-27 entry).
+  - Attempt a2 (PR #272) resolves the review findings: after-anchor split basis (R7), aggregate-only public
+    terminal summary (R11), and the census v3 VP-1 diagnostic.
 - v1 and v2 registrations, seal records, census reports, and rerun outputs are unchanged; the rule v1 code
   path gives byte-identical outputs on the synthetic end-to-end fixtures.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
