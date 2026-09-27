@@ -15,6 +15,40 @@ investment performance.
 
 ---
 
+## 2026-09-26 - Owner Risk Acceptance: Support v2 Look-Ahead Exclusion (AUDIT1-M01, ADV-1)
+
+Context:
+
+- `support_exclusions` (`research/m4_7_common_support.py:81-110`) sets `X(r - 1, i)` from bar
+  availability in `[r, h(r)]`; books and the equal-weight benchmark read `E = S_mask & ~X`.
+  On real_v1 this affects 27 of 26,237 signal-eligible cells (26 unresolved delisting, 1 missing bar).
+  Signals read `S_mask`.
+- Audit Seat 1 raised AUDIT1-M01 (MATERIAL: 1) on the retrospective lookahead; Audit Seat 2 raised
+  ADV-1 (ADVISORY, bounded IC impact <= 0.003, gate invariant). Independent evaluation by Claude
+  Opus 5.5 High (`coord/reports/v8_review_20260923/breadth_fix/eval_option1_vs_option2_opus.md`)
+  recommended Option 1: Owner risk acceptance at DIAGNOSTIC_ONLY ceiling with bounded scope and
+  expiry, noting that Option 2 as worded conflicts with R4 (no default last-price or zero-payoff exit).
+- ADV-2 noted that the structural contract change was directed by the owner correction card
+  (`coord/v8_review_20260923/card_pit_breadth_support_fix.md`), which supersedes the M4.7 binding
+  plan's v1 support sections (`coord/plans/m4_7_binding_plan.md:1956, :3069`).
+
+Decision:
+
+- The owner accepts this R1 deviation for candidate `4ab7d0e88a3db63384f9ba24d118b51cb94c0312` (PR #271),
+  registration v2 (`4a6f8b5a0478bd70e90cd84e440a389898630f2e156eb0488c96ca0e8923e7dc`), snapshot real_v1,
+  at the `DIAGNOSTIC_ONLY` ceiling.
+- Accepted scope: covers IC, book, benchmark, and CPCV diagnostics of registration v2. It strictly excludes
+  any ranking, selection, promotion, or profitability claim.
+- Expiry: the freeze of the next registration. No later registration may bind support contract
+  `asset_level_holding_period_support_exclusion_v1`.
+- Revisit condition: immediately, if any rerun under this contract produces a Family A BY survivor
+  (because `net_ls` then becomes a gate input), or if the excluded fraction exceeds 0.005.
+- Rationale: IC labels for the 26 disappearance cells are missing under any causal design, so the gate
+  inputs are unchanged; a causal book without terminal evidence either stops as Class I, refuses windows,
+  or needs a default exit prohibited by R4.
+
+---
+
 ## 2026-09-26 - M4.7 Support v2: Asset-Level Holding-Period Isolation and Registration v2 Gate Record
 
 Context:

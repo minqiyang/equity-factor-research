@@ -45,8 +45,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Branch `claude/breadth-support-isolation-fix` (local commits; no PR opened) delivers support v2
-  under task `v8-exec-breadth-support-fix-a1`:
+- Candidate PR #271 (branch `claude/breadth-support-isolation-fix`) delivers support v2:
   - `research/m4_7_common_support.py`: asset-level exclusion cells `X` and the evaluation mask
     `E = S_mask & ~X` over one continuous window; gap windows, segments, and peeling removed.
   - `research/m4_7_coverage_census.py`: `census/asset_support.json`, the v2 public census, and
@@ -55,6 +54,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
     IC, books, and benchmark; refuses the v1 document at `schema_version`.
   - Real-data outputs: census v2, seal confirmation v2, registration v2 (`4a6f8b5a…e7dc`), and the
     rerun v2 report, sidecar, and 231-record trials JSONL.
+  - Audit round 1 completed: Seat 1 AUDIT1-M01, Seat 2 ADV-1.
+  - Independent evaluation by Claude Opus 5.5 High recommended Option 1 (Owner Accepted Risk with expiry).
+  - Owner fully accepted Opus 5.5 High recommendation; Owner Risk Acceptance recorded in `docs/decision_log.md`.
+  - Docs-only remediation commit added.
 - v1 registration, seal record, census, rerun outputs, and v1 private derived files are unchanged.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
@@ -68,16 +71,13 @@ ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- Owner review of support v2 and registration v2, including the O-3 choice carried over from v1
-  (`proceed_as_registered`).
-- Publication (push, PR, merge) of this branch needs explicit owner or coordinator authorization.
-- Follow-up research still requires expanding universe breadth or historical depth under a new
-  preregistration.
+- None. Owner has formally accepted the Support v2 lookahead risk (AUDIT1-M01, ADV-1) at DIAGNOSTIC_ONLY
+  ceiling expiring at the next registration freeze.
+- Merge disposition for PR #271: Owner-accepted residual MATERIAL.
 
 ## Next Safe Action
 
-- Coordinator dispatches CRITICAL review of branch `claude/breadth-support-isolation-fix`; on
-  acceptance, publish under the protected PR lifecycle and await owner scoping of the next extension.
+- Perform delta review verification on docs-only commit, and proceed with authorized squash merge of PR #271.
 
 ## Source Routing
 

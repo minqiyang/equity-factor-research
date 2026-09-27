@@ -34,8 +34,9 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   26,237 signal-eligible cells on real_v1. Signal inputs never read `X`.
 - R4: an unevidenced disappearance is never held through its affected period, so no default exit is
   priced. The engines' held-price refusals remain Class I guards; the v2 rerun raised none.
-- Versioning: v1 registration, seal record, census report, rerun outputs, and v1 private derived files
-  stay byte-identical. v2 writes `census/asset_support.json`, `census/census_detail_v2.json`,
+- Versioning: tracked v1 registration, seal record, census report, and rerun outputs stay byte-identical.
+  Private `census/segments.json` matches its committed digest; the other four private v1 files are preserved
+  by write isolation and mtime evidence. v2 writes `census/asset_support.json`, `census/census_detail_v2.json`,
   `rerun/label_records_v2.json` (private), `reports/m4_7_coverage_census_v2.{json,md}`,
   `docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json` (differs from v1 only in the census
   digest), `docs/preregistrations/m4_7_sp500_pit_rerun_v2.json`, and `reports/.../m4_7_sp500_pit_rerun_v2*`.
