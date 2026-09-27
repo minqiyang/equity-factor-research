@@ -254,7 +254,8 @@ def _set(path, value):
     (_set(("costs", "sensitivity_2x", "slippage_bps"), 6.0), "registration_invalid"),
     (_set(("costs", "zero_cost_diagnostic_only", "transaction_cost_bps"), 0.5), "registration_invalid"),
     (_set(("common_support", "contract"), "common_support_segments_open_terminal_holdings_v3"), "registration_invalid"),
-    (_set(("schema_version",), "m4_7_sp500_pit_rerun_v1"), "registration_invalid"),
+    # M4.8 plan 4.1 and T-RET3-2: a non-v2 registration that binds support v2 now refuses support_contract_retired.
+    (_set(("schema_version",), "m4_7_sp500_pit_rerun_v1"), "support_contract_retired"),
 ])
 def test_t_reg_1_departures_from_the_protocol_refuse(pipeline, change, reason):
     doc = copy.deepcopy(pipeline["registration"])

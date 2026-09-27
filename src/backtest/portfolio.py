@@ -264,6 +264,7 @@ class BacktestResult:
     pending_trade_shares: pd.DataFrame
     cancelled_trade_shares: pd.DataFrame
     risk_attribution: PortfolioRiskAttribution | None = None
+    halt_ledger: dict[str, Any] | None = None
 
 
 def capture_backtest_source_provenance(
@@ -437,6 +438,9 @@ ACCEPTED_TERMINAL_BASES = frozenset({
     "prior_observed_close_to_mixed_consideration_valued_at_completion_date_close",
 })
 TERMINAL_SETTLEMENT_CONTRACT = "prior_observed_close_to_consideration_at_completion_date_row_v2"
+HALT_GAP_POLICY = "halt_gap_return_v1"
+LOCKED_CAPITAL_RULE = "self_financing_locked_capital_v1"
+LOCKED_EXPOSURE_TOLERANCE = 1e-12
 
 
 def _prepare_terminal_events(
@@ -555,6 +559,154 @@ def _validate_terminal_target(target: pd.Series, settled: set[str], *, date: pd.
             raise BacktestValidationError("terminal_target_invalid", "frozen target requires an already settled security", date=date, asset=asset)
 
 
+# ---------------------------------------------------------------- halt gap return (M4.8 plan 4.3, both engines)
+
+
+def _halt_price_values(prices: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    """The numeric close matrix and its finite-positive mask under ``halt_gap_return_v1``."""
+    try:
+        values = prices.to_numpy(dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise BacktestValidationError("incoming_price_invalid", f"{HALT_GAP_POLICY} requires a numeric price panel") from exc
+    with np.errstate(invalid="ignore"):
+        return values, np.isfinite(values) & (values > 0.0)
+
+
+def _require_terminal_reference_bars(
+    events: dict[pd.Timestamp, tuple[dict[str, Any], ...]], prices: pd.DataFrame,
+) -> None:
+    """H-8: every terminal event's reference row carries a close for its asset."""
+    for records in events.values():
+        for record in records:
+            if _read_positive_price(prices.at[record["reference_date"], record["permanent_id"]]) is None:
+                raise BacktestValidationError("terminal_reference_bar_missing", "terminal reference row has no close",
+                                              date=record["reference_date"], asset=record["permanent_id"])
+
+
+def _halt_gap_returns(
+    *, marks: np.ndarray, current: np.ndarray, valid: np.ndarray, weights: np.ndarray,
+    terminal: dict[int, float], date: pd.Timestamp, columns: pd.Index,
+) -> tuple[np.ndarray, np.ndarray]:
+    """H-1, H-2, H-4: held-asset row returns against each asset's last observed close.
+
+    Only a missing close (NaN) is a halt: a present close that is not finite
+    positive refuses ``incoming_price_invalid`` (R6, M48B-A1-A01). A held
+    asset without a close keeps its mark and returns 0 (``unmarked_halt_row``);
+    at its next close it realizes ``P(t') / P(last observed) - 1``. With every mark
+    equal to the previous close the arithmetic equals the ``raise`` path. ``marks``
+    advances in place to every close observed at this row.
+    """
+    held = weights != 0.0
+    settling = np.zeros(len(weights), dtype=bool)
+    settling[list(terminal)] = True
+    moving = held & ~settling
+    corrupt = moving & ~np.isnan(current) & ~valid
+    if corrupt.any():
+        raise BacktestValidationError("incoming_price_invalid", "a held close is present but not finite positive",
+                                      date=date, asset=columns[int(np.flatnonzero(corrupt)[0])])
+    unmarked = ~(np.isfinite(marks) & (marks > 0.0))
+    if (moving & unmarked).any():
+        raise BacktestValidationError("incoming_price_invalid", "a held asset has no observed close to mark",
+                                      date=date, asset=columns[int(np.flatnonzero(moving & unmarked)[0])])
+    returns = np.zeros(len(weights), dtype=float)
+    priced = moving & valid
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        returns[priced] = current[priced] / marks[priced] - 1.0
+    for column, value in terminal.items():
+        if held[column]:
+            returns[column] = value
+    marks[valid] = current[valid]
+    return returns, moving & ~valid
+
+
+def _new_halt_ledger() -> dict[str, Any]:
+    return {"policy": HALT_GAP_POLICY, "locked_capital_rule": LOCKED_CAPITAL_RULE, "unmarked_halt_rows": [],
+            "untradeable_execution_cells": [], "locked_execution_rows": [], "typed_exposure_rows": []}
+
+
+def _halt_ledger_summary(ledger: dict[str, Any]) -> dict[str, Any]:
+    typed = ledger["typed_exposure_rows"]
+    net = [abs(row["value"]) for row in typed if row["type"] == "locked_net_exposure"]
+    gross = [row["value"] for row in typed if row["type"] == "locked_gross_excess"]
+    return {"missing_price_policy": HALT_GAP_POLICY, "locked_capital_rule": LOCKED_CAPITAL_RULE,
+            "unmarked_halt_row_count": len(ledger["unmarked_halt_rows"]),
+            "untradeable_execution_cell_count": len(ledger["untradeable_execution_cells"]),
+            "locked_execution_row_count": len(ledger["locked_execution_rows"]),
+            "locked_net_exposure_row_count": len(net), "locked_gross_excess_row_count": len(gross),
+            "max_abs_locked_net_exposure": max(net, default=0.0), "max_locked_gross_excess": max(gross, default=0.0)}
+
+
+def _record_halts(ledger: dict[str, Any], halted: np.ndarray, date: pd.Timestamp, columns: pd.Index) -> None:
+    ledger["unmarked_halt_rows"].extend((date, columns[column]) for column in np.flatnonzero(halted))
+
+
+def _locked_leg_targets(
+    *, intended: np.ndarray, pretrade: np.ndarray, valid: np.ndarray, budgets: dict[int, float],
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """H-3a, H-3b, H-3f: executable targets as fractions of the pre-trade NAV ``E_t``.
+
+    ``budgets`` maps a leg sign (+1 long, -1 short) to its budget ``b_l``. Each
+    locked asset (held, no close) keeps its value on the leg of its sign and
+    leaves every free target set. One leg (long-only book and benchmark) invests
+    ``phi * w*`` in its tradeable free names; two legs match at
+    ``v = min(A_long, A_short)``, and each leg's free names share
+    ``max(v, lam_l) - lam_l`` pro rata to ``|w*|``, never above ``phi_l * |w*|``.
+    """
+    locked = (pretrade != 0.0) & ~valid
+    executable = np.where(locked, pretrade, 0.0)
+    legs: dict[int, dict[str, Any]] = {}
+    for sign, budget in budgets.items():
+        free = (np.sign(intended) == sign) & ~locked
+        tradeable = free & valid
+        lam = float(np.abs(pretrade[locked & (np.sign(pretrade) == sign)]).sum())
+        w_all, w_tradeable = float(np.abs(intended[free]).sum()), float(np.abs(intended[tradeable]).sum())
+        phi = min(1.0, max(budget - lam, 0.0) / w_all) if w_all > 0.0 else 0.0
+        legs[sign] = {"lam": lam, "phi": phi, "attainable": lam + phi * w_tradeable, "tradeable": tradeable,
+                      "w_tradeable": w_tradeable}
+    matched = min(leg["attainable"] for leg in legs.values()) if len(legs) > 1 else None
+    for sign, leg in legs.items():
+        tradeable, magnitude = leg["tradeable"], np.abs(intended)
+        if matched is None:
+            share = leg["phi"] * magnitude[tradeable]
+        elif leg["w_tradeable"] > 0.0:
+            free_value = max(matched, leg["lam"]) - leg["lam"]
+            share = np.minimum(free_value * magnitude[tradeable] / leg["w_tradeable"], leg["phi"] * magnitude[tradeable])
+        else:
+            share = np.zeros(int(tradeable.sum()))
+        executable[tradeable] = sign * share
+    record = {"lam": {sign: leg["lam"] for sign, leg in legs.items()},
+              "phi": {sign: leg["phi"] for sign, leg in legs.items()},
+              "attainable": {sign: leg["attainable"] for sign, leg in legs.items()}, "matched_leg_value": matched}
+    return executable, record
+
+
+def _locked_postcost_weights(
+    *, executable: np.ndarray, locked: np.ndarray, cost: float, date: pd.Timestamp,
+) -> np.ndarray:
+    """H-3c: the free sleeve pays the row cost; locked values stay exact.
+
+    ``cost`` is the row cost as a fraction of ``E_t``. With sleeve value
+    ``s = 1 - net(K_t)``, free weights scale by ``(s - cost) / s`` and every
+    weight is re-expressed on the post-cost NAV ``1 - cost``.
+    """
+    if cost == 0.0:
+        return executable.copy()
+    sleeve = 1.0 - float(executable[locked].sum())
+    if not math.isfinite(sleeve) or sleeve - cost <= 0.0:
+        raise BacktestValidationError("portfolio_insolvent_or_non_finite_after_costs",
+                                      "the free sleeve cannot pay the row cost", date=date)
+    scale = np.where(locked, 1.0, (sleeve - cost) / sleeve)
+    return executable * scale / (1.0 - cost)
+
+
+def _require_no_open_halt(weights: np.ndarray, valid: np.ndarray, date: pd.Timestamp, columns: pd.Index) -> None:
+    """H-5: an asset still unmarked at the last row is an unresolved disappearance (R4)."""
+    open_halts = (weights != 0.0) & ~valid
+    if open_halts.any():
+        raise BacktestValidationError("unresolved_disappearance", "a held asset has no close at the last row",
+                                      date=date, asset=columns[int(np.flatnonzero(open_halts)[0])])
+
+
 def run_long_only_backtest(
     prices: pd.DataFrame,
     signals: pd.DataFrame,
@@ -649,9 +801,13 @@ def run_long_only_backtest(
         )
     )
     signal_data = _validate_bounded_signal_values(bounded_signal_values)
-    if (constituent_intervals is not None or terminal_events is not None) and missing_price_policy != "raise":
+    if (constituent_intervals is not None or terminal_events is not None) and missing_price_policy == "zero_return":
         raise BacktestValidationError("pit_missing_price_policy_invalid", "PIT membership and terminal accounting require strict held-price validation")
+    if missing_price_policy == HALT_GAP_POLICY and impact_model is not None:
+        raise BacktestValidationError("halt_policy_impact_model_unsupported", f"{HALT_GAP_POLICY} requires impact_model None")
     prepared_events = _prepare_terminal_events(terminal_events, prices.index, prices.columns)
+    if missing_price_policy == HALT_GAP_POLICY:
+        _require_terminal_reference_bars(prepared_events, prices)
     universe_mask = _resolve_pit_universe(
         constituent_intervals=constituent_intervals, universe_mask=universe_mask,
         dates=accounting_dates, assets=prices.columns, signal_lag_periods=signal_lag_periods,
@@ -709,6 +865,7 @@ def run_long_only_backtest(
         terminal_event_log,
         impact_fields,
         impact_cash,
+        halt_ledger,
     ) = _calculate_bounded_portfolio_path(
         prices=price_data,
         target_weights=target_weights,
@@ -827,6 +984,7 @@ def run_long_only_backtest(
         **impact_fields,
         terminal_cashflows=terminal_cashflows,
         terminal_event_log=terminal_event_log,
+        halt_ledger=halt_ledger,
         assumptions={
             "rebalance_frequency": rebalance_frequency,
             "top_n": top_n,
@@ -893,6 +1051,7 @@ def run_long_only_backtest(
             **volume_aware_assumptions,
             **impact_assumptions(impact_model, price_basis=impact_price_basis,
                                  volume_basis=impact_volume_basis),
+            **(_halt_ledger_summary(halt_ledger) if halt_ledger is not None else {}),
         },
     )
 
@@ -1035,8 +1194,14 @@ def _calculate_bounded_portfolio_path(
     tuple[dict[str, Any], ...],
     dict[str, Any],
     pd.Series,
+    dict[str, Any] | None,
 ]:
-    """Advance bounded accounting rows in the contract's normative order."""
+    """Advance bounded accounting rows in the contract's normative order.
+
+    Under ``halt_gap_return_v1`` held assets are marked at their last observed
+    close (H-1, H-2) and scheduled rows with a locked or untradeable cell use the
+    locked-capital targets (H-3); every other row takes the ``raise`` path.
+    """
 
     index = prices.index
     columns = prices.columns
@@ -1080,21 +1245,35 @@ def _calculate_bounded_portfolio_path(
             "the initialization anchor must have zero applied impact",
             date=index[0],
         )
+    halt_ledger = _new_halt_ledger() if missing_price_policy == HALT_GAP_POLICY else None
+    if halt_ledger is not None:
+        price_values, close_valid = _halt_price_values(prices)
+        marks = np.where(close_valid[0], price_values[0], np.nan)
 
     for position in range(1, len(index)):
         date = index[position]
         previous_date = index[position - 1]
         events_today = terminal_events.get(date, ())
         terminal_returns = {record["permanent_id"]: record["terminal_return"] for record in events_today}
-        period_returns = _calculate_held_asset_returns(
-            previous_prices=prices.iloc[position - 1],
-            current_prices=prices.iloc[position],
-            previous_holdings=post_trade_weights,
-            previous_date=previous_date,
-            current_date=date,
-            missing_price_policy=missing_price_policy,
-            terminal_returns=terminal_returns or None,
-        )
+        if halt_ledger is not None:
+            values, halted = _halt_gap_returns(
+                marks=marks, current=price_values[position], valid=close_valid[position],
+                weights=post_trade_weights.to_numpy(dtype=float),
+                terminal={columns.get_loc(asset): value for asset, value in terminal_returns.items()},
+                date=date, columns=columns,
+            )
+            _record_halts(halt_ledger, halted, date, columns)
+            period_returns = pd.Series(values, index=columns, dtype=float)
+        else:
+            period_returns = _calculate_held_asset_returns(
+                previous_prices=prices.iloc[position - 1],
+                current_prices=prices.iloc[position],
+                previous_holdings=post_trade_weights,
+                previous_date=previous_date,
+                current_date=date,
+                missing_price_policy=missing_price_policy,
+                terminal_returns=terminal_returns or None,
+            )
         resolved_asset_returns[position] = period_returns.to_numpy(dtype=float)
 
         with np.errstate(over="ignore", invalid="ignore"):
@@ -1163,9 +1342,16 @@ def _calculate_bounded_portfolio_path(
             next_holdings = step.position_values / impact_equity
         else:
             target = target_weights.loc[date]
+            locked_row = None
             if target.notna().any():
                 actual_target = target.fillna(0.0)
                 _validate_terminal_target(actual_target, settled, date=date)
+                if halt_ledger is not None:
+                    actual_target, locked_row = _locked_target(
+                        intended=actual_target, pretrade=pretrade_weights, current=price_values[position],
+                        valid=close_valid[position],
+                        date=date, ledger=halt_ledger, budgets={1: 1.0},
+                    )
                 signed_trades = actual_target - pretrade_weights
                 _validate_execution_price_legs(
                     execution_prices=prices.iloc[position],
@@ -1207,6 +1393,10 @@ def _calculate_bounded_portfolio_path(
             fixed_transaction_cost + fixed_slippage_cost + volume_cost
         )
         total_costs[position] = row_total_cost
+        if impact_model is None and locked_row is not None:
+            next_holdings = pd.Series(_locked_postcost_weights(
+                executable=next_holdings.to_numpy(dtype=float), locked=locked_row["locked_mask"],
+                cost=row_total_cost / gross_multiplier, date=date), index=columns, dtype=float)
 
         with np.errstate(over="ignore", invalid="ignore"):
             net_return = gross_return - row_total_cost
@@ -1227,6 +1417,8 @@ def _calculate_bounded_portfolio_path(
         holdings[position] = next_holdings.to_numpy(dtype=float)
         post_trade_weights = next_holdings
 
+    if halt_ledger is not None:
+        _require_no_open_halt(holdings[-1], close_valid[-1], index[-1], columns)
     return (
         pd.DataFrame(holdings, index=index, columns=columns),
         pd.Series(gross_returns, index=index, name="gross_return"),
@@ -1248,7 +1440,41 @@ def _calculate_bounded_portfolio_path(
                              pending=pending_values, cancelled=cancelled_values,
                              slippage_dollars=impact_dollars if impact_model is not None else None),
         pd.Series(cash_values, index=index),
+        halt_ledger,
     )
+
+
+def _locked_target(
+    *, intended: pd.Series, pretrade: pd.Series, current: np.ndarray, valid: np.ndarray, date: pd.Timestamp,
+    ledger: dict[str, Any], budgets: dict[int, float],
+) -> tuple[pd.Series, dict[str, Any] | None]:
+    """H-3 at a scheduled row of either engine: the executable target and its ledger row.
+
+    Returns ``intended`` unchanged (the ``raise`` path, H-3g) when no held asset
+    lacks a close and every selected name has one. ``budgets`` is ``{1: 1.0}``
+    for the long-only book and benchmark and ``{1: g / 2, -1: g / 2}`` for the
+    long-short book. A target whose close is present but not finite positive
+    refuses ``execution_price_invalid``; only a missing close leaves it untradeable.
+    """
+    columns = intended.index
+    weights, target = pretrade.to_numpy(dtype=float), intended.to_numpy(dtype=float)
+    corrupt = (target != 0.0) & ~np.isnan(current) & ~valid
+    if corrupt.any():
+        raise BacktestValidationError("execution_price_invalid", "a target close is present but not finite positive",
+                                      date=date, asset=columns[int(np.flatnonzero(corrupt)[0])])
+    locked = (weights != 0.0) & ~valid
+    untradeable = (target != 0.0) & ~valid & ~locked
+    if not locked.any() and not untradeable.any():
+        return intended, None
+    executable, legs = _locked_leg_targets(intended=target, pretrade=weights, valid=valid, budgets=budgets)
+    ledger["untradeable_execution_cells"].extend((date, columns[c]) for c in np.flatnonzero(locked | untradeable))
+    row = {"date": date, "locked": {columns[c]: float(weights[c]) for c in np.flatnonzero(locked)},
+           "untradeable_targets": [columns[c] for c in np.flatnonzero(untradeable)], **legs,
+           "pre_cost_net": float(executable.sum()),
+           "intended_target": {columns[c]: float(target[c]) for c in np.flatnonzero(target)},
+           "executable_target": {columns[c]: float(executable[c]) for c in np.flatnonzero(executable)}}
+    ledger["locked_execution_rows"].append(row)
+    return pd.Series(executable, index=columns, dtype=float), {**row, "locked_mask": locked}
 
 
 def _calculate_held_asset_returns(
@@ -1587,6 +1813,8 @@ def _build_timing_metadata(
         "missing_price_policy_classification": (
             "formal_raise"
             if missing_price_policy == "raise"
+            else "typed_halt_gap_return_locked_capital"
+            if missing_price_policy == HALT_GAP_POLICY
             else "diagnostic_zero_return_not_promotion_evidence"
         ),
         "benchmark_missing_policy_classification": (
@@ -1836,8 +2064,8 @@ def _validate_backtest_inputs(
             "volume_aware_slippage_mode must be 'diagnostic_only' or "
             "'apply_precomputed_impact'"
         )
-    if missing_price_policy not in {"raise", "zero_return"}:
-        raise ValueError("missing_price_policy must be 'raise' or 'zero_return'")
+    if missing_price_policy not in {"raise", "zero_return", HALT_GAP_POLICY}:
+        raise ValueError(f"missing_price_policy must be 'raise', 'zero_return', or '{HALT_GAP_POLICY}'")
     if benchmark_missing_policy not in {"raise", "zero_return"}:
         raise ValueError("benchmark_missing_policy must be 'raise' or 'zero_return'")
     periods_per_year_value = _read_exact_integral_scalar(periods_per_year)

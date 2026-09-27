@@ -12,6 +12,197 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage B attempt b3: panel-root split discovery closed (PR #273)
+
+- Source: Seat 1 AUDIT round 2 (`MATERIAL: 1, ADVISORY: 1`) and Seat 2 AUDIT_2 round 2 (`MATERIAL: 1, ADVISORY: 1`)
+  on `ffc4c06`; card `v8-exec-m48b-b3`. Both seats confirmed M48B-A1-M01, M48B-A1-M02, and M48B-A1-A01 resolved.
+- M48B-A1-M03 / A2-B2-M01 (R7, R9, R10): b2 moved the v3 loader call to `load_eod_cohort_panels(root / "panel", ...)`.
+  That loader passes its own directory to `load_symbol_splits`, which searches a request ledger,
+  `normalized/splits/`, `splits/`, and `<symbol>_splits.parquet` under it and overrides the panel `split_factor`.
+  The C64 guard still checked `panel/<side>` only, so an unregistered split table at the panel root changed both
+  segments' split basis (both seats measured 16 changed trial records and about 12 percent book equity) while the
+  registration verified. `_refuse_split_sources` now calls `load_symbol_splits` on `panel/` and on `panel/<side>`
+  for every inventory record, in `bind_snapshot_v3` and again before each segment load in `load_segment_runs`; a
+  found table or a ledger error refuses `panel_split_table_present` before any panel load or output. The loader
+  call, the per-side mapping, and the access-log derivation are unchanged.
+- A2-B2-ADV-1: the `inventory_member_missing` check in `load_segment_runs` could not fire (the loader raises
+  `FileNotFoundError` for an unmapped symbol and reindexes panels to the requested symbols); it is removed. The b2
+  entry below describes it as written at b2; the M02 protection is the registered inventory digest.
+- M48B-A1-A02: the implementation report checklist and the claims file now state the M01 repair by consideration
+  type: cash and worthless completions and delayed payments after the calendar keep `terms_valid` with their
+  timing failure; stock and mixed completions after the calendar return `acquirer_bar_missing` with
+  `terms_invalid`. The frozen v1 validator keeps its A2-05 reading as a disclosed owner follow-up.
+- Tests: 8 new in `tests/test_m4_8_integration_v3.py` (root `splits/`, root `<pid>_splits`, root
+  `normalized/splits/`, side `splits/`, root ledger, root ledger with a missing file, a table planted after binding,
+  and the unplanted control with its access logs). With the b3 test file on an archive of `ffc4c06`, the five root
+  cases and the post-binding case fail; the side case and the control pass. Full suite 3284 passed, 2 skipped
+  (pre-existing `longdouble` skips); ruff clean.
+- Byte identity against `bfdca57`: 18 of 18 engine digests; the v2 synthetic rerun's label records,
+  `census/asset_support.json`, `terminal/terminal_validation.json`, and `terminal/terminal_events_engine.csv`
+  byte-identical; sidecar, 231 trials, and report equal after removing the `code_commit`-dependent digests.
+
+## 2026-09-27 - M4.8 Stage B attempt b2: review remediation (PR #273)
+
+- Source: Seat 1 AUDIT (`MATERIAL: 2, ADVISORY: 1`) and Seat 2 AUDIT_2 (`MATERIAL: 0, ADVISORY: 3`) on `8a2b453`;
+  card `v8-exec-m48b-b2`.
+- M48B-A1-M01 (R1, R4, R10): `calendar.searchsorted` returns `len(calendar)` for a date after the last observed
+  row, and the schema v3 validator used that insertion point as a row. A delayed payment dated months after a settlement
+  in the last three rows passed the three-row bound, projected an immediate settlement, and zeroed claim demand.
+  `terminal_evidence.calendar_row` now returns no row for such a date. Under schema v3 a cash completion or a
+  delayed payment after the calendar stays `terms_valid` with the timing failure
+  (`settlement_lag_exceeds_3_rows` or `unresolved:payment_lag_exceeds_bound`), lag `None`, and the private detail
+  `completion_date_after_calendar` or `payment_date_after_calendar`; projection excludes it and `claim_demand`
+  counts it. A stock valuation date after the calendar stays `acquirer_bar_missing`.
+- Frozen v1 validator: registration v2's carried `_validate_row` keeps its accepted reading of a completion
+  after the last row (review A2-05; `tests/test_m4_7_terminal_evidence.py::test_valuation_row_is_never_indexed_past_the_calendar_end`
+  pins `accepted` with lag 1). Its validation report is bound by hash in the frozen registration v2, and plan
+  2.1 keeps M4.7 artifacts byte-identical, so b2 leaves it unchanged and records it as a disclosed defect of the
+  frozen v2 validator. A trial fix refused that case and failed the carried test; it was reverted.
+  Needs follow-up: an owner decision on whether the real_v1 validation report should be checked for accepted
+  rows whose completion date follows the calendar end (private data, authorization required).
+- M48B-A1-M02 (R2, R6, R9, R10): registration v3 now binds `inventory_sha256`
+  (`panel/inventory_discovery.json`, which carries every panel digest) and `build_manifest_sha256`.
+  `bind_snapshot_v3` parses the inventory from the verified bytes, and `load_segment_runs` opens exactly the files
+  that inventory names (through a per-side mapping), refusing `inventory_member_missing` if a registered member is
+  absent from the loaded panels. Removing one member entry or editing the build manifest now refuses
+  `derived_artifact_stale:inventory` or `derived_artifact_stale:build_manifest` before any panel load.
+- M48B-A1-A01 (R6): under `halt_gap_return_v1` only a missing close (NaN) is a halt. A present close that is not
+  finite positive refuses `incoming_price_invalid` on a held cell and `execution_price_invalid` on a target cell,
+  with date and asset, in both engines.
+- A2-B-ADV-1: the runner access log is the set of side directories of the files the loader opened, and
+  `segment_bars` returns the side directories it opened, which `write_support_files_v3` records as
+  `panel_sides_opened`. A post record pointed at a pre-side file now appears in both logs, and the segment refuses
+  `seal_bracket_computation_forbidden`.
+- A2-B-ADV-3: SL-7 at the b2 head matches 24 (terminal evidence), 10 (common support), and 21 (runner) lines,
+  55 in total, the same as `8a2b453`; b2 adds no matching line. The six integration-commit lines are the seal
+  carry window comparison in `bind_snapshot_v3` (two lines, Seal rule and overlap guards), the
+  `discovery_segments(... holdout_start, holdout_end ...)` call in `snapshot_segments` (Window derivation), and
+  the rule v2 `holdout_start` dispatch in `write_template`, in `validate`, and one docstring line (Terminal
+  scoping).
+- Tests: 23 new (M01 8, A01 10, M02 3, ADV-1 2); the I-1 loader spy now records the mapped inventory files. All
+  17 M01 and A01 witnesses fail on `8a2b453` and pass at b2. Full suite 3276 passed, 2 skipped (pre-existing `longdouble` skips); ruff clean.
+- Byte identity against `bfdca57`: 18 of 18 engine digests; the v2 synthetic rerun's label records,
+  `census/asset_support.json`, `terminal/terminal_validation.json`, and `terminal/terminal_events_engine.csv`
+  byte-identical; sidecar, 231 trials, and report equal after removing the `code_commit`-dependent digests.
+
+## 2026-09-27 - M4.8 Stage B integration on merged Stage A (seams I-1..I-4)
+
+- Source: card `m4_8b-engine-integration`; `claude/m4_8b-engine` rebased onto `bfdca57` (PR #272). Only
+  `docs/engineering_log.md` and `docs/repo_map.md` conflicted; code files rebased cleanly.
+- I-1 (runner): `run_rerun` dispatches a registration v3 document to `run_segments`, which calls
+  `bind_snapshot_v3` (rule v2 snapshot, snapshot ID, every bound file digest through `bound_paths_v3` and
+  `verify_bound_hashes`, recomputed discovery inputs, current terminal projection, inventory and build
+  manifest, panel hashes, no split table beside a side panel, seal carry window equal to the registration,
+  calendar source) and `load_segment_runs` (per segment, only that side's panel directory, rows up to the last
+  book row, events inside the segment). The sidecar records `segment_access_logs`, the census v3 R3-9 input.
+  `discovery_inputs_sha256` is recomputed and never read from a file. The CLI resolves `--census-json` by
+  registration version.
+- I-2 (terminal): `snapshot_segments` derives `discovery_segments` from the build manifest's `d0_pre`;
+  `write_template` and `validate` (and the CLI) run schema v3 on any rule v2 snapshot. Reads and
+  corporate-action evidence checks name the segment's side (`Snapshot.read_discovery(table, code, side)`).
+  Published reasons and lag buckets now use the approved public vocabulary of
+  `research/m4_7_coverage_census.py`: the four v3 reasons carry the `unresolved:` prefix, unusable present
+  values report the carried `evidence_incomplete` with a private `validation_detail`, and terms-availability
+  lags use the buckets `0, 1, 2-5, 6-20, 21-60, >60`. `terminal_summary` builds the census v3 input.
+- I-3 (support): `write_support_files` sends a rule v2 snapshot to `write_support_files_v3`, which reads each
+  segment's side panels only, builds the causal schedule, `P_r` counts, and the residual, computes claim
+  demand from the current schema v3 report, and writes the private `census/asset_support_v3.json` with the
+  approved-schema `terminal_summary`. The rule v1 support file is byte-identical to the base.
+- I-4: `_segment_calendar` refuses `seal_bracket_computation_forbidden` for a pre segment holding a post-side
+  row and for a post segment holding a pre-side row (Stage A advisories A2-ADV-2, A2-ADV-3).
+- Tests: `tests/test_m4_8_integration_v3.py` (13) drives Stage A's rule v2 harness through template, schema v3
+  validation, projection, the membership census, the v3 support file, census v3, a bound registration v3, and
+  `run_rerun`; the run completes with each segment opening its own side only. Updated: the v3 reason
+  strings in `tests/test_m4_8_support_terminal.py`, and the CLI dispatch test in
+  `tests/test_m4_8_runner_v3.py`. Full suite 3253 passed, 2 skipped (pre-existing `longdouble` skips); ruff
+  clean.
+- Byte identity against an archive of `bfdca57`: 18 of 18 engine digests; the registration v2 synthetic
+  rerun's label records and `census/asset_support.json` byte-identical; sidecar, 231 trials, and report equal
+  after removing the digests that depend on the fixture manifest's recorded `code_commit`.
+- Ablation re-check: S1 (merged `_locked_target`) stays; removing the H-8 check, the seal-bracket guard (both
+  directions), the residual stop, or the H-5 refusal each fails its oracle; removing the H-3g fast return
+  breaks T-HALT-7b.
+- Needs follow-up: census v3 reads `segment_access_logs` at Stage F, before the Stage H rerun produces them;
+  the v3 support file's `panel_sides_opened` gives the Stage F value. CRITICAL review of this PR.
+
+## 2026-09-27 - M4.8 Stage B: causal engine hardening, locked capital, terminal schema v3, segment runner
+
+- Source: Milestone 4.8 Binding Implementation Plan Revision 3 (`bd1bf587…0bf3e`), §7.2 Stage B, card
+  `m4_8b-engine-a1`, base `dcf7b86`. All work runs on synthetic fixtures; no real or private data was read.
+- Engines (`src/backtest/portfolio.py`, `src/backtest/long_short.py`): `missing_price_policy="halt_gap_return_v1"`
+  marks a held asset at its last observed close, returns 0 on each `unmarked_halt_row`, and realizes the gap at
+  the next close (H-1, H-2). Scheduled rows with a locked held asset or an untradeable target use
+  `self_financing_locked_capital_v1` (H-3): locked values stay exact, `phi_l = min(1, max(b_l − lam_l, 0) / W'_l)`,
+  the long-short legs match at `v = min(A_long, A_short)`, and the free sleeve `1 − net(K_t)` pays the row cost.
+  Long-short execution rows with a non-empty `K_t` type `locked_net_exposure` and `locked_gross_excess`. H-5
+  (`unresolved_disappearance`), H-8 (`terminal_reference_bar_missing`), and H-9
+  (`halt_policy_impact_model_unsupported`) refuse. Rows without a locked or untradeable cell take the `raise`
+  path (H-3g). The ledger (`halt_ledger`) records unmarked rows, untradeable cells, `K_t`, `lam_l`, `phi_l`,
+  intended and executable targets, and typed rows.
+- Support and labels (`research/m4_7_common_support.py`): `causal_signal_eligibility_mask_v3` sets
+  `E(r − 1) = S_mask(r − 1)`; `potentially_held` builds `P_r`; `residual_disappearances` implements
+  `census_zero_residual_v2` parts 1–2; `claim_demand` counts residual candidates whose only failures are timing
+  bounds; `residual_bound_events` builds the −100 percent case. `reset_to_reset_labels(typed=True)` types
+  `missing_execution_bar:halt`, `missing_horizon_end_bar:halt`, and
+  `missing_horizon_end_bar:unresolved_disappearance` and drops those pairs.
+- Terminal evidence (`research/m4_7_terminal_evidence.py`): `event_scope` classifies each settlement row as
+  in scope (`first_reset_row < s <= last_book_row`), `deferred_holdout` (seal window only), or
+  `outside_discovery_holding_windows`. Schema v3 adds `source_accession`, `source_form`, `terms_known_at`,
+  `payment_timing`, `payment_date`, `payment_source_accession`, and `second_check`. `validate_v3` runs the terms
+  pass and the projection pass with the four timing bounds and writes `timing_failures`, a seeded second-check
+  sample, and counts by reason, kind, consideration type, payment timing, segment, and scope. The engine
+  `known_at` is `max(announcement_date, terms_known_at)`.
+- Runner (`research/m4_7_sp500_pit_rerun.py`): `check_registration` refuses any non-v2 registration that binds
+  `asset_level_holding_period_support_exclusion_v1` (`support_contract_retired`). `REGISTERED_V3` and
+  `check_registration_v3` bind the v3 protocol with Family A and B canonical hashes equal to registration v2;
+  `verify_bound_hashes` checks the bound snapshot files. `run_segments` executes each book and benchmark with one
+  engine call per segment from its anchor row, fits Family B composites once per segment, concatenates the IC
+  and daily net series with `segment_id`, tests Rank IC with `segment_aware_bartlett_hac_v1`
+  (`src/features/diagnostics.py`), and reports per-segment descriptive statistics, prior-exposure overlap from
+  the three seal v1 windows, the calendar-unexposed pre subsample (at 30 or more valid months), the look count,
+  and the vacuous −100 percent case. `_segment_calendar` refuses `seal_bracket_computation_forbidden` for any
+  input row on the other side or inside the seal. `run_rerun` refuses a v3 registration with
+  `segment_side_loader_unavailable` until Stage A's per-side loaders build `SegmentRun` inputs.
+- Consumer inventory (SL-7), command `rg -n -i '\bi_h\b|holdout_end|holdout_start|discovery_window|read_holdout_end|partition_of'`,
+  counting matching lines: base `dcf7b86` terminal evidence 8, common support 10, runner 14 (32, as the plan
+  states); HEAD 20, 10, 19. Dispositions by category:
+  - Window derivation (`discovery_window` import and calls: terminal evidence `:37`, `:81`, `:83`; common
+    support `:303`, `:313`, `:315`, `:330`; runner `:69`, `:466`): kept for rule v1 snapshots and registration v2
+    (plan SL-7 row "Window derivation"); v3 rows come from `discovery_segments` through `SegmentRun` and
+    `event_scope`.
+  - Discovery value slices (common support `:316`; runner `:452`, `:453`): kept for the single-side v2 path; v3
+    loads one side per segment and `_segment_calendar` enforces it.
+  - Terminal scoping (terminal evidence `:91`, `:92`, `:101`, `:111`, `:131`): v1 deferral kept; v3 scope classes
+    in `write_template(segments=...)` and `validate_v3`.
+  - Seal rule and overlap guards (runner `:436`, `:437`, `:438`, `:861`, `:863`): kept in the v2 binder; v3 refuses
+    `holdout_overlap_refused` in `check_registration_v3` and `seal_bracket_computation_forbidden` per segment.
+  - Records and reports (common support `:239`, `:262`, `:329`, `:337`, `:364`; runner `:479`, `:845`, `:1079`,
+    `:1081`, `:1085`): kept for the v2 support digest and report; v3 header and report carry segment fields.
+  - Semantic consumers outside the pattern: `support_exclusions` (v2 only; T-CAUSAL-5), the untyped label guard
+    and its Class I stop (v2 only), `MIN_IC_MONTHS` 32/16 (v3 60/30), the carried LRV (v3 segment-aware), and the
+    single-file discovery reads (v3 side-aware seam).
+  - Integration seams for the Stage A rebase: `SegmentRun` construction from `discovery_segments` and per-side
+    loaders; `read_discovery(..., side=...)`; census v3 consumption of `P_r`, the residual, and claim demand; the
+    terminal CLI v3 arguments.
+- Plan tension resolved: T-LAB-1..4 lists `missing_horizon_end_bar:terminal_claim_pending`; §7 Stage E2 assigns
+  claim labels to the conditional E2 candidate, and AGENTS.md admits no capability without a consumer. Stage B
+  types the three labels reachable without `terminal_claim_v1`; the claim-pending label lands in E2 (T-CLAIM-8).
+- Contract change applied to one carried test (plan §8.3): in `test_t_reg_1_departures_from_the_protocol_refuse`
+  the v2 document relabeled `m4_7_sp500_pit_rerun_v1` now refuses `support_contract_retired` (T-RET3-2) in
+  place of `registration_invalid`.
+- Verification: 82 new tests (engine 28, support and terminal 16, runner 38). T-CAUSAL-1..3 run 200 seeded
+  draws per book. Against an archive of `dcf7b86`, 18 of 18 engine digests (`raise`, `zero_return`,
+  long-short) are byte-identical, and the registration v2 synthetic rerun gives byte-identical label records
+  and equal sidecar, 231 trials, and report after removing the digests that depend on the fixture manifest's
+  recorded `code_commit`. Full suite and ruff results: 3137 passed, 2 skipped (pre-existing `longdouble` skips) in 740.40 s; `ruff check . --exclude .venv` clean.
+- Ablation: S1 (kept) merges the two locked-target wrappers into `portfolio._locked_target` (−24 lines, 97
+  targeted tests green). Rejected with failing oracles: S2 always-typed labels, S3 cash-absorbs-cost, S4 no
+  H-3g fast return, S5 no one-segment HAC branch (kept as a guard; 0 of 1176 stress cases differ on macOS
+  arm64, and the branch makes the exact one-segment identity hold on every BLAS). Necessary guards: H-8 check,
+  seal-bracket guard, residual stop before inference, H-5 refusal.
+- Needs follow-up: Stage A rebase and wiring of the four seams; `docs/current_handoff.md` refresh at PR
+  creation; CRITICAL gate review.
+
 ## 2026-09-27 - M4.8 Stage A attempt a3: approved public terminal schema (PR #272)
 
 - Source: Seat 1 AUDIT round 2 (M48A-A1-M02 OPEN MATERIAL) and Seat 2 AUDIT_2 round 2 (A2-R2-ADV-1) on `143dede`;

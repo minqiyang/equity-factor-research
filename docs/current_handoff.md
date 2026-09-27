@@ -1,7 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-27 for the M4.8 Stage A candidate (partition rule v2, seal carry, segment-local
-validation, and census v3 code on synthetic fixtures).
+Updated: 2026-09-27 for the M4.8 Stage B candidate (causal engines, locked capital, terminal schema v3,
+and the segment runner, integrated with merged Stage A on synthetic fixtures).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -25,17 +25,18 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `dcf7b86ae920502271894c17659e80886e7a235c` (main after PR #271).
+  `bfdca57a9ff7ed71460d6c65b460887840978ef3` (main after PR #272).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #271: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
+- Merged through PR #272: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
   M4.7b-2 preregistration freeze on real_v1, M4.7c-1 point-in-time rerun on real_v1
-  (`extend_first`), the M4.7c-2 decision record, and M4.7 support v2 with the registration v2 rerun.
+  (`extend_first`), the M4.7c-2 decision record, M4.7 support v2 with the registration v2 rerun, and M4.8
+  Stage A (partition rule v2, seal carry, segment-local validation, census v3 code).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
-  `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270), and
-  `dcf7b86a` (PR #271).
+  `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270),
+  `dcf7b86a` (PR #271), and `bfdca57a` (PR #272).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -46,38 +47,42 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m4_8a-partition` delivers M4.8 Stage A under the accepted binding plan
-  Revision 3 (`bd1bf587…bf3e`) and owner decision O48-2(i), on synthetic fixtures only:
-  - `src/data/holdout_partition.py`, `src/data/eodhd_retrieval.py`: partition rule v2
-    (`sealed_window_only_partition_v2`) with per-side discovery files, per-side validation, the pre-seal
-    volume rebase (`pre_seal_volume_share_basis_v1`), and the seal carry record `holdout_seal_v2.json`.
-  - `research/m4_8_membership.py`: curated supplement, change log, and anchor readers (M-1..M-8) and
-    `curated_coverage_start_v2`.
-  - `research/m4_7_universe_build.py`: `discovery_segments` and segment-local validation (SL-1..SL-6, SL-8).
-  - `research/m4_7_coverage_census.py`: `membership-census`, `census-v3`, and readiness R3-1..R3-10.
-  - SL-7 consumer inventory in `docs/engineering_log.md` (2026-09-27 entry).
-  - Attempt a2 (PR #272) resolves the review findings: after-anchor split basis (R7), aggregate-only public
-    terminal summary (R11), and the census v3 VP-1 diagnostic; attempt a3 binds that summary to an explicit
-    approved schema.
-- v1 and v2 registrations, seal records, census reports, and rerun outputs are unchanged; the rule v1 code
-  path gives byte-identical outputs on the synthetic end-to-end fixtures.
+- Candidate branch `claude/m4_8b-engine` delivers M4.8 Stage B under the accepted binding plan Revision 3
+  (`bd1bf587…bf3e`), on synthetic fixtures only:
+  - `src/backtest/portfolio.py`, `src/backtest/long_short.py`: `halt_gap_return_v1` (H-1..H-9) with
+    `self_financing_locked_capital_v1` and the halt ledger.
+  - `src/features/diagnostics.py`: `segment_aware_bartlett_long_run_variance`.
+  - `research/m4_7_common_support.py`: `causal_signal_eligibility_mask_v3`, typed labels, `P_r`, the residual,
+    claim demand, the -100 percent bound events, and the rule v2 support file.
+  - `research/m4_7_terminal_evidence.py`: M4.8 scope classes, schema v3, two-pass validation, the census v3
+    terminal summary, and rule v2 segment dispatch.
+  - `research/m4_7_sp500_pit_rerun.py`: `support_contract_retired`, registration v3 checks with family and bound
+    hashes, the rule v2 binder and per-side loader, per-segment execution, and the v3 report.
+  - SL-7 dispositions, the integration record, and the attempt b2 remediation (review findings M48B-A1-M01,
+    M48B-A1-M02, M48B-A1-A01, A2-B-ADV-1, A2-B-ADV-3) and attempt b3 (M48B-A1-M03 / A2-B2-M01, A2-B2-ADV-1,
+    M48B-A1-A02) in `docs/engineering_log.md` (2026-09-27 entries).
+- The registration v2 code path gives byte-identical engine outputs, label records, and support file on the
+  synthetic fixtures against `bfdca57`.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
 Milestone 4.7 is completed; see `docs/current_roadmap.md`. Registration v2 on real_v1 records the
 gate outcome `extend_first` (60 IC months; Family A MDE_f 0.0437-0.1293 against the 0.02 floor).
-M4.8 Stage A code is a candidate on synthetic fixtures; no real-data M4.8 result exists. The holdout
+M4.8 Stage A is merged and Stage B is a candidate, both on synthetic fixtures; no real-data M4.8 result
+exists. The holdout
 window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
 - O48-1 (public-document retrieval) is needed before Stage C.
-- The Stage A candidate needs its CRITICAL review and ablation acceptance before publication.
+- The Stage B candidate (PR #273, attempt b3) needs its CRITICAL re-review and ablation acceptance before merge.
+- Owner item: the frozen registration v2 validator accepts a cash completion dated after the calendar end
+  (review A2-05, disclosed in the 2026-09-27 b2 engineering-log entry); schema v3 refuses it.
 
 ## Next Safe Action
 
-- Coordinator dispatches the CRITICAL review of the Stage A candidate; Stage B rebases on merged Stage A.
+- Coordinator dispatches the CRITICAL review of the Stage B PR; Stage C membership curation waits for O48-1.
 
 ## Source Routing
 

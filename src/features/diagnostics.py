@@ -263,6 +263,38 @@ def newey_west_long_run_variance(values: np.ndarray | pd.Series, lags: int) -> f
     return hac
 
 
+def segment_aware_bartlett_long_run_variance(
+    values: np.ndarray | pd.Series, segments: np.ndarray | pd.Series | list, lags: int,
+) -> float:
+    """``segment_aware_bartlett_hac_v1`` (M4.8 plan 6.4).
+
+    Pooled centering over all ``n`` values; each ``gamma_l`` sums
+    ``e_t * e_(t - l)`` only over pairs whose two observations share a segment
+    label and divides by ``n``. With one segment the value equals
+    ``newey_west_long_run_variance``. The undefined cases match it.
+    """
+
+    if isinstance(lags, bool) or not isinstance(lags, int) or lags < 0:
+        raise ValueError("lags must be a non-negative integer")
+    clean = _finite_series(values if isinstance(values, pd.Series) else pd.Series(values), name="values")
+    labels = np.asarray(segments, dtype=object)
+    if labels.shape != clean.shape:
+        raise ValueError("segments must label every value")
+    count = int(clean.size)
+    if count == 0 or np.all(clean == clean[0]):
+        return math.nan
+    residual = clean - float(clean.mean())
+    hac = float(np.dot(residual, residual) / count)
+    for lag in range(1, lags + 1):
+        same = labels[lag:] == labels[:-lag]
+        left, right = (residual[lag:], residual[:-lag]) if same.all() else (residual[lag:][same], residual[:-lag][same])
+        gamma = float(np.dot(left, right) / count)
+        hac += 2.0 * (1.0 - lag / (lags + 1.0)) * gamma
+    if not math.isfinite(hac) or hac <= 0.0:
+        return math.nan
+    return hac
+
+
 def mde_from_long_run_variance(lrv: float, count: int, z: float) -> float:
     """Minimum detectable mean ``z * sqrt(lrv / count)``; ``NaN`` when undefined."""
 
@@ -698,4 +730,5 @@ __all__ = [
     "newey_west_long_run_variance",
     "newey_west_mean_tstat",
     "probability_of_backtest_overfitting",
+    "segment_aware_bartlett_long_run_variance",
 ]

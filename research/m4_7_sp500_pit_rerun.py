@@ -29,7 +29,9 @@ import hashlib
 import json
 import math
 import sys
+import tempfile
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence
@@ -39,27 +41,60 @@ import pandas as pd
 from scipy.stats import norm
 
 from backtest.long_short import run_long_short_backtest
-from backtest.portfolio import BacktestValidationError, capture_backtest_source_provenance, run_long_only_backtest
+from backtest.portfolio import (
+    BacktestValidationError,
+    capture_backtest_source_provenance,
+    resolve_pit_universe_mask,
+    run_long_only_backtest,
+)
 from data.constituent_table import load_constituent_intervals_csv
-from data.holdout_partition import SEAL_FILE, SnapshotRefusal, sha256_bytes
+from data.holdout_partition import (
+    PARTITION_RULE_V2,
+    SEAL_CARRY_FILE,
+    SEAL_FILE,
+    SnapshotRefusal,
+    parse_strict_date,
+    read_seal_carry,
+    sha256_bytes,
+)
 from data.parquet_loader import load_eod_cohort_panels, load_symbol_splits
 from features.cross_validation import combinatorial_purged_cross_validation_pbo, cpcv_geometry_unavailable_reason
-from features.diagnostics import deflated_sharpe_ratio, mde_from_long_run_variance, newey_west_long_run_variance
-from features.multiple_testing import return_test_statistics
+from features.diagnostics import (
+    deflated_sharpe_ratio,
+    mde_from_long_run_variance,
+    newey_west_long_run_variance,
+    segment_aware_bartlett_long_run_variance,
+)
+from features.multiple_testing import P_VALUE_FLOOR, return_test_statistics
 from research.m4_7_common_support import (
+    CAUSAL_SUPPORT_CONTRACT,
+    MISSING_HORIZON_DISAPPEARANCE,
+    RESIDUAL_BOUND_CASE,
     SUPPORT_CONTRACT,
+    TYPED_LABEL_REASONS,
     SUPPORT_FILE,
     SupportSchedule,
     _canonical,
+    causal_support_schedule,
     ic_month_set,
     monthly_rank_ic,
     reset_to_reset_labels,
+    residual_disappearances,
     snapshot_support,
 )
 from research.m4_7_coverage_census import _code_commit
 from research.m4_7_family_a import FAMILY_A, FAMILY_A_IDS, FAMILY_A_SIZE, family_a_signals
-from research.m4_7_terminal_evidence import ENGINE_EVENTS, read_engine_events, require_current_terminal
+from research import m4_8_membership
+from research.m4_7_terminal_evidence import (
+    CURATED,
+    ENGINE_EVENTS,
+    VALIDATION,
+    read_engine_events,
+    require_current_terminal,
+    snapshot_segments,
+)
 from research.m4_7_universe_build import (
+    BUILD_MANIFEST,
     INTERVAL_CSV,
     INTERVAL_RESULTS,
     INVENTORY,
@@ -108,21 +143,32 @@ def split_halves(values: pd.Series) -> tuple[pd.Series, pd.Series]:
     return values.iloc[:cut], values.iloc[cut:]
 
 
-def sign_stability(ic: pd.Series) -> bool | None:
-    """True when both halves have a positive mean; ``None`` when a half has fewer than ``MIN_HALF_MONTHS``."""
+def sign_stability(ic: pd.Series, *, min_half: int = MIN_HALF_MONTHS) -> bool | None:
+    """True when both halves have a positive mean; ``None`` when a half has fewer than ``min_half`` months."""
     first, second = split_halves(ic)
-    if len(second) < MIN_HALF_MONTHS:
+    if len(second) < min_half:
         return None
     return bool(first.mean() > 0.0 and second.mean() > 0.0)
 
 
-def ic_minimum_detectable_effect(ic: pd.Series) -> tuple[float | None, float | None]:
-    """``(MDE_f, MDE_single)`` from the automatic-lag Bartlett LRV; ``None`` when undefined."""
+def automatic_lag(count: int) -> int:
+    """The carried Bartlett lag ``floor(4 * (n / 100) ** (2 / 9))`` on the total count."""
+    return int(np.floor(4.0 * (count / 100.0) ** (2.0 / 9.0)))
+
+
+def ic_minimum_detectable_effect(
+    ic: pd.Series, *, segments: Sequence[str] | None = None, min_months: int = MIN_IC_MONTHS,
+) -> tuple[float | None, float | None]:
+    """``(MDE_f, MDE_single)`` from the automatic-lag Bartlett LRV; ``None`` when undefined.
+
+    ``segments`` labels each month for ``segment_aware_bartlett_hac_v1`` (registration v3).
+    """
     count = len(ic)
-    if count < MIN_IC_MONTHS:
+    if count < min_months:
         return None, None
-    lags = int(np.floor(4.0 * (count / 100.0) ** (2.0 / 9.0)))
-    lrv = newey_west_long_run_variance(ic, lags)
+    lags = automatic_lag(count)
+    lrv = (newey_west_long_run_variance(ic, lags) if segments is None
+           else segment_aware_bartlett_long_run_variance(ic, segments, lags))
     mde_f = mde_from_long_run_variance(lrv, count, Z_EFF)
     if math.isnan(mde_f):
         return None, None
@@ -166,6 +212,7 @@ def decide_gate(factors: Sequence[FactorGateInput], *, kill_reachable_projection
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 REGISTRATION_PATH = REPOSITORY_ROOT / "docs/preregistrations/m4_7_sp500_pit_rerun_v2.json"
 CENSUS_JSON = REPOSITORY_ROOT / "reports/m4_7_coverage_census_v2.json"
+CENSUS_V3_JSON = REPOSITORY_ROOT / "reports/m4_8_coverage_census_v3.json"
 SEAL_RECORD = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json"
 REPORT = "reports/m4_7_sp500_pit_rerun_v2.md"
 SIDECAR = "reports/experiment_logs/m4_7_sp500_pit_rerun_v2.json"
@@ -178,7 +225,7 @@ FAMILY_SIZES = {"A": FAMILY_A_SIZE, "B": len(FAMILY_B_IDS)}
 UNION_SIZE = FAMILY_SIZES["A"] + FAMILY_SIZES["B"]
 FAMILY_B_FIELDS = ("open", "high", "low", "close", "adjusted_close", "vwap", "volume", "dollar_volume", "returns")
 CLASS_I_ENGINE = frozenset({"incoming_price_invalid", "execution_price_invalid", "terminal_target_invalid",
-                            "terminal_events_invalid"})
+                            "terminal_events_invalid", "unresolved_disappearance", "terminal_reference_bar_missing"})
 COST_CASES = ("primary", "sensitivity_2x", "zero_cost_diagnostic_only")
 QUANTILES, TOP_PCT, CPCV_SPLITS, CPCV_EMBARGO = 10, 0.10, 8, 5
 O3_CHOICES = ("proceed_as_registered", "north_star_power_definition_changed", "extended_before_rerun")
@@ -304,6 +351,78 @@ SNAPSHOT_DIGESTS = ("manifest_sha256", "discovery_inputs_sha256", "interval_csv_
                     "seal_confirmed_sha256", "census_json_sha256")
 
 
+
+# ---------------------------------------------------------------- registration v3 (M4.8 plan 6)
+
+
+REGISTRATION_V3_PATH = REPOSITORY_ROOT / "docs/preregistrations/m4_8_sp500_pit_rerun_v3.json"
+REPORT_V3 = "reports/m4_8_sp500_pit_rerun_v3.md"
+SIDECAR_V3 = "reports/experiment_logs/m4_8_sp500_pit_rerun_v3.json"
+TRIALS_V3 = "reports/experiment_logs/m4_8_sp500_pit_rerun_v3_trials.jsonl"
+SEAL_V1_RECORD = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1.json"
+MIN_IC_MONTHS_V3, MIN_HALF_MONTHS_V3 = 60, 30
+LOOK_COUNT_V3 = 3
+SEGMENT_IDS = ("pre", "post")
+SEGMENT_DATE_FIELDS = ("anchor_row", "first_reset", "last_ic_reset", "last_book_row")
+FACTORS_NAMED_IN_PRIOR_EXPOSURE = ("MOM_12_1", "REV_1M")
+HALT_POLICY = "halt_gap_return_v1"
+REGISTERED_V3: dict[str, Any] = {
+    **copy.deepcopy(REGISTERED),
+    "schema_version": "m4_8_sp500_pit_rerun_v3",
+    "universe": {
+        **copy.deepcopy(REGISTERED["universe"]),
+        "validation": ["segment_anchor_normalized_basis_v1", "seal_gap_identity_split_v1",
+                       "pre_seal_volume_share_basis_v1"],
+        "membership": {"sources": ["vendor_table", "curated_supplement", "reconstructed_change_log", "count_anchors"],
+                       "coverage_rule": "curated_coverage_start_v2",
+                       "date_correction_rule": "membership_date_corrected_primary_v1",
+                       "availability_basis": "effective_date_as_known_at_v1"},
+    },
+    "holdout": {"seal_rule_version": "carried_forward_sealed_window_v1",
+                "partition_rule": "sealed_window_only_partition_v2", "discovery_layout": "side_partitioned_discovery_v1",
+                "pre_side_volume_basis": "pre_seal_volume_share_basis_v1", "seal_bracket_computation_forbidden": True,
+                "prior_exposure_status": "carried_stated_v1", "buffer_rows": 252,
+                "retrieval_order": copy.deepcopy(REGISTERED["holdout"]["retrieval_order"])},
+    "discovery": {"halves": REGISTERED["discovery"]["halves"],
+                  "evaluation_window": "two_segments_excluding_sealed_holdout_v1"},
+    "common_support": {
+        "contract": CAUSAL_SUPPORT_CONTRACT, "evaluation_window": "two_segments_excluding_sealed_holdout_v1",
+        "evaluation_mask": "signal_row_eligibility_only_no_bar_after_signal_row_v1",
+        "applies_to": "ic_labels_ic_pairs_books_and_equal_weight_benchmark",
+        "missing_labels": "typed_pairwise_complete_no_class_one_stop_v1",
+    },
+    "composites": {"fitting": "per_segment_composite_fitting_v1"},
+    "engine": {"missing_price_policy": HALT_POLICY, "locked_capital": "self_financing_locked_capital_v1",
+               "impact_model": "none", "segment_execution": "one_engine_call_per_segment_from_anchor_row_v1"},
+    "terminal": {
+        **copy.deepcopy(REGISTERED["terminal"]),
+        "event_scope": "segment_holding_windows_seal_window_deferral_and_complement_v1",
+        "labels": ["stock_consideration_converted_at_completion_close_v1", "terms_known_at_bound_v1",
+                   "payment_timing_v1"],
+        "engine_known_at_rule": "max_announcement_date_and_terms_known_at_v1",
+        "claim_contract": "claim_not_built:no_consumer", "source_rule": "source_accession_required_v1",
+        "residual_rule": "census_zero_residual_v2",
+    },
+    "sensitivity_cases": {"costs": ["sensitivity_2x", "zero_cost_diagnostic_only"], "residual": RESIDUAL_BOUND_CASE,
+                          "role": "reported_beside_the_primary_result_never_enters_the_gate"},
+    "statistics": {
+        **copy.deepcopy(REGISTERED["statistics"]),
+        "primary_test": "monthly_rank_ic_mean_two_sided_hac_segment_aware_bartlett_automatic_lag",
+        "hac": "segment_aware_bartlett_hac_v1",
+        "sign_stability": "positive_mean_ic_in_both_halves_min_30_months_each",
+        "min_ic_months": MIN_IC_MONTHS_V3,
+        "mde": {**REGISTERED["statistics"]["mde"], "variance": "segment_aware_bartlett_long_run_variance"},
+        "power_projection": {"prior_band": [0.08, 0.10, 0.12], "per_factor_sigma_lr": "registration_v2_realized"},
+        "sequential_looks": LOOK_COUNT_V3,
+    },
+}
+SNAPSHOT_DIGESTS_V3 = ("manifest_sha256", "discovery_inputs_sha256", "seal_carry_sha256", "security_master_sha256",
+                       "interval_csv_sha256", "interval_results_sha256", "membership_supplement_sha256",
+                       "reconstructed_changes_sha256", "published_counts_sha256", "membership_discrepancies_sha256",
+                       "terminal_evidence_sha256", "terminal_validation_sha256", "engine_events_sha256",
+                       "census_json_sha256", "inventory_sha256", "build_manifest_sha256")
+
+
 class RunnerStop(Exception):
     """A Class I reason of plan section 4.5: the run stops before inference."""
 
@@ -317,8 +436,17 @@ def check_registration(doc: dict[str, Any]) -> dict[str, dict[str, float]]:
 
     Fixed sections must equal ``REGISTERED``; run-specific values (snapshot
     digests, the holdout and discovery dates, the O-3 choice, and the owner
-    values under O-1 and O-6) are checked for type and range.
+    values under O-1 and O-6) are checked for type and range. A registration
+    other than v2 that binds support v2 refuses ``support_contract_retired``
+    (M4.8 plan 4.1); a v3 document goes to ``check_registration_v3``.
     """
+    support = doc.get("common_support")
+    if (doc.get("schema_version") != REGISTERED["schema_version"] and isinstance(support, dict)
+            and support.get("contract") == SUPPORT_CONTRACT):
+        raise RunnerStop("support_contract_retired", f"{doc.get('schema_version')} binds {SUPPORT_CONTRACT}")
+    if doc.get("schema_version") == REGISTERED_V3["schema_version"]:
+        return check_registration_v3(doc)
+
     def refuse(field: str) -> None:
         raise RunnerStop("registration_invalid", field)
 
@@ -356,6 +484,11 @@ def check_registration(doc: dict[str, Any]) -> dict[str, dict[str, float]]:
         value = snapshot.get(key)
         if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
             refuse(f"snapshot.{key}")
+    return _check_costs_and_objective(doc, refuse)
+
+
+def _check_costs_and_objective(doc: dict[str, Any], refuse) -> dict[str, dict[str, float]]:
+    """The owner values under O-1 and O-6, carried unchanged by registration v3."""
     costs = doc.get("costs", {})
     if set(costs) != set(COST_CASES) or any(set(case) != {"transaction_cost_bps", "slippage_bps"}
                                             for case in costs.values()):
@@ -373,6 +506,114 @@ def check_registration(doc: dict[str, Any]) -> dict[str, dict[str, float]]:
             and objective.get("role_in_m4_7") == "descriptive"):
         refuse("objective")
     return values
+
+
+def _canonical_sha256(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def family_hashes(doc: dict[str, Any]) -> dict[str, str]:
+    """Canonical JSON SHA-256 of the Family A and Family B definitions (M4.8 plan 6.3)."""
+    return {family: _canonical_sha256(doc["families"][family]) for family in ("A", "B")}
+
+
+def _strict_iso(value: Any) -> date | None:
+    return parse_strict_date(value) if isinstance(value, str) else None
+
+
+def check_registration_v3(doc: dict[str, Any], *, v2_path: Path = REGISTRATION_PATH) -> dict[str, dict[str, float]]:
+    """T-REG3-1: refuse a v3 registration that departs from the implemented protocol; return its cost cases.
+
+    Fixed sections equal ``REGISTERED_V3``; Family A and B hash to the
+    registration v2 definitions; each segment carries its anchor row, first
+    reset, last IC reset, and last book row with the seal between them; the
+    bound snapshot digests are 64-hex strings (``verify_bound_hashes`` checks
+    them against files).
+    """
+    def refuse(field: str) -> None:
+        raise RunnerStop("registration_invalid", field)
+
+    families = doc.get("families", {})
+    if (families.get("A", {}).get("family_size") != FAMILY_A_SIZE or families.get("B", {}).get("family_size") != 63
+            or families.get("union_sensitivity_size") != 69 or FAMILY_SIZES["B"] != 63):
+        raise RunnerStop("family_size_mismatch", "registered family sizes must be A 6, B 63, union 69")
+    v2_hashes = family_hashes(json.loads(Path(v2_path).read_bytes()))
+    for family, digest in family_hashes(doc).items():
+        if digest != v2_hashes[family]:
+            raise RunnerStop("family_hash_mismatch", f"families.{family}")
+    for section in ("schema_version", "evidence_class", "universe", "timing", "terminal", "families", "books",
+                    "benchmarks", "decision_gate", "common_support", "composites", "engine", "sensitivity_cases"):
+        if doc.get(section) != REGISTERED_V3[section]:
+            refuse(section)
+    holdout = doc.get("holdout", {})
+    if any(holdout.get(key) != value for key, value in REGISTERED_V3["holdout"].items()):
+        refuse("holdout")
+    start, end = _strict_iso(holdout.get("holdout_start")), _strict_iso(holdout.get("holdout_end_exclusive"))
+    if start is None or end is None or not start < end:
+        refuse("holdout.window")
+    discovery = doc.get("discovery", {})
+    if any(discovery.get(key) != value for key, value in REGISTERED_V3["discovery"].items()):
+        refuse("discovery")
+    segments = discovery.get("segments")
+    if not isinstance(segments, list) or [s.get("segment_id") if isinstance(s, dict) else None
+                                          for s in segments] != list(SEGMENT_IDS):
+        refuse("discovery.segments")
+    for position, segment in enumerate(segments):
+        dates = [_strict_iso(segment.get(key)) for key in SEGMENT_DATE_FIELDS]
+        for key, value in zip(SEGMENT_DATE_FIELDS, dates):
+            if value is None:
+                refuse(f"discovery.segments[{position}].{key}")
+        if not dates[0] < dates[1] <= dates[2] < dates[3]:
+            refuse(f"discovery.segments[{position}].order")
+        months = segment.get("ic_months")
+        if segment.get("side") != f"discovery_{segment['segment_id']}" or not isinstance(months, int) or months < 1:
+            refuse(f"discovery.segments[{position}]")
+    if not (_strict_iso(segments[0]["last_book_row"]) < start and _strict_iso(segments[1]["anchor_row"]) >= end):
+        raise RunnerStop("holdout_overlap_refused", "a registered segment row lies in the seal window")
+    statistics = copy.deepcopy(doc.get("statistics", {}))
+    projection = statistics.get("power_projection", {})
+    if not isinstance(projection.pop("kill_reachable_projection", None), bool):
+        refuse("statistics.power_projection.kill_reachable_projection")
+    if projection.pop("owner_decision_o48_3", None) not in O3_CHOICES:
+        refuse("statistics.power_projection.owner_decision_o48_3")
+    holding = statistics.get("cpcv", {}).pop("holding_periods", None)
+    if statistics != REGISTERED_V3["statistics"]:
+        refuse("statistics")
+    if not isinstance(holding, int) or holding != discovery.get("max_reset_to_reset_rows"):
+        refuse("statistics.cpcv.holding_periods")
+    snapshot = doc.get("snapshot", {})
+    if snapshot.get("retrieval_complete") is not True:
+        refuse("snapshot.retrieval_complete")
+    for key in SNAPSHOT_DIGESTS_V3:
+        value = snapshot.get(key)
+        if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
+            refuse(f"snapshot.{key}")
+    return _check_costs_and_objective(doc, refuse)
+
+
+def bound_paths_v3(root: Path, census_json: Path) -> dict[str, Path]:
+    """The file behind each registered v3 digest; ``discovery_inputs_sha256`` is recomputed, never read."""
+    membership = root / "membership"
+    return {"manifest_sha256": root / "manifest.json", "seal_carry_sha256": root / SEAL_CARRY_FILE,
+            "security_master_sha256": root / SECURITY_MASTER, "interval_csv_sha256": root / INTERVAL_CSV,
+            "interval_results_sha256": root / INTERVAL_RESULTS,
+            "membership_supplement_sha256": membership / m4_8_membership.SUPPLEMENT_FILE,
+            "reconstructed_changes_sha256": membership / m4_8_membership.CHANGES_FILE,
+            "published_counts_sha256": membership / m4_8_membership.ANCHORS_FILE,
+            "membership_discrepancies_sha256": membership / m4_8_membership.DISCREPANCIES_FILE,
+            "terminal_evidence_sha256": root / CURATED, "terminal_validation_sha256": root / VALIDATION,
+            "engine_events_sha256": root / ENGINE_EVENTS, "census_json_sha256": Path(census_json),
+            "inventory_sha256": root / INVENTORY, "build_manifest_sha256": root / BUILD_MANIFEST}
+
+
+def verify_bound_hashes(doc: dict[str, Any], paths: dict[str, Path]) -> None:
+    """Stage G binding: every registered v3 file digest equals the SHA-256 of its file."""
+    for key in SNAPSHOT_DIGESTS_V3:
+        if key == "discovery_inputs_sha256":
+            continue
+        path = paths.get(key)
+        if path is None or not Path(path).is_file() or sha256_bytes(Path(path).read_bytes()) != doc["snapshot"][key]:
+            raise _stale(key.removesuffix("_sha256"))
 
 
 # ---------------------------------------------------------------- snapshot binding (C64, S7, plan 2.4 and 4.5)
@@ -584,7 +825,7 @@ def ic_evaluation(signal: pd.DataFrame, labels: pd.DataFrame, e_mask: pd.DataFra
 def run_book(
     book: str, prices: pd.DataFrame, signal: pd.DataFrame, calendar: pd.DatetimeIndex, window: tuple[int, int], *,
     intervals: pd.DataFrame, events: pd.DataFrame, cost: dict[str, float], benchmark: pd.Series | None = None,
-    top_pct: float = TOP_PCT,
+    top_pct: float = TOP_PCT, missing_price_policy: str = "raise",
 ) -> Any:
     """One engine call over the evaluation window ``(anchor, last)``; a Class I engine reason raises ``RunnerStop``.
 
@@ -592,12 +833,15 @@ def run_book(
     ``long_only`` (``top_pct``, equal weight). The book starts from cash at
     the anchor row ``d0 - 1``; the terminal row keeps its open holdings
     (TIMING-012). ``signal`` carries the evaluation mask, so no held asset
-    lacks a bar inside its holding period.
+    lacks a bar inside its holding period. Registration v3 passes
+    ``missing_price_policy="halt_gap_return_v1"`` and the causal mask instead.
     """
     start, end = calendar[window[0]], calendar[window[1]]
     common = dict(evaluation_start=start, evaluation_end=end, rebalance_frequency="ME", weighting_scheme="equal",
                   turnover_penalty_lambda=0.0, constituent_intervals=intervals,
                   terminal_events=events if len(events) else None, **cost)
+    if missing_price_policy != "raise":
+        common["missing_price_policy"] = missing_price_policy
     try:
         if book == "long_short":
             return run_long_short_backtest(prices, signal, quantiles=QUANTILES, gross_leverage=1.0, **common)
@@ -670,6 +914,13 @@ def book_trial(
         fields, net = book_statistics(result, book, boundary)
     except (BacktestValidationError, ValueError, ArithmeticError) as exc:
         return _failure(exc), None
+    return _book_trial_fields(fields, net, book, spy_daily=spy_daily, equal_weight=equal_weight,
+                              objective=objective), net
+
+
+def _book_trial_fields(fields: dict[str, Any], net: pd.Series, book: str, *, spy_daily: pd.Series,
+                       equal_weight: pd.Series | None, objective: dict[str, Any]) -> dict[str, Any]:
+    """Budget flags and, for the long-only book, excess over SPY and the equal-weight benchmark."""
     fields["status"] = "evaluated"
     fields["max_drawdown_within_budget"] = fields["pooled_max_drawdown"] <= objective["max_drawdown_budget"][book]
     if book == "long_only":
@@ -683,7 +934,7 @@ def book_trial(
             "tracking_error_within_budget": (None if tracking is None
                                              else tracking <= objective["tracking_error_budget_annualized"]),
         })
-    return fields, net
+    return fields
 
 
 def excess_metrics(net: pd.Series, reference: pd.Series) -> dict[str, Any]:
@@ -782,7 +1033,7 @@ def _for_summary(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def run_rerun(
     snapshot_dir: Path | str, *, registration_path: Path | str, registration_sha256: str,
-    output_dir: Path | str, census_json: Path | str = CENSUS_JSON, seal_record: Path | str = SEAL_RECORD,
+    output_dir: Path | str, census_json: Path | str | None = None, seal_record: Path | str = SEAL_RECORD,
     code_commit: str | None = None,
 ) -> dict[str, Any]:
     """Run the registered rerun and write the report, sidecar, and trials JSONL; return the sidecar.
@@ -790,10 +1041,21 @@ def run_rerun(
     A Class I stop before the first trial record writes nothing, so the outputs
     of an earlier run stay byte-identical, and returns the sidecar with
     ``outputs_written = False``. A Class I stop after the first trial record
-    writes the sidecar, the report, and the trials recorded so far.
+    writes the sidecar, the report, and the trials recorded so far. A
+    registration v3 document runs ``run_segments`` on the snapshot's per-side
+    files; ``census_json`` defaults to the census of the document's version.
     """
     out = Path(output_dir)
     registration_bytes = Path(registration_path).read_bytes()
+    try:
+        schema = json.loads(registration_bytes).get("schema_version")
+    except (ValueError, AttributeError):
+        schema = None
+    if schema == REGISTERED_V3["schema_version"]:
+        return run_segments(snapshot_dir=snapshot_dir, registration_path=registration_path,
+                            registration_sha256=registration_sha256, output_dir=output_dir,
+                            census_json=CENSUS_V3_JSON if census_json is None else census_json, code_commit=code_commit)
+    census_json = CENSUS_JSON if census_json is None else census_json
     actual = sha256_bytes(registration_bytes)
     state: dict[str, Any] = {"header": {"registration_sha256": actual, "registration_sha256_expected": registration_sha256,
                                         "code_commit": code_commit if code_commit is not None else _code_commit()}}
@@ -932,15 +1194,7 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                 fields["coverage_loss_estimate"] = estimate[factor_id]
                 fields["coverage_loss_beyond_estimate"] = loss - estimate[factor_id]
             primary[factor_id] = trials.add(family, factor_id, "rank_ic_mean", fields)
-    try:  # the family partition refuses unless each family's distinct trials equal its declared size
-        by_family = summarize_multiple_testing(_for_summary(list(primary.values())), family_sizes=FAMILY_SIZES,
-                                               statistic_key="ic_test")
-    except ValueError as exc:
-        raise RunnerStop("family_size_mismatch", str(exc)) from exc
-    union = summarize_multiple_testing(_for_summary(list(primary.values())), family_size=UNION_SIZE,
-                                       statistic_key="ic_test")
-    adjusted = {row["specification"]["factor_id"]: row for row in by_family["rows"]}
-    union_q = {row["specification"]["factor_id"]: row["adjusted_pvalues"]["hac"]["by"] for row in union["rows"]}
+    adjusted, union_q = _by_tables(primary)
 
     common = dict(intervals=loaded["intervals"][loaded["intervals"]["permanent_id"].isin(assets)], events=events)
     measured = calendar[schedule.d0:schedule.d_last + 1]
@@ -981,6 +1235,30 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
                     books["|".join(key)] = trials.add(family, factor_id, "book_return", fields, book=book,
                                                       cost_case=cost_case)
 
+    _summarize_families(state, primary, adjusted, union_q, books, nets, measured, spy_daily, horizon,
+                        registration["statistics"]["power_projection"], "owner_decision_o3")
+
+
+def _by_tables(primary: dict[str, dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """BY within each family and over the union (plan 6.6)."""
+    try:  # the family partition refuses unless each family's distinct trials equal its declared size
+        by_family = summarize_multiple_testing(_for_summary(list(primary.values())), family_sizes=FAMILY_SIZES,
+                                               statistic_key="ic_test")
+    except ValueError as exc:
+        raise RunnerStop("family_size_mismatch", str(exc)) from exc
+    union = summarize_multiple_testing(_for_summary(list(primary.values())), family_size=UNION_SIZE,
+                                       statistic_key="ic_test")
+    return ({row["specification"]["factor_id"]: row for row in by_family["rows"]},
+            {row["specification"]["factor_id"]: row["adjusted_pvalues"]["hac"]["by"] for row in union["rows"]})
+
+
+def _summarize_families(
+    state: dict[str, Any], primary: dict[str, dict[str, Any]], adjusted: dict[str, dict[str, Any]],
+    union_q: dict[str, Any], books: dict[str, dict[str, Any]],
+    nets: dict[tuple[str, str, str], pd.Series | None], measured: pd.DatetimeIndex, spy_daily: pd.Series,
+    horizon: int, projection: dict[str, Any], decision_key: str,
+) -> None:
+    """CPCV, DSR, haircuts, the family tables, and the gate from the primary IC and book trials (plan 6.7-6.9)."""
     state["cpcv"] = {
         f"{family}_{kind}": cpcv_family(
             {f: (nets[(f, book, "primary")] if kind == "long_short" or nets[(f, book, "primary")] is None
@@ -1038,12 +1316,558 @@ def _execute(state: dict[str, Any], trials: _Trials, registration: dict[str, Any
         gate_inputs.append(FactorGateInput(factor_id, status, bool(row["reject"]),
                                            row["mean_ic"] if row["mean_ic"] is not None else math.nan,
                                            row["sign_stable"], net, row["mde_f"]))
-    gate = decide_gate(gate_inputs, kill_reachable_projection=registration["statistics"]["power_projection"][
-        "kill_reachable_projection"])
+    gate = decide_gate(gate_inputs, kill_reachable_projection=projection["kill_reachable_projection"])
     state["gate"] = {**gate, "program_decision": PROGRAM_DECISION[gate["outcome"]],
                      "family_b_context": {"positive_by_rejections": state["families"]["B"]["positive_by_rejections"],
                                           "role": "exploratory; changes no decision"},
-                     "owner_decision_o3": registration["statistics"]["power_projection"]["owner_decision_o3"]}
+                     decision_key: projection[decision_key]}
+
+
+
+
+# ---------------------------------------------------------------- registration v3: segment execution (M4.8 plan 2.5, 4.9, 6.4-6.6)
+
+
+@dataclass(frozen=True)
+class SegmentRun:
+    """One discovery segment's loaded side inputs (M4.8 plan 2.5, 7).
+
+    ``segment`` is a ``discovery_segments`` record with rows on
+    ``full_calendar`` (``segment_id``, ``side``, ``anchor_row``,
+    ``first_reset_row``, ``last_ic_reset_row``, ``last_book_row``,
+    ``feature_floor_row``, ``feature_ceiling_row``). ``fields`` are that side's
+    loaded panels on rows ``[feature_floor_row, last_book_row]``: member
+    permanent IDs plus ``SPY.US#E1``. ``events`` are the side's accepted
+    seven-field terminal events and ``master`` the security master.
+    """
+
+    segment: Any
+    full_calendar: pd.DatetimeIndex
+    fields: dict[str, pd.DataFrame]
+    intervals: pd.DataFrame
+    events: pd.DataFrame
+    master: pd.DataFrame
+
+
+def _segment_calendar(run: SegmentRun, registered: dict[str, Any], holdout: dict[str, Any]) -> pd.DatetimeIndex:
+    """B-1, B-2, SL-7 guards: one side, no seal row, registered rows; returns the segment calendar."""
+    seg = run.segment
+    if not (seg.feature_floor_row <= seg.anchor_row < seg.first_reset_row <= seg.last_ic_reset_row
+            < seg.last_book_row <= seg.feature_ceiling_row) or seg.anchor_row != seg.first_reset_row - 1:
+        raise RunnerStop("census_runner_inconsistency:segment_rows", seg.segment_id)
+    calendar = run.full_calendar[seg.feature_floor_row:seg.last_book_row + 1]
+    start, end = pd.Timestamp(holdout["holdout_start"]), pd.Timestamp(holdout["holdout_end_exclusive"])
+    for name, panel in run.fields.items():
+        index = pd.DatetimeIndex(panel.index)
+        other = index >= start if seg.side == "discovery_pre" else index < end
+        if other.any():
+            raise RunnerStop("seal_bracket_computation_forbidden", f"{seg.segment_id} {name}")
+        if not index.equals(calendar):
+            raise RunnerStop("calendar_mismatch", f"{seg.segment_id} {name} differs from the segment calendar")
+    rows = {"anchor_row": seg.anchor_row, "first_reset": seg.first_reset_row, "last_ic_reset": seg.last_ic_reset_row,
+            "last_book_row": seg.last_book_row}
+    if seg.side != registered["side"] or any(
+            run.full_calendar[row].date().isoformat() != registered[key] for key, row in rows.items()):
+        raise RunnerStop("census_runner_inconsistency:segment_rows", f"{seg.segment_id} differs from the registration")
+    return calendar
+
+
+def prepare_segment(run: SegmentRun, registered: dict[str, Any], holdout: dict[str, Any], horizon: int) -> dict[str, Any]:
+    """Every per-segment computation before inference (B-1, B-5, 4.1, 4.2, 4.6): one side's inputs only."""
+    seg = run.segment
+    calendar = _segment_calendar(run, registered, holdout)
+    columns = set(run.fields["adjusted_close"].columns)
+    if BENCHMARK_ID not in columns:
+        raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} has no {seg.segment_id} panel")
+    assets = sorted(set(run.intervals["permanent_id"]) & columns - {BENCHMARK_ID})
+    research = build_adjusted_research_panels(run.fields)
+    spy = research["adjusted_close"][BENCHMARK_ID]
+    if not np.isfinite(spy.to_numpy(dtype=float)).all():
+        raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} incomplete on the {seg.segment_id} segment")
+    research = {k: v[assets] for k, v in research.items() if isinstance(v, pd.DataFrame)}
+    prices = research["adjusted_close"]
+    bars = pd.DataFrame(np.isfinite(prices.to_numpy(dtype=float)), index=calendar, columns=prices.columns)
+    intervals = run.intervals[run.intervals["permanent_id"].isin(assets)]
+    events = run.events[run.events["permanent_id"].isin(assets)].reset_index(drop=True)
+    mask = (resolve_pit_universe_mask(intervals, events if len(events) else None, calendar, assets)
+            if assets else bars.copy())
+    offset = seg.feature_floor_row
+    schedule = causal_support_schedule(calendar, bars, mask, seg.first_reset_row - offset)
+    ic_resets, unmeasured = ic_month_set(schedule)
+    if schedule.d_last != len(calendar) - 1 or not ic_resets or ic_resets[-1] != seg.last_ic_reset_row - offset:
+        raise RunnerStop("census_runner_inconsistency:segment_rows", f"{seg.segment_id} schedule")
+    if schedule.max_reset_to_reset_rows > horizon:
+        raise RunnerStop("census_runner_inconsistency:max_reset_span", seg.segment_id)
+    last_bars = {row["permanent_id"]: pd.Timestamp(row["last_bar"]) for row in run.master.to_dict(orient="records")
+                 if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"}
+    candidates = {pid: int(calendar.get_loc(day)) + 1 for pid, day in last_bars.items() if day in calendar}
+    residual = residual_disappearances(schedule, bars, set(events["permanent_id"]), candidates)
+    if residual:  # census rule R3-4 requires an empty residual; Branch R is dormant (plan 4.6, 4.7)
+        raise RunnerStop("residual_unevidenced_disappearance", f"{seg.segment_id}: {len(residual)} held-possible stops")
+    labels, label_records = reset_to_reset_labels(prices, schedule.s_mask, schedule.reset_rows, ic_resets,
+                                                  events if len(events) else None, typed=True)
+    if int(label_records[MISSING_HORIZON_DISAPPEARANCE].sum()):
+        raise RunnerStop("census_runner_inconsistency:residual_label", seg.segment_id)
+    s_mask = schedule.s_mask
+    signals: dict[str, dict[str, pd.DataFrame | Exception]] = {}
+    try:
+        signals["A"] = dict(family_a_signals(prices, spy, research["dollar_volume"], s_mask))
+    except (ValueError, ArithmeticError) as exc:
+        signals["A"] = {factor_id: exc for factor_id in FAMILY_A_IDS}
+    alphas = family_b_alphas(research, s_mask)
+    signals["B"] = dict(alphas)
+    rebalances = calendar[[r - 1 for r in schedule.reset_rows if schedule.d0 <= r <= schedule.d_last]]
+    if any(isinstance(v, Exception) for v in alphas.values()):
+        failed = ValueError("parent_alpha_failed: every composite needs the 52 alphas")
+        signals["B"].update({c: failed for c in FAMILY_B_COMPOSITES})
+    else:
+        try:  # B-5: one builder call per segment on that segment's inputs
+            signals["B"].update(family_b_composites(research, s_mask, alphas, labels, ic_resets, rebalances, horizon))
+        except (ValueError, ArithmeticError, KeyError) as exc:
+            signals["B"].update({c: exc for c in FAMILY_B_COMPOSITES})
+    measured = calendar[schedule.d0:schedule.d_last + 1]
+    return {"segment_id": seg.segment_id, "calendar": calendar, "assets": assets, "prices": prices, "spy": spy,
+            "spy_daily": spy.pct_change(fill_method=None).loc[measured], "measured": measured,
+            "intervals": intervals, "events": events, "schedule": schedule, "ic_resets": ic_resets,
+            "ic_months_unmeasured": unmeasured, "labels": labels, "label_records": label_records,
+            "signals": signals, "window": (schedule.d0 - 1, schedule.d_last)}
+
+
+def segment_ic_test(ic: pd.Series, segments: Sequence[str]) -> dict[str, Any]:
+    """The primary two-sided test with ``segment_aware_bartlett_hac_v1`` (plan 6.4).
+
+    The IID fields are carried; the HAC statistic divides the mean by
+    ``sqrt(LRV / n)`` with the lag from the total ``n``.
+    """
+    test = return_test_statistics(ic.reset_index(drop=True), periods_per_year=12)
+    test["hac_estimator"] = "segment_aware_bartlett_hac_v1"
+    if test["status"] != "ok":
+        return test
+    lrv = segment_aware_bartlett_long_run_variance(ic, list(segments), test["hac_lags"])
+    if not math.isfinite(lrv):
+        return {**test, "status": "undefined_statistic", "hac_statistic": None, "hac_pvalue": None}
+    statistic = float(ic.mean()) / math.sqrt(lrv / len(ic))
+    return {**test, "hac_statistic": statistic, "hac_pvalue": max(P_VALUE_FLOOR, float(2 * norm.sf(abs(statistic))))}
+
+
+def _segment_months(segment: dict[str, Any], signal: pd.DataFrame) -> pd.DataFrame:
+    months = monthly_rank_ic(signal, segment["labels"], segment["ic_resets"])
+    resets = segment["schedule"].reset_rows
+    horizons = [int(resets[resets > r][0]) for r in segment["ic_resets"]]
+    return months.assign(segment_id=segment["segment_id"], horizon_date=segment["calendar"][horizons])
+
+
+def ic_evaluation_v3(signals: Sequence[pd.DataFrame], segments: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """The concatenated IC test with ``segment_id`` (B-4, 6.4, 6.5); per-segment figures are descriptive."""
+    months = pd.concat([_segment_months(seg, signal) for seg, signal in zip(segments, signals)])
+    valid = months[months["status"] == "valid"]
+    ic = pd.Series(valid["rank_ic"].to_numpy(dtype=float), index=pd.DatetimeIndex(valid["reset_date"]))
+    labels = valid["segment_id"].tolist()
+    first, second = split_halves(ic)
+    mde_f, mde_single = ic_minimum_detectable_effect(ic, segments=labels, min_months=MIN_IC_MONTHS_V3)
+    losses = [coverage_loss(signal, seg["schedule"].evaluation_mask, seg["ic_resets"])
+              for seg, signal in zip(segments, signals)]
+    lags = automatic_lag(len(ic))
+    demeaned = ic - pd.Series(labels, index=ic.index).map(ic.groupby(labels).mean().to_dict()).to_numpy()
+    per_segment = {}
+    for seg in segments:
+        part = ic[[label == seg["segment_id"] for label in labels]]
+        per_segment[seg["segment_id"]] = {
+            "months": len(part), "mean_ic": float(part.mean()) if len(part) else None,
+            "hac_pvalue": return_test_statistics(part.reset_index(drop=True), periods_per_year=12)["hac_pvalue"]}
+    return {
+        "status": "evaluated" if len(ic) >= MIN_IC_MONTHS_V3 else "invalid_insufficient_ic_months",
+        "ic_month_count": len(ic), "ic_month_gap_count": int(len(months) - len(ic)),
+        "invalid_months": {k: int(v) for k, v in months["status"].value_counts().items() if k != "valid"},
+        "mean_ic": float(ic.mean()) if len(ic) else None,
+        "ic_test": segment_ic_test(ic, labels),
+        "halves": {"boundary_reset_date": second.index[0].date().isoformat() if len(second) else None,
+                   "first": {"months": len(first), "mean_ic": float(first.mean()) if len(first) else None},
+                   "second": {"months": len(second), "mean_ic": float(second.mean()) if len(second) else None}},
+        "sign_stable": sign_stability(ic, min_half=MIN_HALF_MONTHS_V3),
+        "mde_f": mde_f, "mde_single": mde_single,
+        "coverage_loss": {"total": sum(loss["total"] for loss in losses),
+                          "by_month": {k: v for loss in losses for k, v in loss["by_month"].items()}},
+        "finite_pair_count_by_month": dict(zip((d.date().isoformat() for d in months["reset_date"]),
+                                               months["finite_pair_count"].tolist())),
+        "segment_id_by_month": dict(zip((d.date().isoformat() for d in months["reset_date"]),
+                                        months["segment_id"].tolist())),
+        "descriptive": {
+            "per_segment": per_segment,
+            "lrv_concatenated_adjacency": (newey_west_long_run_variance(ic, lags) if len(ic) else None),
+            "lrv_segment_demeaned": (newey_west_long_run_variance(demeaned, lags) if len(ic) else None),
+            "role": "descriptive_never_enters_the_gate"},
+        "_valid_months": valid[["reset_date", "horizon_date", "segment_id", "rank_ic"]],
+    }
+
+
+def pooled_book_statistics(results: Sequence[Any], book: str, boundary: str | None,
+                           segment_ids: Sequence[str]) -> tuple[dict[str, Any], pd.Series]:
+    """Per-segment book statistics and the concatenated measured rows (B-4); no return spans the gap."""
+    parts, nets = {}, []
+    for segment_id, result in zip(segment_ids, results):
+        fields, net = book_statistics(result, book)
+        fields.pop("halves")
+        parts[segment_id] = {**fields, **({"halt": {k: v for k, v in result.assumptions.items() if k in (
+            "unmarked_halt_row_count", "untradeable_execution_cell_count", "locked_execution_row_count",
+            "locked_net_exposure_row_count", "locked_gross_excess_row_count", "max_abs_locked_net_exposure",
+            "max_locked_gross_excess")}})}
+        nets.append(net)
+    net = pd.concat(nets)
+    return {
+        "return_test": return_test_statistics(net, periods_per_year=252), "measured_rows": len(net),
+        "segments": parts, "segment_rows": {sid: len(n) for sid, n in zip(segment_ids, nets)},
+        "pooled_turnover": float(sum(p["pooled_turnover"] for p in parts.values())),
+        "pooled_trading_costs": float(sum(p["pooled_trading_costs"] for p in parts.values())),
+        "pooled_max_drawdown": _max_drawdown((1.0 + net).cumprod()),
+        "mean_daily_net_return": float(net.mean()), "halves": book_halves(net, boundary),
+    }, net
+
+
+def segment_book_trial(
+    book: str, segments: Sequence[dict[str, Any]], signals: Sequence[pd.DataFrame], *, cost: dict[str, float],
+    spy_daily: pd.Series, equal_weight: pd.Series | None, objective: dict[str, Any], boundary: str | None = None,
+    top_pct: float = TOP_PCT,
+) -> tuple[dict[str, Any], pd.Series | None]:
+    """One book trial: one engine call per segment over ``[anchor_row, last_book_row]`` (T-SEG-4)."""
+    try:
+        results = [run_book(book, seg["prices"], signal.where(seg["schedule"].evaluation_mask), seg["calendar"],
+                            seg["window"], intervals=seg["intervals"], events=seg["events"], cost=cost,
+                            benchmark=seg["spy"] if book == "long_only" else None, top_pct=top_pct,
+                            missing_price_policy=HALT_POLICY) for seg, signal in zip(segments, signals)]
+        fields, net = pooled_book_statistics(results, book, boundary, [seg["segment_id"] for seg in segments])
+    except (BacktestValidationError, ValueError, ArithmeticError) as exc:
+        return _failure(exc), None
+    return _book_trial_fields(fields, net, book, spy_daily=spy_daily, equal_weight=equal_weight,
+                              objective=objective), net
+
+
+def prior_exposure_windows(seal_record: Path = SEAL_V1_RECORD) -> tuple[tuple[str, date, date], ...]:
+    """The prior exposures seal v1 records (plan 6.6), as ``(kind, start, end)``."""
+    record = json.loads(Path(seal_record).read_bytes())
+    return tuple((item["kind"], *(date.fromisoformat(part) for part in item["window"].split(".."))) for item in
+                 record["prior_exposures"])
+
+
+def exposure_overlap(dates: Sequence[date], windows: Sequence[tuple[str, date, date]]) -> dict[str, float]:
+    """The carried ``prior_exposure_overlap`` fraction: months whose reset date lies inside each window."""
+    return {kind: (sum(start <= d <= end for d in dates) / len(dates)) if dates else 0.0
+            for kind, start, end in windows}
+
+
+def factor_exposure(valid: pd.DataFrame, factor_id: str, windows: Sequence[tuple[str, date, date]]) -> dict[str, Any]:
+    """T-EXP-1: per-segment overlap of one Family A factor's valid IC months and the unexposed pre subsample.
+
+    The subsample holds the pre-segment valid months whose horizon row precedes
+    the earliest exposure start; its statistics are reported only at 30 or more
+    months and stay descriptive.
+    """
+    cutoff = min(start for _, start, _ in windows)
+    per_segment = {sid: exposure_overlap([d.date() for d in part["reset_date"]], windows)
+                   for sid, part in valid.groupby("segment_id", sort=False)}
+    unexposed = valid[(valid["segment_id"] == "pre") & (pd.DatetimeIndex(valid["horizon_date"]) < pd.Timestamp(cutoff))]
+    subsample: dict[str, Any] = {"months": len(unexposed), "horizon_before": cutoff.isoformat()}
+    if len(unexposed) >= MIN_HALF_MONTHS_V3:
+        values = pd.Series(unexposed["rank_ic"].to_numpy(dtype=float))
+        subsample.update(status="reported_descriptive_factor_choices_made_with_knowledge_of_later_data",
+                         mean_ic=float(values.mean()),
+                         hac_pvalue=return_test_statistics(values, periods_per_year=12)["hac_pvalue"])
+    else:
+        subsample["status"] = "not_reported_below_30_valid_months"
+    return {"per_segment": per_segment, "factor_named_in_prior_exposure": factor_id in FACTORS_NAMED_IN_PRIOR_EXPOSURE,
+            "calendar_unexposed_pre_subsample": subsample}
+
+
+def run_segments(
+    runs: Sequence[SegmentRun] | None = None, *, registration_path: Path | str, registration_sha256: str,
+    output_dir: Path | str, census: dict[str, Any] | None = None, code_commit: str | None = None,
+    seal_v1_record: Path | str = SEAL_V1_RECORD, snapshot_dir: Path | str | None = None,
+    census_json: Path | str | None = None,
+) -> dict[str, Any]:
+    """Run registration v3 on loaded segments and write the v3 report, sidecar, and trials JSONL.
+
+    The Class I and output rules of ``run_rerun`` carry: a stop before the
+    first trial writes nothing. Given ``snapshot_dir`` (and ``census_json``),
+    ``bind_snapshot_v3`` binds the registration and ``load_segment_runs``
+    builds ``runs`` from the per-side files; given ``runs`` (synthetic
+    segments), both steps are skipped.
+    """
+    out = Path(output_dir)
+    registration_bytes = Path(registration_path).read_bytes()
+    actual = sha256_bytes(registration_bytes)
+    state: dict[str, Any] = {"header": {"registration_sha256": actual, "registration_sha256_expected": registration_sha256,
+                                        "code_commit": code_commit if code_commit is not None else _code_commit()}}
+    trials = _Trials(out / TRIALS_V3, actual, {})
+    try:
+        if actual != registration_sha256:
+            raise RunnerStop("registration_hash_mismatch", "registration bytes differ from --registration-sha256")
+        try:
+            registration = json.loads(registration_bytes)
+            if registration.get("schema_version") != REGISTERED_V3["schema_version"]:
+                raise RunnerStop("registration_invalid", "schema_version")
+            costs = check_registration(registration)
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            raise RunnerStop("registration_invalid", f"{type(exc).__name__}: {exc}") from exc
+        if runs is None:
+            bound = bind_snapshot_v3(Path(snapshot_dir), registration, Path(census_json))
+            runs, access = load_segment_runs(bound)
+            census = bound["census"]
+            state["header"]["segment_access_logs"] = access
+        _execute_v3(state, trials, registration, costs, runs, census, prior_exposure_windows(Path(seal_v1_record)))
+        state["run_status"] = "completed"
+    except RunnerStop as stop:
+        state["run_status"] = "stopped_before_inference"
+        state["stop"] = {"reason": stop.reason, "detail": stop.detail, "trial": stop.trial,
+                         "trial_records_retained": len(trials.records)}
+        if not trials.records:
+            return _clean({**_sidecar_head_v3(), **state, "outputs_written": False})
+    sidecar = _clean({**_sidecar_head_v3(), **state, "outputs_written": True,
+                      "trials_jsonl_sha256": sha256_bytes((out / TRIALS_V3).read_bytes())})
+    write_bytes(out / SIDECAR_V3, (json.dumps(sidecar, sort_keys=True, indent=2, allow_nan=False) + "\n").encode())
+    write_bytes(out / REPORT_V3, render_report_v3(sidecar).encode("utf-8"))
+    return sidecar
+
+
+def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_json: Path) -> dict[str, Any]:
+    """Every registration v3 check that precedes a panel load (plan 6.1, Stage G; seam I-1).
+
+    A rule v2 snapshot; the registered file digests, including the per-side
+    panel inventory and the build manifest, so the frozen universe and every
+    panel digest are bound (M48B-A1-M02); the recomputed discovery inputs; the
+    current terminal projection, inventory, and build manifest; every panel
+    hash; the carried seal window against the registration; and no split table
+    beside a side panel. The inventory used downstream is parsed from the
+    verified bytes.
+    """
+    try:
+        snapshot = Snapshot.open(snapshot_dir)
+    except SnapshotRefusal as exc:
+        raise RunnerStop(exc.code, str(exc)) from exc
+    root, pinned = snapshot.root, registration["snapshot"]
+    if snapshot.partition_rule != PARTITION_RULE_V2:
+        raise RunnerStop("registration_invalid", f"snapshot partition rule {snapshot.partition_rule}")
+    if pinned.get("snapshot_id") != snapshot.manifest["snapshot"].get("id"):
+        raise RunnerStop("registration_invalid", "snapshot.snapshot_id")
+    verify_bound_hashes(registration, bound_paths_v3(root, census_json))
+    inputs = discovery_inputs_sha256(snapshot)
+    if inputs != pinned["discovery_inputs_sha256"]:
+        raise _stale("discovery_inputs")
+    inventory_bytes = (root / INVENTORY).read_bytes()
+    if sha256_bytes(inventory_bytes) != pinned["inventory_sha256"]:
+        raise _stale("inventory")
+    try:
+        validation, _ = require_current_terminal(snapshot)
+        inventory = json.loads(inventory_bytes)
+        require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
+        require_current(snapshot, read_derived_json(root, BUILD_MANIFEST).get("discovery_inputs_sha256"), BUILD_MANIFEST)
+        carry = read_seal_carry(root)
+        calendar = snapshot.calendar()
+        segments = snapshot_segments(snapshot, calendar)
+    except SnapshotRefusal as exc:
+        raise RunnerStop(exc.code, str(exc)) from exc
+    for record in inventory["files"]:
+        path = root / "panel" / record["file"]
+        if not path.is_file() or sha256_bytes(path.read_bytes()) != record["sha256"]:
+            raise _stale(f"panel {record['file']}")
+    _refuse_split_sources(root, inventory["files"])
+    holdout = registration["holdout"]
+    if (carry["holdout_start"], carry["holdout_end_exclusive"]) != (
+            holdout.get("holdout_start"), holdout.get("holdout_end_exclusive")):
+        raise RunnerStop("holdout_overlap_refused", "registration and seal carry record disagree")
+    if registration["universe"]["calendar_source"] != snapshot.calendar_source:
+        raise RunnerStop("registration_invalid", "universe.calendar_source differs from the snapshot seal")
+    return {"snapshot": snapshot, "inputs": inputs, "inventory": inventory, "validation": validation,
+            "calendar": calendar, "segments": segments, "census": json.loads(Path(census_json).read_bytes())}
+
+
+V3_LOADER_DIRECTORY = "panel"
+
+
+def _refuse_split_sources(root: Path, records: Sequence[dict[str, Any]]) -> None:
+    """C64 for the v3 loader: no split table reachable from any directory the loader or a side layout exposes.
+
+    ``load_eod_cohort_panels`` passes its own directory to ``load_symbol_splits``,
+    which searches a request ledger, ``normalized/splits``, ``splits``, and
+    ``<symbol>_splits`` below it and overrides the panel ``split_factor``. The
+    check calls that same function on ``panel/`` (the loader's directory) and on
+    ``panel/<side>``, so a split table outside the registered inventory refuses
+    ``panel_split_table_present`` before any panel load (M48B-A1-M03).
+    """
+    for record in records:
+        for directory in (root / V3_LOADER_DIRECTORY, root / V3_LOADER_DIRECTORY / record["side"]):
+            try:
+                found = load_symbol_splits(directory, record["symbol"])
+            except (OSError, ValueError) as exc:
+                raise RunnerStop("panel_split_table_present", f"{record['symbol']}: {exc}") from exc
+            if found is not None:
+                raise RunnerStop("panel_split_table_present",
+                                 f"{record['symbol']} under {directory.relative_to(root).as_posix()}")
+
+
+def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str, list[str]]]:
+    """One ``SegmentRun`` per segment from the bound inventory's panel files for its side (SL-1, B-1; seam I-1).
+
+    The loader opens the EOD files the registered inventory names, whose hashes
+    ``bind_snapshot_v3`` verified, and ``_refuse_split_sources`` runs again just
+    before each load, so the loader's split discovery finds no table (C64). The
+    returned access log, which census v3 rule R3-9 reads, is the set of side
+    directories of the opened EOD paths (A2-B-ADV-1). Fields keep rows up to the
+    segment's last book row; ``_segment_calendar`` refuses any row on the other
+    side or in the seal.
+    """
+    root, calendar = bound["snapshot"].root, bound["calendar"]
+    intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
+    master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
+    events = read_engine_events(root)
+    runs, access = [], {}
+    for segment in bound["segments"]:
+        records = {r["symbol"]: r for r in bound["inventory"]["files"] if r["side"] == segment.side}
+        if BENCHMARK_ID not in records:
+            raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} has no {segment.side} panel")
+        assets = sorted(set(intervals["permanent_id"]) & set(records) - {BENCHMARK_ID})
+        opened = [records[pid]["file"] for pid in assets + [BENCHMARK_ID]]
+        _refuse_split_sources(root, [records[pid] for pid in assets + [BENCHMARK_ID]])
+        with tempfile.TemporaryDirectory() as scratch:
+            mapping = Path(scratch) / "inventory.json"
+            mapping.write_text(json.dumps({"files": [{"symbol": pid, "file": records[pid]["file"]}
+                                                     for pid in assets + [BENCHMARK_ID]]}), encoding="utf-8")
+            loaded = load_eod_cohort_panels(root / V3_LOADER_DIRECTORY, assets + [BENCHMARK_ID], inventory_path=mapping)
+        last = calendar[segment.last_book_row]
+        fields = {k: v.loc[v.index <= last] for k, v in loaded.items() if isinstance(v, pd.DataFrame)}
+        own = events[events["permanent_id"].isin(assets) & events["effective_date"].isin(
+            calendar[segment.feature_floor_row:segment.last_book_row + 1])].reset_index(drop=True)
+        runs.append(SegmentRun(segment=segment, full_calendar=calendar, fields=fields, intervals=intervals,
+                               events=own, master=master))
+        access[segment.segment_id] = sorted({Path(file).parts[0] for file in opened})
+    return runs, access
+
+
+def _sidecar_head_v3() -> dict[str, Any]:
+    return {**_sidecar_head(), "schema_version": "m4_8_sp500_pit_rerun_result_v3"}
+
+
+def _execute_v3(state: dict[str, Any], trials: _Trials, registration: dict[str, Any],
+                costs: dict[str, dict[str, float]], runs: Sequence[SegmentRun], census: dict[str, Any] | None,
+                windows: tuple[tuple[str, date, date], ...]) -> None:
+    registered = {s["segment_id"]: s for s in registration["discovery"]["segments"]}
+    if [run.segment.segment_id for run in runs] != list(SEGMENT_IDS):
+        raise RunnerStop("census_runner_inconsistency:segment_rows", "runs must be the pre and post segments in order")
+    horizon = registration["discovery"]["max_reset_to_reset_rows"]
+    segments = [prepare_segment(run, registered[run.segment.segment_id], registration["holdout"], horizon)
+                for run in runs]
+    if max(seg["schedule"].max_reset_to_reset_rows for seg in segments) != horizon:
+        raise RunnerStop("census_runner_inconsistency:max_reset_span", "no segment attains the registered span")
+    ids = [seg["segment_id"] for seg in segments]
+    for seg in segments:
+        if len(seg["ic_resets"]) != registered[seg["segment_id"]]["ic_months"]:
+            raise RunnerStop("census_runner_inconsistency:ic_months", seg["segment_id"])
+    all_resets = [seg["calendar"][r].date() for seg in segments for r in seg["ic_resets"]]
+    state["header"].update({
+        "snapshot_id": registration["snapshot"].get("snapshot_id"),
+        "manifest_sha256": registration["snapshot"]["manifest_sha256"],
+        "census_json_sha256": registration["snapshot"]["census_json_sha256"],
+        "holdout": {"holdout_start": registration["holdout"]["holdout_start"],
+                    "holdout_end_exclusive": registration["holdout"]["holdout_end_exclusive"],
+                    "description": "carried seal with stated prior exposures", "sealed_rows_loaded": 0},
+        "segments": {seg["segment_id"]: {**{k: registered[seg["segment_id"]][k] for k in SEGMENT_DATE_FIELDS},
+                                         "ic_months": len(seg["ic_resets"]), "member_columns": len(seg["assets"]),
+                                         "first_loaded_date": seg["calendar"][0].date().isoformat(),
+                                         "last_loaded_date": seg["calendar"][-1].date().isoformat()}
+                     for seg in segments},
+        "ic_month_supply": len(all_resets),
+        "sequential_looks": {"count": LOOK_COUNT_V3, "prior": {"v1": 32, "v2": 60},
+                             "note": "third test of the same families on the post-holdout months"},
+        "prior_exposure_overlap_fraction": {seg["segment_id"]: exposure_overlap(
+            [seg["calendar"][r].date() for r in seg["ic_resets"]], windows) for seg in segments},
+        "residual": {sid: 0 for sid in ids},
+        "sensitivity": {RESIDUAL_BOUND_CASE: {"status": "vacuous_no_residual", "residual_events": 0,
+                                              "equals_primary": True, "enters_gate": False}},
+        "census_readiness": None if census is None else census.get("census_readiness", {}).get("status"),
+    })
+    state["assumptions"] = {
+        "timing_contract": registration["timing"]["contract"], "label_contract": registration["timing"]["label_contract"],
+        "support_contract": registration["common_support"]["contract"],
+        "evaluation_window": registration["discovery"]["evaluation_window"],
+        "engine": registration["engine"], "composite_fitting": registration["composites"]["fitting"],
+        "statistics_hac": registration["statistics"]["hac"],
+        "initialization_anchor_policy": "zero_return_zero_trade_all_cash_excluded_from_statistics",
+        "terminal_row_policy": "include_return_trade_cost_open_holdings_no_future_return",
+        "concatenation": "per_segment_ic_and_daily_net_series_in_time_order_with_segment_id",
+        "cpcv_junction": "purged_only_when_the_junction_is_a_block_edge_no_label_spans_it",
+        "costs": costs, "borrow_cost": "absent_from_the_long_short_engine",
+    }
+    trials.context = {"support_contract": CAUSAL_SUPPORT_CONTRACT}
+    state["labels"] = {seg["segment_id"]: {
+        "ic_month_supply": len(seg["ic_resets"]),
+        **{reason.replace("ic_month_", "ic_months_"): len(rows) for reason, rows in seg["ic_months_unmeasured"].items()},
+        "terminal_aware_labels": int(seg["label_records"]["terminal_aware_labels"].sum()),
+        **{reason: int(seg["label_records"][reason].sum()) for reason in TYPED_LABEL_REASONS},
+        "by_month": _clean(seg["label_records"].reset_index().to_dict(orient="records"))} for seg in segments}
+
+    primary: dict[str, dict[str, Any]] = {}
+    state["exposure"] = {}
+    for family, factor_ids in (("A", FAMILY_A_IDS), ("B", FAMILY_B_IDS)):
+        for factor_id in factor_ids:
+            per_segment = [seg["signals"][family][factor_id] for seg in segments]
+            failure = next((signal for signal in per_segment if isinstance(signal, Exception)), None)
+            if failure is not None:
+                fields = _failure(failure)
+            else:
+                try:
+                    fields = ic_evaluation_v3(per_segment, segments)
+                except (ValueError, ArithmeticError) as exc:
+                    fields = _failure(exc)
+            valid = fields.pop("_valid_months", None)
+            if family == "A" and valid is not None:
+                state["exposure"][factor_id] = factor_exposure(valid, factor_id, windows)
+            primary[factor_id] = trials.add(family, factor_id, "rank_ic_mean", fields)
+    adjusted, union_q = _by_tables(primary)
+
+    measured = pd.DatetimeIndex(np.concatenate([seg["measured"].to_numpy() for seg in segments]))
+    spy_daily = pd.concat([seg["spy_daily"] for seg in segments])
+    objective = registration["objective"]
+    try:
+        ew_fields, ew_net = segment_book_trial(
+            "long_only", segments, [equal_weight_signal(seg["schedule"].evaluation_mask) for seg in segments],
+            cost=costs["zero_cost_diagnostic_only"], spy_daily=spy_daily, equal_weight=None, objective=objective,
+            top_pct=1.0)
+    except RunnerStop as stop:
+        stop.trial = "equal_weight_pit"
+        raise
+    ew_record = ew_fields if ew_net is None else {**ew_fields, "excess_vs_spy": excess_metrics(ew_net, spy_daily)}
+    state["benchmarks"] = {"equal_weight_pit": ew_record,
+                           "spy": {"status": "evaluated",
+                                   "return_test": return_test_statistics(spy_daily, periods_per_year=252)}}
+    books: dict[str, dict[str, Any]] = {}
+    nets: dict[tuple[str, str, str], pd.Series | None] = {}
+    for family, factor_ids in (("A", FAMILY_A_IDS), ("B", FAMILY_B_IDS)):
+        for factor_id in factor_ids:
+            per_segment = [seg["signals"][family][factor_id] for seg in segments]
+            failure = next((signal for signal in per_segment if isinstance(signal, Exception)), None)
+            for cost_case in (COST_CASES if family == "A" else ("primary",)):
+                for book in ("long_short", "long_only"):
+                    key = (factor_id, book, cost_case)
+                    if failure is not None:
+                        fields, net = _failure(failure), None
+                    else:
+                        try:
+                            fields, net = segment_book_trial(
+                                book, segments, per_segment, cost=costs[cost_case], spy_daily=spy_daily,
+                                equal_weight=ew_net, objective=objective,
+                                boundary=(primary[factor_id].get("halves") or {}).get("boundary_reset_date"))
+                        except RunnerStop as stop:
+                            stop.trial = f"{family}:{factor_id}:{book}:{cost_case}"
+                            raise
+                    nets[key] = net
+                    books["|".join(key)] = trials.add(family, factor_id, "book_return", fields, book=book,
+                                                      cost_case=cost_case)
+    _summarize_families(state, primary, adjusted, union_q, books, nets, measured, spy_daily, horizon,
+                        registration["statistics"]["power_projection"], "owner_decision_o48_3")
+    state["per_segment_ic"] = {f: (primary[f].get("descriptive") or {}).get("per_segment", {}) for f in FAMILY_A_IDS}
+    state["sensitivity"] = {RESIDUAL_BOUND_CASE: {
+        "status": "vacuous_no_residual", "equals_primary": True, "enters_gate": False,
+        "family_a_long_short_primary_mean_daily_net_return": {
+            f: books[f"{f}|long_short|primary"].get("mean_daily_net_return") for f in FAMILY_A_IDS}}}
 
 
 # ---------------------------------------------------------------- report (plan 6.9, 7.3; Appendix E)
@@ -1059,67 +1883,9 @@ def _fmt(value: Any, digits: int = 6) -> str:
     return str(value)
 
 
-def render_report(sidecar: dict[str, Any]) -> str:
-    """The markdown report: header, assumptions, breadth, labels, families, books, PBO, and the gate."""
-    header = sidecar.get("header", {})
-    lines = [
-        "# M4.7 S&P 500 PIT Rerun (registration v2, asset-level support)",
-        "",
-        "Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or "
-        "profitability claim; `formal_universe_evidence_eligible` and `formal_terminal_evidence_eligible` are false.",
-        "",
-        f"- Run status: `{sidecar['run_status']}`",
-        f"- Registration SHA-256: `{header.get('registration_sha256')}`",
-        f"- Code commit: `{header.get('code_commit')}`",
-    ]
-    if sidecar.get("stop"):
-        stop = sidecar["stop"]
-        lines += [f"- Stop reason (Class I): `{stop['reason']}` ({stop['detail']}); trial: `{stop['trial']}`; "
-                  f"trial records retained: {stop['trial_records_retained']}", ""]
-    if "discovery_window" not in header:
-        return "\n".join(lines) + "\n"
-    window, premises = header["discovery_window"], header["premises"]
-    lines += [
-        f"- Snapshot: `{header['snapshot_id']}`; manifest SHA-256 `{header['manifest_sha256']}`",
-        f"- support_sha256: `{header['support_sha256']}`; census JSON SHA-256 `{header['census_json_sha256']}`",
-        f"- Discovery window: holdout end `{window['holdout_end']}`, D0 `{window['D0']}`, D_last `{window['D_last']}`, "
-        f"D_end `{window['D_end']}`",
-        "- Prior-exposure overlap fractions: " + ", ".join(
-            f"{k} {_fmt(v)}" for k, v in header["prior_exposure_overlap_fraction"].items()),
-        f"- |U| = {header['U']}; support-excluded cells |X| = {header['X']} of {header['signal_eligible_cells']} "
-        f"signal-eligible cells (fraction {_fmt(header['excluded_fraction'])}); by reason "
-        f"{header['excluded_cells_by_reason']}",
-        f"- Eligible unpriced member-day fraction: {_fmt(header['eligible_unpriced_member_day_fraction'])}",
-        f"- Census readiness: `{header['census_readiness']}`",
-        f"- Holdout guard: first loaded date `{header['holdout_guard']['first_loaded_date']}`, "
-        f"overlap {_fmt(header['holdout_guard']['overlap'])}",
-        "",
-        "## Premises",
-        "",
-        f"- VP-1: {premises['VP-1']}; `a1_volume_half = {premises['a1_volume_half']}`",
-        f"- VP-2: {premises['VP-2']}; in_span_distribution_support fraction "
-        f"{_fmt(premises['in_span_distribution_support_fraction'])}; B_D quantiles {premises['b_d']}; "
-        f"S_D quantiles {premises['s_d']}; vp2_revisit_required {_fmt(premises['vp2_revisit_required'])}",
-        f"- O-8 disposition: {premises['o8_disposition']}",
-        f"- Rounding: {premises['rounding_statement']}",
-        "",
-        "## Assumptions",
-        "",
-        *[f"- {key}: {_fmt(value)}" for key, value in sidecar["assumptions"].items()],
-        "",
-    ]
-    if "labels" in sidecar:
-        labels = sidecar["labels"]
-        lines += ["## Labels and IC months", "",
-                  *[f"- {k}: {v}" for k, v in labels.items() if k != "breadth_by_month"], "",
-                  "## Monthly cross-sectional breadth", "",
-                  "A missing bar or an unevidenced disappearance excludes only the affected asset from the reset whose "
-                  "holding period needs that bar; every other asset and month stays evaluated.", "",
-                  "| Reset | Signal-eligible | Support-excluded | Evaluated |", "| --- | --- | --- | --- |",
-                  *[f"| {day} | {row['signal_eligible']} | {row['support_excluded']} | {row['evaluated']} |"
-                    for day, row in labels["breadth_by_month"].items()], ""]
-    if sidecar["run_status"] != "completed":
-        return "\n".join(lines) + "\n"
+def _render_results(sidecar: dict[str, Any], decision_key: str) -> list[str]:
+    """Family tables, Family A books, benchmarks, CPCV, DSR, and the gate of a completed run."""
+    lines: list[str] = []
     for family in ("A", "B"):
         rows = sidecar["families"][family]["rows"]
         lines += [
@@ -1187,7 +1953,74 @@ def render_report(sidecar: dict[str, Any]) -> str:
               f"- power_status: `{gate['power_status']}`",
               f"- kill_reachable_projection: {_fmt(gate['kill_reachable_projection'])}",
               f"- family_b_context: {gate['family_b_context']}",
-              f"- owner_decision_o3: `{gate['owner_decision_o3']}`", "",
+              f"- {decision_key}: `{gate[decision_key]}`", "",
+              ]
+    return lines
+
+
+def render_report(sidecar: dict[str, Any]) -> str:
+    """The markdown report: header, assumptions, breadth, labels, families, books, PBO, and the gate."""
+    header = sidecar.get("header", {})
+    lines = [
+        "# M4.7 S&P 500 PIT Rerun (registration v2, asset-level support)",
+        "",
+        "Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or "
+        "profitability claim; `formal_universe_evidence_eligible` and `formal_terminal_evidence_eligible` are false.",
+        "",
+        f"- Run status: `{sidecar['run_status']}`",
+        f"- Registration SHA-256: `{header.get('registration_sha256')}`",
+        f"- Code commit: `{header.get('code_commit')}`",
+    ]
+    if sidecar.get("stop"):
+        stop = sidecar["stop"]
+        lines += [f"- Stop reason (Class I): `{stop['reason']}` ({stop['detail']}); trial: `{stop['trial']}`; "
+                  f"trial records retained: {stop['trial_records_retained']}", ""]
+    if "discovery_window" not in header:
+        return "\n".join(lines) + "\n"
+    window, premises = header["discovery_window"], header["premises"]
+    lines += [
+        f"- Snapshot: `{header['snapshot_id']}`; manifest SHA-256 `{header['manifest_sha256']}`",
+        f"- support_sha256: `{header['support_sha256']}`; census JSON SHA-256 `{header['census_json_sha256']}`",
+        f"- Discovery window: holdout end `{window['holdout_end']}`, D0 `{window['D0']}`, D_last `{window['D_last']}`, "
+        f"D_end `{window['D_end']}`",
+        "- Prior-exposure overlap fractions: " + ", ".join(
+            f"{k} {_fmt(v)}" for k, v in header["prior_exposure_overlap_fraction"].items()),
+        f"- |U| = {header['U']}; support-excluded cells |X| = {header['X']} of {header['signal_eligible_cells']} "
+        f"signal-eligible cells (fraction {_fmt(header['excluded_fraction'])}); by reason "
+        f"{header['excluded_cells_by_reason']}",
+        f"- Eligible unpriced member-day fraction: {_fmt(header['eligible_unpriced_member_day_fraction'])}",
+        f"- Census readiness: `{header['census_readiness']}`",
+        f"- Holdout guard: first loaded date `{header['holdout_guard']['first_loaded_date']}`, "
+        f"overlap {_fmt(header['holdout_guard']['overlap'])}",
+        "",
+        "## Premises",
+        "",
+        f"- VP-1: {premises['VP-1']}; `a1_volume_half = {premises['a1_volume_half']}`",
+        f"- VP-2: {premises['VP-2']}; in_span_distribution_support fraction "
+        f"{_fmt(premises['in_span_distribution_support_fraction'])}; B_D quantiles {premises['b_d']}; "
+        f"S_D quantiles {premises['s_d']}; vp2_revisit_required {_fmt(premises['vp2_revisit_required'])}",
+        f"- O-8 disposition: {premises['o8_disposition']}",
+        f"- Rounding: {premises['rounding_statement']}",
+        "",
+        "## Assumptions",
+        "",
+        *[f"- {key}: {_fmt(value)}" for key, value in sidecar["assumptions"].items()],
+        "",
+    ]
+    if "labels" in sidecar:
+        labels = sidecar["labels"]
+        lines += ["## Labels and IC months", "",
+                  *[f"- {k}: {v}" for k, v in labels.items() if k != "breadth_by_month"], "",
+                  "## Monthly cross-sectional breadth", "",
+                  "A missing bar or an unevidenced disappearance excludes only the affected asset from the reset whose "
+                  "holding period needs that bar; every other asset and month stays evaluated.", "",
+                  "| Reset | Signal-eligible | Support-excluded | Evaluated |", "| --- | --- | --- | --- |",
+                  *[f"| {day} | {row['signal_eligible']} | {row['support_excluded']} | {row['evaluated']} |"
+                    for day, row in labels["breadth_by_month"].items()], ""]
+    if sidecar["run_status"] != "completed":
+        return "\n".join(lines) + "\n"
+    lines += _render_results(sidecar, "owner_decision_o3")
+    lines += [
               "## Limitations", "",
               "- Borrow cost is absent from the long-short engine; the constant spread understates costs before 2001.",
               "- Terminal rows pay a cost for holdings that are never measured, which is conservative for the strategy.",
@@ -1198,6 +2031,89 @@ def render_report(sidecar: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_report_v3(sidecar: dict[str, Any]) -> str:
+    """The registration v3 report: ceiling, segments, residual, sensitivity, looks, exposure, then the results."""
+    header = sidecar.get("header", {})
+    lines = [
+        "# M4.8 S&P 500 PIT Rerun (registration v3, two discovery segments)",
+        "",
+        "Evidence ceiling: `DIAGNOSTIC_ONLY`. No figure below supports a ranking, selection, promotion, or "
+        "profitability claim; `formal_universe_evidence_eligible` and `formal_terminal_evidence_eligible` are false.",
+        "",
+        f"- Run status: `{sidecar['run_status']}`",
+        f"- Registration SHA-256: `{header.get('registration_sha256')}`",
+        f"- Code commit: `{header.get('code_commit')}`",
+    ]
+    if sidecar.get("stop"):
+        stop = sidecar["stop"]
+        lines += [f"- Stop reason (Class I): `{stop['reason']}` ({stop['detail']}); trial: `{stop['trial']}`; "
+                  f"trial records retained: {stop['trial_records_retained']}", ""]
+    if "segments" not in header:
+        return "\n".join(lines) + "\n"
+    holdout, looks = header["holdout"], header["sequential_looks"]
+    lines += [
+        f"- Snapshot: `{header['snapshot_id']}`; manifest SHA-256 `{header['manifest_sha256']}`",
+        f"- Holdout `[{holdout['holdout_start']}, {holdout['holdout_end_exclusive']})`: {holdout['description']}; "
+        f"sealed rows loaded: {holdout['sealed_rows_loaded']}",
+        f"- IC month supply: {header['ic_month_supply']}; census readiness: `{header['census_readiness']}`",
+        f"- Sequential looks: {looks['count']} ({looks['note']}; earlier looks {looks['prior']})",
+        f"- Residual unevidenced disappearances per segment: {header['residual']}",
+        "- Sensitivity: " + ", ".join(f"`{case}` {value['status']} (enters gate: {_fmt(value['enters_gate'])})"
+                                      for case, value in header["sensitivity"].items()),
+        "",
+        "## Segments",
+        "",
+        "| Segment | Anchor row | First reset | Last IC reset | Last book row | IC months | Members | Exposure overlap |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        *[f"| {sid} | {seg['anchor_row']} | {seg['first_reset']} | {seg['last_ic_reset']} | {seg['last_book_row']} | "
+          f"{seg['ic_months']} | {seg['member_columns']} | "
+          + ", ".join(f"{k} {_fmt(v)}" for k, v in header["prior_exposure_overlap_fraction"][sid].items()) + " |"
+          for sid, seg in header["segments"].items()],
+        "",
+        "## Assumptions",
+        "",
+        *[f"- {key}: {_fmt(value)}" for key, value in sidecar["assumptions"].items()],
+        "",
+    ]
+    if "labels" in sidecar:
+        lines += ["## Labels and IC months", ""]
+        for sid, labels in sidecar["labels"].items():
+            lines.append(f"- {sid}: " + ", ".join(f"{k} {v}" for k, v in labels.items() if k != "by_month"))
+        lines.append("")
+    if sidecar["run_status"] != "completed":
+        return "\n".join(lines) + "\n"
+    lines += ["## Family A prior-exposure overlap by segment", "",
+              "Pre-segment statistics carry their stated exposure overlap; the calendar-unexposed pre subsample is "
+              "descriptive, and factor choices were made with knowledge of later data.", "",
+              "| Factor | Named in prior exposure | Overlap by segment | Unexposed pre months | Unexposed status | "
+              "Unexposed mean IC |", "| --- | --- | --- | --- | --- | --- |"]
+    for factor_id, exposure in sidecar["exposure"].items():
+        subsample = exposure["calendar_unexposed_pre_subsample"]
+        lines.append("| " + " | ".join(_fmt(v) for v in (
+            factor_id, exposure["factor_named_in_prior_exposure"],
+            "; ".join(f"{sid}: " + ", ".join(f"{k} {_fmt(v)}" for k, v in value.items())
+                      for sid, value in exposure["per_segment"].items()),
+            subsample["months"], subsample["status"], subsample.get("mean_ic"))) + " |")
+    lines += ["", "## Per-segment Family A IC (descriptive)", "",
+              "| Factor | Segment | Months | Mean IC | HAC p |", "| --- | --- | --- | --- | --- |"]
+    for factor_id, per_segment in sidecar["per_segment_ic"].items():
+        for sid, part in per_segment.items():
+            lines.append(f"| {factor_id} | {sid} | {part['months']} | {_fmt(part['mean_ic'])} | "
+                         f"{_fmt(part['hac_pvalue'])} |")
+    lines += [""]
+    lines += _render_results(sidecar, "owner_decision_o48_3")
+    lines += ["## Limitations", "",
+              "- Borrow cost is absent from the long-short engine.",
+              "- Unmarked halt rows carry a zero row return; the gap return lands on the resumption row, so daily "
+              "attribution shifts while cumulative returns stay exact.",
+              "- The locked-capital rule leaves the long-only book below full investment while a position is locked; "
+              "long-short net and gross departures at locked execution rows are typed and counted.",
+              "- Family B composites restart their warm-up in each segment.",
+              "- Book return tests pool the concatenated daily series with the carried estimator (descriptive); the "
+              "primary IC test uses the segment-aware estimator.", ""]
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m research.m4_7_sp500_pit_rerun")
     parser.add_argument("--snapshot-id", required=True)
@@ -1205,7 +2121,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--registration", default=str(REGISTRATION_PATH))
     parser.add_argument("--registration-sha256", required=True)
     parser.add_argument("--output-dir", default=str(REPOSITORY_ROOT))
-    parser.add_argument("--census-json", default=str(CENSUS_JSON))
+    parser.add_argument("--census-json", default=None)
     parser.add_argument("--seal-record", default=str(SEAL_RECORD))
     args = parser.parse_args(argv)
     try:
