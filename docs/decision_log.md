@@ -15,6 +15,62 @@ investment performance.
 
 ---
 
+## 2026-09-26 - M4.7 Support v2: Asset-Level Holding-Period Isolation and Registration v2 Gate Record
+
+Context:
+
+- The owner identified the v1 global common-support requirement as over-strict: one asset's missing bar or
+  unevidenced delisting opened a market-wide gap window and dropped short segments for every asset, leaving
+  32 IC months of 61 scheduled resets on real_v1 (476 excluded rows, fraction 0.3842).
+- Task `v8-exec-breadth-support-fix-a1` (GENERAL_EXEC, Coordination Standard V8.7) directed asset-level
+  isolation under R1-R12.
+
+Decision:
+
+- Support contract `asset_level_holding_period_support_exclusion_v1` replaces
+  `common_support_segments_open_terminal_holdings_v3`. A missing bar or unevidenced disappearance excludes only
+  the affected asset from the reset whose holding period needs that bar. Evaluation runs as one continuous
+  window `[D0, D_last]`. R-CENSUS-2 reads the asset-level excluded fraction (support-excluded cells over
+  signal-eligible cells, cap 0.05); the gap-window count no longer exists.
+- Registration v2 (`docs/preregistrations/m4_7_sp500_pit_rerun_v2.json`, SHA-256 `4a6f8b5a…e7dc`) was frozen
+  from census v2 before the rerun. Families, statistics, timing, terminal, books, benchmarks, and gate are
+  unchanged; costs, objective, and the O-3 choice (`proceed_as_registered`) carry over from v1. The seal window
+  is unchanged. v1 artifacts stay byte-identical as history, and the v1 result stays the M4.7 milestone record.
+
+Registration v2 Gate Inputs:
+
+- Snapshot `real_v1`; support SHA-256 `21731a0f…e2f9`; census v2 JSON SHA-256 `8308828f…967e`;
+  seal confirmation v2 `8e9e7b02…88ae`.
+- |U| = 24; exclusion cells |X| = 27 of 26,237 signal-eligible cells (fraction 0.00103; 26 unresolved
+  delisting, 1 missing bar); 61 evaluation resets; 60 IC months (2021-08-31 through 2026-07-31); evaluated
+  breadth 424-433 names per reset (median 430).
+
+Family A (6 factors, primary Rank IC, BY within family of 6):
+
+| Factor | T_f | Mean IC | HAC p | BY q | Half 1 mean | Half 2 mean | Sign stable | MDE_f | MDE_single | LS mean daily net | LS HAC p |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `MOM_12_1` | 60 | 0.018768 | 0.328505 | 1.000000 | 0.026580 | 0.010956 | true | 0.072424 | 0.053812 | 0.000176 | 0.402787 |
+| `HIGH_52W` | 60 | 0.009038 | 0.647710 | 1.000000 | 0.015539 | 0.002536 | true | 0.074575 | 0.055411 | 0.000033 | 0.877417 |
+| `REV_1M` | 60 | -0.017389 | 0.336964 | 1.000000 | 0.002249 | -0.037027 | false | 0.068284 | 0.050736 | -0.000194 | 0.273938 |
+| `LOW_VOL_252` | 60 | -0.006301 | 0.815250 | 1.000000 | 0.015164 | -0.027765 | false | 0.101671 | 0.075543 | -0.000240 | 0.331114 |
+| `LOW_BETA_252` | 60 | -0.015966 | 0.641517 | 1.000000 | 0.014032 | -0.045964 | false | 0.129300 | 0.096072 | -0.000207 | 0.462934 |
+| `AMIHUD_ILLIQ_63` | 60 | -0.013076 | 0.258819 | 1.000000 | -0.023956 | -0.002196 | false | 0.043663 | 0.032442 | -0.000113 | 0.324737 |
+
+- Family B: 63 of 63 trials evaluated (v1: 55 evaluated, 8 invalid for insufficient IC months); zero positive
+  BY rejections.
+- CPCV PBO over 1,239 measured rows (v1: 763): `A_long_short` 0.2143, `A_excess`
+  0.1714, `B_long_short` 0.4571, `B_excess` 0.3429.
+- Gate: `power_status` `inadequate` (MDE_f 0.0437-0.1293 against the 0.02 floor); zero survivors; zero
+  contrary rejections; `kill_reachable_projection` false. Outcome `extend_first`.
+
+Consequences:
+
+- Breadth and continuity are restored. Realized MDE_f falls by 5-30 percent per factor against v1 (median
+  26 percent; square-root scaling from 32 to 60 IC months predicts 27 percent, and each factor's long-run
+  variance moves with its new months), and stays 2.2-6.5 times the 0.02 floor. The program decision is unchanged:
+  extend breadth or history under a new registration; the holdout stays sealed.
+- Owner follow-up: confirm the carried-over O-3 choice for registration v2 and scope the next extension.
+
 ## 2026-09-26 - Milestone 4.7 Point-in-Time Rerun Decision Gate Record: extend_first
 
 Context:

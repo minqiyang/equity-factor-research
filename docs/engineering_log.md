@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-26 - M4.7 support v2: asset-level holding-period isolation (owner correction)
+
+- Owner correction (process failure): the owner identified the v1 global common-support schedule as an
+  over-strict, over-engineered condition. One asset's missing bar or unevidenced delisting opened a
+  market-wide gap window to the next reset, and every segment shorter than 42 rows was dropped for all
+  assets. On real_v1 this produced 20 gap windows, 21 segments, 476 excluded rows (fraction 0.3842), and
+  32 IC months of 61 scheduled resets, although each month held 424-433 eligible priced members.
+  Recorded here per AGENTS.md; the design rule now lives in `research/m4_7_common_support.py` (support
+  contract `asset_level_holding_period_support_exclusion_v1`) and in registration v2.
+- Design: an exclusion cell `X(r, i)` is a signal-eligible asset without a bar on some row of its reset
+  holding period `[r, h(r)]` (ending at `e - 1` for a settled terminal event at `e`; `[r, r]` at the last
+  reset). Reason `unresolved_delisting` when the asset's disappearance row falls in that period, else
+  `missing_bar`. Signals still read `S_mask`; IC labels, IC pairs, books, and the equal-weight benchmark read
+  `E = S_mask & ~X`. One continuous engine call per book over `[D0 - 1, D_last]`.
+- Removed: `GapWindow`, `Segment`, `gap_windows`, `peel_terminal_resets`, `support_segments`,
+  `holding_cells`, `base_exclusion_cells`, `run_segmented_book`, `excluded_event_exposure`, and the
+  segment bookkeeping in the census and runner. `research/m4_7_common_support.py` is 481 -> 369 lines.
+- R1 disclosure: each exclusion cell conditions on its own asset's bar availability over one holding
+  period. v1 conditioned the whole market on the same events; v2 narrows that conditioning to 27 cells of
+  26,237 signal-eligible cells on real_v1. Signal inputs never read `X`.
+- R4: an unevidenced disappearance is never held through its affected period, so no default exit is
+  priced. The engines' held-price refusals remain Class I guards; the v2 rerun raised none.
+- Versioning: v1 registration, seal record, census report, rerun outputs, and v1 private derived files
+  stay byte-identical. v2 writes `census/asset_support.json`, `census/census_detail_v2.json`,
+  `rerun/label_records_v2.json` (private), `reports/m4_7_coverage_census_v2.{json,md}`,
+  `docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json` (differs from v1 only in the census
+  digest), `docs/preregistrations/m4_7_sp500_pit_rerun_v2.json`, and `reports/.../m4_7_sp500_pit_rerun_v2*`.
+  The runner refuses the v1 document at `schema_version`.
+- Real-data results: see `EXPERIMENT_LOG.md` entry `20260926-003`. 61 evaluation resets, 60 IC months,
+  evaluated breadth 424-433 (median 430), Family A MDE_f 0.0437-0.1293 (v1 0.0624-0.1706), outcome
+  `extend_first`.
+- Tests: new asset-local oracles (T-SUP-1, 2, 3, 8, 11 under support v2), engine refusal on `S_mask` and
+  whole-window completion on `E`, fixture holdings checks that no book holds an excluded cell, v2
+  registration check, and v1 refusal. M4.7 plus governance and project-structure suites pass.
+- Ablation: (A1, simplification) typing `unresolved_delisting` for every cell of an asset in `U` gave an
+  identical real_v1 record (SHA-256 unchanged) but mistypes an earlier halt of a later-delisted asset; kept
+  the in-period rule and added a witness test. (A2, guard necessity) dropping the terminal-settlement cutoff
+  excludes evidenced settlements from their final period and fails the settlement oracles; retained. The
+  `d0 >= 1` guard, the label-bar Class I guard, and the bind-time support-file check are retained.
+
 ## 2026-09-26 - Phase M4.7c-2 decision record and Milestone 4.7 conclusion
 
 - Source: Phase M4.7c-2 under Binding Implementation Plan Revision 11 (§7.3 stage `c-2`).

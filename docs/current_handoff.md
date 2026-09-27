@@ -1,6 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-26 for the Milestone 4.7 stage c-2 decision record and milestone conclusion.
+Updated: 2026-09-26 for the M4.7 support v2 correction (asset-level holding-period isolation) and
+registration v2 rerun.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,15 +25,16 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `a9c94dca59649dcb62af9b5d9fd65bde3400af45` (main after PR #269).
+  `e4662859f684d23e1d79b566c14e7391b1f701e6` (main after PR #270).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #269: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
-  M4.7b-2 preregistration freeze on real_v1, and M4.7c-1 point-in-time rerun on real_v1 (`extend_first`).
+- Merged through PR #270: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
+  M4.7b-2 preregistration freeze on real_v1, M4.7c-1 point-in-time rerun on real_v1
+  (`extend_first`), and the M4.7c-2 decision record.
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
-  `45fe5adc` (PR #267), `0d87d7eb` (PR #268), and `a9c94dca` (PR #269).
+  `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), and `e4662859` (PR #270).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -43,32 +45,39 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Milestone 4.7 Binding Implementation Plan Revision 11 (`coord/plans/m4_7_binding_plan.md`,
-  SHA-256 `6541db93…6407`) is formally completed.
-- Phase M4.7c-2 candidate delivers:
-  - `docs/decision_log.md`: deterministic decision gate record for M4.7 rerun on real_v1 (`extend_first`).
-  - `docs/current_roadmap.md`: Milestone 4.7 completed status and updated imperfection backlog rows.
-  - `docs/engineering_log.md`: M4.7c-2 milestone completion entry.
-  - `docs/current_handoff.md`: refreshed handoff to baseline `a9c94dca...`.
-- Program decision: "Extend breadth or history under a new registration; the holdout stays sealed."
+- Branch `claude/breadth-support-isolation-fix` (local commits; no PR opened) delivers support v2
+  under task `v8-exec-breadth-support-fix-a1`:
+  - `research/m4_7_common_support.py`: asset-level exclusion cells `X` and the evaluation mask
+    `E = S_mask & ~X` over one continuous window; gap windows, segments, and peeling removed.
+  - `research/m4_7_coverage_census.py`: `census/asset_support.json`, the v2 public census, and
+    R-CENSUS-2 on the asset-level excluded fraction.
+  - `research/m4_7_sp500_pit_rerun.py`: registration v2 contract, one engine call per book, `E` for
+    IC, books, and benchmark; refuses the v1 document at `schema_version`.
+  - Real-data outputs: census v2, seal confirmation v2, registration v2 (`4a6f8b5a…e7dc`), and the
+    rerun v2 report, sidecar, and 231-record trials JSONL.
+- v1 registration, seal record, census, rerun outputs, and v1 private derived files are unchanged.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
-Milestone 4.7 is completed; see `docs/current_roadmap.md`. The pre-registered point-in-time rerun on real_v1
-confirms that statistical power is inadequate and no factor or composite survives BY correction.
-Under the deterministic gate, the outcome is `extend_first` and the holdout window remains sealed and unaccessed.
-Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+Milestone 4.7 is completed; see `docs/current_roadmap.md`. Registration v2 on real_v1 evaluates all
+61 resets and 60 IC months at 424-433 names per reset (27 asset-level exclusion cells of 26,237).
+No factor survives BY correction; Family A MDE_f is 0.0437-0.1293 against the 0.02 floor, so the
+gate outcome stays `extend_first`. The holdout window remains sealed and unaccessed. Evidence
+ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- No operational blocker. Milestone 4.7 delivery is complete.
-- Follow-up research requires expanding universe breadth or historical depth under a new preregistration.
+- Owner review of support v2 and registration v2, including the O-3 choice carried over from v1
+  (`proceed_as_registered`).
+- Publication (push, PR, merge) of this branch needs explicit owner or coordinator authorization.
+- Follow-up research still requires expanding universe breadth or historical depth under a new
+  preregistration.
 
 ## Next Safe Action
 
-- Open PR for Phase M4.7c-2, execute review verification, squash-merge into `main`,
-  and await owner scoping instructions for the next research phase.
+- Coordinator dispatches CRITICAL review of branch `claude/breadth-support-isolation-fix`; on
+  acceptance, publish under the protected PR lifecycle and await owner scoping of the next extension.
 
 ## Source Routing
 

@@ -53,6 +53,10 @@ The program follows five primary milestones:
   snapshot `real_v1` under preregistration `6ea218a6…1c9f` with 0 Class I stops.
   The deterministic gate evaluates to `extend_first` (power inadequate, 0 BY
   rejections in Family A or Family B, PBO >= 0.50, holdout partition sealed).
+- Support v2 (owner correction, branch `claude/breadth-support-isolation-fix`): asset-level
+  holding-period isolation replaces the global gap-window schedule. Registration v2 (`4a6f8b5a…e7dc`)
+  on real_v1 evaluates all 61 resets and 60 IC months at 424-433 names per reset; Family A MDE_f
+  0.0437-0.1293; outcome stays `extend_first`.
 - The following earlier program-position entries preserve the Stage 2/M3
   checkpoint and historical research evidence.
 - Last externally verified protected baseline:
@@ -178,6 +182,11 @@ Evidence ceiling remains `DIAGNOSTIC_ONLY`.
    (SHA-256 `6ea218a6…1c9f`) binding upstream digests, Owner Decisions O-1, O-3, O-6, O-7, O-8 (PR #268).
 7. **Rerun and gate.** Executed on snapshot `real_v1` with 0 Class I stops, BY corrections,
    and deterministic decision gate outcome `extend_first` (PR #269).
+8. **Support v2 (owner correction).** Asset-level holding-period isolation
+   (`asset_level_holding_period_support_exclusion_v1`) replaces the v1 gap windows and segments. A missing
+   bar or unevidenced delisting excludes only the affected asset-period (27 cells of 26,237 on real_v1).
+   Registration v2 restores 60 IC months (v1: 32) and 424-433 evaluated names per reset; MDE_f
+   0.0437-0.1293 stays above 0.02, so the outcome stays `extend_first`. v1 artifacts remain unchanged.
 
 ## Imperfection Policy And Lightweight Backlog
 

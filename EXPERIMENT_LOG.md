@@ -1424,6 +1424,76 @@ Execute the frozen S&P 500 point-in-time rerun protocol on snapshot `real_v1` bo
 PR #269 merged at commit `a9c94dca…af45` following verified dual independent audit (MATERIAL: 0). Milestone 4.7 concludes in Phase M4.7c-2 with deterministic gate record in `docs/decision_log.md` (outcome `extend_first`, holdout partition sealed), updated roadmap and backlog in `docs/current_roadmap.md`, and refreshed handoff.
 
 
+## 20260926-003-m47-sp500-pit-rerun-real-v1-support-v2
+
+### Experiment ID
+
+`20260926-003-m47-sp500-pit-rerun-real-v1-support-v2`
+
+### Date
+
+`2026-09-26`
+
+### Milestone & Phase
+
+Milestone 4.7 follow-up under owner correction: asset-level support isolation (task
+`v8-exec-breadth-support-fix-a1`). Strategy change: support contract
+`asset_level_holding_period_support_exclusion_v1` replaces the v1 global gap-window schedule.
+
+### Objective
+
+Rerun the frozen S&P 500 point-in-time protocol on snapshot `real_v1` with asset-level isolation: a missing
+bar or unevidenced delisting excludes only the affected asset from the reset whose holding period needs that
+bar, so every scheduled month and the full cross-section stay evaluated.
+
+### Trial Family Declared Before Results
+
+Registration v2 (`docs/preregistrations/m4_7_sp500_pit_rerun_v2.json`, SHA-256 `4a6f8b5a…e7dc`) was committed
+from census v2 before the rerun. Trial families are identical to v1: Family A (6 factors), Family B (63 trials),
+Family A books under three cost cases and Family B books at primary costs (231 trial records). The v1 result
+(entry `20260926-002`) stays recorded and unchanged.
+
+### Bound Inputs
+
+- Snapshot `real_v1`; manifest `ffa76053…35c7` (unchanged); support `21731a0f…e2f9`; census v2 JSON
+  `8308828f…967e`; seal confirmation v2 `8e9e7b02…88ae` (seal window `[2019-07-31, 2020-07-31)` unchanged).
+- Costs: primary 1 bp commission and 4 bps slippage; 2x sensitivity; zero-cost diagnostic only (R8).
+- Benchmarks: `SPY.US#E1` adjusted close; equal-weight PIT universe on the same evaluation mask.
+
+### Output Artifacts
+
+- `reports/m4_7_coverage_census_v2.json` and `.md`
+- `reports/m4_7_sp500_pit_rerun_v2.md` (SHA-256 `59b0611d…f2b4`)
+- `reports/experiment_logs/m4_7_sp500_pit_rerun_v2.json` (SHA-256 `3cab0b26…b518`)
+- `reports/experiment_logs/m4_7_sp500_pit_rerun_v2_trials.jsonl` (SHA-256 `d81668f1…baf0`, 231 records)
+
+### Results (DIAGNOSTIC_ONLY)
+
+- Run status `completed`, zero Class I stops, runtime 20 minutes.
+- Support: |U| = 24; 27 exclusion cells of 26,237 signal-eligible cells (fraction 0.00103; 26 unresolved
+  delisting, 1 missing bar); 61 evaluation resets and 60 IC months (v1: 32); evaluated breadth 424-433 per
+  reset (median 430); 1,239 measured book rows (v1: 763).
+- Family A: zero BY rejections (all BY q = 1.0); MDE_f 0.0437-0.1293 (v1 0.0624-0.1706); sign-stable:
+  `MOM_12_1`, `HIGH_52W`.
+- Family B: 63 of 63 evaluated (v1: 55); zero positive BY rejections.
+- CPCV PBO: `A_long_short` 0.214, `A_excess` 0.171, `B_long_short` 0.457, `B_excess` 0.343.
+- Equal-weight PIT benchmark excess total return over SPY: -0.269 (information ratio -0.477).
+- Gate outcome `extend_first` (`power_status` `inadequate`).
+
+### Limitations
+
+- Each exclusion cell conditions on its own asset's bar availability over one holding period (27 cells).
+- Eligible unpriced member-day fraction stays 0.330 (members without a discovery panel); breadth covers
+  priced members only.
+- Registration v2 follows the v1 result on the same snapshot and discovery window; it is a second registered
+  look at the same data, stated here under R9.
+- No terminal event among priced members settles inside the window, so terminal-aware labels are zero.
+
+### Next Action
+
+Owner review of the support v2 correction and registration v2; the program decision stays "extend breadth or
+history under a new registration; the holdout stays sealed."
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

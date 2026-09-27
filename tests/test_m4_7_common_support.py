@@ -97,6 +97,18 @@ def test_t_sup_1_exclusion_cells_are_asset_and_period_local():
     assert schedule.s_mask.iloc[R[3] - 1]["LATE"] and not schedule.s_mask.iloc[R[1] - 1]["LATE"]
 
 
+def test_t_sup_1_reason_types_only_the_period_that_holds_the_disappearance():
+    """Ablation witness: an asset in ``U`` with an earlier halt keeps ``missing_bar`` for the halt's period."""
+    R = scheduled_reset_rows(Y2024)
+    s_mask = pd.DataFrame(True, index=Y2024, columns=["GONE"])
+    s_mask.iloc[R[6]:] = False
+    bars = pd.DataFrame(True, index=Y2024, columns=["GONE"])
+    bars.iloc[R[2] + 4, 0] = False
+    bars.iloc[R[6] + 3:, 0] = False
+    _, reasons = support_exclusions(s_mask, bars, R, int(R[0]), int(R[-1]), {}, {"GONE": int(R[6]) + 3})
+    assert reasons == (("GONE", int(R[2]), "missing_bar"), ("GONE", int(R[6]), "unresolved_delisting"))
+
+
 def test_t_sup_2_every_reset_stays_in_one_continuous_window():
     R, _, _, schedule = isolation_fixture()
     assert schedule.evaluation_resets.tolist() == R.tolist()
