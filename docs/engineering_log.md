@@ -12,6 +12,112 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage A: partition rule v2, seal carry, segment-local validation, census v3 code
+
+- Source: Milestone 4.8 Binding Implementation Plan Revision 3 (`coord/plans/m4_8_binding_plan.md`, SHA-256
+  `bd1bf587…bf3e`), §7.2 Stage A, owner decision O48-2(i). Synthetic fixtures only; no private data was read.
+- Partition (plan 2.2): `sealed_window_only_partition_v2` makes only `[holdout_start, holdout_end)` holdout and writes
+  discovery rows to `discovery_pre` and `discovery_post` side files for price, split, and dividend rows. The seal
+  file selects the rule (`holdout_seal_v2.json` selects v2); the partitioner records `partition_rule`,
+  `discovery_layout`, and `pre_side_volume_basis` in the manifest before it partitions, and a manifest without a
+  declaration stays rule v1 byte-identically. Validation statuses, the scale check, and split evidence are per side
+  (Seat 2 R3-A3), so a post-side defect quarantines only the post side.
+- SL-8: the partitioner divides pre-side volume by `F_after`, the product of the code's split ratios dated on or after
+  `holdout_start`, and writes no ratio, factor, or count derived from them. Missing split evidence or an invalid later
+  split row writes pre-side volume missing with the typed status `volume_basis_unverified:split_evidence_missing` or
+  `:later_split_invalid`. The eod staleness key under rule v2 is the raw split table hash (Seat 2 R3-A1). A date-only
+  flag `has_row_on_or_after_holdout_start` on split and dividend entries feeds the SL-2 side test (R3-A4).
+- Seal carry: `write_seal_carry` builds `holdout_seal_v2.json` (`carried_forward_sealed_window_v1`) from the committed
+  seal v1 bytes after verifying `b7f9380f…f506`, the embedded prospective `93ce6e5a…9882`, and the confirmation v2
+  `8e9e7b02…88ae`; a present private prospective file must match. Every read restates the seal v1 window, so a forged
+  window refuses. The record carries `prior_exposures`, `seal_bracket_computation_forbidden`, its scope (downstream of
+  the partitioner), and a `partitioner_value_access` entry for the SL-8 split-ratio read (R3-A2).
+  `write_prospective_seal` (and so `research/m4_7_holdout_seal.py`) and the v2 census refuse on a carried seal
+  (`seal_window_recompute_forbidden`).
+- Membership (plan 2.3, 2.4): `research/m4_8_membership.py` reads the supplement, change log, and count anchors and
+  applies M-1..M-8 with typed statuses; `curated_coverage_start_v2` returns the start or `blocked:<code>` with the
+  failing anchors. The universe build joins valid supplements to the vendor table under
+  `effective_date_as_known_at_v1`.
+- Universe build rule v2 path: `discovery_segments` (the section 7 interface), per-side loaders with an access log,
+  SL-1 per-side checks, SL-2 anchoring at the code's last pre-side bar, SL-3 pre-side panels ending at the pre
+  segment's feature ceiling and normalized to their own last row (no stored value carries `a(tau)`), SL-4/SL-5 seal-gap
+  identity splits with interval pieces typed `seal_gap_identity_split`, SL-6 for the benchmark, and SL-8 statuses in the
+  build manifest. `build_universe` takes `D0_pre` from the membership census.
+- Census: `membership-census` (G1), `census-v3` with per-segment metrics, `derive_readiness_v3` (R3-1..R3-10 in table
+  order), the R3-9 seal-carry check, and a public leak scan that refuses a payload holding a code, name, or private
+  path (T-PUB-1). The public census merges `volume_basis_unverified` reasons into one count; the private detail keeps
+  them apart (R3-A2).
+- Verification: 71 new Stage A test items (T-PART-1..7, T-SEAL3-1..2, T-MEM-1..10, T-COV-1..12, T-SEG-1..3, 8, 9
+  segment rows, T-UNI-SEG-1..8, T-ID-SEAL-1..3, T-VOL-SEAL-1..4, T-SEAL-BR-1, T-CEN3-1..13, T-PUB-1, T-RET3-1, and four
+  ablation witnesses). The M4.7 a-2 end-to-end pipeline and the registration v2 rerun on synthetic fixtures give
+  byte-identical outputs on this code and on `dcf7b86` (1,846 files). Full suite and ruff results are in the Stage A
+  report.
+- Ablation: 4 simplification attempts and 13 guard checks, each in isolation. Kept: removing the unreachable
+  seal-bracket guard call in the universe build (bars come from one side file) and its function, and removing the
+  build manifest's curated-membership block, which duplicated `discovery_inputs_sha256` and the membership census.
+  Restored: dropping fill aliases in change matching and dropping the seal-piece exclusion from code-level entries,
+  each caught by a new witness test. Every guard (SL-8 rebase, SL-3 normalization and ceiling, the R3-A4 flag, the
+  rule v1 entry check, both recompute refusals, the restated carried window, the undefined-amount rule, SL-5, the
+  leak scan, the carry writer's ambiguity refusal, and the manifest-seal agreement) fails at least one test when
+  removed and stays.
+- Interim boundary until Stage B: terminal evidence refuses on a rule v2 snapshot (`read_discovery` without a side
+  raises `partition_side_invalid`); the runner binds registration v2 hashes and refuses other snapshots; common
+  support has no rule v2 guard and has no caller on a rule v2 snapshot (the v2 census refuses carried seals).
+- T-SEG-9's engine anchor oracle and the book and composite half of T-SEAL-BR-1 exercise Stage B code (Seat 2
+  R3-A6); Stage A tests the segment rows and the universe-build half.
+
+### SL-7 consumer inventory (Stage A)
+
+Command: `rg -n -i '\bi_h\b|holdout_end|holdout_start|discovery_window|read_holdout_end|partition_of' <file>` at base
+`dcf7b86`; unit: matching lines. Base totals: universe build 17, census 19, `holdout_partition.py` 19,
+`eodhd_retrieval.py` 7 (Stage A 62); terminal evidence 8, common support 10, runner 14 (Stage B 32); and
+`research/m4_7_holdout_seal.py` 1 (R3-A6).
+
+| File (base lines) | Match | v2 disposition | Stage |
+| --- | --- | --- | --- |
+| `holdout_partition.py:11` | module docstring | Rewritten: states rule v1, rule v2, and the carried seal | A |
+| `holdout_partition.py:49,51` | `latest_holdout_end` in `SEAL_RULES` | Count-based seal rules apply to rule v1 only; guarded by `refuse_carried_window_recompute` | A |
+| `holdout_partition.py:92,93,95` | `partition_of` | Kept as rule v1; rule v2 is `side_of`; callers dispatch through `PartitionWindow.partition` | A |
+| `holdout_partition.py:159,160` | `read_seal` parsing | Rule v1 reader kept; `read_seal_carry` for v2; `read_partition_window` dispatches on the seal file | A |
+| `holdout_partition.py:167,168,170` | `read_holdout_end` | Rule v1 helper kept for M4.7 seal tests; no production caller remains | A |
+| `holdout_partition.py:306,307,308,311,314,315` | `derive_holdout_window` | Count-based derivation, rule v1 only; its snapshot entry point refuses on a carried seal | A |
+| `holdout_partition.py:338,339` | `build_prospective_seal` fields | Rule v1 record; rule v2 uses `build_seal_carry_record` | A |
+| `eodhd_retrieval.py:48,50` | imports | Replaced by `PartitionWindow`, `read_partition_window`, `rule_partitions` | A |
+| `eodhd_retrieval.py:562,629,771` | partition step | `window.partition` over `window.partitions`; per-side scale check and split evidence; SL-8 rebase | A |
+| `eodhd_retrieval.py:741` | `_run_table` seal read | `read_partition_window` and `_declare_partition_rule` | A |
+| `eodhd_retrieval.py:849` | `cmd_calendar` seal check | `read_partition_window` (either seal) | A |
+| `m4_7_universe_build.py:91,95,102` | `Snapshot` fields and `open` | Dispatch by seal file with manifest agreement; adds `holdout_start`, `partition_rule`, `seal_file`, access log | A |
+| `m4_7_universe_build.py:227,228,229,232,234` | `discovery_window` | Kept for rule v1; rule v2 uses `discovery_segments` | A |
+| `m4_7_universe_build.py:504` | window in `build_universe` | Rule v2: segments and side row bounds | A |
+| `m4_7_universe_build.py:528` | off-calendar count | Rule v2 counts both sides outside the seal | A |
+| `m4_7_universe_build.py:622,850,858` | E5 with `i_h` | Per-side E5; a gap with an endpoint outside every side is skipped and counted | A |
+| `m4_7_universe_build.py:696,707` | discovery-bar test and bar slice | Per-side episodes, spans, and slices; SL-2 anchor on the pre side | A |
+| `m4_7_universe_build.py:774,775` | build-manifest window fields | Rule v1 kept; rule v2 writes `segments`, `holdout_start`, `partition_rule` | A |
+| `m4_7_coverage_census.py:59,250,300,301,326,329,349` | v1 census window and inputs | Rule v1 census only; `run_census` refuses a carried seal first; census v3 uses segments | A |
+| `m4_7_coverage_census.py:158,159,197` | v1 readiness seal thresholds | Rule v1 only; census v3 uses `derive_readiness_v3` | A |
+| `m4_7_coverage_census.py:466,467,473,476` | `_breadth` coverage confirmation | Count-based, rule v1 only (guarded) | A |
+| `m4_7_coverage_census.py:525,777,780` | v1 unpriced causes and quality window | Rule v1 only; census v3 computes per-segment causes on side panels | A |
+| `m4_7_coverage_census.py:950,953` | v1 markdown | Rule v1 only; census v3 writes its own report | A |
+| `m4_7_terminal_evidence.py:37,81,83,91,92,101,111,131` | window and `deferred_holdout` scope | Seal-window deferral and complement class (plan 3.1); refuses on rule v2 until rewritten | B |
+| `m4_7_common_support.py:239,262,303,313,315,316,329,330,337,364` | window and support record | Per-segment support replaced by the causal mask (plan 4.1) | B |
+| `m4_7_sp500_pit_rerun.py:69,436,437,438,452,453,466,479,845,861,863,1079,1081,1085` | window, seal guard, records | Segments, per-segment seal guard, carried-seal binding, segment report fields | B |
+| `m4_7_holdout_seal.py:114` | seal window print | Rule v1 CLI; `write_prospective_seal` refuses on a carried seal (T-SEAL3-2 calls it) | A |
+
+Semantic consumers outside the pattern:
+
+| Site | v2 disposition | Stage |
+| --- | --- | --- |
+| `Snapshot.read_discovery`, `discovery_status`, `evidence_valid` (role `discovery`) | `side` argument; a side the rule does not define refuses `partition_side_invalid`; every open is logged with its side | A |
+| `discovery_inputs_sha256` | Per-side file hashes; curated membership hashes under rule v2 | A |
+| `_discovery_bars`, split and dividend frames in the universe build | Per side | A |
+| `eodhd_retrieval._split_evidence`, `_discovery_split_rows`, `_eod_stale`, `PARTITIONS` and `_commit` counters | Per-side basis, raw split table staleness key, counters per rule partitions | A |
+| `eodhd_retrieval.cmd_all` seal presence | Accepts the carry record | A |
+| Census `_corporate_actions`, `_history`, `_integrity`, `_holdout_integrity`, `_evidence_basis_counts` | Rule v1 census only; census v3 computes its own inputs | A |
+| `research/real_data_multifactor_diagnostic.build_adjusted_research_panels` | Unchanged; SL-8 and SL-3 make its inputs share one basis per side | A |
+| `m4_7_terminal_evidence.py:267,303,308` (`evidence_valid`, `read_discovery`) | Per-side reads | B |
+| `m4_7_common_support.write_support_files`, `_panels` (inventory by symbol) | Per-side inventory records | B |
+| `m4_7_sp500_pit_rerun.bind_snapshot` (`SEAL_FILE` hash) | Carry record hash | B |
+
 ## 2026-09-26 - M4.7 support v2: asset-level holding-period isolation (owner correction)
 
 - Owner correction (process failure): the owner identified the v1 global common-support schedule as an

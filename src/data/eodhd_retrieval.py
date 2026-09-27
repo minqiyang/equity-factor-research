@@ -39,15 +39,23 @@ from typing import Any, Callable
 import pandas as pd
 
 from data.holdout_partition import (
+    DISCOVERY_LAYOUT_V2,
     MANIFEST_FILE,
     MEMBERSHIP_FILE,
+    PARTITION_RULE_V1,
+    PARTITION_RULE_V2,
+    PRE_SIDE_VOLUME_BASIS,
+    SEAL_CARRY_FILE,
     SEAL_FILE,
+    SIDES,
+    PartitionWindow,
     SnapshotRefusal,
     authorized_records,
+    declared_partition_rule,
     parse_strict_date,
-    partition_of,
     read_authorized_parquet,
-    read_holdout_end,
+    read_partition_window,
+    rule_partitions,
     sha256_bytes,
 )
 from data.parquet_loader import _standardize_eod_frame
@@ -62,7 +70,6 @@ MANIFEST_SCHEMA_VERSION = "m4_7_retrieval_manifest_v1"
 LOG_FILE = "retrieval_log.jsonl"
 TABLES = ("splits", "eod", "dividends")
 ENDPOINTS = {"eod": "eod", "splits": "splits", "dividends": "div"}
-PARTITIONS = ("discovery", "holdout")
 EOD_COLUMNS = ("date", "open", "high", "low", "close", "adjusted_close", "volume")
 MEMBERSHIP_FIELDS = ("Code", "Name", "StartDate", "EndDate", "IsActiveNow", "IsDelisted")
 SYMBOL_FIELDS = ("Code", "Name", "Exchange", "Type", "Isin")
@@ -275,7 +282,7 @@ def _commit(session: Session) -> None:
     counters = manifest["counters"]
     entries = manifest["entries"]
     for table in TABLES:
-        for partition in PARTITIONS:
+        for partition in rule_partitions(declared_partition_rule(manifest)):
             counters[f"{table}_{partition}_quarantined"] = sum(
                 1
                 for key, entry in entries.items()
@@ -500,15 +507,48 @@ def _is_terminal(status: str | None) -> bool:
     return status is not None and (status == "retrieved" or status.startswith("unavailable:"))
 
 
-def _split_evidence(session: Session, code: str) -> tuple[str, str | None]:
-    """``(split_evidence_basis, split_table_sha256_at_eod_validation)`` from the current splits entry."""
+def _split_evidence(session: Session, code: str) -> tuple[Any, str | None]:
+    """``(split_evidence_basis, split_table_sha256_at_eod_validation)`` from the current splits entry.
+
+    Under rule v2 the basis is per side, and the staleness key is the raw split
+    table's hash, because the pre-side volume rebase also reads the split rows
+    dated on or after ``holdout_start``.
+    """
 
     entry = session.manifest["entries"][f"splits/{code}"]
+    if declared_partition_rule(session.manifest) == PARTITION_RULE_V2:
+        if entry["status"] != "retrieved":
+            return dict.fromkeys(SIDES, "none_discontinuity_fallback"), None
+        basis = {side: "discovery_split_table" if entry["partition_statuses"][side] == "valid"
+                 else "split_evidence_quarantined" for side in SIDES}
+        return basis, entry["authorized_files"]["raw"]["sha256"]
     if entry["status"] != "retrieved":
         return "none_discontinuity_fallback", None
     if entry["partition_statuses"]["discovery"] != "valid":
         return "split_evidence_quarantined", None
     return "discovery_split_table", entry["authorized_files"]["discovery"]["sha256"]
+
+
+def _pre_side_volume_basis(session: Session, code: str) -> tuple[str, float | None]:
+    """SL-8: ``(status, F_after)``, the product of the code's split ratios dated on or after ``holdout_start``.
+
+    ``F_after`` is undefined when the split table is not retrieved or a split
+    partition on or after ``holdout_start`` failed validation; the status then
+    carries the typed reason and pre-side volume is written missing.
+    """
+
+    entry = session.manifest["entries"][f"splits/{code}"]
+    if entry["status"] != "retrieved":
+        return "volume_basis_unverified:split_evidence_missing", None
+    later = ("holdout", "discovery_post")
+    if any(entry["partition_statuses"].get(partition) != "valid" for partition in later):
+        return "volume_basis_unverified:later_split_invalid", None
+    factor = 1.0
+    for partition in later:
+        record = entry["authorized_files"][partition]
+        for ratio in read_authorized_parquet(session.snapshot_dir, record["path"], session.manifest)["ratio"]:
+            factor *= float(ratio)
+    return PRE_SIDE_VOLUME_BASIS, factor
 
 
 def _eod_stale(session: Session, code: str) -> bool:
@@ -559,7 +599,7 @@ def _retrieve_table(
     session: Session,
     table: str,
     code: str,
-    holdout_end: date,
+    window: PartitionWindow,
     calendar_rows: dict[pd.Timestamp, int] | None = None,
 ) -> None:
     args = session.args
@@ -617,16 +657,22 @@ def _retrieve_table(
     if table == "eod" and not rows:
         _set_entry(session, table, code, {**entry, "status": "unavailable:empty_payload"})
         return
-    basis, split_rows = "", []
+    v2 = window.rule == PARTITION_RULE_V2
+    basis: Any = ""
+    f_after: float | None = None
     if table == "eod":
         files["dates"] = _write_file(session, f"dates/{code}.{stamp}.parquet", _parquet_bytes(pd.DataFrame({"date": _date_column(dates)})), len(dates))
         basis, split_sha = _split_evidence(session, code)
         entry["split_evidence_basis"] = basis
         entry["split_table_sha256_at_eod_validation"] = split_sha
-        split_rows = _discovery_split_rows(session, code, basis, calendar_rows or {})
+        if v2:
+            entry["pre_side_volume_basis"], f_after = _pre_side_volume_basis(session, code)
+    if v2:
+        # R3-A4: a date-only flag for the SL-2 side test; no value of a later row is exposed.
+        entry["has_row_on_or_after_holdout_start"] = any(day >= window.holdout_start for day in dates)
 
-    for partition in PARTITIONS:
-        selected = [index for index, day in enumerate(dates) if partition_of(day, holdout_end) == partition]
+    for partition in window.partitions:
+        selected = [index for index, day in enumerate(dates) if window.partition(day) == partition]
         part_rows = [rows[index] for index in selected]
         part_dates = [dates[index] for index in selected]
         if table == "splits":
@@ -635,11 +681,16 @@ def _retrieve_table(
             result = _validate_dividend_partition(part_rows, part_dates)
         else:
             result = _validate_eod_partition(part_rows, part_dates)
-            if partition == "discovery" and not isinstance(result, str):
-                if basis == "split_evidence_quarantined":
+            if partition != "holdout" and not isinstance(result, str):
+                side_basis = basis[partition] if v2 else basis
+                if side_basis == "split_evidence_quarantined":
                     result = "split_evidence_quarantined"
-                elif _unverified_split(result, calendar_rows or {}, split_rows):
+                elif _unverified_split(result, calendar_rows or {},
+                                       _discovery_split_rows(session, code, side_basis, calendar_rows or {}, partition)):
                     result = "unverified_split"
+                elif partition == "discovery_pre":
+                    volume = result["volume"].astype(float)
+                    result = result.assign(volume=volume / f_after if f_after is not None else math.nan)
         if isinstance(result, str):
             _log(session, {"table": table, "code": code, "partition": partition, "outcome": f"validation_failed:{result}"})
             entry["partition_statuses"][partition] = f"quarantined:{result}"
@@ -665,10 +716,12 @@ def _discovery_split_rows(
     code: str,
     basis: str,
     calendar_rows: dict[pd.Timestamp, int],
+    partition: str = "discovery",
 ) -> list[int]:
+    """Calendar rows of the split rows in one discovery partition; the scale check of that partition reads them."""
     if basis != "discovery_split_table":
         return []
-    record = session.manifest["entries"][f"splits/{code}"]["authorized_files"]["discovery"]
+    record = session.manifest["entries"][f"splits/{code}"]["authorized_files"][partition]
     splits = read_authorized_parquet(session.snapshot_dir, record["path"], session.manifest)
     calendar_dates = pd.DatetimeIndex(sorted(calendar_rows))
     return [int(calendar_dates.searchsorted(day)) for day in pd.DatetimeIndex(splits["date"])]
@@ -737,8 +790,28 @@ def _record_requested(session: Session, codes: list[str]) -> None:
             session.manifest["requested_codes"].append(code)
 
 
+def _declare_partition_rule(session: Session, window: PartitionWindow) -> None:
+    """Record rule v2 in the manifest before the first partition step; a rule v1 manifest stays untouched.
+
+    A manifest whose declaration disagrees with the seal, or whose entries were
+    already partitioned under rule v1, refuses ``partition_rule_mismatch``.
+    """
+
+    snapshot = session.manifest["snapshot"]
+    declared = declared_partition_rule(session.manifest)
+    if declared == window.rule:
+        return
+    v1_entries = any("discovery" in entry.get("partition_statuses", {}) for entry in session.manifest["entries"].values())
+    if window.rule == PARTITION_RULE_V1 or "partition_rule" in snapshot or v1_entries:
+        raise SnapshotRefusal("partition_rule_mismatch", f"manifest declares {declared}, seal selects {window.rule}")
+    snapshot.update(partition_rule=PARTITION_RULE_V2, discovery_layout=DISCOVERY_LAYOUT_V2,
+                    pre_side_volume_basis=PRE_SIDE_VOLUME_BASIS)
+    _commit(session)
+
+
 def _run_table(session: Session, table: str, codes_file: str | None, refresh: bool) -> None:
-    holdout_end = read_holdout_end(session.snapshot_dir)
+    window = read_partition_window(session.snapshot_dir)
+    _declare_partition_rule(session, window)
     if codes_file is not None:
         codes = _read_code_file(codes_file)
         _record_requested(session, codes)
@@ -768,7 +841,7 @@ def _run_table(session: Session, table: str, codes_file: str | None, refresh: bo
             _record_invalid_code(session, table, code)
             continue
         if refresh or _is_open(session, table, code):
-            _retrieve_table(session, table, code, holdout_end, calendar_rows)
+            _retrieve_table(session, table, code, window, calendar_rows)
     _commit(session)
 
 
@@ -846,7 +919,7 @@ def cmd_symbols(session: Session) -> int:
 
 
 def cmd_calendar(session: Session) -> int:
-    read_holdout_end(session.snapshot_dir)
+    read_partition_window(session.snapshot_dir)
     _refuse_existing(session, "calendar")
     index = session.args.index
     body = _fetch_once(session, f"eod/{index}", {"from": session.args.date_from, "to": session.args.date_to}, "calendar")
@@ -886,7 +959,7 @@ def cmd_all(session: Session) -> int:
         cmd_components(session)
     if "symbols_listed" not in files:
         cmd_symbols(session)
-    if not (session.snapshot_dir / SEAL_FILE).is_file():
+    if not any((session.snapshot_dir / name).is_file() for name in (SEAL_FILE, SEAL_CARRY_FILE)):
         raise SnapshotRefusal("holdout_seal_required", "derive holdout_seal_v1.json, then rerun all")
     if session.args.consideration_securities is not None:
         _record_requested(session, _read_code_file(session.args.consideration_securities))
