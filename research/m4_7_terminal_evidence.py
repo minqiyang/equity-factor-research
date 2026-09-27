@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from data.holdout_partition import SnapshotRefusal, parse_strict_date, sha256_bytes
+from data.holdout_partition import PARTITION_RULE_V2, SnapshotRefusal, parse_strict_date, sha256_bytes
 from research.m4_7_universe_build import (
     BUILD_MANIFEST,
     INTERVAL_RESULTS,
@@ -43,6 +43,7 @@ from research.m4_7_universe_build import (
     Snapshot,
     canonical_json,
     csv_bytes,
+    discovery_segments,
     discovery_window,
     read_bar_dates,
     read_derived_json,
@@ -89,7 +90,20 @@ PAYMENT_LAG_MAX = 3
 SECOND_CHECK_FRACTION = 0.2
 SECOND_CHECK_SEED = 20260927
 IN_SCOPE, DEFERRED, OUTSIDE = "in_scope", "deferred_holdout", "outside_discovery_holding_windows"
+TERMS_LATE, PAYMENT_UNKNOWN, PAYMENT_LATE, SECOND_CHECK_DISAGREE = (
+    "unresolved:terms_known_after_reference", "unresolved:payment_timing_unknown",
+    "unresolved:payment_lag_exceeds_bound", "unresolved:second_check_disagree")
 V3_LABELS = ("stock_consideration_converted_at_completion_close_v1", "terms_known_at_bound_v1", "payment_timing_v1")
+
+
+def snapshot_segments(snapshot: Snapshot, calendar: pd.DatetimeIndex) -> tuple[Any, ...] | None:
+    """Rule v2: ``discovery_segments`` from the build manifest's ``d0_pre``; rule v1: ``None`` (one discovery side)."""
+    if snapshot.partition_rule != PARTITION_RULE_V2:
+        return None
+    d0_pre = read_derived_json(snapshot.root, BUILD_MANIFEST).get("d0_pre")
+    if not d0_pre:
+        raise SnapshotRefusal("discovery_segments_undefined", "the rule v2 build manifest records no d0_pre")
+    return discovery_segments(calendar, snapshot.holdout_start, snapshot.holdout_end, date.fromisoformat(d0_pre))
 
 
 def _load(snapshot_dir: Path | str) -> tuple[Snapshot, pd.DatetimeIndex, int, pd.DataFrame, str]:
@@ -130,9 +144,12 @@ def write_template(
     """One template row per candidate permanent ID (plan 3.1).
 
     Without ``segments`` a row is ``deferred_holdout`` when ``S <= i_H``; with
-    them (schema v3) it carries its M4.8 scope class and the v3 columns.
+    them (schema v3) it carries its M4.8 scope class and the v3 columns. A rule
+    v2 snapshot supplies its own segments and ``holdout_start``.
     """
     snapshot, calendar, i_h, master, inputs = _load(snapshot_dir)
+    if segments is None:
+        segments, holdout_start = snapshot_segments(snapshot, calendar), snapshot.holdout_start
     columns = EVIDENCE_COLUMNS if segments is None else EVIDENCE_COLUMNS_V3
     seal_rows = None if segments is None else _seal_rows(calendar, holdout_start, i_h)
     rows = []
@@ -162,9 +179,13 @@ def validate(
 ) -> dict[str, Any]:
     """Apply the section 3.6 codes to the curated table and write the validation report.
 
-    With ``segments`` the schema v3 two-pass validation of M4.8 plan 3.6 runs
-    instead (``validate_v3``).
+    With ``segments``, or on a rule v2 snapshot, the schema v3 two-pass
+    validation of M4.8 plan 3.6 runs instead (``validate_v3``).
     """
+    if segments is None:
+        opened = Snapshot.open(snapshot_dir)
+        if opened.partition_rule == PARTITION_RULE_V2:
+            segments, holdout_start = snapshot_segments(opened, opened.calendar()), opened.holdout_start
     if segments is not None:
         return validate_v3(snapshot_dir, segments=segments, holdout_start=holdout_start,
                            second_check_seed=second_check_seed)
@@ -418,7 +439,7 @@ def validate_v3(
             "event_kind", "consideration_type", "payment_timing", "segment_id", "scope")},
         "timing_only_failures": sum(1 for r in results if r["terms_pass"] == "terms_valid" and r["timing_failures"]),
         "settlement_lag_distribution": _lag_distribution(results),
-        "terms_availability_lag_days": _count([r for r in results if r["terms_availability_lag_days"] is not None],
+        "terms_availability_lag_distribution": _count([r for r in results if r["terms_availability_lag_days"] is not None],
                                               lambda r: _lag_bucket(r["terms_availability_lag_days"])),
         "second_check": second_check,
         "rows": results,
@@ -435,7 +456,9 @@ def _count(rows: list[dict[str, Any]], key) -> dict[str, int]:
 
 
 def _lag_bucket(days: int) -> str:
-    return "0" if days == 0 else "1-30" if days <= 30 else "31-90" if days <= 90 else ">90"
+    """The approved public day-lag buckets (``research/m4_7_coverage_census.DAY_LAG_BUCKETS``)."""
+    return next(label for bound, label in ((0, "0"), (1, "1"), (5, "2-5"), (20, "6-20"), (60, "21-60")) if days <= bound) \
+        if days <= 60 else ">60"
 
 
 def _result_v3(row: dict[str, Any], status: str, reason: str | None, segment: Any, **fields: Any) -> dict[str, Any]:
@@ -444,6 +467,7 @@ def _result_v3(row: dict[str, Any], status: str, reason: str | None, segment: An
         "scope": scope, "segment_id": None if segment is None else segment.segment_id, "terms_pass": None,
         "timing_failures": [], "payment_timing": row.get("payment_timing", "") or None, "terms_known_at": None,
         "terms_availability_lag_days": None, "payment_lag_rows": None, "second_check": row.get("second_check", ""),
+        "validation_detail": None,
         **fields})
 
 
@@ -463,38 +487,71 @@ def _second_check_sample(results: list[dict[str, Any]], seed: int) -> dict[str, 
             "pending": sum(1 for event_id in required if not by_id[event_id]["second_check"].strip())}
 
 
+def terminal_summary(report: dict[str, Any], residual_count: int, claim: dict[str, Any]) -> dict[str, Any]:
+    """The census v3 ``terminal_summary`` (plan 3.7, 4.6): counts only, in the approved public vocabulary.
+
+    ``research.m4_7_coverage_census.aggregate_terminal_summary`` validates the
+    result; every key below comes from its declared vocabulary.
+    """
+    rows = report["rows"]
+    in_scope = [r for r in rows if r["scope"] == IN_SCOPE]
+    curated = [r for r in in_scope if r["validation_reason"] not in ("curation_unresolved", "reference_not_last_bar")]
+    unresolved = [r for r in in_scope if r["status"] == "unresolved"]
+    return {
+        "residual_count": int(residual_count), "claim_demand": int(claim["claim_demand"]),
+        "in_scope_candidates": len(in_scope), "curated": len(curated),
+        "accepted": sum(1 for r in in_scope if r["status"] == "accepted"), "unresolved": len(unresolved),
+        "deferred_holdout": sum(1 for r in rows if r["scope"] == DEFERRED),
+        "outside_discovery_holding_windows": sum(1 for r in rows if r["scope"] == OUTSIDE),
+        "by_status": _count(rows, lambda r: r["status"]),
+        "unresolved_by_reason": _count(unresolved, lambda r: r["validation_reason"]),
+        "by_event_kind": _count(in_scope, lambda r: r["event_kind"] or "unresolved"),
+        "by_consideration_type": _count(in_scope, lambda r: r["consideration_type"] or "unresolved"),
+        "by_payment_timing": _count([r for r in curated if r["payment_timing"]], lambda r: r["payment_timing"]),
+        "by_segment": _count(in_scope, lambda r: r["segment_id"]),
+        "terms_availability_lag_distribution": report["terms_availability_lag_distribution"],
+        "settlement_lag_distribution": report["settlement_lag_distribution"],
+    }
+
+
 def _read(snapshot: Snapshot, table: str, code: str, side: str | None) -> pd.DataFrame | None:
     """A discovery read confined to one side (SL-1); ``side`` is ``None`` for a one-side rule v1 snapshot."""
-    return snapshot.read_discovery(table, code) if side is None else snapshot.read_discovery(table, code, side=side)
+    return snapshot.read_discovery(table, code, side or "discovery")
 
 
-def _v3_schema_fault(kind: str, row: dict[str, Any], announced: date) -> str | None:
-    """Plan 3.3 required fields; a blank field never defaults to another value."""
+def _v3_schema_fault(kind: str, row: dict[str, Any], announced: date) -> tuple[str, str | None] | None:
+    """Plan 3.3 required fields: ``(reason, detail)``; a blank field never defaults to another value.
+
+    A missing required field is ``evidence_incomplete:<field>_missing``; a present
+    but unusable value is the carried ``evidence_incomplete`` with its detail kept
+    in the private report, so every published reason stays in the approved
+    vocabulary (``research/m4_7_coverage_census.TERMINAL_REASONS``).
+    """
     if not row["source_accession"].strip():
-        return "evidence_incomplete:source_accession_missing"
+        return "evidence_incomplete:source_accession_missing", None
     if not row["terms_known_at"].strip():
-        return "evidence_incomplete:terms_known_at_missing"
+        return "evidence_incomplete:terms_known_at_missing", None
     terms = parse_strict_date(row["terms_known_at"])
     if terms is None:
-        return "evidence_incomplete:terms_known_at_unparseable"
+        return "evidence_incomplete", "terms_known_at_unparseable"
     if terms < announced:
-        return "evidence_incomplete:terms_known_at_before_announcement"
+        return "evidence_incomplete", "terms_known_at_before_announcement"
     timing = row["payment_timing"].strip()
     if not timing:
-        return "evidence_incomplete:payment_timing_missing"
+        return "evidence_incomplete:payment_timing_missing", None
     if (timing not in PAYMENT_TIMINGS) if kind in ("cash", "mixed") else timing != "not_applicable":
-        return "evidence_incomplete:payment_timing_invalid"
+        return "evidence_incomplete", "payment_timing_invalid"
     if timing == "delayed_evidenced":
         if not row["payment_date"].strip():
-            return "evidence_incomplete:payment_date_missing"
+            return "evidence_incomplete:payment_date_missing", None
         if parse_strict_date(row["payment_date"]) is None:
-            return "evidence_incomplete:payment_date_unparseable"
+            return "evidence_incomplete", "payment_date_unparseable"
         if not row["payment_source_accession"].strip():
-            return "evidence_incomplete:payment_source_accession_missing"
+            return "evidence_incomplete:payment_source_accession_missing", None
     elif row["payment_date"].strip():
-        return "evidence_incomplete:payment_date_not_applicable"
+        return "evidence_incomplete", "payment_date_not_applicable"
     if row["second_check"].strip() not in ("", "agree", "disagree"):
-        return "evidence_incomplete:second_check_invalid"
+        return "evidence_incomplete", "second_check_invalid"
     return None
 
 
@@ -520,8 +577,10 @@ def _validate_row_v3(
         return unresolved("curation_unresolved")
     complete = (row["event_kind"] in EVENT_KINDS and kind in BASIS and announced is not None
                 and completed is not None and row["source_evidence"].strip())
-    fault = "evidence_incomplete" if not complete else (_v3_schema_fault(kind, row, announced)
-                                                       or _consideration_fault(kind, row, cash, ratio, acquirer))
+    schema = None if not complete else _v3_schema_fault(kind, row, announced)
+    if schema is not None:
+        return unresolved(schema[0], validation_detail=schema[1])
+    fault = "evidence_incomplete" if not complete else _consideration_fault(kind, row, cash, ratio, acquirer)
     if fault is not None:
         return unresolved(fault)
     terms = parse_strict_date(row["terms_known_at"])
@@ -529,9 +588,9 @@ def _validate_row_v3(
     if kind in ("cash", "mixed") and row["cash_currency"].strip() != "USD":
         return unresolved("terminal_currency_unsupported")
     if row["payment_timing"].strip() == "unknown":
-        return unresolved("payment_timing_unknown")
+        return unresolved(PAYMENT_UNKNOWN)
     if row["second_check"].strip() == "disagree":
-        return unresolved("second_check_disagree")
+        return unresolved(SECOND_CHECK_DISAGREE)
     if pd.Timestamp(announced) > reference:
         return unresolved("known_at_after_reference")
     completion_row = int(calendar.searchsorted(pd.Timestamp(completed)))
@@ -551,7 +610,7 @@ def _validate_row_v3(
             return unresolved("acquirer_bar_missing")
         acquirer_code = record["vendor_code"]
     tables = [("splits", code), ("dividends", code)] + ([("splits", acquirer_code)] if acquirer_code else [])
-    if not all(snapshot.evidence_valid(table, table_code) for table, table_code in tables):
+    if not all(snapshot.evidence_valid(table, table_code, side or "discovery") for table, table_code in tables):
         return unresolved("terminal_basis_ambiguous:corporate_action_evidence_missing",
                           corporate_action_evidence_status="missing")
     timing["corporate_action_evidence_status"] = "valid"
@@ -581,12 +640,12 @@ def _validate_row_v3(
     if kind in ("stock", "mixed") and lag not in STOCK_LAGS:
         failures.append("stock_consideration_lag_positive")
     if terms > reference.date():
-        failures.append("terms_known_after_reference")
+        failures.append(TERMS_LATE)
     if row["payment_timing"].strip() == "delayed_evidenced":
         timing["payment_lag_rows"] = int(calendar.searchsorted(pd.Timestamp(parse_strict_date(row["payment_date"])))) \
             - settlement
         if timing["payment_lag_rows"] > PAYMENT_LAG_MAX:
-            failures.append("payment_lag_exceeds_bound")
+            failures.append(PAYMENT_LATE)
     if failures:
         return _result_v3(row, "unresolved", failures[0], segment, terms_pass="terms_valid", timing_failures=failures,
                           terminal_return=rho, **timing)

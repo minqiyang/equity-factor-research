@@ -12,6 +12,46 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage B integration on merged Stage A (seams I-1..I-4)
+
+- Source: card `m4_8b-engine-integration`; `claude/m4_8b-engine` rebased onto `bfdca57` (PR #272). Only
+  `docs/engineering_log.md` and `docs/repo_map.md` conflicted; code files rebased cleanly.
+- I-1 (runner): `run_rerun` dispatches a registration v3 document to `run_segments`, which calls
+  `bind_snapshot_v3` (rule v2 snapshot, snapshot ID, every bound file digest through `bound_paths_v3` and
+  `verify_bound_hashes`, recomputed discovery inputs, current terminal projection, inventory and build
+  manifest, panel hashes, no split table beside a side panel, seal carry window equal to the registration,
+  calendar source) and `load_segment_runs` (per segment, only that side's panel directory, rows up to the last
+  book row, events inside the segment). The sidecar records `segment_access_logs`, the census v3 R3-9 input.
+  `discovery_inputs_sha256` is recomputed and never read from a file. The CLI resolves `--census-json` by
+  registration version.
+- I-2 (terminal): `snapshot_segments` derives `discovery_segments` from the build manifest's `d0_pre`;
+  `write_template` and `validate` (and the CLI) run schema v3 on any rule v2 snapshot. Reads and
+  corporate-action evidence checks name the segment's side (`Snapshot.read_discovery(table, code, side)`).
+  Published reasons and lag buckets now use the approved public vocabulary of
+  `research/m4_7_coverage_census.py`: the four v3 reasons carry the `unresolved:` prefix, unusable present
+  values report the carried `evidence_incomplete` with a private `validation_detail`, and terms-availability
+  lags use the buckets `0, 1, 2-5, 6-20, 21-60, >60`. `terminal_summary` builds the census v3 input.
+- I-3 (support): `write_support_files` sends a rule v2 snapshot to `write_support_files_v3`, which reads each
+  segment's side panels only, builds the causal schedule, `P_r` counts, and the residual, computes claim
+  demand from the current schema v3 report, and writes the private `census/asset_support_v3.json` with the
+  approved-schema `terminal_summary`. The rule v1 support file is byte-identical to the base.
+- I-4: `_segment_calendar` refuses `seal_bracket_computation_forbidden` for a pre segment holding a post-side
+  row and for a post segment holding a pre-side row (Stage A advisories A2-ADV-2, A2-ADV-3).
+- Tests: `tests/test_m4_8_integration_v3.py` (13) drives Stage A's rule v2 harness through template, schema v3
+  validation, projection, the membership census, the v3 support file, census v3, a bound registration v3, and
+  `run_rerun`; the run completes with each segment opening its own side only. Updated: the v3 reason
+  strings in `tests/test_m4_8_support_terminal.py`, and the CLI dispatch test in
+  `tests/test_m4_8_runner_v3.py`. Full suite 3253 passed, 2 skipped (pre-existing `longdouble` skips); ruff
+  clean.
+- Byte identity against an archive of `bfdca57`: 18 of 18 engine digests; the registration v2 synthetic
+  rerun's label records and `census/asset_support.json` byte-identical; sidecar, 231 trials, and report equal
+  after removing the digests that depend on the fixture manifest's recorded `code_commit`.
+- Ablation re-check: S1 (merged `_locked_target`) stays; removing the H-8 check, the seal-bracket guard (both
+  directions), the residual stop, or the H-5 refusal each fails its oracle; removing the H-3g fast return
+  breaks T-HALT-7b.
+- Needs follow-up: census v3 reads `segment_access_logs` at Stage F, before the Stage H rerun produces them;
+  the v3 support file's `panel_sides_opened` gives the Stage F value. CRITICAL review of this PR.
+
 ## 2026-09-27 - M4.8 Stage B: causal engine hardening, locked capital, terminal schema v3, segment runner
 
 - Source: Milestone 4.8 Binding Implementation Plan Revision 3 (`bd1bf587…0bf3e`), §7.2 Stage B, card

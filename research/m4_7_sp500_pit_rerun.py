@@ -47,7 +47,15 @@ from backtest.portfolio import (
     run_long_only_backtest,
 )
 from data.constituent_table import load_constituent_intervals_csv
-from data.holdout_partition import SEAL_FILE, SnapshotRefusal, parse_strict_date, sha256_bytes
+from data.holdout_partition import (
+    PARTITION_RULE_V2,
+    SEAL_CARRY_FILE,
+    SEAL_FILE,
+    SnapshotRefusal,
+    parse_strict_date,
+    read_seal_carry,
+    sha256_bytes,
+)
 from data.parquet_loader import load_eod_cohort_panels, load_symbol_splits
 from features.cross_validation import combinatorial_purged_cross_validation_pbo, cpcv_geometry_unavailable_reason
 from features.diagnostics import (
@@ -75,8 +83,17 @@ from research.m4_7_common_support import (
 )
 from research.m4_7_coverage_census import _code_commit
 from research.m4_7_family_a import FAMILY_A, FAMILY_A_IDS, FAMILY_A_SIZE, family_a_signals
-from research.m4_7_terminal_evidence import ENGINE_EVENTS, read_engine_events, require_current_terminal
+from research import m4_8_membership
+from research.m4_7_terminal_evidence import (
+    CURATED,
+    ENGINE_EVENTS,
+    VALIDATION,
+    read_engine_events,
+    require_current_terminal,
+    snapshot_segments,
+)
 from research.m4_7_universe_build import (
+    BUILD_MANIFEST,
     INTERVAL_CSV,
     INTERVAL_RESULTS,
     INVENTORY,
@@ -194,6 +211,7 @@ def decide_gate(factors: Sequence[FactorGateInput], *, kill_reachable_projection
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 REGISTRATION_PATH = REPOSITORY_ROOT / "docs/preregistrations/m4_7_sp500_pit_rerun_v2.json"
 CENSUS_JSON = REPOSITORY_ROOT / "reports/m4_7_coverage_census_v2.json"
+CENSUS_V3_JSON = REPOSITORY_ROOT / "reports/m4_8_coverage_census_v3.json"
 SEAL_RECORD = REPOSITORY_ROOT / "docs/preregistrations/m4_7_holdout_seal_v1_confirmation_v2.json"
 REPORT = "reports/m4_7_sp500_pit_rerun_v2.md"
 SIDECAR = "reports/experiment_logs/m4_7_sp500_pit_rerun_v2.json"
@@ -572,9 +590,25 @@ def check_registration_v3(doc: dict[str, Any], *, v2_path: Path = REGISTRATION_P
     return _check_costs_and_objective(doc, refuse)
 
 
+def bound_paths_v3(root: Path, census_json: Path) -> dict[str, Path]:
+    """The file behind each registered v3 digest; ``discovery_inputs_sha256`` is recomputed, never read."""
+    membership = root / "membership"
+    return {"manifest_sha256": root / "manifest.json", "seal_carry_sha256": root / SEAL_CARRY_FILE,
+            "security_master_sha256": root / SECURITY_MASTER, "interval_csv_sha256": root / INTERVAL_CSV,
+            "interval_results_sha256": root / INTERVAL_RESULTS,
+            "membership_supplement_sha256": membership / m4_8_membership.SUPPLEMENT_FILE,
+            "reconstructed_changes_sha256": membership / m4_8_membership.CHANGES_FILE,
+            "published_counts_sha256": membership / m4_8_membership.ANCHORS_FILE,
+            "membership_discrepancies_sha256": membership / m4_8_membership.DISCREPANCIES_FILE,
+            "terminal_evidence_sha256": root / CURATED, "terminal_validation_sha256": root / VALIDATION,
+            "engine_events_sha256": root / ENGINE_EVENTS, "census_json_sha256": Path(census_json)}
+
+
 def verify_bound_hashes(doc: dict[str, Any], paths: dict[str, Path]) -> None:
-    """Stage G binding: every registered v3 snapshot digest equals the SHA-256 of its file."""
+    """Stage G binding: every registered v3 file digest equals the SHA-256 of its file."""
     for key in SNAPSHOT_DIGESTS_V3:
+        if key == "discovery_inputs_sha256":
+            continue
         path = paths.get(key)
         if path is None or not Path(path).is_file() or sha256_bytes(Path(path).read_bytes()) != doc["snapshot"][key]:
             raise _stale(key.removesuffix("_sha256"))
@@ -997,7 +1031,7 @@ def _for_summary(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def run_rerun(
     snapshot_dir: Path | str, *, registration_path: Path | str, registration_sha256: str,
-    output_dir: Path | str, census_json: Path | str = CENSUS_JSON, seal_record: Path | str = SEAL_RECORD,
+    output_dir: Path | str, census_json: Path | str | None = None, seal_record: Path | str = SEAL_RECORD,
     code_commit: str | None = None,
 ) -> dict[str, Any]:
     """Run the registered rerun and write the report, sidecar, and trials JSONL; return the sidecar.
@@ -1005,10 +1039,21 @@ def run_rerun(
     A Class I stop before the first trial record writes nothing, so the outputs
     of an earlier run stay byte-identical, and returns the sidecar with
     ``outputs_written = False``. A Class I stop after the first trial record
-    writes the sidecar, the report, and the trials recorded so far.
+    writes the sidecar, the report, and the trials recorded so far. A
+    registration v3 document runs ``run_segments`` on the snapshot's per-side
+    files; ``census_json`` defaults to the census of the document's version.
     """
     out = Path(output_dir)
     registration_bytes = Path(registration_path).read_bytes()
+    try:
+        schema = json.loads(registration_bytes).get("schema_version")
+    except (ValueError, AttributeError):
+        schema = None
+    if schema == REGISTERED_V3["schema_version"]:
+        return run_segments(snapshot_dir=snapshot_dir, registration_path=registration_path,
+                            registration_sha256=registration_sha256, output_dir=output_dir,
+                            census_json=CENSUS_V3_JSON if census_json is None else census_json, code_commit=code_commit)
+    census_json = CENSUS_JSON if census_json is None else census_json
     actual = sha256_bytes(registration_bytes)
     state: dict[str, Any] = {"header": {"registration_sha256": actual, "registration_sha256_expected": registration_sha256,
                                         "code_commit": code_commit if code_commit is not None else _code_commit()}}
@@ -1021,9 +1066,6 @@ def run_rerun(
             costs = check_registration(registration)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise RunnerStop("registration_invalid", f"{type(exc).__name__}: {exc}") from exc
-        if registration["schema_version"] == REGISTERED_V3["schema_version"]:
-            raise RunnerStop("segment_side_loader_unavailable",
-                             "registration v3 runs through run_segments on per-side loaded segments")
         bound = bind_snapshot(Path(snapshot_dir), registration, Path(census_json), Path(seal_record))
         loaded = load_member_panels(bound)
         _execute(state, trials, registration, costs, bound, loaded, Path(snapshot_dir))
@@ -1535,15 +1577,18 @@ def factor_exposure(valid: pd.DataFrame, factor_id: str, windows: Sequence[tuple
 
 
 def run_segments(
-    runs: Sequence[SegmentRun], *, registration_path: Path | str, registration_sha256: str, output_dir: Path | str,
-    census: dict[str, Any] | None = None, code_commit: str | None = None,
-    seal_v1_record: Path | str = SEAL_V1_RECORD,
+    runs: Sequence[SegmentRun] | None = None, *, registration_path: Path | str, registration_sha256: str,
+    output_dir: Path | str, census: dict[str, Any] | None = None, code_commit: str | None = None,
+    seal_v1_record: Path | str = SEAL_V1_RECORD, snapshot_dir: Path | str | None = None,
+    census_json: Path | str | None = None,
 ) -> dict[str, Any]:
     """Run registration v3 on loaded segments and write the v3 report, sidecar, and trials JSONL.
 
     The Class I and output rules of ``run_rerun`` carry: a stop before the
-    first trial writes nothing. ``runs`` come from the per-side loaders of the
-    snapshot binding.
+    first trial writes nothing. Given ``snapshot_dir`` (and ``census_json``),
+    ``bind_snapshot_v3`` binds the registration and ``load_segment_runs``
+    builds ``runs`` from the per-side files; given ``runs`` (synthetic
+    segments), both steps are skipped.
     """
     out = Path(output_dir)
     registration_bytes = Path(registration_path).read_bytes()
@@ -1561,6 +1606,11 @@ def run_segments(
             costs = check_registration(registration)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise RunnerStop("registration_invalid", f"{type(exc).__name__}: {exc}") from exc
+        if runs is None:
+            bound = bind_snapshot_v3(Path(snapshot_dir), registration, Path(census_json))
+            runs, access = load_segment_runs(bound)
+            census = bound["census"]
+            state["header"]["segment_access_logs"] = access
         _execute_v3(state, trials, registration, costs, runs, census, prior_exposure_windows(Path(seal_v1_record)))
         state["run_status"] = "completed"
     except RunnerStop as stop:
@@ -1574,6 +1624,81 @@ def run_segments(
     write_bytes(out / SIDECAR_V3, (json.dumps(sidecar, sort_keys=True, indent=2, allow_nan=False) + "\n").encode())
     write_bytes(out / REPORT_V3, render_report_v3(sidecar).encode("utf-8"))
     return sidecar
+
+
+def bind_snapshot_v3(snapshot_dir: Path, registration: dict[str, Any], census_json: Path) -> dict[str, Any]:
+    """Every registration v3 check that precedes a panel load (plan 6.1, Stage G; seam I-1).
+
+    A rule v2 snapshot; the registered file digests; the recomputed discovery
+    inputs; the current terminal projection, inventory, and build manifest;
+    every panel hash; the carried seal window against the registration; and no
+    split table beside a side panel.
+    """
+    try:
+        snapshot = Snapshot.open(snapshot_dir)
+    except SnapshotRefusal as exc:
+        raise RunnerStop(exc.code, str(exc)) from exc
+    root, pinned = snapshot.root, registration["snapshot"]
+    if snapshot.partition_rule != PARTITION_RULE_V2:
+        raise RunnerStop("registration_invalid", f"snapshot partition rule {snapshot.partition_rule}")
+    if pinned.get("snapshot_id") != snapshot.manifest["snapshot"].get("id"):
+        raise RunnerStop("registration_invalid", "snapshot.snapshot_id")
+    verify_bound_hashes(registration, bound_paths_v3(root, census_json))
+    inputs = discovery_inputs_sha256(snapshot)
+    if inputs != pinned["discovery_inputs_sha256"]:
+        raise _stale("discovery_inputs")
+    try:
+        validation, _ = require_current_terminal(snapshot)
+        inventory = read_derived_json(root, INVENTORY)
+        require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
+        require_current(snapshot, read_derived_json(root, BUILD_MANIFEST).get("discovery_inputs_sha256"), BUILD_MANIFEST)
+        carry = read_seal_carry(root)
+        calendar = snapshot.calendar()
+        segments = snapshot_segments(snapshot, calendar)
+    except SnapshotRefusal as exc:
+        raise RunnerStop(exc.code, str(exc)) from exc
+    for record in inventory["files"]:
+        path = root / "panel" / record["file"]
+        if not path.is_file() or sha256_bytes(path.read_bytes()) != record["sha256"]:
+            raise _stale(f"panel {record['file']}")
+        if load_symbol_splits(root / "panel" / record["side"], record["symbol"]) is not None:
+            raise RunnerStop("panel_split_table_present", record["file"])
+    holdout = registration["holdout"]
+    if (carry["holdout_start"], carry["holdout_end_exclusive"]) != (
+            holdout.get("holdout_start"), holdout.get("holdout_end_exclusive")):
+        raise RunnerStop("holdout_overlap_refused", "registration and seal carry record disagree")
+    if registration["universe"]["calendar_source"] != snapshot.calendar_source:
+        raise RunnerStop("registration_invalid", "universe.calendar_source differs from the snapshot seal")
+    return {"snapshot": snapshot, "inputs": inputs, "inventory": inventory, "validation": validation,
+            "calendar": calendar, "segments": segments, "census": json.loads(Path(census_json).read_bytes())}
+
+
+def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str, list[str]]]:
+    """One ``SegmentRun`` per segment from that side's panel files only (SL-1, B-1; seam I-1).
+
+    Returns the runs and the access log census v3 rule R3-9 reads: the panel
+    sides each segment opened. Fields keep rows up to the segment's last book
+    row; ``_segment_calendar`` refuses any row on the other side or in the seal.
+    """
+    root, calendar = bound["snapshot"].root, bound["calendar"]
+    intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
+    master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
+    events = read_engine_events(root)
+    runs, access = [], {}
+    for segment in bound["segments"]:
+        records = {r["symbol"]: r for r in bound["inventory"]["files"] if r["side"] == segment.side}
+        if BENCHMARK_ID not in records:
+            raise RunnerStop("calendar_mismatch", f"{BENCHMARK_ID} has no {segment.side} panel")
+        assets = sorted(set(intervals["permanent_id"]) & set(records) - {BENCHMARK_ID})
+        loaded = load_eod_cohort_panels(root / "panel" / segment.side, assets + [BENCHMARK_ID])
+        last = calendar[segment.last_book_row]
+        fields = {k: v.loc[v.index <= last] for k, v in loaded.items() if isinstance(v, pd.DataFrame)}
+        own = events[events["permanent_id"].isin(assets) & events["effective_date"].isin(
+            calendar[segment.feature_floor_row:segment.last_book_row + 1])].reset_index(drop=True)
+        runs.append(SegmentRun(segment=segment, full_calendar=calendar, fields=fields, intervals=intervals,
+                               events=own, master=master))
+        access[segment.segment_id] = sorted({records[pid]["side"] for pid in assets + [BENCHMARK_ID]})
+    return runs, access
 
 
 def _sidecar_head_v3() -> dict[str, Any]:
@@ -1955,7 +2080,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--registration", default=str(REGISTRATION_PATH))
     parser.add_argument("--registration-sha256", required=True)
     parser.add_argument("--output-dir", default=str(REPOSITORY_ROOT))
-    parser.add_argument("--census-json", default=str(CENSUS_JSON))
+    parser.add_argument("--census-json", default=None)
     parser.add_argument("--seal-record", default=str(SEAL_RECORD))
     args = parser.parse_args(argv)
     try:

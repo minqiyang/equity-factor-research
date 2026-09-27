@@ -320,7 +320,7 @@ def test_t_term3_4_second_check_disagreement_and_a_reproducible_sample(deal_snap
     rows_ = deal_rows()
     write_v3(deal_snapshot, [v3(rows_[0], second="disagree")] + [v3(r) for r in rows_[1:]])
     first = run_v3(deal_snapshot, seed=11)
-    assert by_code(first)["CSH"]["validation_reason"] == "second_check_disagree"
+    assert by_code(first)["CSH"]["validation_reason"] == "unresolved:second_check_disagree"
     again = run_v3(deal_snapshot, seed=11)
     assert first["second_check"] == again["second_check"] and first["second_check"]["seed"] == 11
     assert len(first["second_check"]["sampled_event_ids"]) == 2  # ceil(0.2 * 6)
@@ -345,11 +345,11 @@ def test_t_term3_5_9_payment_timing_rules(deal_snapshot):
         v3(rows_[5]),
     ])
     got = by_code(run_v3(deal_snapshot))
-    assert got["CSH"]["validation_reason"] == "payment_lag_exceeds_bound"
-    assert got["CSH"]["timing_failures"] == ["payment_lag_exceeds_bound"] and got["CSH"]["terms_pass"] == "terms_valid"
+    assert got["CSH"]["validation_reason"] == "unresolved:payment_lag_exceeds_bound"
+    assert got["CSH"]["timing_failures"] == ["unresolved:payment_lag_exceeds_bound"] and got["CSH"]["terms_pass"] == "terms_valid"
     assert got["STK0"]["validation_reason"] == "evidence_incomplete:payment_timing_missing"
     assert got["MIX0"]["status"] == "accepted" and got["MIX0"]["payment_lag_rows"] == 2
-    assert got["MIX1"]["validation_reason"] == "payment_timing_unknown"
+    assert got["MIX1"]["validation_reason"] == "unresolved:payment_timing_unknown"
     assert got["MIX1"]["terms_pass"] == "terms_invalid"
     write_v3(deal_snapshot, [v3(rows_[0], timing="delayed_evidenced", payment_source="PA-0")]
              + [v3(r) for r in rows_[1:]])
@@ -386,8 +386,8 @@ def test_t_term3_7_8_terms_availability_and_carried_lags(tmp_path, monkeypatch):
     for code, lag in {"C0": -1, "C1": 0, "C2": 3, "SL": -1, "SS": 0}.items():
         assert got[code]["status"] == "accepted" and got[code]["settlement_lag_rows"] == lag, code
         assert got[code]["known_at"] == day(targets[code]["last"])  # max(announcement, terms_known_at)
-    assert got["C3"]["validation_reason"] == "terms_known_after_reference"
-    assert got["C3"]["timing_failures"] == ["terms_known_after_reference"]
+    assert got["C3"]["validation_reason"] == "unresolved:terms_known_after_reference"
+    assert got["C3"]["timing_failures"] == ["unresolved:terms_known_after_reference"]
     projected = project(snap)
     assert set(read_engine_events(snap)["permanent_id"]) == {f"{c}.US#E1" for c in ("C0", "C1", "C2", "SL", "SS")}
     assert set(projected["known_at"]) == {day(targets[c]["last"]) for c in ("C0", "C1", "C2", "SL", "SS")}
@@ -417,7 +417,7 @@ def test_t_causal_6_paired_final_terms_leave_books_identical_before_settlement(t
         report = run_v3(snap)
         events = project(snap)
         books[name] = (report, events)
-    assert books["late_a"][0]["rows"][0]["validation_reason"] == "terms_known_after_reference"
+    assert books["late_a"][0]["rows"][0]["validation_reason"] == "unresolved:terms_known_after_reference"
     assert len(books["late_a"][1]) == len(books["late_b"][1]) == 0
     assert len(books["known_a"][1]) == len(books["known_b"][1]) == 1
     prices = pd.DataFrame(20.0 * np.exp(np.cumsum(np.random.default_rng(9).normal(0, 0.01, (N, 4)), axis=0)),

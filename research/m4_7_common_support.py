@@ -405,10 +405,11 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     matches the current manifest (S7), and refuses
     ``derived_artifact_stale:terminal_events_engine_mismatch`` unless the
     engine event table is the projection of the current validation report.
-    Writes ``census/asset_support.json``.
+    Writes ``census/asset_support.json``. A rule v2 snapshot goes to
+    ``write_support_files_v3``.
     """
     from data.constituent_table import load_constituent_intervals_csv
-    from data.holdout_partition import SnapshotRefusal, sha256_bytes
+    from data.holdout_partition import PARTITION_RULE_V1, SnapshotRefusal, sha256_bytes
     from research.m4_7_terminal_evidence import read_engine_events, require_current_terminal
     from research.m4_7_universe_build import (
         INTERVAL_CSV, INVENTORY, SECURITY_MASTER, Snapshot, _parquet, discovery_window, read_derived_json,
@@ -416,6 +417,8 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     )
 
     snapshot = Snapshot.open(snapshot_dir)
+    if snapshot.partition_rule != PARTITION_RULE_V1:
+        return write_support_files_v3(snapshot)
     root = snapshot.root
     inventory = read_derived_json(root, INVENTORY)
     inputs = require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
@@ -442,6 +445,87 @@ def write_support_files(snapshot_dir) -> SnapshotSupport:
     write_bytes(root / SUPPORT_FILE, _canonical({**support.record(), "discovery_inputs_sha256": inputs,
                                                  "support_sha256": support.support_sha256}))
     return support
+
+
+SUPPORT_FILE_V3 = "census/asset_support_v3.json"
+
+
+def segment_bars(root, inventory: dict, side: str, pids: list[str], calendar: pd.DatetimeIndex) -> pd.DataFrame:
+    """Bar presence on one segment's calendar from that side's panel files only, hash-checked (SL-1, S7)."""
+    from data.holdout_partition import SnapshotRefusal, sha256_bytes
+    from research.m4_7_universe_build import _parquet
+
+    files = {record["symbol"]: record for record in inventory["files"] if record.get("side") == side}
+    bars = pd.DataFrame(False, index=calendar, columns=pd.Index(pids, dtype=object))
+    for pid in pids:
+        payload = (root / "panel" / files[pid]["file"]).read_bytes()
+        if sha256_bytes(payload) != files[pid]["sha256"]:
+            raise SnapshotRefusal("derived_artifact_stale", f"panel {files[pid]['file']}")
+        frame = _parquet(payload, files[pid]["file"], columns=["date", "adjusted_close"])
+        present = pd.DatetimeIndex(frame.loc[np.isfinite(frame["adjusted_close"]), "date"])
+        bars.loc[present.intersection(calendar), pid] = True
+    return bars
+
+
+def write_support_files_v3(snapshot) -> dict:
+    """Rule v2 support per segment (M4.8 plan 4.1, 4.6, 3.6); writes the private ``census/asset_support_v3.json``.
+
+    Each segment reads only its side's panel files on rows
+    ``[feature_floor_row, last_book_row]``: the causal schedule, ``P_r`` cell
+    counts, and the residual over ``P_r``. Claim demand comes from the current
+    validation report, and ``terminal_summary`` is the census v3 input in the
+    approved public vocabulary.
+    """
+    from data.constituent_table import load_constituent_intervals_csv
+    from data.holdout_partition import SnapshotRefusal
+    from research.m4_7_terminal_evidence import read_engine_events, require_current_terminal, snapshot_segments, \
+        terminal_summary
+    from research.m4_7_universe_build import INTERVAL_CSV, INVENTORY, SECURITY_MASTER, read_derived_json, \
+        require_current, write_bytes
+
+    root = snapshot.root
+    inventory = read_derived_json(root, INVENTORY)
+    inputs = require_current(snapshot, inventory.get("discovery_inputs_sha256"), INVENTORY)
+    report, _ = require_current_terminal(snapshot)
+    if report.get("schema_version") != "m4_8_terminal_validation_v3":
+        raise SnapshotRefusal("terminal_validation_schema_mismatch", "rule v2 support needs the schema v3 report")
+    full = snapshot.calendar()
+    intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
+    master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
+    events = read_engine_events(root)
+    segments, residual_all, record = snapshot_segments(snapshot, full), [], {}
+    for segment in segments:
+        calendar = full[segment.feature_floor_row:segment.last_book_row + 1]
+        side_pids = {r["symbol"] for r in inventory["files"] if r.get("side") == segment.side}
+        pids = sorted(set(intervals["permanent_id"]) & side_pids)
+        bars = segment_bars(root, inventory, segment.side, pids, calendar)
+        own = events[events["permanent_id"].isin(pids) & events["effective_date"].isin(calendar)].reset_index(drop=True)
+        mask = (resolve_pit_universe_mask(intervals[intervals["permanent_id"].isin(pids)], own if len(own) else None,
+                                          calendar, pids) if pids else bars.copy())
+        schedule = causal_support_schedule(calendar, bars, mask, segment.first_reset_row - segment.feature_floor_row)
+        last_bars = {row["permanent_id"]: pd.Timestamp(row["last_bar"]) for row in master.to_dict(orient="records")
+                     if row["permanent_id"] in pids and row["has_delisting_candidate_interval"] == "True"}
+        candidates = {pid: int(calendar.get_loc(day)) + 1 for pid, day in last_bars.items() if day in calendar}
+        residual = residual_disappearances(schedule, bars, set(own["permanent_id"]), candidates)
+        residual_all.extend(residual)
+        iso = [day.date().isoformat() for day in calendar]
+        included, _ = ic_month_set(schedule)
+        record[segment.segment_id] = {
+            "side": segment.side, "D0": iso[schedule.d0], "D_last": iso[schedule.d_last],
+            "ic_month_supply": len(included), "max_reset_to_reset_rows": schedule.max_reset_to_reset_rows,
+            "member_columns": len(pids),
+            "potentially_held_cells": int(sum(int(v.sum()) for v in potentially_held(schedule, bars).values())),
+            "residual_count": len(residual),
+            "residual": [[pid, iso[stop], iso[reset]] for pid, stop, reset in residual],
+            "panel_sides_opened": [segment.side] if pids else [],
+        }
+    claim = claim_demand(report["rows"], tuple(residual_all))
+    body = {"support_contract": CAUSAL_SUPPORT_CONTRACT, "partition_rule": snapshot.partition_rule,
+            "segments": record, "claim": claim,
+            "terminal_summary": terminal_summary(report, len(residual_all), claim)}
+    digest = hashlib.sha256(_canonical(body)).hexdigest()
+    write_bytes(root / SUPPORT_FILE_V3, _canonical({**body, "discovery_inputs_sha256": inputs, "support_sha256": digest}))
+    return {**body, "support_sha256": digest}
 
 
 def snapshot_support(

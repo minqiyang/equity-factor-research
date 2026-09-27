@@ -314,12 +314,13 @@ def test_t_ret3_2_a_registration_other_than_v2_binding_support_v2_refuses():
         assert stop.value.reason == "support_contract_retired"
 
 
-def test_t_reg3_2_the_cli_path_refuses_v3_until_per_side_loaders_bind(tmp_path):
+def test_t_reg3_2_run_rerun_dispatches_a_v3_document_to_the_segment_binder(tmp_path):
     path = tmp_path / "registration.json"
     sha = write_registration(sup.registration(), path)
     sidecar = runner.run_rerun(tmp_path / "missing_snapshot", registration_path=path, registration_sha256=sha,
                                output_dir=tmp_path / "out", code_commit="fixture")
-    assert sidecar["stop"]["reason"] == "segment_side_loader_unavailable" and sidecar["outputs_written"] is False
+    assert sidecar["schema_version"] == "m4_8_sp500_pit_rerun_result_v3" and sidecar["outputs_written"] is False
+    assert sidecar["stop"]["reason"] and not (tmp_path / "out").exists()
 
 
 def test_t_reg3_4_minimum_months_route_short_series_to_invalid():
