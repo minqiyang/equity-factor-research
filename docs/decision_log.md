@@ -15,6 +15,70 @@ investment performance.
 
 ---
 
+## 2026-09-28 - Owner Decisions: North Star v2, M4.8 Pause After Stage D, Public Factor Data, SEC Fundamentals, Process Constraints
+
+Context:
+
+- The owner judged progress too slow, asked for an audit of North Star drift, and asked to collect as many factors
+  as possible, keep the structure simple, and define Milestone 5 as "under which conditions which factor gives
+  higher returns or smaller drawdowns".
+- The coordinator's progress assessment (`coord/reports/progress_assessment_opus.md`) and the six-lens audit with
+  red-team and fact-check passes (`coord/reports/north_star_speed_audit_opus.md`) found: the edge thesis, the 0.02
+  MDE kill criterion, the tax hurdle, and the execution-platform Milestone 5 came from the 2026-09-23 agent audit
+  package; the kill criterion needs 286 to 2,508 monthly IC observations on S&P 500 data, so every null routed to
+  `extend_first`; Track A used 117 of 131 calendar days with zero real-data results.
+
+Decisions (owner, 2026-09-28, answered in session):
+
+1. **M4.8 pauses after Stage D.** PR #275 merged at `9dee2df2267c4cfb4b587783a8447d2cbae3d88a` (squash, bound to
+   the reviewed head `d1bf6a32e8c57e51e04375f58df5e0882b276d62`; Seat 1 GPT via Codex MATERIAL 0 / ADVISORY 3,
+   Seat 2 Opus 5.5 MATERIAL 0 / ADVISORY 6; CI green). Stages E–H stop. Resume point: Stage E on `real_v2`. The nine
+   Stage D advisories (A1-D-ADV-01..03, A2-D-ADV-1..6) and the M-2 disposition carry to the resume point.
+2. **Public factor data authorized.** French, AQR, JKP, Open Source Asset Pricing, Hou–Xue–Zhang, and FRED series
+   may be downloaded and interpreted. Raw third-party files stay out of the public repository; commits carry a
+   manifest with URL, retrieval date, SHA-256, and row count.
+3. **Fundamentals from SEC as-filed data only.** No EODHD fundamentals call. The EODHD subscription has expired
+   and is not renewed now; the local snapshots `real_v1` and `real_v2` remain the stock-level data under the
+   recorded written terms (`local_retention: PERMITTED`, `deletion_obligation: NONE`,
+   `docs/stage1_accepted_public_record_v1.json`). A forward-price source is chosen at the forward-observation step;
+   free sources are tried first.
+4. **North Star v2 and process constraints adopted**, effective when the owner confirms this PR: the new
+   `docs/north_star.md`, chosen by the owner after the vision assessment
+   (`coord/reports/north_star_vision_assessment_opus.md`): a factor-class allocator that learns which classes of
+   factors earn more or lose less in real-time market conditions, allocates monthly into a long-only large-cap
+   portfolio, puts risk first, treats "all classes, balanced by risk" as a valid result, and admits new factors only
+   through a counted search that beats random mining; Milestone 5 = factor-class allocator, Milestone 6 = separately
+   authorized execution; AGENTS.md R1, R4, R6, R7, R8, R9, R10, R11, R12 amended; the Owner Process Constraints section (two
+   cross-family seats only for real-data inference code and trial-family freezes, at most two review rounds,
+   wording findings advisory, design notes instead of binding plans, logged coordinator defaults that never loosen
+   R1, R2, R4, R6, R8, or R9); ablation once per milestone.
+5. **English only.** Everything written to the repository, to GitHub (PR titles and bodies, comments, commit
+   messages), and to any report is English; Chinese characters are prohibited there. A governance test enforces it
+   for tracked files. Live chat with the owner may use the owner's language. PR titles, bodies, comments, and commit messages
+   carry no AI attribution line (no "Generated with" tool line, no `Co-Authored-By` trailer naming an AI model);
+   the line was removed from nine older PR bodies. Other wording, bot comments, repository files, merged commit
+   history, and GitHub's contributor list stay unchanged.
+
+Coordinator records carried by this entry:
+
+- Coordination Standard V8.9 §3.3 acceptance of M4.8 plan Revision 4 (SHA-256
+  `816a3bea1b7245accdc4b539a5c43c9558d2115e1e456366a056b89c35bbd74c`, EXPERT author Claude Code Opus 5.5 xhigh,
+  history §16) and of the Stage C c4 candidate merged as PR #274 (`1c56939`); acceptor: the coordinator (Claude
+  Code, Opus 5.5), recorded after the fact. Execution scope: M4.8 Stages C and D.
+
+Consequences:
+
+- R4 replaces "refuse the run" with the side-aware adverse default. The engines still refuse an unevidenced held
+  disappearance until the default is implemented in Milestone 5; that refusal stays conservative.
+- The support v2 owner risk acceptance stays in force for exploratory runs and is disclosed in their headers.
+- The seal window `[2019-07-31, 2020-07-31)` stays unaccessed; spending it is an open owner item for the first
+  stock-level confirmation design.
+
+Follow-up:
+
+- Milestone 5 step 1 (trial file and catalog) and step 2 (risk-balanced baseline on public data) start after this
+  PR.
+
 ## 2026-09-28 - M4.8 Stage D: real_v2 Built Offline Under Partition Rule v2; Curated Identity Boundary Rule
 
 Context:
@@ -482,15 +546,15 @@ Decision:
 
 Context:
 
-- The owner approved the standing-authority record ("Authority没问题。",
-  "Authority is fine.") and delegated four open items to the producing session
+- The owner approved the standing-authority record ("Authority is fine.",
+  translated from the owner's Chinese) and delegated four open items to the producing session
   (Claude Opus 5.5): agent identity, credential location, the preservation tag,
   and the stale Standards project notes.
 
 Decision:
 
 - **Standing grants:** The owner approved `AUTHORITY.md` as introduced at
-  PR #257 head `cb3d7e3` and confirmed that approval ("Authority没问题。"); the
+  PR #257 head `cb3d7e3` and confirmed that approval ("Authority is fine."); the
   approval is quoted on PR #257. The PR #257 REVIEW remediation left the grant
   substance unchanged: `7e4f5c5` rewrote each Grant field as a verbatim source
   quote, labeled Scope and Expiry as owner-approved interpretation, and
