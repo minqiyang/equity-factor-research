@@ -87,7 +87,7 @@
   "curated_file_sha256": {
     "curated_membership_supplement.csv": "37a8647670fb6de73e5c1e2ed48f94ff3798b8245ef2b6757179ceadcc3927e5",
     "published_counts.csv": "bc78c55638291b7bf224f317a80ce79926baa978d3cb344dd905db65e8ffb280",
-    "reconstructed_changes.csv": "a4e127dea472c56ae5ced9d42126a4c7c517c0a95424160b587955b20c6848d8"
+    "reconstructed_changes.csv": "3fe432cfd927d7596547ad42167e63f30ad33d22d055f0fd2176cddb9347799a"
   },
   "evidence_ceiling": "DIAGNOSTIC_ONLY",
   "failing_anchors": [],
@@ -1016,14 +1016,14 @@
     "by_match": {
       "supplement": 28,
       "unresolved": 5,
-      "vendor_entry": 368
+      "vendor_entry": 369
     },
-    "total": 401,
+    "total": 402,
     "unresolved_by_reason": {
       "no_entry_within_tolerance": 5
     }
   },
-  "schema_version": "m4_8_membership_census_v1",
+  "schema_version": "m4_8_membership_census_v2",
   "supplement_counts_by_action_and_status": {
     "absent_member_add": {
       "valid": 30
@@ -1035,5 +1035,21 @@
       "valid": 142
     }
   },
-  "unresolved_change_fraction": 0.013245033112582781
+  "unresolved_change_fraction": 0.013201320132013201,
+  "vendor_endpoints": {
+    "by_class": {
+      "change_matched": 368,
+      "discrepancy": 9,
+      "vendor_only": 6
+    },
+    "span": [
+      "2011-08-31",
+      "2019-07-31"
+    ],
+    "total": 383,
+    "vendor_only_from_coverage_start_pre": {
+      "endpoints": 6,
+      "entries": 3
+    }
+  }
 }

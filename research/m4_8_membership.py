@@ -1,7 +1,7 @@
 """Curated point-in-time membership for M4.8 (plan sections 2.3 and 2.4).
 
 Reads the three private curation files of a membership directory, applies
-rules M-1..M-8, and evaluates ``curated_coverage_start_v2``. Everything here
+rules M-1..M-9, and evaluates ``curated_coverage_start_v2``. Everything here
 reads membership metadata and the curated files only; no price value is opened
 (R2, R11). Invalid rows stay typed and counted; nothing is filled or repaired
 (R6). The files never leave ``<private_data_root>``; callers publish counts.
@@ -41,6 +41,7 @@ DISCREPANCY_COLUMNS = ("supplement_id", "vendor_raw_row", "code", "field", "vend
 ACTIONS = ("start_date_fill", "absent_member_add", "date_correction")
 SOURCE_KINDS = ("sp_dji_announcement", "sec_filing", "public_changes_list")
 MATCH_TOLERANCE_ROWS = 5
+ENDPOINT_CLASSES = ("change_matched", "discrepancy", "vendor_only")
 COVERAGE_RULE = "curated_coverage_start_v2"
 COVERAGE_FLOOR = date(2011, 8, 31)
 MAX_UNRESOLVED_CHANGE_FRACTION = 0.02
@@ -306,6 +307,38 @@ def unresolved_change_fraction(changes: list[dict[str, Any]], start: date, end: 
     if not total:
         return None
     return (sum(1 for c in span if c["match"] == "unresolved") + undated) / total
+
+
+def vendor_endpoints(
+    entries: list[dict[str, Any]],
+    changes: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    start: date,
+    end: date,
+) -> list[dict[str, Any]]:
+    """M-9: every add or delete endpoint of a retained vendor entry effective in ``[start, end)``, classified once.
+
+    ``change_matched`` when a matched change names the entry, or its fill or
+    correction, with that action; ``discrepancy`` when an M-2 discrepancy line
+    names the entry and field; ``vendor_only`` otherwise. A vendor-only
+    endpoint stays outside R3-2a and counts in R3-10.
+    """
+    vendor_ref = {r["supplement_id"]: str(r["vendor_raw_row"]) for r in records if r["action"] != "absent_member_add"}
+    matched = {(vendor_ref.get(c["match_ref"], c["match_ref"]), c["action"]) for c in changes if c["match"] != "unresolved"}
+    lines = {(str(line["vendor_raw_row"]), "add" if line["field"] == "start_date" else "delete")
+             for record in records for line in record["discrepancies"]}
+    endpoints = []
+    for entry in entries:
+        if entry["kind"] != "vendor_entry":
+            continue
+        for action, day in (("add", entry["start"]), ("delete", entry["end"])):
+            if day is None or not start <= day < end:
+                continue
+            key = (entry["ref"], action)
+            endpoint_class = "change_matched" if key in matched else "discrepancy" if key in lines else "vendor_only"
+            endpoints.append({"ref": entry["ref"], "code": entry["code"], "action": action, "effective_date": day,
+                              "class": endpoint_class})
+    return endpoints
 
 
 def m8_charges(

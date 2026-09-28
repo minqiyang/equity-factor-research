@@ -12,7 +12,52 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
-## 2026-09-27 - M4.8 Stage C attempt c3: plan amendment A1, primary-sourced placeholders, gate G1 re-recorded (PR #274)
+## 2026-09-27 - M4.8 Stage C attempt c4 (EXPERT): plan Revision 4, rule M-9 vendor-endpoint reconciliation, gate G1 re-recorded (PR #274)
+
+- Source: Round 3 review of `054ceaa`. Seat 1 (`MATERIAL: 1, ADVISORY: 4`; A2R2-M01 open) and Seat 2
+  (`MATERIAL: 0, ADVISORY: 6`). Route `EXPERT` under Coordination Standard V8.9 §3.3 (review iteration limit);
+  card `v8-expert-m48c-c4`. Report: `coord/reports/m4_8c_membership_impl.md` section 11.
+- Plan Revision 4 (history §16, SHA-256 `816a3bea…bd74c`), authored on a route with `may_author_plan`: adopts A1
+  (rule M-5a and the change-row source rule) word for word, rewords the `code` column as "the code rule M-5a
+  assigns" (A2R3-ADV-1, A2R3-ADV-3(e)), and adds rule M-9. Under M-9 the change log holds the changes an
+  independent public record establishes; the census classifies every in-span endpoint of a retained dated vendor
+  entry as `change_matched`, `discrepancy` (an M-2 line), or `vendor_only`; vendor-only endpoints stay outside
+  R3-2a and M-8, and R3-10 counts their entries (A2R3-ADV-2).
+- A2R2-M01 (R2, R6, R9, R10): the seven events now have one disposition each. The 2019 spin-off addition has a
+  source: the parent issuer's 2019-02-11 announcement states the 2019-03-01 distribution date with due-bill trading
+  through its close, so with the S&P DJI release and the 2015-09-14 zero-price policy the addition is effective
+  2019-03-04, 0 rows from the vendor date. The other six events (three entries: a 2016 distribution placeholder, a
+  2017 spin-off placeholder, and a 2017 share-class stock-dividend placeholder) have no located source for their
+  S&P 500 dates: S&P DJI press-site keyword searches found no release, and the located company documents state the
+  corporate event without the ex-date or the index treatment. The census counts them as vendor-only (6 endpoints,
+  3 entries). None is in the eligibility mask at a scheduled reset or its signal row.
+- Code: `research/m4_8_membership.py` `vendor_endpoints` (M-9); `research/m4_7_coverage_census.py` public
+  `vendor_endpoints` block (schema `m4_8_membership_census_v2`), the private per-endpoint detail, and the R3-10
+  numerator term. Tests: `test_t_mem_11_every_vendor_endpoint_in_the_span_is_classified_once`,
+  `test_t_mem_11_a_vendor_only_entry_is_counted_and_leaves_the_change_fraction_unchanged`,
+  `test_t_cen3_r3_10_counts_vendor_only_entries_active_in_the_pre_segment`.
+- Reconciliation on real_v1: 402 changes = 397 matched + 5 unresolved. The 397 matches name 396 endpoints (368
+  vendor, 28 absent-member); one vendor start carries two list events, a line and the renamed line it continues.
+  The 383 in-span vendor endpoints = 368 change-matched + 9 discrepancy + 6 vendor-only.
+- Census: `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last` 2019-05-31; `pre_ic_months` 62; R3-2a
+  4 / 303 = 0.0132; R3-2c 5,738 / 650,629 = 0.0088; seven floor anchors (n_cur 495–504). **Gate G1: passed.** The
+  Stage F R3-10 input is (10 + 3) / 638 = 0.0204 (cap 0.05). Public census JSON SHA-256
+  `c40ad8aa6dad01fe026c8e491cfb93cfffad775eeacb2ff770b4829d544f3e6e`.
+- Sensitivities (private, diagnostics; c4 inputs unless stated):
+  - Vendor-only endpoints typed as sourceless change rows: R3-2a 10 / 309 at 2014-04-30; start 2018-11-30, 7
+    months, blocked. Seat 1's Round 3 variant on the c3 inputs reproduces: 11 / 309; 2019-03-31, 3 months, blocked.
+  - Renamed issuers as traded (no M-5a(a)): R3-2c 0.0104, blocked.
+  - Bare codes in place of `_old`: start 2015-09-30, 45 months, passes.
+  - Placeholders removed: same start, R3-2a 0.0153, passes; vendor-only endpoints rise from 6 to 48.
+  - Modelled anchors: 2016-10-31, 32 months, blocked (the M-2 owner item).
+- AUDIT1-M48C-R3-A01 and A2R3-ADV-3(a)–(d): the c3 counts were 4 / 302 and 21 entries for 41 events (20 with
+  both dates, one deletion-only); the c3 entry below carries the correction. The c4 span holds 303 changes because
+  the 2019 addition joined it.
+- Ablation (plan history §16.3): two simplification attempts (drop the gate-span count; keep schema label v1) and
+  three guard checks (the discrepancy class, the fill mapping, the R3-10 term); no removal.
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3288 passed, 2 skipped (pre-existing `longdouble` skips; three new cases).
+
+## 2026-09-27 - M4.8 Stage C attempt c3: plan amendment A1, primary-sourced placeholders, gate G1 re-recorded (PR #274; superseded by c4)
 
 - Source: Round 2 review of `548175b`. Seat 1 (`MATERIAL: 0, ADVISORY: 4`) and Seat 2 (`MATERIAL: 1, ADVISORY: 5`);
   card `m4_8c-membership-c3`. Report: `coord/reports/m4_8c_membership_impl.md` section 10.
@@ -23,6 +68,7 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Route 2 of A2R2-M01: the other 24 short vendor entries were searched release by release. S&P DJI releases for 20
   state the spin completion and target-index timing; with the S&P DJI zero-price spin-off policy of 2015-09-14 as
   corroboration they give 41 add or delete events, all equal to the vendor dates (the builder asserts equality).
+  (Corrected in c4: 21 entries give the 41 events, 20 with both dates and one deletion-only.)
   Two releases name a company other than the vendor's label. Seven events stay unreconstructed and counted (three
   entries without a located release, one addition whose date the release omits).
 - Plan amendment A1 (history §15, SHA-256 `3a870bed…98f2707`): rule M-5a adds the code rule, and section 2.3 now

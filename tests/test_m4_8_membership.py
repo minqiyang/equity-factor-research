@@ -214,6 +214,41 @@ def test_t_mem_10_m8_worst_case_charges_and_a_not_evaluable_segment():
     assert blocked["status"] == "blocked:unpriced_eligible_member_days"
 
 
+def test_t_mem_11_every_vendor_endpoint_in_the_span_is_classified_once():
+    entries = [{"ref": "0", "kind": "vendor_entry", "code": "AAA.US", "start": date(2014, 3, 3), "end": date(2016, 1, 4)},
+               {"ref": "1", "kind": "vendor_entry", "code": "BBB.US", "start": date(2015, 11, 10), "end": date(2015, 11, 11)},
+               {"ref": "2", "kind": "vendor_entry", "code": "CCC.US", "start": date(2012, 3, 1), "end": None},
+               {"ref": "3", "kind": "vendor_entry", "code": "DDD.US", "start": date(2009, 1, 2), "end": date(2019, 8, 1)},
+               {"ref": "MS-9", "kind": "supplement", "code": "NEW.US", "start": date(2015, 1, 5), "end": date(2016, 1, 4)}]
+    records = [{"supplement_id": "MS-1", "action": "start_date_fill", "vendor_raw_row": "2", "discrepancies": []},
+               {"supplement_id": "MS-2", "action": "date_correction", "vendor_raw_row": "0",
+                "discrepancies": [{"vendor_raw_row": "0", "field": "end_date"}]},
+               {"supplement_id": "MS-9", "action": "absent_member_add", "vendor_raw_row": "", "discrepancies": []}]
+    changes = [{"action": "add", "match": "vendor_entry", "match_ref": "0"},
+               {"action": "add", "match": "supplement", "match_ref": "MS-1"},
+               {"action": "add", "match": "unresolved", "match_ref": ""},
+               {"action": "delete", "match": "supplement", "match_ref": "MS-9"}]
+    endpoints = mm.vendor_endpoints(entries, changes, records, FLOOR, END)
+    assert [(e["ref"], e["action"], e["class"]) for e in endpoints] == [
+        ("0", "add", "change_matched"), ("0", "delete", "discrepancy"), ("1", "add", "vendor_only"),
+        ("1", "delete", "vendor_only"), ("2", "add", "change_matched")]
+    assert mm.vendor_endpoints(entries, [], [], FLOOR, END)[-1]["class"] == "vendor_only"
+    assert mm.vendor_endpoints(entries, changes, records, date(2016, 1, 5), END) == []
+
+
+def test_t_mem_11_a_vendor_only_entry_is_counted_and_leaves_the_change_fraction_unchanged(tmp_path, monkeypatch):
+    curated = {"changes": [change_row("RC-1", "2018-01-02", "add", "AAA.US")]}
+    harness = snapshot_v2(tmp_path, monkeypatch, "M11", [entry("AAA", "2018-01-02"), entry("TPS", "2018-03-01", "2018-03-02")],
+                          {"AAA.US": bars2(ALL_ROWS)}, curated=curated, build=False)
+    result = membership_census(Snapshot.open(harness.snapshot_dir), mm.read_curated(harness.snapshot_dir / "membership"))
+    public = result["public"]
+    assert public["vendor_endpoints"] == {"span": ["2011-08-31", "2019-07-31"], "total": 3, "by_class": {
+        "change_matched": 1, "discrepancy": 0, "vendor_only": 2}, "vendor_only_from_coverage_start_pre": None}
+    assert public["reconstructed_changes"] == {"total": 1, "by_match": {"vendor_entry": 1}, "unresolved_by_reason": {}}
+    assert mm.unresolved_change_fraction(result["changes"], FLOOR, END) == 0.0
+    assert {e["ref"] for e in result["vendor_endpoints"] if e["class"] == "vendor_only"} == {"1"}
+
+
 def _clean_readiness():
     return {"pre_ic_months": 70, "unresolved_change_fraction": 0.0, "failing_anchors": [],
             "unpriced_absent_fraction": {"pre": 0.0, "post": 0.0}, "unpriced_eligible_fraction": {"pre": 0.0, "post": 0.0},

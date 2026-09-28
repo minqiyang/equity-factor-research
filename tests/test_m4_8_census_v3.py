@@ -8,7 +8,7 @@ import pytest
 
 from data.holdout_partition import SnapshotRefusal
 from m4_7_snapshot_support import entry
-from m4_8_snapshot_support import ALL_ROWS, HS_ROW, bars2, snapshot_v2, split_row, supplement_row
+from m4_8_snapshot_support import ALL_ROWS, HS_ROW, bars2, change_row, snapshot_v2, split_row, supplement_row
 from research.m4_7_universe_build import Snapshot
 from research.m4_7_coverage_census import (
     aggregate_terminal_summary,
@@ -95,12 +95,12 @@ def test_potentially_held_sets_carry_locks_and_halts_count_from_bar_presence():
     assert counts == {"potentially_held_cells": 3, "untradeable_execution_cells": 1, "unmarked_halt_rows": 3}
 
 
-def _census_fixture(tmp_path, monkeypatch, name="CEN"):
+def _census_fixture(tmp_path, monkeypatch, name="CEN", changes=()):
     codes = {"AAA.US": bars2(ALL_ROWS), "MIS.US": (bars2(ALL_ROWS), 404),
              "INV.US": (bars2(ALL_ROWS), [split_row(HS_ROW + 10, "0/1")])}
     entries = [entry("AAA", "2018-01-02", name="Alpha Holdings"), entry("MIS", "2018-01-02", name="Missing Evidence Co"),
                entry("INV", "2018-01-02", name="Invalid Split Co")]
-    curated = {"supplement": [supplement_row("MS-1", "absent_member_add", "UNP.US", "2018-03-01")]}
+    curated = {"supplement": [supplement_row("MS-1", "absent_member_add", "UNP.US", "2018-03-01")], "changes": list(changes)}
     return snapshot_v2(tmp_path, monkeypatch, name, entries, codes, curated=curated)
 
 
@@ -136,6 +136,22 @@ def test_census_v3_end_to_end_on_a_rule_v2_snapshot(tmp_path, monkeypatch):
     with pytest.raises(SnapshotRefusal) as refused:
         run_census_v3(harness.snapshot_dir, terminal_summary={}, segment_access_logs=LOGS, reports_dir=tmp_path / "r3")
     assert refused.value.code == "terminal_summary_incomplete"
+
+
+def test_t_cen3_r3_10_counts_vendor_only_entries_active_in_the_pre_segment(tmp_path, monkeypatch):
+    def r3_10(result):
+        return {"rule": "R3-10", "result": "ready_with_caveats:membership_discrepancies"} in \
+            result["public"]["census_readiness"]["failures"]
+
+    vendor_only = run_census_v3(_census_fixture(tmp_path / "a", monkeypatch, name="VO").snapshot_dir,
+                                terminal_summary={"residual_count": 0}, segment_access_logs=LOGS,
+                                reports_dir=tmp_path / "a" / "reports")
+    assert r3_10(vendor_only)
+    changes = [change_row(f"RC-{i}", "2018-01-02", "add", code) for i, code in enumerate(("AAA.US", "MIS.US", "INV.US"))]
+    matched = run_census_v3(_census_fixture(tmp_path / "b", monkeypatch, name="VM", changes=changes).snapshot_dir,
+                            terminal_summary={"residual_count": 0}, segment_access_logs=LOGS,
+                            reports_dir=tmp_path / "b" / "reports")
+    assert not r3_10(matched)
 
 
 def test_t_pub_1_public_outputs_hold_no_code_name_or_private_path(tmp_path, monkeypatch):
