@@ -12,7 +12,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
-## 2026-09-27 - M4.8 Stage C: point-in-time membership curation on real_v1 and gate G1
+## 2026-09-27 - M4.8 Stage C attempt c2: plan-literal codes, every list change, gate G1 re-recorded (PR #274)
+
+- Source: Round 1 CRITICAL review of `c150136`. Seat 1 (`MATERIAL: 1, ADVISORY: 2`) and Seat 2
+  (`MATERIAL: 0, ADVISORY: 6`); card `m4_8c-membership-c2`. Report: `coord/reports/m4_8c_membership_impl.md`
+  section 9. No repository code changed; the private builder and curated files were regenerated.
+- AUDIT1-M48C-M01 / A2-C-ADV-1 (R2, R10): the c1 pass used convention C-1, which the plan does not state. c2 keys
+  every absent member by the ticker as traded in its interval (plan 2.3). `<ticker>_old` marks the six tickers whose
+  snapshot code belongs to another permanent security, so those rows stay unpriced (R3 fail closed). The four renamed
+  rows now carry their as-traded codes and are unpriced (6 priced, 24 unpriced absent members).
+- AUDIT1-M48C-A02 (R2): the two single-source transient events (a 2015 spin-off placeholder) are in the change log,
+  typed `change_invalid:corroboration_missing`. No second source was found in the downloaded S&P DJI documents,
+  the October–December 2015 Wayback captures, or a web search. The other 24 vendor entries of at most 12 trading
+  days (35 member-days) have no public-list event; they stay vendor entries, counted and unreconstructed.
+- A2-C-ADV-2 (R3): the successor-code row now carries its as-traded code and is unpriced, so no curated row keys two
+  permanent securities to one code. Stage D still needs an identity split at the 2017-04-03 share exchange for the
+  vendor line that holds the predecessor's bars.
+- A2-C-ADV-4: notes on 1996-01-02 starts now read "the latest possible addition date" (40 fills, 15 absent members).
+- AUDIT1-M48C-A01: privacy attestations cover this candidate's diff and artifacts. The tracked tree holds 53
+  inherited private-path occurrences in 17 files at both `f416af8` and the candidate; redacting them needs separate
+  authorization.
+- A2-C-ADV-5: the address the first Wikipedia request sent was the owner's account email. The session instruction
+  restricts that address to identification, so sending it was a process failure; later requests used a generic user
+  agent, and no tool stores a user agent. Owner confirmation requested.
+- A2-C-ADV-6: the implementation report names no constituent.
+- Census (plan-literal gate of record): `coverage_start_pre` = `D0_pre` = 2015-07-31; `r_pre_last` 2019-05-31;
+  `pre_ic_months` 47; R3-2a 4 / 204 = 0.0196; R3-2c 3,882 / 493,963 = 0.0079; six required anchors on the floor
+  (n_cur 496–504); band 496–506 with no exception. **Gate G1: passed.** 360 changes (325 vendor, 28 supplement,
+  7 unresolved); 19 exclusions (11 ticker changes, 4 S&P DJI continuations, 4 source artifacts). Public census
+  JSON SHA-256 `752f7053138a0ac961551232613ebb9feb97ab001847c485023a6c5021c28052`.
+- Sensitivities (private, diagnostics):
+  - C-1 codes: same start, R3-2c 0.0064, passes.
+  - Bare codes in place of `_old`: 3 `identity_refused`, start 2016-01-31, 41 months, passes.
+  - Transient events excluded (c1 treatment): start 2014-04-30, R3-2c 0.0104, blocked.
+  - Modelled anchors: start 2016-10-31, 32 months, blocked (the M-2 owner item).
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3284 passed, 2 skipped (pre-existing `longdouble` skips).
+
+## 2026-09-27 - M4.8 Stage C attempt c1: point-in-time membership curation on real_v1 and gate G1 (superseded by c2)
 
 - Source: plan Revision 3 (`bd1bf587…bf3e`) sections 2.3, 2.4, 5.1, 7.3; card `m4_8c-membership-a1`; O48-1(a).
   Report: `coord/reports/m4_8c_membership_impl.md`. Base `f416af8` (PR #273). No repository code changed.
