@@ -15,6 +15,77 @@ investment performance.
 
 ---
 
+## 2026-09-27 - M4.8 Stage C: O48-1(a) Retrieval, Plan Revision 4 (Rules M-5a and M-9), and Gate G1 Record (attempt c4)
+
+Context:
+
+- Plan `m4_8_binding_plan` Revision 3 (`bd1bf587…bf3e`) section 7.3 gates Stage D on G1. The Stage C card
+  (`coord/v8_review_20260923/card_m4_8c_membership.md`, task `m4_8c-membership-a1`) states owner directive O48-1(a):
+  public-document retrieval (SEC EDGAR, S&P DJI announcements and factsheets, public changes lists with
+  corroboration). O48-1(b) (EODHD retrieval) is not granted.
+- Review history: Round 1 on c1 (`c150136`) found the pass rested on the unstated code convention C-1
+  (AUDIT1-M48C-M01). Round 2 on c2 (`548175b`) found a 2015 S&P DJI release that c2 had missed (A2R2-M01). Round 3
+  on c3 (`054ceaa`) kept A2R2-M01 open at Seat 1 (`MATERIAL: 1`): seven vendor-only placeholder events sat outside
+  the change log, and typed as sourceless rows they block G1 (start 2019-03-31, 3 IC months). Seat 2
+  (`MATERIAL: 0`) read the exclusion as sound and asked for the rule in the plan (A2R3-ADV-2) and for A1's adoption
+  by an eligible plan author (A2R3-ADV-1). Under Coordination Standard V8.9 §3.3 the coordinator dispatched EXPERT
+  (card `coord/v8_review_20260923/card_expert_m48c_c4.md`).
+
+Decision:
+
+- Plan Revision 4 (history §16; SHA-256 `816a3bea1b7245accdc4b539a5c43c9558d2115e1e456366a056b89c35bbd74c`), authored
+  on `EXPERT` (`may_author_plan = true`), adopts amendment A1 word for word: rule M-5a (a renamed issuer keeps its
+  own bars under the later snapshot code; a ticker reused by another permanent security takes `<Code>_old` and stays
+  unpriced; a predecessor across a share exchange keeps its as-traded code and stays unpriced) and the change-row
+  source rule. The `code` column now reads "the code rule M-5a assigns". The route deviation of c3 (A1 written on
+  `GENERAL_EXEC`; the c3 card's `AUTHORITY.md` citation, which holds no plan-amendment grant) is recorded in
+  history §16.1.
+- Revision 4 adds rule M-9. The change log holds the index changes an independent public record establishes (an
+  S&P DJI announcement, an SEC filing, or a corroborated public changes list, with dates derivable through a
+  published S&P DJI policy). The census classifies every in-span endpoint of a retained dated vendor entry once:
+  `change_matched`, `discrepancy` (an M-2 line), or `vendor_only`. Vendor-only endpoints stay outside R3-2a and
+  M-8, their entries stay retained, the census publishes the counts, and R3-10 counts each vendor-only entry active
+  in the pre segment.
+- Disposition of the seven events: the 2019 spin-off addition is now sourced (the parent issuer's 2019-02-11
+  announcement with the S&P DJI release and the 2015-09-14 zero-price policy) and matches its vendor date; the other
+  six events (three entries) are vendor-only under M-9.
+- Stage C used O48-1(a) only; no EODHD request was made. Curated files stay under `<private_data_root>`.
+- Gate G1 record on `real_v1` metadata and the c4 curated files: `passed`. `coverage_start_pre` = `D0_pre` =
+  2014-04-30, `r_pre_last` 2019-05-31, `pre_ic_months` 62, unresolved-change fraction 4 / 303 = 0.0132 (cap 0.02),
+  R3-2c 5,738 / 650,629 = 0.0088 (cap 0.01), seven required anchors pass on the 500-line floor. Vendor endpoints in
+  the span: 383 = 368 change-matched + 9 discrepancy + 6 vendor-only. Curated file SHA-256: supplement
+  `37a86476…3927e5` (unchanged), changes `3fe432cf…9a799a` (402 rows), counts `bc78c556…4ffb280` (unchanged);
+  public census `c40ad8aa…3f6e`.
+- M-2 applied as written: 10 vendor start dates that both public lists contradict stay in force as unadjudicated
+  discrepancies. All 17 published factsheet counts equal `n_cur` plus these lines. With every anchor modelled that
+  way, the start moves to 2016-10-31 with 32 IC months and G1 blocks, so the pass rests on the floor-anchor slack
+  plan section 10 states.
+
+Rationale:
+
+- R3-2a measures completeness against the independent record: its numerator counts independent-record changes the
+  membership fails to match. A vendor-only endpoint is the converse relation, and M-8 would charge it as a missing
+  member the universe already holds. Its risk is over-inclusion, which the anchors bound, the census counts, and
+  R3-10 records as a caveat. The computed classes keep completeness machine-checked: removing the 42 sourced
+  placeholder events moves the vendor-only count from 6 to 48.
+- The rule was stated with its quantified contrary reading on record (R9): typed as sourceless rows, the six
+  vendor-only endpoints give R3-2a 10 / 309 at 2014-04-30 and a 2018-11-30 start with 7 IC months, blocked. The
+  three vendor-only entries hold 14 pre-segment membership rows and enter no book (no reset or signal row).
+- The pass needs M-5a(a): with the three renamed issuers read as traded, R3-2c is 0.0104 and G1 blocks. M-5a(a)
+  prices a member with its own bars; M-5a(b) and (c) fail closed where a code would join two permanent securities.
+
+Follow-up:
+
+- Coordinator: record the acceptance of Revision 4 and of the c4 candidate under §3.3; record the disposition of
+  A2R2-M01 for the PR merge (section 8).
+- Owner: the M-2 disposition (accept as the R3-10 caveat, revise M-2 by plan revision, or seek primary sources);
+  the user-agent disclosure (engineering log); optionally a coverage-rule change so that more unresolved changes
+  cannot shorten the evaluated segment into a pass (A2R2-ADV-2).
+- Stage D: identity split at the 2017-04-03 share exchange (A2-C-ADV-2); the census v3 R3-10 input includes the
+  M-9 term.
+
+---
+
 ## 2026-09-26 - Owner Risk Acceptance: Support v2 Look-Ahead Exclusion (AUDIT1-M01, ADV-1)
 
 Context:

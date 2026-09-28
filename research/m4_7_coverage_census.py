@@ -1252,6 +1252,10 @@ def membership_census(snapshot: Snapshot, curated: m4_8_membership.Curated) -> d
         if parse_strict_date(row.get("StartDate")) is None and end is not None and holdout_start <= end <= warm_up_end:
             late["seal_window" if end < holdout_end else "post_holdout_warm_up"] += 1
     discrepancies = m4_8_membership.discrepancy_rows(records)
+    endpoints = m4_8_membership.vendor_endpoints(entries, changes, records, m4_8_membership.COVERAGE_FLOOR, holdout_start)
+    vendor_only = [e for e in endpoints if e["class"] == "vendor_only"]
+    gate_span = (None if coverage["coverage_start_pre"] is None else
+                 [e for e in vendor_only if e["effective_date"] >= date.fromisoformat(coverage["coverage_start_pre"])])
     absent = [r for r in records if r["action"] == "absent_member_add"]
     match_counts: dict[str, int] = {}
     reasons: dict[str, int] = {}
@@ -1260,7 +1264,7 @@ def membership_census(snapshot: Snapshot, curated: m4_8_membership.Curated) -> d
         if change["match"] == "unresolved":
             reasons[change["reason"]] = reasons.get(change["reason"], 0) + 1
     public = {
-        "schema_version": "m4_8_membership_census_v1",
+        "schema_version": "m4_8_membership_census_v2",
         "evidence_ceiling": "DIAGNOSTIC_ONLY",
         "coverage_rule": m4_8_membership.COVERAGE_RULE,
         "coverage_status": coverage["status"],
@@ -1276,6 +1280,12 @@ def membership_census(snapshot: Snapshot, curated: m4_8_membership.Curated) -> d
         "unresolved_change_fraction": coverage["unresolved_change_fraction"],
         "reconstructed_changes": {"total": len(changes), "by_match": dict(sorted(match_counts.items())),
                                   "unresolved_by_reason": dict(sorted(reasons.items()))},
+        "vendor_endpoints": {
+            "span": [m4_8_membership.COVERAGE_FLOOR.isoformat(), holdout_start.isoformat()], "total": len(endpoints),
+            "by_class": {name: sum(1 for e in endpoints if e["class"] == name) for name in m4_8_membership.ENDPOINT_CLASSES},
+            "vendor_only_from_coverage_start_pre": None if gate_span is None else {
+                "endpoints": len(gate_span), "entries": len({e["ref"] for e in gate_span})},
+        },
         "supplement_counts_by_action_and_status": m4_8_membership.supplement_counts(records),
         "absent_members": {
             "priced": sum(1 for r in absent if r["status"] == "valid" and r.get("priced")),
@@ -1294,9 +1304,10 @@ def membership_census(snapshot: Snapshot, curated: m4_8_membership.Curated) -> d
                         if key != "discrepancies"} for r in records],
         "changes": [{**c, "effective_date": None if c["effective_date"] is None else c["effective_date"].isoformat()}
                     for c in changes],
+        "vendor_endpoints": [{**e, "effective_date": e["effective_date"].isoformat()} for e in endpoints],
     }
     return {"public": public, "detail": detail, "discrepancies": discrepancies, "changes": changes,
-            "records": records, "entries": entries, "coverage": coverage}
+            "records": records, "entries": entries, "coverage": coverage, "vendor_endpoints": endpoints}
 
 
 def run_membership_census(
@@ -1321,6 +1332,8 @@ def run_membership_census(
         f"- coverage_start_pre: `{public['coverage_start_pre']}`; D0_pre: `{public['D0_pre']}`; "
         f"pre IC months: {public['pre_ic_months']}",
         f"- Unresolved change fraction: {public['unresolved_change_fraction']}",
+        f"- Vendor endpoints in the change span (M-9): {public['vendor_endpoints']['total']}; "
+        + ", ".join(f"{name} {count}" for name, count in public["vendor_endpoints"]["by_class"].items()),
         f"- Gate G1: `{public['gate_g1']['status']}`",
         f"- Failing anchors: {len(public['failing_anchors'])}", ""])
     result["public_sha256"] = _write_public(reports, MEMBERSHIP_REPORT, public, markdown, snapshot, (curated_dir,))
@@ -1545,8 +1558,10 @@ def run_census_v3(
             spy[s.side].index[np.isfinite(spy[s.side]["adjusted_close"])]).all() for s in segments)
     holdout_counts = [c["n_cur"] for c in membership["public"]["n_cur_by_month_end"]
                       if snapshot.holdout_start.isoformat() <= c["month_end"] < snapshot.holdout_end.isoformat()]
-    dated_pre = sum(1 for e in membership["entries"] if e["kind"] == "vendor_entry" and _rows_inside(
-        _member_rows(calendar, e["start"], e["end"]), segments[0].first_reset_row, segments[0].last_book_row))
+    active_pre = {e["ref"] for e in membership["entries"] if e["kind"] == "vendor_entry" and _rows_inside(
+        _member_rows(calendar, e["start"], e["end"]), segments[0].first_reset_row, segments[0].last_book_row)}
+    dated_pre = len(active_pre)
+    vendor_only_pre = len({e["ref"] for e in membership["vendor_endpoints"] if e["class"] == "vendor_only"} & active_pre)
     halts_cells = sum(m["halts"]["potentially_held_cells"] for m in per_segment.values())
     inputs = {
         "pre_ic_months": per_segment["pre"]["ic_months"],
@@ -1573,8 +1588,8 @@ def run_census_v3(
         "total_ic_months": sum(m["ic_months"] for m in per_segment.values()),
         "vp2_revisit_required": any(m["vp2_revisit_required"] for m in per_segment.values()),
         "seal_carry_passed": seal["passed"],
-        "discrepancy_fraction": (membership["public"]["corrections"]["unadjudicated_discrepancies"] / dated_pre
-                                 if dated_pre else 0.0),
+        "discrepancy_fraction": ((membership["public"]["corrections"]["unadjudicated_discrepancies"] + vendor_only_pre)
+                                 / dated_pre if dated_pre else 0.0),
     }
     readiness = derive_readiness_v3(inputs)
     public_segments = {k: {key: value for key, value in m.items() if key != "volume_basis_unverified_by_reason"}

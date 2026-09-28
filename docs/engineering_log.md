@@ -12,6 +12,159 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-27 - M4.8 Stage C attempt c4 (EXPERT): plan Revision 4, rule M-9 vendor-endpoint reconciliation, gate G1 re-recorded (PR #274)
+
+- Source: Round 3 review of `054ceaa`. Seat 1 (`MATERIAL: 1, ADVISORY: 4`; A2R2-M01 open) and Seat 2
+  (`MATERIAL: 0, ADVISORY: 6`). Route `EXPERT` under Coordination Standard V8.9 §3.3 (review iteration limit);
+  card `v8-expert-m48c-c4`. Report: `coord/reports/m4_8c_membership_impl.md` section 11.
+- Plan Revision 4 (history §16, SHA-256 `816a3bea…bd74c`), authored on a route with `may_author_plan`: adopts A1
+  (rule M-5a and the change-row source rule) word for word, rewords the `code` column as "the code rule M-5a
+  assigns" (A2R3-ADV-1, A2R3-ADV-3(e)), and adds rule M-9. Under M-9 the change log holds the changes an
+  independent public record establishes; the census classifies every in-span endpoint of a retained dated vendor
+  entry as `change_matched`, `discrepancy` (an M-2 line), or `vendor_only`; vendor-only endpoints stay outside
+  R3-2a and M-8, and R3-10 counts their entries (A2R3-ADV-2).
+- A2R2-M01 (R2, R6, R9, R10): the seven events now have one disposition each. The 2019 spin-off addition has a
+  source: the parent issuer's 2019-02-11 announcement states the 2019-03-01 distribution date with due-bill trading
+  through its close, so with the S&P DJI release and the 2015-09-14 zero-price policy the addition is effective
+  2019-03-04, 0 rows from the vendor date. The other six events (three entries: a 2016 distribution placeholder, a
+  2017 spin-off placeholder, and a 2017 share-class stock-dividend placeholder) have no located source for their
+  S&P 500 dates: S&P DJI press-site keyword searches found no release, and the located company documents state the
+  corporate event without the ex-date or the index treatment. The census counts them as vendor-only (6 endpoints,
+  3 entries). None is in the eligibility mask at a scheduled reset or its signal row.
+- Code: `research/m4_8_membership.py` `vendor_endpoints` (M-9); `research/m4_7_coverage_census.py` public
+  `vendor_endpoints` block (schema `m4_8_membership_census_v2`), the private per-endpoint detail, and the R3-10
+  numerator term. Tests: `test_t_mem_11_every_vendor_endpoint_in_the_span_is_classified_once`,
+  `test_t_mem_11_a_vendor_only_entry_is_counted_and_leaves_the_change_fraction_unchanged`,
+  `test_t_cen3_r3_10_counts_vendor_only_entries_active_in_the_pre_segment`.
+- Reconciliation on real_v1: 402 changes = 397 matched + 5 unresolved. The 397 matches name 396 endpoints (368
+  vendor, 28 absent-member); one vendor start carries two list events, a line and the renamed line it continues.
+  The 383 in-span vendor endpoints = 368 change-matched + 9 discrepancy + 6 vendor-only.
+- Census: `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last` 2019-05-31; `pre_ic_months` 62; R3-2a
+  4 / 303 = 0.0132; R3-2c 5,738 / 650,629 = 0.0088; seven floor anchors (n_cur 495–504). **Gate G1: passed.** The
+  Stage F R3-10 input is (10 + 3) / 638 = 0.0204 (cap 0.05). Public census JSON SHA-256
+  `c40ad8aa6dad01fe026c8e491cfb93cfffad775eeacb2ff770b4829d544f3e6e`.
+- Sensitivities (private, diagnostics; c4 inputs unless stated):
+  - Vendor-only endpoints typed as sourceless change rows: R3-2a 10 / 309 at 2014-04-30; start 2018-11-30, 7
+    months, blocked. Seat 1's Round 3 variant on the c3 inputs reproduces: 11 / 309; 2019-03-31, 3 months, blocked.
+  - Renamed issuers as traded (no M-5a(a)): R3-2c 0.0104, blocked.
+  - Bare codes in place of `_old`: start 2015-09-30, 45 months, passes.
+  - Placeholders removed: same start, R3-2a 0.0153, passes; vendor-only endpoints rise from 6 to 48.
+  - Modelled anchors: 2016-10-31, 32 months, blocked (the M-2 owner item).
+- AUDIT1-M48C-R3-A01 and A2R3-ADV-3(a)–(d): the c3 counts were 4 / 302 and 21 entries for 41 events (20 with
+  both dates, one deletion-only); the c3 entry below carries the correction. The c4 span holds 303 changes because
+  the 2019 addition joined it.
+- Ablation (plan history §16.3): two simplification attempts (drop the gate-span count; keep schema label v1) and
+  three guard checks (the discrepancy class, the fill mapping, the R3-10 term); no removal.
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3288 passed, 2 skipped (pre-existing `longdouble` skips; three new cases).
+
+## 2026-09-27 - M4.8 Stage C attempt c3: plan amendment A1, primary-sourced placeholders, gate G1 re-recorded (PR #274; superseded by c4)
+
+- Source: Round 2 review of `548175b`. Seat 1 (`MATERIAL: 0, ADVISORY: 4`) and Seat 2 (`MATERIAL: 1, ADVISORY: 5`);
+  card `m4_8c-membership-c3`. Report: `coord/reports/m4_8c_membership_impl.md` section 10.
+- A2R2-M01 (R2, R10): c2 typed the 2015 spin-off placeholder events `change_invalid:corroboration_missing`. An S&P
+  DJI release of 2015-11-02 states the one-day S&P 500 membership: added after the close of 2015-11-09 and dropped
+  after the close of 2015-11-10. The rows now cite it (effective 2015-11-10 and 2015-11-11, both at 0 rows from the
+  vendor interval). The c2 search used the wrong wording; the release was one query away.
+- Route 2 of A2R2-M01: the other 24 short vendor entries were searched release by release. S&P DJI releases for 20
+  state the spin completion and target-index timing; with the S&P DJI zero-price spin-off policy of 2015-09-14 as
+  corroboration they give 41 add or delete events, all equal to the vendor dates (the builder asserts equality).
+  (Corrected in c4: 21 entries give the 41 events, 20 with both dates and one deletion-only.)
+  Two releases name a company other than the vendor's label. Seven events stay unreconstructed and counted (three
+  entries without a located release, one addition whose date the release omits).
+- Plan amendment A1 (history §15, SHA-256 `3a870bed…98f2707`): rule M-5a adds the code rule, and section 2.3 now
+  states the change-row source rule (A2R2-ADV-3, A2R2-ADV-1 plan text). The three renamed issuers use the later
+  snapshot code under M-5a(a); the share-exchange predecessor stays as traded and unpriced (M-5a(c)); the six `_old`
+  codes follow M-5a(b). No research code changed.
+- A2R2-ADV-1: `test_t_mem_9_a_change_row_without_a_valid_source_stays_unresolved_despite_an_exact_match` covers
+  `change_invalid:corroboration_missing` and `change_invalid:source_missing` (blank locator, unknown kind) against an
+  exact vendor match with a claimed `match_ref`, and their unresolved-fraction contribution.
+- AUDIT1-M48C-R2-A01: the builder now writes `match = unresolved` and an empty `match_ref` for a source-invalid row;
+  raw CSV and evaluated match counts agree (368 / 28 / 5). R2-A02: 38 fills and 15 absent members start 1996-01-02.
+- A2-C-ADV-5: open. The controller states that a new process-failure entry needs owner confirmation, so the
+  controller is unchanged; the incident stays recorded in the c2 entry.
+- Census: `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last` 2019-05-31; `pre_ic_months` 62; R3-2a
+  4 / 302 = 0.0132; R3-2c 5,738 / 650,629 = 0.0088; seven floor anchors (n_cur 495–504). **Gate G1: passed.** 401
+  changes (368 vendor, 28 supplement, 5 unresolved); 30 absent members (9 priced, 21 unpriced). Public census JSON
+  SHA-256 `8b85763f36739f44f5469e0f0c2346d9eb91e6056902afdec971538381ed0f36`.
+- Sensitivities (private, diagnostics):
+  - Renamed issuers as traded (no M-5a(a)): R3-2c 0.0104, blocked.
+  - Bare codes in place of `_old`: 3 `identity_refused`, start 2015-09-30, 45 months, passes.
+  - Placeholders removed: same start, R3-2a 0.0153, passes.
+  - Modelled anchors: 2016-10-31, 32 months, blocked (the M-2 owner item).
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3285 passed, 2 skipped (pre-existing `longdouble` skips; the new T-MEM-9 case adds one).
+
+## 2026-09-27 - M4.8 Stage C attempt c2: plan-literal codes, every list change, gate G1 re-recorded (PR #274; superseded by c3)
+
+- Source: Round 1 CRITICAL review of `c150136`. Seat 1 (`MATERIAL: 1, ADVISORY: 2`) and Seat 2
+  (`MATERIAL: 0, ADVISORY: 6`); card `m4_8c-membership-c2`. Report: `coord/reports/m4_8c_membership_impl.md`
+  section 9. No repository code changed; the private builder and curated files were regenerated.
+- AUDIT1-M48C-M01 / A2-C-ADV-1 (R2, R10): the c1 pass used convention C-1, which the plan does not state. c2 keys
+  every absent member by the ticker as traded in its interval (plan 2.3). `<ticker>_old` marks the six tickers whose
+  snapshot code belongs to another permanent security, so those rows stay unpriced (R3 fail closed). The four renamed
+  rows now carry their as-traded codes and are unpriced (6 priced, 24 unpriced absent members).
+- AUDIT1-M48C-A02 (R2): the two single-source transient events (a 2015 spin-off placeholder) are in the change log,
+  typed `change_invalid:corroboration_missing`. No second source was found in the downloaded S&P DJI documents,
+  the October–December 2015 Wayback captures, or a web search (refuted in Round 2: an S&P DJI release of 2015-11-02
+  states the membership; see the c3 entry). The other 24 vendor entries of at most 12 trading
+  days (35 member-days) have no public-list event; they stay vendor entries, counted and unreconstructed.
+- A2-C-ADV-2 (R3): the successor-code row now carries its as-traded code and is unpriced, so no curated row keys two
+  permanent securities to one code. Stage D still needs an identity split at the 2017-04-03 share exchange for the
+  vendor line that holds the predecessor's bars.
+- A2-C-ADV-4: notes on 1996-01-02 starts now read "the latest possible addition date" (38 fills and 15 absent
+  members; this entry first said 40 fills, corrected in c3).
+- AUDIT1-M48C-A01: privacy attestations cover this candidate's diff and artifacts. The tracked tree holds 53
+  inherited private-path occurrences in 17 files at both `f416af8` and the candidate; redacting them needs separate
+  authorization.
+- A2-C-ADV-5: the address the first Wikipedia request sent was the owner's account email. The session instruction
+  restricts that address to identification, so sending it was a process failure; later requests used a generic user
+  agent, and no tool stores a user agent. Owner confirmation requested.
+- A2-C-ADV-6: the implementation report names no constituent.
+- Census (plan-literal gate of record): `coverage_start_pre` = `D0_pre` = 2015-07-31; `r_pre_last` 2019-05-31;
+  `pre_ic_months` 47; R3-2a 4 / 204 = 0.0196; R3-2c 3,882 / 493,963 = 0.0079; six required anchors on the floor
+  (n_cur 496–504); band 496–506 with no exception. **Gate G1: passed.** 360 changes (325 vendor, 28 supplement,
+  7 unresolved); 19 exclusions (11 ticker changes, 4 S&P DJI continuations, 4 source artifacts). Public census
+  JSON SHA-256 `752f7053138a0ac961551232613ebb9feb97ab001847c485023a6c5021c28052`.
+- Sensitivities (private, diagnostics):
+  - C-1 codes: same start, R3-2c 0.0064, passes.
+  - Bare codes in place of `_old`: 3 `identity_refused`, start 2016-01-31, 41 months, passes.
+  - Transient events excluded (c1 treatment): start 2014-04-30, R3-2c 0.0104, blocked.
+  - Modelled anchors: start 2016-10-31, 32 months, blocked (the M-2 owner item).
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3284 passed, 2 skipped (pre-existing `longdouble` skips).
+
+## 2026-09-27 - M4.8 Stage C attempt c1: point-in-time membership curation on real_v1 and gate G1 (superseded by c2)
+
+- Source: plan Revision 3 (`bd1bf587…bf3e`) sections 2.3, 2.4, 5.1, 7.3; card `m4_8c-membership-a1`; O48-1(a).
+  Report: `coord/reports/m4_8c_membership_impl.md`. Base `f416af8` (PR #273). No repository code changed.
+- Sources (retrieved 2026-09-27, stored privately with SHA-256 indexes): the Wikipedia changes table (revision
+  1376064088) and constituents list (revision 1376729338); the fja05680/sp500 daily component file (commit
+  `a2430f2`); 122 of 153 cited S&P DJI and news documents (27 returned 403, 4 returned 404); 100 archived S&P 500
+  monthly factsheets. Every effective date comes from its S&P DJI announcement when one parse agrees with the lists
+  within 7 rows (18 disagreements reviewed against the text, one parser error overridden). Wikipedia records
+  announcement dates on some rows (checked for two 2012 rows).
+- Curated files (private): 182 supplement rows (142 `start_date_fill` valid, 30 `absent_member_add` valid with 10
+  priced and 20 unpriced and 0 `identity_refused`, 10 `date_correction` typed `correction_not_primary`); 358 changes
+  (265 `sp_dji_announcement`, 93 `public_changes_list`; 325 vendor matches, 28 supplement matches, 5 unresolved); 21
+  list events excluded with typed reasons (11 ticker changes, 4 S&P DJI continuations, 4 source artifacts, 2 spin-off
+  placeholders); 17 factsheet line counts. Zero fatal schema or rule errors.
+- Census (`membership-census --snapshot-id real_v1 --curated-dir <private>`): `n_cur` rises from 321 to 492 at
+  2011-08-31 and from 467 to 504 at 2019-06-30. `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last`
+  2019-05-31; `pre_ic_months` 62; R3-2a 0.01544; R3-2c 5,336 / 650,629 = 0.00820; required anchors 7 of 7 on the
+  floor; late undated entries 10 in the seal window and 10 in the warm-up. **Gate G1: passed.** Public output
+  `reports/m4_8_membership_census.json` SHA-256 `1ef23a17a549263f3780a92911e9189d8c1a039ad4b2526fa41e79760d766cce`.
+- Check: at all 17 published month-ends, published count = `n_cur` + active M-2 discrepancy lines (Δ −7 to −2).
+- Decisive sensitivities (diagnostics): the literal as-traded code reading gives R3-2c 0.01044 (G1 blocked);
+  modelled anchors equal to `n_cur` plus discrepancy lines give a 2016-10-31 start with 32 IC months (G1 blocked).
+  Both are owner items in `docs/decision_log.md`.
+- Ablation: simplification attempt (list dates in place of announcement dates) changes 31 dates and no census
+  output; the announcement dates stay as the correct `known_at` dates. Guard check: bare codes in place of the six
+  `_old` codes refuse 3 real members and price one member with another company's bars; the guard stays.
+- Findings outside scope: one line absent from the vendor table spans 2015-07-02 to 2024-07-08, so the registration
+  v2 post-holdout universe omitted it; one vendor entry acquired in 2020 has no end date. Plan gap: M-5 and M-7 see
+  code reuse only on overlapping dates.
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3284 passed, 2 skipped (pre-existing `longdouble` skips).
+- Process note: the first Wikipedia request sent a contact address in its user agent; later requests used a
+  generic user agent.
+
 ## 2026-09-27 - M4.8 Stage B attempt b3: panel-root split discovery closed (PR #273)
 
 - Source: Seat 1 AUDIT round 2 (`MATERIAL: 1, ADVISORY: 1`) and Seat 2 AUDIT_2 round 2 (`MATERIAL: 1, ADVISORY: 1`)
