@@ -92,9 +92,9 @@ re-enter this gate before acting on a different PR or changed scope.
 
 ## GitHub Review Lifecycle
 
-- PR titles, PR bodies, comments, and commit messages are English only and carry nothing AI-related: no AI tool,
-  model, or vendor names, no generated-with line, and no AI co-author trailer (owner rule, 2026-09-28). GitHub's
-  existing contributor list is out of scope.
+- PR titles, PR bodies, comments, and commit messages are English only and carry no AI attribution line: no
+  "Generated with" tool line and no `Co-Authored-By` trailer naming an AI model (owner rule, 2026-09-28). Other
+  wording, bot comments, repository files, and GitHub's contributor list stay as they are.
 - Do not use GitHub Code Review. Keep GitHub Codex Automatic Review disabled.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI

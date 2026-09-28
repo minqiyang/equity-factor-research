@@ -55,8 +55,9 @@ Decisions (owner, 2026-09-28, answered in session):
 5. **English only.** Everything written to the repository, to GitHub (PR titles and bodies, comments, commit
    messages), and to any report is English; Chinese characters are prohibited there. A governance test enforces it
    for tracked files. Live chat with the owner may use the owner's language. PR titles, bodies, comments, and commit messages
-   carry nothing AI-related (no AI tool, model, or vendor names, no generated-with line, no AI co-author trailer);
-   older PR text is cleaned the same way, and GitHub's existing contributor list is out of scope.
+   carry no AI attribution line (no "Generated with" tool line, no `Co-Authored-By` trailer naming an AI model);
+   the line was removed from nine older PR bodies. Other wording, bot comments, repository files, merged commit
+   history, and GitHub's contributor list stay unchanged.
 
 Coordinator records carried by this entry:
 
