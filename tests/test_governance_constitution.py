@@ -290,6 +290,43 @@ def test_merges_since_refuses_an_unknown_checkpoint() -> None:
         _merges_since("future", [("c256", "docs: v8 (#256)"), ("c255", "feat (#255)")])
 
 
+CJK_CHARACTERS = re.compile("[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]")
+
+
+def _tracked_files() -> list[str]:
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        check=True,
+    )
+    return [path for path in result.stdout.decode("utf-8").split("\0") if path]
+
+
+def _cjk_lines(text: str) -> list[int]:
+    return [number for number, line in enumerate(text.splitlines(), 1) if CJK_CHARACTERS.search(line)]
+
+
+def test_cjk_guard_detects_chinese_and_ignores_english() -> None:
+    assert _cjk_lines("plain English\n\u4e2d\u6587 line\nfull-width \uff08x\uff09") == [2, 3]
+    assert _cjk_lines("Rank IC \u2248 0.02 \u2014 \u00e9t\u00e9 \u2264 5") == []
+
+
+def test_tracked_text_is_english_only() -> None:
+    """Owner rule (2026-09-28): repository text is English only; no Chinese characters."""
+    offenders = []
+    for relative_path in _tracked_files():
+        path = PROJECT_ROOT / relative_path
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        offenders.extend(f"{relative_path}:{number}" for number in _cjk_lines(text))
+    assert not offenders, f"Chinese characters in tracked files: {offenders[:20]}"
+
+
 def test_handoff_trails_its_base_by_at_most_one_merged_pr() -> None:
     """HEAD~1 is the base tip in a pull-request merge ref and after a squash merge."""
     checkpoint = _handoff_checkpoint(_read("docs/current_handoff.md"))

@@ -199,7 +199,7 @@ Type: **A** ready-made factor return series; **B** stock-level signal values; **
 | AQR Data Library | Quality Minus Junk, Betting Against Beta, HML Devil, Value and Momentum Everywhere | Updated 2026 | Credit requested | A |
 | Stambaugh (Wharton) | Mispricing factors, Pastor–Stambaugh liquidity, 11 anomalies | 1962–2025 | Terms unstated | A |
 | WorldQuant 101 | Formulas; 52 implemented; 30 more need only price and volume | n/a | Paper | C |
-| Guotai Junan 191 (2017 report "数量化专题之九十三") | Short-horizon price-volume formulas | n/a | Copyrighted report; formulas widely republished | C |
+| Guotai Junan 191 (2017 report "Quantitative Special Topic No. 93") | Short-horizon price-volume formulas | n/a | Copyrighted report; formulas widely republished | C |
 | Microsoft Qlib Alpha158 / Alpha360 | OHLCV-based features | n/a | MIT | C |
 | Chinese broker factor handbooks (e.g. Huatai single-factor series), JoinQuant library | Valuation, growth, momentum, turnover, volatility, money flow, quality | n/a | Copyrighted | C |
 | SEC Financial Statement Data Sets and XBRL APIs | As-filed company financials | 2009-04 onward (small filers from about 2011) | Free US government data | raw fundamentals |

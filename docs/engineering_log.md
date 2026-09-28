@@ -12,6 +12,18 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Owner-identified process failure: Chinese text in a PR body; English-only rule and guard test
+
+- Incident (owner, 2026-09-28): the PR #276 body carried a Chinese summary section, and the draft `AGENTS.md`
+  Writing section allowed owner-facing summaries in the owner's language. The owner ruled that everything written
+  to the repository, to GitHub, and to any report is English only, with Chinese characters prohibited.
+- Fix: the PR #276 body was rewritten in English; `AGENTS.md` Writing Style And Syntax states the rule; the
+  controller Process Failures table gains the row; `test_tracked_text_is_english_only` fails on any Chinese
+  character in a tracked text file, with `test_cjk_guard_detects_chinese_and_ignores_english` covering the guard.
+- Repository scan before the fix: 5 lines in 3 tracked files. Two historical owner quotes in `docs/decision_log.md`
+  and two in `docs/engineering_log.md` now carry English translations; one report title in
+  `coord/reports/north_star_speed_audit_opus.md` is translated. Commit messages on the branch held no Chinese.
+
 ## 2026-09-28 - Owner-identified process failure: rigor ceremony over results; North Star v2 and process constraints
 
 - Incident (owner, 2026-09-28): progress too slow; rules and data perfectionism block work; the North Star did not
@@ -2716,11 +2728,11 @@ Semantic consumers outside the pattern:
 
 - Owner correction: after an owner-requested in-scope repository change is
   complete, the coordinator opens the PR, completes required checks and review,
-  and performs the eligible protected merge. Asking the owner to type 建PR or
+  and performs the eligible protected merge. Asking the owner to type "create PR" or
   merge is a P1 process failure. Herdr plus Pi coordination runs that lifecycle
   without continuous owner supervision.
 - Incident: after writing the affirmative-style rule into `AGENTS.md`, work
-  stopped at "reply 建PR" instead of publishing.
+  stopped at "reply create PR" instead of publishing.
 - Continuation invariant is in `AGENTS.md` Authority And Scope and Owner
   Corrections. Mermaid/visualization guidance is in Writing Style And Syntax.
 

@@ -194,6 +194,7 @@ first recorded the rule.
 | Closing tabs or panes immediately upon round completion instead of deferring closure until the next round launches and confirms they are unneeded | `2c07ee4` (2026-09-25) |
 | Short polling or checking background tasks without sufficient wait margin (under-waiting relative to task runtime) | `2c07ee4` (2026-09-25) |
 | Spending a stage on work that cannot change a real-data result or an owner decision in that step, including repeated data extension under a gate that cannot pass | North Star v2 PR (2026-09-28) |
+| Writing non-English text, including Chinese characters, to the repository, to GitHub (PR titles and bodies, comments, commit messages), or to any report | North Star v2 PR (2026-09-28) |
 
 Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
 own incident record and owner confirmation.

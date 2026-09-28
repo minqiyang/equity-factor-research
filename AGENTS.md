@@ -147,9 +147,10 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
 
 ## Writing Style And Syntax
 
-- Repository documents are English and plain; historical evidence keeps its
-  original bytes. Owner-facing summaries and chat use the owner's language and
-  words a university student can follow.
+- Everything written to the repository, to GitHub (PR titles and bodies,
+  comments, commit messages), and to any report is English only; Chinese
+  characters are prohibited there, and a test enforces it for tracked files. Only
+  live chat with the owner uses the owner's language, in plain words.
 - Lead with the conclusion. Use a Mermaid diagram when it shows structure more
   clearly than prose. Reports and handoffs state completed facts and current
   measurements.

@@ -52,6 +52,9 @@ Decisions (owner, 2026-09-28, answered in session):
    cross-family seats only for real-data inference code and trial-family freezes, at most two review rounds,
    wording findings advisory, design notes instead of binding plans, logged coordinator defaults that never loosen
    R1, R2, R4, R6, R8, or R9); ablation once per milestone.
+5. **English only.** Everything written to the repository, to GitHub (PR titles and bodies, comments, commit
+   messages), and to any report is English; Chinese characters are prohibited there. A governance test enforces it
+   for tracked files. Live chat with the owner may use the owner's language.
 
 Coordinator records carried by this entry:
 
@@ -540,15 +543,15 @@ Decision:
 
 Context:
 
-- The owner approved the standing-authority record ("Authority没问题。",
-  "Authority is fine.") and delegated four open items to the producing session
+- The owner approved the standing-authority record ("Authority is fine.",
+  translated from the owner's Chinese) and delegated four open items to the producing session
   (Claude Opus 5.5): agent identity, credential location, the preservation tag,
   and the stale Standards project notes.
 
 Decision:
 
 - **Standing grants:** The owner approved `AUTHORITY.md` as introduced at
-  PR #257 head `cb3d7e3` and confirmed that approval ("Authority没问题。"); the
+  PR #257 head `cb3d7e3` and confirmed that approval ("Authority is fine."); the
   approval is quoted on PR #257. The PR #257 REVIEW remediation left the grant
   substance unchanged: `7e4f5c5` rewrote each Grant field as a verbatim source
   quote, labeled Scope and Expiry as owner-approved interpretation, and
