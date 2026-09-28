@@ -16,8 +16,9 @@ carried seal. Every value-reading check runs on one side (SL-1): the pre side
 anchors seal-touching codes at their last pre-side bar (SL-2, SL-3), seal gaps
 split identity (SL-4, SL-5), the benchmark follows the same rules (SL-6), and
 per-ID panels are written per side. The curated membership supplement joins
-the vendor table (M-1..M-7), and the build takes ``D0_pre`` from the membership
-census to fix the two discovery segments.
+the vendor table (M-1..M-7), a curated identity boundary starts a new permanent
+ID where a successor code carries a predecessor's bars (M-5a(c)), and the build
+takes ``D0_pre`` from the membership census to fix the two discovery segments.
 
 Run as ``python -m research.m4_7_universe_build --snapshot-id <ID> [--d0-pre YYYY-MM-DD]``.
 """
@@ -228,6 +229,7 @@ def discovery_inputs_sha256(snapshot: Snapshot, membership: pd.DataFrame | None 
                          *[roles.get(side, {}).get("sha256") for side in snapshot.sides]])
     if snapshot.partition_rule == PARTITION_RULE_V2:
         head.append(m4_8_membership.read_curated(snapshot.root / "membership").sha256)
+        head.append(m4_8_membership.read_identity_boundaries(snapshot.root / "membership")[1])
     return sha256_bytes(canonical_json({"inputs": head, "entries": sorted(rows)}))
 
 
@@ -563,6 +565,7 @@ class Episode:
     panel_refusal: str = ""
     intervals: list[dict[str, Any]] = field(default_factory=list)
     parent: int = 0
+    identity_segment: int = 0
 
     @property
     def first(self) -> int:
@@ -603,6 +606,28 @@ def seal_gap_split(eps: list[Episode], hs_row: int, he_row: int) -> tuple[list[E
         for part in np.split(ep.rows, breaks):
             split.append(Episode(ep.code, len(split) + 1, part, ep.role, parent=ep.k))
     return split, count
+
+
+def identity_boundary_split(eps: list[Episode], boundary_rows: list[int]) -> list[Episode]:
+    """``curated_identity_boundary_v1``: split episodes at curated boundary rows.
+
+    Each boundary row must be a bar of the code with an earlier bar, else the
+    build refuses ``identity_boundary_invalid``. Pieces keep their E1 parent and
+    carry ``identity_segment``, the number of boundaries at or before their
+    first bar, so SL-5 never attaches one interval across a boundary.
+    """
+    if not boundary_rows:
+        return eps
+    bars = np.concatenate([ep.rows for ep in eps]) if eps else np.array([], dtype=int)
+    if any(row not in bars or row <= bars[0] for row in boundary_rows):
+        raise SnapshotRefusal("identity_boundary_invalid", f"{eps[0].code if eps else ''}: boundary_not_inside_bars")
+    split: list[Episode] = []
+    for ep in eps:
+        inner = [row for row in boundary_rows if ep.first < row <= ep.last]
+        for part in np.split(ep.rows, np.searchsorted(ep.rows, inner)):
+            split.append(Episode(ep.code, len(split) + 1, part, ep.role, parent=ep.parent,
+                                 identity_segment=sum(row <= part[0] for row in boundary_rows)))
+    return split
 
 
 def _row(calendar: pd.DatetimeIndex, day: date | pd.Timestamp) -> int:
@@ -662,10 +687,13 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
     raw_membership = snapshot.read_file("membership")
     membership = raw_membership
     supplement: list[dict[str, Any]] = []
+    boundaries: dict[str, list[int]] = {}
     if v2:
         curated = m4_8_membership.read_curated(root / "membership")
         supplement = m4_8_membership.validate_supplement(curated.supplement, raw_membership, calendar)
         membership = m4_8_membership.apply_supplement(raw_membership, supplement, retrieved)
+        boundaries = m4_8_membership.identity_boundary_rows(
+            m4_8_membership.read_identity_boundaries(root / "membership")[0], calendar)
     records = classify_membership_entries(membership, retrieved)
     keys = interval_keys(membership, records)
     raw_rows = membership["raw_row"].tolist() if "raw_row" in membership else list(range(len(membership)))
@@ -694,9 +722,13 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
     episodes = e1_episodes
     seal_splits: dict[str, int] = {}
     if v2:
+        unknown = sorted(set(boundaries) - set(roles))
+        if unknown:
+            raise SnapshotRefusal("identity_boundary_invalid", f"{len(unknown)} boundary codes outside the request list")
         episodes = {}
         for code, eps in e1_episodes.items():
-            episodes[code], seal_splits[code] = seal_gap_split(eps, hs_row, i_h)
+            eps, seal_splits[code] = seal_gap_split(eps, hs_row, i_h)
+            episodes[code] = identity_boundary_split(eps, boundaries.get(code, []))
 
     # Entries: typed outcomes, boundary rows, and E2 per interval (C52, C60, C62).
     starts_by_date: dict[date, list[tuple[str, str]]] = {}
@@ -761,9 +793,10 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
                 entry["evidence"].append(f"first_bar={_date(calendar, int(rows[0]))}")
             continue
         touched = [ep for ep in episodes[code] if ((ep.rows >= rs) & (ep.rows < re_)).any()]
-        siblings = v2 and len({ep.parent for ep in touched}) == 1
+        siblings = v2 and len({(ep.parent, ep.identity_segment) for ep in touched}) == 1
         if len(touched) > 1 and not siblings:
-            entry["resolution"] = "ambiguous_reuse_gap"
+            spanned = v2 and len({ep.parent for ep in touched}) == 1
+            entry["resolution"] = "identity_boundary_spanned" if spanned else "ambiguous_reuse_gap"
         elif rs < touched[0].first - E1_GAP_ROWS:
             entry["resolution"] = "no_containing_episode"
         else:
@@ -850,7 +883,8 @@ def build_universe(snapshot_dir: Path | str, d0_pre: date | None = None) -> dict
     counters = _new_counters()
     if v2:
         counters.update(segment_anchor_checks=0, pre_side_split_rows_after_anchor=0,
-                        seal_gap_identity_split=sum(seal_splits.values()))
+                        seal_gap_identity_split=sum(seal_splits.values()),
+                        curated_identity_split=sum(len(rows) for rows in boundaries.values()))
     pre_ceiling = segments[0].feature_ceiling_row if v2 else n_rows
     episode_checks: list[dict[str, Any]] = []
     support_frames: list[pd.DataFrame] = []
@@ -1063,7 +1097,7 @@ def _v2_build_fields(
                       "feature_ceiling_row": _date(calendar, s.feature_ceiling_row),
                       "ic_months": int(len(segment_ic_resets(calendar, s)))} for s in segments],
         "universe_validation": ["segment_anchor_normalized_basis_v1", "seal_gap_identity_split_v1",
-                                "pre_seal_volume_share_basis_v1"],
+                                "pre_seal_volume_share_basis_v1", m4_8_membership.IDENTITY_BOUNDARY_RULE],
         "pre_side_volume_basis_by_code": dict(sorted(volume_basis.items())),
         "access_log": {"opens_by_table_and_side": dict(sorted(opens.items())),
                        "holdout_partition_opens": sum(1 for r in snapshot.access_log if r["side"] == "holdout")},

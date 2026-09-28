@@ -36,6 +36,10 @@ SUPPLEMENT_COLUMNS = ("supplement_id", "action", "vendor_raw_row", "code", "star
 CHANGE_COLUMNS = ("change_id", "effective_date", "action", "code", "source_kind", "source_locator",
                   "corroboration_locator", "match", "match_ref", "retrieved_utc_date", "curator", "notes")
 ANCHOR_COLUMNS = ("month_end", "n_published", "source_locator", "retrieved_utc_date", "curator")
+IDENTITY_BOUNDARIES_FILE = "identity_boundaries.csv"
+IDENTITY_BOUNDARY_COLUMNS = ("boundary_id", "code", "first_date", "source_kind", "source_locator",
+                             "corroboration_locator", "supplement_ref", "retrieved_utc_date", "curator", "notes")
+IDENTITY_BOUNDARY_RULE = "curated_identity_boundary_v1"
 DISCREPANCY_COLUMNS = ("supplement_id", "vendor_raw_row", "code", "field", "vendor_date", "source_date",
                        "source_kind", "source_locator", "adjudication")
 ACTIONS = ("start_date_fill", "absent_member_add", "date_correction")
@@ -80,6 +84,32 @@ def read_curated(directory: Path | str) -> Curated:
     changes, c_sha = _read(directory, CHANGES_FILE, CHANGE_COLUMNS)
     anchors, a_sha = _read(directory, ANCHORS_FILE, ANCHOR_COLUMNS)
     return Curated(supplement, changes, anchors, {SUPPLEMENT_FILE: s_sha, CHANGES_FILE: c_sha, ANCHORS_FILE: a_sha})
+
+
+def read_identity_boundaries(directory: Path | str) -> tuple[pd.DataFrame, str | None]:
+    """The private identity-boundary file of a membership directory and its SHA-256 (``None`` when absent)."""
+    return _read(Path(directory), IDENTITY_BOUNDARIES_FILE, IDENTITY_BOUNDARY_COLUMNS)
+
+
+def identity_boundary_rows(frame: pd.DataFrame, calendar: pd.DatetimeIndex) -> dict[str, list[int]]:
+    """``curated_identity_boundary_v1``: ``{code: rows}``, each row the first bar of a later permanent security.
+
+    M-5a(c) keeps a predecessor on its as-traded code; this file names the
+    successor code whose bars before ``first_date`` belong to that predecessor.
+    Rule M-3's source requirement applies. An invalid row refuses the build
+    (``identity_boundary_invalid``), since dropping it would stitch two
+    permanent securities (PIT-005).
+    """
+    rows: dict[str, list[int]] = {}
+    for row in frame.to_dict(orient="records"):
+        day = parse_strict_date(row["first_date"])
+        reason = "date_unparseable" if day is None else _source_reason(row)
+        if reason is None and trading_row(calendar, day) in rows.get(row["code"], []):
+            reason = "duplicate"
+        if reason is not None:
+            raise SnapshotRefusal("identity_boundary_invalid", f"{row['boundary_id']}: {reason}")
+        rows.setdefault(row["code"], []).append(trading_row(calendar, day))
+    return {code: sorted(values) for code, values in rows.items()}
 
 
 def trading_row(calendar: pd.DatetimeIndex, day: date) -> int:
