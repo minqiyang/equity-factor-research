@@ -1,0 +1,358 @@
+{
+  "schema_version": "m5_trial_family_v1",
+  "declared_on": "2026-09-28",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "purpose": "Milestone 5 step 1 trial-family declaration for the factor-class allocator. It fixes the data sources, universes, evaluation window, timing, rules, market states, factor traits, baselines, costs, step 2 metrics, step 2 tests, and the step 2 decision rule before any repository result on public factor returns. Step 2 runs only R0 and R1; R2 to R4, the states, and the traits are declared now for step 3.",
+  "declaration_timing": {
+    "written_after_prior_exposures": true,
+    "statement": "This declaration was written after the coordinator had seen the two diagnostics listed under prior_exposures. It was written before any repository download of factor return data and before any repository factor statistic.",
+    "verification_scope_2026_09_28": "URL and column-name verification read only HTTP headers, zip central directories, and CSV header or preamble lines, plus the JKP metadata files cluster_labels.csv, factor_details.xlsx, and aux_functions.py at a pinned commit. No factor return value, market value, or bond-yield value was printed or stored."
+  },
+  "data_sources": [
+    {
+      "id": "jkp_usa_all_factors_monthly_vw_cap",
+      "provider": "Jensen, Kelly, and Pedersen, jkpfactors.com",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_factors%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "zip_member": "[usa]_[all_factors]_[monthly]_[vw_cap].csv",
+      "columns": ["location", "name", "freq", "weighting", "direction", "n_stocks", "n_stocks_min", "date", "ret"],
+      "return_column": "ret",
+      "return_basis": "US monthly long-minus-short factor return, capped value weight, already signed by the direction column (jkp-data aux_functions.py builds each LMS return as top minus bottom portfolio times direction). The loader applies no re-signing.",
+      "units": "decimal monthly return",
+      "use": "universe jkp_factors_153",
+      "fail_closed_checks": [
+        "location has the single value usa",
+        "freq has the single value monthly",
+        "weighting has the single value vw_cap",
+        "the set of name values equals the 153 characteristic values of cluster_labels.csv",
+        "a duplicate (name, calendar month) pair refuses the load"
+      ],
+      "http_check_2026_09_28": {"status": 200, "content_length": 2674337, "last_modified": "2026-08-04T05:30:09Z", "etag": "e599f2933b27422df2e4a6f67dbe5c80"}
+    },
+    {
+      "id": "jkp_usa_all_themes_monthly_vw_cap",
+      "provider": "Jensen, Kelly, and Pedersen, jkpfactors.com",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_themes%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "zip_member": "[usa]_[all_themes]_[monthly]_[vw_cap].csv",
+      "columns": ["location", "name", "freq", "weighting", "n_factors", "date", "ret"],
+      "return_column": "ret",
+      "return_basis": "US monthly theme return, the average of the signed LMS returns of the theme's member factors, capped value weight.",
+      "units": "decimal monthly return",
+      "use": "universe jkp_themes_13",
+      "fail_closed_checks": [
+        "location has the single value usa",
+        "freq has the single value monthly",
+        "weighting has the single value vw_cap",
+        "the set of name values equals the 13 cluster labels of cluster_labels.csv after lowercasing and replacing spaces and hyphens with underscores",
+        "a duplicate (name, calendar month) pair refuses the load"
+      ],
+      "http_check_2026_09_28": {"status": 200, "content_length": 204444, "last_modified": "2026-08-04T05:30:10Z", "etag": "8bb3cae54e089896753b9ed3fb0be46c"}
+    },
+    {
+      "id": "jkp_cluster_labels",
+      "provider": "Jensen, Kelly, and Pedersen, github.com/bkelly-lab/jkp-data",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/cluster_labels.csv",
+      "pinned_commit": "666e8960ed81a664f1e9f189f92925ab2eeffcd5",
+      "sha256": "22c7fdd214218d1210ab9922efed59bf607538098cc06b6f2c5f326d2e6cf64b",
+      "columns": ["characteristic", "cluster"],
+      "row_count": 153,
+      "clusters": ["Accruals", "Debt Issuance", "Investment", "Low Leverage", "Low Risk", "Momentum", "Profit Growth", "Profitability", "Quality", "Seasonality", "Short-Term Reversal", "Size", "Value"],
+      "use": "factor-to-theme map for the theme and turnover_class traits and the jkp_factors_153 membership check"
+    },
+    {
+      "id": "jkp_factor_details",
+      "provider": "Jensen, Kelly, and Pedersen, github.com/bkelly-lab/jkp-data",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/factor_details.xlsx",
+      "pinned_commit": "666e8960ed81a664f1e9f189f92925ab2eeffcd5",
+      "sha256": "4c579e4dcb93eed0897941d8f5f84e9cc784a2d3fc696be68a29a24e68206141",
+      "sheet": "details",
+      "columns_used": ["abr_jkp", "cite"],
+      "use": "publication year per factor: the four-digit year inside the first pair of parentheses in cite, joined on abr_jkp. 142 of the 153 factors carry one."
+    },
+    {
+      "id": "jkp_accounting_characteristics_list",
+      "provider": "Jensen, Kelly, and Pedersen, github.com/bkelly-lab/jkp-data",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/aux_functions.py",
+      "pinned_commit": "666e8960ed81a664f1e9f189f92925ab2eeffcd5",
+      "sha256": "b3cab651d62bd1214651c9e0aab1fdcafec9125911a6ddc1435967bf8c8732aa",
+      "object_used": "function acc_chars_list(), the list assigned to acc_chars (315 names)",
+      "use": "data_source trait: 94 of the 153 factors appear in the list"
+    },
+    {
+      "id": "french_ff5_2x3_monthly",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
+      "zip_member": "F-F_Research_Data_5_Factors_2x3.csv",
+      "header": ",Mkt-RF,SMB,HML,RMW,CMA,RF",
+      "columns_used": ["SMB", "HML", "RMW", "CMA"],
+      "use": "universe french_7"
+    },
+    {
+      "id": "french_momentum_monthly",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_CSV.zip",
+      "zip_member": "F-F_Momentum_Factor.csv",
+      "header": ",Mom",
+      "columns_used": ["Mom"],
+      "use": "universe french_7"
+    },
+    {
+      "id": "french_st_reversal_monthly",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_ST_Reversal_Factor_CSV.zip",
+      "zip_member": "F-F_ST_Reversal_Factor.csv",
+      "header": ",ST_Rev",
+      "columns_used": ["ST_Rev"],
+      "use": "universe french_7"
+    },
+    {
+      "id": "french_lt_reversal_monthly",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_LT_Reversal_Factor_CSV.zip",
+      "zip_member": "F-F_LT_Reversal_Factor.csv",
+      "header": ",LT_Rev",
+      "columns_used": ["LT_Rev"],
+      "use": "universe french_7"
+    },
+    {
+      "id": "french_ff3_monthly",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+      "zip_member": "F-F_Research_Data_Factors.csv",
+      "header": ",Mkt-RF,SMB,HML,RF",
+      "columns_used": ["Mkt-RF", "RF"],
+      "use": "market excess return baseline (Mkt-RF) and the market_trend state (Mkt-RF plus RF)"
+    },
+    {
+      "id": "french_ff3_daily",
+      "provider": "Kenneth R. French Data Library",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
+      "zip_member": "F-F_Research_Data_Factors_daily.csv",
+      "header": ",Mkt-RF,SMB,HML,RF",
+      "columns_used": ["Mkt-RF"],
+      "use": "market_volatility state"
+    },
+    {
+      "id": "fred_baa_aaa_monthly",
+      "provider": "Moody's, retrieved from FRED, Federal Reserve Bank of St. Louis",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA,AAA",
+      "header": "observation_date,BAA,AAA",
+      "series": {"BAA": "Moody's Seasoned Baa Corporate Bond Yield", "AAA": "Moody's Seasoned Aaa Corporate Bond Yield"},
+      "units": "percent per year, monthly, not seasonally adjusted; observation_date is the first day of the month the value describes",
+      "use": "credit_spread state"
+    }
+  ],
+  "french_file_rules": {
+    "units": "percent per month in the monthly files and percent per day in the daily file; the loader divides by 100",
+    "monthly_block": "only rows whose first field is a six-digit YYYYMM before the first 'Annual Factors' line; the annual block is never read",
+    "daily_rows": "rows whose first field is an eight-digit YYYYMMDD",
+    "missing_codes": "-99.99 and -999 become typed missing values and are counted; they are never filled",
+    "file_note": "the verified files state they were created from the 202608 CRSP database"
+  },
+  "licenses": {
+    "jkp": "Data CC BY-NC 4.0; attribute 'Jensen, Kelly, and Pedersen, jkpfactors.com' and cite Jensen, Kelly, and Pedersen (2023), Is There a Replication Crisis in Finance?, Journal of Finance, doi 10.1111/jofi.13249. jkp-data code is MIT.",
+    "french": "Copyright Eugene F. Fama and Kenneth R. French; attribute the Kenneth R. French Data Library.",
+    "fred": "FRED marks BAA and AAA 'Copyrighted: Citation Required'; the Moody's notice forbids copying or redistributing Moody's information. Cite Moody's via FRED, Federal Reserve Bank of St. Louis.",
+    "publication_rule": "Raw downloads go to data/public_cache/, which is gitignored. The repository commits only manifests (URL, retrieval date UTC, SHA-256, row count, date range) and aggregate statistics. Raw rows are never committed."
+  },
+  "universes": {
+    "jkp_factors_153": {
+      "primary": true,
+      "source": "jkp_usa_all_factors_monthly_vw_cap",
+      "members": "the 153 characteristic values of cluster_labels.csv"
+    },
+    "jkp_themes_13": {
+      "primary": false,
+      "source": "jkp_usa_all_themes_monthly_vw_cap",
+      "members": ["accruals", "debt_issuance", "investment", "low_leverage", "low_risk", "momentum", "profit_growth", "profitability", "quality", "seasonality", "short_term_reversal", "size", "value"]
+    },
+    "french_7": {
+      "primary": false,
+      "source": "SMB, HML, RMW, CMA from french_ff5_2x3_monthly; Mom from french_momentum_monthly; ST_Rev from french_st_reversal_monthly; LT_Rev from french_lt_reversal_monthly",
+      "members": ["SMB", "HML", "RMW", "CMA", "Mom", "ST_Rev", "LT_Rev"]
+    },
+    "membership_rule": "Factor i enters the set for month t only if it has a return for month t and at least 24 non-missing monthly returns in months t-36 to t-1, the window R1 uses. R0 and R1 therefore share one set each month.",
+    "return_availability_note": "A JKP return for month t exists only when both extreme portfolios met the minimum stock count at formation at the end of month t-1, so availability is treated as known at decision time. The report states the count of factor-months excluded by each membership condition per universe and half.",
+    "missingness": "Missing values stay typed and are counted per universe, month, and reason; nothing is filled, clipped, dropped silently, or repaired. An evaluated month with an empty set refuses that universe's run."
+  },
+  "evaluation_window": {
+    "first_evaluated_month": "1972-01",
+    "last_evaluated_month": "the last month present in the pulled file for that universe; for french_7 the earliest last month across its four files",
+    "halves": {"first": ["1972-01", "1999-12"], "second": ["2000-01", "last_evaluated_month"]},
+    "run_structure": "one continuous run per universe, rule, and cost level from 1972-01; each half is a sub-period of that run, so turnover in 2000-01 uses the 1999-12 weights",
+    "lookback_use": "months before 1972-01 serve only as lookback for weights, membership, traits, and states"
+  },
+  "timing": {
+    "label": "after_month_end_signal_next_month_return",
+    "rule": "Weights for month t use only returns and state inputs through month t-1. Signals are formed after the end of month t-1, the rebalance happens at the end of month t-1, the holding and return month is t, and the switch cost is charged in month t.",
+    "relation_to_repository_contract": "monthly analogue of after_close_signal_next_observed_close_v1",
+    "required_test": "a future-perturbation test on a synthetic fixture: changing any return in months t and later leaves the weights, membership, states, and traits for month t unchanged"
+  },
+  "rules": {
+    "max_rules": 5,
+    "step2_runs": ["R0", "R1"],
+    "R0": {
+      "name": "equal_weight",
+      "definition": "w_i,t = 1/N_t over the month's set"
+    },
+    "R1": {
+      "name": "inverse_volatility",
+      "definition": "w_i,t proportional to 1/sigma_i,t, normalized to sum 1, no cap. sigma_i,t is the sample standard deviation (ddof 1) of factor i's non-missing monthly returns in months t-36 to t-1, with at least 24 observations.",
+      "degenerate_case": "a zero or non-finite sigma_i,t for a member refuses that universe's run"
+    },
+    "R2": {
+      "name": "state_tilt",
+      "step": 3,
+      "definition": "Start from R1 and tilt each theme by the sign of its past average return in the current state cell, shrunk by the cell's episode count.",
+      "open_parameters": "tilt size, shrinkage form, and cap are fixed in a v2 amendment only if needed, before step 3 runs"
+    },
+    "R3": {
+      "name": "factor_momentum_tilt",
+      "step": 3,
+      "definition": "Start from R1 and overweight factors with a positive trailing 12-month return (months t-12 to t-1).",
+      "open_parameters": "tilt size is fixed in a v2 amendment before step 3 runs"
+    },
+    "R4": {
+      "name": "pooled_ridge",
+      "step": 3,
+      "definition": "One pooled ridge model of next-month factor return on traits crossed with states, walk-forward, refit each January on all earlier months.",
+      "open_parameters": "ridge penalty rule and the map from forecasts to weights are fixed in a v2 amendment before step 3 runs",
+      "known_defect_to_avoid": "src/features/ml_combination.py:136 default cross-sectional z-score turns a state value shared by every factor into NaN, and the row filter at :179 drops those rows without warning (R6). The pooled model must fix or bypass that path."
+    },
+    "amendment_policy": "A v2 amendment may only fill the open parameters of R2 to R4 and the step 3 test details. It is committed before any step 3 result, lists every result seen at that time, and changes nothing in data sources, universes, window, timing, R0, R1, states, traits, costs, step 2 metrics, step 2 tests, or the step 2 decision rule."
+  },
+  "states": {
+    "max_states": 3,
+    "step": 3,
+    "market_trend": {
+      "definition": "Sign of the trailing 12-month cumulative French market total return through month t-1: product over months t-12 to t-1 of (1 + (Mkt-RF + RF)/100), minus 1.",
+      "cells": {"up": "value > 0", "down": "value <= 0"},
+      "missing": "any missing month in the 12 leaves the state typed missing"
+    },
+    "market_volatility": {
+      "definition": "Sample standard deviation (ddof 1) of French daily Mkt-RF/100 over the last 63 trading days ending on the last trading day of month t-1, times sqrt(252).",
+      "cells": {"high": "value above the expanding median of this month-end series from the first available month (1926) through month t-1 inclusive", "normal": "otherwise"},
+      "minimum_history": "the expanding median requires at least 60 monthly values; with fewer the state is typed missing"
+    },
+    "credit_spread": {
+      "definition": "Moody's BAA minus AAA monthly yield from FRED, using the value for month t-2 as the publication lag.",
+      "cells": {"wide": "month t-2 value above the median of the 120 monthly values for months t-121 to t-2", "normal": "otherwise"},
+      "minimum_history": "120 non-missing values; with fewer the state is typed missing"
+    },
+    "excluded_inputs": "No NBER recession flag, no revised macro series, and no full-sample standardization.",
+    "episodes": "An episode of a cell is a maximal run of consecutive evaluated months in that cell. Episode counts are reported per cell and half; a cell with fewer than 10 episodes supports description only."
+  },
+  "traits": {
+    "max_traits": 6,
+    "step": 3,
+    "theme": {
+      "definition": "JKP cluster from cluster_labels.csv for jkp_factors_153; the theme itself for jkp_themes_13.",
+      "french_7_map": {"SMB": "size", "HML": "value", "RMW": "profitability", "CMA": "investment", "Mom": "momentum", "ST_Rev": "short_term_reversal", "LT_Rev": "investment"},
+      "french_7_map_source": "the JKP cluster of the closest JKP characteristic: market_equity, be_me, ope_be, at_gr1, ret_12_1, ret_1_0, ret_60_12"
+    },
+    "data_source": {
+      "definition": "accounting when the characteristic appears in jkp-data acc_chars_list() at the pinned commit (94 factors); composite for the six mixed accounting-and-market composites; market for the rest (53 factors: prices, returns, volume, shares, dividends, and listing age).",
+      "composite": ["qmj", "qmj_growth", "qmj_prof", "qmj_safety", "mispricing_mgmt", "mispricing_perf"],
+      "market": ["age", "ami_126d", "beta_60m", "beta_dimson_21d", "betabab_1260d", "betadown_252d", "bidaskhl_21d", "chcsho_12m", "corr_1260d", "coskew_21d", "div12m_me", "dolvol_126d", "dolvol_var_126d", "eqnpo_12m", "iskew_capm_21d", "iskew_ff3_21d", "iskew_hxz4_21d", "ivol_capm_21d", "ivol_capm_252d", "ivol_ff3_21d", "ivol_hxz4_21d", "market_equity", "prc", "prc_highprc_252d", "resff3_12_1", "resff3_6_1", "ret_12_1", "ret_12_7", "ret_1_0", "ret_3_1", "ret_60_12", "ret_6_1", "ret_9_1", "rmax1_21d", "rmax5_21d", "rmax5_rvol_21d", "rskew_21d", "rvol_21d", "seas_11_15an", "seas_11_15na", "seas_16_20an", "seas_16_20na", "seas_1_1an", "seas_1_1na", "seas_2_5an", "seas_2_5na", "seas_6_10an", "seas_6_10na", "turnover_126d", "turnover_var_126d", "zero_trades_126d", "zero_trades_21d", "zero_trades_252d"],
+      "french_7_map": {"SMB": "market", "HML": "accounting", "RMW": "accounting", "CMA": "accounting", "Mom": "market", "ST_Rev": "market", "LT_Rev": "market"},
+      "jkp_themes_13": "not defined; themes mix data sources"
+    },
+    "trailing_12m_return": {
+      "definition": "product over months t-12 to t-1 of (1 + r_i), minus 1; fewer than 12 non-missing returns leaves it typed missing"
+    },
+    "trailing_36m_volatility": {
+      "definition": "sigma_i,t exactly as in R1"
+    },
+    "years_since_publication": {
+      "definition": "calendar year of month t minus the publication year from jkp_factor_details; jkp_factors_153 only",
+      "missing_publication_year": ["niq_be_chg1", "niq_at_chg1", "gp_atl1", "ope_bel1", "op_at", "cop_at", "saleq_gr1", "ivol_capm_21d", "ivol_hxz4_21d", "iskew_capm_21d", "iskew_hxz4_21d"],
+      "missing_rule": "these 11 factors keep a typed missing value and are counted"
+    },
+    "turnover_class": {
+      "definition": "high for factors in the themes short_term_reversal, seasonality, and momentum (26 of the 153 factors); low otherwise. For jkp_themes_13 the same rule applies to the theme; for french_7, Mom and ST_Rev are high and the rest low.",
+      "source": "coordinator default recorded here, based on the JKP theme of each factor: these three themes rank on returns of the last few months and turn over their constituents fastest",
+      "limitation": "some fast signals sit in other JKP clusters, for example seas_16_20na in accruals and rmax1_21d in low_risk, and are classed low under this rule"
+    }
+  },
+  "baselines": {
+    "R0": "equal_weight across the universe's monthly set",
+    "R1": "inverse_volatility across the universe's monthly set",
+    "market_excess": "French monthly Mkt-RF, context only, no switch cost",
+    "label": "Factor portfolios are long-short zero-investment returns. A rule's return is the weighted sum of factor returns with weights summing to 1, with no risk-free rate added. The market baseline is an excess return."
+  },
+  "costs": {
+    "switch_cost_bps": {"primary": 20, "sensitivity": 50},
+    "turnover_definition": "turnover_t = sum over i of |w_i,t - w_i,t-1| on target weights, with a weight of 0 for a factor outside the set; factors entering or leaving count fully",
+    "first_month": "1972-01 starts from no holdings, so its turnover is sum over i of |w_i,1972-01| = 1",
+    "net_return": "r_net,t = sum over i of w_i,t r_i,t - (switch_cost_bps / 10000) * turnover_t",
+    "drift": "target weights are compared without drift adjustment, because long-short factor returns carry no position drift under this convention",
+    "gross_label": "Results are gross of each factor's internal trading costs and of short-leg borrow costs, which live inside the published factor returns and are not modeled."
+  },
+  "step2_metrics": {
+    "periods": ["full", "first_half", "second_half"],
+    "grid": "each universe x {R0, R1} x {20 bp, 50 bp} x period; market_excess per universe window and period",
+    "annualized_mean": "12 times the arithmetic mean of monthly net returns",
+    "volatility": "sqrt(12) times the sample standard deviation (ddof 1) of monthly net returns",
+    "sharpe": "annualized_mean / volatility of monthly net returns, with no risk-free subtraction",
+    "maximum_drawdown": "src/backtest/metrics.py calculate_max_drawdown on the path cumprod(1 + r_net) with initial_capital 1.0, rebased to 1 at the start of each period; reported as a negative decimal and compared by magnitude",
+    "worst_12_month_return": "minimum over the period of the compounded net return of any 12 consecutive months inside the period",
+    "average_monthly_turnover": "mean of turnover_t over the period's months",
+    "volatility_forecast_accuracy": "Spearman rank correlation, pooled across factor-months, between sigma_i,t and the factor's realized sample standard deviation (ddof 1) over months t to t+11. A pair requires a defined sigma_i,t and 12 non-missing realized returns; pairs are assigned to a period by t, the realized window may cross the half boundary, and the last usable t is the last evaluated month minus 11. Excluded pairs are counted.",
+    "counts": "factor-months in the set, factor-months excluded by each membership condition, and typed-missing counts, per universe and period"
+  },
+  "step2_tests": {
+    "family": "S2",
+    "family_size": 3,
+    "tests": [
+      {"id": "S2.jkp_factors_153", "universe": "jkp_factors_153"},
+      {"id": "S2.jkp_themes_13", "universe": "jkp_themes_13"},
+      {"id": "S2.french_7", "universe": "french_7"}
+    ],
+    "statistic": "For each universe, d_t = R1 net return minus R0 net return at 20 bp for every evaluated month from 1972-01 to the last evaluated month. src/features/multiple_testing.py return_test_statistics(d, periods_per_year=12); two-sided HAC p-value hac_pvalue.",
+    "newey_west_lag": "the helper default floor(4 * (n / 100) ** (2 / 9))",
+    "correction": "src/features/multiple_testing.py adjust_pvalues(p, method='by', family_size=3), Benjamini-Yekutieli across the 3 tests",
+    "other_comparisons": "halves, the 50 bp level, market_excess, post-publication months, and volatility-forecast accuracy are descriptive and untested"
+  },
+  "step2_decision_rule": {
+    "rule": "R1 becomes the baseline product if, on jkp_factors_153, in BOTH halves and at BOTH 20 bp and 50 bp, the magnitude of R1 maximum drawdown is at most the magnitude of R0 maximum drawdown AND R1 Sharpe is at least R0 Sharpe. Otherwise the baseline product is R0.",
+    "conditions_count": "8 comparisons: 2 halves x 2 cost levels x (drawdown, Sharpe); all 8 must hold",
+    "other_universes": "jkp_themes_13 and french_7 are reported descriptively and change no decision",
+    "tests_role": "the S2 q-values are reported beside the decision and do not change it",
+    "scope": "the decision picks the baseline weighting rule on public long-short series at DIAGNOSTIC_ONLY; the implementable check on the repository's point-in-time S&P 500 books follows in step 4"
+  },
+  "post_publication_months": {
+    "universe": "jkp_factors_153",
+    "source": "jkp_factor_details cite column, publication year as defined there",
+    "definition": "For month t, the post-publication subset is the month's set restricted to factors whose publication year is before the calendar year of t. R0 and R1 are formed on that subset with the same rules and costs.",
+    "missing_year": "the 11 factors without a publication year are excluded from this split and counted",
+    "role": "descriptive split with the step 2 metrics; no test and no decision"
+  },
+  "step3_declared": {
+    "tests": "HAC standard errors, a Benjamini-Yekutieli correction that counts every tested variant in the step 3 family, a random-date null for state effects, and the episode count behind each cell; details fixed in the v2 amendment before step 3 runs",
+    "closure_rule": "if the state tilt loses to the step 2 baseline product in either half, the return-timing line closes as a reported negative result"
+  },
+  "prior_exposures": {
+    "statement": "This declaration was written after seeing the following diagnostics. They count as trials already seen under R9 and stay visible.",
+    "items": [
+      {
+        "id": "audit_scratch_2026_09_28",
+        "date": "2026-09-28",
+        "reference": "coord/reports/north_star_speed_audit_opus.md section 7.2",
+        "data": "7 Ken French long-short factors, 1973-07 to 2026-08, 20 bp switch cost",
+        "results_seen": "B0 equal weight Sharpe 0.83, maximum drawdown -16.4%; T2 inverse volatility Sharpe 0.83, maximum drawdown -16.6%; T1 factor momentum and T3 regime rules also run; nothing survived BY correction"
+      },
+      {
+        "id": "vision_probe_2026_09_28",
+        "date": "2026-09-28",
+        "reference": "coord/reports/north_star_vision_assessment_opus.md section 2",
+        "data": "JKP 153 US factors and 13 themes, 1972-01 to 2025-12",
+        "results_seen": "inverse volatility Sharpe 0.94 versus 0.72 for equal weight, worst loss -7.8% versus -14.0%; state-conditional return tests on 612 factor x state pairs with none surviving correction"
+      }
+    ],
+    "overlap": "Both exposures use months inside this declaration's evaluation window. The step 2 comparison of R0 and R1 therefore re-examines a comparison already seen and supports no confirmatory claim."
+  },
+  "limitations": [
+    "The JKP factor list was assembled after publication of the underlying papers; months before each publication were in the original authors' samples.",
+    "Public factor returns are long-short, include small caps, and exclude each factor's internal costs; results are diagnostics until the rule holds on the repository's own point-in-time books after costs.",
+    "The JKP file date range is not read in this declaration; the step 2 manifest records the retrieved file's SHA-256, row count, and date range."
+  ]
+}
