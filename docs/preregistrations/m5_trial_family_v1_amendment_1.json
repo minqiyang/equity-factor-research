@@ -1,0 +1,23 @@
+{
+  "schema_version": "m5_trial_family_v1_amendment_1",
+  "declared_on": "2026-09-28",
+  "amends": {
+    "path": "docs/preregistrations/m5_trial_family_v1.json",
+    "sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+    "section": "post_publication_months"
+  },
+  "authority": "Coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md. It changes one descriptive split that carries no test and no decision, and it loosens none of R1, R2, R4, R6, R8, or R9. The v1 amendment_policy lists only R2 to R4 and the step 3 tests, so this amendment is recorded as a coordinator default outside that list.",
+  "problem": "v1 restricts month t to factors whose publication year is before the calendar year of t. The earliest JKP publication year is 1973, so 1972-01 to 1973-12 have an empty subset, and the v1 empty-set refusal left the split without metrics.",
+  "change": {
+    "start_month": "The post-publication run starts at the first evaluated month whose subset is non-empty. The start month follows from publication years and membership alone; with the pinned factor_details.xlsx it is 1974-01.",
+    "periods": "full runs from the start month to the last evaluated month; first_half runs from the start month to 1999-12; second_half is unchanged. A period whose start would fall after its end is reported as empty.",
+    "leading_empty_months": "Months before the start month are counted and reported as empty-subset months.",
+    "later_empty_months": "An empty subset in any month from the start month on still refuses the split.",
+    "unchanged": "Membership, sigma, R0, R1, costs, turnover, metrics, the missing-publication-year exclusions, and every other v1 section."
+  },
+  "results_seen_before_this_amendment": {
+    "run": "step 2 attempts 20260928T233911Z and 20260928T234058Z on 2026-09-28",
+    "seen": "every R0 and R1 metric for jkp_factors_153, jkp_themes_13, and french_7; the S2 tests; the decision outcome R1; the market excess return; the volatility-forecast accuracy; and the post-publication counts (24 empty-subset months from 1972-01 to 1973-12; 35,292 subset factor-months over the full window)",
+    "not_seen": "no post-publication return, Sharpe, drawdown, turnover, or volatility-forecast metric was computed before this amendment"
+  }
+}
