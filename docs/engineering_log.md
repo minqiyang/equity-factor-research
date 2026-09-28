@@ -12,6 +12,44 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Milestone 5 step 2: public factor loaders and the R0 versus R1 baseline run
+
+- Scope: step 2 of `docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`, committed alone
+  in `8c4f2e2` before any repository result). Branch `claude/m5-baseline`. Evidence ceiling `DIAGNOSTIC_ONLY`.
+- Code (`a27b6b4`, `2fd16a8`): `src/data/public_factors.py` downloads once into the gitignored
+  `data/public_cache/` with a URL, UTC time, and SHA-256 sidecar, refuses a cached file whose bytes or URL
+  disagree, parses the JKP long files and the Ken French monthly blocks with typed missing values (`absent`,
+  `blank_field`, `provider_missing_code`), loads FRED CSVs for step 3, reads the JKP `factor_details.xlsx` with the
+  standard library (openpyxl is not installed), and writes the manifest. `research/m5_factor_baseline.py`
+  refuses a trial file that differs from HEAD or from its pinned SHA-256, forms R0 and R1 month by month from
+  returns through t-1, charges 20 and 50 bp on weight turnover, and writes the report, the aggregate JSON, the
+  manifest, and one start and one end record per attempt.
+- Guard change: `NETWORK_ALLOWLIST` in `tests/test_project_structure.py` adds `src/data/public_factors.py`, and a new
+  assertion pins its network imports to exactly `urllib.request` (R11 authorizes these public downloads).
+  `scripts/repo_map.py` names the second network-capable module; `docs/repo_map.md` is regenerated.
+- Tests: `tests/test_m5_factor_baseline.py` adds 31 synthetic tests (future perturbation for R0 and R1, a
+  non-vacuity check, inverse-volatility weights on a known example, the 24-of-36 boundary, typed missing counts,
+  refusals, switch-cost arithmetic with entry and exit, drawdown and worst 12 months on known paths, halves,
+  volatility-forecast counts, S2 BY adjustment, the decision rule, the post-publication refusal, parsers, the
+  cache, the manifest, and the trial-file refusal in a temporary git repository).
+- Attempts (`reports/m5_factor_baseline_attempts.jsonl`): two, both completed. Attempt `20260928T233911Z` at
+  `a27b6b4`; attempt `20260928T234058Z` at `2fd16a8` changed only report formatting (lookback typed-missing counts,
+  the S2 difference in bp) and reproduced every number. No failed attempt.
+- Independent cross-check: a separate rolling-window script on the cached files reproduced the jkp_factors_153
+  half-period Sharpe and maximum drawdown for R0 and R1 at both cost levels, the french_7 full-window values, and
+  the jkp_factors_153 volatility-forecast Spearman (0.6073, 97,373 pairs) to six decimals.
+- Result: decision outcome `R1` (8 of 8 conditions on jkp_factors_153). R1 Sharpe 1.659 vs 1.224 (1972-1999) and
+  0.735 vs 0.610 (2000-2025) at 20 bp; maximum drawdown -3.67% vs -8.57% and -7.23% vs -9.27%. S2 BY q-values
+  0.294 (jkp_factors_153), 0.294 (jkp_themes_13), 0.720 (french_7); every S2 mean difference is negative (R1 earns
+  a lower mean with lower volatility). french_7 favors R0 in 1972-1999 (Sharpe 1.343 vs 1.467), descriptive only.
+- Trial-file gap: the declared post-publication split refuses, because no factor has a publication year before
+  1974 (earliest 1973), so 1972-01 to 1973-12 have an empty subset, and the trial file refuses any evaluated month
+  with an empty set and declares no other handling. The trial file is unchanged; the amendment policy covers only
+  R2 to R4 and step 3 tests, so this needs a coordinator or owner decision.
+- Not retrieved in step 2: `french_ff3_daily` and `jkp_accounting_characteristics_list` (step 3 consumers).
+- Needs follow-up: the two cross-family review seats for the step 2 real-data code and the trial-family freeze
+  have not run; the step 2 results were produced before those reviews.
+
 ## 2026-09-28 - Owner-identified process failure: Chinese text in a PR body; English-only rule and guard test
 
 - Incident (owner, 2026-09-28): the PR #276 body carried a Chinese summary section, and the draft `AGENTS.md`

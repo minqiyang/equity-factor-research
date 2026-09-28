@@ -1,0 +1,113 @@
+{
+  "schema_version": "m5_public_data_manifest_v1",
+  "trial_file": "docs/preregistrations/m5_trial_family_v1.json",
+  "trial_file_sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+  "code_commit": "2fd16a86475c634aaf1aab15b1afb448fcb0602f",
+  "cache_dir": "data/public_cache/ (gitignored; raw files are never committed)",
+  "not_retrieved_in_step2": {
+    "french_ff3_daily": "consumed in step 3",
+    "jkp_accounting_characteristics_list": "consumed in step 3"
+  },
+  "sources": [
+    {
+      "id": "jkp_cluster_labels",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/cluster_labels.csv",
+      "retrieved_utc": "2026-09-28T23:39:11Z",
+      "sha256": "22c7fdd214218d1210ab9922efed59bf607538098cc06b6f2c5f326d2e6cf64b",
+      "bytes": 3207,
+      "rows": 153,
+      "first_date": null,
+      "last_date": null
+    },
+    {
+      "id": "jkp_factor_details",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/factor_details.xlsx",
+      "retrieved_utc": "2026-09-28T23:39:11Z",
+      "sha256": "4c579e4dcb93eed0897941d8f5f84e9cc784a2d3fc696be68a29a24e68206141",
+      "bytes": 40330,
+      "rows": 153,
+      "first_date": null,
+      "last_date": null
+    },
+    {
+      "id": "jkp_usa_all_factors_monthly_vw_cap",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_factors%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "retrieved_utc": "2026-09-28T23:39:12Z",
+      "sha256": "f766aa2c7db1f97594f79f9063275161b7038e936db9ea960eac6eb7ec27ca80",
+      "bytes": 2674337,
+      "rows": 146457,
+      "first_date": "1926-01",
+      "last_date": "2025-12"
+    },
+    {
+      "id": "jkp_usa_all_themes_monthly_vw_cap",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_themes%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "retrieved_utc": "2026-09-28T23:39:13Z",
+      "sha256": "9cf3bfa2a2941846e1ec5872dc5b613c9b40a0eed4b3fbc95e2979355ef93c53",
+      "bytes": 204444,
+      "rows": 14945,
+      "first_date": "1926-01",
+      "last_date": "2025-12"
+    },
+    {
+      "id": "french_ff5_2x3_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "36756c5c2559648519ac4b22913d860c6afd865cfebce920e3e8927f8e2d10b7",
+      "bytes": 11964,
+      "rows": 758,
+      "first_date": "1963-07",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_momentum_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "c06d1c2e9a5e4f6985879722f23c6bb585f46b34eaf3fcb681d4de887e353f3e",
+      "bytes": 5600,
+      "rows": 1196,
+      "first_date": "1927-01",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_st_reversal_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_ST_Reversal_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "06c0d46d819f51f060a149b9f613aed3a8d8fea7da3fc6bbae7e14dbd048119e",
+      "bytes": 5573,
+      "rows": 1207,
+      "first_date": "1926-02",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_lt_reversal_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_LT_Reversal_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:15Z",
+      "sha256": "f4432f4c1dfc32adaae95648bb2dbca23a50511d1dd4855d3c35ca50b1849f4f",
+      "bytes": 5333,
+      "rows": 1148,
+      "first_date": "1931-01",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_ff3_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:15Z",
+      "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "bytes": 13065,
+      "rows": 1202,
+      "first_date": "1926-07",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "fred_baa_aaa_monthly",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA,AAA",
+      "retrieved_utc": "2026-09-28T23:39:16Z",
+      "sha256": "7cf737a14461f9e073ef5c832f33a7c8f9be449358601149126ce86cdf85a5c2",
+      "bytes": 27398,
+      "rows": 1292,
+      "first_date": "1919-01",
+      "last_date": "2026-08"
+    }
+  ]
+}

@@ -1494,6 +1494,91 @@ Family A books under three cost cases and Family B books at primary costs (231 t
 Owner review of the support v2 correction and registration v2; the program decision stays "extend breadth or
 history under a new registration; the holdout stays sealed."
 
+## 20260928-001-m5-public-factor-baseline
+
+### Experiment ID
+
+`20260928-001-m5-public-factor-baseline`
+
+### Date
+
+`2026-09-28`
+
+### Milestone & Phase
+
+Milestone 5 step 2 (baseline product): R0 equal weight against R1 inverse volatility on public long-short
+factor returns, run by `python -m research.m5_factor_baseline`.
+
+### Objective
+
+Pick the baseline weighting rule with the declared step 2 decision rule: R1 becomes the baseline product if, on
+jkp_factors_153, in both halves and at both 20 and 50 bp, R1's maximum drawdown magnitude is at most R0's and R1's
+Sharpe is at least R0's.
+
+### Trial Family Declared Before Results
+
+`docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`), committed alone in `8c4f2e2` before
+any repository download of factor returns. S2 family: 3 HAC tests of R1 net minus R0 net at 20 bp, one per
+universe, Benjamini-Yekutieli with family size 3. Prior exposures seen before the declaration: the 2026-09-28
+audit scratch run (7 French factors) and the 2026-09-28 vision probe (JKP 153 factors and 13 themes); this run
+re-examines a comparison already seen and supports no confirmatory claim.
+
+### Bound Inputs
+
+- Public data (manifest `reports/m5_public_data_manifest.json`, retrieved 2026-09-28 UTC): JKP US all factors
+  monthly vw_cap (SHA-256 `f766aa2c...ca80`, 146,457 rows, 1926-01 to 2025-12), JKP US all themes monthly vw_cap
+  (`9cf3bfa2...3c53`, 14,945 rows, 1926-01 to 2025-12), JKP cluster labels and factor details at the pinned
+  jkp-data commit (hashes equal the declared values), Ken French FF5 2x3, Mom, ST_Rev, LT_Rev, and FF3 monthly
+  (through 2026-08), FRED BAA and AAA (retrieved for step 3, unused here).
+- Evaluation: 1972-01 to 2025-12 for the JKP universes and 1972-01 to 2026-08 for french_7; halves 1972-1999 and
+  2000 to the end; timing `after_month_end_signal_next_month_return`.
+- Costs: switch cost 20 bp primary and 50 bp sensitivity on weight turnover; results are gross of each factor's
+  internal trading and borrow costs.
+
+### Output Artifacts
+
+- `reports/m5_factor_baseline.md` (SHA-256 `b372d61c...96fd`)
+- `reports/m5_factor_baseline.json` (SHA-256 `69a27f4f...f5dd`, aggregates only)
+- `reports/m5_public_data_manifest.json` (SHA-256 `1d0b45ae...0bc2`)
+- `reports/m5_factor_baseline_attempts.jsonl` (two attempts, both completed; the second changed only report
+  formatting)
+
+### Results (DIAGNOSTIC_ONLY)
+
+- Decision outcome `R1`: 8 of 8 conditions hold on jkp_factors_153.
+- jkp_factors_153, Sharpe R0 / R1 and maximum drawdown R0 / R1: 1972-1999 at 20 bp 1.224 / 1.659 and -8.57% /
+  -3.67%; at 50 bp 1.217 / 1.597 and -8.57% / -3.80%. 2000-2025 at 20 bp 0.610 / 0.735 and -9.27% / -7.23%; at 50
+  bp 0.610 / 0.703 and -9.27% / -7.36%. Full window at 20 bp: annualized mean 2.57% / 2.26%, volatility 3.28% /
+  2.13%.
+- jkp_themes_13 (descriptive): Sharpe 1.842 / 2.338 and 0.804 / 1.086 by half at 20 bp; drawdown -2.05% / -1.22%
+  and -5.06% / -3.43%.
+- french_7 (descriptive): Sharpe 1.467 / 1.343 and 0.455 / 0.529 by half at 20 bp; drawdown -5.81% / -6.97% and
+  -16.41% / -16.58%. R1 does not beat R0 on the French set in 1972-1999.
+- S2 (R1 minus R0 at 20 bp): mean monthly difference -2.63 bp (jkp_factors_153, HAC p 0.107, BY q 0.294), -2.67
+  bp (jkp_themes_13, p 0.058, q 0.294), -1.18 bp (french_7, p 0.393, q 0.720). No test survives; R1's gain is in
+  risk, with a lower mean.
+- Volatility-forecast accuracy (Spearman of trailing 36-month sigma with next-12-month realized volatility, full
+  window, then 1972-1999 / 2000-2025): 0.607, 0.600 / 0.619 (jkp_factors_153); 0.698, 0.676 / 0.716
+  (jkp_themes_13); 0.426, 0.349 / 0.474 (french_7).
+- Post-publication split: refused. 1972-01 to 1973-12 have an empty subset (earliest publication year 1973), and
+  the trial file refuses any evaluated month with an empty set.
+- Market excess (French Mkt-RF, context): Sharpe 0.480 and maximum drawdown -54.16% over 1972-2025.
+
+### Limitations
+
+- Public long-short series, gross of internal costs, including small caps; the implementable long-only check is
+  step 4.
+- The halves reuse history already seen in two prior diagnostics; no out-of-sample claim.
+- Month-t return availability enters the month-t set by declaration.
+- 88 jkp_factors_153 factor-months in 1972-1973 are excluded for short history (140 absent factor-months in the
+  1969-1971 lookback).
+- The post-publication check has no metrics until its empty-month handling is decided.
+
+### Next Action
+
+Two cross-family review seats for the step 2 real-data code and the trial-family freeze; a coordinator or owner
+decision on the post-publication split's empty months; then the v2 amendment for R2 to R4 before step 3.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full
