@@ -2,9 +2,10 @@
 
 ## Objective And North Star
 
-The ultimate aspiration of the project is automated stock selection and trading,
-pursuing sustainable risk-controlled long-term net returns. Stable profit is an
-explicit objective, not a guarantee.
+The North Star (`docs/north_star.md`) is an automated stock selector for US
+equities that aims to beat an index fund over the long term after trading costs,
+with smaller drawdowns. Profit is the aim and carries no guarantee. The core
+question is which factors earn more, or lose less, in which market conditions.
 
 The research and simulation platform built in this repository is the foundational
 first phase—not the final execution product. The repository remains strictly
@@ -15,7 +16,7 @@ The engineering approach is **demo-first**: ship a basic, presentable, and
 reproducible end-to-end version first, record non-blocking imperfections in a
 lightweight backlog, and improve in layers. We avoid blocking a working
 demonstration on an ideal pipeline, complete SEC identity proof for every
-security, optional ledger/schema coverage, or a broad factor zoo. Canonical
+security, or optional ledger/schema coverage. Canonical
 minimum correctness and non-negotiable boundaries are defined exclusively in
 [AGENTS.md Research Safety Invariants](AGENTS.md#research-safety-invariants) and the
 [blocking backlog table](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog),
@@ -254,15 +255,17 @@ Begin with interpretable baselines:
 - leverage; and
 - volume shocks.
 
-Fundamental factors may enter formal campaigns only after point-in-time filing
-availability is supported.
+Fundamental factors use SEC as-filed financial data and become usable from the
+filing date plus one trading day.
 
-WorldQuant-style formulas enter in reviewed batches of 5-10 by compatible data
-family. Every factor requires source traceability, exact formula, expected
-direction, required fields, availability lag, parameters, horizon,
-preprocessing, neutralization, missing policy, golden fixture, timing tests,
-known limitations, and a trial family. A factor implementation is not a
-strategy or profitability claim.
+Every collected factor gets one catalog row: id, source, formula or reference,
+inputs, horizon, and status. Cataloguing needs no review. Implemented factors
+share two tests: a future-perturbation test (changing data after date t leaves
+the value at t unchanged) and a smoke test (the factor runs, varies across
+stocks, and reports its coverage). A factor on the confirmatory shortlist
+additionally records its expected direction, availability lag, parameters,
+preprocessing, missing-data policy, known limitations, and trial family. A
+factor implementation is not a strategy or profitability claim.
 
 ## Timing and Sample Isolation
 
@@ -407,7 +410,7 @@ The project operates under two clearly bounded modes to prevent conflating explo
 
 To balance rigorous research hygiene with demo-first engineering velocity, imperfections are handled under an explicit classification:
 - **Safe to defer**: Presentation polish, extra factor families, optional ledger schema breadth beyond demo needs, advanced multiple-testing packages beyond demo claims, and exhaustive historical entity lineage proofs (provided the actual claimed calculation remains valid without fabricating economics).
-- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, default last-price or zero-payoff disappearance (PIT-006; if accepted terminal evidence is absent, the affected window blocks), dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
+- **Non-deferrable (Demo-blocking)**: Identity mis-stitching and ticker reuse, future-membership selection and survivor-cohort filtering (no historical eligibility selected by future continuity or survivor cohorts; unverified diagnostics labeled explicitly survivorship-biased; no claim of a survivorship-free universe until Milestone 4), silent fill/clip/drop/repair, silent last-price or zero-payoff disappearance (PIT-006; without accepted terminal evidence the declared side-aware adverse default of R4 applies), dividend double counting, incompatible price/volume dollar turnover, lookahead leakage or timing mismatch, incorrect cost/return math, falsified or cherry-picked results, unhedged/leaked private data, and live execution or brokerage integration. A known defect is not made safe merely by adding a caveat.
 
 The complete, single authoritative imperfection backlog table is maintained exclusively in
 [docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog).
@@ -415,7 +418,7 @@ See that document for active row-level caveats, handling rules, revisit triggers
 
 ## Primary Milestones
 
-The program follows a five-milestone sequence from foundational research to simulated demo delivery and future execution. Program stage sequence, status, gate and completion criteria are owned exclusively by [docs/current_roadmap.md#primary-milestones](docs/current_roadmap.md#primary-milestones).
+The program follows a six-milestone sequence from foundational research through simulated demo delivery and factor timing to future execution. Program stage sequence, status, gate and completion criteria are owned exclusively by [docs/current_roadmap.md#primary-milestones](docs/current_roadmap.md#primary-milestones).
 
 Detailed Demo v0 deliverable definitions and acceptance criteria are owned exclusively by the roadmap Definition of Done at [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
 

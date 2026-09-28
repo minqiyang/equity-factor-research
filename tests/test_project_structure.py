@@ -191,8 +191,8 @@ def test_governance_documents_define_unique_policy_owners() -> None:
     owners = {
         "agents": (
             "Canonical responsibility: repository invariants, authority boundaries, "
-            "research-safety review standards, writing-style rules, and ablation after "
-            "completed design or implementation."
+            "research-safety review standards, the owner's process constraints, writing "
+            "rules, and milestone ablation."
         ),
         "controller": (
             "Canonical responsibility: staged workflow state transitions, external "
@@ -6618,16 +6618,17 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
     assert "## Protected Merge Eligibility" in controller
 
 
-def test_agents_ablation_section_runs_after_each_completed_delivery() -> None:
+def test_agents_ablation_section_runs_once_per_milestone() -> None:
+    # Owner decision 2026-09-28: one ablation pass per milestone replaces the
+    # per-delivery pass, and it targets whole stages and rules as well as code.
     agents = (PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     ablation = " ".join(_markdown_section(agents, "Ablation").split())
 
-    assert "After every completed design or implementation" in ablation
-    assert "run an ablation experiment" in ablation
-    assert "simplest implementation that still meets current requirements" in (
-        ablation
-    )
+    assert "At the end of each milestone" in ablation
+    assert "run one ablation pass" in ablation
+    assert "whole stages, rules, and modules" in ablation
     assert "Preserve the baseline" in ablation
+    assert "keep the guards R1–R12 require" in ablation
     assert "A supported no-change outcome is valid" in ablation
 
 

@@ -1,8 +1,8 @@
 # AI Agent Rules
 
 Canonical responsibility: repository invariants, authority boundaries,
-research-safety review standards, writing-style rules, and ablation after
-completed design or implementation.
+research-safety review standards, the owner's process constraints, writing
+rules, and milestone ablation.
 
 This repository is the simulation-only research phase of an automated
 stock-selection program. Procedures live in
@@ -39,11 +39,12 @@ stock-selection program. Procedures live in
 
 ## Startup And Sources
 
-- The coordination standard owns dispatch, lanes, reviewer routing, model
-  bindings, quota, and visible-tab review. Before dispatch or review, read the
-  three policy files in `Codex/Standards/coordination-standard/`:
-  `coordinator.md`, `routing_table.json`, and `model_bindings.json`. Do not copy
-  seats or bindings into this file. Do not load `Codex/Standards/archive/`.
+- The coordination standard owns dispatch, reviewer routing, model bindings,
+  quota, and visible-tab review. Before dispatch or review, read the three
+  policy files in `Codex/Standards/coordination-standard/`: `coordinator.md`,
+  `routing_table.json`, and `model_bindings.json`. Do not copy seats or
+  bindings into this file. Do not load `Codex/Standards/archive/`. The owner's
+  process constraints below set which work in this repository needs which gate.
 - After `AGENTS.md`, for staged continuations through a thin routing Skill, read
   `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
   `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
@@ -53,84 +54,104 @@ stock-selection program. Procedures live in
 
 ## Research Safety Invariants
 
-The ultimate aspiration is automated stock selection and trading pursuing
-sustainable risk-controlled long-term net returns. Stable profit is an
-objective, not a guarantee. Invariants R1–R12 bind every layer, including demos
-and diagnostics. Everything else may wait in the backlog in
-`docs/current_roadmap.md`. A known defect stays a defect when a caveat is added.
+The North Star is in `docs/north_star.md`. Invariants R1–R12 guard against fake
+backtest profits at every layer, including demos and factor-timing studies.
+Everything else may wait in the `docs/current_roadmap.md` backlog. A known
+defect stays a defect when a caveat is added.
 
 - **R1 Timing.** Inputs are known before trading under
   `after_close_signal_next_observed_close_v1`. Distinguish feature, signal,
-  rebalance, execution, and return dates, and test every boundary. Never use
-  future returns, future fundamentals, or same-period target returns.
-- **R2 Universe.** Eligibility uses only membership known at decision time. A
-  static survivor cohort is permitted only under `DIAGNOSTIC_ONLY`, with the
-  bias stated in each report header, and it never supports a ranking,
-  selection, promotion, or profitability claim.
+  rebalance, execution, and return dates, and test every boundary with a
+  future-perturbation test. Fundamentals are usable from filing date plus one
+  trading day; macro series carry their release lag. Never use future returns,
+  revised or retrospectively dated series (such as NBER recession flags),
+  full-sample standardization, or same-period target returns as inputs.
+- **R2 Universe.** Eligibility uses only membership known at decision time,
+  including members later removed, acquired, or bankrupt. A static survivor
+  cohort is permitted only under `DIAGNOSTIC_ONLY`, with the bias stated in each
+  report header, and it never supports a ranking, selection, promotion, or
+  profitability claim.
 - **R3 Identity (PIT-005).** Fail closed on ticker reuse; never stitch returns
   across permanent securities. Vendor identifiers with fail-closed ambiguity
-  handling suffice for diagnostics; unresolved SEC EDGAR lineage parsing never
-  blocks diagnostic research.
-- **R4 Disappearance (PIT-006).** No default last-price or zero-payoff exit. A
-  held disappearance without accepted terminal evidence refuses the affected
-  run or window.
+  handling suffice; unresolved SEC EDGAR lineage parsing never blocks research.
+- **R4 Disappearance (PIT-006).** A held disappearance uses accepted terminal
+  evidence when it exists and otherwise a declared side-aware adverse default:
+  a cash acquisition settles at the last close or the deal price; a failure or
+  unknown cause settles at −100% for a long position and at the last close plus
+  30% for a short position, or the run makes no long-short claim. The benchmark
+  uses the same rule. The report states the count and weight share affected
+  and a rerun with the last close for all; a sign flip labels the result fragile.
 - **R5 Distributions (PIT-007).** Use one total-return basis; never add cash
   dividends to an adjusted series.
 - **R6 Missingness (PIT-009).** Missing values stay typed; no silent fill, clip,
-  drop, or repair.
+  drop, or repair. Bad data blanks every window that touches it, lookbacks and
+  holding periods included, and the report states the blanked or unpriced share
+  split by later exit class.
 - **R7 Price and volume basis.** Dollar turnover, liquidity, and capacity use
-  matching price and volume bases.
+  split-only close times split-adjusted volume, checked by one split-continuity
+  test.
 - **R8 Costs.** Apply explicit commission and spread or slippage under existing
-  turnover conventions. Zero-cost or no-slippage results are diagnostics only.
-- **R9 Trials.** Keep failed, weak, invalid, abandoned, and contrary results
-  visible. Declare the trial family before results; never cherry-pick only the
-  best parameter or trial.
+  turnover conventions, and a switch cost for factor-allocation rules. State
+  borrow cost for shorts. Zero-cost results are labelled gross diagnostics.
+- **R9 Trials.** Commit the trial family before results; append every run; keep
+  failed, weak, invalid, abandoned, and contrary results visible. The
+  multiple-testing correction counts every tested variant, and its method is
+  fixed before results. Exploratory screens are fully visible; a confirmatory
+  shortlist of at most ten is frozen before its confirmation data is opened, and
+  confirmation uses months the screen never used.
 - **R10 Claims.** Never invent results or claim profitability without
   reproducible evidence. Report excess over a declared benchmark at a stated
-  evidence ceiling, and explain data provenance, missingness, costs, slippage,
-  execution timing, benchmark choice, sample splits, and material limitations.
-- **R11 Data and privacy.** Real/private-data access or interpretation requires
-  accepted methodology, evidence gates, and explicit authorization. Publication
-  follows the owner's written data terms: noncommercial aggregates may be
-  public; raw provider rows, provider responses, provider-derived membership
-  lists, credentials, and private paths stay private.
-- **R12 Non-execution.** Keep this project simulated, auditable, reproducible,
-  and explainable; never add brokerage connections, orders, paper/live trading,
-  or live-account behavior. Execution belongs to a future, separately
-  authorized private repository.
+  evidence ceiling, with q-values beside any ranking, and state data provenance,
+  missingness, costs, execution timing, sample reuse, and material limitations.
+- **R11 Data and privacy.** Private-data access requires explicit owner
+  authorization. Public academic factor libraries and FRED series are authorized
+  for download and interpretation. Publication follows the owner's written data
+  terms: noncommercial aggregates may be public; raw provider rows, provider
+  responses, provider-derived membership lists, raw third-party files,
+  credentials, and private paths stay private; commit a manifest and hashes.
+- **R12 Non-execution.** Keep this project simulated, auditable, and
+  reproducible; simulated factor-selection and factor-timing strategies are in
+  scope. Never add brokerage connections, orders, paper/live trading, or
+  live-account behavior; execution belongs to a separate future repository.
+
+## Owner Process Constraints
+
+Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 intact.
+
+- Two formal review seats from different model families are required only for
+  code on the real-data path that computes signals, returns, identity, costs, or
+  statistics, and for a trial-family freeze. Other code gets one seat. Docs,
+  records, and catalogs get coordinator verification.
+- At most two review rounds per card. Wording, style, claims-file, and record
+  findings are ADVISORY and go to the backlog. Reviewers also ask whether a
+  rule drops data in a way that biases the sample.
+- A design note of at most two pages replaces a binding plan unless the owner
+  asks for a plan.
+- The coordinator sets technical defaults and logs each one; no default loosens
+  R1, R2, R4, R6, R8, or R9. The owner decides money, data access, legal terms,
+  and goals.
+- Work that cannot change a result or a decision in the current step waits.
 
 ## Review Priorities
 
 - Prioritize research-validity risk over style. A P1 requires concrete evidence
   from changed code, tests, or documentation; touching a factor input alone is
   not evidence of leakage.
-- Flag as P1 an unsupported implemented/completed claim or a concrete mismatch
-  in signal/factor timing, rebalance/execution timing, return-window or benchmark
-  alignment, portfolio construction or accounting, or leakage prevention.
+- Flag as P1 an unsupported completed claim or a concrete mismatch in signal,
+  execution, return-window, benchmark, portfolio accounting, or leakage timing.
 - Flag as P2 undocumented implemented/tested behavior, partial work called
   complete, stale next steps, or missing sparse/empty/invalid-data, cost,
   turnover, benchmark, or calendar edge tests unless evidence creates P1 risk.
-- Rank misleading claims, hidden assumptions, and missing non-goals by impact;
-  ignore typos unless meaning changes. Flag unexplained Unicode/control changes.
-- Every finding must cite the file and claim, code/test evidence, mismatch and
-  impact, plus a recommended fix or targeted test.
+- Ignore typos unless meaning changes. Flag unexplained Unicode/control changes.
+  Every finding cites the file and claim, evidence, impact, and a fix or test.
 
 ## Writing Style And Syntax
 
-These rules bind every model and harness working in this repository.
-Research-safety invariants and authority prohibitions keep their existing
-wording.
-
-- Every newly authored or edited repository document is English, including
-  AGENTS, skills, logs, handoffs, and reports. Historical evidence keeps its
-  original bytes. User-facing chat may use the user's preferred language.
-- Use direct affirmative construction: state what things are, and let the first
-  clause state the conclusion.
-- Definition by negation is banned. False-dichotomy templates are banned: "not
-  just X, but Y"; "not merely X, but rather Y"; "it is not about X, it is about
-  Y". Strawman antithesis is banned.
-- When a Mermaid diagram shows structure more clearly than prose, use it.
-- Reports, handoffs, and section closings state completed facts and current
+- Repository documents are English and plain; historical evidence keeps its
+  original bytes. Owner-facing summaries and chat use the owner's language and
+  words a university student can follow.
+- Lead with the conclusion. Use a Mermaid diagram when it shows structure more
+  clearly than prose. Reports and handoffs state completed facts and current
   measurements.
 
 ## Engineering And Change Discipline
@@ -142,17 +163,15 @@ wording.
   tests for feature, strategy, portfolio, accounting, or reporting calculation
   changes; prefer behavioral tests over source-text assertions.
 - Walking skeleton first: keep one working thread from data through factor,
-  statistics, portfolio backtest, and evidence report, and grow it in working
-  layers.
+  statistics, portfolio backtest, and report, and grow it in working layers.
 - Milestone admission: every milestone changes a real-data result or an owner
-  decision within that milestone. A capability without a real-data consumer
-  waits for the milestone that consumes it.
+  decision. A factor catalog entry needs no consumer; a factor run once in a
+  declared screening family counts as consumed. Other capabilities without a
+  real-data consumer wait for the milestone that consumes them.
 - Choose the simplest implementation that meets current requirements. Add no
-  speculative registries, capability minting, recursive abstraction layers, or
-  optional engine parameters without a consumer. Reuse existing dependencies and
-  established libraries before writing custom code.
-- When data or infrastructure is blocked, unblocked modules proceed on
-  synthetic golden fixtures.
+  speculative registries, abstraction layers, or optional engine parameters
+  without a consumer; reuse established libraries before writing custom code.
+- When data or infrastructure is blocked, unblocked modules use synthetic fixtures.
 - Record strategy changes in `EXPERIMENT_LOG.md` or `PROJECT_SPEC.md`, process
   evidence in `docs/engineering_log.md` with the newest entry first, and durable
   choices in `docs/decision_log.md`. Commit summaries and hashes; keep bulky
@@ -172,22 +191,9 @@ wording.
 
 ## Ablation
 
-After every completed design or implementation, run an ablation experiment.
-Remove unnecessary abstractions, speculative design, and surplus code. Keep the
-simplest implementation that still meets current requirements.
-
-Preserve the baseline. Test each removal in isolation. Compare behavior,
-correctness, and relevant costs. Keep justified simplifications. Restore
-regressions. Keep necessary tests, validation, and guards.
-
-Report at least one simplification attempt separately from guard-necessity
-checks. Record removals, retained necessities, and known limitations. A
-supported no-change outcome is valid. Ablation revalidation is not a recursive
-ablation loop.
-
-For ablations that replace array traversal, test every public boundary's
-empty-axis shapes (Nx0, 0xM, and 0x0), duplicate or named axes, and mixed
-scalar identity; compare public cells, state digests, and refusal reasons. A
-whole-project ablation completion claim requires a runtime and subsystem
-coverage matrix, tested high-impact hypotheses, preserved baseline and negative
-evidence, and a limitations assessment.
+At the end of each milestone, run one ablation pass aimed at deleting whole
+stages, rules, and modules as well as surplus code. Preserve the baseline, test
+each removal in isolation, keep justified simplifications, restore regressions,
+and keep the guards R1–R12 require. Record removals, retained necessities, and
+known limitations. A supported no-change outcome is valid. Ablation
+revalidation is not a recursive ablation loop.

@@ -18,8 +18,8 @@ operation must satisfy that boundary.
 1. After `AGENTS.md`, read `docs/current_handoff.md`,
    `docs/codex_long_running_controller.md`, and `docs/current_roadmap.md` for the
    recorded checkpoint, execution gates, and program status, respectively.
-   Read `docs/north_star.md` for active product aspiration, edge thesis, and
-   kill criteria, and `AUTHORITY.md` for standing owner grants.
+   Read `docs/north_star.md` for active product aspiration, core question,
+   objective, and decision rule, and `AUTHORITY.md` for standing owner grants.
 2. Use `docs/repo_map.md` for targeted orientation and read only active-stage
    contracts. Research or code stages also require `PROJECT_SPEC.md`.
 3. With capped output, check branch/tree state, local and remote `main`, recent
@@ -106,7 +106,9 @@ re-enter this gate before acting on a different PR or changed scope.
   Do not request review until required exact-head CI has stabilized.
 - Review is required for research semantics, returns, costs, benchmarks,
   implementation, CI, security, data handling, or execution scope. Trivial
-  spelling, date, count, or equivalent metadata-only edits may omit it.
+  spelling, date, count, or equivalent metadata-only edits may omit it. The
+  number of seats and rounds follows the owner process constraints in
+  `AGENTS.md`.
 - Never repeat a request for an unchanged head. An actionable fix changes the
   head and requires validation, CI, and one new current-head review.
 - Count completed formal reviews that returned P1 or P2 on that PR. After two
@@ -191,6 +193,7 @@ first recorded the rule.
 | Asking the owner to issue an already-determined next command during authorized unattended work, including running a demo or starting the next roadmap slice | `4859cab` (2026-09-16) |
 | Closing tabs or panes immediately upon round completion instead of deferring closure until the next round launches and confirms they are unneeded | `2c07ee4` (2026-09-25) |
 | Short polling or checking background tasks without sufficient wait margin (under-waiting relative to task runtime) | `2c07ee4` (2026-09-25) |
+| Spending a stage on work that cannot change a real-data result or an owner decision in that step, including repeated data extension under a gate that cannot pass | North Star v2 PR (2026-09-28) |
 
 Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
 own incident record and owner confirmation.
@@ -237,9 +240,12 @@ action and requires separate explicit authorization.
 Stop for missing authority; unclear tree/branch ownership; failed validation
 outside safe remediation; unresolved P1/high risk; unverifiable protection,
 checks, reviews, conflicts, or scope; destructive/security/privacy risk; or
-unresolved provenance, license, point-in-time, benchmark, cost, timing, or
-statistical choices. Also stop before unapproved vendor/private data,
-credentials, brokerage/orders, live behavior, or out-of-scope interpretation.
+unresolved provenance, license, or data-access choices. Point-in-time,
+benchmark, cost, timing, and statistical choices get a logged coordinator
+default under the owner process constraints in `AGENTS.md`; no default loosens
+R1, R2, R4, R6, R8, or R9. Also stop before unapproved vendor/private data,
+paid services, credentials, brokerage/orders, live behavior, or out-of-scope
+interpretation.
 
 ## Completion Report
 

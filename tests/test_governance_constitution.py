@@ -257,9 +257,11 @@ def test_grant_guard_detects_a_partial_copy() -> None:
     assert _grant_language_hits(documents, quotes)
 
 
-def test_north_star_states_edge_objective_and_kill_criteria() -> None:
+def test_north_star_states_core_question_objective_and_decision_rule() -> None:
+    # North Star v2 (owner decision 2026-09-28) replaces the edge thesis, hurdle,
+    # and kill criteria with a core question, an objective, and a decision rule.
     north_star = _read("docs/north_star.md")
-    for heading in ("Edge Thesis", "Objective And Hurdle", "Kill Criteria"):
+    for heading in ("Core Question", "Objective And Benchmark", "Decision Rule"):
         assert _section(north_star, heading).strip()
     assert "R1–R12" in north_star
 

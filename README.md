@@ -10,7 +10,7 @@
 
 An auditable Python toolkit for equity-factor research with strict data contracts, deterministic diagnostics, drift-aware portfolio accounting, and reproducible experiment records.
 
-The ultimate aspiration of the project is automated stock selection and trading, pursuing sustainable risk-controlled long-term net returns (stable profit is an objective, not a guarantee). See [North Star](docs/north_star.md) for the active product aspiration and demo-first delivery principles. The historical [research charter](docs/research_program_charter.md) remains preserved as formal evidence policy. This repository builds the simulated research and backtesting foundation—the essential first part, not the final execution product. Live execution, broker connectivity, pre-trade risk limits, reconciliation, and emergency kill switches belong strictly to a future, separately authorized private execution repository.
+The North Star is an automated stock selector for US equities that aims to beat an index fund over the long term after trading costs, with smaller drawdowns; profit is the aim and carries no guarantee. Its core question is which factors earn more, or lose less, in which market conditions. See [North Star](docs/north_star.md). The historical [research charter](docs/research_program_charter.md) remains preserved as formal evidence policy. This repository builds the simulated research and backtesting foundation—the essential first part, not the final execution product. Live execution, broker connectivity, pre-trade risk limits, reconciliation, and emergency kill switches belong strictly to a future, separately authorized private execution repository.
 
 `LAGGED FEATURE CONTRACTS` · `EXPLICIT SIGNAL LAG` · `DRIFT-AWARE ACCOUNTING` · `JSON EVIDENCE`
 
@@ -60,7 +60,7 @@ These legacy commands use synthetic data or committed fixtures and may refresh f
 
 ## Demo-First Delivery Target (Demo v0)
 
-The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, complete ledger schema coverage, or a broad factor zoo.
+The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, or complete ledger schema coverage.
 
 **Demo v0** is the synthetic vertical slice. The official command is `python -m research.demo_v0`:
 - One reproducible local command using existing 12-1 momentum and one frozen strategy configuration;
@@ -89,7 +89,7 @@ methodology-process evidence.
 
 ## Current program status
 
-- **North Star & Roadmap Alignment**: Five primary milestones define the path from core research foundation to simulated demo slice, exploratory multi-factor expansion, formal research promotion, and eventual separately authorized execution. See the [current roadmap](docs/current_roadmap.md).
+- **North Star & Roadmap Alignment**: Six primary milestones define the path from core research foundation to simulated demo slice, exploratory multi-factor expansion, formal research, factor collection and factor timing, and eventual separately authorized execution. See the [current roadmap](docs/current_roadmap.md).
 - **Historical Track A Disposition**: Track A (14-trial EODHD diagnostic design) remains frozen and REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`) under evidence ceiling `DIAGNOSTIC_ONLY`. This historical refusal is preserved as immutable evidence and is not a universal blocker for the demo-first program.
 - **Track B First Checkpoints**: SQLite ledger runtime first checkpoints (Path A PR #199, Path B PR #200) merged as software progress. The Track A campaign runner, PIT manifest validator, and ledger runtime retired on 2026-09-23 and remain in Git history at `8fa0055`; the frozen ledger schema releases stay in `src/ledger/schemas/`. Diagnostic runs append trial records (sample hash, specification, statistics, and status) to a JSONL log; the run's code commit appears once per run in the experiment log and report, and individual JSONL records carry no commit.
 - **Exploration Diagnostic Context**: A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility and planning context on local data history, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling. It is outside Demo v0 acceptance, produces no strategy or profitability claims, and does not prove tradability, universe completeness, or a pristine holdout.

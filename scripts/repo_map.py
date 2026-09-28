@@ -71,7 +71,7 @@ IMPORTANT_FILES = [
     ),
     (
         "docs/north_star.md",
-        "Active North Star product aspiration, edge thesis, objective, and kill criteria; not an external-action authority source.",
+        "Active North Star product aspiration, core question, objective, and decision rule; not an external-action authority source.",
     ),
     (
         "docs/research_program_charter.md",

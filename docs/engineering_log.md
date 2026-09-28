@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Owner-identified process failure: rigor ceremony over results; North Star v2 and process constraints
+
+- Incident (owner, 2026-09-28): progress too slow; rules and data perfectionism block work; the North Star did not
+  state the owner's intent (collect many factors; learn which factor works in which conditions).
+- Measured causes (`coord/reports/north_star_speed_audit_opus.md` §4): Track A used 117 of 131 calendar days and
+  203 PRs with zero real-data results; 39 of 72 post-pivot PRs built synthetic-only capability; the M4.7 plan took
+  10 dual-seat rounds and reached 4,018 lines; M4.8 produced about 134,000 words of plan and review prose against
+  about 4,000 runtime lines; Stage C attempts c2–c4 reproduced the c1 gate result; the 0.02 MDE kill criterion
+  cannot pass on S&P 500 monthly data (286 to 2,508 IC months needed), so every null routed to `extend_first`.
+- Counter-evidence kept: the light-review sprint #224–#255 passed 16 MATERIAL defects later caught by post-merge
+  audits, so cross-family dual review stays for real-data inference code.
+- Rule updates in their owning documents: `docs/north_star.md` (v2), `AGENTS.md` (R1, R4, R6, R7, R8, R9, R10,
+  R11, R12; Owner Process Constraints; Writing; milestone admission; milestone ablation),
+  `docs/current_roadmap.md` (six milestones, M4.8 paused, Milestone 5 active, backlog rows),
+  `docs/codex_long_running_controller.md` (startup reading, seat pointer, stop conditions, new Process Failures
+  row), `PROJECT_SPEC.md` (objective, factor intake), `README.md`, `scripts/repo_map.py` and `docs/repo_map.md`.
+- Test change: `test_north_star_states_edge_objective_and_kill_criteria` is replaced by its v2 counterpart
+  `test_north_star_states_core_question_objective_and_decision_rule`, because the owner replaced those sections.
+- PR #275 merged as `9dee2df` under the owner's explicit instruction; M4.8 paused after Stage D.
+
 ## 2026-09-28 - M4.8 Stage D: private snapshot real_v2, seal carry, rule v2 partition, universe build, terminal template
 
 - Source: card `coord/v8_review_20260923/card_m4_8d_real_v2.md` (task `v8-stage-m48-d`, route `GENERAL_EXEC`, lane

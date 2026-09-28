@@ -1,9 +1,9 @@
-# North Star and Demo-First Delivery
+# North Star
 
-Updated: 2026-09-23
+Updated: 2026-09-28 after the owner's North Star v2 decision (`docs/decision_log.md`).
 
-Canonical responsibility: active product aspiration, delivery methodology,
-and research versus execution boundaries.
+Canonical responsibility: active product aspiration, core research question,
+objective, decision rule, and research versus execution boundaries.
 
 Repository authority is [AGENTS.md](../AGENTS.md), workflow behavior is owned
 by the [controller](codex_long_running_controller.md), operational status is
@@ -12,84 +12,79 @@ in the [current handoff](current_handoff.md), and stage sequences are in the
 
 ## North Star
 
-The ultimate aspiration of the project is automated stock selection and trading,
-pursuing sustainable risk-controlled long-term net returns. Stable profit is an
-explicit objective, not a guarantee.
+Build an automated stock selector for US equities that aims to beat an index
+fund over the long term after trading costs, with smaller drawdowns. Profit is
+the aim and carries no guarantee.
 
-This repository is the foundational research and simulation phase. It stays
-strictly simulated, reproducible, auditable, and non-order-capable. Live
-trading, broker integrations, credentials, order routing, pre-trade risk limits,
-position and cash reconciliation, real-time health monitoring, and emergency
-kill switches belong strictly to a future, separately authorized private
-execution system.
+This repository is the research and simulation phase. It stays simulated,
+reproducible, and auditable, and it places no orders. Paper trading, broker
+integrations, credentials, order routing, and live risk controls belong to a
+future, separately authorized execution system (Milestone 6).
 
-## Edge Thesis
+## Core Question
 
-The program tests one primary source of return: diversified, low-turnover
-harvesting of published risk and behavioral premia in liquid US equities,
-improved by combination, cost control, and risk budgeting. Candidate premia are
-momentum, short-term reversal, low risk, value, and quality. Short-horizon
-price-volume alphas at end-of-day granularity sit outside the thesis; the
-WorldQuant-101 library remains an exploratory control family.
+Which factors earn more, or lose less, in which market conditions?
 
-## Objective And Hurdle
+A factor is a simple scoring rule for stocks, such as "recent winners" or "low
+volatility". The program answers the question in three layers:
 
-- **Objective metric:** net-of-cost excess return over declared benchmarks
-  (SPY and the equal-weight point-in-time universe). Each pre-registration
-  states a target information ratio, a tracking-error budget, and a maximum
-  drawdown budget.
-- **Planning prior:** a net information ratio of about 0.3–0.6 for a
-  diversified premia portfolio, with material post-publication decay.
-- **Hurdle:** beat the cheapest passive implementation of the same premia, an
-  index fund plus factor ETFs, after costs and taxes.
+1. **Collect** as many published factors as possible from academic libraries,
+   factor-sharing sites, and broker research, in one catalog.
+2. **Screen** every factor with one standard backtest and keep every result.
+3. **Time** factors: measure each factor's return and drawdown by market
+   condition on long public histories, and turn the findings into a monthly rule
+   that uses past data only.
 
-## Kill Criteria
+## Objective And Benchmark
 
-If an adequately powered, pre-registered factor family on the point-in-time
-universe has no survivor under Benjamini–Yekutieli control at 5%, engine
-feature work stops and the owner reviews the edge thesis. Adequate power means
-a minimum detectable mean monthly Rank IC of 0.02 or better. An underpowered
-null extends history or breadth before any pivot.
+- **Objective metric:** net-of-cost return and maximum drawdown of the selected
+  portfolio, compared with three baselines: SPY, the equal-weight point-in-time
+  universe, and an equal-weight mix of all screened factors.
+- **Expectation:** published evidence finds that simple factor timing adds about
+  0 to 2 percentage points a year before costs, that holding all factors equally
+  is hard to beat, and that risk is more predictable than return. The drawdown
+  half of the objective is the more promising half.
+- **Implementable check:** a result on public factor-return series stays a
+  diagnostic until the same rule holds on the repository's own point-in-time
+  S&P 500 books after costs, or on tradable factor ETFs.
 
-## Demo-First Delivery Philosophy
+## Decision Rule
 
-The engineering approach ships a small, demonstrable, presentable, and
-reproducible end-to-end version first (**Demo v0**) and improves it in working
-layers. Non-blocking imperfections, data caveats, and missing coverage go to a
-lightweight backlog.
+- Each line of work declares, before any result, its trial family, its number of
+  looks, and its decision metric (net return or drawdown difference against the
+  equal-weight baseline, with a confidence interval and a Benjamini–Yekutieli
+  correction across the family).
+- "No detectable edge at this data size" is a valid result that closes that line
+  of work. After an underpowered null, the next step may be new factors, new
+  data, or a new question; history extension is one option among these.
+- A frozen shortlist is confirmed on months its screen never used and then on
+  forward months before any separately authorized paper or live evaluation.
 
-An initial working demonstration proceeds without an ideal pipeline, complete
-SEC identity proof for every security, optional ledger/schema coverage, or a
-factor zoo. Minimum research correctness at every layer is the invariant set
-R1–R12 in [AGENTS.md](../AGENTS.md#research-safety-invariants).
+## Guards Against Fake Backtest Profits
+
+Invariants R1–R12 in [AGENTS.md](../AGENTS.md#research-safety-invariants) are the
+guards: no look-ahead, point-in-time membership, no stitched identities, a
+side-aware adverse rule for disappearing stocks, one total-return basis, no
+silent data repair, matching price and volume bases, real costs, every trial
+kept and corrected for, honest claims, private data kept private, and
+simulation only. They never defer.
+
+## Speed Rule
+
+Work that cannot change a result or a decision in the current step waits.
+Non-blocking imperfections go to the lightweight backlog in
+[docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](current_roadmap.md#imperfection-policy-and-lightweight-backlog).
+
+## Primary Milestones
+
+The program follows six primary milestones, from the research engine to factor
+timing and a separately authorized execution system. Stage sequence,
+dependencies, completion criteria, and status are owned by
+[docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones).
+Every attempted run keeps its outcome, including failures.
 
 ## Relationship to the Historical Research Charter
 
 The historical research charter ([docs/research_program_charter.md](research_program_charter.md))
-remains preserved as the hash-pinned formal research evidence policy and evidentiary
-ceiling definition. It governs formal claims; demo delivery proceeds under the
-invariants above.
-
-Formal promotion controls, full corporate action event reconciliation, and multiple-testing
-adjustments remain prerequisites for formal academic or production claims. A
-visibly limited demo proceeds without them.
-
-## Primary Milestones
-
-The program follows a five-milestone sequence from foundational engine to working demo and future execution. Program stage sequence, dependency order, gate and completion criteria, and coarse status are owned by [docs/current_roadmap.md#primary-milestones](current_roadmap.md#primary-milestones); detailed Demo v0 deliverable definitions and criteria are owned exclusively by [docs/current_roadmap.md#active-delivery-target-demo-v0-definition-of-done](current_roadmap.md#active-delivery-target-demo-v0-definition-of-done).
-
-Under demo-first delivery, every actual attempted run retains its outcomes and
-negative evidence. Demo v0 All-Attempt Case Logging records every attempted
-case, including failures, for `python -m research.demo_v0`. Existing synthetic
-sidecars are legacy diagnostics outside Demo v0 evidence. This lightweight
-diagnostic run logging is distinct from the formal experiment/trial-ledger
-accounting required by charter Stage 4 / Milestone 4.
-
-## Authoritative Backlog and Imperfection Policy
-
-The single authoritative imperfection backlog table is maintained exclusively in
-[docs/current_roadmap.md#imperfection-policy-and-lightweight-backlog](current_roadmap.md#imperfection-policy-and-lightweight-backlog).
-Presentation polish, additional factor families beyond demo scope, full 37-event
-ledger schema breadth, and comprehensive historical SEC entity lineage proofs
-are safe to defer when the claimed calculation stays valid. Invariants R1–R12
-never defer.
+remains preserved as hash-pinned formal evidence history. Active work follows this
+North Star and the invariants in `AGENTS.md`.
