@@ -54,7 +54,8 @@ Decisions (owner, 2026-09-28, answered in session):
    R1, R2, R4, R6, R8, or R9); ablation once per milestone.
 5. **English only.** Everything written to the repository, to GitHub (PR titles and bodies, comments, commit
    messages), and to any report is English; Chinese characters are prohibited there. A governance test enforces it
-   for tracked files. Live chat with the owner may use the owner's language.
+   for tracked files. Live chat with the owner may use the owner's language. PR and commit text never carries a
+   "Generated with Claude Code" line.
 
 Coordinator records carried by this entry:
 

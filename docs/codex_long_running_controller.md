@@ -92,6 +92,8 @@ re-enter this gate before acting on a different PR or changed scope.
 
 ## GitHub Review Lifecycle
 
+- PR titles, PR bodies, comments, and commit messages are English only and never carry a "Generated with Claude
+  Code" line (owner rule, 2026-09-28).
 - Do not use GitHub Code Review. Keep GitHub Codex Automatic Review disabled.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI
