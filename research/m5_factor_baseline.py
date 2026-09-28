@@ -58,6 +58,8 @@ from features.multiple_testing import adjust_pvalues, return_test_statistics
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRIAL_PATH = "docs/preregistrations/m5_trial_family_v1.json"
 TRIAL_SHA256 = "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a"
+AMENDMENT_PATH = "docs/preregistrations/m5_trial_family_v1_amendment_1.json"
+AMENDMENT_SHA256 = "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751"
 CACHE_DIR = "data/public_cache"
 REPORT_MD = "reports/m5_factor_baseline.md"
 REPORT_JSON = "reports/m5_factor_baseline.json"
@@ -484,7 +486,12 @@ def run_universe(panel: MonthlyPanel, first: pd.Period, last: pd.Period, trial: 
 
 def post_publication(universe: dict[str, Any], years: dict[str, int | None], trial: dict[str, Any],
                      costs: list[int]) -> dict[str, Any]:
-    """R0 and R1 on the set restricted to factors published before year(t)."""
+    """R0 and R1 on the set restricted to factors published before year(t).
+
+    Amendment 1: the run starts at the first evaluated month with a non-empty
+    subset; earlier months are counted as empty, and a later empty month
+    still refuses.
+    """
 
     member: Membership = universe["_member"]
     declared = set(trial["traits"]["years_since_publication"]["missing_publication_year"])
@@ -512,20 +519,29 @@ def post_publication(universe: dict[str, Any], years: dict[str, int | None], tri
                 (in_set & ~published[inside]).drop(columns=sorted(no_year)).to_numpy().sum()),
             "months_with_empty_subset": int((subset[inside].sum(axis=1) == 0).sum()),
         }
-    empty = subset.index[subset.sum(axis=1) == 0]
+    non_empty = subset.sum(axis=1) > 0
+    start = subset.index[non_empty.to_numpy().argmax()] if non_empty.any() else None
+    leading = subset.index[~non_empty & (subset.index < start)] if start is not None else subset.index
     result: dict[str, Any] = {
         "counts": counts,
-        "empty_subset_months": {"count": int(len(empty)),
-                                "first": str(empty[0]) if len(empty) else None,
-                                "last": str(empty[-1]) if len(empty) else None},
+        "start_month": str(start) if start is not None else None,
+        "empty_subset_months": {"count": int(len(leading)),
+                                "first": str(leading[0]) if len(leading) else None,
+                                "last": str(leading[-1]) if len(leading) else None},
     }
+    if start is None:
+        result.update(status="refused", reason="no evaluated month has a non-empty subset")
+        return result
+    run_bounds = {period: (max(first, start), end) for period, (first, end) in bounds.items()
+                  if max(first, start) <= end}
+    run_subset, run_sigma = subset.loc[start:], member.sigma.loc[start:]
     try:
-        grid, _ = rule_grid(subset, member.sigma, universe["_returns"], costs, bounds)
+        grid, _ = rule_grid(run_subset, run_sigma, universe["_returns"], costs, run_bounds)
     except PublicDataRefusal as refusal:
         result.update(status="refused", reason=str(refusal))
         return result
     result["volatility_forecast_accuracy"] = volatility_accuracy(
-        member.sigma, realized_volatility(universe["_returns"], subset.index), subset, bounds)
+        run_sigma, realized_volatility(universe["_returns"], run_subset.index), run_subset, run_bounds)
     result.update(status="completed", rules=grid)
     return result
 
@@ -534,6 +550,9 @@ def run(repo_root: Path) -> dict[str, Any]:
     trial_bytes, trial_sha = verify_trial_file(repo_root, TRIAL_PATH)
     if trial_sha != TRIAL_SHA256:
         raise PublicDataRefusal(f"trial file SHA-256 {trial_sha} differs from the pinned {TRIAL_SHA256}")
+    _, amendment_sha = verify_trial_file(repo_root, AMENDMENT_PATH)
+    if amendment_sha != AMENDMENT_SHA256:
+        raise PublicDataRefusal(f"amendment SHA-256 {amendment_sha} differs from the pinned {AMENDMENT_SHA256}")
     trial = json.loads(trial_bytes)
     git = git_state(repo_root)
     costs = [trial["costs"]["switch_cost_bps"]["primary"], trial["costs"]["switch_cost_bps"]["sensitivity"]]
@@ -571,7 +590,8 @@ def run(repo_root: Path) -> dict[str, Any]:
         "schema_version": "m5_factor_baseline_v1",
         "evidence_ceiling": trial["evidence_ceiling"],
         "run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "trial_file": TRIAL_PATH, "trial_file_sha256": trial_sha, "git": git,
+        "trial_file": TRIAL_PATH, "trial_file_sha256": trial_sha,
+        "amendment_file": AMENDMENT_PATH, "amendment_file_sha256": amendment_sha, "git": git,
         "timing": trial["timing"]["label"], "switch_cost_bps": costs,
         "manifest": inputs["manifest"],
         "universes": universes, "s2_tests": s2, "decision": decision, "post_publication": post,
@@ -624,7 +644,9 @@ def render_report(result: dict[str, Any]) -> str:
         "0.83) and the 2026-09-28 vision probe on JKP 153 factors (inverse volatility Sharpe 0.94 vs 0.72 for equal "
         "weight). This run re-examines a comparison already seen and supports no confirmatory claim.",
         f"- **Trial family.** `{result['trial_file']}`, SHA-256 `{result['trial_file_sha256']}`, verified equal "
-        "to its committed HEAD version before any data was read.",
+        "to its committed HEAD version before any data was read"
+        + (f"; amendment `{result['amendment_file']}`, SHA-256 `{result['amendment_file_sha256']}`, verified the "
+           "same way." if result.get("amendment_file") else "."),
         f"- **Timing.** `{result['timing']}`: weights for month t use returns through month t-1 and the declared "
         "availability of each factor's month-t return; the switch cost is charged in month t.",
         "",
@@ -729,15 +751,16 @@ def render_report(result: dict[str, Any]) -> str:
     post = result["post_publication"]
     lines += ["", "## Post-Publication Split (jkp_factors_153, descriptive)", "",
               "For month t the set is restricted to factors whose publication year is before the calendar year of "
-              "t; R0 and R1 use the same rules and costs in one continuous run from 1972-01.", "",
-              f"Status `{post['status']}`."]
+              "t; R0 and R1 use the same rules and costs in one continuous run from the first month with a non-empty "
+              "subset (trial amendment 1).", "",
+              f"Status `{post['status']}`; start month {post.get('start_month') or 'none'}."]
     if "empty_subset_months" in post:
         empty = post["empty_subset_months"]
         lines += ["", f"Evaluated months with an empty subset: {empty['count']}"
                   + (f" ({empty['first']} to {empty['last']})." if empty["count"] else ".")]
     if post["status"] == "refused":
-        lines += ["", f"Refusal: {post['reason']}. The trial family refuses any evaluated month with an empty set, "
-                  "and it declares no other handling for this split, so the split has no metrics."]
+        lines += ["", f"Refusal: {post['reason']}. An empty subset after the start month refuses the split, so "
+                  "it has no metrics."]
     elif post["status"] == "completed":
         lines += ["", "| Rule | Cost | Period | Months | Ann. mean | Volatility | Sharpe | Max drawdown | "
                   "Worst 12 months | Avg turnover |",

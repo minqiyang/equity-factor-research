@@ -274,7 +274,7 @@ def test_s2_tests_use_hac_pvalues_and_by_adjustment_over_three() -> None:
     assert result["S2.c"]["status"] == "universe_refused" and result["S2.c"]["by_qvalue"] is None
 
 
-def test_post_publication_split_refuses_on_empty_subset_months() -> None:
+def test_post_publication_split_starts_at_first_non_empty_month_and_refuses_later_gaps() -> None:
     returns = random_panel()
     evaluated = months("1993-01", "1996-12")
     member = m5.membership(returns, evaluated)
@@ -284,9 +284,22 @@ def test_post_publication_split_refuses_on_empty_subset_months() -> None:
     assert result["status"] == "completed"
     assert result["counts"]["full"]["excluded_missing_publication_year"] == int(member.in_set["D"].sum())
     late = {"A": 1993, "B": 1994, "C": 1995, "D": None}
-    refused = m5.post_publication(universe, late, trial_like(), [20, 50])
-    assert refused["status"] == "refused"
-    assert refused["empty_subset_months"] == {"count": 12, "first": "1993-01", "last": "1993-12"}
+    started = m5.post_publication(universe, late, trial_like(), [20, 50])
+    assert started["status"] == "completed" and started["start_month"] == "1994-01"
+    assert started["empty_subset_months"] == {"count": 12, "first": "1993-01", "last": "1993-12"}
+    assert started["rules"]["R0"]["20bp"]["first_half"]["months"] == 12
+    assert started["rules"]["R1"]["50bp"]["full"]["months"] == 36
+    assert started["rules"]["R0"]["20bp"]["second_half"]["months"] == 24
+    # Entry turnover is charged in the start month, not in the leading empty months.
+    assert started["rules"]["R0"]["20bp"]["first_half"]["average_monthly_turnover"] >= 1 / 12
+    gap = returns.copy()
+    gap.loc["1995-03", "A"] = np.nan
+    gapped = {"_member": m5.membership(gap, evaluated), "_returns": gap.loc[:"1996-12"]}
+    refused = m5.post_publication(gapped, {"A": 1992, "B": 2000, "C": 2000, "D": None}, trial_like(), [20])
+    assert refused["status"] == "refused" and "empty set" in refused["reason"]
+    assert refused["start_month"] == "1993-01"
+    never = m5.post_publication(universe, {"A": 2000, "B": 2000, "C": 2000, "D": None}, trial_like(), [20])
+    assert never["status"] == "refused" and never["empty_subset_months"]["count"] == 48
     wrong = m5.post_publication(universe, {"A": 1990, "B": None, "C": 1990, "D": None}, trial_like(), [20])
     assert wrong["status"] == "refused" and "differ from the declared list" in wrong["reason"]
 
@@ -352,6 +365,8 @@ def test_trial_file_must_equal_its_committed_head_version(tmp_path: Path) -> Non
 def test_committed_trial_file_matches_the_pinned_sha256() -> None:
     _, digest = m5.verify_trial_file(m5.REPO_ROOT, m5.TRIAL_PATH)
     assert digest == m5.TRIAL_SHA256
+    _, amendment = m5.verify_trial_file(m5.REPO_ROOT, m5.AMENDMENT_PATH)
+    assert amendment == m5.AMENDMENT_SHA256
 
 
 # Parsers --------------------------------------------------------------------
