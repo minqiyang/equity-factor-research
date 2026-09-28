@@ -2,10 +2,12 @@
 
 ## Objective And North Star
 
-The North Star (`docs/north_star.md`) is an automated stock selector for US
-equities that aims to beat an index fund over the long term after trading costs,
-with smaller drawdowns. Profit is the aim and carries no guarantee. The core
-question is which factors earn more, or lose less, in which market conditions.
+The North Star (`docs/north_star.md`) is an automated US stock selector that
+learns which classes of factors earn more or lose less in market conditions
+visible at the time, allocates monthly across those classes, and holds a
+long-only portfolio of US large-cap stocks. It aims to beat an index fund and a
+cheap factor-ETF blend after costs over the long term. Risk control comes first;
+losing years are expected, and profit carries no guarantee.
 
 The research and simulation platform built in this repository is the foundational
 first phase—not the final execution product. The repository remains strictly

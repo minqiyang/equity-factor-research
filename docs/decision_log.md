@@ -43,8 +43,12 @@ Decisions (owner, 2026-09-28, answered in session):
    `docs/stage1_accepted_public_record_v1.json`). A forward-price source is chosen at the forward-observation step;
    free sources are tried first.
 4. **North Star v2 and process constraints adopted**, effective when the owner confirms this PR: the new
-   `docs/north_star.md`; Milestone 5 = factor collection and factor timing, Milestone 6 = separately authorized
-   execution; AGENTS.md R1, R4, R6, R7, R8, R9, R10, R11, R12 amended; the Owner Process Constraints section (two
+   `docs/north_star.md`, chosen by the owner after the vision assessment
+   (`coord/reports/north_star_vision_assessment_opus.md`): a factor-class allocator that learns which classes of
+   factors earn more or lose less in real-time market conditions, allocates monthly into a long-only large-cap
+   portfolio, puts risk first, treats "all classes, balanced by risk" as a valid result, and admits new factors only
+   through a counted search that beats random mining; Milestone 5 = factor-class allocator, Milestone 6 = separately
+   authorized execution; AGENTS.md R1, R4, R6, R7, R8, R9, R10, R11, R12 amended; the Owner Process Constraints section (two
    cross-family seats only for real-data inference code and trial-family freezes, at most two review rounds,
    wording findings advisory, design notes instead of binding plans, logged coordinator defaults that never loosen
    R1, R2, R4, R6, R8, or R9); ablation once per milestone.
@@ -66,7 +70,8 @@ Consequences:
 
 Follow-up:
 
-- Milestone 5 step 1 (factor catalog) and step 2 (public factor-timing study) start after this PR.
+- Milestone 5 step 1 (trial file and catalog) and step 2 (risk-balanced baseline on public data) start after this
+  PR.
 
 ## 2026-09-28 - M4.8 Stage D: real_v2 Built Offline Under Partition Rule v2; Curated Identity Boundary Rule
 

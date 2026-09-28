@@ -31,6 +31,15 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Test change: `test_north_star_states_edge_objective_and_kill_criteria` is replaced by its v2 counterpart
   `test_north_star_states_core_question_objective_and_decision_rule`, because the owner replaced those sections.
 - PR #275 merged as `9dee2df` under the owner's explicit instruction; M4.8 paused after Stage D.
+- Vision assessment (`coord/reports/north_star_vision_assessment_opus.md`): four explorers and a judge on the owner's
+  revised idea. Public JKP probe (diagnostic, long-short, before costs): factor risk is predictable and stable
+  (risk-rank persistence +0.75 / +0.73 across halves); conditional returns are not (none of 612 factor-by-state
+  tests survives correction; walk-forward state models lose to equal weight after 2000); inverse-volatility
+  weighting across 153 factors gave Sharpe 0.94 vs 0.72 with worst loss −7.8% vs −14.0%. The owner chose the
+  factor-class allocator North Star.
+- Defect found for Milestone 5: `src/features/ml_combination.py:136` z-scores features across the cross-section by
+  default, so a market-state value shared by every factor becomes NaN, and the row filter at `:179` drops those rows
+  without a typed count (R6). The pooled class model must fix or bypass it.
 
 ## 2026-09-28 - M4.8 Stage D: private snapshot real_v2, seal carry, rule v2 partition, universe build, terminal template
 

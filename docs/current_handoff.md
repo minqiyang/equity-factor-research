@@ -51,10 +51,11 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Candidate branch `claude/north-star-v2-governance` records the owner decisions of 2026-09-28
   (`docs/decision_log.md`): North Star v2 (`docs/north_star.md`), amended invariants and the Owner Process
   Constraints (`AGENTS.md`), six primary milestones with M4.8 paused and Milestone 5 active
-  (`docs/current_roadmap.md`), controller startup, seat, stop, and Process Failures updates, factor intake in
-  `PROJECT_SPEC.md`, `README.md`, and the regenerated `docs/repo_map.md`.
-- Assessments committed with it: `coord/reports/progress_assessment_opus.md` and
-  `coord/reports/north_star_speed_audit_opus.md`.
+  (`docs/current_roadmap.md`, Milestone 5 = factor-class allocator), controller startup, seat, stop, and
+  Process Failures updates, factor intake in `PROJECT_SPEC.md`, `README.md`, and the regenerated
+  `docs/repo_map.md`.
+- Assessments committed with it: `coord/reports/progress_assessment_opus.md`,
+  `coord/reports/north_star_speed_audit_opus.md`, and `coord/reports/north_star_vision_assessment_opus.md`.
 - Test change: the North Star structure test checks the v2 sections (Core Question, Objective And Benchmark,
   Decision Rule).
 - The change takes effect when the owner confirms the PR.
@@ -78,8 +79,8 @@ unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Next Safe Action
 
-- After the owner confirms this PR: Milestone 5 step 1 (factor catalog) and step 2 (public factor-timing study on
-  French, AQR, JKP, Open Source Asset Pricing, and Hou–Xue–Zhang returns with FRED conditioning series).
+- After the owner confirms this PR: Milestone 5 step 1 (hashed trial file and factor catalog) and step 2
+  (risk-balanced all-class baseline on French and JKP returns with FRED condition series).
 
 ## Source Routing
 

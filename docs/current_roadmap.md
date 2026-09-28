@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-28 after the owner's North Star v2 decision (M4.8 paused after Stage D; Milestone 5 redefined as factor collection and factor timing).
+Updated: 2026-09-28 after the owner's North Star v2 decision (M4.8 paused after Stage D; Milestone 5 redefined as the factor-class allocator).
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -44,7 +44,7 @@ The program follows six primary milestones:
 | **2. Demo v0 Working Vertical Slice** | Minimal end-to-end reproducible workflow | **Implemented (synthetic fixtures)** | Official command `python -m research.demo_v0` reuses existing 12-1 momentum and frozen `SyntheticDemoConfig` values -> simulated selection/holdings -> human-readable comparison report with benchmark, explicit cost/timing, risk, and limitations; All-Attempt Case Logging records successes and failures. Synthetic fixtures only; no profitability claim; no private data. `python -m research.synthetic_momentum_demo` remains a legacy diagnostic. Separately approved local-data runs remain exploratory diagnostics. Non-blocking imperfections stay in the backlog. |
 | **3. Exploratory Multi-Factor & Diagnostics** | Multi-factor combination and data-cleaning layers | **Completed exploratory layer (M3-01 through M3-08, M3.9 regime composite, M3.10 hardening)** | M3.9 adds 52 WorldQuant-101 alphas with composite, neutralization, weighting, turnover-penalty, and regime layers; M3.10 resolves the M01–M11 causality and accounting audit. M3-01 command `python -m research.synthetic_multifactor_backtest_demo` reuses Demo v0 synthetic prices, existing combine/normalize helpers, and the Demo v0 backtester with All-Attempt Case Logging. M3-02 requires complete finite strictly positive price bars in Demo v0 and the M3-01 demo, and refuses a supplied zero-volume or missing volume panel without silent fill, clip, drop, or repair. M3-03 proves those demos count signal lag in observed source rows; a missing source row remains an omitted observation. Those demos keep the supplied observed index. M3-07 reports adjacent calendar-day spans and refuses panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Session and holiday status remains unverified. M3-04 proves those demos compute held returns from the supplied price series only and refuse a separate cash-dividend overlay (PIT-007). M3-05 proves those demos run on a longer synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official frozen `DEMO_V0_CONFIG` remains 756 rows. M3-06 counts unchanging-price segments on those demos and keeps every supplied bar. M3-08 implements supplied-event date membership and explicit no-table disclosure. Full economic dividend/split reconciliation against independent events remains deferred to a separately scoped Milestone 3/4 slice. All empirical runs remain explicitly caveated exploratory diagnostics. |
 | **4. Formal Research & Strict Lineage Controls** | Real-data point-in-time research engine and registered reruns | **Diagnostic layer M4.0–M4.7 merged; M4.8 paused after Stage D (PR #275)** | M4.0 local 50-name real-data diagnostic; M4.1 walk-forward ML combination; M4.2 purged and embargoed CPCV; M4.3 multiple-testing diagnostics; M4.4 point-in-time membership and terminal cash; M4.5 optional square-root impact; M4.6 style risk attribution; M4.7 S&P 500 point-in-time universe with registered reruns on real_v1 (PR #268, PR #269, PR #271), gate outcome `extend_first` (holdout sealed). M4.8 Stages A–D merged (PR #272–#275, snapshot `real_v2` built); Stages E–H paused by owner decision on 2026-09-28 because the registered gate cannot reach the 0.02 power floor. Resume point: Stage E on `real_v2`. |
-| **5. Factor Collection & Factor Timing** | Collect many factors; screen them; find which factors earn more or lose less in which market conditions; simulated monthly factor-selection rule | **Active (next)** | Factor catalog seeded from public libraries and broker formulas; factor-timing study on long public factor-return histories (French, AQR, JKP, Open Source Asset Pricing, Hou–Xue–Zhang) with FRED conditioning series; stock-level screen on the local point-in-time S&P 500 snapshots; value and quality factors from SEC as-filed financial data; a frozen shortlist of at most ten checked on the repository's own books after costs. Success test: net return and drawdown against SPY, the equal-weight point-in-time universe, and the equal-weight all-factor mix, with BY across each declared family. Simulation only (R12). |
+| **5. Factor-Class Allocator** | Collect many factors into classes; learn which classes earn more or lose less in real-time market conditions; monthly class allocation turned into a long-only large-cap portfolio; counted discovery of new factors | **Active (next)** | Factor catalog seeded from public libraries and broker formulas; risk-balanced all-class baseline and pre-declared timing questions on long public factor-return histories (French, AQR, JKP, Open Source Asset Pricing, Hou–Xue–Zhang) with FRED condition series; value and quality classes from SEC as-filed data; bridge to long-only point-in-time S&P 500 portfolios with costs on the local snapshots; counted discovery judged against random mining. Success test: net return and maximum drawdown against SPY, a cheap factor-ETF blend, and the risk-balanced baseline, in both halves and after publication, with BY across each declared family. Simulation only (R12). |
 | **6. Automated Execution & Trading Platform** | Live execution and order management | **Future Separately Authorized Scope** | Distinct future progression: candidate comparison and freezing -> independent reproduction -> forward observation -> separately authorized paper trading -> separately authorized small-capital evaluation -> separately authorized live evaluation. Maintained in a separate execution repository owning pre-trade risk limits, position and cash reconciliation, real-time health monitoring, emergency kill switches, broker connectivity, credentials, and live orders; strictly outside the authority of this research repository. No milestone grants authority and no candidate or strategy model has been validated by this documentation task. |
 
 ## Program Position
@@ -204,21 +204,28 @@ Family A minimum detectable effect is 0.031–0.091 against the 0.02 floor, so t
 `extend_first` again. The resume point is Stage E on `real_v2`; the nine Stage D advisories and the M-2 disposition
 carry to that point. The seal window stays unaccessed.
 
-## Milestone 5: Factor Collection And Factor Timing (Active)
+## Milestone 5: Factor-Class Allocator (Active)
 
-1. **Catalog.** One factor catalog (id, source, formula or reference, inputs, horizon, status) seeded from Open
-   Source Asset Pricing, JKP, Hou–Xue–Zhang, French, AQR, WorldQuant 101, Guotai Junan 191, and Qlib Alpha158.
-   Cataloguing needs no review.
-2. **Public factor-timing study.** Long public factor-return histories with at most four declared signals (the
-   factor's trailing return and volatility, market trend, one lagged stress series), walk-forward monthly weights,
-   a switch cost, and comparison with the equal-weight all-factor mix and the market. Diagnostic until bridged.
-3. **Stock-level expansion.** More price-volume factors on the local point-in-time snapshots and value and quality
-   factors from SEC as-filed data, usable from filing date plus one trading day.
-4. **Screen.** One exploration runner over a committed trial family, reporting q-values, costs, and the unpriced
-   share by exit class.
-5. **Bridge.** A shortlist of at most ten, chosen on post-publication public history and frozen, checked on the
-   S&P 500 books after costs.
-6. **Owner report.** A plain-language report, then forward observation of the frozen shortlist.
+Design basis: `coord/reports/north_star_vision_assessment_opus.md`.
+
+1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
+   states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most
+   6 traits and 5 rules, baselines of equal weight, inverse volatility, and the market; the 2026-09-28 audit and
+   probe runs count as trials already seen. One factor catalog (id, source, formula or reference, inputs, horizon,
+   status) seeded from Open Source Asset Pricing, JKP, Hou–Xue–Zhang, French, AQR, WorldQuant 101, Guotai Junan 191,
+   and Qlib Alpha158; cataloguing needs no review.
+2. **Baseline.** Loaders with a SHA-256 manifest for French, JKP (153 factors, 13 themes), and FRED. Walk-forward
+   report of equal weight against inverse volatility across themes and factors, at 20 and 50 bp switch costs, both
+   halves, post-publication months, maximum drawdown, and volatility-forecast accuracy.
+3. **Timing questions.** The declared state tilt and one pooled class-level model, with HAC standard errors, BY
+   correction, a random-date null, and the episode count behind each cell. If the tilt loses to the baseline in
+   either half, the return-timing line closes as a reported negative result.
+4. **Bridge.** Factor classes as long-only top-quintile point-in-time S&P 500 portfolios with costs on the local
+   snapshots, price classes first and SEC as-filed value and quality classes next; the report states how much of
+   the long-short result survives.
+5. **Discovery.** A counted search for new candidates in trait regions that survived, against a random search with
+   the same number of candidates and the Open Source Asset Pricing placebo signals as a control.
+6. **Owner report and freeze.** A plain-language report, a dated freeze, and forward observation.
 
 ## Imperfection Policy And Lightweight Backlog
 
