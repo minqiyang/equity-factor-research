@@ -50,6 +50,43 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Needs follow-up: the two cross-family review seats for the step 2 real-data code and the trial-family freeze
   have not run; the step 2 results were produced before those reviews.
 
+## 2026-09-28 - Milestone 5 step 1: factor catalog seeded with 1,160 rows
+
+- `research/factor_catalog.csv` has 1,160 rows with columns id, source, formula_or_ref, inputs, horizon, status.
+  Rows by source: Open Source Asset Pricing 326 (212 predictors and 114 placebos; the 5 `Drop` rows are left out),
+  Hou-Xue-Zhang 206 (201 testing-portfolio anomalies and 5 q5 factors), Guotai Junan 191, Qlib Alpha158 158,
+  JKP 153, WorldQuant 101 101, Ken French 8, AQR 7, Repository Family A 6, Stambaugh 4.
+- Rows by inputs: ohlcv 450, accounting 335, return_series 176, price 101, analyst 28, trading 23, other 22,
+  options 9, holdings_13f 8, event 8. By horizon: monthly 522, daily 450, annual 179, quarterly 9. By status:
+  cataloged 1,102, implemented 58 (the 52 `def alpha_` functions in `src/features/alphas.py` and the 6 Family A
+  factors in `research/m4_7_family_a.py`, added as `repo.*` rows that name their nearest OSAP and JKP rows).
+- Sources, retrieved 2026-09-28 UTC, with the SHA-256 of each file read:
+  - OSAP `SignalDoc.csv`, `OpenSourceAP/CrossSection` master at `8db89244`:
+    `f6c055120bad7afe97c16e23e0f49bce0982269026605a955e8064bd661cf415`.
+  - JKP `GlobalFactors/Cluster Labels.csv`, `bkelly-lab/ReplicationCrisis` master at `67174c7f`:
+    `22c7fdd214218d1210ab9922efed59bf607538098cc06b6f2c5f326d2e6cf64b`; citations come from the same
+    repository's `Factor Details.xlsx`.
+  - global-q.org `testingportfolios.html` (release 2026-07-30):
+    `227ef76d074085ad69b035dd5c6eecd24e1bf2395fb59bca3e06de1c6cd6ad13`; q5 names from `factors.html`.
+  - Qlib `qlib/contrib/data/loader.py`, `microsoft/qlib` main at `be725493`:
+    `814b7f7ab3d418ae3c87ce352220080b239eba2670eac9e38376b794be4075cb`, read as text; the 158 names follow the
+    `Alpha158DL` default handler config.
+  - Ken French Data Library, AQR Data Sets, and Robert Stambaugh's data page supply series titles. WorldQuant 101
+    and Guotai Junan 191 rows carry IDs and references only. Every source was reachable; no raw data rows are
+    committed.
+- Mapping rules: OSAP inputs follow `Cat.Data`; OSAP horizon follows `Portfolio Period` (1 monthly, 3 and 6
+  quarterly, 12 and 36 annual; the 6, 36, and unstated periods are named in the row). JKP, French, AQR, q5, and
+  Stambaugh traded series use `return_series`, and each JKP row records its theme and a name-based underlying-data
+  tag. HXZ horizon is monthly for a holding-period suffix or a monthly-by-construction anomaly (srev,
+  seasonality) and annual otherwise.
+- Attribution: JKP data, Jensen, Kelly, and Pedersen, jkpfactors.com (CC BY-NC 4.0); Ken French data, Copyright
+  Eugene F. Fama and Kenneth R. French; Qlib Alpha158 expressions, Microsoft Corporation (MIT).
+- `tests/test_factor_catalog.py` checks the column list, row-count band, unique ASCII ids, allowed values, the
+  exact WorldQuant and Family A implemented sets, and the absence of Chinese characters. `.gitignore` gains
+  `data/public_cache/` for raw public downloads; `docs/repo_map.md` is regenerated for the new file counts.
+- Limitations: WorldQuant rows do not flag industry-neutralized or market-cap inputs; the `aqr.UMD` reference names
+  the series without a paper; catalog status says nothing about data availability or screening results.
+
 ## 2026-09-28 - Owner-identified process failure: Chinese text in a PR body; English-only rule and guard test
 
 - Incident (owner, 2026-09-28): the PR #276 body carried a Chinese summary section, and the draft `AGENTS.md`

@@ -1,0 +1,1161 @@
+id,source,formula_or_ref,inputs,horizon,status
+osap.AbnormalAccruals,Open Source Asset Pricing,"OSAP AbnormalAccruals (Abnormal Accruals): Xie (2001), category Accounting",accounting,annual,cataloged
+osap.Accruals,Open Source Asset Pricing,"OSAP Accruals (Accruals): Sloan (1996), category Accounting",accounting,annual,cataloged
+osap.AccrualsBM,Open Source Asset Pricing,"OSAP AccrualsBM (Book-to-market and accruals): Bartov and Kim (2004), category Accounting",accounting,annual,cataloged
+osap.Activism1,Open Source Asset Pricing,"OSAP Activism1 (Takeover vulnerability): Cremers and Nair (2005), category 13F",holdings_13f,monthly,cataloged
+osap.AM,Open Source Asset Pricing,"OSAP AM (Total assets to market): Fama and French (1992), category Accounting",accounting,annual,cataloged
+osap.AnalystRevision,Open Source Asset Pricing,"OSAP AnalystRevision (EPS forecast revision): Hawkins, Chamberlin, Daniel (1984), category Analyst",analyst,monthly,cataloged
+osap.AnnouncementReturn,Open Source Asset Pricing,"OSAP AnnouncementReturn (Earnings announcement return): Chan, Jegadeesh and Lakonishok (1996), category Price",price,monthly,cataloged
+osap.AssetGrowth,Open Source Asset Pricing,"OSAP AssetGrowth (Asset growth): Cooper, Gulen and Schill (2008), category Accounting",accounting,annual,cataloged
+osap.BetaLiquidityPS,Open Source Asset Pricing,"OSAP BetaLiquidityPS (Pastor-Stambaugh liquidity beta): Pastor and Stambaugh (2003), category Price",price,annual,cataloged
+osap.BetaTailRisk,Open Source Asset Pricing,"OSAP BetaTailRisk (Tail risk beta): Kelly and Jiang (2014), category Price",price,annual,cataloged
+osap.betaVIX,Open Source Asset Pricing,"OSAP betaVIX (Systematic volatility): Ang et al. (2006), category Price",price,monthly,cataloged
+osap.BM,Open Source Asset Pricing,"OSAP BM (Book to market, original (Stattman 1980)): Stattman (1980), category Accounting",accounting,annual,cataloged
+osap.BMdec,Open Source Asset Pricing,"OSAP BMdec (Book to market using December ME): Fama and French (1992), category Accounting",accounting,annual,cataloged
+osap.BookLeverage,Open Source Asset Pricing,"OSAP BookLeverage (Book leverage (annual)): Fama and French (1992), category Accounting",accounting,annual,cataloged
+osap.BPEBM,Open Source Asset Pricing,"OSAP BPEBM (Leverage component of BM): Penman, Richardson and Tuna (2007), category Accounting",accounting,annual,cataloged
+osap.Cash,Open Source Asset Pricing,"OSAP Cash (Cash to assets): Palazzo (2012), category Accounting",accounting,monthly,cataloged
+osap.CashProd,Open Source Asset Pricing,"OSAP CashProd (Cash Productivity): Chandrashekar and Rao (2009), category Accounting",accounting,monthly,cataloged
+osap.CBOperProf,Open Source Asset Pricing,"OSAP CBOperProf (Cash-based operating profitability): Ball et al. (2016), category Accounting",accounting,annual,cataloged
+osap.CF,Open Source Asset Pricing,"OSAP CF (Cash flow to market): Lakonishok, Shleifer, Vishny (1994), category Accounting",accounting,annual,cataloged
+osap.cfp,Open Source Asset Pricing,"OSAP cfp (Operating Cash flows to price): Desai, Rajgopal, Venkatachalam (2004), category Accounting",accounting,annual,cataloged
+osap.ChangeInRecommendation,Open Source Asset Pricing,"OSAP ChangeInRecommendation (Change in recommendation): Jegadeesh et al. (2004), category Analyst",analyst,monthly,cataloged
+osap.ChAssetTurnover,Open Source Asset Pricing,"OSAP ChAssetTurnover (Change in Asset Turnover): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.ChEQ,Open Source Asset Pricing,"OSAP ChEQ (Growth in book equity): Lockwood and Prombutr (2010), category Accounting",accounting,annual,cataloged
+osap.ChForecastAccrual,Open Source Asset Pricing,"OSAP ChForecastAccrual (Change in Forecast and Accrual): Barth and Hutton (2004), category Analyst",analyst,annual,cataloged
+osap.ChInv,Open Source Asset Pricing,"OSAP ChInv (Inventory Growth): Thomas and Zhang (2002), category Accounting",accounting,annual,cataloged
+osap.ChInvIA,Open Source Asset Pricing,"OSAP ChInvIA (Change in capital inv (ind adj)): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.ChNAnalyst,Open Source Asset Pricing,"OSAP ChNAnalyst (Decline in Analyst Coverage): Scherbina (2008), category Analyst",analyst,monthly,cataloged
+osap.ChNNCOA,Open Source Asset Pricing,"OSAP ChNNCOA (Change in Net Noncurrent Op Assets): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.ChNWC,Open Source Asset Pricing,"OSAP ChNWC (Change in Net Working Capital): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.ChTax,Open Source Asset Pricing,"OSAP ChTax (Change in Taxes): Thomas and Zhang (2011), category Accounting",accounting,quarterly,cataloged
+osap.CitationsRD,Open Source Asset Pricing,"OSAP CitationsRD (Citations to RD expenses): Hirschleifer, Hsu and Li (2013), category Other",other,annual,cataloged
+osap.CompEquIss,Open Source Asset Pricing,"OSAP CompEquIss (Composite equity issuance): Daniel and Titman (2006), category Accounting",accounting,monthly,cataloged
+osap.CompositeDebtIssuance,Open Source Asset Pricing,"OSAP CompositeDebtIssuance (Composite debt issuance): Lyandres, Sun and Zhang (2008), category Accounting",accounting,annual,cataloged
+osap.ConvDebt,Open Source Asset Pricing,"OSAP ConvDebt (Convertible debt indicator): Valta (2016), category Accounting",accounting,monthly,cataloged
+osap.CoskewACX,Open Source Asset Pricing,"OSAP CoskewACX (Coskewness using daily returns): Ang, Chen and Xing (2006), category Price",price,monthly,cataloged
+osap.CPVolSpread,Open Source Asset Pricing,"OSAP CPVolSpread (Call minus Put Vol): Bali and Hovakimian (2009), category Options",options,monthly,cataloged
+osap.dVolCall,Open Source Asset Pricing,"OSAP dVolCall (Change in call vol): An, Ang, Bali, Cakici (2014), category Options",options,monthly,cataloged
+osap.dVolPut,Open Source Asset Pricing,"OSAP dVolPut (Change in put vol): An, Ang, Bali, Cakici (2014), category Options",options,monthly,cataloged
+osap.dCPVolSpread,Open Source Asset Pricing,"OSAP dCPVolSpread (Change in put vol minus change in call vol): An, Ang, Bali, Cakici (2014), category Options",options,monthly,cataloged
+osap.CredRatDG,Open Source Asset Pricing,"OSAP CredRatDG (Credit Rating Downgrade): Dichev and Piotroski (2001), category Analyst",analyst,monthly,cataloged
+osap.CustomerMomentum,Open Source Asset Pricing,"OSAP CustomerMomentum (Customer momentum): Cohen and Frazzini (2008), category Other",other,monthly,cataloged
+osap.DelBreadth,Open Source Asset Pricing,"OSAP DelBreadth (Breadth of ownership): Chen, Hong and Stein (2002), category 13F",holdings_13f,quarterly,cataloged
+osap.DelCOA,Open Source Asset Pricing,"OSAP DelCOA (Change in current operating assets): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DelCOL,Open Source Asset Pricing,"OSAP DelCOL (Change in current operating liabilities): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DelEqu,Open Source Asset Pricing,"OSAP DelEqu (Change in equity to assets): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DelFINL,Open Source Asset Pricing,"OSAP DelFINL (Change in financial liabilities): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DelLTI,Open Source Asset Pricing,"OSAP DelLTI (Change in long-term investment): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DelNetFin,Open Source Asset Pricing,"OSAP DelNetFin (Change in net financial assets): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DivInit,Open Source Asset Pricing,"OSAP DivInit (Dividend Initiation): Michaely, Thaler and Womack (1995), category Event",event,monthly,cataloged
+osap.DivOmit,Open Source Asset Pricing,"OSAP DivOmit (Dividend Omission): Michaely, Thaler and Womack (1995), category Event",event,monthly,cataloged
+osap.DivSeason,Open Source Asset Pricing,"OSAP DivSeason (Dividend seasonality): Hartzmark and Salomon (2013), category Event",event,monthly,cataloged
+osap.DivYieldST,Open Source Asset Pricing,"OSAP DivYieldST (Predicted div yield next month): Litzenberger and Ramaswamy (1979), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.dNoa,Open Source Asset Pricing,"OSAP dNoa (change in net operating assets): Hirshleifer, Hou, Teoh, Zhang (2004), category Accounting",accounting,monthly,cataloged
+osap.DolVol,Open Source Asset Pricing,"OSAP DolVol (Past trading volume): Brennan, Chordia, Subra (1998), category Trading",trading,monthly,cataloged
+osap.EarningsConsistency,Open Source Asset Pricing,"OSAP EarningsConsistency (Earnings consistency): Alwathainani (2009), category Accounting",accounting,annual,cataloged
+osap.EarningsForecastDisparity,Open Source Asset Pricing,"OSAP EarningsForecastDisparity (Long-vs-short EPS forecasts): Da and Warachka (2011), category Analyst",analyst,monthly,cataloged
+osap.EarningsStreak,Open Source Asset Pricing,"OSAP EarningsStreak (Earnings surprise streak): Loh and Warachka (2012), category Accounting",accounting,monthly,cataloged
+osap.EarningsSurprise,Open Source Asset Pricing,"OSAP EarningsSurprise (Earnings Surprise): Foster, Olsen and Shevlin (1984), category Accounting",accounting,monthly,cataloged
+osap.EarnSupBig,Open Source Asset Pricing,"OSAP EarnSupBig (Earnings surprise of big firms): Hou (2007), category Accounting",accounting,monthly,cataloged
+osap.EBM,Open Source Asset Pricing,"OSAP EBM (Enterprise component of BM): Penman, Richardson and Tuna (2007), category Accounting",accounting,annual,cataloged
+osap.EntMult,Open Source Asset Pricing,"OSAP EntMult (Enterprise Multiple): Loughran and Wellman (2011), category Accounting",accounting,annual,cataloged
+osap.EP,Open Source Asset Pricing,"OSAP EP (Earnings-to-Price Ratio): Basu (1977), category Accounting",accounting,monthly,cataloged
+osap.EquityDuration,Open Source Asset Pricing,"OSAP EquityDuration (Equity Duration): Dechow, Sloan and Soliman (2004), category Accounting",accounting,annual,cataloged
+osap.ExchSwitch,Open Source Asset Pricing,"OSAP ExchSwitch (Exchange Switch): Dharan and Ikenberry (1995), category Event",event,monthly,cataloged
+osap.ExclExp,Open Source Asset Pricing,"OSAP ExclExp (Excluded Expenses): Doyle, Lundholm and Soliman (2003), category Analyst",analyst,annual,cataloged
+osap.FEPS,Open Source Asset Pricing,"OSAP FEPS (Analyst earnings per share): Cen, Wei, and Zhang (2006), category Analyst",analyst,monthly,cataloged
+osap.fgr5yrLag,Open Source Asset Pricing,"OSAP fgr5yrLag (Long-term EPS forecast): La Porta (1996), category Analyst",analyst,quarterly,cataloged
+osap.FirmAgeMom,Open Source Asset Pricing,"OSAP FirmAgeMom (Firm Age - Momentum): Zhang (2006), category Price",price,monthly,cataloged
+osap.ForecastDispersion,Open Source Asset Pricing,"OSAP ForecastDispersion (EPS Forecast Dispersion): Diether, Malloy and Scherbina (2002), category Analyst",analyst,monthly,cataloged
+osap.Frontier,Open Source Asset Pricing,"OSAP Frontier (Efficient frontier index): Nguyen and Swanson (2009), category Accounting",accounting,annual,cataloged
+osap.Governance,Open Source Asset Pricing,"OSAP Governance (Governance Index): Gompers, Ishii and Metrick (2003), category Other",other,monthly,cataloged
+osap.GP,Open Source Asset Pricing,"OSAP GP (gross profits / total assets): Novy-Marx (2013), category Accounting",accounting,annual,cataloged
+osap.GrAdExp,Open Source Asset Pricing,"OSAP GrAdExp (Growth in advertising expenses): Lou (2014), category Accounting",accounting,monthly,cataloged
+osap.grcapx,Open Source Asset Pricing,"OSAP grcapx (Change in capex (two years)): Anderson and Garcia-Feijoo (2006), category Accounting",accounting,annual,cataloged
+osap.grcapx3y,Open Source Asset Pricing,"OSAP grcapx3y (Change in capex (three years)): Anderson and Garcia-Feijoo (2006), category Accounting",accounting,annual,cataloged
+osap.Herf,Open Source Asset Pricing,"OSAP Herf (Industry concentration (sales)): Hou and Robinson (2006), category Other",other,monthly,cataloged
+osap.HerfBE,Open Source Asset Pricing,"OSAP HerfBE (Industry concentration (equity)): Hou and Robinson (2006), category Other",other,monthly,cataloged
+osap.hire,Open Source Asset Pricing,"OSAP hire (Employment growth): Bazdresch, Belo and Lin (2014), category Other",other,annual,cataloged
+osap.IdioVol3F,Open Source Asset Pricing,"OSAP IdioVol3F (Idiosyncratic risk (3 factor)): Ang et al. (2006), category Price",price,monthly,cataloged
+osap.IdioVolAHT,Open Source Asset Pricing,"OSAP IdioVolAHT (Idiosyncratic risk (AHT)): Ali, Hwang, and Trombley (2003), category Price, portfolio period 36 months",price,annual,cataloged
+osap.Illiquidity,Open Source Asset Pricing,"OSAP Illiquidity (Amihud's illiquidity): Amihud (2002), category Trading",trading,annual,cataloged
+osap.IndIPO,Open Source Asset Pricing,"OSAP IndIPO (Initial Public Offerings): Ritter (1991), category Event",event,monthly,cataloged
+osap.IndMom,Open Source Asset Pricing,"OSAP IndMom (Industry Momentum): Grinblatt and Moskowitz (1999), category Price, portfolio period 6 months",price,quarterly,cataloged
+osap.IndRetBig,Open Source Asset Pricing,"OSAP IndRetBig (Industry return of big firms): Hou (2007), category Price",price,monthly,cataloged
+osap.IntanBM,Open Source Asset Pricing,"OSAP IntanBM (Intangible return using BM): Daniel and Titman (2006), category Accounting",accounting,monthly,cataloged
+osap.IntanCFP,Open Source Asset Pricing,"OSAP IntanCFP (Intangible return using CFtoP): Daniel and Titman (2006), category Accounting",accounting,monthly,cataloged
+osap.IntanEP,Open Source Asset Pricing,"OSAP IntanEP (Intangible return using EP): Daniel and Titman (2006), category Accounting",accounting,annual,cataloged
+osap.IntanSP,Open Source Asset Pricing,"OSAP IntanSP (Intangible return using Sale2P): Daniel and Titman (2006), category Accounting",accounting,annual,cataloged
+osap.IntMom,Open Source Asset Pricing,"OSAP IntMom (Intermediate Momentum): Novy-Marx (2012), category Price",price,monthly,cataloged
+osap.Investment,Open Source Asset Pricing,"OSAP Investment (Investment to revenue): Titman, Wei and Xie (2004), category Accounting",accounting,annual,cataloged
+osap.InvestPPEInv,Open Source Asset Pricing,"OSAP InvestPPEInv (change in ppe and inv/assets): Lyandres, Sun and Zhang (2008), category Accounting",accounting,monthly,cataloged
+osap.InvGrowth,Open Source Asset Pricing,"OSAP InvGrowth (Inventory Growth): Belo and Lin (2012), category Accounting",accounting,annual,cataloged
+osap.iomom_cust,Open Source Asset Pricing,"OSAP iomom_cust (Customers momentum): Menzly and Ozbas (2010), category Other",other,monthly,cataloged
+osap.iomom_supp,Open Source Asset Pricing,"OSAP iomom_supp (Suppliers momentum): Menzly and Ozbas (2010), category Other",other,monthly,cataloged
+osap.Leverage,Open Source Asset Pricing,"OSAP Leverage (Market leverage): Bhandari (1988), category Accounting",accounting,annual,cataloged
+osap.LRreversal,Open Source Asset Pricing,"OSAP LRreversal (Long-run reversal): De Bondt and Thaler (1985), category Price",price,monthly,cataloged
+osap.MaxRet,Open Source Asset Pricing,"OSAP MaxRet (Maximum return over month): Bali, Cakici, and Whitelaw (2011), category Price",price,monthly,cataloged
+osap.MeanRankRevGrowth,Open Source Asset Pricing,"OSAP MeanRankRevGrowth (Revenue Growth Rank): Lakonishok, Shleifer, Vishny (1994), category Accounting",accounting,annual,cataloged
+osap.Mom12m,Open Source Asset Pricing,"OSAP Mom12m (Momentum (12 month)): Jegadeesh and Titman (1993), category Price",price,quarterly,cataloged
+osap.Mom12mOffSeason,Open Source Asset Pricing,"OSAP Mom12mOffSeason (Momentum without the seasonal part): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.Mom6m,Open Source Asset Pricing,"OSAP Mom6m (Momentum (6 month)): Jegadeesh and Titman (1993), category Price",price,quarterly,cataloged
+osap.Mom6mJunk,Open Source Asset Pricing,"OSAP Mom6mJunk (Junk Stock Momentum): Avramov et al (2007), category Price",price,monthly,cataloged
+osap.MomOffSeason,Open Source Asset Pricing,"OSAP MomOffSeason (Off season long-term reversal): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomOffSeason06YrPlus,Open Source Asset Pricing,"OSAP MomOffSeason06YrPlus (Off season reversal years 6 to 10): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomOffSeason16YrPlus,Open Source Asset Pricing,"OSAP MomOffSeason16YrPlus (Off season reversal years 16 to 20): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomRev,Open Source Asset Pricing,"OSAP MomRev (Momentum and LT Reversal): Chan and Ko (2006), category Price",price,quarterly,cataloged
+osap.MomSeason,Open Source Asset Pricing,"OSAP MomSeason (Return seasonality years 2 to 5): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomSeason06YrPlus,Open Source Asset Pricing,"OSAP MomSeason06YrPlus (Return seasonality years 6 to 10): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomSeason11YrPlus,Open Source Asset Pricing,"OSAP MomSeason11YrPlus (Return seasonality years 11 to 15): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomSeason16YrPlus,Open Source Asset Pricing,"OSAP MomSeason16YrPlus (Return seasonality years 16 to 20): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomSeasonShort,Open Source Asset Pricing,"OSAP MomSeasonShort (Return seasonality last year): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MomVol,Open Source Asset Pricing,"OSAP MomVol (Momentum in high volume stocks): Lee and Swaminathan (2000), category Price",price,quarterly,cataloged
+osap.MS,Open Source Asset Pricing,"OSAP MS (Mohanram G-score): Mohanram (2005), category Accounting",accounting,monthly,cataloged
+osap.NetDebtFinance,Open Source Asset Pricing,"OSAP NetDebtFinance (Net debt financing): Bradshaw, Richardson, Sloan (2006), category Accounting",accounting,annual,cataloged
+osap.NetDebtPrice,Open Source Asset Pricing,"OSAP NetDebtPrice (Net debt to price): Penman, Richardson and Tuna (2007), category Accounting",accounting,annual,cataloged
+osap.NetEquityFinance,Open Source Asset Pricing,"OSAP NetEquityFinance (Net equity financing): Bradshaw, Richardson, Sloan (2006), category Accounting",accounting,annual,cataloged
+osap.NetPayoutYield,Open Source Asset Pricing,"OSAP NetPayoutYield (Net Payout Yield): Boudoukh et al. (2007), category Accounting",accounting,annual,cataloged
+osap.NOA,Open Source Asset Pricing,"OSAP NOA (Net Operating Assets): Hirshleifer et al. (2004), category Accounting",accounting,monthly,cataloged
+osap.OPLeverage,Open Source Asset Pricing,"OSAP OPLeverage (Operating leverage): Novy-Marx (2011), category Accounting",accounting,annual,cataloged
+osap.OptionVolume1,Open Source Asset Pricing,"OSAP OptionVolume1 (Option to stock volume): Johnson and So (2012), category Options",options,monthly,cataloged
+osap.OrderBacklog,Open Source Asset Pricing,"OSAP OrderBacklog (Order backlog): Rajgopal, Shevlin, Venkatachalam (2003), category Accounting",accounting,annual,cataloged
+osap.OrderBacklogChg,Open Source Asset Pricing,"OSAP OrderBacklogChg (Change in order backlog): Baik and Ahn (2007), category Accounting",accounting,annual,cataloged
+osap.OrgCap,Open Source Asset Pricing,"OSAP OrgCap (Organizational capital): Eisfeldt and Papanikolaou (2013), category Accounting",accounting,annual,cataloged
+osap.OScore,Open Source Asset Pricing,"OSAP OScore (O Score): Dichev (1998), category Accounting",accounting,monthly,cataloged
+osap.PatentsRD,Open Source Asset Pricing,"OSAP PatentsRD (Patents to RD expenses): Hirschleifer, Hsu and Li (2013), category Other",other,annual,cataloged
+osap.PayoutYield,Open Source Asset Pricing,"OSAP PayoutYield (Payout Yield): Boudoukh et al. (2007), category Accounting",accounting,annual,cataloged
+osap.PctAcc,Open Source Asset Pricing,"OSAP PctAcc (Percent Operating Accruals): Hafzalla, Lundholm, Van Winkle (2011), category Accounting",accounting,annual,cataloged
+osap.PctTotAcc,Open Source Asset Pricing,"OSAP PctTotAcc (Percent Total Accruals): Hafzalla, Lundholm, Van Winkle (2011), category Accounting",accounting,annual,cataloged
+osap.Price,Open Source Asset Pricing,"OSAP Price (Price): Blume and Husic (1973), category Price",price,monthly,cataloged
+osap.PriceDelayRsq,Open Source Asset Pricing,"OSAP PriceDelayRsq (Price delay r square): Hou and Moskowitz (2005), category Price",price,annual,cataloged
+osap.PS,Open Source Asset Pricing,"OSAP PS (Piotroski F-score): Piotroski (2000), category Accounting",accounting,monthly,cataloged
+osap.RD,Open Source Asset Pricing,"OSAP RD (R&D over market cap): Chan, Lakonishok and Sougiannis (2001), category Accounting",accounting,annual,cataloged
+osap.RDAbility,Open Source Asset Pricing,"OSAP RDAbility (R&D ability): Cohen, Diether and Malloy (2013), category Accounting",accounting,monthly,cataloged
+osap.RDcap,Open Source Asset Pricing,"OSAP RDcap (R&D capital-to-assets): Li (2011), category Accounting",accounting,annual,cataloged
+osap.RDIPO,Open Source Asset Pricing,"OSAP RDIPO (IPO and no R&D spending): Gou, Lev and Shi (2006), category Event",event,monthly,cataloged
+osap.RDS,Open Source Asset Pricing,"OSAP RDS (Real dirty surplus): Landsman et al. (2011), category Accounting",accounting,annual,cataloged
+osap.RealizedVol,Open Source Asset Pricing,"OSAP RealizedVol (Realized (Total) Volatility): Ang et al. (2006), category Price",price,monthly,cataloged
+osap.Recomm_ShortInterest,Open Source Asset Pricing,"OSAP Recomm_ShortInterest (Analyst Recommendations and Short-Interest): Drake, Rees and Swanson (2011), category Analyst",analyst,monthly,cataloged
+osap.ResidualMomentum,Open Source Asset Pricing,"OSAP ResidualMomentum (Momentum based on FF3 residuals): Blitz, Huij and Martens (2011), category Price",price,monthly,cataloged
+osap.retConglomerate,Open Source Asset Pricing,"OSAP retConglomerate (Conglomerate return): Cohen and Lou (2012), category Price",price,monthly,cataloged
+osap.ReturnSkew,Open Source Asset Pricing,"OSAP ReturnSkew (Return skewness): Bali, Engle and Murray (2015), category Price",price,monthly,cataloged
+osap.ReturnSkew3F,Open Source Asset Pricing,"OSAP ReturnSkew3F (Idiosyncratic skewness (3F model)): Bali, Engle and Murray (2015), category Price",price,monthly,cataloged
+osap.REV6,Open Source Asset Pricing,"OSAP REV6 (Earnings forecast revisions): Chan, Jegadeesh and Lakonishok (1996), category Analyst",analyst,monthly,cataloged
+osap.RevenueSurprise,Open Source Asset Pricing,"OSAP RevenueSurprise (Revenue Surprise): Jegadeesh and Livnat (2006), category Accounting",accounting,monthly,cataloged
+osap.RIO_Disp,Open Source Asset Pricing,"OSAP RIO_Disp (Inst Own and Forecast Dispersion): Nagel (2005), category 13F",holdings_13f,monthly,cataloged
+osap.RIO_MB,Open Source Asset Pricing,"OSAP RIO_MB (Inst Own and Market to Book): Nagel (2005), category 13F",holdings_13f,monthly,cataloged
+osap.RIO_Turnover,Open Source Asset Pricing,"OSAP RIO_Turnover (Inst Own and Turnover): Nagel (2005), category 13F",holdings_13f,monthly,cataloged
+osap.RIO_Volatility,Open Source Asset Pricing,"OSAP RIO_Volatility (Inst Own and Idio Vol): Nagel (2005), category 13F",holdings_13f,monthly,cataloged
+osap.RIVolSpread,Open Source Asset Pricing,"OSAP RIVolSpread (Realized minus Implied Vol): Bali and Hovakimian (2009), category Options",options,monthly,cataloged
+osap.roaq,Open Source Asset Pricing,"OSAP roaq (Return on assets (qtrly)): Balakrishnan, Bartov and Faurel (2010), category Accounting",accounting,monthly,cataloged
+osap.sfe,Open Source Asset Pricing,"OSAP sfe (Earnings Forecast to price): Elgers, Lo and Pfeiffer (2001), category Analyst",analyst,annual,cataloged
+osap.ShareIss1Y,Open Source Asset Pricing,"OSAP ShareIss1Y (Share issuance (1 year)): Pontiff and Woodgate (2008), category Accounting",accounting,annual,cataloged
+osap.ShareIss5Y,Open Source Asset Pricing,"OSAP ShareIss5Y (Share issuance (5 year)): Daniel and Titman (2006), category Accounting",accounting,annual,cataloged
+osap.ShareVol,Open Source Asset Pricing,"OSAP ShareVol (Share Volume): Datar, Naik and Radcliffe (1998), category Trading",trading,annual,cataloged
+osap.Size,Open Source Asset Pricing,"OSAP Size (Size): Banz (1981), category Price",price,annual,cataloged
+osap.SmileSlope,Open Source Asset Pricing,"OSAP SmileSlope (Put volatility minus call volatility): Yan (2011), category Options",options,monthly,cataloged
+osap.std_turn,Open Source Asset Pricing,"OSAP std_turn (Share turnover volatility): Chordia, Subra, Anshuman (2001), category Trading",trading,monthly,cataloged
+osap.STreversal,Open Source Asset Pricing,"OSAP STreversal (Short term reversal): Jegadeesh (1990), category Price",price,monthly,cataloged
+osap.SurpriseRD,Open Source Asset Pricing,"OSAP SurpriseRD (Unexpected R&D increase): Eberhart, Maxwell and Siddique (2004), category Accounting",accounting,monthly,cataloged
+osap.tang,Open Source Asset Pricing,"OSAP tang (Tangibility): Hahn and Lee (2009), category Accounting",accounting,monthly,cataloged
+osap.Tax,Open Source Asset Pricing,"OSAP Tax (Taxable income to income): Lev and Nissim (2004), category Accounting",accounting,annual,cataloged
+osap.TotalAccruals,Open Source Asset Pricing,"OSAP TotalAccruals (Total accruals): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.TrendFactor,Open Source Asset Pricing,"OSAP TrendFactor (Trend Factor): Han, Zhou, Zhu (2016), category Price",price,monthly,cataloged
+osap.VolSD,Open Source Asset Pricing,"OSAP VolSD (Volume Variance): Chordia, Subra, Anshuman (2001), category Trading",trading,monthly,cataloged
+osap.XFIN,Open Source Asset Pricing,"OSAP XFIN (Net external financing): Bradshaw, Richardson, Sloan (2006), category Accounting",accounting,annual,cataloged
+osap.zerotrade6M,Open Source Asset Pricing,"OSAP zerotrade6M (Days with zero trades): Liu (2006), category Trading",trading,monthly,cataloged
+osap.zerotrade1M,Open Source Asset Pricing,"OSAP zerotrade1M (Days with zero trades): Liu (2006), category Trading",trading,annual,cataloged
+osap.zerotrade12M,Open Source Asset Pricing,"OSAP zerotrade12M (Days with zero trades): Liu (2006), category Trading",trading,monthly,cataloged
+osap.Activism2,Open Source Asset Pricing,"OSAP Activism2 (Active shareholders): Cremers and Nair (2005), category 13F",holdings_13f,monthly,cataloged
+osap.AdExp,Open Source Asset Pricing,"OSAP AdExp (Advertising Expense): Chan, Lakonishok and Sougiannis (2001), category Accounting",accounting,annual,cataloged
+osap.AgeIPO,Open Source Asset Pricing,"OSAP AgeIPO (IPO and age): Ritter (1991), category Event",event,monthly,cataloged
+osap.AnalystValue,Open Source Asset Pricing,"OSAP AnalystValue (Analyst Value): Frankel and Lee (1998), category Analyst",analyst,annual,cataloged
+osap.AOP,Open Source Asset Pricing,"OSAP AOP (Analyst Optimism): Frankel and Lee (1998), category Analyst",analyst,annual,cataloged
+osap.Beta,Open Source Asset Pricing,"OSAP Beta (CAPM beta): Fama and MacBeth (1973), category Price",price,monthly,cataloged
+osap.BetaFP,Open Source Asset Pricing,"OSAP BetaFP (Frazzini-Pedersen Beta): Frazzini and Pedersen (2014), category Price",price,monthly,cataloged
+osap.BidAskSpread,Open Source Asset Pricing,"OSAP BidAskSpread (Bid-ask spread): Amihud and Mendelson (1986), category Trading",trading,monthly,cataloged
+osap.BrandInvest,Open Source Asset Pricing,"OSAP BrandInvest (Brand capital investment): Belo, Lin and Vitorino (2014), category Accounting",accounting,annual,cataloged
+osap.ConsRecomm,Open Source Asset Pricing,"OSAP ConsRecomm (Consensus Recommendation): Barber et al. (2001), category Analyst",analyst,monthly,cataloged
+osap.Coskewness,Open Source Asset Pricing,"OSAP Coskewness (Coskewness): Harvey and Siddique (2000), category Price",price,monthly,cataloged
+osap.DebtIssuance,Open Source Asset Pricing,"OSAP DebtIssuance (Debt Issuance): Spiess and Affleck-Graves (1999), category Accounting",accounting,monthly,cataloged
+osap.DelDRC,Open Source Asset Pricing,"OSAP DelDRC (Deferred Revenue): Prakash and Sinha (2013), category Accounting",accounting,monthly,cataloged
+osap.DownRecomm,Open Source Asset Pricing,"OSAP DownRecomm (Down forecast EPS): Barber et al. (2001), category Analyst",analyst,monthly,cataloged
+osap.FirmAge,Open Source Asset Pricing,"OSAP FirmAge (Firm age based on CRSP): Barry and Brown (1984), category Other",other,monthly,cataloged
+osap.FR,Open Source Asset Pricing,"OSAP FR (Pension Funding Status): Franzoni and Marin (2006), category Accounting",accounting,annual,cataloged
+osap.GrLTNOA,Open Source Asset Pricing,"OSAP GrLTNOA (Growth in long term operating assets): Fairfield, Whisenant and Yohn (2003), category Accounting",accounting,annual,cataloged
+osap.GrSaleToGrInv,Open Source Asset Pricing,"OSAP GrSaleToGrInv (Sales growth over inventory growth): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.GrSaleToGrOverhead,Open Source Asset Pricing,"OSAP GrSaleToGrOverhead (Sales growth over overhead growth): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.HerfAsset,Open Source Asset Pricing,"OSAP HerfAsset (Industry concentration (assets)): Hou and Robinson (2006), category Other",other,monthly,cataloged
+osap.High52,Open Source Asset Pricing,"OSAP High52 (52 week high): George and Hwang (2004), category Price, portfolio period 6 months",price,quarterly,cataloged
+osap.IO_ShortInterest,Open Source Asset Pricing,"OSAP IO_ShortInterest (Inst own among high short interest): Asquith Pathak and Ritter (2005), category 13F",holdings_13f,monthly,cataloged
+osap.MomOffSeason11YrPlus,Open Source Asset Pricing,"OSAP MomOffSeason11YrPlus (Off season reversal years 11 to 15): Heston and Sadka (2008), category Price",price,monthly,cataloged
+osap.MRreversal,Open Source Asset Pricing,"OSAP MRreversal (Medium-run reversal): De Bondt and Thaler (1985), category Price",price,annual,cataloged
+osap.NumEarnIncrease,Open Source Asset Pricing,"OSAP NumEarnIncrease (Earnings streak length): Loh and Warachka (2012), category Accounting",accounting,monthly,cataloged
+osap.OperProf,Open Source Asset Pricing,"OSAP OperProf (operating profits / book equity): Fama and French (2006), category Accounting",accounting,annual,cataloged
+osap.OperProfRD,Open Source Asset Pricing,"OSAP OperProfRD (Operating profitability R&D adjusted): Ball et al. (2016), category Accounting",accounting,annual,cataloged
+osap.OptionVolume2,Open Source Asset Pricing,"OSAP OptionVolume2 (Option volume to average): Johnson and So (2012), category Options",options,monthly,cataloged
+osap.PredictedFE,Open Source Asset Pricing,"OSAP PredictedFE (Predicted Analyst forecast error): Frankel and Lee (1998), category Accounting",accounting,annual,cataloged
+osap.PriceDelaySlope,Open Source Asset Pricing,"OSAP PriceDelaySlope (Price delay coeff): Hou and Moskowitz (2005), category Price",price,annual,cataloged
+osap.PriceDelayTstat,Open Source Asset Pricing,"OSAP PriceDelayTstat (Price delay SE adjusted): Hou and Moskowitz (2005), category Price",price,annual,cataloged
+osap.ProbInformedTrading,Open Source Asset Pricing,"OSAP ProbInformedTrading (Probability of Informed Trading): Easley, Hvidkjaer and O'Hara (2002), category Trading",trading,monthly,cataloged
+osap.realestate,Open Source Asset Pricing,"OSAP realestate (Real estate holdings): Tuzel (2010), category Accounting",accounting,annual,cataloged
+osap.RoE,Open Source Asset Pricing,"OSAP RoE (net income / book equity): Haugen and Baker (1996), category Accounting",accounting,annual,cataloged
+osap.ShareRepurchase,Open Source Asset Pricing,"OSAP ShareRepurchase (Share repurchases): Ikenberry, Lakonishok, Vermaelen (1995), category Accounting",accounting,annual,cataloged
+osap.ShortInterest,Open Source Asset Pricing,"OSAP ShortInterest (Short Interest): Dechow et al. (2001), category Trading",trading,monthly,cataloged
+osap.sinAlgo,Open Source Asset Pricing,"OSAP sinAlgo (Sin Stock (selection criteria)): Hong and Kacperczyk (2009), category Other",other,monthly,cataloged
+osap.skew1,Open Source Asset Pricing,"OSAP skew1 (Volatility smirk near the money): Xing, Zhang and Zhao (2010), category Options",options,monthly,cataloged
+osap.SP,Open Source Asset Pricing,"OSAP SP (Sales-to-price): Barbee, Mukherji and Raines (1996), category Accounting",accounting,annual,cataloged
+osap.Spinoff,Open Source Asset Pricing,"OSAP Spinoff (Spinoffs): Cusatis, Miles and Woolridge (1993), category Event",event,monthly,cataloged
+osap.UpRecomm,Open Source Asset Pricing,"OSAP UpRecomm (Up Forecast): Barber et al. (2001), category Analyst",analyst,monthly,cataloged
+osap.VarCF,Open Source Asset Pricing,"OSAP VarCF (Cash-flow to price variance): Haugen and Baker (1996), category Accounting",accounting,annual,cataloged
+osap.VolMkt,Open Source Asset Pricing,"OSAP VolMkt (Volume to market equity): Haugen and Baker (1996), category Trading",trading,annual,cataloged
+osap.VolumeTrend,Open Source Asset Pricing,"OSAP VolumeTrend (Volume Trend): Haugen and Baker (1996), category Trading",trading,annual,cataloged
+osap.BetaBDLeverage,Open Source Asset Pricing,"OSAP placebo BetaBDLeverage (Broker-Dealer Leverage Beta): Adrian, Etula and Muir (2014), category Trading",trading,annual,cataloged
+osap.BetaSquared,Open Source Asset Pricing,"OSAP placebo BetaSquared (CAPM beta squred): Fama and MacBeth (1973), category Price",price,monthly,cataloged
+osap.BidAskTAQ,Open Source Asset Pricing,"OSAP placebo BidAskTAQ (Bid-ask spread (TAQ)): Hou and Loh (2016), category Trading",trading,annual,cataloged
+osap.DelayAcct,Open Source Asset Pricing,"OSAP placebo DelayAcct (Accounting component of price delay): Callen, Khan and Lu (2013), category Accounting",accounting,annual,cataloged
+osap.DelayNonAcct,Open Source Asset Pricing,"OSAP placebo DelayNonAcct (Non-accounting component of price delay): Callen, Khan and Lu (2013), category Accounting",accounting,annual,cataloged
+osap.DelSTI,Open Source Asset Pricing,"OSAP placebo DelSTI (Change in short-term investment): Richardson et al. (2005), category Accounting",accounting,annual,cataloged
+osap.DownsideBeta,Open Source Asset Pricing,"OSAP placebo DownsideBeta (Downside beta): Ang, Chen and Xing (2006), category Price",price,monthly,cataloged
+osap.FailureProbability,Open Source Asset Pricing,"OSAP placebo FailureProbability (Failure probability): Campbell, Hilscher and Szilagyi (2008), category Accounting",accounting,annual,cataloged
+osap.ForecastDispersionLT,Open Source Asset Pricing,"OSAP placebo ForecastDispersionLT (Long-term forecast dispersion): Anderson, Ghysels, and Juergens (2005), category Analyst",analyst,monthly,cataloged
+osap.KZ,Open Source Asset Pricing,"OSAP placebo KZ (Kaplan Zingales index): Lamont, Polk and Saa-Requejo (2001), category Accounting",accounting,annual,cataloged
+osap.rd_sale,Open Source Asset Pricing,"OSAP placebo rd_sale (R&D to sales): Chan, Lakonishok and Sougiannis (2001), category Accounting",accounting,annual,cataloged
+osap.roic,Open Source Asset Pricing,"OSAP placebo roic (Return on invested capital): Brown and Rowe (2007), category Accounting",accounting,annual,cataloged
+osap.WW,Open Source Asset Pricing,"OSAP placebo WW (Whited-Wu index): Whited and Wu (2006), category Accounting",accounting,annual,cataloged
+osap.ZScore,Open Source Asset Pricing,"OSAP placebo ZScore (Altman Z-Score): Dichev (1998), category Accounting",accounting,monthly,cataloged
+osap.AbnormalAccrualsPercent,Open Source Asset Pricing,"OSAP placebo AbnormalAccrualsPercent (Percent Abnormal Accruals): Hafzalla, Lundholm, Van Winkle (2011), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AccrualQuality,Open Source Asset Pricing,"OSAP placebo AccrualQuality (Accrual Quality): Francis, LaFond, Olsson, Schipper (2005), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AccrualQualityJune,Open Source Asset Pricing,"OSAP placebo AccrualQualityJune (Accrual Quality in June): Francis, LaFond, Olsson, Schipper (2005), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AMq,Open Source Asset Pricing,"OSAP placebo AMq (Total assets to market (quarterly)): Fama and French (1992), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetGrowth_q,Open Source Asset Pricing,"OSAP placebo AssetGrowth_q (Asset growth quarterly): Cooper, Gulen and Schill (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetLiquidityBook,Open Source Asset Pricing,"OSAP placebo AssetLiquidityBook (Asset liquidity over book assets): Ortiz-Molina and Phillips (2014), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetLiquidityBookQuart,Open Source Asset Pricing,"OSAP placebo AssetLiquidityBookQuart (Asset liquidity over book (qtrly)): Ortiz-Molina and Phillips (2014), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetLiquidityMarket,Open Source Asset Pricing,"OSAP placebo AssetLiquidityMarket (Asset liquidity over market): Ortiz-Molina and Phillips (2014), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetLiquidityMarketQuart,Open Source Asset Pricing,"OSAP placebo AssetLiquidityMarketQuart (Asset liquidity over market (qtrly)): Ortiz-Molina and Phillips (2014), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.AssetTurnover,Open Source Asset Pricing,"OSAP placebo AssetTurnover (Asset Turnover): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.AssetTurnover_q,Open Source Asset Pricing,"OSAP placebo AssetTurnover_q (Asset Turnover): Soliman (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.betaCC,Open Source Asset Pricing,"OSAP placebo betaCC (Illiquidity-illiquidity beta (beta2i)): Acharya and Pedersen (2005), category Trading, portfolio period not stated (cataloged monthly)",trading,monthly,cataloged
+osap.betaCR,Open Source Asset Pricing,"OSAP placebo betaCR (Illiquidity-market return beta (beta4i)): Acharya and Pedersen (2005), category Trading, portfolio period not stated (cataloged monthly)",trading,monthly,cataloged
+osap.BetaDimson,Open Source Asset Pricing,"OSAP placebo BetaDimson (Dimson Beta): Dimson (1979), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.betaNet,Open Source Asset Pricing,"OSAP placebo betaNet (Net liquidity beta (betanet,p)): Acharya and Pedersen (2005), category Trading, portfolio period not stated (cataloged monthly)",trading,monthly,cataloged
+osap.betaRC,Open Source Asset Pricing,"OSAP placebo betaRC (Return-market illiquidity beta): Acharya and Pedersen (2005), category Trading, portfolio period not stated (cataloged monthly)",trading,monthly,cataloged
+osap.betaRR,Open Source Asset Pricing,"OSAP placebo betaRR (Return-market return illiquidity beta): Acharya and Pedersen (2005), category Trading, portfolio period not stated (cataloged monthly)",trading,monthly,cataloged
+osap.BMq,Open Source Asset Pricing,"OSAP placebo BMq (Book to market (quarterly)): Rosenberg, Reid, and Lanstein (1985), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.BookLeverageQuarterly,Open Source Asset Pricing,"OSAP placebo BookLeverageQuarterly (Book leverage (quarterly)): Fama and French (1992), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.BrandCapital,Open Source Asset Pricing,"OSAP placebo BrandCapital (Brand capital to assets): Belo, Lin and Vitorino (2014), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.CapTurnover,Open Source Asset Pricing,"OSAP placebo CapTurnover (Capital turnover): Haugen and Baker (1996), category Accounting",accounting,monthly,cataloged
+osap.CapTurnover_q,Open Source Asset Pricing,"OSAP placebo CapTurnover_q (Capital turnover (quarterly)): Haugen and Baker (1996), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.cashdebt,Open Source Asset Pricing,"OSAP placebo cashdebt (CF to debt): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.CBOperProfLagAT,Open Source Asset Pricing,"OSAP placebo CBOperProfLagAT (Cash-based oper prof lagged assets): Ball et al. (2016), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.CBOperProfLagAT_q,Open Source Asset Pricing,"OSAP placebo CBOperProfLagAT_q (Cash-based oper prof lagged assets qtrly): Ball et al. (2016), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.cfpq,Open Source Asset Pricing,"OSAP placebo cfpq (Operating Cash flows to price quarterly): Desai, Rajgopal, Venkatachalam (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.CFq,Open Source Asset Pricing,"OSAP placebo CFq (Cash flow to market quarterly): Lakonishok, Shleifer, Vishny (1994), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ChangeRoA,Open Source Asset Pricing,"OSAP placebo ChangeRoA (Change in Return on assets): Balakrishnan, Bartov and Faurel (2010), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ChangeRoE,Open Source Asset Pricing,"OSAP placebo ChangeRoE (Change in Return on equity): Balakrishnan, Bartov and Faurel (2010), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ChNCOA,Open Source Asset Pricing,"OSAP placebo ChNCOA (Change in Noncurrent Operating Assets): Soliman (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ChNCOL,Open Source Asset Pricing,"OSAP placebo ChNCOL (Change in Noncurrent Operating Liab): Soliman (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ChPM,Open Source Asset Pricing,"OSAP placebo ChPM (Change in Profit Margin): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.currat,Open Source Asset Pricing,"OSAP placebo currat (Current Ratio): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.depr,Open Source Asset Pricing,"OSAP placebo depr (Depreciation to PPE): Holthausen and Larcker (1992), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.DivYield,Open Source Asset Pricing,"OSAP placebo DivYield (Dividend yield for small stocks): Naranjo, Nimalendran, Ryngaert (1998), category Accounting",accounting,monthly,cataloged
+osap.DivYieldAnn,Open Source Asset Pricing,"OSAP placebo DivYieldAnn (Last year's dividends over price): Naranjo, Nimalendran, Ryngaert (1998), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsConservatism,Open Source Asset Pricing,"OSAP placebo EarningsConservatism (Earnings conservatism): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsPersistence,Open Source Asset Pricing,"OSAP placebo EarningsPersistence (Earnings persistence): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsPredictability,Open Source Asset Pricing,"OSAP placebo EarningsPredictability (Earnings Predictability): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsSmoothness,Open Source Asset Pricing,"OSAP placebo EarningsSmoothness (Earnings Smoothness): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsTimeliness,Open Source Asset Pricing,"OSAP placebo EarningsTimeliness (Earnings timeliness): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EarningsValueRelevance,Open Source Asset Pricing,"OSAP placebo EarningsValueRelevance (Value relevance of earnings): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EBM_q,Open Source Asset Pricing,"OSAP placebo EBM_q (Enterprise component of BM): Penman, Richardson and Tuna (2007), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EntMult_q,Open Source Asset Pricing,"OSAP placebo EntMult_q (Enterprise Multiple quarterly): Loughran and Wellman (2011), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.EPq,Open Source Asset Pricing,"OSAP placebo EPq (Earnings-to-Price Ratio): Basu (1977), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ETR,Open Source Asset Pricing,"OSAP placebo ETR (Effective Tax Rate): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.FailureProbabilityJune,Open Source Asset Pricing,"OSAP placebo FailureProbabilityJune (Failure probability): Campbell, Hilscher and Szilagyi (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.fgr5yrNoLag,Open Source Asset Pricing,"OSAP placebo fgr5yrNoLag (Long-term EPS forecast (Monthly)): La Porta (1996), category Analyst, portfolio period not stated (cataloged monthly)",analyst,monthly,cataloged
+osap.FRbook,Open Source Asset Pricing,"OSAP placebo FRbook (Pension Funding Status): Franzoni and Marin (2006), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.GPlag,Open Source Asset Pricing,"OSAP placebo GPlag (gross profits / total assets): Novy-Marx (2013), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.GPlag_q,Open Source Asset Pricing,"OSAP placebo GPlag_q (gross profits / total assets): Novy-Marx (2013), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.grcapx1y,Open Source Asset Pricing,"OSAP placebo grcapx1y (Investment growth (1 year)): Anderson and Garcia-Feijoo (2006), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.GrGMToGrSales,Open Source Asset Pricing,"OSAP placebo GrGMToGrSales (Gross margin growth to sales growth): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.GrSaleToGrReceivables,Open Source Asset Pricing,"OSAP placebo GrSaleToGrReceivables (Change in sales vs change in receiv): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.IdioVolCAPM,Open Source Asset Pricing,"OSAP placebo IdioVolCAPM (Idiosyncratic risk (CAPM)): Ang et al. (2006), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.IdioVolQF,Open Source Asset Pricing,"OSAP placebo IdioVolQF (Idiosyncratic risk (q factor)): Ang et al. (2006), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.IntrinsicValue,Open Source Asset Pricing,"OSAP placebo IntrinsicValue (Intrinsic or historical value): Frankel and Lee (1998), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.KZ_q,Open Source Asset Pricing,"OSAP placebo KZ_q (Kaplan Zingales index quarterly): Lamont, Polk and Saa-Requejo (2001), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.LaborforceEfficiency,Open Source Asset Pricing,"OSAP placebo LaborforceEfficiency (Laborforce efficiency): Abarbanell and Bushee (1998), category Accounting",accounting,annual,cataloged
+osap.Leverage_q,Open Source Asset Pricing,"OSAP placebo Leverage_q (Market leverage quarterly): Bhandari (1988), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.nanalyst,Open Source Asset Pricing,"OSAP placebo nanalyst (Number of analysts): Elgers, Lo and Pfeiffer (2001), category Analyst",analyst,monthly,cataloged
+osap.NetDebtPrice_q,Open Source Asset Pricing,"OSAP placebo NetDebtPrice_q (Net debt to price): Penman, Richardson and Tuna (2007), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.NetPayoutYield_q,Open Source Asset Pricing,"OSAP placebo NetPayoutYield_q (Net Payout Yield quarterly): Boudoukh et al. (2007), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OperProfLag,Open Source Asset Pricing,"OSAP placebo OperProfLag (operating profits / book equity): Fama and French (2006), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OperProfLag_q,Open Source Asset Pricing,"OSAP placebo OperProfLag_q (operating profits / book equity): Fama and French (2006), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OperProfRDLagAT,Open Source Asset Pricing,"OSAP placebo OperProfRDLagAT (Oper prof R&D adj lagged assets): Ball et al. (2016), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OperProfRDLagAT_q,Open Source Asset Pricing,"OSAP placebo OperProfRDLagAT_q (Oper prof R&D adj lagged assets (qtrly)): Ball et al. (2016), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OPLeverage_q,Open Source Asset Pricing,"OSAP placebo OPLeverage_q (Operating leverage (qtrly)): Novy-Marx (2011), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OrgCapNoAdj,Open Source Asset Pricing,"OSAP placebo OrgCapNoAdj (Org cap w/o industry adjustment): Eisfeldt and Papanikolaou (2013), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.OScore_q,Open Source Asset Pricing,"OSAP placebo OScore_q (O Score quarterly): Dichev (1998), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.PayoutYield_q,Open Source Asset Pricing,"OSAP placebo PayoutYield_q (Payout Yield quarterly): Boudoukh et al. (2007), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.pchcurrat,Open Source Asset Pricing,"OSAP placebo pchcurrat (Change in Current Ratio): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.pchdepr,Open Source Asset Pricing,"OSAP placebo pchdepr (Change in depreciation to PPE): Holthausen and Larcker (1992), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.pchgm_pchsale,Open Source Asset Pricing,"OSAP placebo pchgm_pchsale (Change in gross margin vs sales): Abarbanell and Bushee (1998), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.pchquick,Open Source Asset Pricing,"OSAP placebo pchquick (Change in quick ratio): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.pchsaleinv,Open Source Asset Pricing,"OSAP placebo pchsaleinv (Change in sales to inventory): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.PM,Open Source Asset Pricing,"OSAP placebo PM (Profit Margin): Soliman (2008), category Accounting",accounting,annual,cataloged
+osap.PM_q,Open Source Asset Pricing,"OSAP placebo PM_q (Profit Margin): Soliman (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.PS_q,Open Source Asset Pricing,"OSAP placebo PS_q (Piotroski F-score): Piotroski (2000), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.quick,Open Source Asset Pricing,"OSAP placebo quick (Quick ratio): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.RD_q,Open Source Asset Pricing,"OSAP placebo RD_q (R&D over market cap quarterly): Chan, Lakonishok and Sougiannis (2001), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.rd_sale_q,Open Source Asset Pricing,"OSAP placebo rd_sale_q (R&D to sales): Chan, Lakonishok and Sougiannis (2001), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ResidualMomentum6m,Open Source Asset Pricing,"OSAP placebo ResidualMomentum6m (6 month residual momentum): Blitz, Huij and Martens (2011), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.RetNOA,Open Source Asset Pricing,"OSAP placebo RetNOA (Return on Net Operating Assets): Soliman (2008), category Accounting",accounting,monthly,cataloged
+osap.RetNOA_q,Open Source Asset Pricing,"OSAP placebo RetNOA_q (Return on Net Operating Assets): Soliman (2008), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ReturnSkewCAPM,Open Source Asset Pricing,"OSAP placebo ReturnSkewCAPM (Idiosyncratic skewness (CAPM)): Bali, Engle and Murray (2015), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.ReturnSkewQF,Open Source Asset Pricing,"OSAP placebo ReturnSkewQF (Idiosyncratic skewness (Q model)): Bali, Engle and Murray (2015), category Price, portfolio period not stated (cataloged monthly)",price,monthly,cataloged
+osap.roavol,Open Source Asset Pricing,"OSAP placebo roavol (RoA volatility): Francis, LaFond, Olsson, Schipper (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.salecash,Open Source Asset Pricing,"OSAP placebo salecash (Sales to cash ratio): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.saleinv,Open Source Asset Pricing,"OSAP placebo saleinv (Sales to inventory): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.salerec,Open Source Asset Pricing,"OSAP placebo salerec (Sales to receivables): Ou and Penman (1989), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.secured,Open Source Asset Pricing,"OSAP placebo secured (Secured debt): Valta (2016), category Accounting",accounting,monthly,cataloged
+osap.securedind,Open Source Asset Pricing,"OSAP placebo securedind (Secured debt indicator): Valta (2016), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.sgr,Open Source Asset Pricing,"OSAP placebo sgr (Annual sales growth): Lakonishok, Shleifer, Vishny (1994), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.sgr_q,Open Source Asset Pricing,"OSAP placebo sgr_q (Annual sales growth quarterly): Lakonishok, Shleifer, Vishny (1994), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.SP_q,Open Source Asset Pricing,"OSAP placebo SP_q (Sales-to-price quarterly): Barbee, Mukherji and Raines (1996), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.tang_q,Open Source Asset Pricing,"OSAP placebo tang_q (Tangibility quarterly): Hahn and Lee (2009), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.Tax_q,Open Source Asset Pricing,"OSAP placebo Tax_q (Taxable income to income (qtrly)): Lev and Nissim (2004), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.WW_Q,Open Source Asset Pricing,"OSAP placebo WW_Q (Whited-Wu index): Whited and Wu (2006), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+osap.ZScore_q,Open Source Asset Pricing,"OSAP placebo ZScore_q (Altman Z-Score quarterly): Dichev (1998), category Accounting, portfolio period not stated (cataloged monthly)",accounting,monthly,cataloged
+jkp.age,JKP Global Factor Data,"JKP age (jkpfactors.com), theme Low Leverage, underlying data other; Jiang Lee and Zhang (2005)",return_series,monthly,cataloged
+jkp.aliq_at,JKP Global Factor Data,"JKP aliq_at (jkpfactors.com), theme Investment, underlying data accounting; Ortiz-Molina and Phillips (2014)",return_series,monthly,cataloged
+jkp.aliq_mat,JKP Global Factor Data,"JKP aliq_mat (jkpfactors.com), theme Low Leverage, underlying data accounting; Ortiz-Molina and Phillips (2014)",return_series,monthly,cataloged
+jkp.ami_126d,JKP Global Factor Data,"JKP ami_126d (jkpfactors.com), theme Size, underlying data trading; Amihud (2002)",return_series,monthly,cataloged
+jkp.at_be,JKP Global Factor Data,"JKP at_be (jkpfactors.com), theme Low Leverage, underlying data accounting; Fama and French (1992)",return_series,monthly,cataloged
+jkp.at_gr1,JKP Global Factor Data,"JKP at_gr1 (jkpfactors.com), theme Investment, underlying data accounting; Cooper Gulen and Schill (2008)",return_series,monthly,cataloged
+jkp.at_me,JKP Global Factor Data,"JKP at_me (jkpfactors.com), theme Value, underlying data accounting; Fama and French (1992)",return_series,monthly,cataloged
+jkp.at_turnover,JKP Global Factor Data,"JKP at_turnover (jkpfactors.com), theme Quality, underlying data accounting; Haugen and Baker (1996)",return_series,monthly,cataloged
+jkp.be_gr1a,JKP Global Factor Data,"JKP be_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.be_me,JKP Global Factor Data,"JKP be_me (jkpfactors.com), theme Value, underlying data accounting; Rosenberg Reid and Lanstein (1985)",return_series,monthly,cataloged
+jkp.beta_60m,JKP Global Factor Data,"JKP beta_60m (jkpfactors.com), theme Low Risk, underlying data price; Fama and MacBeth (1973)",return_series,monthly,cataloged
+jkp.beta_dimson_21d,JKP Global Factor Data,"JKP beta_dimson_21d (jkpfactors.com), theme Low Risk, underlying data price; Dimson (1979)",return_series,monthly,cataloged
+jkp.betabab_1260d,JKP Global Factor Data,"JKP betabab_1260d (jkpfactors.com), theme Low Risk, underlying data price; Frazzini and Pedersen (2014)",return_series,monthly,cataloged
+jkp.betadown_252d,JKP Global Factor Data,"JKP betadown_252d (jkpfactors.com), theme Low Risk, underlying data price; Ang Chen and Xing (2006)",return_series,monthly,cataloged
+jkp.bev_mev,JKP Global Factor Data,"JKP bev_mev (jkpfactors.com), theme Value, underlying data accounting; Penman Richardson and Tuna (2007)",return_series,monthly,cataloged
+jkp.bidaskhl_21d,JKP Global Factor Data,"JKP bidaskhl_21d (jkpfactors.com), theme Low Leverage, underlying data trading; Corwin and Schultz (2012)",return_series,monthly,cataloged
+jkp.capex_abn,JKP Global Factor Data,"JKP capex_abn (jkpfactors.com), theme Debt Issuance, underlying data accounting; Titman Wei and Xie (2004)",return_series,monthly,cataloged
+jkp.capx_gr1,JKP Global Factor Data,"JKP capx_gr1 (jkpfactors.com), theme Investment, underlying data accounting; Xie (2001)",return_series,monthly,cataloged
+jkp.capx_gr2,JKP Global Factor Data,"JKP capx_gr2 (jkpfactors.com), theme Investment, underlying data accounting; Anderson and Garcia-Feijoo (2006)",return_series,monthly,cataloged
+jkp.capx_gr3,JKP Global Factor Data,"JKP capx_gr3 (jkpfactors.com), theme Investment, underlying data accounting; Anderson and Garcia-Feijoo (2006)",return_series,monthly,cataloged
+jkp.cash_at,JKP Global Factor Data,"JKP cash_at (jkpfactors.com), theme Low Leverage, underlying data accounting; Palazzo (2012)",return_series,monthly,cataloged
+jkp.chcsho_12m,JKP Global Factor Data,"JKP chcsho_12m (jkpfactors.com), theme Value, underlying data accounting; Pontiff and Woodgate (2008)",return_series,monthly,cataloged
+jkp.coa_gr1a,JKP Global Factor Data,"JKP coa_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.col_gr1a,JKP Global Factor Data,"JKP col_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.cop_at,JKP Global Factor Data,"JKP cop_at (jkpfactors.com), theme Quality, underlying data accounting",return_series,monthly,cataloged
+jkp.cop_atl1,JKP Global Factor Data,"JKP cop_atl1 (jkpfactors.com), theme Quality, underlying data accounting; Ball et al. (2016)",return_series,monthly,cataloged
+jkp.corr_1260d,JKP Global Factor Data,"JKP corr_1260d (jkpfactors.com), theme Seasonality, underlying data price; Assness, Frazzini, Gormsen, Pedersen (2020)",return_series,monthly,cataloged
+jkp.coskew_21d,JKP Global Factor Data,"JKP coskew_21d (jkpfactors.com), theme Seasonality, underlying data price; Harvey and Siddique (2000)",return_series,monthly,cataloged
+jkp.cowc_gr1a,JKP Global Factor Data,"JKP cowc_gr1a (jkpfactors.com), theme Accruals, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.dbnetis_at,JKP Global Factor Data,"JKP dbnetis_at (jkpfactors.com), theme Seasonality, underlying data accounting; Bradshaw Richardson and Sloan (2006)",return_series,monthly,cataloged
+jkp.debt_gr3,JKP Global Factor Data,"JKP debt_gr3 (jkpfactors.com), theme Debt Issuance, underlying data accounting; Lyandres Sun and Zhang (2008)",return_series,monthly,cataloged
+jkp.debt_me,JKP Global Factor Data,"JKP debt_me (jkpfactors.com), theme Value, underlying data accounting; Bhandari (1988)",return_series,monthly,cataloged
+jkp.dgp_dsale,JKP Global Factor Data,"JKP dgp_dsale (jkpfactors.com), theme Quality, underlying data accounting; Abarbanell and Bushee (1998)",return_series,monthly,cataloged
+jkp.div12m_me,JKP Global Factor Data,"JKP div12m_me (jkpfactors.com), theme Value, underlying data accounting; Litzenberger and Ramaswamy (1979)",return_series,monthly,cataloged
+jkp.dolvol_126d,JKP Global Factor Data,"JKP dolvol_126d (jkpfactors.com), theme Size, underlying data trading; Brennan Chordia and Subrahmanyam (1998)",return_series,monthly,cataloged
+jkp.dolvol_var_126d,JKP Global Factor Data,"JKP dolvol_var_126d (jkpfactors.com), theme Profitability, underlying data trading; Chordia Subrahmanyam and Anshuman (2001)",return_series,monthly,cataloged
+jkp.dsale_dinv,JKP Global Factor Data,"JKP dsale_dinv (jkpfactors.com), theme Profit Growth, underlying data accounting; Abarbanell and Bushee (1998)",return_series,monthly,cataloged
+jkp.dsale_drec,JKP Global Factor Data,"JKP dsale_drec (jkpfactors.com), theme Profit Growth, underlying data accounting; Abarbanell and Bushee (1998)",return_series,monthly,cataloged
+jkp.dsale_dsga,JKP Global Factor Data,"JKP dsale_dsga (jkpfactors.com), theme Profit Growth, underlying data accounting; Abarbanell and Bushee (1998)",return_series,monthly,cataloged
+jkp.earnings_variability,JKP Global Factor Data,"JKP earnings_variability (jkpfactors.com), theme Low Risk, underlying data accounting; Francis et al. (2004)",return_series,monthly,cataloged
+jkp.ebit_bev,JKP Global Factor Data,"JKP ebit_bev (jkpfactors.com), theme Profitability, underlying data accounting; Soliman (2008)",return_series,monthly,cataloged
+jkp.ebit_sale,JKP Global Factor Data,"JKP ebit_sale (jkpfactors.com), theme Profitability, underlying data accounting; Soliman (2008)",return_series,monthly,cataloged
+jkp.ebitda_mev,JKP Global Factor Data,"JKP ebitda_mev (jkpfactors.com), theme Value, underlying data accounting; Loughran and Wellman (2011)",return_series,monthly,cataloged
+jkp.emp_gr1,JKP Global Factor Data,"JKP emp_gr1 (jkpfactors.com), theme Investment, underlying data accounting; Belo Lin and Bazdresch (2014)",return_series,monthly,cataloged
+jkp.eq_dur,JKP Global Factor Data,"JKP eq_dur (jkpfactors.com), theme Value, underlying data accounting; Dechow Sloan and Soliman (2004)",return_series,monthly,cataloged
+jkp.eqnetis_at,JKP Global Factor Data,"JKP eqnetis_at (jkpfactors.com), theme Value, underlying data accounting; Bradshaw Richardson and Sloan (2006)",return_series,monthly,cataloged
+jkp.eqnpo_12m,JKP Global Factor Data,"JKP eqnpo_12m (jkpfactors.com), theme Value, underlying data accounting; Daniel and Titman (2006)",return_series,monthly,cataloged
+jkp.eqnpo_me,JKP Global Factor Data,"JKP eqnpo_me (jkpfactors.com), theme Value, underlying data accounting; Boudoukh et al. (2007)",return_series,monthly,cataloged
+jkp.eqpo_me,JKP Global Factor Data,"JKP eqpo_me (jkpfactors.com), theme Value, underlying data accounting; Boudoukh et al. (2007)",return_series,monthly,cataloged
+jkp.f_score,JKP Global Factor Data,"JKP f_score (jkpfactors.com), theme Profitability, underlying data accounting; Piotroski (2000)",return_series,monthly,cataloged
+jkp.fcf_me,JKP Global Factor Data,"JKP fcf_me (jkpfactors.com), theme Value, underlying data accounting; Lakonishok Shleifer and Vishny (1994)",return_series,monthly,cataloged
+jkp.fnl_gr1a,JKP Global Factor Data,"JKP fnl_gr1a (jkpfactors.com), theme Debt Issuance, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.gp_at,JKP Global Factor Data,"JKP gp_at (jkpfactors.com), theme Quality, underlying data accounting; Novy-Marx (2013)",return_series,monthly,cataloged
+jkp.gp_atl1,JKP Global Factor Data,"JKP gp_atl1 (jkpfactors.com), theme Quality, underlying data accounting",return_series,monthly,cataloged
+jkp.inv_gr1,JKP Global Factor Data,"JKP inv_gr1 (jkpfactors.com), theme Investment, underlying data accounting; Belo and Lin (2011)",return_series,monthly,cataloged
+jkp.inv_gr1a,JKP Global Factor Data,"JKP inv_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Thomas and Zhang (2002)",return_series,monthly,cataloged
+jkp.iskew_capm_21d,JKP Global Factor Data,"JKP iskew_capm_21d (jkpfactors.com), theme Short-Term Reversal, underlying data price",return_series,monthly,cataloged
+jkp.iskew_ff3_21d,JKP Global Factor Data,"JKP iskew_ff3_21d (jkpfactors.com), theme Short-Term Reversal, underlying data price; Bali Engle and Murray (2016)",return_series,monthly,cataloged
+jkp.iskew_hxz4_21d,JKP Global Factor Data,"JKP iskew_hxz4_21d (jkpfactors.com), theme Short-Term Reversal, underlying data price",return_series,monthly,cataloged
+jkp.ival_me,JKP Global Factor Data,"JKP ival_me (jkpfactors.com), theme Value, underlying data accounting; Frankel and Lee (1998)",return_series,monthly,cataloged
+jkp.ivol_capm_21d,JKP Global Factor Data,"JKP ivol_capm_21d (jkpfactors.com), theme Low Risk, underlying data price",return_series,monthly,cataloged
+jkp.ivol_capm_252d,JKP Global Factor Data,"JKP ivol_capm_252d (jkpfactors.com), theme Low Risk, underlying data price; Ali Hwang and Trombley (2003)",return_series,monthly,cataloged
+jkp.ivol_ff3_21d,JKP Global Factor Data,"JKP ivol_ff3_21d (jkpfactors.com), theme Low Risk, underlying data price; Ang et al. (2006)",return_series,monthly,cataloged
+jkp.ivol_hxz4_21d,JKP Global Factor Data,"JKP ivol_hxz4_21d (jkpfactors.com), theme Low Risk, underlying data price",return_series,monthly,cataloged
+jkp.kz_index,JKP Global Factor Data,"JKP kz_index (jkpfactors.com), theme Seasonality, underlying data accounting; Lamont Polk and Saa-Requejo (2001)",return_series,monthly,cataloged
+jkp.lnoa_gr1a,JKP Global Factor Data,"JKP lnoa_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Fairfield Whisenant and Yohn (2003)",return_series,monthly,cataloged
+jkp.lti_gr1a,JKP Global Factor Data,"JKP lti_gr1a (jkpfactors.com), theme Seasonality, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.market_equity,JKP Global Factor Data,"JKP market_equity (jkpfactors.com), theme Size, underlying data price; Banz (1981)",return_series,monthly,cataloged
+jkp.mispricing_mgmt,JKP Global Factor Data,"JKP mispricing_mgmt (jkpfactors.com), theme Investment, underlying data mixed; Stambaugh and Yuan (2016)",return_series,monthly,cataloged
+jkp.mispricing_perf,JKP Global Factor Data,"JKP mispricing_perf (jkpfactors.com), theme Quality, underlying data mixed; Stambaugh and Yuan (2016)",return_series,monthly,cataloged
+jkp.ncoa_gr1a,JKP Global Factor Data,"JKP ncoa_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.ncol_gr1a,JKP Global Factor Data,"JKP ncol_gr1a (jkpfactors.com), theme Debt Issuance, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.netdebt_me,JKP Global Factor Data,"JKP netdebt_me (jkpfactors.com), theme Low Leverage, underlying data accounting; Penman Richardson and Tuna (2007)",return_series,monthly,cataloged
+jkp.netis_at,JKP Global Factor Data,"JKP netis_at (jkpfactors.com), theme Value, underlying data accounting; Bradshaw Richardson and Sloan (2006)",return_series,monthly,cataloged
+jkp.nfna_gr1a,JKP Global Factor Data,"JKP nfna_gr1a (jkpfactors.com), theme Debt Issuance, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.ni_ar1,JKP Global Factor Data,"JKP ni_ar1 (jkpfactors.com), theme Debt Issuance, underlying data accounting; Francis et al. (2004)",return_series,monthly,cataloged
+jkp.ni_be,JKP Global Factor Data,"JKP ni_be (jkpfactors.com), theme Profitability, underlying data accounting; Haugen and Baker (1996)",return_series,monthly,cataloged
+jkp.ni_inc8q,JKP Global Factor Data,"JKP ni_inc8q (jkpfactors.com), theme Quality, underlying data accounting; Barth Elliott and Finn (1999)",return_series,monthly,cataloged
+jkp.ni_ivol,JKP Global Factor Data,"JKP ni_ivol (jkpfactors.com), theme Low Leverage, underlying data accounting; Francis et al. (2004)",return_series,monthly,cataloged
+jkp.ni_me,JKP Global Factor Data,"JKP ni_me (jkpfactors.com), theme Value, underlying data accounting; Basu (1983)",return_series,monthly,cataloged
+jkp.niq_at,JKP Global Factor Data,"JKP niq_at (jkpfactors.com), theme Quality, underlying data accounting; Balakrishnan Bartov and Faurel (2010)",return_series,monthly,cataloged
+jkp.niq_at_chg1,JKP Global Factor Data,"JKP niq_at_chg1 (jkpfactors.com), theme Profit Growth, underlying data accounting",return_series,monthly,cataloged
+jkp.niq_be,JKP Global Factor Data,"JKP niq_be (jkpfactors.com), theme Profitability, underlying data accounting; Hou Xue and Zhang (2015)",return_series,monthly,cataloged
+jkp.niq_be_chg1,JKP Global Factor Data,"JKP niq_be_chg1 (jkpfactors.com), theme Profit Growth, underlying data accounting",return_series,monthly,cataloged
+jkp.niq_su,JKP Global Factor Data,"JKP niq_su (jkpfactors.com), theme Profit Growth, underlying data accounting; Foster Olsen and Shevlin (1984)",return_series,monthly,cataloged
+jkp.nncoa_gr1a,JKP Global Factor Data,"JKP nncoa_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.noa_at,JKP Global Factor Data,"JKP noa_at (jkpfactors.com), theme Debt Issuance, underlying data accounting; Hirshleifer et al. (2004)",return_series,monthly,cataloged
+jkp.noa_gr1a,JKP Global Factor Data,"JKP noa_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Hirshleifer et al. (2004)",return_series,monthly,cataloged
+jkp.o_score,JKP Global Factor Data,"JKP o_score (jkpfactors.com), theme Profitability, underlying data accounting; Dichev (1998)",return_series,monthly,cataloged
+jkp.oaccruals_at,JKP Global Factor Data,"JKP oaccruals_at (jkpfactors.com), theme Accruals, underlying data accounting; Sloan (1996)",return_series,monthly,cataloged
+jkp.oaccruals_ni,JKP Global Factor Data,"JKP oaccruals_ni (jkpfactors.com), theme Accruals, underlying data accounting; Hafzalla Lundholm and Van Winkle (2011)",return_series,monthly,cataloged
+jkp.ocf_at,JKP Global Factor Data,"JKP ocf_at (jkpfactors.com), theme Profitability, underlying data accounting; Bouchard, Kruger, Landier and Thesmar (2019)",return_series,monthly,cataloged
+jkp.ocf_at_chg1,JKP Global Factor Data,"JKP ocf_at_chg1 (jkpfactors.com), theme Profit Growth, underlying data accounting; Bouchard, Kruger, Landier and Thesmar (2019)",return_series,monthly,cataloged
+jkp.ocf_me,JKP Global Factor Data,"JKP ocf_me (jkpfactors.com), theme Value, underlying data accounting; Desai Rajgopal and Venkatachalam (2004)",return_series,monthly,cataloged
+jkp.ocfq_saleq_std,JKP Global Factor Data,"JKP ocfq_saleq_std (jkpfactors.com), theme Low Risk, underlying data accounting; Huang (2009)",return_series,monthly,cataloged
+jkp.op_at,JKP Global Factor Data,"JKP op_at (jkpfactors.com), theme Quality, underlying data accounting",return_series,monthly,cataloged
+jkp.op_atl1,JKP Global Factor Data,"JKP op_atl1 (jkpfactors.com), theme Quality, underlying data accounting; Ball et al. (2016)",return_series,monthly,cataloged
+jkp.ope_be,JKP Global Factor Data,"JKP ope_be (jkpfactors.com), theme Profitability, underlying data accounting; Fama and French (2015)",return_series,monthly,cataloged
+jkp.ope_bel1,JKP Global Factor Data,"JKP ope_bel1 (jkpfactors.com), theme Profitability, underlying data accounting",return_series,monthly,cataloged
+jkp.opex_at,JKP Global Factor Data,"JKP opex_at (jkpfactors.com), theme Quality, underlying data accounting; Novy-Marx (2011)",return_series,monthly,cataloged
+jkp.pi_nix,JKP Global Factor Data,"JKP pi_nix (jkpfactors.com), theme Seasonality, underlying data accounting; Lev and Nissim (2004)",return_series,monthly,cataloged
+jkp.ppeinv_gr1a,JKP Global Factor Data,"JKP ppeinv_gr1a (jkpfactors.com), theme Investment, underlying data accounting; Lyandres Sun and Zhang (2008)",return_series,monthly,cataloged
+jkp.prc,JKP Global Factor Data,"JKP prc (jkpfactors.com), theme Size, underlying data price; Miller and Scholes (1982)",return_series,monthly,cataloged
+jkp.prc_highprc_252d,JKP Global Factor Data,"JKP prc_highprc_252d (jkpfactors.com), theme Momentum, underlying data price; George and Hwang (2004)",return_series,monthly,cataloged
+jkp.qmj,JKP Global Factor Data,"JKP qmj (jkpfactors.com), theme Quality, underlying data mixed; Assness, Frazzini and Pedersen (2018)",return_series,monthly,cataloged
+jkp.qmj_growth,JKP Global Factor Data,"JKP qmj_growth (jkpfactors.com), theme Quality, underlying data mixed; Assness, Frazzini and Pedersen (2018)",return_series,monthly,cataloged
+jkp.qmj_prof,JKP Global Factor Data,"JKP qmj_prof (jkpfactors.com), theme Quality, underlying data mixed; Assness, Frazzini and Pedersen (2018)",return_series,monthly,cataloged
+jkp.qmj_safety,JKP Global Factor Data,"JKP qmj_safety (jkpfactors.com), theme Quality, underlying data mixed; Assness, Frazzini and Pedersen (2018)",return_series,monthly,cataloged
+jkp.rd5_at,JKP Global Factor Data,"JKP rd5_at (jkpfactors.com), theme Low Leverage, underlying data accounting; Li (2011)",return_series,monthly,cataloged
+jkp.rd_me,JKP Global Factor Data,"JKP rd_me (jkpfactors.com), theme Size, underlying data accounting; Chan Lakonishok and Sougiannis (2001)",return_series,monthly,cataloged
+jkp.rd_sale,JKP Global Factor Data,"JKP rd_sale (jkpfactors.com), theme Low Leverage, underlying data accounting; Chan Lakonishok and Sougiannis (2001)",return_series,monthly,cataloged
+jkp.resff3_12_1,JKP Global Factor Data,"JKP resff3_12_1 (jkpfactors.com), theme Momentum, underlying data price; Blitz Huij and Martens (2011)",return_series,monthly,cataloged
+jkp.resff3_6_1,JKP Global Factor Data,"JKP resff3_6_1 (jkpfactors.com), theme Momentum, underlying data price; Blitz Huij and Martens (2011)",return_series,monthly,cataloged
+jkp.ret_12_1,JKP Global Factor Data,"JKP ret_12_1 (jkpfactors.com), theme Momentum, underlying data price; Jegadeesh and Titman (1993)",return_series,monthly,cataloged
+jkp.ret_12_7,JKP Global Factor Data,"JKP ret_12_7 (jkpfactors.com), theme Profit Growth, underlying data price; Novy-Marx (2012)",return_series,monthly,cataloged
+jkp.ret_1_0,JKP Global Factor Data,"JKP ret_1_0 (jkpfactors.com), theme Short-Term Reversal, underlying data price; Jegadeesh (1990)",return_series,monthly,cataloged
+jkp.ret_3_1,JKP Global Factor Data,"JKP ret_3_1 (jkpfactors.com), theme Momentum, underlying data price; Jegedeesh and Titman (1993)",return_series,monthly,cataloged
+jkp.ret_60_12,JKP Global Factor Data,"JKP ret_60_12 (jkpfactors.com), theme Investment, underlying data price; De Bondt and Thaler (1985)",return_series,monthly,cataloged
+jkp.ret_6_1,JKP Global Factor Data,"JKP ret_6_1 (jkpfactors.com), theme Momentum, underlying data price; Jegadeesh and Titman (1993)",return_series,monthly,cataloged
+jkp.ret_9_1,JKP Global Factor Data,"JKP ret_9_1 (jkpfactors.com), theme Momentum, underlying data price; Jegedeesh and Titman (1993)",return_series,monthly,cataloged
+jkp.rmax1_21d,JKP Global Factor Data,"JKP rmax1_21d (jkpfactors.com), theme Low Risk, underlying data price; Bali Cakici and Whitelaw (2011)",return_series,monthly,cataloged
+jkp.rmax5_21d,JKP Global Factor Data,"JKP rmax5_21d (jkpfactors.com), theme Low Risk, underlying data price; Bali, Brown, Murray and Tang (2017)",return_series,monthly,cataloged
+jkp.rmax5_rvol_21d,JKP Global Factor Data,"JKP rmax5_rvol_21d (jkpfactors.com), theme Short-Term Reversal, underlying data price; Assness, Frazzini, Gormsen, Pedersen (2020)",return_series,monthly,cataloged
+jkp.rskew_21d,JKP Global Factor Data,"JKP rskew_21d (jkpfactors.com), theme Short-Term Reversal, underlying data price; Bali Engle and Murray (2016)",return_series,monthly,cataloged
+jkp.rvol_21d,JKP Global Factor Data,"JKP rvol_21d (jkpfactors.com), theme Low Risk, underlying data price; Ang et al. (2006)",return_series,monthly,cataloged
+jkp.sale_bev,JKP Global Factor Data,"JKP sale_bev (jkpfactors.com), theme Quality, underlying data accounting; Soliman (2008)",return_series,monthly,cataloged
+jkp.sale_emp_gr1,JKP Global Factor Data,"JKP sale_emp_gr1 (jkpfactors.com), theme Profit Growth, underlying data accounting; Abarbanell and Bushee (1998)",return_series,monthly,cataloged
+jkp.sale_gr1,JKP Global Factor Data,"JKP sale_gr1 (jkpfactors.com), theme Investment, underlying data accounting; Lakonishok Shleifer and Vishny (1994)",return_series,monthly,cataloged
+jkp.sale_gr3,JKP Global Factor Data,"JKP sale_gr3 (jkpfactors.com), theme Investment, underlying data accounting; Lakonishok Shleifer and Vishny (1994)",return_series,monthly,cataloged
+jkp.sale_me,JKP Global Factor Data,"JKP sale_me (jkpfactors.com), theme Value, underlying data accounting; Barbee Mukherji and Raines (1996)",return_series,monthly,cataloged
+jkp.saleq_gr1,JKP Global Factor Data,"JKP saleq_gr1 (jkpfactors.com), theme Investment, underlying data accounting",return_series,monthly,cataloged
+jkp.saleq_su,JKP Global Factor Data,"JKP saleq_su (jkpfactors.com), theme Profit Growth, underlying data accounting; Jegadeesh and Livnat (2006)",return_series,monthly,cataloged
+jkp.seas_11_15an,JKP Global Factor Data,"JKP seas_11_15an (jkpfactors.com), theme Seasonality, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_11_15na,JKP Global Factor Data,"JKP seas_11_15na (jkpfactors.com), theme Seasonality, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_16_20an,JKP Global Factor Data,"JKP seas_16_20an (jkpfactors.com), theme Seasonality, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_16_20na,JKP Global Factor Data,"JKP seas_16_20na (jkpfactors.com), theme Accruals, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_1_1an,JKP Global Factor Data,"JKP seas_1_1an (jkpfactors.com), theme Profit Growth, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_1_1na,JKP Global Factor Data,"JKP seas_1_1na (jkpfactors.com), theme Momentum, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_2_5an,JKP Global Factor Data,"JKP seas_2_5an (jkpfactors.com), theme Seasonality, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_2_5na,JKP Global Factor Data,"JKP seas_2_5na (jkpfactors.com), theme Investment, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_6_10an,JKP Global Factor Data,"JKP seas_6_10an (jkpfactors.com), theme Seasonality, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.seas_6_10na,JKP Global Factor Data,"JKP seas_6_10na (jkpfactors.com), theme Low Risk, underlying data price; Heston and Sadka (2008)",return_series,monthly,cataloged
+jkp.sti_gr1a,JKP Global Factor Data,"JKP sti_gr1a (jkpfactors.com), theme Seasonality, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.taccruals_at,JKP Global Factor Data,"JKP taccruals_at (jkpfactors.com), theme Accruals, underlying data accounting; Richardson et al. (2005)",return_series,monthly,cataloged
+jkp.taccruals_ni,JKP Global Factor Data,"JKP taccruals_ni (jkpfactors.com), theme Accruals, underlying data accounting; Hafzalla Lundholm and Van Winkle (2011)",return_series,monthly,cataloged
+jkp.tangibility,JKP Global Factor Data,"JKP tangibility (jkpfactors.com), theme Low Leverage, underlying data accounting; Hahn and Lee (2009)",return_series,monthly,cataloged
+jkp.tax_gr1a,JKP Global Factor Data,"JKP tax_gr1a (jkpfactors.com), theme Profit Growth, underlying data accounting; Thomas and Zhang (2011)",return_series,monthly,cataloged
+jkp.turnover_126d,JKP Global Factor Data,"JKP turnover_126d (jkpfactors.com), theme Low Risk, underlying data trading; Datar Naik and Radcliffe (1998)",return_series,monthly,cataloged
+jkp.turnover_var_126d,JKP Global Factor Data,"JKP turnover_var_126d (jkpfactors.com), theme Profitability, underlying data trading; Chordia Subrahmanyam and Anshuman (2001)",return_series,monthly,cataloged
+jkp.z_score,JKP Global Factor Data,"JKP z_score (jkpfactors.com), theme Low Leverage, underlying data accounting; Dichev (1998)",return_series,monthly,cataloged
+jkp.zero_trades_126d,JKP Global Factor Data,"JKP zero_trades_126d (jkpfactors.com), theme Low Risk, underlying data trading; Liu (2006)",return_series,monthly,cataloged
+jkp.zero_trades_21d,JKP Global Factor Data,"JKP zero_trades_21d (jkpfactors.com), theme Low Risk, underlying data trading; Liu (2006)",return_series,monthly,cataloged
+jkp.zero_trades_252d,JKP Global Factor Data,"JKP zero_trades_252d (jkpfactors.com), theme Low Risk, underlying data trading; Liu (2006)",return_series,monthly,cataloged
+wq101.alpha_001,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#1; src/features/alphas.py alpha_001,ohlcv,daily,implemented
+wq101.alpha_002,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#2; src/features/alphas.py alpha_002,ohlcv,daily,implemented
+wq101.alpha_003,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#3; src/features/alphas.py alpha_003,ohlcv,daily,implemented
+wq101.alpha_004,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#4; src/features/alphas.py alpha_004,ohlcv,daily,implemented
+wq101.alpha_005,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#5; src/features/alphas.py alpha_005,ohlcv,daily,implemented
+wq101.alpha_006,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#6; src/features/alphas.py alpha_006,ohlcv,daily,implemented
+wq101.alpha_007,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#7; src/features/alphas.py alpha_007,ohlcv,daily,implemented
+wq101.alpha_008,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#8; src/features/alphas.py alpha_008,ohlcv,daily,implemented
+wq101.alpha_009,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#9; src/features/alphas.py alpha_009,ohlcv,daily,implemented
+wq101.alpha_010,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#10; src/features/alphas.py alpha_010,ohlcv,daily,implemented
+wq101.alpha_011,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#11,ohlcv,daily,cataloged
+wq101.alpha_012,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#12; src/features/alphas.py alpha_012,ohlcv,daily,implemented
+wq101.alpha_013,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#13; src/features/alphas.py alpha_013,ohlcv,daily,implemented
+wq101.alpha_014,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#14; src/features/alphas.py alpha_014,ohlcv,daily,implemented
+wq101.alpha_015,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#15; src/features/alphas.py alpha_015,ohlcv,daily,implemented
+wq101.alpha_016,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#16; src/features/alphas.py alpha_016,ohlcv,daily,implemented
+wq101.alpha_017,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#17; src/features/alphas.py alpha_017,ohlcv,daily,implemented
+wq101.alpha_018,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#18; src/features/alphas.py alpha_018,ohlcv,daily,implemented
+wq101.alpha_019,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#19; src/features/alphas.py alpha_019,ohlcv,daily,implemented
+wq101.alpha_020,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#20; src/features/alphas.py alpha_020,ohlcv,daily,implemented
+wq101.alpha_021,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#21; src/features/alphas.py alpha_021,ohlcv,daily,implemented
+wq101.alpha_022,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#22; src/features/alphas.py alpha_022,ohlcv,daily,implemented
+wq101.alpha_023,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#23; src/features/alphas.py alpha_023,ohlcv,daily,implemented
+wq101.alpha_024,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#24; src/features/alphas.py alpha_024,ohlcv,daily,implemented
+wq101.alpha_025,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#25; src/features/alphas.py alpha_025,ohlcv,daily,implemented
+wq101.alpha_026,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#26; src/features/alphas.py alpha_026,ohlcv,daily,implemented
+wq101.alpha_027,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#27,ohlcv,daily,cataloged
+wq101.alpha_028,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#28; src/features/alphas.py alpha_028,ohlcv,daily,implemented
+wq101.alpha_029,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#29,ohlcv,daily,cataloged
+wq101.alpha_030,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#30; src/features/alphas.py alpha_030,ohlcv,daily,implemented
+wq101.alpha_031,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#31; src/features/alphas.py alpha_031,ohlcv,daily,implemented
+wq101.alpha_032,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#32; src/features/alphas.py alpha_032,ohlcv,daily,implemented
+wq101.alpha_033,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#33; src/features/alphas.py alpha_033,ohlcv,daily,implemented
+wq101.alpha_034,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#34; src/features/alphas.py alpha_034,ohlcv,daily,implemented
+wq101.alpha_035,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#35; src/features/alphas.py alpha_035,ohlcv,daily,implemented
+wq101.alpha_036,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#36; src/features/alphas.py alpha_036,ohlcv,daily,implemented
+wq101.alpha_037,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#37; src/features/alphas.py alpha_037,ohlcv,daily,implemented
+wq101.alpha_038,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#38; src/features/alphas.py alpha_038,ohlcv,daily,implemented
+wq101.alpha_039,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#39; src/features/alphas.py alpha_039,ohlcv,daily,implemented
+wq101.alpha_040,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#40; src/features/alphas.py alpha_040,ohlcv,daily,implemented
+wq101.alpha_041,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#41; src/features/alphas.py alpha_041,ohlcv,daily,implemented
+wq101.alpha_042,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#42; src/features/alphas.py alpha_042,ohlcv,daily,implemented
+wq101.alpha_043,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#43; src/features/alphas.py alpha_043,ohlcv,daily,implemented
+wq101.alpha_044,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#44; src/features/alphas.py alpha_044,ohlcv,daily,implemented
+wq101.alpha_045,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#45; src/features/alphas.py alpha_045,ohlcv,daily,implemented
+wq101.alpha_046,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#46; src/features/alphas.py alpha_046,ohlcv,daily,implemented
+wq101.alpha_047,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#47,ohlcv,daily,cataloged
+wq101.alpha_048,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#48,ohlcv,daily,cataloged
+wq101.alpha_049,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#49; src/features/alphas.py alpha_049,ohlcv,daily,implemented
+wq101.alpha_050,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#50; src/features/alphas.py alpha_050,ohlcv,daily,implemented
+wq101.alpha_051,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#51; src/features/alphas.py alpha_051,ohlcv,daily,implemented
+wq101.alpha_052,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#52; src/features/alphas.py alpha_052,ohlcv,daily,implemented
+wq101.alpha_053,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#53; src/features/alphas.py alpha_053,ohlcv,daily,implemented
+wq101.alpha_054,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#54; src/features/alphas.py alpha_054,ohlcv,daily,implemented
+wq101.alpha_055,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#55; src/features/alphas.py alpha_055,ohlcv,daily,implemented
+wq101.alpha_056,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#56,ohlcv,daily,cataloged
+wq101.alpha_057,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#57,ohlcv,daily,cataloged
+wq101.alpha_058,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#58,ohlcv,daily,cataloged
+wq101.alpha_059,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#59,ohlcv,daily,cataloged
+wq101.alpha_060,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#60; src/features/alphas.py alpha_060,ohlcv,daily,implemented
+wq101.alpha_061,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#61,ohlcv,daily,cataloged
+wq101.alpha_062,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#62,ohlcv,daily,cataloged
+wq101.alpha_063,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#63,ohlcv,daily,cataloged
+wq101.alpha_064,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#64,ohlcv,daily,cataloged
+wq101.alpha_065,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#65,ohlcv,daily,cataloged
+wq101.alpha_066,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#66,ohlcv,daily,cataloged
+wq101.alpha_067,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#67,ohlcv,daily,cataloged
+wq101.alpha_068,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#68,ohlcv,daily,cataloged
+wq101.alpha_069,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#69,ohlcv,daily,cataloged
+wq101.alpha_070,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#70,ohlcv,daily,cataloged
+wq101.alpha_071,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#71,ohlcv,daily,cataloged
+wq101.alpha_072,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#72,ohlcv,daily,cataloged
+wq101.alpha_073,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#73,ohlcv,daily,cataloged
+wq101.alpha_074,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#74,ohlcv,daily,cataloged
+wq101.alpha_075,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#75,ohlcv,daily,cataloged
+wq101.alpha_076,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#76,ohlcv,daily,cataloged
+wq101.alpha_077,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#77,ohlcv,daily,cataloged
+wq101.alpha_078,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#78,ohlcv,daily,cataloged
+wq101.alpha_079,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#79,ohlcv,daily,cataloged
+wq101.alpha_080,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#80,ohlcv,daily,cataloged
+wq101.alpha_081,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#81,ohlcv,daily,cataloged
+wq101.alpha_082,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#82,ohlcv,daily,cataloged
+wq101.alpha_083,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#83,ohlcv,daily,cataloged
+wq101.alpha_084,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#84,ohlcv,daily,cataloged
+wq101.alpha_085,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#85,ohlcv,daily,cataloged
+wq101.alpha_086,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#86,ohlcv,daily,cataloged
+wq101.alpha_087,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#87,ohlcv,daily,cataloged
+wq101.alpha_088,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#88,ohlcv,daily,cataloged
+wq101.alpha_089,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#89,ohlcv,daily,cataloged
+wq101.alpha_090,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#90,ohlcv,daily,cataloged
+wq101.alpha_091,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#91,ohlcv,daily,cataloged
+wq101.alpha_092,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#92,ohlcv,daily,cataloged
+wq101.alpha_093,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#93,ohlcv,daily,cataloged
+wq101.alpha_094,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#94,ohlcv,daily,cataloged
+wq101.alpha_095,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#95,ohlcv,daily,cataloged
+wq101.alpha_096,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#96,ohlcv,daily,cataloged
+wq101.alpha_097,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#97,ohlcv,daily,cataloged
+wq101.alpha_098,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#98,ohlcv,daily,cataloged
+wq101.alpha_099,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#99,ohlcv,daily,cataloged
+wq101.alpha_100,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#100,ohlcv,daily,cataloged
+wq101.alpha_101,WorldQuant 101 (Kakushadze 2016),Kakushadze (2016) Alpha#101; src/features/alphas.py alpha_101,ohlcv,daily,implemented
+gtja191.alpha_001,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha1,ohlcv,daily,cataloged
+gtja191.alpha_002,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha2,ohlcv,daily,cataloged
+gtja191.alpha_003,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha3,ohlcv,daily,cataloged
+gtja191.alpha_004,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha4,ohlcv,daily,cataloged
+gtja191.alpha_005,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha5,ohlcv,daily,cataloged
+gtja191.alpha_006,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha6,ohlcv,daily,cataloged
+gtja191.alpha_007,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha7,ohlcv,daily,cataloged
+gtja191.alpha_008,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha8,ohlcv,daily,cataloged
+gtja191.alpha_009,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha9,ohlcv,daily,cataloged
+gtja191.alpha_010,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha10,ohlcv,daily,cataloged
+gtja191.alpha_011,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha11,ohlcv,daily,cataloged
+gtja191.alpha_012,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha12,ohlcv,daily,cataloged
+gtja191.alpha_013,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha13,ohlcv,daily,cataloged
+gtja191.alpha_014,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha14,ohlcv,daily,cataloged
+gtja191.alpha_015,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha15,ohlcv,daily,cataloged
+gtja191.alpha_016,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha16,ohlcv,daily,cataloged
+gtja191.alpha_017,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha17,ohlcv,daily,cataloged
+gtja191.alpha_018,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha18,ohlcv,daily,cataloged
+gtja191.alpha_019,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha19,ohlcv,daily,cataloged
+gtja191.alpha_020,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha20,ohlcv,daily,cataloged
+gtja191.alpha_021,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha21,ohlcv,daily,cataloged
+gtja191.alpha_022,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha22,ohlcv,daily,cataloged
+gtja191.alpha_023,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha23,ohlcv,daily,cataloged
+gtja191.alpha_024,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha24,ohlcv,daily,cataloged
+gtja191.alpha_025,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha25,ohlcv,daily,cataloged
+gtja191.alpha_026,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha26,ohlcv,daily,cataloged
+gtja191.alpha_027,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha27,ohlcv,daily,cataloged
+gtja191.alpha_028,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha28,ohlcv,daily,cataloged
+gtja191.alpha_029,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha29,ohlcv,daily,cataloged
+gtja191.alpha_030,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha30,ohlcv,daily,cataloged
+gtja191.alpha_031,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha31,ohlcv,daily,cataloged
+gtja191.alpha_032,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha32,ohlcv,daily,cataloged
+gtja191.alpha_033,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha33,ohlcv,daily,cataloged
+gtja191.alpha_034,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha34,ohlcv,daily,cataloged
+gtja191.alpha_035,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha35,ohlcv,daily,cataloged
+gtja191.alpha_036,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha36,ohlcv,daily,cataloged
+gtja191.alpha_037,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha37,ohlcv,daily,cataloged
+gtja191.alpha_038,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha38,ohlcv,daily,cataloged
+gtja191.alpha_039,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha39,ohlcv,daily,cataloged
+gtja191.alpha_040,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha40,ohlcv,daily,cataloged
+gtja191.alpha_041,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha41,ohlcv,daily,cataloged
+gtja191.alpha_042,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha42,ohlcv,daily,cataloged
+gtja191.alpha_043,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha43,ohlcv,daily,cataloged
+gtja191.alpha_044,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha44,ohlcv,daily,cataloged
+gtja191.alpha_045,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha45,ohlcv,daily,cataloged
+gtja191.alpha_046,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha46,ohlcv,daily,cataloged
+gtja191.alpha_047,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha47,ohlcv,daily,cataloged
+gtja191.alpha_048,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha48,ohlcv,daily,cataloged
+gtja191.alpha_049,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha49,ohlcv,daily,cataloged
+gtja191.alpha_050,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha50,ohlcv,daily,cataloged
+gtja191.alpha_051,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha51,ohlcv,daily,cataloged
+gtja191.alpha_052,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha52,ohlcv,daily,cataloged
+gtja191.alpha_053,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha53,ohlcv,daily,cataloged
+gtja191.alpha_054,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha54,ohlcv,daily,cataloged
+gtja191.alpha_055,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha55,ohlcv,daily,cataloged
+gtja191.alpha_056,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha56,ohlcv,daily,cataloged
+gtja191.alpha_057,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha57,ohlcv,daily,cataloged
+gtja191.alpha_058,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha58,ohlcv,daily,cataloged
+gtja191.alpha_059,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha59,ohlcv,daily,cataloged
+gtja191.alpha_060,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha60,ohlcv,daily,cataloged
+gtja191.alpha_061,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha61,ohlcv,daily,cataloged
+gtja191.alpha_062,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha62,ohlcv,daily,cataloged
+gtja191.alpha_063,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha63,ohlcv,daily,cataloged
+gtja191.alpha_064,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha64,ohlcv,daily,cataloged
+gtja191.alpha_065,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha65,ohlcv,daily,cataloged
+gtja191.alpha_066,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha66,ohlcv,daily,cataloged
+gtja191.alpha_067,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha67,ohlcv,daily,cataloged
+gtja191.alpha_068,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha68,ohlcv,daily,cataloged
+gtja191.alpha_069,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha69,ohlcv,daily,cataloged
+gtja191.alpha_070,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha70,ohlcv,daily,cataloged
+gtja191.alpha_071,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha71,ohlcv,daily,cataloged
+gtja191.alpha_072,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha72,ohlcv,daily,cataloged
+gtja191.alpha_073,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha73,ohlcv,daily,cataloged
+gtja191.alpha_074,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha74,ohlcv,daily,cataloged
+gtja191.alpha_075,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha75,ohlcv,daily,cataloged
+gtja191.alpha_076,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha76,ohlcv,daily,cataloged
+gtja191.alpha_077,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha77,ohlcv,daily,cataloged
+gtja191.alpha_078,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha78,ohlcv,daily,cataloged
+gtja191.alpha_079,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha79,ohlcv,daily,cataloged
+gtja191.alpha_080,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha80,ohlcv,daily,cataloged
+gtja191.alpha_081,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha81,ohlcv,daily,cataloged
+gtja191.alpha_082,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha82,ohlcv,daily,cataloged
+gtja191.alpha_083,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha83,ohlcv,daily,cataloged
+gtja191.alpha_084,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha84,ohlcv,daily,cataloged
+gtja191.alpha_085,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha85,ohlcv,daily,cataloged
+gtja191.alpha_086,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha86,ohlcv,daily,cataloged
+gtja191.alpha_087,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha87,ohlcv,daily,cataloged
+gtja191.alpha_088,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha88,ohlcv,daily,cataloged
+gtja191.alpha_089,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha89,ohlcv,daily,cataloged
+gtja191.alpha_090,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha90,ohlcv,daily,cataloged
+gtja191.alpha_091,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha91,ohlcv,daily,cataloged
+gtja191.alpha_092,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha92,ohlcv,daily,cataloged
+gtja191.alpha_093,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha93,ohlcv,daily,cataloged
+gtja191.alpha_094,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha94,ohlcv,daily,cataloged
+gtja191.alpha_095,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha95,ohlcv,daily,cataloged
+gtja191.alpha_096,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha96,ohlcv,daily,cataloged
+gtja191.alpha_097,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha97,ohlcv,daily,cataloged
+gtja191.alpha_098,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha98,ohlcv,daily,cataloged
+gtja191.alpha_099,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha99,ohlcv,daily,cataloged
+gtja191.alpha_100,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha100,ohlcv,daily,cataloged
+gtja191.alpha_101,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha101,ohlcv,daily,cataloged
+gtja191.alpha_102,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha102,ohlcv,daily,cataloged
+gtja191.alpha_103,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha103,ohlcv,daily,cataloged
+gtja191.alpha_104,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha104,ohlcv,daily,cataloged
+gtja191.alpha_105,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha105,ohlcv,daily,cataloged
+gtja191.alpha_106,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha106,ohlcv,daily,cataloged
+gtja191.alpha_107,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha107,ohlcv,daily,cataloged
+gtja191.alpha_108,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha108,ohlcv,daily,cataloged
+gtja191.alpha_109,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha109,ohlcv,daily,cataloged
+gtja191.alpha_110,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha110,ohlcv,daily,cataloged
+gtja191.alpha_111,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha111,ohlcv,daily,cataloged
+gtja191.alpha_112,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha112,ohlcv,daily,cataloged
+gtja191.alpha_113,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha113,ohlcv,daily,cataloged
+gtja191.alpha_114,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha114,ohlcv,daily,cataloged
+gtja191.alpha_115,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha115,ohlcv,daily,cataloged
+gtja191.alpha_116,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha116,ohlcv,daily,cataloged
+gtja191.alpha_117,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha117,ohlcv,daily,cataloged
+gtja191.alpha_118,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha118,ohlcv,daily,cataloged
+gtja191.alpha_119,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha119,ohlcv,daily,cataloged
+gtja191.alpha_120,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha120,ohlcv,daily,cataloged
+gtja191.alpha_121,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha121,ohlcv,daily,cataloged
+gtja191.alpha_122,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha122,ohlcv,daily,cataloged
+gtja191.alpha_123,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha123,ohlcv,daily,cataloged
+gtja191.alpha_124,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha124,ohlcv,daily,cataloged
+gtja191.alpha_125,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha125,ohlcv,daily,cataloged
+gtja191.alpha_126,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha126,ohlcv,daily,cataloged
+gtja191.alpha_127,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha127,ohlcv,daily,cataloged
+gtja191.alpha_128,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha128,ohlcv,daily,cataloged
+gtja191.alpha_129,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha129,ohlcv,daily,cataloged
+gtja191.alpha_130,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha130,ohlcv,daily,cataloged
+gtja191.alpha_131,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha131,ohlcv,daily,cataloged
+gtja191.alpha_132,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha132,ohlcv,daily,cataloged
+gtja191.alpha_133,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha133,ohlcv,daily,cataloged
+gtja191.alpha_134,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha134,ohlcv,daily,cataloged
+gtja191.alpha_135,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha135,ohlcv,daily,cataloged
+gtja191.alpha_136,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha136,ohlcv,daily,cataloged
+gtja191.alpha_137,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha137,ohlcv,daily,cataloged
+gtja191.alpha_138,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha138,ohlcv,daily,cataloged
+gtja191.alpha_139,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha139,ohlcv,daily,cataloged
+gtja191.alpha_140,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha140,ohlcv,daily,cataloged
+gtja191.alpha_141,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha141,ohlcv,daily,cataloged
+gtja191.alpha_142,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha142,ohlcv,daily,cataloged
+gtja191.alpha_143,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha143,ohlcv,daily,cataloged
+gtja191.alpha_144,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha144,ohlcv,daily,cataloged
+gtja191.alpha_145,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha145,ohlcv,daily,cataloged
+gtja191.alpha_146,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha146,ohlcv,daily,cataloged
+gtja191.alpha_147,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha147,ohlcv,daily,cataloged
+gtja191.alpha_148,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha148,ohlcv,daily,cataloged
+gtja191.alpha_149,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha149,ohlcv,daily,cataloged
+gtja191.alpha_150,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha150,ohlcv,daily,cataloged
+gtja191.alpha_151,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha151,ohlcv,daily,cataloged
+gtja191.alpha_152,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha152,ohlcv,daily,cataloged
+gtja191.alpha_153,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha153,ohlcv,daily,cataloged
+gtja191.alpha_154,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha154,ohlcv,daily,cataloged
+gtja191.alpha_155,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha155,ohlcv,daily,cataloged
+gtja191.alpha_156,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha156,ohlcv,daily,cataloged
+gtja191.alpha_157,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha157,ohlcv,daily,cataloged
+gtja191.alpha_158,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha158,ohlcv,daily,cataloged
+gtja191.alpha_159,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha159,ohlcv,daily,cataloged
+gtja191.alpha_160,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha160,ohlcv,daily,cataloged
+gtja191.alpha_161,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha161,ohlcv,daily,cataloged
+gtja191.alpha_162,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha162,ohlcv,daily,cataloged
+gtja191.alpha_163,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha163,ohlcv,daily,cataloged
+gtja191.alpha_164,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha164,ohlcv,daily,cataloged
+gtja191.alpha_165,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha165,ohlcv,daily,cataloged
+gtja191.alpha_166,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha166,ohlcv,daily,cataloged
+gtja191.alpha_167,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha167,ohlcv,daily,cataloged
+gtja191.alpha_168,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha168,ohlcv,daily,cataloged
+gtja191.alpha_169,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha169,ohlcv,daily,cataloged
+gtja191.alpha_170,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha170,ohlcv,daily,cataloged
+gtja191.alpha_171,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha171,ohlcv,daily,cataloged
+gtja191.alpha_172,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha172,ohlcv,daily,cataloged
+gtja191.alpha_173,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha173,ohlcv,daily,cataloged
+gtja191.alpha_174,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha174,ohlcv,daily,cataloged
+gtja191.alpha_175,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha175,ohlcv,daily,cataloged
+gtja191.alpha_176,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha176,ohlcv,daily,cataloged
+gtja191.alpha_177,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha177,ohlcv,daily,cataloged
+gtja191.alpha_178,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha178,ohlcv,daily,cataloged
+gtja191.alpha_179,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha179,ohlcv,daily,cataloged
+gtja191.alpha_180,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha180,ohlcv,daily,cataloged
+gtja191.alpha_181,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha181,ohlcv,daily,cataloged
+gtja191.alpha_182,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha182,ohlcv,daily,cataloged
+gtja191.alpha_183,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha183,ohlcv,daily,cataloged
+gtja191.alpha_184,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha184,ohlcv,daily,cataloged
+gtja191.alpha_185,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha185,ohlcv,daily,cataloged
+gtja191.alpha_186,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha186,ohlcv,daily,cataloged
+gtja191.alpha_187,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha187,ohlcv,daily,cataloged
+gtja191.alpha_188,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha188,ohlcv,daily,cataloged
+gtja191.alpha_189,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha189,ohlcv,daily,cataloged
+gtja191.alpha_190,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha190,ohlcv,daily,cataloged
+gtja191.alpha_191,Guotai Junan 191 (2017),Guotai Junan Securities (2017) short-period price-volume Alpha191,ohlcv,daily,cataloged
+qlib158.KMID,Microsoft Qlib Alpha158,Qlib Alpha158 feature KMID (($close-$open)/$open),ohlcv,daily,cataloged
+qlib158.KLEN,Microsoft Qlib Alpha158,Qlib Alpha158 feature KLEN (($high-$low)/$open),ohlcv,daily,cataloged
+qlib158.KMID2,Microsoft Qlib Alpha158,Qlib Alpha158 feature KMID2 (($close-$open)/($high-$low+1e-12)),ohlcv,daily,cataloged
+qlib158.KUP,Microsoft Qlib Alpha158,"Qlib Alpha158 feature KUP (($high-Greater($open, $close))/$open)",ohlcv,daily,cataloged
+qlib158.KUP2,Microsoft Qlib Alpha158,"Qlib Alpha158 feature KUP2 (($high-Greater($open, $close))/($high-$low+1e-12))",ohlcv,daily,cataloged
+qlib158.KLOW,Microsoft Qlib Alpha158,"Qlib Alpha158 feature KLOW ((Less($open, $close)-$low)/$open)",ohlcv,daily,cataloged
+qlib158.KLOW2,Microsoft Qlib Alpha158,"Qlib Alpha158 feature KLOW2 ((Less($open, $close)-$low)/($high-$low+1e-12))",ohlcv,daily,cataloged
+qlib158.KSFT,Microsoft Qlib Alpha158,Qlib Alpha158 feature KSFT ((2*$close-$high-$low)/$open),ohlcv,daily,cataloged
+qlib158.KSFT2,Microsoft Qlib Alpha158,Qlib Alpha158 feature KSFT2 ((2*$close-$high-$low)/($high-$low+1e-12)),ohlcv,daily,cataloged
+qlib158.OPEN0,Microsoft Qlib Alpha158,Qlib Alpha158 feature OPEN0 ($open/$close),ohlcv,daily,cataloged
+qlib158.HIGH0,Microsoft Qlib Alpha158,Qlib Alpha158 feature HIGH0 ($high/$close),ohlcv,daily,cataloged
+qlib158.LOW0,Microsoft Qlib Alpha158,Qlib Alpha158 feature LOW0 ($low/$close),ohlcv,daily,cataloged
+qlib158.VWAP0,Microsoft Qlib Alpha158,Qlib Alpha158 feature VWAP0 ($vwap/$close),ohlcv,daily,cataloged
+qlib158.ROC5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature ROC5 (Ref($close, 5)/$close)",ohlcv,daily,cataloged
+qlib158.ROC10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature ROC10 (Ref($close, 10)/$close)",ohlcv,daily,cataloged
+qlib158.ROC20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature ROC20 (Ref($close, 20)/$close)",ohlcv,daily,cataloged
+qlib158.ROC30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature ROC30 (Ref($close, 30)/$close)",ohlcv,daily,cataloged
+qlib158.ROC60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature ROC60 (Ref($close, 60)/$close)",ohlcv,daily,cataloged
+qlib158.MA5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MA5 (Mean($close, 5)/$close)",ohlcv,daily,cataloged
+qlib158.MA10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MA10 (Mean($close, 10)/$close)",ohlcv,daily,cataloged
+qlib158.MA20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MA20 (Mean($close, 20)/$close)",ohlcv,daily,cataloged
+qlib158.MA30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MA30 (Mean($close, 30)/$close)",ohlcv,daily,cataloged
+qlib158.MA60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MA60 (Mean($close, 60)/$close)",ohlcv,daily,cataloged
+qlib158.STD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature STD5 (Std($close, 5)/$close)",ohlcv,daily,cataloged
+qlib158.STD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature STD10 (Std($close, 10)/$close)",ohlcv,daily,cataloged
+qlib158.STD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature STD20 (Std($close, 20)/$close)",ohlcv,daily,cataloged
+qlib158.STD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature STD30 (Std($close, 30)/$close)",ohlcv,daily,cataloged
+qlib158.STD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature STD60 (Std($close, 60)/$close)",ohlcv,daily,cataloged
+qlib158.BETA5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature BETA5 (Slope($close, 5)/$close)",ohlcv,daily,cataloged
+qlib158.BETA10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature BETA10 (Slope($close, 10)/$close)",ohlcv,daily,cataloged
+qlib158.BETA20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature BETA20 (Slope($close, 20)/$close)",ohlcv,daily,cataloged
+qlib158.BETA30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature BETA30 (Slope($close, 30)/$close)",ohlcv,daily,cataloged
+qlib158.BETA60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature BETA60 (Slope($close, 60)/$close)",ohlcv,daily,cataloged
+qlib158.RSQR5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSQR5 (Rsquare($close, 5))",ohlcv,daily,cataloged
+qlib158.RSQR10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSQR10 (Rsquare($close, 10))",ohlcv,daily,cataloged
+qlib158.RSQR20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSQR20 (Rsquare($close, 20))",ohlcv,daily,cataloged
+qlib158.RSQR30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSQR30 (Rsquare($close, 30))",ohlcv,daily,cataloged
+qlib158.RSQR60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSQR60 (Rsquare($close, 60))",ohlcv,daily,cataloged
+qlib158.RESI5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RESI5 (Resi($close, 5)/$close)",ohlcv,daily,cataloged
+qlib158.RESI10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RESI10 (Resi($close, 10)/$close)",ohlcv,daily,cataloged
+qlib158.RESI20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RESI20 (Resi($close, 20)/$close)",ohlcv,daily,cataloged
+qlib158.RESI30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RESI30 (Resi($close, 30)/$close)",ohlcv,daily,cataloged
+qlib158.RESI60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RESI60 (Resi($close, 60)/$close)",ohlcv,daily,cataloged
+qlib158.MAX5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MAX5 (Max($high, 5)/$close)",ohlcv,daily,cataloged
+qlib158.MAX10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MAX10 (Max($high, 10)/$close)",ohlcv,daily,cataloged
+qlib158.MAX20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MAX20 (Max($high, 20)/$close)",ohlcv,daily,cataloged
+qlib158.MAX30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MAX30 (Max($high, 30)/$close)",ohlcv,daily,cataloged
+qlib158.MAX60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MAX60 (Max($high, 60)/$close)",ohlcv,daily,cataloged
+qlib158.MIN5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MIN5 (Min($low, 5)/$close)",ohlcv,daily,cataloged
+qlib158.MIN10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MIN10 (Min($low, 10)/$close)",ohlcv,daily,cataloged
+qlib158.MIN20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MIN20 (Min($low, 20)/$close)",ohlcv,daily,cataloged
+qlib158.MIN30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MIN30 (Min($low, 30)/$close)",ohlcv,daily,cataloged
+qlib158.MIN60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature MIN60 (Min($low, 60)/$close)",ohlcv,daily,cataloged
+qlib158.QTLU5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLU5 (Quantile($close, 5, 0.8)/$close)",ohlcv,daily,cataloged
+qlib158.QTLU10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLU10 (Quantile($close, 10, 0.8)/$close)",ohlcv,daily,cataloged
+qlib158.QTLU20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLU20 (Quantile($close, 20, 0.8)/$close)",ohlcv,daily,cataloged
+qlib158.QTLU30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLU30 (Quantile($close, 30, 0.8)/$close)",ohlcv,daily,cataloged
+qlib158.QTLU60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLU60 (Quantile($close, 60, 0.8)/$close)",ohlcv,daily,cataloged
+qlib158.QTLD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLD5 (Quantile($close, 5, 0.2)/$close)",ohlcv,daily,cataloged
+qlib158.QTLD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLD10 (Quantile($close, 10, 0.2)/$close)",ohlcv,daily,cataloged
+qlib158.QTLD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLD20 (Quantile($close, 20, 0.2)/$close)",ohlcv,daily,cataloged
+qlib158.QTLD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLD30 (Quantile($close, 30, 0.2)/$close)",ohlcv,daily,cataloged
+qlib158.QTLD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature QTLD60 (Quantile($close, 60, 0.2)/$close)",ohlcv,daily,cataloged
+qlib158.RANK5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RANK5 (Rank($close, 5))",ohlcv,daily,cataloged
+qlib158.RANK10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RANK10 (Rank($close, 10))",ohlcv,daily,cataloged
+qlib158.RANK20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RANK20 (Rank($close, 20))",ohlcv,daily,cataloged
+qlib158.RANK30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RANK30 (Rank($close, 30))",ohlcv,daily,cataloged
+qlib158.RANK60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RANK60 (Rank($close, 60))",ohlcv,daily,cataloged
+qlib158.RSV5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSV5 (($close-Min($low, 5))/(Max($high, 5)-Min($low, 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.RSV10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSV10 (($close-Min($low, 10))/(Max($high, 10)-Min($low, 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.RSV20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSV20 (($close-Min($low, 20))/(Max($high, 20)-Min($low, 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.RSV30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSV30 (($close-Min($low, 30))/(Max($high, 30)-Min($low, 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.RSV60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature RSV60 (($close-Min($low, 60))/(Max($high, 60)-Min($low, 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.IMAX5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMAX5 (IdxMax($high, 5)/5)",ohlcv,daily,cataloged
+qlib158.IMAX10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMAX10 (IdxMax($high, 10)/10)",ohlcv,daily,cataloged
+qlib158.IMAX20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMAX20 (IdxMax($high, 20)/20)",ohlcv,daily,cataloged
+qlib158.IMAX30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMAX30 (IdxMax($high, 30)/30)",ohlcv,daily,cataloged
+qlib158.IMAX60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMAX60 (IdxMax($high, 60)/60)",ohlcv,daily,cataloged
+qlib158.IMIN5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMIN5 (IdxMin($low, 5)/5)",ohlcv,daily,cataloged
+qlib158.IMIN10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMIN10 (IdxMin($low, 10)/10)",ohlcv,daily,cataloged
+qlib158.IMIN20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMIN20 (IdxMin($low, 20)/20)",ohlcv,daily,cataloged
+qlib158.IMIN30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMIN30 (IdxMin($low, 30)/30)",ohlcv,daily,cataloged
+qlib158.IMIN60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMIN60 (IdxMin($low, 60)/60)",ohlcv,daily,cataloged
+qlib158.IMXD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMXD5 ((IdxMax($high, 5)-IdxMin($low, 5))/5)",ohlcv,daily,cataloged
+qlib158.IMXD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMXD10 ((IdxMax($high, 10)-IdxMin($low, 10))/10)",ohlcv,daily,cataloged
+qlib158.IMXD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMXD20 ((IdxMax($high, 20)-IdxMin($low, 20))/20)",ohlcv,daily,cataloged
+qlib158.IMXD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMXD30 ((IdxMax($high, 30)-IdxMin($low, 30))/30)",ohlcv,daily,cataloged
+qlib158.IMXD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature IMXD60 ((IdxMax($high, 60)-IdxMin($low, 60))/60)",ohlcv,daily,cataloged
+qlib158.CORR5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORR5 (Corr($close, Log($volume+1), 5))",ohlcv,daily,cataloged
+qlib158.CORR10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORR10 (Corr($close, Log($volume+1), 10))",ohlcv,daily,cataloged
+qlib158.CORR20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORR20 (Corr($close, Log($volume+1), 20))",ohlcv,daily,cataloged
+qlib158.CORR30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORR30 (Corr($close, Log($volume+1), 30))",ohlcv,daily,cataloged
+qlib158.CORR60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORR60 (Corr($close, Log($volume+1), 60))",ohlcv,daily,cataloged
+qlib158.CORD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORD5 (Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 5))",ohlcv,daily,cataloged
+qlib158.CORD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORD10 (Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 10))",ohlcv,daily,cataloged
+qlib158.CORD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORD20 (Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 20))",ohlcv,daily,cataloged
+qlib158.CORD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORD30 (Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 30))",ohlcv,daily,cataloged
+qlib158.CORD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CORD60 (Corr($close/Ref($close,1), Log($volume/Ref($volume, 1)+1), 60))",ohlcv,daily,cataloged
+qlib158.CNTP5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTP5 (Mean($close>Ref($close, 1), 5))",ohlcv,daily,cataloged
+qlib158.CNTP10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTP10 (Mean($close>Ref($close, 1), 10))",ohlcv,daily,cataloged
+qlib158.CNTP20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTP20 (Mean($close>Ref($close, 1), 20))",ohlcv,daily,cataloged
+qlib158.CNTP30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTP30 (Mean($close>Ref($close, 1), 30))",ohlcv,daily,cataloged
+qlib158.CNTP60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTP60 (Mean($close>Ref($close, 1), 60))",ohlcv,daily,cataloged
+qlib158.CNTN5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTN5 (Mean($close<Ref($close, 1), 5))",ohlcv,daily,cataloged
+qlib158.CNTN10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTN10 (Mean($close<Ref($close, 1), 10))",ohlcv,daily,cataloged
+qlib158.CNTN20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTN20 (Mean($close<Ref($close, 1), 20))",ohlcv,daily,cataloged
+qlib158.CNTN30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTN30 (Mean($close<Ref($close, 1), 30))",ohlcv,daily,cataloged
+qlib158.CNTN60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTN60 (Mean($close<Ref($close, 1), 60))",ohlcv,daily,cataloged
+qlib158.CNTD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTD5 (Mean($close>Ref($close, 1), 5)-Mean($close<Ref($close, 1), 5))",ohlcv,daily,cataloged
+qlib158.CNTD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTD10 (Mean($close>Ref($close, 1), 10)-Mean($close<Ref($close, 1), 10))",ohlcv,daily,cataloged
+qlib158.CNTD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTD20 (Mean($close>Ref($close, 1), 20)-Mean($close<Ref($close, 1), 20))",ohlcv,daily,cataloged
+qlib158.CNTD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTD30 (Mean($close>Ref($close, 1), 30)-Mean($close<Ref($close, 1), 30))",ohlcv,daily,cataloged
+qlib158.CNTD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature CNTD60 (Mean($close>Ref($close, 1), 60)-Mean($close<Ref($close, 1), 60))",ohlcv,daily,cataloged
+qlib158.SUMP5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMP5 (Sum(Greater($close-Ref($close, 1), 0), 5)/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMP10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMP10 (Sum(Greater($close-Ref($close, 1), 0), 10)/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMP20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMP20 (Sum(Greater($close-Ref($close, 1), 0), 20)/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMP30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMP30 (Sum(Greater($close-Ref($close, 1), 0), 30)/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMP60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMP60 (Sum(Greater($close-Ref($close, 1), 0), 60)/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMN5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMN5 (Sum(Greater(Ref($close, 1)-$close, 0), 5)/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMN10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMN10 (Sum(Greater(Ref($close, 1)-$close, 0), 10)/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMN20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMN20 (Sum(Greater(Ref($close, 1)-$close, 0), 20)/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMN30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMN30 (Sum(Greater(Ref($close, 1)-$close, 0), 30)/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMN60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMN60 (Sum(Greater(Ref($close, 1)-$close, 0), 60)/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMD5 ((Sum(Greater($close-Ref($close, 1), 0), 5)-Sum(Greater(Ref($close, 1)-$close, 0), 5))/(Sum(Abs($close-Ref($close, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMD10 ((Sum(Greater($close-Ref($close, 1), 0), 10)-Sum(Greater(Ref($close, 1)-$close, 0), 10))/(Sum(Abs($close-Ref($close, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMD20 ((Sum(Greater($close-Ref($close, 1), 0), 20)-Sum(Greater(Ref($close, 1)-$close, 0), 20))/(Sum(Abs($close-Ref($close, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMD30 ((Sum(Greater($close-Ref($close, 1), 0), 30)-Sum(Greater(Ref($close, 1)-$close, 0), 30))/(Sum(Abs($close-Ref($close, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.SUMD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature SUMD60 ((Sum(Greater($close-Ref($close, 1), 0), 60)-Sum(Greater(Ref($close, 1)-$close, 0), 60))/(Sum(Abs($close-Ref($close, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.VMA5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VMA5 (Mean($volume, 5)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VMA10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VMA10 (Mean($volume, 10)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VMA20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VMA20 (Mean($volume, 20)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VMA30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VMA30 (Mean($volume, 30)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VMA60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VMA60 (Mean($volume, 60)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VSTD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSTD5 (Std($volume, 5)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VSTD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSTD10 (Std($volume, 10)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VSTD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSTD20 (Std($volume, 20)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VSTD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSTD30 (Std($volume, 30)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.VSTD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSTD60 (Std($volume, 60)/($volume+1e-12))",ohlcv,daily,cataloged
+qlib158.WVMA5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature WVMA5 (Std(Abs($close/Ref($close, 1)-1)*$volume, 5)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.WVMA10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature WVMA10 (Std(Abs($close/Ref($close, 1)-1)*$volume, 10)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.WVMA20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature WVMA20 (Std(Abs($close/Ref($close, 1)-1)*$volume, 20)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.WVMA30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature WVMA30 (Std(Abs($close/Ref($close, 1)-1)*$volume, 30)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.WVMA60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature WVMA60 (Std(Abs($close/Ref($close, 1)-1)*$volume, 60)/(Mean(Abs($close/Ref($close, 1)-1)*$volume, 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMP5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMP5 (Sum(Greater($volume-Ref($volume, 1), 0), 5)/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMP10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMP10 (Sum(Greater($volume-Ref($volume, 1), 0), 10)/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMP20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMP20 (Sum(Greater($volume-Ref($volume, 1), 0), 20)/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMP30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMP30 (Sum(Greater($volume-Ref($volume, 1), 0), 30)/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMP60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMP60 (Sum(Greater($volume-Ref($volume, 1), 0), 60)/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMN5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMN5 (Sum(Greater(Ref($volume, 1)-$volume, 0), 5)/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMN10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMN10 (Sum(Greater(Ref($volume, 1)-$volume, 0), 10)/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMN20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMN20 (Sum(Greater(Ref($volume, 1)-$volume, 0), 20)/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMN30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMN30 (Sum(Greater(Ref($volume, 1)-$volume, 0), 30)/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMN60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMN60 (Sum(Greater(Ref($volume, 1)-$volume, 0), 60)/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMD5,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMD5 ((Sum(Greater($volume-Ref($volume, 1), 0), 5)-Sum(Greater(Ref($volume, 1)-$volume, 0), 5))/(Sum(Abs($volume-Ref($volume, 1)), 5)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMD10,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMD10 ((Sum(Greater($volume-Ref($volume, 1), 0), 10)-Sum(Greater(Ref($volume, 1)-$volume, 0), 10))/(Sum(Abs($volume-Ref($volume, 1)), 10)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMD20,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMD20 ((Sum(Greater($volume-Ref($volume, 1), 0), 20)-Sum(Greater(Ref($volume, 1)-$volume, 0), 20))/(Sum(Abs($volume-Ref($volume, 1)), 20)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMD30,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMD30 ((Sum(Greater($volume-Ref($volume, 1), 0), 30)-Sum(Greater(Ref($volume, 1)-$volume, 0), 30))/(Sum(Abs($volume-Ref($volume, 1)), 30)+1e-12))",ohlcv,daily,cataloged
+qlib158.VSUMD60,Microsoft Qlib Alpha158,"Qlib Alpha158 feature VSUMD60 ((Sum(Greater($volume-Ref($volume, 1), 0), 60)-Sum(Greater(Ref($volume, 1)-$volume, 0), 60))/(Sum(Abs($volume-Ref($volume, 1)), 60)+1e-12))",ohlcv,daily,cataloged
+hxz.abr_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Abr1 (abr_1), cumulative abnormal returns around earnings announcement dates, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.abr_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Abr6 (abr_6), cumulative abnormal returns around earnings announcement dates, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.abr_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Abr12 (abr_12), cumulative abnormal returns around earnings announcement dates, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.cim_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Cim1 (cim_1), customer industries momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.cim_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Cim6 (cim_6), customer industries momentum, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.cim_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Cim12 (cim_12), customer industries momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.cm_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Cm1 (cm_1), customer momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.cm_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Cm6 (cm_6), customer momentum, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.cm_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Cm12 (cm_12), customer momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.def_1,Hou-Xue-Zhang q-factor anomalies,"HXZ dEf1 (def_1), changes in analyst earnings forecasts, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.def_6,Hou-Xue-Zhang q-factor anomalies,"HXZ dEf6 (def_6), changes in analyst earnings forecasts, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.def_12,Hou-Xue-Zhang q-factor anomalies,"HXZ dEf12 (def_12), changes in analyst earnings forecasts, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.ile_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ile1 (ile_1), industry lead-lag effect in earnings surprises, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ilr_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ilr1 (ilr_1), industry lead-lag effect in prior returns, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.ilr_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Ilr6 (ilr_6), industry lead-lag effect in prior returns, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.ilr_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Ilr12 (ilr_12), industry lead-lag effect in prior returns, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.im_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Im1 (im_1), industry momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.im_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Im6 (im_6), industry momentum, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.im_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Im12 (im_12), industry momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.nei_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Nei1 (nei_1), the number of quarters with consecutive earnings increase, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.p52w_6,Hou-Xue-Zhang q-factor anomalies,"HXZ 52w6 (p52w_6), 52-week high, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.p52w_12,Hou-Xue-Zhang q-factor anomalies,"HXZ 52w12 (p52w_12), 52-week high, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r6_1,Hou-Xue-Zhang q-factor anomalies,"HXZ R6_1 (r6_1), prior 6-month returns, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r6_6,Hou-Xue-Zhang q-factor anomalies,"HXZ R6_6 (r6_6), prior 6-month returns, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r6_12,Hou-Xue-Zhang q-factor anomalies,"HXZ R6_12 (r6_12), prior 6-month returns, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r11_1,Hou-Xue-Zhang q-factor anomalies,"HXZ R11_1 (r11_1), prior 11-month returns, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r11_6,Hou-Xue-Zhang q-factor anomalies,"HXZ R11_6 (r11_6), prior 11-month returns, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r11_12,Hou-Xue-Zhang q-factor anomalies,"HXZ R11_12 (r11_12), prior 11-month returns, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.re_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Re1 (re_1), revisions in analyst earnings forecasts, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.re_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Re6 (re_6), revisions in analyst earnings forecasts, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.resid6_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Resid6_6 (resid6_6), 6-month residual momentum, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.resid6_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Resid6_12 (resid6_12), 6-month residual momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.resid11_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Resid11_1 (resid11_1), 11-month residual momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.resid11_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Resid11_6 (resid11_6), 11-month residual momentum, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.resid11_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Resid11_12 (resid11_12), 11-month residual momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.rs_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Rs1 (rs_1), revenue surprises, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.sim_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Sim1 (sim_1), supplier industries momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.sim_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Sim12 (sim_12), supplier industries momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.sm_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Sm1 (sm_1), segment momentum, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.sm_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Sm12 (sm_12), segment momentum, 12-month holding period, category momentum; Hou, Xue, and Zhang (2020)",other,monthly,cataloged
+hxz.sue_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Sue1 (sue_1), standard unexpected earnings, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.sue_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Sue6 (sue_6), standard unexpected earnings, 6-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.tes_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Tes1 (tes_1), tax expense surprises, 1-month holding period, category momentum; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.bm,Hou-Xue-Zhang q-factor anomalies,"HXZ Bm (bm), book-to-market equity, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.bmj,Hou-Xue-Zhang q-factor anomalies,"HXZ Bmj (bmj), book-to-June-end market equity, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.bmq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Bmq12 (bmq_12), quarterly book-to-market equity, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.cp,Hou-Xue-Zhang q-factor anomalies,"HXZ Cp (cp), cash flow-to-price, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.cpq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Cpq1 (cpq_1), quarterly cash flow-to-price, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.cpq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Cpq6 (cpq_6), quarterly cash flow-to-price, 6-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.cpq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Cpq12 (cpq_12), quarterly cash flow-to-price, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.dp,Hou-Xue-Zhang q-factor anomalies,"HXZ Dp (dp), dividend yield, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dur,Hou-Xue-Zhang q-factor anomalies,"HXZ Dur (dur), equity duration, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ebp,Hou-Xue-Zhang q-factor anomalies,"HXZ Ebp (ebp), enterprise book-to-price, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.em,Hou-Xue-Zhang q-factor anomalies,"HXZ Em (em), enterprise multiple, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.emq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Emq1 (emq_1), quarterly enterprise multiple, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.emq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Emq6 (emq_6), quarterly enterprise multiple, 6-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.emq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Emq12 (emq_12), quarterly enterprise multiple, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ep,Hou-Xue-Zhang q-factor anomalies,"HXZ Ep (ep), earnings-to-price, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.epq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Epq1 (epq_1), quarterly earnings-to-price, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.epq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Epq6 (epq_6), quarterly earnings-to-price, 6-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.epq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Epq12 (epq_12), quarterly earnings-to-price, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ir,Hou-Xue-Zhang q-factor anomalies,"HXZ Ir (ir), intangible return, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.nop,Hou-Xue-Zhang q-factor anomalies,"HXZ Nop (nop), net payout yield, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ocp,Hou-Xue-Zhang q-factor anomalies,"HXZ Ocp (ocp), operating cash flow-to-price, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ocpq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ocpq1 (ocpq_1), quarterly operating cash flow-to-price, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.op,Hou-Xue-Zhang q-factor anomalies,"HXZ Op (op), payout yield, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.rev_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Rev1 (rev_1), long-term reversal, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.rev_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Rev6 (rev_6), long-term reversal, 6-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.rev_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Rev12 (rev_12), long-term reversal, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.sp,Hou-Xue-Zhang q-factor anomalies,"HXZ Sp (sp), sales-to-price, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.spq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Spq1 (spq_1), quarterly sales-to-price, 1-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.spq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Spq6 (spq_6), quarterly sales-to-price, 6-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.spq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Spq12 (spq_12), quarterly sales-to-price, 12-month holding period, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.vfp,Hou-Xue-Zhang q-factor anomalies,"HXZ Vfp (vfp), analyst-based intrinsic value-to-market, category value-versus-growth; Hou, Xue, and Zhang (2020)",analyst,annual,cataloged
+hxz.vhp,Hou-Xue-Zhang q-factor anomalies,"HXZ Vhp (vhp), Roe-based intrinsic value-to-market, category value-versus-growth; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.aci,Hou-Xue-Zhang q-factor anomalies,"HXZ Aci (aci), abnormal corporate investment, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.cei,Hou-Xue-Zhang q-factor anomalies,"HXZ Cei (cei), composite equity issuance, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dac,Hou-Xue-Zhang q-factor anomalies,"HXZ Dac (dac), discretionary accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dbe,Hou-Xue-Zhang q-factor anomalies,"HXZ dBe (dbe), changes in book equity, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dcoa,Hou-Xue-Zhang q-factor anomalies,"HXZ dCoa (dcoa), changes in current operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dfin,Hou-Xue-Zhang q-factor anomalies,"HXZ dFin (dfin), changes in net financial assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dfnl,Hou-Xue-Zhang q-factor anomalies,"HXZ dFnl (dfnl), changes in financial liabilities, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dii,Hou-Xue-Zhang q-factor anomalies,"HXZ dIi (dii), percent changes in investment relative to industry, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dlno,Hou-Xue-Zhang q-factor anomalies,"HXZ dLno (dlno), changes in long-term net operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dlti,Hou-Xue-Zhang q-factor anomalies,"HXZ dLti (dlti), changes in long-term investments, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dnca,Hou-Xue-Zhang q-factor anomalies,"HXZ dNca (dnca), changes in non-current operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dnco,Hou-Xue-Zhang q-factor anomalies,"HXZ dNco (dnco), changes in net non-current operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dnoa,Hou-Xue-Zhang q-factor anomalies,"HXZ dNoa (dnoa), changes in net operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dpia,Hou-Xue-Zhang q-factor anomalies,"HXZ dPia (dpia), changes in PPE and inventory scaled by lagged assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.dwc,Hou-Xue-Zhang q-factor anomalies,"HXZ dWc (dwc), changes in net non-cash working capital, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ia,Hou-Xue-Zhang q-factor anomalies,"HXZ I/A (ia), investment-to-assets (asset growth), category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.iaq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Iaq1 (iaq_1), quarterly investment-to-assets (asset growth), 1-month holding period, category investment; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.iaq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Iaq6 (iaq_6), quarterly investment-to-assets (asset growth), 6-month holding period, category investment; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.iaq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Iaq12 (iaq_12), quarterly investment-to-assets (asset growth), 12-month holding period, category investment; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ig,Hou-Xue-Zhang q-factor anomalies,"HXZ Ig (ig), investment growth, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ig2,Hou-Xue-Zhang q-factor anomalies,"HXZ 2Ig (ig2), 2-year investment growth, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ivc,Hou-Xue-Zhang q-factor anomalies,"HXZ Ivc (ivc), inventory changes, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ivg,Hou-Xue-Zhang q-factor anomalies,"HXZ Ivg (ivg), inventory growth, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ndf,Hou-Xue-Zhang q-factor anomalies,"HXZ Ndf (ndf), net external debt financing, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.nxf,Hou-Xue-Zhang q-factor anomalies,"HXZ Nxf (nxf), net external equity financing, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.noa,Hou-Xue-Zhang q-factor anomalies,"HXZ Noa (noa), net operating assets, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.nsi,Hou-Xue-Zhang q-factor anomalies,"HXZ Nsi (nsi), net stock issues, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.oa,Hou-Xue-Zhang q-factor anomalies,"HXZ Oa (oa), operating accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.pda,Hou-Xue-Zhang q-factor anomalies,"HXZ Pda (pda), percent discretionary accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.poa,Hou-Xue-Zhang q-factor anomalies,"HXZ Poa (poa), percent operating accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.pta,Hou-Xue-Zhang q-factor anomalies,"HXZ Pta (pta), percent total accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ta,Hou-Xue-Zhang q-factor anomalies,"HXZ Ta (ta), total accruals, category investment; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ato,Hou-Xue-Zhang q-factor anomalies,"HXZ Ato (ato), assets turnover, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.atoq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Atoq1 (atoq_1), quarterly assets turnover, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.atoq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Atoq6 (atoq_6), quarterly assets turnover, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.atoq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Atoq12 (atoq_12), quarterly assets turnover, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.cla,Hou-Xue-Zhang q-factor anomalies,"HXZ Cla (cla), cash-based operating profits-to-lagged assets, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.claq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Claq1 (claq_1), quarterly cash-based operating profits-to-lagged assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.claq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Claq6 (claq_6), quarterly cash-based operating profits-to-lagged assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.claq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Claq12 (claq_12), quarterly cash-based operating profits-to-lagged assets, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.cop,Hou-Xue-Zhang q-factor anomalies,"HXZ Cop (cop), operating cash flow-to-assets, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.cto,Hou-Xue-Zhang q-factor anomalies,"HXZ Cto (cto), capital turnover, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ctoq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ctoq1 (ctoq_1), quarterly capital turnover, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ctoq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Ctoq6 (ctoq_6), quarterly capital turnover, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.ctoq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Ctoq12 (ctoq_12), quarterly capital turnover, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.droa_1,Hou-Xue-Zhang q-factor anomalies,"HXZ dRoa1 (droa_1), 4-quarter changes in return on assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.droa_6,Hou-Xue-Zhang q-factor anomalies,"HXZ dRoa6 (droa_6), 4-quarter changes in return on assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.droe_1,Hou-Xue-Zhang q-factor anomalies,"HXZ dRoe1 (droe_1), 4-quarter changes in return on equity, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.droe_6,Hou-Xue-Zhang q-factor anomalies,"HXZ dRoe6 (droe_6), 4-quarter changes in return on equity, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.droe_12,Hou-Xue-Zhang q-factor anomalies,"HXZ dRoe12 (droe_12), 4-quarter changes in return on equity, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.eg_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Eg1 (eg_1), expected growth, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.eg_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Eg6 (eg_6), expected growth, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.eg_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Eg12 (eg_12), expected growth, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.fp_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Fp6 (fp_6), failure probability, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.fq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Fq1 (fq_1), quarterly fundamental score, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.fq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Fq6 (fq_6), quarterly fundamental score, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.fq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Fq12 (fq_12), quarterly fundamental score, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.gla,Hou-Xue-Zhang q-factor anomalies,"HXZ Gla (gla), gross profits-to-lagged assets, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.glaq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Glaq1 (glaq_1), quarterly gross profits-to-lagged assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.glaq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Glaq6 (glaq_6), quarterly gross profits-to-lagged assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.glaq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Glaq12 (glaq_12), quarterly gross profits-to-lagged assets, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.gpa,Hou-Xue-Zhang q-factor anomalies,"HXZ Gpa (gpa), gross profits-to-assets, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.olaq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Olaq1 (olaq_1), quarterly operating profits-to-lagged assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.olaq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Olaq6 (olaq_6), quarterly operating profits-to-lagged assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.olaq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Olaq12 (olaq_12), quarterly operating profits-to-lagged assets, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.oleq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Oleq1 (oleq_1), quarterly operating profits-to-lagged book equity, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.oleq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Oleq6 (oleq_6), quarterly operating profits-to-lagged book equity, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.oleq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Oleq12 (oleq_12), quarterly operating profits-to-lagged book equity, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.opa,Hou-Xue-Zhang q-factor anomalies,"HXZ Opa (opa), operating profits-to-assets, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ope,Hou-Xue-Zhang q-factor anomalies,"HXZ Ope (ope), operating profits-to-book equity, category profitability; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.oq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Oq1 (oq_1), quarterly O-score, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.pmq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Pmq1 (pmq_1), quarterly profit margin, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rnaq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Rnaq1 (rnaq_1), quarterly return on net operating assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rnaq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Rnaq6 (rnaq_6), quarterly return on net operating assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rnaq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Rnaq12 (rnaq_12), quarterly return on net operating assets, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.roa_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Roa1 (roa_1), return on assets, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.roa_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Roa6 (roa_6), return on assets, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.roe_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Roe1 (roe_1), return on equity, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.roe_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Roe6 (roe_6), return on equity, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.sgq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Sgq1 (sgq_1), quarterly sales growth, 1-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.tbiq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Tbiq6 (tbiq_6), quarterly tax income-to-book income, 6-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.tbiq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Tbiq12 (tbiq_12), quarterly tax income-to-book income, 12-month holding period, category profitability; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.adm,Hou-Xue-Zhang q-factor anomalies,"HXZ Adm (adm), advertising expense-to-market, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.alaq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Alaq1 (alaq_1), quarterly asset liquidity scaled by 1-quarter-lagged total assets, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.almq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Almq1 (almq_1), quarterly asset liquidity scaled by 1-quarter-lagged market value of assets, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.almq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Almq6 (almq_6), quarterly asset liquidity scaled by 1-quarter-lagged market value of assets, 6-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.almq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Almq12 (almq_12), quarterly asset liquidity scaled by 1-quarter-lagged market value of assets, 12-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.dls_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Dls1 (dls_1), disparity between long- and short-term earnings growth forecasts, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",analyst,monthly,cataloged
+hxz.eprd,Hou-Xue-Zhang q-factor anomalies,"HXZ Eprd (eprd), earnings predictability, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.etl,Hou-Xue-Zhang q-factor anomalies,"HXZ Etl (etl), earnings timeliness, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.etr,Hou-Xue-Zhang q-factor anomalies,"HXZ Etr (etr), effective tax rate, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.hs,Hou-Xue-Zhang q-factor anomalies,"HXZ Hs (hs), industry concentration in sales, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ioca,Hou-Xue-Zhang q-factor anomalies,"HXZ Ioca (ioca), industry-adjusted organizational capital-to-assets, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.oca,Hou-Xue-Zhang q-factor anomalies,"HXZ Oca (oca), organizational capital-to-assets, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.ol,Hou-Xue-Zhang q-factor anomalies,"HXZ Ol (ol), operating leverage, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.olq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Olq1 (olq_1), quarterly operating leverage, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.olq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Olq6 (olq_6), quarterly operating leverage, 6-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.olq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Olq12 (olq_12), quarterly operating leverage, 12-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.r1a,Hou-Xue-Zhang q-factor anomalies,"HXZ R1a (r1a), seasonality, return in month t -12, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r1n,Hou-Xue-Zhang q-factor anomalies,"HXZ R1n (r1n), seasonality, average return from month t -11 to t -1, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r5a,Hou-Xue-Zhang q-factor anomalies,"HXZ R[2,5]a (r5a), seasonality, average return across months t -24, t -36, t -48, and t -60, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r5n,Hou-Xue-Zhang q-factor anomalies,"HXZ R[2,5]n (r5n), seasonality, average return from month t -60 to t -13 except for months t -24, t -36, t -48, and t -60, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r10a,Hou-Xue-Zhang q-factor anomalies,"HXZ R[6,10]a (r10a), seasonality, average return across months t -72, t -84, t -96, t -108, and t -120, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r10n,Hou-Xue-Zhang q-factor anomalies,"HXZ R[6,10]n (r10n), seasonality, average return from month t -120 to t -61 except for months t -72, t -84, t -96, t -108, and t -120, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r15a,Hou-Xue-Zhang q-factor anomalies,"HXZ R[11,15]a (r15a), seasonality, average return across months t -132, t -144, t -156, t -168, and t -180, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.r20a,Hou-Xue-Zhang q-factor anomalies,"HXZ R[16,20]a (r20a), seasonality, average return across months t -192, t -204, t -216, t -228, and t -240, category intangibles; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.rca,Hou-Xue-Zhang q-factor anomalies,"HXZ Rca (rca), R&D capital-to-assets, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.rdm,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdm (rdm), R&D expense-to-market, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.rdmq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdmq1 (rdmq_1), quarterly R&D expense-to-market, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rdmq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdmq6 (rdmq_6), quarterly R&D expense-to-market, 6-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rdmq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdmq12 (rdmq_12), quarterly R&D expense-to-market, 12-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rdsq_6,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdsq6 (rdsq_6), quarterly R&D expense-to-sales, 6-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rdsq_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Rdsq12 (rdsq_12), quarterly R&D expense-to-sales, 12-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.rer,Hou-Xue-Zhang q-factor anomalies,"HXZ Rer (rer), industry-adjusted real estate ratio, category intangibles; Hou, Xue, and Zhang (2020)",accounting,annual,cataloged
+hxz.vcf_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Vcf1 (vcf_1), cash flow volatility, 1-month holding period, category intangibles; Hou, Xue, and Zhang (2020)",accounting,monthly,cataloged
+hxz.beta_1,Hou-Xue-Zhang q-factor anomalies,"HXZ beta1 (beta_1), market beta, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.dtv_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Dtv12 (dtv_12), dollar trading volume, 12-month holding period, category frictions; Hou, Xue, and Zhang (2020)",trading,monthly,cataloged
+hxz.isff_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Isff1 (isff_1), idiosyncratic skewness estimated from the Fama-French 3-factor model, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.isq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Isq1 (isq_1), idiosyncratic skewness estimated from the q -factor model, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.ivff_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ivff1 (ivff_1), idiosyncratic volatility estimated from the Fama-French 3-factor model, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.ivq_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Ivq1 (ivq_1), idiosyncratic volatility estimated from the q -factor model, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.me,Hou-Xue-Zhang q-factor anomalies,"HXZ Me (me), the market equity, category frictions; Hou, Xue, and Zhang (2020)",price,annual,cataloged
+hxz.srev,Hou-Xue-Zhang q-factor anomalies,"HXZ Srev (srev), short-term reversal, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.sv_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Sv1 (sv_1), systematic volatility, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.tail_12,Hou-Xue-Zhang q-factor anomalies,"HXZ Tail12 (tail_12), tail risk, 12-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.tv_1,Hou-Xue-Zhang q-factor anomalies,"HXZ Tv1 (tv_1), total volatility, 1-month holding period, category frictions; Hou, Xue, and Zhang (2020)",price,monthly,cataloged
+hxz.R_MKT,Hou-Xue-Zhang q-factor anomalies,"global-q.org q5 factor R_MKT, market excess return; Hou, Mo, Xue, and Zhang (2021)",return_series,monthly,cataloged
+hxz.R_ME,Hou-Xue-Zhang q-factor anomalies,"global-q.org q5 factor R_ME, size factor; Hou, Mo, Xue, and Zhang (2021)",return_series,monthly,cataloged
+hxz.R_IA,Hou-Xue-Zhang q-factor anomalies,"global-q.org q5 factor R_IA, investment factor; Hou, Mo, Xue, and Zhang (2021)",return_series,monthly,cataloged
+hxz.R_ROE,Hou-Xue-Zhang q-factor anomalies,"global-q.org q5 factor R_ROE, return on equity factor; Hou, Mo, Xue, and Zhang (2021)",return_series,monthly,cataloged
+hxz.R_EG,Hou-Xue-Zhang q-factor anomalies,"global-q.org q5 factor R_EG, expected growth factor; Hou, Mo, Xue, and Zhang (2021)",return_series,monthly,cataloged
+ff.Mkt_RF,Ken French Data Library,"Ken French Data Library, Fama/French 3 Research Factors: Mkt-RF",return_series,monthly,cataloged
+ff.SMB,Ken French Data Library,"Ken French Data Library, Fama/French 5 Research Factors (2x3): SMB",return_series,annual,cataloged
+ff.HML,Ken French Data Library,"Ken French Data Library, Fama/French 3 Research Factors: HML",return_series,annual,cataloged
+ff.RMW,Ken French Data Library,"Ken French Data Library, Fama/French 5 Research Factors (2x3): RMW",return_series,annual,cataloged
+ff.CMA,Ken French Data Library,"Ken French Data Library, Fama/French 5 Research Factors (2x3): CMA",return_series,annual,cataloged
+ff.Mom,Ken French Data Library,"Ken French Data Library, Momentum Factor (Mom)",return_series,monthly,cataloged
+ff.ST_Rev,Ken French Data Library,"Ken French Data Library, Short-Term Reversal Factor (ST Rev)",return_series,monthly,cataloged
+ff.LT_Rev,Ken French Data Library,"Ken French Data Library, Long-Term Reversal Factor (LT Rev)",return_series,monthly,cataloged
+aqr.QMJ,AQR Data Library,"AQR Data Library, Quality Minus Junk: Factors; Asness, Frazzini, and Pedersen (2019)",return_series,monthly,cataloged
+aqr.BAB,AQR Data Library,"AQR Data Library, Betting Against Beta: Equity Factors; Frazzini and Pedersen (2014)",return_series,monthly,cataloged
+aqr.HML_Devil,AQR Data Library,"AQR Data Library, The Devil in HML's Details: Factors; Asness and Frazzini (2013)",return_series,monthly,cataloged
+aqr.UMD,AQR Data Library,"AQR Data Library, AQR UMD momentum factor series",return_series,monthly,cataloged
+aqr.TSMOM,AQR Data Library,"AQR Data Library, Time Series Momentum: Factors; Moskowitz, Ooi, and Pedersen (2012)",return_series,monthly,cataloged
+aqr.VME_VAL,AQR Data Library,"AQR Data Library, Value and Momentum Everywhere: Factors, VAL everywhere; Asness, Moskowitz, and Pedersen (2013)",return_series,monthly,cataloged
+aqr.VME_MOM,AQR Data Library,"AQR Data Library, Value and Momentum Everywhere: Factors, MOM everywhere; Asness, Moskowitz, and Pedersen (2013)",return_series,monthly,cataloged
+stambaugh.MGMT,Stambaugh data,Stambaugh and Yuan (2017) mispricing factor MGMT (M4.csv),return_series,monthly,cataloged
+stambaugh.PERF,Stambaugh data,Stambaugh and Yuan (2017) mispricing factor PERF (M4.csv),return_series,monthly,cataloged
+stambaugh.PS_LIQ_V,Stambaugh data,"Pastor and Stambaugh (2003) traded liquidity factor LIQ_V, 10-1 sort on historical liquidity betas",return_series,annual,cataloged
+stambaugh.PS_LIQ_INNOV,Stambaugh data,"Pastor and Stambaugh (2003) innovations in aggregate liquidity, non-traded factor (equation 8)",trading,monthly,cataloged
+repo.MOM_12_1,Repository Family A,research/m4_7_family_a.py MOM_12_1: 252-row return skipping the latest 21 rows; near osap.Mom12m and jkp.ret_12_1,price,monthly,implemented
+repo.HIGH_52W,Repository Family A,research/m4_7_family_a.py HIGH_52W: close over its 252-row high; near osap.High52 and jkp.prc_highprc_252d,price,monthly,implemented
+repo.REV_1M,Repository Family A,research/m4_7_family_a.py REV_1M: negative 21-row return; near osap.STreversal and jkp.ret_1_0,price,monthly,implemented
+repo.LOW_VOL_252,Repository Family A,research/m4_7_family_a.py LOW_VOL_252: negative 252-row realized volatility; near osap.RealizedVol and jkp.rvol_21d,price,monthly,implemented
+repo.LOW_BETA_252,Repository Family A,research/m4_7_family_a.py LOW_BETA_252: negative 252-row market beta; near osap.Beta and jkp.beta_60m,price,monthly,implemented
+repo.AMIHUD_ILLIQ_63,Repository Family A,research/m4_7_family_a.py AMIHUD_ILLIQ_63: 63-row Amihud illiquidity; near osap.Illiquidity and jkp.ami_126d,trading,monthly,implemented
