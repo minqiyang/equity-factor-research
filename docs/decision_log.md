@@ -15,7 +15,7 @@ investment performance.
 
 ---
 
-## 2026-09-27 - M4.8 Stage C: O48-1(a) Retrieval, Curation Rules, and Gate G1 Record (attempt c2)
+## 2026-09-27 - M4.8 Stage C: O48-1(a) Retrieval, Plan Amendment A1, and Gate G1 Record (attempt c3)
 
 Context:
 
@@ -23,25 +23,28 @@ Context:
   (`coord/v8_review_20260923/card_m4_8c_membership.md`, task `m4_8c-membership-a1`) states owner directive O48-1(a):
   public-document retrieval (SEC EDGAR, S&P DJI announcements and factsheets, public changes lists with
   corroboration). O48-1(b) (EODHD retrieval) is not granted.
-- Round 1 review of attempt c1 (`c150136`): Seat 1 AUDIT1-M48C-M01 (MATERIAL) found the c1 pass rested on an
-  unaccepted code convention C-1; Seat 1 A02 and Seat 2 advisories found an unruled transient-change exclusion and
-  one C-1 row spanning two permanent securities. Remediation card `m4_8c-membership-c2`.
+- Review history: Round 1 on c1 (`c150136`) found the pass rested on the unstated code convention C-1
+  (AUDIT1-M48C-M01). Round 2 on c2 (`548175b`) found that c2's plan-literal pass rested on two transient events
+  typed without a source that exists: an S&P DJI release of 2015-11-02 (A2R2-M01). With that release and the
+  plan-literal codes, G1 blocks (R3-2c 0.0104). Remediation card `m4_8c-membership-c3` directs the clarification of
+  plan section 2.3.
 
 Decision:
 
+- Plan amendment A1 to Revision 3 (history §15; amended SHA-256 `3a870bed…98f2707`) adds rule M-5a to section 2.3:
+  a renamed issuer keeps its own bars under the later snapshot code; a ticker reused by another permanent security
+  takes `<Code>_old` and stays unpriced; a predecessor across a share exchange keeps its as-traded code and stays
+  unpriced. It also states the change-row source rule the merged code already enforces. A1 takes effect for Stage C
+  on the Round 3 CRITICAL review and the coordinator's acceptance record.
 - Stage C used O48-1(a) only; no EODHD request was made. Curated files stay under `<private_data_root>`.
-- Attempt c2 applies plan 2.3 as written. An absent member's `code` is the ticker as traded during its membership
-  interval; when that ticker belongs to a different permanent security in the snapshot, the row carries
-  `<ticker>_old` and stays unpriced (`as_traded_code_reuse_fail_closed_v1`, the R3 fail-closed rule for reuse that
-  M-5 cannot see on non-overlapping dates). Every public-list change in the span is in the change log; the two
-  transient events without a second source stay typed `change_invalid:corroboration_missing`.
-- Gate G1 record on `real_v1` metadata and the c2 curated files: `passed`. `coverage_start_pre` = `D0_pre` =
-  2015-07-31, `r_pre_last` 2019-05-31, `pre_ic_months` 47, unresolved-change fraction 4 / 204 = 0.0196 (cap 0.02),
-  R3-2c 3,882 / 493,963 = 0.0079 (cap 0.01), six required anchors pass on the 500-line floor. Curated file SHA-256:
-  supplement `4f65e3c3…a844ed5`, changes `11f2fd64…7488c67`, counts `bc78c556…4ffb280`; public census
-  `752f7053…c28052`.
-- Convention C-1 (renamed snapshot code of the same security) is withdrawn from the gate of record; it remains a
-  diagnostic (R3-2c 0.0064, same start) for an owner decision on plan wording.
+- The change log records every public-list event in the span plus 41 spin-off placeholder events from S&P DJI
+  releases read with the S&P DJI zero-price spin-off policy of 2015-09-14; seven vendor-only placeholder events
+  without a located release stay counted and unreconstructed.
+- Gate G1 record on `real_v1` metadata and the c3 curated files: `passed`. `coverage_start_pre` = `D0_pre` =
+  2014-04-30, `r_pre_last` 2019-05-31, `pre_ic_months` 62, unresolved-change fraction 4 / 302 = 0.0132 (cap 0.02),
+  R3-2c 5,738 / 650,629 = 0.0088 (cap 0.01), seven required anchors pass on the 500-line floor. Curated file
+  SHA-256: supplement `37a86476…3927e5`, changes `a4e127de…6848d8`, counts `bc78c556…4ffb280`; public census
+  `8b85763f…ed0f36`.
 - M-2 applied as written: 10 vendor start dates that both public lists contradict stay in force as unadjudicated
   discrepancies. All 17 published factsheet counts equal `n_cur` plus these lines. With every anchor modelled that
   way, the start moves to 2016-10-31 with 32 IC months and G1 blocks, so the pass rests on the floor-anchor slack
@@ -49,14 +52,17 @@ Decision:
 
 Rationale:
 
-- The gate of record now uses the accepted plan text only. The two transient events are single-source; typing them
-  unresolved moves the start from 2014-04-30 to 2015-07-31 (R3-2a exceeds 0.02 before 2015-07). With them excluded,
-  as in c1, the start is 2014-04-30 and R3-2c is 0.0104 (blocked), so the exclusion would have needed a plan rule.
+- The pass needs M-5a(a): with the three renamed issuers read as traded, R3-2c is 0.0104 and G1 blocks. M-5a(a)
+  prices a member with its own bars, matching the vendor table's keying of renamed lines; M-5a(b) and (c) fail
+  closed where a code would join two permanent securities (bare reused codes refuse three members and price rows
+  from other securities).
 
 Follow-up:
 
+- Coordinator: record the acceptance of amendment A1 with the Round 3 result.
 - Owner: the M-2 disposition (accept as the R3-10 caveat, revise M-2 by plan revision, or seek primary sources);
-  optionally a plan clarification for C-1 or for transient spin-off memberships. Round 2 CRITICAL review of c2.
+  the user-agent disclosure (engineering log); optionally a coverage-rule change so that more unresolved changes
+  cannot shorten the evaluated segment into a pass (A2R2-ADV-2).
 
 ---
 

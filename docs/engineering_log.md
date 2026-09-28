@@ -12,7 +12,42 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
-## 2026-09-27 - M4.8 Stage C attempt c2: plan-literal codes, every list change, gate G1 re-recorded (PR #274)
+## 2026-09-27 - M4.8 Stage C attempt c3: plan amendment A1, primary-sourced placeholders, gate G1 re-recorded (PR #274)
+
+- Source: Round 2 review of `548175b`. Seat 1 (`MATERIAL: 0, ADVISORY: 4`) and Seat 2 (`MATERIAL: 1, ADVISORY: 5`);
+  card `m4_8c-membership-c3`. Report: `coord/reports/m4_8c_membership_impl.md` section 10.
+- A2R2-M01 (R2, R10): c2 typed the 2015 spin-off placeholder events `change_invalid:corroboration_missing`. An S&P
+  DJI release of 2015-11-02 states the one-day S&P 500 membership: added after the close of 2015-11-09 and dropped
+  after the close of 2015-11-10. The rows now cite it (effective 2015-11-10 and 2015-11-11, both at 0 rows from the
+  vendor interval). The c2 search used the wrong wording; the release was one query away.
+- Route 2 of A2R2-M01: the other 24 short vendor entries were searched release by release. S&P DJI releases for 20
+  state the spin completion and target-index timing; with the S&P DJI zero-price spin-off policy of 2015-09-14 as
+  corroboration they give 41 add or delete events, all equal to the vendor dates (the builder asserts equality).
+  Two releases name a company other than the vendor's label. Seven events stay unreconstructed and counted (three
+  entries without a located release, one addition whose date the release omits).
+- Plan amendment A1 (history §15, SHA-256 `3a870bed…98f2707`): rule M-5a adds the code rule, and section 2.3 now
+  states the change-row source rule (A2R2-ADV-3, A2R2-ADV-1 plan text). The three renamed issuers use the later
+  snapshot code under M-5a(a); the share-exchange predecessor stays as traded and unpriced (M-5a(c)); the six `_old`
+  codes follow M-5a(b). No research code changed.
+- A2R2-ADV-1: `test_t_mem_9_a_change_row_without_a_valid_source_stays_unresolved_despite_an_exact_match` covers
+  `change_invalid:corroboration_missing` and `change_invalid:source_missing` (blank locator, unknown kind) against an
+  exact vendor match with a claimed `match_ref`, and their unresolved-fraction contribution.
+- AUDIT1-M48C-R2-A01: the builder now writes `match = unresolved` and an empty `match_ref` for a source-invalid row;
+  raw CSV and evaluated match counts agree (368 / 28 / 5). R2-A02: 38 fills and 15 absent members start 1996-01-02.
+- A2-C-ADV-5: open. The controller states that a new process-failure entry needs owner confirmation, so the
+  controller is unchanged; the incident stays recorded in the c2 entry.
+- Census: `coverage_start_pre` = `D0_pre` = 2014-04-30; `r_pre_last` 2019-05-31; `pre_ic_months` 62; R3-2a
+  4 / 302 = 0.0132; R3-2c 5,738 / 650,629 = 0.0088; seven floor anchors (n_cur 495–504). **Gate G1: passed.** 401
+  changes (368 vendor, 28 supplement, 5 unresolved); 30 absent members (9 priced, 21 unpriced). Public census JSON
+  SHA-256 `8b85763f36739f44f5469e0f0c2346d9eb91e6056902afdec971538381ed0f36`.
+- Sensitivities (private, diagnostics):
+  - Renamed issuers as traded (no M-5a(a)): R3-2c 0.0104, blocked.
+  - Bare codes in place of `_old`: 3 `identity_refused`, start 2015-09-30, 45 months, passes.
+  - Placeholders removed: same start, R3-2a 0.0153, passes.
+  - Modelled anchors: 2016-10-31, 32 months, blocked (the M-2 owner item).
+- Validation: `ruff check . --exclude .venv` clean; full `pytest` 3285 passed, 2 skipped (pre-existing `longdouble` skips; the new T-MEM-9 case adds one).
+
+## 2026-09-27 - M4.8 Stage C attempt c2: plan-literal codes, every list change, gate G1 re-recorded (PR #274; superseded by c3)
 
 - Source: Round 1 CRITICAL review of `c150136`. Seat 1 (`MATERIAL: 1, ADVISORY: 2`) and Seat 2
   (`MATERIAL: 0, ADVISORY: 6`); card `m4_8c-membership-c2`. Report: `coord/reports/m4_8c_membership_impl.md`
@@ -23,12 +58,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   rows now carry their as-traded codes and are unpriced (6 priced, 24 unpriced absent members).
 - AUDIT1-M48C-A02 (R2): the two single-source transient events (a 2015 spin-off placeholder) are in the change log,
   typed `change_invalid:corroboration_missing`. No second source was found in the downloaded S&P DJI documents,
-  the October–December 2015 Wayback captures, or a web search. The other 24 vendor entries of at most 12 trading
+  the October–December 2015 Wayback captures, or a web search (refuted in Round 2: an S&P DJI release of 2015-11-02
+  states the membership; see the c3 entry). The other 24 vendor entries of at most 12 trading
   days (35 member-days) have no public-list event; they stay vendor entries, counted and unreconstructed.
 - A2-C-ADV-2 (R3): the successor-code row now carries its as-traded code and is unpriced, so no curated row keys two
   permanent securities to one code. Stage D still needs an identity split at the 2017-04-03 share exchange for the
   vendor line that holds the predecessor's bars.
-- A2-C-ADV-4: notes on 1996-01-02 starts now read "the latest possible addition date" (40 fills, 15 absent members).
+- A2-C-ADV-4: notes on 1996-01-02 starts now read "the latest possible addition date" (38 fills and 15 absent
+  members; this entry first said 40 fills, corrected in c3).
 - AUDIT1-M48C-A01: privacy attestations cover this candidate's diff and artifacts. The tracked tree holds 53
   inherited private-path occurrences in 17 files at both `f416af8` and the candidate; redacting them needs separate
   authorization.

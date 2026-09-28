@@ -178,6 +178,27 @@ def test_t_mem_9_a_change_within_five_trading_days_matches_and_a_later_one_stays
     assert mm.unresolved_change_fraction(result, date(2014, 1, 1), date(2019, 7, 31)) == pytest.approx(3 / 6)
 
 
+def test_t_mem_9_a_change_row_without_a_valid_source_stays_unresolved_despite_an_exact_match():
+    entries = [{"ref": "0", "kind": "vendor_entry", "code": "AAA.US", "start": date(2015, 11, 10), "end": date(2015, 11, 11)}]
+    no_locator = {**change_row("RC-3", "2015-11-10", "add", "AAA.US", match_ref="0"), "source_locator": ""}
+    changes = pd.DataFrame([
+        change_row("RC-1", "2015-11-10", "add", "AAA.US", match_ref="0", source_kind="public_changes_list"),
+        change_row("RC-2", "2015-11-11", "delete", "AAA.US", source_kind="public_changes_list", corroboration="second"),
+        no_locator,
+        change_row("RC-4", "2015-11-10", "add", "AAA.US", source_kind="press_release"),
+        change_row("RC-5", "2015-11-11", "delete", "AAA.US"),
+    ], columns=list(mm.CHANGE_COLUMNS))
+    result = mm.match_changes(changes, entries, CAL)
+    assert [(c["match"], c["match_ref"], c["reason"]) for c in result] == [
+        ("unresolved", "", "change_invalid:corroboration_missing"),
+        ("vendor_entry", "0", ""),
+        ("unresolved", "", "change_invalid:source_missing"),
+        ("unresolved", "", "change_invalid:source_missing"),
+        ("vendor_entry", "0", "")]
+    assert mm.unresolved_change_fraction(result, date(2015, 1, 1), date(2019, 7, 31)) == pytest.approx(3 / 5)
+    assert mm.unresolved_change_fraction(result, date(2015, 12, 31), date(2019, 7, 31)) is None
+
+
 def test_t_mem_10_m8_worst_case_charges_and_a_not_evaluable_segment():
     calendar = pd.bdate_range("2014-01-01", "2014-12-31")
     changes = [{"change_id": "RC-1", "action": "add", "code": "A.US", "effective_date": date(2014, 3, 3), "match": "unresolved"},

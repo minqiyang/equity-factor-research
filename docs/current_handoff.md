@@ -1,7 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-27 for the M4.8 Stage C record, attempt c2 (private point-in-time membership curation on
-real_v1 and gate G1 under the plan-literal code rule).
+Updated: 2026-09-27 for the M4.8 Stage C record, attempt c3 (private point-in-time membership curation on
+real_v1 and gate G1 under plan amendment A1).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -52,32 +52,35 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Candidate branch `claude/m4_8c-membership` records M4.8 Stage C under the accepted binding plan Revision 3
   (`bd1bf587…bf3e`), sections 2.3, 2.4, 5.1, and 7.3. No repository code changes.
   - Private curation files (under `<private_data_root>`, never committed): 182 supplement rows (142
-    `start_date_fill`, 30 `absent_member_add` keyed by as-traded codes, 10 `date_correction` typed
-    `correction_not_primary`), 360 reconstructed changes, and 17 S&P DJI factsheet line counts, from public
+    `start_date_fill`, 30 `absent_member_add` keyed under plan rule M-5a, 10 `date_correction` typed
+    `correction_not_primary`), 401 reconstructed changes, and 17 S&P DJI factsheet line counts, from public
     documents under O48-1(a).
+  - Test: T-MEM-9 change-row source rule (`tests/test_m4_8_membership.py`).
+  - Plan amendment A1 to Revision 3 (section 2.3 rule M-5a and the change-row source rule) in the untracked
+    `coord/plans/` files; history §15 records its digest.
   - Public census output `reports/m4_8_membership_census.{json,md}` (counts and hashes only).
-  - Records: `docs/engineering_log.md` (Stage C c1 and c2 entries) and `docs/decision_log.md` (Stage C record).
-- `real_v1` and every committed M4.7 and M4.8 artifact stay byte-identical.
+  - Records: `docs/engineering_log.md` (Stage C c1, c2, and c3 entries) and `docs/decision_log.md` (Stage C
+    record).
+- `real_v1` and every committed M4.7 and M4.8 artifact stay byte-identical; no research code changed.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
 Milestone 4.7 is completed; see `docs/current_roadmap.md`. Registration v2 on real_v1 records the
 gate outcome `extend_first` (60 IC months; Family A MDE_f 0.0437-0.1293 against the 0.02 floor).
-M4.8 Stages A and B are merged (synthetic fixtures). Stage C gate G1 (attempt c2, plan-literal codes)
-on real_v1 membership metadata passed: `coverage_start_pre` = `D0_pre` = 2015-07-31, 47 pre-segment IC months,
-unresolved-change fraction 0.0196 (cap 0.02), R3-2c 0.0079. Six required anchors pass on the floor rule (no
-December factsheet exists); modelled anchors would move the start to 2016-10-31 (32 months, blocked). No price
-value was read. The holdout
+M4.8 Stages A and B are merged (synthetic fixtures). Stage C gate G1 (attempt c3, plan amendment A1)
+on real_v1 membership metadata passed: `coverage_start_pre` = `D0_pre` = 2014-04-30, 62 pre-segment IC months,
+unresolved-change fraction 0.0132 (cap 0.02), R3-2c 0.0088 (0.0104 and blocked without rule M-5a(a)). Seven
+required anchors pass on the floor rule (no December factsheet exists); modelled anchors would move the start to
+2016-10-31 (32 months, blocked). No price value was read. The holdout
 window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- Stage C convention C-1 is withdrawn from the gate of record; a plan clarification for it is optional (the
-  C-1 diagnostic keeps the 2015-07-31 start with R3-2c 0.0064).
+- Plan amendment A1 (rule M-5a) decides G1; the coordinator records its acceptance with the Round 3 review.
 - Owner disposition of the 10 M-2 discrepancy lines (vendor start dates the public lists and all 17 S&P DJI
   factsheet counts contradict): accept as the R3-10 caveat, revise M-2 by plan revision, or seek primary sources.
-- The Stage C attempt c2 record needs its Round 2 CRITICAL two-seat review before Stage D builds real_v2.
+- The Stage C attempt c3 record needs its Round 3 CRITICAL two-seat review before Stage D builds real_v2.
 - Owner confirmation: the first Stage C Wikipedia request sent the owner's account email in its user agent
   (engineering log, c2 entry).
 - Owner item carried: the frozen registration v2 validator accepts a cash completion dated after the calendar end
@@ -85,7 +88,7 @@ window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`
 
 ## Next Safe Action
 
-- Coordinator dispatches the Round 2 CRITICAL review of Stage C attempt c2; after the owner's M-2 disposition,
+- Coordinator dispatches the Round 3 CRITICAL review of Stage C attempt c3; after the owner's M-2 disposition,
   Stage D builds real_v2 with the curated files and splits identity at the 2017-04-03 share exchange (A2-C-ADV-2).
 
 ## Source Routing

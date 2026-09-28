@@ -1,17 +1,27 @@
 {
-  "D0_pre": "2015-07-31",
+  "D0_pre": "2014-04-30",
   "absent_members": {
     "identity_refused": 0,
-    "priced": 6,
-    "unpriced": 24
+    "priced": 9,
+    "unpriced": 21
   },
   "anchors": [
     {
-      "as_of": "2015-07-31",
+      "as_of": "2014-04-30",
+      "delta": -5,
+      "dual_class_lines": 1,
+      "kind": "anchor_floor_500",
+      "month_end": "2014-04-30",
+      "n_cur": 495,
+      "n_ref": 500,
+      "passed": true
+    },
+    {
+      "as_of": "2014-12-31",
       "delta": -4,
       "dual_class_lines": 1,
       "kind": "anchor_floor_500",
-      "month_end": "2015-07-31",
+      "month_end": "2014-12-31",
       "n_cur": 496,
       "n_ref": 500,
       "passed": true
@@ -72,12 +82,12 @@
     "unadjudicated_discrepancies": 10
   },
   "coverage_rule": "curated_coverage_start_v2",
-  "coverage_start_pre": "2015-07-31",
+  "coverage_start_pre": "2014-04-30",
   "coverage_status": "passed",
   "curated_file_sha256": {
-    "curated_membership_supplement.csv": "4f65e3c3da3828eac2dd6d5c277fe5d5fcb10e8532d758e10f5471404a844ed5",
+    "curated_membership_supplement.csv": "37a8647670fb6de73e5c1e2ed48f94ff3798b8245ef2b6757179ceadcc3927e5",
     "published_counts.csv": "bc78c55638291b7bf224f317a80ce79926baa978d3cb344dd905db65e8ffb280",
-    "reconstructed_changes.csv": "11f2fd640896144c289ee24e6cee01a0c2c245c9cabd79223132ae2857488c67"
+    "reconstructed_changes.csv": "a4e127dea472c56ae5ced9d42126a4c7c517c0a95424160b587955b20c6848d8"
   },
   "evidence_ceiling": "DIAGNOSTIC_ONLY",
   "failing_anchors": [],
@@ -995,22 +1005,21 @@
       "n_cur": 504
     }
   ],
-  "pre_ic_months": 47,
+  "pre_ic_months": 62,
   "r3_2c_pre": {
-    "eligible_member_days": 493963,
-    "fraction": 0.007858888216323894,
-    "unpriced_absent_member_days": 3882
+    "eligible_member_days": 650629,
+    "fraction": 0.008819158076261586,
+    "unpriced_absent_member_days": 5738
   },
   "r_pre_last": "2019-05-31",
   "reconstructed_changes": {
     "by_match": {
       "supplement": 28,
-      "unresolved": 7,
-      "vendor_entry": 325
+      "unresolved": 5,
+      "vendor_entry": 368
     },
-    "total": 360,
+    "total": 401,
     "unresolved_by_reason": {
-      "change_invalid:corroboration_missing": 2,
       "no_entry_within_tolerance": 5
     }
   },
@@ -1026,5 +1035,5 @@
       "valid": 142
     }
   },
-  "unresolved_change_fraction": 0.0196078431372549
+  "unresolved_change_fraction": 0.013245033112582781
 }
