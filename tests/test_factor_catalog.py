@@ -17,7 +17,7 @@ INPUTS = {
     "event", "trading", "return_series", "other",
 }
 HORIZONS = {"daily", "weekly", "monthly", "quarterly", "annual"}
-CJK_CHARACTERS = re.compile("[　-〿㐀-鿿豈-﫿＀-￯]")
+CJK_CHARACTERS = re.compile("[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]")
 
 
 def _load() -> tuple[list[str], list[dict[str, str]]]:
