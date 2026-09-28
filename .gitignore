@@ -16,3 +16,6 @@ dist/
 .env.*
 
 uv.lock
+
+# Raw public third-party downloads (R11); only manifests are committed.
+data/public_cache/

@@ -10,15 +10,15 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | --- | --- | --- |
 | `.agents/skills/` | Project-specific Codex Skills and workflow gates. | 2 mapped files |
 | `.github/` | Repository automation such as CI workflows. | 2 mapped files |
-| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 153 mapped files |
+| `docs/` | Project process notes, readiness gates, designs, logs, and maps. | 154 mapped files |
 | `scripts/` | Workflow tooling; scripts here must not fetch data or trade. | 2 mapped files |
 | `src/features/` | Factor calculations, validation, normalization, combination, and diagnostics. | 19 mapped files |
 | `src/backtest/` | Simulated long-only and long-short engines, market impact, style risk attribution, and metrics. | 7 mapped files |
-| `src/data/` | Strict local CSV and Parquet loaders, point-in-time constituent tables, blue-chip cohort spec, metadata review helpers, the M4.7 holdout seal, and the EODHD retrieval CLI (the one network-capable module). | 9 mapped files |
+| `src/data/` | Strict local CSV and Parquet loaders, point-in-time constituent tables, blue-chip cohort spec, metadata review helpers, the M4.7 holdout seal, the EODHD retrieval CLI, and the public factor loader (the two network-capable modules). | 10 mapped files |
 | `src/ledger/` | Frozen Stage 4B ledger schema releases bound by accepted contracts; data only. The Track A runtime retired on 2026-09-23 and remains in history at 8fa0055. | 20 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
-| `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 37 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 225 mapped files |
+| `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 38 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 226 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 119 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |

@@ -6806,7 +6806,8 @@ NETWORK_MODULES = (
     "ccxt",
     "ib_insync",
 )
-NETWORK_ALLOWLIST = {"src/data/eodhd_retrieval.py"}
+# The public factor loader downloads the public academic files that R11 authorizes.
+NETWORK_ALLOWLIST = {"src/data/eodhd_retrieval.py", "src/data/public_factors.py"}
 
 
 def _imported_modules(tree: ast.AST) -> set[str]:
@@ -6851,6 +6852,10 @@ def test_t_struct_1_only_the_retrieval_module_imports_network_modules() -> None:
     retrieval = PROJECT_ROOT / "src/data/eodhd_retrieval.py"
     allowed = _network_imports(_imported_modules(ast.parse(retrieval.read_text(encoding="utf-8"))))
     assert allowed == {"urllib.request", "urllib.error"}
+    public = PROJECT_ROOT / "src/data/public_factors.py"
+    assert _network_imports(_imported_modules(ast.parse(public.read_text(encoding="utf-8")))) == {
+        "urllib.request"
+    }
 
     dependencies = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     declared = dependencies["project"]["dependencies"] + [
