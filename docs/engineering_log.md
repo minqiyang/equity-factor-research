@@ -23,6 +23,12 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Repository scan before the fix: 5 lines in 3 tracked files. Two historical owner quotes in `docs/decision_log.md`
   and two in `docs/engineering_log.md` now carry English translations; one report title in
   `coord/reports/north_star_speed_audit_opus.md` is translated. Commit messages on the branch held no Chinese.
+- Follow-up incident (owner, 2026-09-28): asked to drop AI attribution, the coordinator over-read the scope and
+  began rewriting all AI wording in 411 old PR texts; 27 PR titles and bodies were changed before the owner narrowed
+  the rule to attribution lines only. The process was stopped, the 27 PRs were restored from the backup, and only the
+  "Generated with" line was removed from 9 PR bodies. A live comparison against the backup shows every PR equal to
+  its original minus that line and all 834 comments and reviews unchanged. The PR #276 branch commits dropped their
+  AI co-author trailers; merged history on `main` is unchanged.
 
 ## 2026-09-28 - Owner-identified process failure: rigor ceremony over results; North Star v2 and process constraints
 
