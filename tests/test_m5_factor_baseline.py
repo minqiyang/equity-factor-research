@@ -136,6 +136,7 @@ def test_minimum_observations_and_typed_missing_are_counted_never_filled() -> No
     m5.portfolio(weights, returns, 20)
     pd.testing.assert_frame_equal(returns, snapshot)
     assert m5.missing_by_month(missing.loc["1993-01":"1993-02"]) == {"1993-01": {MISSING_CODE: 1}}
+    assert m5.typed_missing_counts(missing.loc[:"1992-12"]) == {MISSING_ABSENT: 12 + 13}
 
 
 def test_empty_set_and_degenerate_sigma_refuse() -> None:
@@ -302,6 +303,10 @@ def test_run_universe_and_report_on_a_synthetic_panel() -> None:
     assert universe["status"] == "completed"
     assert universe["rules"]["R1"]["20bp"]["full"]["months"] == 48
     assert universe["rules"]["R0"]["20bp"]["first_half"]["months"] == 24
+    assert universe["lookback_typed_missing"] == {
+        "months": "1990-01 to 1992-12",
+        "by_reason": {MISSING_ABSENT: int(returns.loc[:"1992-12"].isna().to_numpy().sum())},
+    }
     diff = universe["_series"][("R1", 20)] - universe["_series"][("R0", 20)]
     post = m5.post_publication(universe, {"A": 1980, "B": 1980, "C": 1980, "D": None}, trial_like(), [20, 50])
     for key in ("_series", "_member", "_returns"):
@@ -312,8 +317,8 @@ def test_run_universe_and_report_on_a_synthetic_panel() -> None:
         "timing": "after_month_end_signal_next_month_return", "switch_cost_bps": [20, 50],
         "manifest": [{"id": "x", "rows": 1, "first_date": None, "last_date": None, "sha256": "f" * 64,
                       "retrieved_utc": "2026-01-01T00:00:00Z"}],
-        "universes": {"synthetic": universe},
-        "s2_tests": m5.s2_tests({"S2.synthetic": diff}, 3),
+        "universes": {m5.PRIMARY_UNIVERSE: universe},
+        "s2_tests": m5.s2_tests({f"S2.{m5.PRIMARY_UNIVERSE}": diff}, 3),
         "decision": m5.decide(universe["rules"], [20, 50]), "post_publication": post,
     }
     text = m5.render_report(result)

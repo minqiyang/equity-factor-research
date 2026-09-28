@@ -266,6 +266,12 @@ def volatility_accuracy(sigma: pd.DataFrame, realized: pd.DataFrame, in_set: pd.
     return result
 
 
+def typed_missing_counts(missing: pd.DataFrame) -> dict[str, int]:
+    reasons = missing.to_numpy().ravel()
+    return {str(reason): int(count) for reason, count in
+            zip(*np.unique(reasons[reasons != PRESENT], return_counts=True))}
+
+
 def membership_counts(member: Membership, missing: pd.DataFrame,
                       bounds: dict[str, tuple[pd.Period, pd.Period]]) -> dict[str, Any]:
     result = {}
@@ -273,15 +279,13 @@ def membership_counts(member: Membership, missing: pd.DataFrame,
         inside = (member.in_set.index >= start) & (member.in_set.index <= end)
         no_return = ~member.has_return[inside]
         short = ~member.enough_history[inside]
-        reasons = missing.loc[start:end].to_numpy().ravel()
         result[period] = {
             "factor_months_declared": int(no_return.size),
             "factor_months_in_set": int(member.in_set[inside].to_numpy().sum()),
             "excluded_no_return_in_month": int(no_return.to_numpy().sum()),
             "excluded_fewer_than_24_prior_returns": int(short.to_numpy().sum()),
             "excluded_both_conditions": int((no_return & short).to_numpy().sum()),
-            "typed_missing_by_reason": {str(reason): int(count) for reason, count in
-                                        zip(*np.unique(reasons[reasons != PRESENT], return_counts=True))},
+            "typed_missing_by_reason": typed_missing_counts(missing.loc[start:end]),
         }
     return result
 
@@ -452,6 +456,10 @@ def run_universe(panel: MonthlyPanel, first: pd.Period, last: pd.Period, trial: 
         "first_evaluated_month": str(first), "last_evaluated_month": str(last),
         "declared_factors": int(returns.shape[1]),
         "counts": membership_counts(member, missing, bounds),
+        "lookback_typed_missing": {
+            "months": f"{first - LOOKBACK_MONTHS} to {first - 1}",
+            "by_reason": typed_missing_counts(missing.loc[first - LOOKBACK_MONTHS: first - 1]),
+        },
         "missing_by_month": missing_by_month(missing.loc[first:last]),
         "volatility_forecast_accuracy": volatility_accuracy(
             member.sigma, realized_volatility(returns, months), member.in_set, bounds),
@@ -580,6 +588,10 @@ def _num(value: float | None, digits: int = 3) -> str:
     return "n/a" if value is None else f"{value:.{digits}f}"
 
 
+def _bp(value: float | None) -> str:
+    return "n/a" if value is None else f"{10_000 * value:.2f}"
+
+
 def _pvalue(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.4g}"
 
@@ -628,6 +640,15 @@ def render_report(result: dict[str, Any]) -> str:
             f"{decision['conditions_held']} of {len(decision['conditions'])} declared conditions hold on "
             "jkp_factors_153 (R1 drawdown magnitude at most R0's and R1 Sharpe at least R0's, in both halves, at "
             "20 and 50 bp). The S2 q-values are reported beside the decision and do not change it.")
+        full = {rule: result["universes"][PRIMARY_UNIVERSE]["rules"][rule][f"{result['switch_cost_bps'][0]}bp"]["full"]
+                for rule in RULES}
+        s2 = result["s2_tests"].get(f"S2.{PRIMARY_UNIVERSE}", {})
+        lines += ["", f"Full window at {result['switch_cost_bps'][0]} bp on {PRIMARY_UNIVERSE}: annualized mean net "
+                  f"return R0 {_pct(full['R0']['annualized_mean'])} and R1 {_pct(full['R1']['annualized_mean'])}; "
+                  f"volatility R0 {_pct(full['R0']['volatility'])} and R1 {_pct(full['R1']['volatility'])}; "
+                  f"maximum drawdown R0 {_pct(full['R0']['max_drawdown'])} and R1 "
+                  f"{_pct(full['R1']['max_drawdown'])}. The S2 test of the mean monthly difference R1 minus R0 has "
+                  f"HAC p {_pvalue(s2.get('hac_pvalue'))} and BY q {_pvalue(s2.get('by_qvalue'))}."]
     lines += ["", "## Data Manifest", "",
               "| Source | Rows | First | Last | SHA-256 (prefix) | Retrieved (UTC) |",
               "| --- | ---: | --- | --- | --- | --- |"]
@@ -652,11 +673,11 @@ def render_report(result: dict[str, Any]) -> str:
     lines += ["", "## S2 Tests (R1 net minus R0 net at 20 bp, full window)", "",
               "Family S2 has 3 tests; Benjamini-Yekutieli adjustment with family size 3; two-sided Newey-West "
               "HAC p-values.", "",
-              "| Test | Status | Months | Mean monthly difference | HAC t | HAC lags | p | BY q |",
+              "| Test | Status | Months | Mean monthly difference (bp) | HAC t | HAC lags | p | BY q |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for test_id, stat in result["s2_tests"].items():
         lines.append(f"| {test_id} | {stat['status']} | {stat.get('n_observations', 'n/a')} | "
-                     f"{_pct(stat.get('mean_return'))} | {_num(stat.get('hac_statistic'), 2)} | "
+                     f"{_bp(stat.get('mean_return'))} | {_num(stat.get('hac_statistic'), 2)} | "
                      f"{stat.get('hac_lags', 'n/a')} | {_pvalue(stat.get('hac_pvalue'))} | "
                      f"{_pvalue(stat.get('by_qvalue'))} |")
 
@@ -700,6 +721,10 @@ def render_report(result: dict[str, Any]) -> str:
             lines.append(f"| {PERIOD_LABEL[period]} | {c['factor_months_declared']} | {c['factor_months_in_set']} | "
                          f"{c['excluded_no_return_in_month']} | {c['excluded_fewer_than_24_prior_returns']} | "
                          f"{c['excluded_both_conditions']} | {typed} |")
+        lookback = universe["lookback_typed_missing"]
+        typed = ", ".join(f"{k} {v}" for k, v in lookback["by_reason"].items()) or "none"
+        lines += ["", f"Typed missing factor-months in the lookback-only months {lookback['months']}: {typed}. "
+                  "They count against the 24-return condition and are never filled."]
 
     post = result["post_publication"]
     lines += ["", "## Post-Publication Split (jkp_factors_153, descriptive)", "",
