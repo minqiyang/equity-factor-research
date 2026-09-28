@@ -1,7 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-28 for the North Star v2 governance change (M4.8 paused after Stage D; Milestone 5 factor
-collection and factor timing active).
+Updated: 2026-09-28 for the North Star v2 governance change (M4.8 paused after Stage D; Milestone 5
+factor-class allocator active).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,

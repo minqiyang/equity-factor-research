@@ -259,7 +259,7 @@ status.
 | Incompatible price/volume dollar turnover | Accounting Correctness | Distorted liquidity, sizing, or capacity | Must not multiply raw price with split-adjusted volume or vice-versa; must use compatible price and volume bases | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Lookahead leakage or timing mismatch | Timing Correctness | Invalidates all backtest validity | Must enforce accepted `after_close_signal_next_observed_close_v1` timing contract (signals computed strictly after close, earliest target reset at next observed close; no same-bar or open execution without separate typed contract); no lookahead | Never deferrable | **BLOCKING (Cannot Defer)** |
 | Frictional cost and turnover accounting | Accounting Correctness | Phantom profitability from ignored trading fees | Must apply explicit transaction costs (fixed basis points on turnover under existing undivided turnover conventions; sum of absolute signed trades) and explicit slippage assumptions; no zero-cost or frictionless trading claims | Never deferrable | **BLOCKING (Cannot Defer)** |
-| Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 5) | **PROHIBITED IN CURRENT REPO** |
+| Brokerage connection & live execution | Safety/Authority | Unsafe order placement, real-money risk | Strictly prohibited in research repo; simulated portfolio only | Future execution repo (Milestone 6) | **PROHIBITED IN CURRENT REPO** |
 
 ## Canonical Research Sources
 
@@ -366,7 +366,7 @@ the linked canonical sources.
 Optional 37-event completion stays off the critical path. Strategy promotion,
 independent cross-provider replication, LEAN parity, and completion of the
 remaining 26 optional ledger event schemas are outside the active queue. Factor
-collection and factor timing belong to Milestone 5. Demo v0 is
+collection, the factor-class allocator, and counted discovery belong to Milestone 5. Demo v0 is
 the implemented synthetic vertical slice (`python -m research.demo_v0`), with
 separately authorized exploratory local-data diagnostics under the existing
 audit protocol; no unauthorized data access or live execution is authorized here. Real-money
