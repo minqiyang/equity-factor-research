@@ -1,7 +1,7 @@
 """M4.8 Stage A: discovery segments and segment-local validation (plan 2.5, 2.7).
 
 T-SEG-1..3, T-SEG-8, T-SEG-9 (segment rows), T-UNI-SEG-1..8, T-ID-SEAL-1..3,
-T-VOL-SEAL-1..4, T-SEAL-BR-1. Every snapshot is retrieved through the real
+T-ID-BND-1..3 (curated identity boundary, M-5a(c)), T-VOL-SEAL-1..4, T-SEAL-BR-1. Every snapshot is retrieved through the real
 retrieval path and built by the real universe build. Floating-point panel
 values compare at 1e-12 relative, and statuses, refusals, ranks, and holdings
 compare exactly (Seat 1 R3-A03, Seat 2 R3-A1).
@@ -38,8 +38,11 @@ from m4_8_snapshot_support import (
     snapshot_v2,
     split_row,
 )
+from research import m4_8_membership
 from research.m4_7_common_support import scheduled_reset_rows
+from research.m4_7_terminal_evidence import write_template
 from research.m4_7_universe_build import (
+    build_universe,
     discovery_segments,
     reset_in_month,
     segment_ic_resets,
@@ -306,6 +309,104 @@ def test_t_id_seal_3_an_isin_conflict_across_the_seal_still_refuses(tmp_path, mo
                           delisted=[{"Code": "ISN", "Name": "ISN Inc", "Isin": "US0000000002"}])
     intervals = csv(harness.snapshot_dir, "identity/interval_results.csv")
     assert intervals.loc[intervals["vendor_code"] == "ISN.US", "resolution"].tolist() == ["ambiguous_reuse_isin_conflict"]
+
+
+# ---------------------------------------------------------------- T-ID-BND
+
+
+BOUNDARY = row_of("2019-02-01")
+
+
+def boundary_row(boundary_id, code, first_date, **fields):
+    return {"boundary_id": boundary_id, "code": code, "first_date": first_date, "source_kind": "sp_dji_announcement",
+            "source_locator": "locator", "retrieved_utc_date": "2026-09-28", "curator": "test", **fields}
+
+
+def write_boundaries(snap, rows):
+    columns = list(m4_8_membership.IDENTITY_BOUNDARY_COLUMNS)
+    frame = pd.DataFrame([{column: row.get(column, "") for column in columns} for row in rows], columns=columns)
+    frame.to_csv(snap / "membership" / m4_8_membership.IDENTITY_BOUNDARIES_FILE, index=False)
+
+
+def successor_snapshot(tmp_path, monkeypatch, name, entries, rows=None, codes=None):
+    """``SUC.US`` trades on every row; its bars before ``BOUNDARY`` belong to a predecessor (close 50 vs 100)."""
+    eod = bars2(ALL_ROWS, close=lambda r: 50.0 + (r % 5) if r < BOUNDARY else 100.0 + (r % 7))
+    harness = snapshot_v2(tmp_path, monkeypatch, name, entries, {"SUC.US": eod, **(codes or {})}, build=False)
+    if rows is not None:
+        write_boundaries(harness.snapshot_dir, rows)
+    return harness.snapshot_dir
+
+
+def test_t_id_bnd_1_a_curated_boundary_gives_the_successor_its_own_permanent_id(tmp_path, monkeypatch):
+    entries = [entry("SUC", day2(BOUNDARY + 1), name="Successor Co")]
+    snap = successor_snapshot(tmp_path / "split", monkeypatch, "B1", entries,
+                              [boundary_row("IB-1", "SUC.US", day2(BOUNDARY))])
+    control = successor_snapshot(tmp_path / "control", monkeypatch, "B1C", entries)
+    for s in (snap, control):
+        build_universe(s, D0_PRE)
+    master = csv(snap, "identity/security_master.csv").set_index("permanent_id")
+    assert master.loc[["SUC.US#E1", "SUC.US#E2"], ["first_bar", "last_bar", "interval_count"]].values.tolist() == [
+        [day2(0), day2(BOUNDARY - 1), "0"], [day2(BOUNDARY), day2(N_ROWS - 1), "1"]]
+    intervals = csv(snap, "identity/interval_results.csv")
+    assert intervals.loc[intervals["vendor_code"] == "SUC.US", ["permanent_id", "resolution"]].values.tolist() == [
+        ["SUC.US#E2", "resolved"]]
+    manifest = build(snap)
+    assert (manifest["curated_identity_split"], manifest["seal_gap_identity_split"]) == (1, 0)
+    assert m4_8_membership.IDENTITY_BOUNDARY_RULE in manifest["universe_validation"]
+    # No successor panel row reads a predecessor bar, so every successor feature window starts at the boundary.
+    successor, predecessor = panel(snap, "discovery_pre", "SUC.US#E2"), panel(snap, "discovery_pre", "SUC.US#E1")
+    assert successor["date"].min() == pd.Timestamp(day2(BOUNDARY)) and (successor["close"] >= 100.0).all()
+    assert predecessor["date"].max() == pd.Timestamp(day2(BOUNDARY - 1)) and (predecessor["close"] < 100.0).all()
+    assert panel(snap, "discovery_post", "SUC.US#E2") is not None and panel(snap, "discovery_post", "SUC.US#E1") is None
+    assert not write_template(snap)["permanent_id"].str.startswith("SUC.US").any()
+    # Without the file one permanent ID carries both securities; the boundary file enters the input digest.
+    assert csv(control, "identity/security_master.csv").query("vendor_code == 'SUC.US'")["permanent_id"].tolist() == [
+        "SUC.US#E1"]
+    assert build(control)["curated_identity_split"] == 0
+    assert manifest["discovery_inputs_sha256"] != build(control)["discovery_inputs_sha256"]
+
+
+def test_t_id_bnd_2_an_interval_across_a_boundary_refuses_and_seal_pieces_still_attach(tmp_path, monkeypatch):
+    post_boundary = HE_ROW + 40
+    small_gap = [r for r in ALL_ROWS if not HS_ROW + 30 <= r < HS_ROW + 33]
+    snap = successor_snapshot(tmp_path, monkeypatch, "B2", [
+        entry("SUC", "2018-01-02", name="Successor Co"), entry("HOP", "2018-01-02", day2(post_boundary - 1)),
+        entry("HOP", day2(post_boundary + 1))], [
+        boundary_row("IB-1", "SUC.US", day2(BOUNDARY)), boundary_row("IB-2", "HOP.US", day2(post_boundary))],
+        codes={"HOP.US": bars2(small_gap)})
+    build_universe(snap, D0_PRE)
+    intervals = csv(snap, "identity/interval_results.csv")
+    suc = intervals[intervals["vendor_code"] == "SUC.US"]
+    assert suc[["permanent_id", "resolution", "census_cap"]].values.tolist() == [
+        ["", "identity_boundary_spanned", "R-CENSUS-3"]]
+    hop = intervals[intervals["vendor_code"] == "HOP.US"]
+    # A predecessor piece that ends at its boundary while a member is a disappearance that needs terminal evidence (R4).
+    assert hop[["permanent_id", "exit_class"]].values.tolist() == [
+        ["HOP.US#E1", "seal_gap_identity_split"], ["HOP.US#E2", "delisting_candidate"],
+        ["HOP.US#E3", "index_removal_still_trading"]]
+    assert write_template(snap)["permanent_id"].tolist() == ["HOP.US#E2"]
+    manifest = build(snap)
+    assert (manifest["curated_identity_split"], manifest["seal_gap_identity_split"]) == (2, 1)
+
+
+@pytest.mark.parametrize("rows, detail", [
+    ([boundary_row("IB-1", "SUC.US", "2019-02-30")], "IB-1: date_unparseable"),
+    ([boundary_row("IB-1", "SUC.US", day2(BOUNDARY), source_kind="")], "IB-1: source_missing"),
+    ([boundary_row("IB-1", "SUC.US", day2(BOUNDARY), source_kind="public_changes_list")], "IB-1: corroboration_missing"),
+    ([boundary_row("IB-1", "SUC.US", day2(BOUNDARY)), boundary_row("IB-2", "SUC.US", day2(BOUNDARY))], "IB-2: duplicate"),
+    ([boundary_row("IB-1", "SUC.US", day2(0))], "boundary_not_inside_bars"),
+    ([boundary_row("IB-1", "GAP.US", day2(BOUNDARY))], "boundary_not_inside_bars"),
+    ([boundary_row("IB-1", "ZZZ.US", day2(BOUNDARY))], "outside the request list"),
+])
+def test_t_id_bnd_3_an_invalid_boundary_row_refuses_the_build_before_any_write(tmp_path, monkeypatch, rows, detail):
+    gap = bars2([r for r in ALL_ROWS if not BOUNDARY - 3 <= r <= BOUNDARY])
+    snap = successor_snapshot(tmp_path, monkeypatch, "B3", [entry("SUC", day2(BOUNDARY + 1)), entry("GAP", "2018-01-02")],
+                              rows, codes={"GAP.US": gap})
+    with pytest.raises(SnapshotRefusal) as refusal:
+        build_universe(snap, D0_PRE)
+    assert refusal.value.code == "identity_boundary_invalid" and detail in str(refusal.value)
+    assert not (snap / "membership/membership_build_manifest.json").exists()
+    assert not (snap / "identity/security_master.csv").exists()
 
 
 # ---------------------------------------------------------------- T-VOL-SEAL

@@ -15,6 +15,51 @@ investment performance.
 
 ---
 
+## 2026-09-28 - M4.8 Stage D: real_v2 Built Offline Under Partition Rule v2; Curated Identity Boundary Rule
+
+Context:
+
+- Plan `m4_8_binding_plan` Revision 4 (`816a3bea…bd74c`) section 7.3 Stage D: build `real_v2` from the local
+  acquisitions, write the seal carry record and verify real_v1's prospective seal, partition under rule v2, and run
+  calendar, universe build with segment-local validation, and the terminal template. Card
+  `coord/v8_review_20260923/card_m4_8d_real_v2.md` (`GENERAL_EXEC`); the Stage C record (PR #274) passed G1 at
+  `D0_pre` 2014-04-30.
+- Stage C review finding A2-C-ADV-2 asked Stage D to give the 2017-04-03 share-exchange successor two permanent IDs
+  (or a typed refusal), because its snapshot code files the predecessor's bars and no carried identity rule
+  separates them.
+
+Decision:
+
+- `real_v2` is built offline from the same local acquisitions as real_v1; no retrieval grant beyond O48-1(a) was
+  used and no network request was made. The seal carry record binds `[2019-07-31, 2020-07-31)` from the seal v1
+  bytes, with all three bound hashes and real_v1's prospective seal file verified. real_v1 stays byte-identical.
+- New rule `curated_identity_boundary_v1` implements the permanent-security clause of rule M-5a(c) ("so no code
+  carries two permanent securities") for the successor code: a private file `membership/identity_boundaries.csv`
+  (one row per boundary: code, first bar date of the later security, the M-3 source fields, and the supplement row
+  it pairs with) starts a new permanent ID at that bar. An interval across the boundary refuses as
+  `identity_boundary_spanned`; a member piece ending at the boundary is a disappearance that needs terminal
+  evidence; an invalid row refuses the build. The file's hash enters `discovery_inputs_sha256`.
+- One boundary is recorded (2017-04-03, sourced to the S&P DJI release of 2017-03-28). Two IDs result; the
+  predecessor piece holds no membership interval.
+
+Rationale:
+
+- A typed refusal of the whole code would also drop the successor's post-segment membership. Two IDs keep each
+  security's own bars and restart the successor's feature warm-up at its first bar, so no feature reads the
+  predecessor's prices (R3, PIT-005).
+- Treating the pieces as SL-5 siblings would attach one membership interval to both securities and end the
+  predecessor piece without a terminal event, dropping the R4 obligation; the ablation keeps the refusal.
+
+Follow-up:
+
+- Review: the boundary file is a new private input format added on `GENERAL_EXEC`; the CRITICAL review decides
+  whether plan section 2.3 should state it by revision.
+- Stage E: curate the 68 in-scope terminal candidates. Stage F: census v3 on real_v2, including the pre-side panel
+  shortfall (111 of 448 members at `D0_pre` without a pre-side panel) and the owner's M-2 disposition, which Stage
+  D leaves open.
+
+---
+
 ## 2026-09-27 - M4.8 Stage C: O48-1(a) Retrieval, Plan Revision 4 (Rules M-5a and M-9), and Gate G1 Record (attempt c4)
 
 Context:

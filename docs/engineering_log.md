@@ -12,6 +12,62 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - M4.8 Stage D: private snapshot real_v2, seal carry, rule v2 partition, universe build, terminal template
+
+- Source: card `coord/v8_review_20260923/card_m4_8d_real_v2.md` (task `v8-stage-m48-d`, route `GENERAL_EXEC`, lane
+  CRITICAL, structural). Plan Revision 4 (`816a3bea…bd74c`) section 7.3 Stage D, sections 2.2 and 2.7. Base
+  `1c56939` (PR #274). Report: `coord/reports/m4_8d_real_v2_impl.md`.
+- Build (offline, no network request): the private real_v1 transport adapter, copied with the snapshot id changed,
+  serves the same local EODHD acquisitions. `components` 818 entries (components clock 2026-08-07); symbols 18,184
+  listed and 32,555 delisted; calendar 8,438 rows; `splits`, `eod`, and `dividends` each 815 `retrieved` and 4
+  `unavailable:missing_symbol`; `verify` reports `retrieval_complete = true`, no hash mismatch, no stale split
+  evidence, and no token leak. The manifest declares `sealed_window_only_partition_v2`,
+  `side_partitioned_discovery_v1`, and `pre_seal_volume_share_basis_v1`; its 10,615 authorized files match their
+  recorded SHA-256. Every retrieved code's pre-side volume carries the SL-8 status `pre_seal_volume_share_basis_v1`
+  (815 of 815; no `volume_basis_unverified:*`). Quarantines: 39 `discovery_pre` and 2 `discovery_post` EOD
+  partitions (`unverified_split`, the carried scale check); no split or dividend partition.
+- Seal carry (R1, T-SEAL3 on real data): `holdout_seal_v2.json` written by `data.holdout_partition.write_seal_carry`,
+  which verified the docs seal v1 (`b7f9380f…f506`), confirmation v2 (`8e9e7b02…88ae`), and real_v1's prospective
+  seal file (`93ce6e5a…9882`) before writing; `private_prospective_verified = true`; window
+  `[2019-07-31, 2020-07-31)`; record SHA-256 `40471065…b741`.
+- Membership: the four Stage C curated files, copied byte-identical (supplement `37a86476…27e5`, changes
+  `3fe432cf…799a`, counts `bc78c556…b280`, discrepancies `5fa147b5…755d`). The membership census on real_v2
+  reproduces the committed census byte for byte (`c40ad8aa…3f6e`), so G1 holds on real_v2.
+- Identity (R3, A2-C-ADV-2): the Stage C share-exchange predecessor keeps its as-traded code under M-5a(c), but the
+  successor's snapshot code files the predecessor's bars before 2017-04-03 with continuous bar dates, so no E1 or
+  SL-5 rule separates them. New rule `curated_identity_boundary_v1`: a private `membership/identity_boundaries.csv`
+  names a code and the first bar date of the later security; the universe build starts a new permanent ID there,
+  refuses one interval across it (`identity_boundary_spanned`), and types a member piece that ends at it as a
+  disappearance, which then needs terminal evidence (R4). An invalid row (date, source rule, a boundary outside
+  the code's bars, a duplicate, or a code outside the request list) refuses the build (`identity_boundary_invalid`).
+  The file's SHA-256 enters `discovery_inputs_sha256`, which the registration v3 runner recomputes. On real_v2 one
+  boundary (2017-04-03, S&P DJI release of 2017-03-28) gives two permanent IDs: the predecessor piece ends
+  2017-03-31 and holds no interval; the successor ID starts 2017-04-03 and holds the member interval.
+- Universe build (`--d0-pre 2014-04-30`): segments pre `[2014-04-30, 2019-06-28]` with 62 IC months and post
+  `[2021-08-31, 2026-08-07]` with 60. 848 intervals: 755 resolved, 23 identity refusals (18 E3, 4 E5, 1 reuse
+  gap), 69 without a containing episode or bars, 1 `entry_missing_field`. 926 permanent IDs; 1,223 panels (595 pre
+  side, 628 post side). Pre segment: 601 resolved member IDs, 468 with a pre-side panel. Post segment: 586 and 510.
+  Episode panel refusals: 169 IDs (148 on the pre side, 83 on the post side, 62 on both). Segment anchor
+  checks 675; pre-side split rows after an anchor 1; `seal_gap_identity_split` 158 (7 codes whose bar dates skip
+  seal rows: 156 gaps of 1 to 14 rows and 2 over 20); `curated_identity_split` 1.
+- Access (R1): the build manifest records 0 holdout-partition opens. A Python `open` audit hook over the build and
+  the template recorded every path opened under real_v2: 0 opens of `raw/`, `quarantine/`, or any holdout
+  partition; discovery opens only by side.
+- Terminal template: 88 candidates: 68 in scope (`unresolved`), 5 `deferred_holdout`, 15
+  `outside_discovery_holding_windows`.
+- real_v1: all 8,830 files byte-identical before and after (SHA-256 file inventory).
+- Code and tests: `research/m4_8_membership.py` (`read_identity_boundaries`, `identity_boundary_rows`);
+  `research/m4_7_universe_build.py` (`identity_boundary_split`, `Episode.identity_segment`, the interval rule, the
+  digest term, and the manifest counter and rule label); `tests/test_m4_8_universe_segments.py` T-ID-BND-1..3
+  (9 cases).
+- Ablation: one simplification kept (count applied boundaries, which drops the per-episode count and the tuple
+  return); two simplifications rejected (joining pieces across a boundary as SL-5 siblings drops the R4 terminal
+  obligation; deduplicating repeated rows drops a fail-closed refusal); five guards retained (code in the request
+  list, boundary inside the bars, digest term, source rule, the split itself), each failing at least one test.
+- Needs follow-up: 111 of 448 pre-segment members at `D0_pre` have no pre-side panel (EOD quarantine or in-span
+  refusal); Stage F measures the coverage effect. E3 still evaluates E1 episodes, so a name change at a curated
+  boundary on one code refuses that code (conservative). Stage E curates the 68 in-scope candidates.
+
 ## 2026-09-27 - M4.8 Stage C attempt c4 (EXPERT): plan Revision 4, rule M-9 vendor-endpoint reconciliation, gate G1 re-recorded (PR #274)
 
 - Source: Round 3 review of `054ceaa`. Seat 1 (`MATERIAL: 1, ADVISORY: 4`; A2R2-M01 open) and Seat 2

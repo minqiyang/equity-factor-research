@@ -1,7 +1,7 @@
 # Current Handoff
 
-Updated: 2026-09-27 for the M4.8 Stage C record, attempt c4 (EXPERT; private point-in-time membership curation on
-real_v1 and gate G1 under plan Revision 4, rules M-5a and M-9).
+Updated: 2026-09-28 for M4.8 Stage D (private snapshot real_v2 under partition rule v2, seal carry, universe build
+across both segments, curated identity boundary rule, terminal template).
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -25,68 +25,69 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `f416af8c5196844052c20cb6ebf580c39ab765fa` (main after PR #273).
+  `1c56939b0172b8f248c993961bac89fc8d2b6a13` (main after PR #274).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
-- Merged through PR #272: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
+- Merged through PR #274: M4.0 local real-data diagnostic through M4.7a-3 PIT universe construction,
   M4.7b-2 preregistration freeze on real_v1, M4.7c-1 point-in-time rerun on real_v1
   (`extend_first`), the M4.7c-2 decision record, M4.7 support v2 with the registration v2 rerun, M4.8
   Stage A (partition rule v2, seal carry, segment-local validation, census v3 code), and M4.8 Stage B (causal
-  engines, locked capital, terminal schema v3, segment runner).
+  engines, locked capital, terminal schema v3, segment runner), and the M4.8 Stage C membership curation record
+  (plan Revision 4, rule M-9, gate G1 passed).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
   `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270),
-  `dcf7b86a` (PR #271), `bfdca57a` (PR #272), and `f416af8c` (PR #273).
+  `dcf7b86a` (PR #271), `bfdca57a` (PR #272), `f416af8c` (PR #273), and `1c56939b` (PR #274).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
   (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`);
   it is preserved history outside the active queue.
 - This candidate's diff and artifacts add no raw private data, provider response, provider-derived membership
-  list, or private path. The tracked tree holds 53 inherited private-path occurrences in 17 files, identical at
+  list, security code, or private path. Inherited private-path occurrences in the tracked tree are unchanged from
   the base; redacting them needs separate owner authorization.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m4_8c-membership` records M4.8 Stage C under binding plan Revision 4
-  (`816a3bea…bd74c`, EXPERT candidate under Coordination Standard V8.9 §3.3; Revision 3 `bd1bf587…bf3e` accepted),
-  sections 2.3, 2.4, 5.1, 5.3, and 7.3.
-  - Private curation files (under `<private_data_root>`, never committed): 182 supplement rows (142
-    `start_date_fill`, 30 `absent_member_add` keyed under plan rule M-5a, 10 `date_correction` typed
-    `correction_not_primary`), 402 reconstructed changes, and 17 S&P DJI factsheet line counts, from public
-    documents under O48-1(a).
-  - Code: rule M-9 vendor-endpoint reconciliation (`research/m4_8_membership.py` `vendor_endpoints`), the public
-    `vendor_endpoints` counts (schema `m4_8_membership_census_v2`), and the R3-10 numerator term
-    (`research/m4_7_coverage_census.py`).
-  - Tests: T-MEM-9 change-row source rule, T-MEM-11 (two cases), and the R3-10 census case.
-  - Plan Revision 4 and history §16 in the untracked `coord/plans/` files; Revision 3 and the A1 candidate are
-    preserved under `coord/plans/archive/`.
-  - Public census output `reports/m4_8_membership_census.{json,md}` (counts and hashes only).
-  - Records: `docs/engineering_log.md` (Stage C c1–c4 entries) and `docs/decision_log.md` (Stage C record).
-- `real_v1` and every committed M4.7 and M4.8 artifact other than the membership census stay byte-identical.
+- Candidate branch `claude/m4_8d-build-real-v2` records M4.8 Stage D under binding plan Revision 4
+  (`816a3bea…bd74c`), sections 2.2, 2.7, and 7.3.
+  - Private snapshot `real_v2` under `<private_data_root>`, built offline from the local acquisitions (no network
+    request): manifest with 10,615 hash-verified authorized files, rule `sealed_window_only_partition_v2`, per-side
+    discovery files, SL-8 pre-side volume basis on all 815 retrieved codes, seal carry record `holdout_seal_v2.json`
+    (`40471065…b741`) with the three bound hashes and real_v1's prospective seal verified.
+  - Universe build with `D0_pre` 2014-04-30: pre segment 62 IC months, post 60; 755 of 848 intervals resolved;
+    926 permanent IDs; 1,223 side panels; 158 seal-gap identity splits; one curated identity boundary.
+  - Terminal template: 88 candidates (68 in scope, 5 `deferred_holdout`, 15 outside the holding windows).
+  - Access: 0 holdout, raw, or quarantine opens downstream of the partitioner (build access log and an `open`
+    audit hook).
+  - Code: rule `curated_identity_boundary_v1` (`research/m4_8_membership.py`, `research/m4_7_universe_build.py`);
+    tests T-ID-BND-1..3 in `tests/test_m4_8_universe_segments.py`.
+  - Records: `docs/engineering_log.md` and `docs/decision_log.md` (Stage D entries).
+- `real_v1` (8,830 files) and every committed M4.7 and M4.8 artifact stay byte-identical; the membership census on
+  real_v2 reproduces the committed census byte for byte.
 - Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Current Research Gate Summary
 
 Milestone 4.7 is completed; see `docs/current_roadmap.md`. Registration v2 on real_v1 records the
 gate outcome `extend_first` (60 IC months; Family A MDE_f 0.0437-0.1293 against the 0.02 floor).
-M4.8 Stages A and B are merged (synthetic fixtures). Stage C gate G1 (attempt c4, plan Revision 4)
+M4.8 Stages A, B, and C are merged. Stage C gate G1 (attempt c4, plan Revision 4)
 on real_v1 membership metadata passed: `coverage_start_pre` = `D0_pre` = 2014-04-30, 62 pre-segment IC months,
 unresolved-change fraction 4 / 303 = 0.0132 (cap 0.02), R3-2c 0.0088 (0.0104 and blocked without rule M-5a(a)).
 Rule M-9 counts 6 vendor-only endpoints (3 entries) outside R3-2a; typed as sourceless change rows they would
 block G1 (start 2018-11-30, 7 months). Seven required anchors pass on the floor rule (no December factsheet
-exists); modelled anchors would move the start to 2016-10-31 (32 months, blocked). No price value was read. The holdout
-window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
+exists); modelled anchors would move the start to 2016-10-31 (32 months, blocked). Stage C read no price value.
+Stage D built real_v2; its universe build and template opened discovery side files only, and the holdout window
+remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`.
 
 ## Immediate Blockers Or Owner Decisions
 
-- Plan Revision 4 (A1 adopted, rule M-9) decides G1; the coordinator records its acceptance and the c4 candidate's
-  under Coordination Standard V8.9 §3.3, with the A2R2-M01 disposition for the merge.
-- Owner disposition of the 10 M-2 discrepancy lines (vendor start dates the public lists and all 17 S&P DJI
-  factsheet counts contradict): accept as the R3-10 caveat, revise M-2 by plan revision, or seek primary sources.
-- Stage C attempt c4 proceeds under §3.3 (QA and coordinator verification, no further review round) before Stage D
-  builds real_v2.
+- CRITICAL review of the Stage D candidate, including the new private boundary file format
+  (`membership/identity_boundaries.csv`, rule `curated_identity_boundary_v1`), which plan section 2.3 does not yet
+  state.
+- Owner disposition of the 10 M-2 discrepancy lines (accept as the R3-10 caveat, revise M-2 by plan revision, or
+  seek primary sources); Stage D leaves it open for Stage F.
 - Owner confirmation: the first Stage C Wikipedia request sent the owner's account email in its user agent
   (engineering log, c2 entry).
 - Owner item carried: the frozen registration v2 validator accepts a cash completion dated after the calendar end
@@ -94,9 +95,9 @@ window remains sealed and unaccessed. Evidence ceiling remains `DIAGNOSTIC_ONLY`
 
 ## Next Safe Action
 
-- Coordinator verifies the c4 candidate and QA evidence and records acceptance under §3.3; after the owner's M-2
-  disposition, Stage D builds real_v2 with the curated files and splits identity at the 2017-04-03 share exchange
-  (A2-C-ADV-2).
+- After review and merge of Stage D, Stage E curates the 68 in-scope terminal candidates on real_v2 and runs the
+  two-pass `validate` and `project`; Stage F then runs census v3, which measures the pre-side panel shortfall
+  (111 of 448 members at `D0_pre` without a pre-side panel).
 
 ## Source Routing
 
