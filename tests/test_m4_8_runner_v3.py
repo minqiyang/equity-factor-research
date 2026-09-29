@@ -12,7 +12,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import os
 import pickle
 from datetime import date
 from pathlib import Path
@@ -81,14 +80,15 @@ def _run(base: Path, paths: dict[str, pd.DataFrame] | None) -> dict:
             "report": (base / "out" / runner.REPORT_V3).read_text()}
 
 
-def _once_per_session(tmp_path_factory, name, compute):
+def _once_per_session(config, tmp_path_factory, name, compute):
     """Compute ``name`` once per xdist session; every other worker loads its exact pickle.
 
     This is the pytest-xdist pattern for a once-only fixture: the lock and the pickle
-    live in the temporary root that only this session's workers share. Without xdist
-    workers that root is shared across sessions, so the value is computed directly.
+    live in the temporary root that only this session's workers share. Only xdist
+    workers carry ``config.workerinput``; outside a worker that root is shared across
+    sessions, so the value is computed directly.
     """
-    if "PYTEST_XDIST_WORKER" not in os.environ:
+    if not hasattr(config, "workerinput"):
         return compute()
     import fcntl  # POSIX file lock; CI runs on Linux and local runs on macOS
     path = tmp_path_factory.getbasetemp().parent / f"{name}.pickle"
@@ -102,13 +102,13 @@ def _once_per_session(tmp_path_factory, name, compute):
 
 
 @pytest.fixture(scope="module")
-def e2e(tmp_path_factory):
+def e2e(request, tmp_path_factory):
     """The clean run, computed once per session and loaded by any other worker.
 
     Under ``--dist loadgroup`` the ``v3_clean`` group computes this run on one worker
     while the ``v3_poisoned`` group computes ``poisoned`` on the other.
     """
-    return _once_per_session(tmp_path_factory, "m4_8_runner_v3_e2e",
+    return _once_per_session(request.config, tmp_path_factory, "m4_8_runner_v3_e2e",
                              lambda: _run(tmp_path_factory.mktemp("v3_clean"), None))
 
 
@@ -451,18 +451,23 @@ def test_once_per_session_computes_once_under_xdist_and_directly_without_it(tmp_
         def getbasetemp(self):
             return tmp_path / "popen-gw0"
 
+    class Config:
+        pass
+
+    class WorkerConfig:
+        workerinput = {"workerid": "gw0"}
+
     calls = []
 
     def compute():
         calls.append(len(calls))
         return {"frame": pd.DataFrame({"x": [0.1, np.nan, -0.0]}), "text": "report"}
 
-    monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
-    _once_per_session(Factory(), "probe", compute)
-    _once_per_session(Factory(), "probe", compute)
+    monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")  # a leaked variable alone never shares state
+    _once_per_session(Config(), Factory(), "probe", compute)
+    _once_per_session(Config(), Factory(), "probe", compute)
     assert calls == [0, 1] and not (tmp_path / "probe.pickle").exists()  # no state across sessions
-    monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")
-    first = _once_per_session(Factory(), "probe", compute)
-    second = _once_per_session(Factory(), "probe", compute)
+    first = _once_per_session(WorkerConfig(), Factory(), "probe", compute)
+    second = _once_per_session(WorkerConfig(), Factory(), "probe", compute)
     assert calls == [0, 1, 2] and second["text"] == first["text"]
     pd.testing.assert_frame_equal(second["frame"], first["frame"])

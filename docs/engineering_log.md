@@ -24,10 +24,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   parallel, each with `-n 2 --dist loadgroup`. `xdist_group` marks keep the m4_7 rerun module, the integration
   module, and the ten `e2e`-only runner v3 tests (`v3_clean`) each on one worker; T-SEG-7 is `v3_poisoned`.
   `cpus.txt` records `nproc --all`; plain `nproc` printed 1 under `OMP_NUM_THREADS=1`. A new test in
-  `tests/test_ci_workflow.py` checks that each `tests/test_*.py` file runs in exactly one lane.
+  `tests/test_ci_workflow.py` checks that each `tests/test_*.py` file runs in exactly one lane. Three existing
+  pins in that file (dist mode, lane list, `max-parallel`) now match the new configuration; the `8c2820a`
+  message says no assertion changed, which is wrong for those three pins.
 - `4873162`: `e2e` is computed once per xdist session (`_once_per_session`: an fcntl lock and a pickle in the
   session's shared temporary root; direct computation without xdist workers). T-SEG-7 requests `poisoned`
-  first. No assertion changed. A leaf-by-leaf exact comparison of one clean run against its pickle round trip
+  first. No assertion changed. The helper detects an xdist worker by `config.workerinput`, which only workers
+  carry, so a leaked `PYTEST_XDIST_WORKER` variable cannot share a pickle across sessions (review advisory).
+  A leaf-by-leaf exact comparison of one clean run against its pickle round trip
   (frames with `check_exact`, index frequency, attrs, NaN positions) found no difference.
 - Local timings, paired before and after runs under the same load:
 
