@@ -24,25 +24,24 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `5b74d35a81aca61f3fb28f065922831056659e78` (main after PR #276).
+  `23b1c734bf221a7e3f16ef137c5b182eb0184cc4` (main after PR #263).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
   real_v1, `extend_first`), M4.7 support v2, and M4.8 Stages A–D (partition rule v2 and seal carry, causal engines
   and terminal schema v3, membership curation with gate G1 passed, private snapshot `real_v2`), and North Star
-  v2 (PR #276: factor-class allocator, owner process constraints, M4.8 paused, Milestone 5 active).
+  v2 (PR #276: factor-class allocator, owner process constraints, M4.8 paused, Milestone 5 active), and the
+  controller review rules (PR #263: `MATERIAL` or `ADVISORY` findings, two review rounds, short plain PR text).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
   `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270),
   `dcf7b86a` (PR #271), `bfdca57a` (PR #272), `f416af8c` (PR #273), `1c56939b` (PR #274), and
-  `9dee2df2` (PR #275), and `5b74d35a` (PR #276).
+  `9dee2df2` (PR #275), `5b74d35a` (PR #276), and `23b1c734` (PR #263).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
   (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`, `DIAGNOSTIC_ONLY`); preserved history.
-- PR #263 (controller review rules, rebuilt on `main` after PR #276 on 2026-09-28) touches the controller, the
-  handoff, and both logs; whichever of it and this candidate lands second refreshes those files.
 - This candidate adds no raw private data, provider response, provider-derived membership list, security code, or
   private path.
 
@@ -72,7 +71,7 @@ D; the seal window remains unaccessed. The stock-level check on the local point-
 
 ## Immediate Blockers Or Owner Decisions
 
-- None for steps 1 and 2. PR #263 (controller review rules) awaits the owner's merge.
+- None for steps 1 and 2.
 - Carried to the M4.8 resume point: nine Stage D advisories and the M-2 disposition of 10 discrepancy lines.
 - Owner items carried: the iCloud sync of the private data root (Stage D, A2-D-ADV-6); the Stage C Wikipedia
   request that sent the owner's account email in its user agent (engineering log, c2 entry); the frozen

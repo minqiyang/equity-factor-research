@@ -66,6 +66,34 @@ Follow-up:
 - The v2 amendment for step 3 states whether the prior-exposure variants (612 factor x state pairs, T1, T3)
   count in the step 3 BY family (review advisory A2-A2).
 
+## 2026-09-28 - Controller Review Rules Follow The Materiality Test And The Owner's Two-Round Limit
+
+Context:
+
+- `docs/codex_long_running_controller.md` still carried review steps from an
+  older coordination standard: stop after two P1/P2 reviews, then a
+  review-loop analysis role and a fixer route. The live standard has neither
+  role; it classifies each finding as `MATERIAL` or `ADVISORY`, and only
+  `MATERIAL` findings block. The controller blocked merge on any actionable
+  finding. PR #263 proposed the fix on 2026-09-26 and went stale.
+
+Decision:
+
+- Every finding is `MATERIAL` or `ADVISORY` under the materiality test in
+  `coordinator.md` section 3; P1 and P2 labels only rank review attention.
+- Review rounds follow the owner process constraints in `AGENTS.md` (at most
+  two per card). When the last allowed round still reports `MATERIAL`
+  findings, the EXPERT step and residual-risk disposition of
+  `coordinator.md` section 3.3 apply.
+- A PR is merge-eligible only with `MATERIAL: 0`, or an explicit merge
+  disposition for each owner-accepted `MATERIAL` finding.
+- The controller names the standard without a version number, so the text
+  stays correct when the standard is updated.
+
+Consequences:
+
+- A test pins the current rules and the absence of the retired ones.
+
 ---
 
 ## 2026-09-28 - Owner Decisions: North Star v2, M4.8 Pause After Stage D, Public Factor Data, SEC Fundamentals, Process Constraints
