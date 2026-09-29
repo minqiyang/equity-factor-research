@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Owner-identified process failure: PR text full of process jargon; controller review rules updated
+
+- Incident (owner, 2026-09-28): the PR #263 body carried a "Lane" section and an "Out of scope" section and cited a
+  coordination-standard version (V8.5) that the standard has since replaced. The owner asked for PR text that is
+  short, plain, and readable by an ordinary engineer.
+- Fix: the controller GitHub Review Lifecycle states the rule (what changed, why, how it was tested; no lane
+  labels, standard version numbers, or out-of-scope remarks), and the PR #263 body was rewritten to match.
+- Same change: the controller review rules now follow the live standard. The two-review P1/P2 stop, the
+  review-loop analysis role, and the fixer route are removed; findings are `MATERIAL` or `ADVISORY`; review
+  rounds follow the owner's limit of two per card; merge needs `MATERIAL: 0` or an explicit disposition;
+  "Herdr+Pi" becomes "Herdr" in the controller and in the `scripts/repo_map.py` description of `AGENTS.md`.
+- Tests: two existing controller pins now check the new merge wording; the new
+  `test_controller_review_rules_follow_materiality_and_owner_round_limit` checks the current rules, the PR
+  writing rule, and the absence of the retired ones.
+- Publishing slip (coordinator, 2026-09-29 UTC): renaming the PR #263 head branch through the GitHub API to drop
+  "v85" from its name closed the PR, because GitHub deletes the old head ref. The branch was restored under its
+  original name and the PR reopened 14 seconds later at the same head. Lesson: never rename a PR's head branch.
+
+---
+
 ## 2026-09-28 - Owner-identified process failure: Chinese text in a PR body; English-only rule and guard test
 
 - Incident (owner, 2026-09-28): the PR #276 body carried a Chinese summary section, and the draft `AGENTS.md`
