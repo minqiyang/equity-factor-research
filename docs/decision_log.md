@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-09-28 - Milestone 5 Trial Amendments 1 and 2 (Coordinator Technical Defaults)
+
+Context:
+
+- The v1 trial family (`docs/preregistrations/m5_trial_family_v1.json`, SHA-256 `a99a862c...417a`) lets a v2
+  amendment fill only the open parameters of R2 to R4 and the step 3 test details. Both amendments below change
+  other sections, so each is a coordinator technical default under the AGENTS.md Owner Process Constraints. Neither
+  loosens R1, R2, R4, R6, R8, or R9. Amendment 1 said it was logged here; this entry supplies that record (review
+  advisories A1-M5-04 and A2-A1).
+
+Decisions:
+
+1. **Amendment 1** (`m5_trial_family_v1_amendment_1.json`, SHA-256 `b3992b32...0751`, committed alone in
+   `f77b4ed`): the descriptive post-publication split starts at its first evaluated month with a non-empty subset,
+   because no JKP factor has a publication year before 1973 and the v1 empty-set refusal left the split without
+   metrics. Leading empty months are counted; a later empty month still refuses. Results seen before it: every
+   R0, R1, S2, decision, market, and volatility-forecast result of the first two step 2 attempts and the
+   post-publication counts; no post-publication metric. It carries no test and no decision.
+2. **Amendment 2** (`m5_trial_family_v1_amendment_2.json`, SHA-256 `59461b15...72f1`, committed alone in
+   `261d84f` before any result under it) repairs review round 1 MATERIAL findings:
+   - A1-M5-01 (AUDIT seat): v1 formed month t's weights from returns through month t-1 and earned month t from
+     that same close. Now the signal month is t-2, the target executes at the month t-1 close, and it first earns
+     month t; every v1 window ending at t-1 ends at t-2 (credit spread at t-3). This is
+     `after_close_signal_next_observed_close_v1` on the monthly grid with a lag of one observed row.
+   - Month-t return availability is no longer a set condition, since it is not known at the new decision time; a
+     missing held return refuses instead of reallocating (advisories A1-M5-02, A2-A4). A bad-data code in the
+     36-month window excludes the factor; an absent month counts only against the 24 (advisory A1-M5-03, R6).
+   - A2-M1 (AUDIT_2 seat): `years_since_publication` is the signal month's year minus the publication year,
+     typed missing until positive, and such factor-months leave R4's inputs. The post-publication split uses the
+     same definition.
+   - Results seen before it: all step 2 results of attempts 1 to 4 under the v1 timing, including the
+     post-publication metrics, and both seats' round 1 diagnostics (the AUDIT seat's one-month-delay sensitivity
+     and the AUDIT_2 seat's pre- versus post-publication return gap).
+
+Rationale:
+
+- The v1 timing let a signal known only after a close trade at that close (R1). The trait leaked which factors
+  would be published later (R1). Neither repair uses any return to choose a rule.
+
+Consequences:
+
+- The amendment 2 rerun (attempt `20260929T003920038139Z`, outputs in `c0ce46d`) keeps the decision R1 (8 of 8);
+  it equals the AUDIT seat's sensitivity. The v1-timing results stay visible as prior exposure (R9).
+- Step 3 inherits the t-2 signal month and the corrected trait; R4's weight-level publication-year test becomes a
+  required step 3 test.
+
+Follow-up:
+
+- The v2 amendment for step 3 states whether the prior-exposure variants (612 factor x state pairs, T1, T3)
+  count in the step 3 BY family (review advisory A2-A2).
+
+---
+
 ## 2026-09-28 - Owner Decisions: North Star v2, M4.8 Pause After Stage D, Public Factor Data, SEC Fundamentals, Process Constraints
 
 Context:
