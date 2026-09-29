@@ -26,6 +26,9 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Tests: two existing controller pins now check the new merge wording; the new
   `test_controller_review_rules_follow_materiality_and_owner_round_limit` checks the current rules, the PR
   writing rule, and the absence of the retired ones.
+- Publishing slip (coordinator, 2026-09-29 UTC): renaming the PR #263 head branch through the GitHub API to drop
+  "v85" from its name closed the PR, because GitHub deletes the old head ref. The branch was restored under its
+  original name and the PR reopened 14 seconds later at the same head. Lesson: never rename a PR's head branch.
 
 ---
 
