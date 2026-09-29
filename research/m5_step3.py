@@ -703,7 +703,7 @@ def post_publication_condition(post: dict[str, Any], costs: list[int]) -> dict[s
 
     if post.get("status") != "completed" or "full" not in post.get("rules", {}).get("R2", {}).get(f"{costs[0]}bp", {}):
         return {"holds": False, "detail": "post-publication period is empty or refused"}
-    checks = []
+    checks, parts = [], []
     for cost in costs:
         r1, r2 = post["rules"]["R1"][f"{cost}bp"]["full"], post["rules"]["R2"][f"{cost}bp"]["full"]
         if not r1.get("months") or not r2.get("months"):
@@ -712,9 +712,21 @@ def post_publication_condition(post: dict[str, Any], costs: list[int]) -> dict[s
         drawdown = (None if r1["max_drawdown"] is None or r2["max_drawdown"] is None
                     else abs(r1["max_drawdown"]) - abs(r2["max_drawdown"]))
         checks += [not_worse(sharpe), not_worse(drawdown)]
+        parts.append(f"at {cost} bp, Sharpe margin {_margin(sharpe, 4)} ({'holds' if checks[-2] else 'fails'}) and "
+                     f"drawdown margin {_margin(drawdown, 4, percent=True)} ({'holds' if checks[-1] else 'fails'})")
     mean = post.get("mean_difference_20bp")
-    holds = all(checks) and mean is not None and math.isfinite(mean) and mean > 0
-    return {"holds": bool(holds), "detail": f"Sharpe and drawdown checks {checks}; mean R2-sub minus R1-sub {mean}"}
+    positive = mean is not None and math.isfinite(mean) and mean > 0
+    parts.append(f"mean R2-sub minus R1-sub at 20 bp {_margin(mean, 2, bp=True)} per month "
+                 f"({'holds' if positive else 'fails'})")
+    return {"holds": bool(all(checks) and positive), "detail": "; ".join(parts)}
+
+
+def _margin(value: float | None, digits: int, percent: bool = False, bp: bool = False) -> str:
+    if value is None or not math.isfinite(value):
+        return "undefined"
+    if bp:
+        return f"{10_000 * value:+.{digits}f} bp"
+    return f"{100 * value:+.{digits}f} pp" if percent else f"{value:+.{digits}f}"
 
 
 def r2_timing_claim(conditions: list[dict[str, Any]], mean_difference: float | None, qvalue: float | None,
@@ -899,6 +911,7 @@ def post_publication_r2(built: dict[str, Any], step2: dict[str, Any], data: Step
     difference = books["R2"][costs[0]]["net"] - books["R1"][costs[0]]["net"]
     result.update(
         rules={"R0": post["rules"]["R0"], **rules}, span_start=str(span_start),
+        periods={period: [str(first), str(end)] for period, (first, end) in bounds.items()},
         mean_difference_20bp=float(difference.mean()),
         mean_lambda=mean_by_period(r2["lambdas"], bounds),
         weights_differ_share=differs_share(w2, w1, bounds),
@@ -1167,7 +1180,7 @@ def _yes(value: bool) -> str:
 
 
 def _interval(values: list[float] | None, scale: float) -> str:
-    return "n/a" if values is None else f"[{100 * scale * values[0]:.3f}%, {100 * scale * values[1]:.3f}%]"
+    return "n/a" if values is None else f"[{100 * scale * values[0]:.4f}%, {100 * scale * values[1]:.4f}%]"
 
 
 def render_report(result: dict[str, Any]) -> str:
@@ -1197,6 +1210,11 @@ def render_report(result: dict[str, Any]) -> str:
         label = f", labeled '{closure['r2_label']}'" if closure["r2_label"] else ""
         lines.append(f"**The return-timing line stays open.** R2 meets all 8 closure conditions and goes to step 4 "
                      f"beside R1{label}.")
+    r2_test = tests["S3.R2"]
+    lines += ["", f"S3.R2 (R2 net minus R1 net at {costs[0]} bp, {r2_test['n_observations']} months): mean "
+              f"{_bp(r2_test['mean_return'])} bp per month, 95% interval {_interval(r2_test['ci95_monthly'], 1)} per "
+              f"month, HAC p {_pvalue(r2_test['hac_pvalue'])}, BY q {_pvalue(r2_test['by_qvalue'])}, random-date p "
+              f"{_pvalue(r2_test['random_date']['p'])}."]
     lines += ["", f"R2 timing claim: **{'qualifies' if claim['qualifies'] else 'does not qualify'}**"
               + ("" if claim["qualifies"] else f" (failed conditions: {', '.join(claim['failed'])})") + ".", "",
               "| Condition | Text | Holds |", "| --- | --- | --- |"]
@@ -1317,8 +1335,12 @@ def render_report(result: dict[str, Any]) -> str:
         lines += ["", "| Rule | Cost | Period | Months | Ann. mean | Volatility | Sharpe | Max drawdown | "
                   "Worst 12 months | Avg turnover |", "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
         lines += _grid_rows(post["rules"], costs, ("R0", "R1", "R2"))
-        lines += ["", f"Mean R2-sub net minus R1-sub net at 20 bp over the full subset period: "
-                  f"{_bp(post['mean_difference_20bp'])} bp per month. {claim['post_publication_detail']}.", "",
+        members = post["rules"]["R0"]["members_per_month"]
+        lines += ["", "Subset periods: " + "; ".join(f"{PERIOD_LABEL[p]} {a} to {b}" for p, (a, b) in post["periods"].items())
+                  + f". Subset members per month: min {members['min']}, median {members['median']}, max "
+                  f"{members['max']}; the early subset holds very few factors, so its first-half figures describe a "
+                  "thin and changing set.", "",
+                  f"Condition 5 over the full subset period: {claim['post_publication_detail']}.", "",
                   "R2-sub mean lambda per state: "
                   + "; ".join(f"{PERIOD_LABEL[p]} " + ", ".join(f"{s} {v:.3f}" for s, v in values.items())
                               for p, values in post["mean_lambda"].items()) + ".", "",
@@ -1464,13 +1486,15 @@ def _append_attempt(repo_root: Path, record: dict[str, Any]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args(argv)
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--reason", default=None, help="why this attempt runs (recorded in the attempt log)")
+    args = parser.parse_args(argv)
     attempt = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     try:
         commit = base.git_state(REPO_ROOT)
     except subprocess.CalledProcessError:
         commit = {"commit": None, "tracked_changes": None}
-    _append_attempt(REPO_ROOT, {"attempt": attempt, "event": "start", **commit})
+    _append_attempt(REPO_ROOT, {"attempt": attempt, "event": "start", "reason": args.reason, **commit})
     started = time.perf_counter()
     try:
         result = json_ready(run(REPO_ROOT, commit))
