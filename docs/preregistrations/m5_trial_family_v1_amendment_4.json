@@ -1,0 +1,290 @@
+{
+  "schema_version": "m5_trial_family_v1_amendment_4",
+  "declared_on": "2026-09-29",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "purpose": "The step 4 amendment: the first run of the price-class bridge. It fixes the snapshot and its pins, the universe, the R4 disappearance events and their last-close rerun, the missingness refusals, the classes and signals, the sleeves, the stock and switch costs, R0, rule R1, and R2 on the sleeves, the benchmarks, the survival and transmission metrics, the halves and the comparison window, the S4 tests and their BY family, the prior exposures, the decision outcomes, and the required tests for the step 4 code. It is committed alone, before any step 4 code, sleeve, return, IC, or rule weight exists.",
+  "naming": "Rule R1 means the inverse-volatility rule and invariant R1 means the AGENTS.md timing invariant. R0, rule R1, and R2 here are the step 2 and step 3 rules applied to the six stock-level sleeves.",
+  "amends": {
+    "path": "docs/preregistrations/m5_trial_family_v1.json",
+    "sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+    "also_in_force": [
+      {"path": "docs/preregistrations/m5_trial_family_v1_amendment_1.json", "sha256": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751"},
+      {"path": "docs/preregistrations/m5_trial_family_v1_amendment_2.json", "sha256": "59461b150a957959f0fc9ac36aef9889168d6924f17bc33c3f15dab25eae72f1"},
+      {"path": "docs/preregistrations/m5_trial_family_v1_amendment_3.json", "sha256": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb"}
+    ],
+    "sections": ["step2_decision_rule.scope (the step 4 implementable check)", "rules.R0 and rules.R1 on stock-level sleeves", "rules.R2 (amendment 3) on stock-level sleeves", "costs (stock costs inside sleeves; drift-adjusted class turnover)", "step 4 tests, decision outcomes, and required tests (new)"]
+  },
+  "authority": "The v1 amendment_policy covers only the v2 amendment; amendments 1 and 2 were coordinator defaults outside that list, and this amendment is recorded the same way. v1 step2_decision_rule.scope leaves 'the implementable check on the repository's point-in-time S&P 500 books' to step 4; this amendment defines that check. Owner decisions O-5 (local reads of the snapshots for step 4; aggregates and hashed manifests only) and O-9 (premise VP-2 re-ratified under DIAGNOSTIC_ONLY for step 4) and the coordinator scope defaults of 2026-09-29 in docs/decision_log.md bind it. Each choice listed under technical_defaults is a coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md; none loosens R1, R2, R4, R6, R8, or R9. No public-data definition, result, or decision of steps 2 and 3 changes.",
+  "question_and_decision": {
+    "question": "On long-only top-quintile point-in-time S&P 500 books after costs, does rule R1 still beat R0, and does R2 still avoid losing to rule R1? How much of the public long-short result survives?",
+    "decides": "the stock-level baseline product (rule R1 or R0), whether R2 continues, and the survival figure the owner uses before step 4b (SEC as-filed classes) and step 5",
+    "looks": "One declared run: the primary run under the R4 adverse default and its last-close rerun, both computed and reported together. A rerun happens only to fix a defect; every attempt is appended to reports/m5_step4_attempts.jsonl and stays visible under R9."
+  },
+  "snapshot": {
+    "id": "real_v2",
+    "only_snapshot": "Step 4 reads real_v2 only. real_v1 is not opened; real_v2's post side serves the same local acquisitions (docs/engineering_log.md, 2026-09-28 M4.8 Stage D entry).",
+    "location": "Passed to the runner as a command-line snapshot directory. The repository names the private data root only through the environment variable EFR_EODHD_DATA_DIR and the snapshot only by its id; no private path is written to the repository or to a report (R11).",
+    "pins": {
+      "manifest_sha256": "b8e5bf478dbeb7e2c69d4167ba77cf2dd74d0b19230ebe16e7d7df20bbf5fbee",
+      "inventory_sha256": "125fb53b14d05c19704b725b55598750b14f7660e16d2210cf2e1dac58d43d3b",
+      "discovery_inputs_sha256": "0583ba8c6d3466fab8a76e7229d9aacff92046af57598b5f7659e8a439f7bc52",
+      "seal_carry_sha256": "4047106596a06aad4ff3cd0da2a6a30bc202ac0ae0c78b33a9fb1b7cb4fcb741",
+      "build_manifest_sha256": "f2fdb938eaa032d17ec887acba7274141bf261af01bd9375eef2c78570ad7253",
+      "interval_csv_sha256": "64faa0b5752c63ad195c249b22065eb136451df4852aa7a4990a3fb38fb60ba9",
+      "security_master_sha256": "a54d98c36ee66ee41b7becc694341fc7244c46c4fcd9a216f4b21f00fd80d6c6",
+      "files": "manifest.json, panel/inventory_discovery.json, holdout_seal_v2.json, membership/membership_build_manifest.json, membership/constituent_intervals.csv, and identity/security_master.csv under the snapshot root. discovery_inputs_sha256 is recomputed by research/m4_7_universe_build.py discovery_inputs_sha256 and must also equal the value recorded in the inventory and the build manifest; it covers the curated membership files and membership/identity_boundaries.csv.",
+      "panel_files": "every panel file named by the pinned inventory must match its recorded SHA-256 before any load, as in bind_snapshot_v3"
+    },
+    "declared_properties": {
+      "partition_rule": "sealed_window_only_partition_v2",
+      "discovery_layout": "side_partitioned_discovery_v1",
+      "calendar_source": "SPY.US_eod_dates_v1",
+      "d0_pre": "2014-04-30",
+      "seal_window": "[2019-07-31, 2020-07-31), from the pinned seal carry record"
+    },
+    "binding": "A new bind_step4 keeps every check of research/m4_7_sp500_pit_rerun.py bind_snapshot_v3 that precedes a panel load (snapshot open, partition rule, snapshot id, the pins above, the recomputed discovery inputs, every panel hash, the seal carry window, the calendar source, and _refuse_split_sources) and drops the census JSON and the terminal projection checks, because step 4 accepts no terminal evidence. Any mismatch refuses the run before a panel is loaded.",
+    "seal_guard": "research/m4_7_sp500_pit_rerun.py _segment_calendar raises seal_bracket_computation_forbidden when any loaded field row lies on the other side or in the seal window; bind_step4 raises holdout_overlap_refused when the seal carry window differs from the declared seal_window; load_segment_runs opens only the side directories of the inventory files, so no seal-window partition is opened. The seal window stays unaccessed.",
+    "writes": "The runner writes nothing inside the snapshot and reads no file under its terminal/ directory; its outputs are reports/m5_step4.md, reports/m5_step4.json, and reports/m5_step4_attempts.jsonl, which carry aggregates and hashes only: no raw provider row, provider response, membership list, security code, or private path (R11)."
+  },
+  "universe": {
+    "segments": {
+      "pre": {"side": "discovery_pre", "anchor_row": "2014-04-29", "first_reset": "2014-04-30", "last_ic_reset": "2019-05-31", "last_book_row": "2019-06-28"},
+      "post": {"side": "discovery_post", "anchor_row": "2021-08-30", "first_reset": "2021-08-31", "last_ic_reset": "2026-07-31", "last_book_row": "2026-08-07"},
+      "source": "research/m4_7_universe_build.py discovery_segments on the pinned calendar, holdout window, and d0_pre; the runner recomputes them and refuses (census_runner_inconsistency:segment_rows) when they differ from these dates"
+    },
+    "membership": "Point-in-time constituent intervals from the pinned interval CSV, resolved by src/backtest/portfolio.py resolve_pit_universe_mask, and the causal eligibility mask research/m4_7_common_support.py causal_support_schedule (causal_signal_eligibility_mask_v3: E(r - 1) = S_mask(r - 1)). Members later removed, acquired, or bankrupt stay in the universe for the days they were members (invariant R2).",
+    "identity": "Permanent IDs from the snapshot build under rules E1 to E6 and curated_identity_boundary_v1; an ambiguous identity was refused at build time and is never stitched (R3).",
+    "assets": "Per segment, the permanent IDs with an interval and a panel on that segment's side, excluding SPY.US#E1, as in prepare_segment. A member without a panel on the side is unpriced: it is never held, and its member-days are counted (missingness.unpriced_share)."
+  },
+  "returns_and_volume": {
+    "return_basis": "Vendor adjusted_close is the only return basis (R5), through research/real_data_multifactor_diagnostic.py build_adjusted_research_panels; no cash dividend is added. Premise VP-2 (the vendor's adjusted close applies each declared distribution) holds under owner decision O-9 for step 4 only; the report header discloses VP-2 and the M4.8 census share (S_D > 0.05 on 22.5 percent of eligible member-days).",
+    "dollar_volume": "Split-only close times vendor volume (build_adjusted_research_panels), the R7 basis used by AMIHUD_ILLIQ_63.",
+    "benchmark_series": "SPY.US#E1 adjusted close; a segment whose SPY series is not finite on every row refuses (prepare_segment)."
+  },
+  "disappearances": {
+    "accepted_evidence": "None. Stage E never ran, and the 68 in-scope terminal candidates are uncurated. The runner passes no snapshot terminal event to the engine.",
+    "residual_stops": "Per segment, research/m4_7_common_support.py residual_disappearances(schedule, bars, accepted = empty set, candidates) finds every stop of an asset that is potentially held (P_r of potentially_held, which depends on no factor): part 1 takes each delisting-candidate settlement row (last bar + 1) from the security master, part 2 each asset whose last bar precedes the segment's last book row.",
+    "primary_events": "residual_bound_events (residual_disappearance_minus_100pct_bound_v1): each residual stop settles at terminal_return -1.0 at its stop row, with reference and known_at at the preceding observed row. This replaces the refusal residual_unevidenced_disappearance of prepare_segment. It is the R4 side-aware adverse default for a long position; step 4 holds no short position.",
+    "same_events_everywhere": "The same event set enters every sleeve, every cost case, and the equal-weight benchmark of that segment. The engine applies an event only to a position held at the stop, and the universe mask removes the asset from its effective date on, so no book sells before the stop.",
+    "last_close_rerun": "A second full run replaces every terminal_return with 0.0 (settlement at the last observed close) and recomputes sleeves, the equal-weight benchmark, sigma, R0, rule R1, R2, survival, transmission, and S4 tests.",
+    "fragility": "For each S4 mean difference and each closure margin (the 8 of rule R1 against R0, the 8 of R2 against rule R1, and, when R0 is the point-in-time baseline, the 8 of R2 against R0), sign(x) is -1, 0, or +1, with |x| < 1e-12 counted as 0. The result is labeled fragile when any of these signs, or any decision outcome, differs between the primary run and the last-close rerun. The label is reported in the header and beside the decision; it does not change the decision, which uses the primary run.",
+    "reported": "per segment: the residual stop count; per book (each sleeve and cost case, the equal-weight benchmark, and R0, rule R1, and R2): the number of events that settle a held position and the sum and maximum of their incoming weights (for the rules, the sleeve weight times the incoming weight inside the sleeve), in both runs"
+  },
+  "missingness": {
+    "halts": "missing_price_policy halt_gap_return_v1 (src/backtest/portfolio.py _halt_gap_returns): a held asset without a close keeps its mark and returns 0, and realizes its gap return at its next close; unmarked halt rows and locked capital are typed and counted per sleeve.",
+    "refusals": [
+      "a snapshot pin, panel hash, discovery-inputs, seal carry, calendar source, or segment-row mismatch, or a split table beside a panel",
+      "a loaded field row on the other side or in the seal window (seal_bracket_computation_forbidden)",
+      "a segment whose SPY series is not finite on every row",
+      "an engine Class I reason (incoming_price_invalid, execution_price_invalid, terminal_target_invalid, terminal_events_invalid, unresolved_disappearance, terminal_reference_bar_missing), including a held close that is present but not finite positive",
+      "an empty sleeve target at any scheduled rebalance of a segment: no eligible member has a finite signal, so the engine would silently hold cash (src/backtest/portfolio.py _build_target_weights)",
+      "a zero or non-finite rule R1 sigma for a sleeve in a comparison month",
+      "a missing R2 multiplier for one of the four themes in a comparison month",
+      "a missing sleeve or benchmark monthly return in a sleeve month"
+    ],
+    "typed_and_counted": "An eligible member without a finite signal at a signal row (warm-up or a missing anchor) is not ranked; its count per sleeve and rebalance is reported. Nothing is filled, clipped, dropped silently, or repaired (R6).",
+    "unpriced_share": "Per segment, the share of member-days of members without a side panel, split by the exit class of research/m4_7_universe_build.py exit_class (index_removal_still_trading, delisting_candidate, disappearance_outside_membership) and by the reason the panel is absent (EOD quarantine, episode panel refusal, identity refusal, or no vendor bars). At D0_pre, 111 of 448 members have no pre-side panel (Stage D count)."
+  },
+  "classes_and_signals": {
+    "signals": "The six frozen Family A signals of research/m4_7_family_a.py family_a_signals on adjusted_close, SPY.US#E1, and dollar_volume, masked by S_mask; every signal reads higher is better (LOW_VOL_252 and LOW_BETA_252 negated).",
+    "map": [
+      {"signal": "MOM_12_1", "jkp_characteristic": "ret_12_1", "theme": "Momentum"},
+      {"signal": "HIGH_52W", "jkp_characteristic": "prc_highprc_252d", "theme": "Momentum"},
+      {"signal": "REV_1M", "jkp_characteristic": "ret_1_0", "theme": "Short-Term Reversal"},
+      {"signal": "LOW_VOL_252", "jkp_characteristic": "rvol_21d", "theme": "Low Risk"},
+      {"signal": "LOW_BETA_252", "jkp_characteristic": "beta_60m", "theme": "Low Risk"},
+      {"signal": "AMIHUD_ILLIQ_63", "jkp_characteristic": "ami_126d", "theme": "Size"}
+    ],
+    "map_source": "the nearest JKP characteristic named in research/factor_catalog.csv (rows repo.MOM_12_1 to repo.AMIHUD_ILLIQ_63) and its cluster in data/public_cache/jkp_cluster_labels.csv at the v1 pinned commit",
+    "waiting": "Seasonality has no price signal in Family A, and share-based Size needs shares data; both wait. The SEC as-filed value and quality classes are step 4b.",
+    "class_return": "Descriptive only: the class return of theme k in month t is rule R1 within the class, the sum over its sleeves of (1/sigma_s,t) * r_s,t divided by the sum of 1/sigma_s,t, with the rule R1 sigma below. A one-sleeve class equals its sleeve."
+  },
+  "sleeves": {
+    "count": "One sleeve per signal and segment: 6 signals x 2 segments, each at 2 cost cases, in each of the two event runs.",
+    "engine_call": "research/m4_7_sp500_pit_rerun.py run_book('long_only', prices, signal, calendar, window = (anchor_row, last_book_row), intervals, events, cost, top_pct = 0.20, missing_price_policy = 'halt_gap_return_v1'), with the segment's residual events, one engine call per segment from its anchor row, starting from cash.",
+    "holdings": "At each scheduled month-end rebalance, the ceil(0.2 * n) highest-signal names among the n eligible members with a finite signal, equal weight (src/backtest/portfolio.py _select_top_assets). Ties at the cutoff follow the engine's stable sort in asset-column order.",
+    "timing": "The engine contract after_close_signal_next_observed_close_v1 with signal_lag_periods 1: the rebalance row r is the last trading day of a month, the signal and eligibility use row r - 1, the target executes at the close of row r, and it first earns the return of row r + 1.",
+    "monthly_return": "The sleeve's month-t net return is the product over calendar rows in (last trading day of t-1, last trading day of t] of (1 + daily net return), minus 1. The first sleeve month of each segment also includes the first reset row, which carries the cost of the initial purchase. The benchmark monthly returns compound the same way.",
+    "sleeve_months": "pre 2014-05 to 2019-06 (62 months); post 2021-09 to 2026-07 (59 months). The partial month 2026-08 (five rows to 2026-08-07) enters no monthly figure and is counted.",
+    "active_return": "The sleeve's month-t net active return is its monthly net return minus the equal-weight benchmark's monthly return in the same event run."
+  },
+  "costs": {
+    "stock_costs": "Inside each sleeve, the engine's transaction_cost_bps and slippage_bps on traded notional, booked on the execution row: primary 1 + 4 bp, sensitivity 2 + 8 bp (research/m4_7_sp500_pit_rerun.py REGISTERED costs). No zero-cost sleeve is run; a zero-cost figure, if shown, is labeled a gross diagnostic.",
+    "switch_cost": "The class layer pays 20 bp (primary) or 50 bp (sensitivity) on drift-adjusted class turnover: turnover_t = sum over sleeves s of |w_s,t - wd_s,t-1|, where wd_s,t-1 = w_s,t-1 * (1 + r_s,t-1) / (1 + sum over j of w_j,t-1 * r_j,t-1) is last month's weight after its month-(t-1) net return. The first comparison month of each segment starts from cash, so its turnover is 1. Net class-layer return: r_net,t = sum over s of w_s,t * r_s,t - (bps / 10000) * turnover_t, with r_s,t the sleeve's net monthly return.",
+    "cost_cases": {"primary": "stock 1 + 4 bp with switch 20 bp", "sensitivity": "stock 2 + 8 bp with switch 50 bp"},
+    "booking": "Stock costs on the execution row inside the sleeve; switch costs recorded at the month-(t-1) close and deducted from the month-t return, as in step 2.",
+    "netting": "Nothing nets across sleeves: two sleeves trading the same name in opposite directions both pay, which overstates costs; the report says so.",
+    "borrow": "Step 4 holds no short position, so no borrow cost applies.",
+    "impact": "No market-impact model (the M4.8 engine setting 'none'); the report states it."
+  },
+  "rules": {
+    "set": "The six sleeves of a segment, all present in every comparison month.",
+    "R0": "w_s,t = 1/6 (research/m5_factor_baseline.py rule_weights 'R0').",
+    "R1": {
+      "weights": "w_s,t proportional to 1/sigma_s,t, normalized, no cap (rule_weights 'R1').",
+      "sigma": "the sample standard deviation (ddof 1) of the sleeve's daily net return minus the equal-weight benchmark's daily return, over the 126 calendar rows (US trading days of the SPY calendar) ending on the last trading day of month t-2, counted from the row after the segment's first reset row; each cost case uses its own sleeve returns and each event run its own series",
+      "undefined": "a month whose window has fewer than 126 rows has no rule R1 weight; a zero or non-finite sigma in a comparison month refuses"
+    },
+    "R2": {
+      "weights": "w2_s,t = w1_s,t * M_k(s),t / (sum over j of w1_j,t * M_k(j),t), with k(s) the sleeve's theme (research/m5_step3.py tilt with every sleeve in the block).",
+      "multipliers": "M_k,t is the amendment 3 R2 class multiplier of theme k for return month t, taken unchanged from research/m5_step3.py r2_on_months on jkp_factors_153 with the pinned public inputs of reports/m5_public_data_manifest.json (SHA-256 ba025b1a67af175dfff892c3dcefe96b573f7542b6d365dcdc783353c2af998f at the base), for the themes Momentum, Short-Term Reversal, Low Risk, and Size. They are not re-estimated on the stock-level books.",
+      "label": "R2 keeps the step 3 label 'no evidence of state timing'; step 4 makes no state-timing claim."
+    },
+    "timing": "Every class-layer input for month t ends at month t-2: sleeve and benchmark daily returns through the last trading day of month t-2, and the R2 multipliers, whose inputs end at t-2 (French data) and t-3 (FRED). The class weights execute at the close of the last trading day of month t-1 and earn the sleeves' month-t returns (invariant R1; the step 2 event order of amendment 2).",
+    "start": "In each segment the class layer starts at the first month t whose sigma window has 126 rows for every sleeve; R0, rule R1, and R2 all start that month from cash. Expected from the calendar alone: 2014-12 in the pre segment and 2022-05 in the post segment."
+  },
+  "benchmarks": {
+    "spy": "SPY.US#E1 adjusted close, cost-free, compounded monthly as the sleeves are",
+    "equal_weight_pit": "research/m4_7_sp500_pit_rerun.py run_book('long_only') with equal_weight_signal on the evaluation mask, top_pct 1.0, zero cost, and the same residual events as the sleeves (the M4.8 registration v3 secondary benchmark)",
+    "factor_etf_blend": "Not run: it needs an ETF data source, an owner item.",
+    "reported": "for R0, rule R1, R2, and each sleeve, per segment and cost case: the annualized mean monthly net excess over SPY and over the equal-weight benchmark, and the compounded excess total return over each"
+  },
+  "metrics": {
+    "per_rule": "research/m5_factor_baseline.py performance on monthly net returns of each comparison window: annualized mean, volatility, Sharpe (no risk-free subtraction), maximum drawdown on cumprod(1 + r_net) rebased to 1 at the window start, worst 12-month return, and average monthly turnover",
+    "per_sleeve": "the same metrics on sleeve months, plus the average monthly stock turnover and cost"
+  },
+  "survival": {
+    "primary": "The count of the 8 conditions that hold on point-in-time books: 2 segments (pre and post comparison windows) x 2 cost cases x {Sharpe at least, maximum-drawdown magnitude at most}, with research/m5_step3.py closure_conditions and not_worse (differences below 1e-12 in magnitude count as equal; an undefined value fails). It is computed for rule R1 against R0 and for R2 against rule R1 (and for R2 against R0 when R0 is the point-in-time baseline).",
+    "public_counterpart": "Beside each condition, the same condition on the public jkp_factors_153 books over the same calendar months: step 2 R0 and R1 and step 3 R2, from their continuous public runs with the pinned inputs, at 20 bp beside the primary case and 50 bp beside the sensitivity case, with metrics rebased to each comparison window.",
+    "ratio": "Beside each condition, the point-in-time margin divided by the public margin when the public margin is positive; otherwise the ratio is reported as undefined.",
+    "role": "The survival count and ratios are the figure the owner uses before step 4b and step 5. The decision outcomes below use the point-in-time conditions only."
+  },
+  "transmission": {
+    "role": "descriptive only; no test and no decision",
+    "sleeve": "For each sleeve, over its sleeve months through 2025-12 in each segment and pooled, at the primary cost case: the mean monthly net active return, the mean monthly return of its matched JKP characteristic in the same calendar months, their ratio (undefined when the JKP mean is 0), and their Pearson correlation.",
+    "class": "For each of the four themes, over the comparison months: the mean monthly class return minus the equal-weight benchmark return, the mean of the amendment 3 class return r_k,t of that JKP cluster in the same months, their ratio, and their correlation."
+  },
+  "halves_and_window": {
+    "halves": "The two segments are the halves: pre [2014-04-30, 2019-06-28] and post [2021-08-31, 2026-08-07]. Each is a separate run that starts from cash; nothing carries across the seal window and its buffers.",
+    "comparison_window": "Rule comparisons, survival, S4 tests, and class transmission use the comparison months from the class-layer start to 2019-06 (pre) and to 2025-12 (post), the last JKP month in reports/m5_public_data_manifest.json and the last month with an R2 multiplier. Expected from the calendar alone: 55 pre and 44 post comparison months, 99 in all.",
+    "descriptive_months": "Sleeve months 2026-01 to 2026-07 are reported for sleeves and benchmarks only."
+  },
+  "step4_tests": {
+    "family": "S4",
+    "tests": [
+      {"id": "S4.R1", "statistic": "d_t = rule R1 net return minus R0 net return at the primary cost case over the pooled comparison months of both segments, in time order"},
+      {"id": "S4.R2", "statistic": "d_t = R2 net return minus rule R1 net return at the primary cost case over the same months"}
+    ],
+    "method": "research/m5_step3.py rule_test: src/features/multiple_testing.py return_test_statistics(d, periods_per_year = 12), two-sided HAC p-value, Bartlett lag floor(4 * (n / 100) ** (2 / 9)), and the pointwise 95 percent interval mean +/- 1.959964 * sqrt(LRV / n). The pooled series joins the two segments; the HAC treats the last pre month and the first post month as adjacent. An undefined test keeps its slot with p = 1.",
+    "correction": "src/features/multiple_testing.py adjust_pvalues(p, method = 'by', family_size = 480) on the 2 observed S4 p-values; the other 478 slots enter as p = 1 through family_size.",
+    "family_size": {
+      "count": 480,
+      "counting_rule": "Conservative: the 2 observed tests; one slot at p = 1 for each public rule test of steps 2 and 3; and one slot at p = 1 for every Family A test statistic in the committed M4.7 v1 and v2 records, where the HAC and the iid statistic of one series count separately and every sample (full window and halves), book, and cost case counts separately.",
+      "items": [
+        {"source": "step 4", "variant": "S4.R1 and S4.R2 (observed)", "slots": 2},
+        {"source": "public rule tests", "variant": "S2.jkp_factors_153, S2.jkp_themes_13, S2.french_7, S3.R2, S3.R3, S3.R4", "slots": 6},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun_trials.jsonl", "variant": "Family A monthly rank IC tests: 6 factors x {HAC, iid}", "slots": 12},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun_trials.jsonl", "variant": "Family A book return tests: 6 factors x {long_short, long_only} x {primary, sensitivity_2x, zero_cost_diagnostic_only} x {full, first half, second half} x {HAC, iid}", "slots": 216},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun.json", "variant": "Family A deflated Sharpe values (dsr.A, 6) and Family A PBO (cpcv.A_excess, cpcv.A_long_short, 2)", "slots": 8},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun_v2_trials.jsonl", "variant": "Family A monthly rank IC tests: 6 factors x {HAC, iid}", "slots": 12},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun_v2_trials.jsonl", "variant": "Family A book return tests: 6 factors x 2 books x 3 cost cases x 3 samples x {HAC, iid}", "slots": 216},
+        {"source": "reports/experiment_logs/m4_7_sp500_pit_rerun_v2.json", "variant": "Family A deflated Sharpe values (6) and Family A PBO (2)", "slots": 8}
+      ],
+      "left_outside": "No slot, each for a stated reason, all visible under R9: the sidecar rows families.A.rows (hac_pvalue, long_short_hac_pvalue) and books.* repeat statistics already counted from the trial records; BY and union BY q-values adjust counted p-values; iid_sharpe_haircuts.adjusted_t_magnitude transforms a counted iid statistic; MDE and sign stability are not tests; the 63 Family B signals per record, the SPY and equal-weight benchmark return tests, the 39 S3 state-effect tests, and the 1005 S3 prior slots test other questions; reports/walking_skeleton_mvp.md uses synthetic prices; the EODHD three-factor campaign inventory (docs/preregistrations/eodhd_sp500_three_factor_trial_inventory_v1.json) is a protocol with no committed result record.",
+      "completeness": "480 is exact for the committed records named above. The three stock-level prior exposures in docs/preregistrations/m4_7_holdout_seal_v1.json (static 50-name cohort, CSV validation, historical evaluation) and any interactive work left no countable committed test statistic, so the historical search stays a stated limitation."
+    },
+    "random_date_null": "None: the comparison span is too short for offsets in [60, n - 60] (research/m5_step3.py null_offsets), and step 4 makes no state claim.",
+    "role": "S4 q-values and intervals are reported beside the decision outcomes and do not change them."
+  },
+  "decision_outcomes": {
+    "baseline": "Rule R1 is the point-in-time baseline product when it meets all 8 survival conditions against R0 on point-in-time books in the primary run. Otherwise R0 becomes the point-in-time baseline.",
+    "R2": "R2 continues beside the point-in-time baseline, labeled 'no evidence of state timing', when it meets all 8 conditions against rule R1 and, when R0 is the point-in-time baseline, all 8 against R0 as well. Otherwise the timing line closes as a reported negative result.",
+    "undefined": "An undefined Sharpe or drawdown fails its condition.",
+    "fragile": "The fragility label and the last-close rerun outcomes are reported beside each outcome and do not change it.",
+    "claims": "No outcome is a profitability claim. Each is a DIAGNOSTIC_ONLY re-examination on exposed months (prior_exposures)."
+  },
+  "data_and_timing": [
+    {"input": "sleeve signal and eligibility at rebalance row r", "source": "real_v2 side panels, pinned intervals, and S_mask", "window": "rows up to r - 1 (MOM_12_1 252 rows skipping 21; HIGH_52W 252; REV_1M 21; LOW_VOL_252 252; LOW_BETA_252 252 against SPY; AMIHUD_ILLIQ_63 63), inside the segment's feature rows"},
+    {"input": "sleeve holdings", "source": "the engine", "window": "execution at the close of rebalance row r; first return row r + 1"},
+    {"input": "rule R1 sigma for month t", "source": "sleeve daily net and equal-weight benchmark daily returns", "window": "126 rows ending on the last trading day of month t-2"},
+    {"input": "R2 multipliers for month t", "source": "research/m5_step3.py on the pinned public inputs", "window": "class returns and labels from inputs through month t-2 (credit_spread t-3), as in amendment 3"},
+    {"input": "public jkp_factors_153 books and matched JKP characteristics", "source": "reports/m5_public_data_manifest.json inputs", "window": "the step 2 and step 3 definitions; month-t returns are outcomes only"},
+    {"input": "month-t sleeve, benchmark, and class-layer returns", "source": "the engine and the class layer", "window": "outcome only: rows in (last trading day of t-1, last trading day of t]"}
+  ],
+  "prior_exposures": {
+    "m4_7": "M4.7 registrations v1 and v2 on real_v1 over the post window (D0 2021-08-31 to 2026-08-07) ran monthly rank IC tests, long-short decile books, and top-10 percent long-only books for all six Family A factors at three cost cases. v2 long-only excess total return over SPY at the primary cost: MOM_12_1 +0.365, the other five -0.287 to -0.674, the equal-weight benchmark -0.269 (reports/m4_7_sp500_pit_rerun_v2.md). real_v2's post side serves the same acquisitions, so the post segment re-examines these months and factors.",
+    "seal_record": "docs/preregistrations/m4_7_holdout_seal_v1.json lists a static 50-name cohort (2016-08-08 to 2026-08-07), CSV validation (2018-01-02 to 2026-06-26), and a historical evaluation (2025-05-01 to 2026-05-31).",
+    "public": "every step 2 and step 3 result on public factor data, including the R2 multipliers' parent results",
+    "unexposed": "At stock level only 2014-05 to 2016-07, inside the pre segment, is outside every listed exposure.",
+    "consequence": "Every step 4 comparison re-examines exposed months or factors and supports no confirmatory claim; the S4 family counts the M4.7 statistics as slots."
+  },
+  "records": {
+    "report": "reports/m5_step4.md and reports/m5_step4.json, headed DIAGNOSTIC_ONLY with VP-2 and its measured share, the R4 default and fragility label, the unpriced share, the missing 2020 crash, the evidence ceiling, and the prior exposures",
+    "attempts": "reports/m5_step4_attempts.jsonl: every attempt, completed or refused, with the code commit, amendment SHA-256, snapshot pins, and outcome",
+    "trial_file_pins": "The runner refuses unless v1 and amendments 1 to 4 match their pinned SHA-256 and HEAD."
+  },
+  "required_tests": [
+    "future_perturbation: on a synthetic fixture, for each of the six signals, changing any price, volume, or membership value after signal row r - 1 leaves the sleeve's target at row r unchanged; changing any sleeve or benchmark daily return after the last trading day of month t-2, or any public input after its window, leaves month t's sigma and R0, rule R1, and R2 weights unchanged; changing a return on the last trading day of month t-2 can change them (HIGH_52W, LOW_BETA_252, and AMIHUD_ILLIQ_63 have no such test today)",
+    "r4_events: a residual held stop settles at -1 at its stop row in every sleeve that holds it and in the equal-weight benchmark, a book not holding it is unaffected, the affected count and incoming-weight sum and maximum match a hand count, and the last-close copy settles the same stops at 0",
+    "no_terminal_evidence: the runner passes no snapshot terminal event to the engine and opens no file under terminal/",
+    "fragility: a fixture whose S4 mean, closure margin, or decision outcome changes sign between the two runs is labeled fragile; one whose signs all agree is not; a margin below 1e-12 in magnitude counts as 0",
+    "drift_turnover: drift-adjusted class turnover and the switch cost match a hand calculation, with turnover 1 in the first comparison month of each segment",
+    "monthly_compounding: a sleeve month compounds its daily net returns over (last trading day of t-1, last trading day of t]; the first sleeve month includes the first reset row's cost; the partial final month enters no monthly figure",
+    "active_sigma: ddof 1 over exactly 126 rows ending on the last trading day of t-2; 125 rows leave the month without a rule R1 weight; the class layer starts at the first month with a full window for every sleeve; a zero sigma refuses",
+    "r2_multipliers: step 4 R2 multipliers equal research/m5_step3.py r2_on_months output for the four themes; R2 weights are positive and sum to 1; a missing multiplier in a comparison month refuses",
+    "empty_sleeve_refuses: a rebalance with no eligible member holding a finite signal refuses the run",
+    "unpriced_exit_class: the unpriced member-day share per segment, split by exit class and absence reason, matches a hand count",
+    "seal_and_pins: a panel row in the seal window refuses seal_bracket_computation_forbidden; a changed manifest, inventory, discovery-inputs, seal carry, build manifest, interval CSV, security master, or panel hash refuses before any panel load; a seal carry window different from [2019-07-31, 2020-07-31) refuses holdout_overlap_refused",
+    "no_snapshot_write: a run on a synthetic snapshot leaves the SHA-256 of every file under its root unchanged",
+    "comparison_window: rule comparisons end at the last month with a JKP return and an R2 multiplier; later sleeve months are descriptive",
+    "decision_outcomes: a fixture where rule R1 fails any one of its 8 conditions makes R0 the baseline; one where R2 fails any one of its 8 against rule R1 closes the line; with R0 as baseline, R2 passing against rule R1 but failing one condition against R0 closes the line; an undefined Sharpe fails; a difference below 1e-12 holds",
+    "survival_tables: the public counterpart uses the same calendar months with metrics rebased to each window, and the ratio is undefined when the public margin is not positive",
+    "transmission: ratio and correlation match a hand calculation, and the ratio is undefined when the JKP mean is 0",
+    "s4_family: adjust_pvalues receives 2 observed p-values and family_size 480; any other count refuses",
+    "costs: sleeve stock costs come from run_book at 1 + 4 and 2 + 8 bp and pair with 20 and 50 bp switch costs",
+    "trial_file_pins: the runner refuses when v1 or any of amendments 1 to 4 differs from its pinned SHA-256 or from HEAD"
+  ],
+  "technical_defaults": [
+    "File name amendment_4: it follows the existing amendment sequence.",
+    "real_v2 only: it covers both segments under partition rule v2, and its post side serves the same acquisitions as real_v1.",
+    "The six Family A signals are the price classes, mapped to the JKP cluster of their nearest JKP characteristic: they are the frozen price signals the snapshot supports, and the map makes each comparable with a public series.",
+    "Class return = rule R1 within the class on the sleeves, descriptive only: the same definition as amendment 3.",
+    "Top quintile, ceil(0.2 n) names, equal weight, the engine's stable order at ties: the roadmap's top-quintile book with the existing engine selection.",
+    "Month-end rebalance on the engine's after-close contract; the monthly return compounds daily net returns; the first sleeve month includes the initial purchase cost; the partial month 2026-08 is excluded: monthly returns that match the public calendar months and drop no cost.",
+    "An empty sleeve target refuses the run: otherwise the sleeve silently holds cash (R6).",
+    "Stock costs 1 + 4 bp primary and 2 + 8 bp sensitivity: the M4.7 and M4.8 registered cases; no zero-cost sleeve, because it changes no decision (R8).",
+    "Class switch cost 20 and 50 bp on drift-adjusted class turnover, paired with the stock cost cases as (1 + 4, 20) and (2 + 8, 50): the v1 levels on the turnover a long-only book actually trades; the v1 no-drift convention rests on long-short returns having no position drift.",
+    "Rule R1 sigma is the ddof-1 standard deviation of the sleeve's daily net active return over the 126 US trading days ending on the last trading day of month t-2: active risk is the long-only analogue of long-short factor risk, and the v1 estimator (36 months, at least 24 observations) would leave about 64 of about 99 comparison months.",
+    "The class layer starts at the first month with a full sigma window for every sleeve, and R0, rule R1, and R2 start together from cash: every comparison uses the same months and costs.",
+    "R2 uses the step 3 multipliers unchanged, from the pinned public inputs: re-estimating on about ten years of stock-level data would leave lambda near 0.",
+    "Rule comparisons end at 2025-12: it is the last JKP month and the last month with an R2 multiplier; later sleeve months are descriptive.",
+    "The halves are the two segments, each a separate run from cash: the seal window and its buffers separate them.",
+    "Survival counts the 8 step 2 conditions with the 1e-12 tolerance, beside the same conditions on the public jkp_factors_153 books over the same months, with the ratio when the public margin is positive: the same bar that chose the public baseline.",
+    "Transmission compares each sleeve with its matched JKP characteristic and each class with its amendment 3 class return: the public series each maps to.",
+    "S4 tests use rule_test on the pooled comparison months at the primary cost case: the step 3 rule test on all step 4 months.",
+    "The S4 BY family is 480: 2 observed tests, 6 public rule-test slots, and 472 committed M4.7 Family A statistics at p = 1, counting HAC and iid separately: an inclusive count with each exclusion stated.",
+    "No random-date null: the span is too short and step 4 makes no state claim.",
+    "Residual held stops settle at -100 percent in every sleeve and the equal-weight benchmark, with a last-close rerun and a sign-based fragility label: the owner-bound R4 default and rerun of 2026-09-29.",
+    "With R0 as the point-in-time baseline, R2 must also meet the 8 conditions against R0 to continue: the timing line is judged against the baseline product, and this adds a condition without removing one.",
+    "Affected-event reporting gives the count and the sum and maximum of incoming weights per book: R4's count and weight share in a form each book can state.",
+    "The pooled S4 HAC treats the segment boundary as adjacent: one series per test, with the effect stated as a limitation.",
+    "Rule and sleeve metrics use research/m5_factor_baseline.py performance on monthly net returns: the step 2 metrics, comparable with the public books."
+  ],
+  "limitations": [
+    "Every result is DIAGNOSTIC_ONLY and rests on premise VP-2 (O-9); the M4.8 census measured S_D > 0.05 on 22.5 percent of eligible member-days.",
+    "No terminal evidence is accepted: every residual held stop settles at -100 percent, a lower bound for long books that also lowers the equal-weight benchmark; the last-close rerun bounds the other side, and a sign flip labels the result fragile.",
+    "Members without a side panel are never held (111 of 448 members at D0_pre); if quarantined or refused names differ systematically, the universe tilts, so the unpriced share is reported by exit class and reason.",
+    "The seal window and its buffers exclude 2019-07 to 2021-08, including the 2020 crash, so drawdowns are understated.",
+    "About 99 comparison months give little power; the pooled HAC treats the segment boundary as adjacent; monthly drawdowns understate intra-month drawdowns.",
+    "The post segment re-examines M4.7 factors and months on the same acquisitions, the pre segment overlaps the static cohort from 2016-08-08 and the CSV validation from 2018-01-02, and only 2014-05 to 2016-07 is unexposed; no result is confirmatory.",
+    "All six source papers predate 2014, so every step 4 month is post-publication.",
+    "R2's multipliers come from public long-short data and are not re-estimated on stock-level books.",
+    "Costs do not net across sleeves and include no market-impact model; the switch cost is a proxy for the stock trades a class reweighting needs.",
+    "Four of 13 themes are covered; Seasonality and share-based Size wait, and the SEC as-filed classes are step 4b.",
+    "The public counterpart is the 153-factor book, not a six-factor public book, so survival compares a narrow stock-level book with a broad public one.",
+    "With 480 slots, the smallest S4 p-value needs about 1.5e-5 (HAC |t| about 4.3) to reach BY q 0.05; the prior slots make significance rare, and the report says so.",
+    "The S4 prior-slot count covers the committed M4.7 records only; the seal record's earlier stock-level exposures and interactive work left no countable record."
+  ],
+  "results_seen_before_this_amendment": {
+    "prior_amendments": "everything listed in the results_seen sections of amendments 1 to 3 and in v1 prior_exposures",
+    "step_2_and_3": "every number in reports/m5_factor_baseline.md, reports/m5_step3.md, and their JSON files (attempts 20260929T003920038139Z, 20260929T062523224474Z, and 20260929T062817683096Z): among them the S2 tests and decision R1 (8 of 8); step 3 closure open with R2 meeting 8 of 8 against R1; S3.R2 mean -0.23 bp a month, 95 percent interval -0.76 to +0.29 bp, HAC p 0.379, BY q 1, random-date p 0.318; S3.R3 and S3.R4 with BY q 1, meeting 4 and 1 of 8; no surviving state cell, the closest Size x credit_spread with raw p 0.0051",
+    "step_3_reviews": "the step 3 freeze and code review reports under coord/reports/m5_step3/ in the main checkout",
+    "m4_7": "every number in reports/m4_7_sp500_pit_rerun.md, reports/m4_7_sp500_pit_rerun_v2.md, and their sidecars and trial logs, including the numbers under prior_exposures.m4_7; for this amendment the Family A primary test table and the Family A long-only book rows of the v2 report were reread, the record fields were counted, and one Family A deflated Sharpe value per sidecar was printed",
+    "m4_8": "the Stage C and Stage D counts in docs/engineering_log.md and docs/decision_log.md (segments, 848 intervals and their resolution, 926 permanent IDs, 1,223 panels, the 111 of 448 unpriced members at D0_pre, 88 terminal candidates with 68 in scope, 158 seal-gap splits) and the census share S_D > 0.05 on 22.5 percent of eligible member-days",
+    "real_v2_metadata_read_for_this_amendment": "under O-5: the manifest's snapshot fields; the SHA-256 of the pinned files; the inventory's file count (1,223) and discovery-inputs hash; the build manifest's scalar fields and counters (interval resolution counts, episode panel refusal counts, failing pair counts, in-span step check outcomes, d0_pre and the holdout dates), whose per-code pre-side volume basis map was printed in the session and is written nowhere; the listing of the terminal directory (the template only); and the calendar dates (8,438 rows, 1993-01-29 to 2026-08-07) with the segment dates computed from them. No panel, price, volume, return, membership row, identity row, or terminal row was opened.",
+    "public_cache_read_for_this_amendment": "the jkp_cluster_labels.csv clusters of the six matched characteristics",
+    "design_note": "the step 4 design note (coord/reports/m5_step4/design_note.md, untracked), which states no step 4 result",
+    "computed_for_this_amendment": "the segment dates and the expected comparison months (55 pre, 44 post) from the calendar alone; the Family A statistic counts from the committed records; the BY threshold in limitations; and SHA-256 values. No sleeve, return, IC, sigma, residual event, exposure count, or rule weight.",
+    "not_seen": "No step 4 code, sleeve, portfolio, return, IC, sigma, rule weight, residual stop list, or affected-event count exists. According to the repository records, no return, IC, or book has been computed on real_v2 (M4.8 Stages E to H never ran); its build ran data-validation checks on prices."
+  }
+}
