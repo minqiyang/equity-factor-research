@@ -2,7 +2,11 @@
   "schema_version": "m5_trial_family_v1_amendment_3",
   "declared_on": "2026-09-28",
   "evidence_ceiling": "DIAGNOSTIC_ONLY",
-  "purpose": "The step 3 amendment that v1 calls 'the v2 amendment'. It fixes the open parameters of R2, R3, and R4, the map from R4 forecasts to weights, the comparisons with R1 and R0, the step 3 tests, costs, the closure rule, the data and timing each rule needs, and the required tests for the step 3 code. It is committed before any step 3 code, data retrieval, or result.",
+  "purpose": "The step 3 amendment that v1 calls 'the v2 amendment'. It fixes the open parameters of R2, R3, and R4, the map from R4 forecasts to weights, the comparisons with R1 and R0, the step 3 tests, costs, the closure rule, the R2 timing-claim gate, the data and timing each rule needs, and the required tests for the step 3 code. It is committed before any step 3 code, data retrieval, or result.",
+  "revision_history": [
+    {"revision": 1, "commit": "cd1d578", "sha256": "b5c67cf1212f651dbaf7959b30c7eeaaafbb853103e50dd41e5735a070710c62"},
+    {"revision": 2, "reason": "Review round 1 repairs before any step 3 result: GPT-R1-M1 (post-publication condition in the R2 timing claim), GPT-R1-A1 and S3O-A7 (label span, missing class returns, undefined null statistics), GPT-R1-A2 and S3O-A1 (exact prior-exposure recount), GPT-R1-A3 and S3O-A3 (episode rule for R2 and its expected consequence), S3O-A2 (seen list and re-examination), S3O-A4 (tie tolerance), S3O-A5 (closed and open wording), S3O-A6 (hindsight limitations), and S3O-A9 (no descriptive universes, no R3 or R4 post-publication runs)."}
+  ],
   "amends": {
     "path": "docs/preregistrations/m5_trial_family_v1.json",
     "sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
@@ -12,29 +16,32 @@
     ],
     "sections": ["rules.R2.open_parameters", "rules.R3.open_parameters", "rules.R4.open_parameters", "amendment_2.change.R4 (no-forecast weighting)", "step3_declared.tests"]
   },
-  "authority": "The v1 amendment_policy lets this amendment fill the open parameters of R2 to R4 and the step 3 test details. Each choice listed under technical_defaults is a coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md. It loosens none of R1, R2, R4, R6, R8, or R9. Data sources, universes, the window and halves, timing, R0, R1, states, traits, costs, the step 2 metrics, tests, and decision rule, and amendments 1 and 2 stay as they are.",
+  "authority": "The v1 amendment_policy lets this amendment fill the open parameters of R2 to R4 and the step 3 test details. Each choice listed under technical_defaults is a coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md. It loosens none of R1, R2, R4, R6, R8, or R9. Data sources, universe definitions, the window and halves, timing, R0, R1, states, traits, costs, the step 2 metrics, tests, and decision rule, and amendments 1 and 2 stay as they are; step 3 runs on the primary universe only.",
   "scope": {
-    "primary_universe": "jkp_factors_153 carries R2, R3, R4, the state-effect tests, the S3 family, and the closure rule.",
-    "descriptive_universes": "jkp_themes_13 and french_7 run R2 and R3 with the same parameters and report the step 2 metrics; they carry no test and change no decision. R4 runs on jkp_factors_153 only, where data_source and years_since_publication are defined.",
-    "classes": "A class is a theme: the 13 JKP clusters on jkp_factors_153 (Accruals 6, Debt Issuance 7, Investment 22, Low Leverage 11, Low Risk 18, Momentum 8, Profit Growth 12, Profitability 11, Quality 17, Seasonality 12, Short-Term Reversal 6, Size 5, Value 18 factors), the 13 theme series on jkp_themes_13, and 6 classes on french_7 under the v1 french_7_map, where CMA and LT_Rev share investment.",
-    "class_return": "r_k,t is R1 applied within class k: the sum over members i of class k in month t's set of (1/sigma_i,t) * r_i,t, divided by the sum of 1/sigma_i,t, gross of switch costs. A class with no member in month t has a typed-missing return that month, counted per class and half.",
-    "looks": "One declared run per universe. A rerun happens only to fix a defect; every attempt is appended to the attempt log and stays visible under R9."
+    "universe": "jkp_factors_153 is the only step 3 universe. It carries R2, R3, R4, the state-effect tests, the S3 family, the R2 timing claim, and the closure rule.",
+    "descriptive_universes": "None. R2 and R3 on jkp_themes_13 and french_7 would carry no test and change no decision, so step 3 does not run them (review S3O-A9). Their step 2 results stand.",
+    "classes": "A class is a theme: the 13 JKP clusters on jkp_factors_153 (Accruals 6, Debt Issuance 7, Investment 22, Low Leverage 11, Low Risk 18, Momentum 8, Profit Growth 12, Profitability 11, Quality 17, Seasonality 12, Short-Term Reversal 6, Size 5, Value 18 factors).",
+    "class_return": "r_k,t is R1 applied within class k: the sum over members i of class k in month t's set of (1/sigma_i,t) * r_i,t, divided by the sum of 1/sigma_i,t, gross of switch costs.",
+    "class_return_missing": "r_k,t is typed missing, left out of every cell history and test, and counted per class and period when class k has no member in month t, or when month t is before 1972-01 and a member of class k lacks its month-t return. On the full set, an evaluated month in which a class has no member refuses the run, so the state-effect regressions have no gaps. On the post-publication subset, such a class-month is typed missing, left out, and counted.",
+    "looks": "One declared run. A rerun happens only to fix a defect; every attempt is appended to the attempt log and stays visible under R9."
   },
   "state_labels": {
     "definition": "label_s(t) is the v1 cell of state s for return month t, computed from inputs through the signal month t-2 (credit_spread from month t-3), as amendment 2 fixes.",
-    "evaluated_month_missing": "A typed-missing label at an evaluated month refuses that universe's step 3 run.",
-    "lookback_month_missing": "A lookback month (before 1972-01) with a typed-missing label is left out of R2's cell histories and episode counts, and is counted."
+    "label_span": "The label span starts at the first return month in which all three labels and at least one class return are defined, and ends at the last evaluated month. On the post-publication subset, it starts at the first month in which all three labels and at least one subset class return are defined. R2 cell histories and episode counts use months inside the span only, in the observed run and in every random-date rebuild alike. A label month before the span start is used by no rule or test; the report counts such months per state.",
+    "missing_inside_span": "A typed-missing label at any month inside the label span, evaluated or lookback, refuses the run.",
+    "episode_eligibility_labels": "Episode counts for the episode rule use the observed labels only."
   },
   "rules": {
     "R2": {
       "name": "state_tilt",
       "base": "month t's R1 weights w1_i,t on month t's set",
-      "cell_history": "For class k and state s, the current cell is c = label_s(t). The history is every return month u <= t-2 with label_s(u) = c and a defined r_k,u, from the first month of the universe's file on; months before 1972-01 serve as lookback only, as v1 allows. m_k,s,t is the arithmetic mean of r_k,u over that history.",
-      "shrinkage": "lambda_s,t = E / (E + 10), where E is the number of episodes of cell c (maximal runs of consecutive months with label_s = c) among the label months u <= t-2. A cell with no past month has lambda 0.",
+      "cell_history": "For class k and state s, the current cell is c = label_s(t). The history is every return month u inside the label span with u <= t-2, label_s(u) = c, and a defined r_k,u. Span months before 1972-01 serve as lookback only, as v1 allows. m_k,s,t is the arithmetic mean of r_k,u over that history.",
+      "shrinkage": "lambda_s,t = E / (E + 10), where E is the number of episodes of cell c (maximal runs of consecutive months with label_s = c) among the label-span months u <= t-2. A cell with no past span month has lambda 0.",
       "score": "score_k,t = (1/3) * sum over the three states of sign(m_k,s,t) * lambda_s,t, which lies in [-1, 1]. sign(0) is 0, and an empty history contributes 0.",
       "tilt_size": "M_k,t = 1 + 0.5 * score_k,t, so each class multiplier lies in [0.5, 1.5].",
       "weights": "w2_i,t = w1_i,t * M_k(i),t / (sum over j of w1_j,t * M_k(j),t). Weights are positive and sum to 1.",
-      "cap": "The tilt size 0.5 and |score| <= 1 bound each class multiplier to [0.5, 1.5] before normalization, so no separate cap is needed."
+      "cap": "The tilt size 0.5 and |score| <= 1 bound each class multiplier to [0.5, 1.5] before normalization, so no separate cap is needed.",
+      "reported": "the mean lambda per state and half; the share of evaluated months in which any R2 weight differs from the R1 weight by more than 1e-12"
     },
     "R3": {
       "name": "factor_momentum_tilt",
@@ -69,69 +76,109 @@
     "same_set": "R2, R3, and R4 start from R1 on month t's set. Every comparison with R1 and R0 therefore uses the same factor-month set, months, and costs.",
     "A2R2-A1": "Settled by the review's second option: a factor-month without an R4 forecast keeps its exact R1 weight, and the covered block keeps its R1 total, so R4 differs from R1 only where R4 has a forecast. The 11 factors without a publication year keep their R1 weight in every month. The report states per half the covered factor-month count and share, the covered share of R1 weight, and the uncovered counts by reason.",
     "tested": "R2, R3, and R4 against R1, the step 2 baseline product, through the S3 rule tests",
-    "descriptive": "the step 2 metrics for R0, R1, R2, R3, and R4 side by side per period and cost level, and market_excess as context. R0 comparisons, halves, the 50 bp level, and the descriptive universes carry no test.",
-    "post_publication": "R1, R2, R3, and R4 are also formed on the amendment 2 post-publication subset from its amendment 1 start month with the same rules and costs; R2's class returns and cell histories then use the subset. Descriptive, with no test."
+    "descriptive": "the step 2 metrics for R0, R1, R2, R3, and R4 side by side per period and cost level, and market_excess as context. R0 comparisons, halves, and the 50 bp level carry no test.",
+    "post_publication": "R1 and R2 are also formed on the amendment 2 post-publication subset from its amendment 1 start month (1974-03 under amendment 2) to the last evaluated month, with the same rules and costs; R2's class returns, label span, and cell histories then use the subset. Turnover starts from no holdings at the start month, as in step 2. This comparison is condition 5 of survival.R2_timing_claim and carries no test; it changes no closure decision. R3 and R4 are not formed on the subset (review S3O-A9)."
   },
-  "costs": "Unchanged from v1: switch_cost_bps 20 primary and 50 sensitivity; turnover_t = sum over i of |w_i,t - w_i,t-1| on target weights with 0 outside the set; 1972-01 turnover 1; net = gross - (bps / 10000) * turnover; no drift adjustment. R2, R3, and R4 use the step 2 portfolio function. The state-effect tests use gross class returns, since no rule trades them. Factor internal costs and borrow stay inside the published returns (v1 gross_label).",
+  "costs": "Unchanged from v1: switch_cost_bps 20 primary and 50 sensitivity; turnover_t = sum over i of |w_i,t - w_i,t-1| on target weights with 0 outside the set; 1972-01 turnover 1; net = gross - (bps / 10000) * turnover; no drift adjustment. R2, R3, and R4, and the post-publication R1 and R2, use the step 2 portfolio function. The state-effect tests use gross class returns, since no rule trades them. Factor internal costs and borrow stay inside the published returns (v1 gross_label).",
   "step3_tests": {
     "family": "S3",
     "rule_tests": {
       "ids": ["S3.R2", "S3.R3", "S3.R4"],
-      "statistic": "d_t = rule net return minus R1 net return at 20 bp on jkp_factors_153 for every evaluated month from 1972-01 to the last evaluated month; src/features/multiple_testing.py return_test_statistics(d, periods_per_year=12); two-sided HAC p-value hac_pvalue."
+      "statistic": "d_t = rule net return minus R1 net return at 20 bp on jkp_factors_153 for every evaluated month from 1972-01 to the last evaluated month; src/features/multiple_testing.py return_test_statistics(d, periods_per_year=12); two-sided HAC p-value hac_pvalue. The full-window mean of d_t is reported with its sign."
     },
     "state_effect_tests": {
       "ids": "S3.effect.<class>.<state> for the 13 jkp_factors_153 classes and the 3 states: 39 tests",
-      "statistic": "OLS of r_k,t on an intercept and D_s,t (1 for up, high, or wide; 0 otherwise) over the evaluated months with a defined r_k,t. The slope b equals the mean in the first cell minus the mean in the second. Its HAC variance is n * LRV(g) / (sum over t of (D_t - mean D)^2)^2, with g_t = (D_t - mean D) * residual_t and LRV from src/features/diagnostics.py newey_west_long_run_variance; t = b / sqrt(variance); two-sided normal p-value floored as in return_test_statistics.",
-      "reported_beside_each": "months and episodes of each cell per half, the cell mean gross return per half, b per half, and b on the post-publication subset"
+      "statistic": "OLS of r_k,t on an intercept and D_s,t (1 for up, high, or wide; 0 otherwise) over the evaluated months. The slope b equals the mean in the first cell minus the mean in the second. Its HAC variance is n * LRV(g) / (sum over t of (D_t - mean D)^2)^2, with g_t = (D_t - mean D) * residual_t and LRV from src/features/diagnostics.py newey_west_long_run_variance; t = b / sqrt(variance); two-sided normal p-value floored as in return_test_statistics.",
+      "reported_beside_each": "months and episodes of each cell per half, the cell mean gross return per half, b per half, b on the post-publication subset, and whether the cell is pre-seen (results_seen_before_this_amendment.pre_seen_cells)"
     },
     "hac": "Bartlett kernel, lag floor(4 * (n / 100) ** (2 / 9)) with n the test's observation count, normal reference, two-sided. An undefined test keeps its family slot with p = 1.",
     "prior_exposure_slots": {
-      "A2-A2": "Settled by counting. The prior variants that test a step 3 hypothesis join the S3 family size as slots with p = 1, because their p-values are not in the repository.",
-      "count": 617,
+      "A2-A2": "Settled by an exact count of the retained scratch scripts. The prior tests of a step 3 hypothesis join the S3 family size as slots with p = 1, because their p-values are not in the repository.",
+      "counting_rule": "One slot for every t-statistic or p-value the retained scripts computed on a step 3 hypothesis: a factor, class, or class-group return conditioned on a market state; a factor-momentum or market-regime timing rule; or a pooled trait or trait x state model. Every sample (full window and halves), state definition, cost level, and series counts separately. Descriptive statistics without a test statistic (means, Sharpe ratios, drawdowns, correlations, out-of-sample R2), null draws, and tests of other questions take no slot and stay visible as seen.",
+      "count": 1005,
       "items": [
-        {"source": "vision_probe_2026_09_28", "variant": "state-conditional return tests on factor x state pairs", "slots": 612},
-        {"source": "audit_scratch_2026_09_28", "variant": "T1 factor momentum rule (overlaps R3)", "slots": 1},
-        {"source": "audit_scratch_2026_09_28", "variant": "T3 bull/bear regime rule (overlaps R2)", "slots": 1},
-        {"source": "vision_probe_2026_09_28", "variant": "walk-forward state models against equal weight; the report gives a range, so the smallest consistent count is used", "slots": 2},
-        {"source": "vision_probe_2026_09_28", "variant": "defensive versus value, size, and momentum after a high-volatility month (assessment section 2.1)", "slots": 1}
+        {"source": "vision_probe_2026_09_28", "script": "stats_redteam/run_all.py", "variant": "HAC tests of the 153 factors on 4 states (high_vol, bear_trend, high_credit, recession_nber), full window", "slots": 612},
+        {"source": "vision_probe_2026_09_28", "script": "stats_redteam/run_all.py", "variant": "HAC tests of the 13 cluster-mean class returns on the same 4 states, full window", "slots": 52},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py Q1", "variant": "Newey-West tests of the 13 themes and their equal-weight average on 5 states (down_trend, high_vol, high_credit, high_vol_r120, high_credit_r120), full window", "slots": 70},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py per-theme table", "variant": "the same 14 series on the same 5 states in each half", "slots": 140},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py Q2", "variant": "defensive-minus-cyclical theme spread on 6 states (the 5 plus high_credit_lag2), full window and each half", "slots": 18},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py Q3", "variant": "pooled regressions, clustered t on the trait and state coefficients (trailing mean and volatility in 6 specifications; the state dummy and its two trait interactions in 5 state specifications), full window and each half", "slots": 81},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py factor momentum sort", "variant": "winners minus losers by own trailing 12-month mean, full window and each half", "slots": 3},
+        {"source": "vision_probe_2026_09_28", "script": "analysis.py walk-forward", "variant": "portfolios of the 6 walk-forward pooled models and the own_mom_pos rule against equal weight, net HAC t, 1982-2025 and each half", "slots": 21},
+        {"source": "audit_scratch_2026_09_28", "script": "ft/factor_timing_scratch.py", "variant": "T1 factor momentum (overlaps R3) and T3 bull/bear regime rule (overlaps R2) against B0, HAC at 20 bp and 50 bp", "slots": 4},
+        {"source": "audit_scratch_2026_09_28", "script": "ft/factor_timing_scratch.py", "variant": "T1 minus B0 naive t on the last 60, 122, and 300 months and on all months", "slots": 4}
       ],
-      "left_outside": "The audit's T2 inverse-volatility rule tests the step 2 question and is step 2 prior exposure. The assessment's same-month defensive spread uses the holding month's market return, which no decision-time rule can use. The fake-regime placebo is a null draw. All three stay visible under R9."
+      "left_outside": "32 retained test statistics take no slot, each for a stated reason, and all stay visible under R9: the audit's T2 and the probe's walk-forward inv_vol portfolio (5) test the step 2 question and are step 2 prior exposure; the Q1 market-excess series on 5 states (5) conditions the market, which no S3 test or rule uses; the Q3 intercepts (18) test a cell level, not a cell difference or a rule; the addendum's same-month defensive contrasts (4) use the holding month's own market return or volatility, which no decision-time rule can use. The red-team placebo shifts are null draws.",
+      "scripts": {
+        "note": "Scratch files outside the repository, read as code only for the recount; their result files were not opened for this revision.",
+        "vision_probe_2026_09_28": [
+          {"file": "analysis.py", "sha256": "96ffe46eaae42159b3f21166a0fa1889aa0314e918ecd1976e800568ea865631"},
+          {"file": "addendum.py", "sha256": "343b34fde6c4612d6ac3300d86c0cd14f9cff4958f7bf8201342f5e9819aa66c"},
+          {"file": "stats_redteam/run_all.py", "sha256": "05e2e089d5702469460bfe26808160ec45d687fc61d7e4323883d987e8d0efbc"},
+          {"file": "stats_redteam/states.py", "sha256": "ee2fa37b994c8c84fb1cdbe289dc165166b6629cce93e0d4d72c47f9adc64ee9"},
+          {"file": "stats_redteam/stats.py", "sha256": "7592cd33f0f925239263e4217277ea8ece6c1a8b99e0150ae47ab637f475eda8"},
+          {"file": "stats_redteam/common.py", "sha256": "bbf8331c5fefa16a343d4cdcc7348a8bd2d15988c7563917633874bb807a3e4c"}
+        ],
+        "audit_scratch_2026_09_28": [
+          {"file": "ft/factor_timing_scratch.py", "sha256": "4080e961fa81d79771f251b26556cc0b95cd4a003b46fbb06ac4bf88816832c8"},
+          {"file": "ft/power_add.py", "sha256": "bc1f08670fdcb850d31ac1a5a8ad06aae1c431ecae532a87bf6a8f4caff098c4"}
+        ]
+      },
+      "completeness": "1005 is the exact count for the retained final scripts, not a proven complete inventory of the prior search. Earlier edits of analysis.py are not retained (the vision assessment says its rolling ten-year thresholds were added after the state counts were seen), and interactive work outside the scripts left no record. The historical search stays an open limitation."
     },
-    "correction": "src/features/multiple_testing.py adjust_pvalues(p, method='by', family_size=659) on the 42 observed S3 HAC p-values; the 617 prior slots enter as p = 1 through family_size.",
-    "family_size": 659,
+    "correction": "src/features/multiple_testing.py adjust_pvalues(p, method='by', family_size=1047) on the 42 observed S3 HAC p-values; the 1005 prior slots enter as p = 1 through family_size.",
+    "family_size": 1047,
     "random_date_null": {
       "applies_to": "S3.R2 and the 39 state-effect tests",
-      "label_span": "from the first month where all three labels and at least one jkp_factors_153 class return are defined to the last evaluated month; n is its length in months",
-      "draw": "One draw is one integer offset k. The three label series shift together, circularly within the label span: the label at position j moves to position (j + k) mod n.",
+      "label_span": "state_labels.label_span on the full set; n is its length in months",
+      "draw": "One draw is one integer offset k. The three label series shift together, circularly within the label span: the label at position j moves to position (j + k) mod n. Months before the span are not shifted and are used by neither the observed nor the shifted runs.",
       "offsets": "uniform integers on [60, n - 60], drawn with replacement, so every shifted series is at least five years out of phase",
       "draws": 999,
       "seed": "numpy.random.default_rng(20260928).integers(60, n - 60, size=999, endpoint=True); one offset set is shared by every test",
       "statistic": "the observed test's HAC t-statistic recomputed with shifted labels. For S3.R2, R2 is rebuilt from the shifted labels (cell histories, shrinkage, and weights) while R1 stays fixed.",
-      "p_value": "(1 + number of draws with |t_draw| >= |t_observed|) / 1000",
+      "p_value": "(1 + number of draws with |t_draw| >= |t_observed| or an undefined t_draw) / 1000",
+      "undefined_draw": "A draw whose statistic is undefined (for example a constant shifted D or a non-positive long-run variance) counts as an exceedance. The number of undefined draws is reported per test; no draw is dropped.",
+      "undefined_observed": "When the observed statistic is undefined, the random-date p-value is undefined, the test keeps p = 1 in the family, and it cannot survive; for S3.R2 no timing claim qualifies.",
       "role": "reported beside each HAC p-value as a guard against the serial dependence that persistent states leave in HAC standard errors; it is a survival condition and stays outside the BY family"
     },
     "episode_rule": {
       "episode": "v1: a maximal run of consecutive evaluated months in one cell. In per-half counts, a run that crosses 1999-12 to 2000-01 counts once in each half.",
-      "description_only": "A state-effect test whose state has fewer than 10 episodes in either cell in either half is labeled description only. Its p-value still counts in the S3 family, and it cannot survive.",
-      "R2": "E in R2's shrinkage counts episodes over the label history through t-2, lookback months included. The report gives the mean lambda per state and half."
+      "state_eligibility": "A state is eligible when each of its two cells has at least 10 episodes in each half. A state with fewer supports description only (North Star decision rule; v1 counts episodes per cell and half).",
+      "description_only": "A state-effect test on a state that is not eligible is labeled description only. Its p-value still counts in the S3 family, and it cannot survive.",
+      "R2": "The same eligibility applies to R2's three states: if any is not eligible, R2's result supports description only and no timing claim qualifies (survival.R2_timing_claim condition 6). E in R2's shrinkage is separate: it counts episodes over the label span through t-2, lookback months included. The report gives the mean lambda per state and half."
     },
+    "tolerance": "Every Sharpe and maximum-drawdown comparison in the closure rule and in the R2 timing claim treats a difference whose magnitude is below 1e-12 as equal, and equal is not a loss.",
     "survival": {
-      "state_effect": "A class x state cell survives when its S3 BY q-value is at most 0.05, its random-date p-value is at most 0.05, it is eligible under the episode rule, and b has the full-window sign in each half and on the post-publication subset (class returns on the subset from the amendment 1 start month, 1974-03 under amendment 2). A zero or undefined b in any of those samples fails the condition.",
-      "R2_timing_claim": "A claim that states improve on the baseline needs R2 to pass the closure conditions, S3.R2 q at most 0.05, and its random-date p-value at most 0.05."
+      "state_effect": "A class x state cell survives when its S3 BY q-value is at most 0.05, its random-date p-value is defined and at most 0.05, its state is eligible under the episode rule, and b has the full-window sign in each half and on the post-publication subset (class returns on the subset from the amendment 1 start month, 1974-03 under amendment 2). A zero or undefined b in any of those samples fails the condition.",
+      "re_examination": "The vision probe tested all 13 JKP classes on similar states over the same months (13 cluster means on 4 states; 13 themes on 5 states, full window and each half). Every S3 state-effect test therefore re-examines a comparison already run and supports no confirmatory claim. A surviving cell is reported as a surviving descriptive cell, and the report marks each pre-seen cell.",
+      "R2_timing_claim": {
+        "rule": "A claim that states improve on the baseline qualifies only when all 6 conditions hold. Otherwise no timing claim qualifies, and the report names each failed condition.",
+        "conditions": [
+          "1. R2 meets all 8 closure conditions (closure_rule.loses_in_a_half, with the tolerance).",
+          "2. The full-window mean of the S3.R2 difference d_t at 20 bp is positive.",
+          "3. The S3.R2 BY q-value is at most 0.05.",
+          "4. The S3.R2 random-date p-value is defined and at most 0.05.",
+          "5. Post-publication: on the post-publication subset (comparisons.post_publication) over its full period, from the start month to the last evaluated month, at 20 bp and at 50 bp, R2's Sharpe is at least R1's and the magnitude of R2's maximum drawdown is at most R1's (with the tolerance), and the mean of R2 net minus R1 net return at 20 bp is positive. An empty period, or an undefined Sharpe, drawdown, or mean, fails this condition.",
+          "6. Each of R2's three states is eligible under the episode rule."
+        ],
+        "attribution": "Even when the claim qualifies, it is a claim about the three-state tilt as a whole and credits no single state. A statement about one state needs a surviving state-effect cell."
+      }
     }
   },
   "closure_rule": {
     "quoted_roadmap": "If the tilt loses to the baseline in either half, the return-timing line closes as a reported negative result.",
     "quoted_v1": "if the state tilt loses to the step 2 baseline product in either half, the return-timing line closes as a reported negative result",
-    "loses_in_a_half": "On jkp_factors_153, R2 loses to R1 in a half when, at 20 bp or at 50 bp, R2's Sharpe is below R1's or the magnitude of R2's maximum drawdown exceeds R1's in that half. These are the 8 conditions of the step 2 decision rule with R2 in place of R1 and R1 in place of R0.",
-    "closed": "R2 loses in the first half or in the second half. R1 stays the baseline product and is the only rule carried to step 4. R2, R3, R4, the state-effect tests, and the null results are reported as a negative result, and every trial stays visible.",
-    "open": "R2 meets all 8 conditions. The line stays open and R2 goes to step 4 beside R1.",
-    "R3_and_R4": "R3 and R4 are reported with the same 8 conditions and their S3 q-values and change no step 3 decision. A rule that meets all 8 conditions with q at most 0.05 becomes an owner item for a new question.",
-    "tests_role": "S3 q-values and random-date p-values are reported beside the closure decision and do not change it."
+    "loses_in_a_half": "On jkp_factors_153, R2 loses to R1 in a half when, at 20 bp or at 50 bp, R2's Sharpe is below R1's or the magnitude of R2's maximum drawdown exceeds R1's in that half, beyond the 1e-12 tolerance. These are the 8 conditions of the step 2 decision rule with R2 in place of R1 and R1 in place of R0.",
+    "closed": "R2 loses in the first half or in the second half. R1 stays the baseline product and is the only rule carried to step 4. R2, R3, R4, and the null results are reported as a negative result for return timing, and every trial stays visible. A surviving state-effect cell is still reported as a surviving descriptive cell.",
+    "open": "R2 meets all 8 conditions. The line stays open and R2 goes to step 4 beside R1. When survival.R2_timing_claim does not qualify, R2 goes to step 4 labeled 'no evidence of state timing'.",
+    "surviving_cells_and_step_5": "Whether the line is open or closed, a surviving state-effect cell may be named as a candidate region for step 5. Step 5 declares its own trial family, and no step 3 result confirms a step 5 candidate.",
+    "R3_and_R4": "R3 and R4 are reported with the same 8 conditions and their S3 q-values and change no step 3 decision. A rule that meets all 8 conditions with q at most 0.05 becomes an owner item for a new question, whose declaration includes its post-publication check.",
+    "tests_role": "S3 q-values and random-date p-values are reported beside the closure decision and do not change it.",
+    "reported": "each of the 8 margins (R2 minus R1 Sharpe, and R1 minus R2 drawdown magnitude, per half and cost level) and the share of evaluated months in which R2's weights differ from R1's"
   },
   "data_and_timing": [
     {"input": "month t's set and sigma_i,t (R1 weights)", "source": "jkp_usa_all_factors_monthly_vw_cap", "window": "months t-37 to t-2"},
-    {"input": "class returns in R2 cell histories", "source": "the factor file and jkp_cluster_labels, with each month u's own set and sigma", "window": "return months u <= t-2"},
+    {"input": "class returns in R2 cell histories", "source": "the factor file and jkp_cluster_labels, with each month u's own set and sigma", "window": "return months u <= t-2 inside the label span"},
     {"input": "market_trend label", "source": "french_ff3_monthly Mkt-RF + RF", "window": "months t-13 to t-2"},
     {"input": "market_volatility label", "source": "french_ff3_daily Mkt-RF", "window": "63 trading days ending on the last trading day of month t-2; expanding median of month-end values through t-2"},
     {"input": "credit_spread label", "source": "fred_baa_aaa_monthly", "window": "month t-3 value against the median of months t-122 to t-3"},
@@ -139,7 +186,7 @@
     {"input": "trailing_36m_volatility (R4)", "source": "sigma_i,t", "window": "months t-37 to t-2"},
     {"input": "theme and turnover_class (classes, R2, R4)", "source": "jkp_cluster_labels at the pinned commit", "window": "static metadata"},
     {"input": "data_source (R4)", "source": "jkp_accounting_characteristics_list; the run refuses unless aux_functions.py matches the v1 SHA-256", "window": "static metadata"},
-    {"input": "years_since_publication (R4 rows and feature)", "source": "jkp_factor_details at the pinned commit", "window": "year(t-2) minus the publication year, defined when positive"},
+    {"input": "years_since_publication (R4 rows and feature; post-publication subset)", "source": "jkp_factor_details at the pinned commit", "window": "year(t-2) minus the publication year, defined when positive"},
     {"input": "R4 training pairs", "source": "covered features at signal month u-2 with the month-u return", "window": "return months u <= November of Y-1 for every return month of year Y"},
     {"input": "month-t factor and class returns", "source": "the factor file", "window": "outcome only: the portfolio return and the test's dependent variable"}
   ],
@@ -152,46 +199,57 @@
     "r4_shared_state_column: a state value shared by every factor in a month stays finite, and the row count reaching the fit equals the covered-pair count",
     "r2_hand_computed: cell histories, E and lambda = E / (E + 10), sign(0) = 0, an empty history contributing 0, multipliers in [0.5, 1.5], and weights summing to 1 match a hand calculation",
     "r3_hand_computed: the sign tilt, R1 weight for a member without a trailing return, and the preserved block total match a hand calculation",
-    "missing_state: a typed-missing label at an evaluated month refuses the run; one in a lookback month is left out of R2's histories and counted",
+    "label_span: the span starts at the first month with all three labels and a class return; a typed-missing label anywhere inside the span refuses the run; changing a label month before the span start leaves the observed R2 and every shifted R2 unchanged, and such months are counted",
+    "class_return_missing: before 1972-01, a class with a member lacking its month-u return, or with no member, is typed missing, left out of R2's histories, and counted; on the full set, an evaluated month with an empty class refuses the run; on the post-publication subset, it is typed missing and counted",
     "state_effect_hac: b equals the cell mean difference, and with lag 0 the t-statistic equals the heteroskedasticity-robust (White) t computed directly",
-    "random_date_null: the seed reproduces the offsets, every offset lies in [60, n - 60], a shift preserves each label series' cell month counts, and the p-value is (1 + count) / 1000",
-    "s3_family: adjust_pvalues receives 42 observed p-values and family_size 659; any other count refuses",
-    "episode_rule: a run crossing the half boundary counts once in each half; 9 episodes label a test description only and 10 make it eligible",
-    "closure_rule: a fixture failing any one of the 8 conditions closes the line, and one passing all 8 keeps it open",
-    "costs: R2, R3, and R4 turnover and net returns come from the step 2 portfolio function, with 1972-01 turnover 1",
+    "random_date_null: the seed reproduces the offsets, every offset lies in [60, n - 60], a shift preserves each label series' cell month counts, and the p-value is (1 + count) / 1000; on a degenerate fixture, a draw with a constant shifted D or a non-positive long-run variance counts as an exceedance and is reported; an undefined observed statistic gives an undefined random-date p-value and no survival",
+    "s3_family: adjust_pvalues receives 42 observed p-values and family_size 1047; any other count refuses",
+    "episode_rule: a run crossing the half boundary counts once in each half; 9 episodes in one cell of one half make the state not eligible and its tests description only, and 10 make it eligible",
+    "r2_timing_claim: a fixture that meets conditions 1 to 4 and 6 but fails condition 5 (R2 loses to R1 on the post-publication subset) gives no timing claim; so do fixtures whose only failure is an undefined post-publication Sharpe, an empty post-publication period, a non-positive full-window mean difference, or one R2 state with 9 episodes in one cell of one half; with 10 episodes and every condition met, the claim qualifies",
+    "closure_rule: a fixture failing any one of the 8 conditions closes the line; one passing all 8 keeps it open; one in which R2 and R1 differ by less than 1e-12 in a Sharpe or a drawdown magnitude keeps it open",
+    "costs: R2, R3, and R4 turnover and net returns, and the post-publication R1 and R2, come from the step 2 portfolio function, with turnover 1 in the first month of each run",
     "trial_file_pins: the runner refuses when v1 or any of amendments 1 to 3 differs from its pinned SHA-256 or from HEAD"
   ],
   "technical_defaults": [
     "File name amendment_3: it follows the existing amendment sequence; it is the file v1 calls 'the v2 amendment'.",
-    "Tests and the closure rule on jkp_factors_153 only: it is the v1 primary universe and the step 2 decision universe.",
-    "R4 on jkp_factors_153 only: two of its traits exist only there.",
+    "Step 3 runs on jkp_factors_153 only: it is the v1 primary universe and the step 2 decision universe, two R4 traits exist only there, and runs on the other universes would change no decision (review S3O-A9).",
     "Class = theme, class return = R1 within the class: the owner question is about classes, and R1 is the baseline product.",
     "R2 adds the three states' tilts with equal weight: a joint 8-cell split would leave too few episodes per cell.",
     "R2 shrinkage E / (E + 10): 10 is the v1 description-only episode threshold, so a 10-episode cell gets half weight.",
     "Tilt size 0.5 for R2, R3, and R4, with multipliers in [0.5, 1.5] and no separate cap: one bounded tilt keeps the three rules comparable.",
-    "R2 cell histories use pre-1972 lookback months: v1 allows lookback, and it gives R2 evidence in the first half.",
-    "A missing label at an evaluated month refuses the run; one in a lookback month is left out and counted: fail closed where it matters, typed and counted elsewhere (R6).",
+    "R2 cell histories use lookback months inside the label span, and months before the span enter neither the observed R2 nor any random-date rebuild: v1 allows lookback, it gives R2 evidence in the first half, and one history policy serves the observed and shifted runs (GPT-R1-A1).",
+    "A missing label inside the label span refuses the run; a lookback class-month with a missing member return or no member is typed missing, left out, and counted; an evaluated month with an empty class refuses: fail closed where it matters, typed and counted elsewhere (R6).",
     "No forecast or signal keeps the R1 weight in R3 and R4, with the covered block total preserved: this settles A2R2-A1 and keeps every comparison on the R1 set.",
     "R4 features: one-hot categories, cross-sectional ranks in [-0.5, 0.5] for numeric traits, states at +/-0.5, and every trait x state product: bounded inputs with no state standardization.",
     "R4 penalty alpha = training rows: weights use forecast ranks only, and a heavy penalty keeps the ranking close to the features' marginal covariances with return.",
     "R4 needs 36 training months and 2 covered members: the smallest samples where a fit and a ranking mean something.",
     "R4 forecasts map to weights by cross-sectional rank: rank tilts ignore the forecast scale.",
-    "A2-A2: 617 prior slots enter the BY family at p = 1: counting them keeps R9 intact.",
+    "A2-A2: every retained prior test statistic on a step 3 hypothesis, full window and halves alike, takes one slot at p = 1 (1005 slots, family size 1047): an inclusive count with each exclusion stated, so no narrower convention has to be defended (S3O-A1, GPT-R1-A2).",
     "HAC lag floor(4 (n/100)^(2/9)): the step 2 rule.",
     "The state effect is the gross class mean difference between the two cells, by OLS with HAC: it answers 'which classes earn more or lose less in which conditions'.",
     "Random-date null by circular shift, offsets on [60, n - 60], 999 draws, seed 20260928: it keeps each state's persistence and the states' joint timing.",
+    "An undefined draw statistic counts as an exceedance, and an undefined observed statistic leaves the random-date p-value undefined and the test unable to survive: the null fails closed (GPT-R1-A1).",
     "Survival thresholds q <= 0.05 and random-date p <= 0.05: the conventional level.",
     "'Loses' uses the 8 step 2 conditions: the same bar that made R1 the baseline.",
+    "Sharpe and drawdown differences below 1e-12 in magnitude count as equal, and equal is not a loss: rounding cannot decide the closure (S3O-A4).",
     "An episode crossing the half boundary counts in both halves: each half is judged on its own months.",
+    "The 10-episode rule applies per cell and half, to state-effect tests and to each of R2's states: v1 counts episodes per cell and half, and the North Star gives a state with fewer than 10 episodes description only (GPT-R1-A3).",
+    "The R2 timing claim needs the post-publication condition over the subset's full period: the North Star asks a conditional result to hold after publication; the halves are already judged on the full set, and the subset holds few factors before 2000 (GPT-R1-M1).",
+    "The R2 timing claim needs a positive full-window mean difference: the two-sided HAC test alone does not give the direction.",
     "R4 has no random-date null: rebuilding 48 annual ridge fits 999 times buys little; R4 supports a rule comparison only."
   ],
   "limitations": [
     "R4 covers about 35% of set factor-months in 1972-2025 and about 6% in 1972-1999 (A2R2-A1 counts), so R4 is close to R1 by construction in the first half and its first-half comparison has little power.",
     "R4 has no random-date null and supports no state-timing claim.",
-    "With 659 slots, the smallest S3 p-value needs about 1.1e-5 (HAC |t| about 4.4) to reach BY q 0.05; the prior slots make survival rare, and the report says so.",
+    "With 1047 slots, the smallest S3 p-value needs about 6.3e-6 (HAC |t| about 4.5) to reach BY q 0.05; the prior slots make survival rare, and the report says so.",
+    "The prior-exposure count covers the retained final scripts only; earlier script edits and interactive work are not recorded, so the historical search is not proven complete (step3_tests.prior_exposure_slots.completeness).",
+    "Expected episode consequence, from counts seen before this amendment under the probe's state definitions (19 down-trend episodes and about 20 credit cycles in 1972-2025): under the per-half rule, the 13 market_trend tests will very likely be description only and the 13 credit_spread tests may be, so state-effect survival may be possible only for market_volatility, and R2's result will very likely support description only, with no timing claim. This follows from state properties, not returns. A full-window 10-episode rule would be an owner choice, made before any result.",
     "HAC standard errors with the step 2 lag may understate uncertainty for persistent states; the random-date null is the guard.",
     "The circular shift joins the end of the label span to its start once in each draw.",
-    "R2 cell histories include pre-1972 months when the JKP file has fewer factors.",
+    "R2 cell histories include pre-1972 months when the JKP file has fewer factors, and they start at the label span, so label months before it are not used (by their definitions, market_trend and credit_spread labels start a few years before market_volatility; review S3O-A7).",
+    "R2 lookback histories reach back to the early 1930s and include early Compustat years with the known backfill bias; accounting classes start in the cache between 1946 and 1951, and their early means may look better than a real-time investor would have seen.",
+    "The JKP clusters used as classes were formed from full-sample correlations of US factor returns. Membership uses co-movement, not means, but it is hindsight information that shapes the class returns R2 tilts and the state-effect tests use.",
+    "The post-publication condition of the R2 timing claim uses the subset's full period, which is weighted toward the second half; the subset halves are reported, not tested.",
     "On jkp_factors_153, turnover_class is a function of theme, so it adds no information to R4 beyond theme; it stays because v1 declares it.",
     "Public factor returns are long-short, include small caps, and exclude each factor's internal costs; every result is DIAGNOSTIC_ONLY until step 4."
   ],
@@ -202,13 +260,17 @@
     "review_round_2": "A2R2-A1 coverage counts (R4 lacks input for 64,044 of 99,052 jkp_factors_153 set factor-months in 1972-2025 and 48,324 of 51,316 in 1972-1999; 56,916 not yet published and 7,128 without a publication year) and the AUDIT_2 round 2 missingness counts (0 missing evaluated returns, 92 short-history factor-months in 1972-1973, 144 absent lookback cells)",
     "read_while_preparing": [
       "coord/reports/north_star_vision_assessment_opus.md section 2 verdict row: return-rank persistence falls from +0.35 to +0.05 across the halves; none of 612 factor x state tests survives correction; a randomly placed fake regime explains as many factors as real regimes; walk-forward state models beat equal weight in 1982-1999 (+0.6 to +1.0%/yr) and lose in 2000-2025 (-0.4 to -1.1%/yr)",
+      "the same file, section 2 verdict row 'One stable conditional pattern': momentum does badly after a falling market in both halves (-0.41 and -0.90%/month); omitted from revision 1 and added on review S3O-A2",
       "the same file, section 2.1: defensive factors (low risk, quality) do better in the same month the market falls (+0.76% per month spread, t 4.1); after a high-volatility month they did worse than value, size, and momentum in both halves",
       "the same file, section 2.2: about 7 to 30 slow-state episodes since 1963, with 19 down-trend episodes and about 20 credit cycles in 1972-2025",
       "coord/reports/north_star_speed_audit_opus.md section 7.2 table on 7 French factors: B0 Sharpe 0.83, drawdown -16.4%; T1 Sharpe 0.63, drawdown -33.8%, HAC p 0.30; T2 Sharpe 0.83, drawdown -16.6%, HAC p 0.44; T3 Sharpe 0.84, drawdown -16.4%, HAC p 0.61; BY q 1 for all three; T3 turnover 1% a month",
       "reports/m5_public_data_manifest.json date ranges: JKP files 1926-01 to 2025-12; French monthly files end 2026-08, FF5 from 1963-07; FRED BAA and AAA 1919-01 to 2026-08",
       "data/public_cache/jkp_cluster_labels.csv factor counts per cluster, listed under scope.classes"
     ],
-    "computed_for_this_amendment": "no state label series, episode count, class return, or availability count; only the BY threshold in limitations, which uses no data",
+    "review_round_1": "the two round 1 reports on revision 1 (coord/reports/m5_step3/review_gpt_r1.md and review_opus_r1.md). Beyond items listed above, they give availability facts only: every class has a factor with returns by 1951-11 (Accruals from 1946-01, Debt Issuance from 1951-11); 18 internal gaps in iskew_hxz4_21d and ivol_hxz4_21d from 1967-12 to 1969-02; the first covered R4 pair in 1974-03 and 48 fits for 1978-2025; and the vision assessment's statement that the rolling ten-year thresholds were added after the state counts were seen.",
+    "scratch_code_read_for_the_recount": "the code of the scripts listed under step3_tests.prior_exposure_slots.scripts; code holds no result values, and no result file of either probe was opened for this revision",
+    "pre_seen_cells": "cells whose direction the author saw before this amendment: momentum x market_trend (the verdict row above), and low_risk, quality, value, size, and momentum x market_volatility (section 2.1). Every other cell was also tested by the probe on similar states; the values the author saw are only those listed in this section.",
+    "computed_for_this_amendment": "the BY thresholds in limitations, which use no data, and the SHA-256 of the scratch scripts; no state label series, episode count, class return, or availability count",
     "not_seen": "No step 3 code, rule weight, rule return, state label, class return by state or trait, R4 fit, or random-date draw exists. french_ff3_daily and aux_functions.py are not yet retrieved."
   }
 }
