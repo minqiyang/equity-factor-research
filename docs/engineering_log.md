@@ -12,6 +12,57 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - CI wall time: four disjoint test lanes and a once-per-session runner v3 fixture
+
+- Scope: owner request to shorten PR CI. Branch `claude/ci-speed` from `main` at `edbd34c`. CI and test files
+  only; no file under `src/` or `research/` changed, so no research output can change.
+- Cause (CI run 36502489178): the core lane took 28m38s. `tests/test_m4_8_runner_v3.py` took 2,192 s because
+  `--dist worksteal` spread it over both workers, so its clean-run fixture `e2e` (one `run_segments` call,
+  about 550 s on CI) ran three times beside the poisoned run. The m4_7 rerun module (460 s) and the M4.8
+  integration module (200 s) ran in the same lane.
+- `8c2820a`: `.github/workflows/ci.yml` runs lanes `runner-v3`, `m4-pipelines`, `core`, and `diagnostics` in
+  parallel, each with `-n 2 --dist loadgroup`. `xdist_group` marks keep the m4_7 rerun module, the integration
+  module, and the ten `e2e`-only runner v3 tests (`v3_clean`) each on one worker; T-SEG-7 is `v3_poisoned`.
+  `cpus.txt` records `nproc --all`; plain `nproc` printed 1 under `OMP_NUM_THREADS=1`. A new test in
+  `tests/test_ci_workflow.py` checks that each `tests/test_*.py` file runs in exactly one lane. Three existing
+  pins in that file (dist mode, lane list, `max-parallel`) now match the new configuration; the `8c2820a`
+  message says no assertion changed, which is wrong for those three pins.
+- `4873162`: `e2e` is computed once per xdist session (`_once_per_session`: an fcntl lock and a pickle in the
+  session's shared temporary root; direct computation without xdist workers). T-SEG-7 requests `poisoned`
+  first. No assertion changed. The helper detects an xdist worker by `config.workerinput`, which only workers
+  carry, so a leaked `PYTEST_XDIST_WORKER` variable cannot share a pickle across sessions (review advisory).
+  A leaf-by-leaf exact comparison of one clean run against its pickle round trip
+  (frames with `check_exact`, index frequency, attrs, NaN positions) found no difference.
+- Local timings, paired before and after runs under the same load:
+
+| Selection | Before | After |
+|---|---|---|
+| runner-v3 lane, -n 2 | 346.8 s wall, 523 s CPU (worksteal, three runs) | 182.3 s, 355 s CPU (two runs) |
+| m4-pipelines lane, -n 2 | 188.6 s, 312 s CPU (worksteal) | 144.2 s, 197 s CPU |
+| diagnostics lane, -n 2 | 105.2 s (worksteal) | 104.9 s |
+| new core lane selection, -n 2 | 62.4 s (worksteal) | 68.1 s |
+| runner v3 module, serial | 353.8 s | 353.6 s |
+| full suite, -n auto | 367.9 s | 357.6 s (201 s with `--dist loadgroup`) |
+
+- CI projection from the CI-measured test durations: runner-v3 about 560 s, m4-pipelines about 460 s,
+  diagnostics about 360 s, core about 200 s plus lint and build; about 11 minutes per PR with setup, against
+  about 30. Needs follow-up: confirm on this branch's first CI run.
+- Ablation, one removal at a time (five runs in parallel, so a run took about 190 s instead of 177 s):
+  - Simplification attempts, all restored: without the runner v3 group marks, 370 s wall (one worker waited on
+    the lock); without the shared fixture, 368 s and 560 s CPU; with T-SEG-7's original parameter order, 368 s;
+    without the two module marks, 199.7 s and 361 s CPU.
+  - Guards: removing the direct path without xdist fails the helper test (a later serial session would load an
+    earlier pickle); dropping a core `--ignore`, or a file from a named lane, fails the partition test.
+  - Not done: sharing the two identical short diagnostic runs (CPU only; that lane is off the critical path),
+    and the provenance-snapshot and interval-overlap source speedups (about 7% and 5% of one run, on the
+    real-data path, needing two formal reviewers).
+- Limitations: fcntl is POSIX only. The two runner v3 groups reach different workers because `v3_poisoned` is
+  the first single-test scope after `v3_clean`; if an edit breaks that order, the lane runs both runs on one
+  worker, slower and still correct.
+- QA: full suite 3,341 passed and 2 skipped (two new tests); `ruff check .` clean.
+
+---
+
 ## 2026-09-28 - Milestone 5 steps 1-2 remediation: review round 1 findings (task m5-s12-fix, attempt 1)
 
 - Scope: the two MATERIAL findings of review round 1 on `58f398c` (AUDIT seat A1-M5-01, AUDIT_2 seat A2-M1) and

@@ -12,6 +12,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import pickle
 from datetime import date
 from pathlib import Path
 
@@ -79,9 +80,36 @@ def _run(base: Path, paths: dict[str, pd.DataFrame] | None) -> dict:
             "report": (base / "out" / runner.REPORT_V3).read_text()}
 
 
+def _once_per_session(config, tmp_path_factory, name, compute):
+    """Compute ``name`` once per xdist session; every other worker loads its exact pickle.
+
+    This is the pytest-xdist pattern for a once-only fixture: the lock and the pickle
+    live in the temporary root that only this session's workers share. Only xdist
+    workers carry ``config.workerinput``; outside a worker that root is shared across
+    sessions, so the value is computed directly.
+    """
+    if not hasattr(config, "workerinput"):
+        return compute()
+    import fcntl  # POSIX file lock; CI runs on Linux and local runs on macOS
+    path = tmp_path_factory.getbasetemp().parent / f"{name}.pickle"
+    with open(f"{path}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if path.is_file():
+            return pickle.loads(path.read_bytes())
+        value = compute()
+        path.write_bytes(pickle.dumps(value))
+        return value
+
+
 @pytest.fixture(scope="module")
-def e2e(tmp_path_factory):
-    return _run(tmp_path_factory.mktemp("v3_clean"), None)
+def e2e(request, tmp_path_factory):
+    """The clean run, computed once per session and loaded by any other worker.
+
+    Under ``--dist loadgroup`` the ``v3_clean`` group computes this run on one worker
+    while the ``v3_poisoned`` group computes ``poisoned`` on the other.
+    """
+    return _once_per_session(request.config, tmp_path_factory, "m4_8_runner_v3_e2e",
+                             lambda: _run(tmp_path_factory.mktemp("v3_clean"), None))
 
 
 @pytest.fixture(scope="module")
@@ -98,6 +126,7 @@ def poisoned(tmp_path_factory):
 # ---------------------------------------------------------------- end to end
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_v3_synthetic_run_completes_with_the_registered_segments(e2e):
     sidecar = e2e["sidecar"]
     assert sidecar["run_status"] == "completed" and sidecar["outputs_written"] is True
@@ -115,11 +144,13 @@ def test_v3_synthetic_run_completes_with_the_registered_segments(e2e):
     assert len(e2e["trials"]) == runner.UNION_SIZE + 6 * 3 * 2 + 63 * 2
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_causal_5_the_v3_runner_never_calls_support_exclusions(e2e):
     assert e2e["sidecar"]["run_status"] == "completed"  # the fixture ran with support_exclusions raising
     assert all(t.get("support_contract") == runner.CAUSAL_SUPPORT_CONTRACT for t in e2e["trials"])
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_4_one_engine_call_per_segment_over_anchor_to_last_book_row(e2e):
     calls = e2e["log"]["engine"]
     book_trials = [t for t in e2e["trials"] if t["hypothesis"] == "book_return"]
@@ -134,6 +165,7 @@ def test_t_seg_4_one_engine_call_per_segment_over_anchor_to_last_book_row(e2e):
         assert pre["first_month"] == sup.CAL[sup.PRE.first_reset_row].strftime("%Y-%m")
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_5_concatenated_series_carry_segment_ids_and_no_return_spans_the_gap(e2e):
     trial = next(t for t in e2e["trials"] if t["factor_id"] == "MOM_12_1" and t["hypothesis"] == "rank_ic_mean")
     by_month = trial["segment_id_by_month"]
@@ -147,6 +179,7 @@ def test_t_seg_5_concatenated_series_carry_segment_ids_and_no_return_spans_the_g
         assert ew["segments"][segment]["first_row_net_return"] == 0.0
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_6_one_composite_builder_call_per_segment(e2e):
     calls = e2e["log"]["composites"]
     assert len(calls) == 2
@@ -178,7 +211,8 @@ def _pre_parts(run: dict) -> dict:
     return parts
 
 
-def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(e2e, poisoned):
+@pytest.mark.xdist_group("v3_poisoned")
+def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(poisoned, e2e):
     clean, dirty = _pre_parts(e2e), _pre_parts(poisoned)
     assert json.dumps(clean, sort_keys=True) == json.dumps(dirty, sort_keys=True)
     post_clean = e2e["sidecar"]["benchmarks"]["equal_weight_pit"]["segments"]["post"]
@@ -186,6 +220,7 @@ def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(e2e,
     assert post_clean != post_dirty  # the poison reached the post segment
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seal_br_2_every_panel_stays_on_one_side_and_the_first_post_return_is_missing(e2e):
     start, end = pd.Timestamp(sup.HOLDOUT_START), pd.Timestamp(sup.HOLDOUT_END)
     for result in e2e["log"]["panels"]:
@@ -238,6 +273,7 @@ def test_an_unevidenced_held_possible_disappearance_stops_before_inference(tmp_p
 # ---------------------------------------------------------------- registration v3
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_reg3_3_family_hashes_equal_registration_v2(e2e):
     committed = json.loads(runner.REGISTRATION_PATH.read_bytes())
     assert runner.family_hashes(e2e["doc"]) == runner.family_hashes(committed)
@@ -343,6 +379,7 @@ def test_t_reg3_5_power_projection_reproduces_section_5_4():
     assert power_projection(356)["kill_reachable_projection"] is True
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_reg3_6_the_report_states_looks_exposure_and_the_unexposed_subsample(e2e):
     report = e2e["report"]
     assert "Sequential looks: 3" in report and "carried seal with stated prior exposures" in report
@@ -352,6 +389,7 @@ def test_t_reg3_6_the_report_states_looks_exposure_and_the_unexposed_subsample(e
     assert "residual_disappearance_minus_100pct_bound_v1` vacuous_no_residual" in report
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_gate3_the_v3_gate_is_the_carried_decide_gate(e2e):
     gate = e2e["sidecar"]["gate"]
     rows = e2e["sidecar"]["families"]["A"]["rows"]
@@ -392,6 +430,7 @@ def test_t_exp_1_overlap_reproduces_the_carried_computation():
     assert fewer["calendar_unexposed_pre_subsample"]["status"] == "not_reported_below_30_valid_months"
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_exp_2_full_overlap_reports_no_subsample_and_no_statistic_is_fresh(e2e):
     windows = runner.prior_exposure_windows()
     valid = pd.DataFrame({"reset_date": pd.date_range("2016-09-30", periods=40, freq="ME"),
@@ -402,3 +441,33 @@ def test_t_exp_2_full_overlap_reports_no_subsample_and_no_statistic_is_fresh(e2e
     assert result["per_segment"]["pre"]["static_50_name_cohort"] == 1.0
     assert "fresh" not in e2e["report"].lower()
     assert date(2016, 8, 8) == min(start for _, start, _ in windows)
+
+
+# ---------------------------------------------------------------- shared fixture helper
+
+
+def test_once_per_session_computes_once_under_xdist_and_directly_without_it(tmp_path, monkeypatch):
+    class Factory:
+        def getbasetemp(self):
+            return tmp_path / "popen-gw0"
+
+    class Config:
+        pass
+
+    class WorkerConfig:
+        workerinput = {"workerid": "gw0"}
+
+    calls = []
+
+    def compute():
+        calls.append(len(calls))
+        return {"frame": pd.DataFrame({"x": [0.1, np.nan, -0.0]}), "text": "report"}
+
+    monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")  # a leaked variable alone never shares state
+    _once_per_session(Config(), Factory(), "probe", compute)
+    _once_per_session(Config(), Factory(), "probe", compute)
+    assert calls == [0, 1] and not (tmp_path / "probe.pickle").exists()  # no state across sessions
+    first = _once_per_session(WorkerConfig(), Factory(), "probe", compute)
+    second = _once_per_session(WorkerConfig(), Factory(), "probe", compute)
+    assert calls == [0, 1, 2] and second["text"] == first["text"]
+    pd.testing.assert_frame_equal(second["frame"], first["frame"])

@@ -41,6 +41,9 @@ from research.multiple_testing_diagnostics import summarize_multiple_testing
 from research.real_data_multifactor_diagnostic import build_adjusted_research_panels
 
 
+# One worker runs the whole module under --dist loadgroup, so the module fixtures run once.
+pytestmark = pytest.mark.xdist_group("m4_7_rerun")
+
 PRIMARY = {"transaction_cost_bps": 1.0, "slippage_bps": 4.0}
 ZERO = {"transaction_cost_bps": 0.0, "slippage_bps": 0.0}
 BENCHMARK = runner.BENCHMARK_ID
