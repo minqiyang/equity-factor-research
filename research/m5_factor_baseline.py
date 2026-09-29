@@ -5,10 +5,10 @@ step 2 part of ``docs/preregistrations/m5_trial_family_v1.json`` and refuses to
 run when that file differs from its committed HEAD version or from the pinned
 SHA-256 below.
 
-Timing (``after_month_end_signal_next_month_return``): the set, sigma, and
-weights for month t use returns through month t-1 only, plus the declared
-availability of each factor's month-t return; the rebalance happens at the end
-of month t-1, the return month is t, and the switch cost is charged in month t.
+Timing (amendment 2, ``after_month_end_signal_next_month_end_execution``):
+for return month t the signal month is t-2, so the set, sigma, and weights use
+returns through month t-2 only; the target executes at the close of month t-1,
+first earns the month-t return, and the switch cost is charged in month t.
 Evidence ceiling ``DIAGNOSTIC_ONLY``: public long-short factor returns, gross of
 each factor's internal trading and borrow costs.
 
@@ -39,6 +39,8 @@ from scipy.stats import spearmanr
 from backtest.metrics import calculate_max_drawdown
 from data.public_factors import (
     MISSING_ABSENT,
+    MISSING_BLANK,
+    MISSING_CODE,
     PRESENT,
     MonthlyPanel,
     PublicDataRefusal,
@@ -58,8 +60,12 @@ from features.multiple_testing import adjust_pvalues, return_test_statistics
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRIAL_PATH = "docs/preregistrations/m5_trial_family_v1.json"
 TRIAL_SHA256 = "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a"
-AMENDMENT_PATH = "docs/preregistrations/m5_trial_family_v1_amendment_1.json"
-AMENDMENT_SHA256 = "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751"
+AMENDMENTS = {
+    "docs/preregistrations/m5_trial_family_v1_amendment_1.json":
+        "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751",
+    "docs/preregistrations/m5_trial_family_v1_amendment_2.json":
+        "59461b150a957959f0fc9ac36aef9889168d6924f17bc33c3f15dab25eae72f1",
+}
 CACHE_DIR = "data/public_cache"
 REPORT_MD = "reports/m5_factor_baseline.md"
 REPORT_JSON = "reports/m5_factor_baseline.json"
@@ -68,6 +74,9 @@ ATTEMPTS_JSONL = "reports/m5_factor_baseline_attempts.jsonl"
 
 LOOKBACK_MONTHS = 36
 MIN_OBSERVATIONS = 24
+SIGNAL_LAG_MONTHS = 2  # return month t uses a signal from month t-2, executed at the month t-1 close
+FIRST_LOOKBACK_MONTH = LOOKBACK_MONTHS + SIGNAL_LAG_MONTHS - 1  # month t-37 opens the t-37..t-2 window
+BAD_DATA = (MISSING_BLANK, MISSING_CODE)
 REALIZED_MONTHS = 12
 WORST_WINDOW_MONTHS = 12
 MONTHS_PER_YEAR = 12
@@ -75,6 +84,13 @@ RULES = ("R0", "R1")
 UNIVERSES = ("jkp_factors_153", "jkp_themes_13", "french_7")
 PRIMARY_UNIVERSE = "jkp_factors_153"
 PERIODS = ("full", "first_half", "second_half")
+TIMING = {
+    "label": "after_month_end_signal_next_month_end_execution",
+    "signal_month": "t-2 (feature observation end: the close of the last trading day of month t-2)",
+    "execution": "the close of the last trading day of month t-1",
+    "return_month": "t (close of month t-1 to close of month t)",
+    "switch_cost": "recorded at the execution close and deducted from the month-t return",
+}
 FRENCH_7_FILES = {
     "french_ff5_2x3_monthly": ["SMB", "HML", "RMW", "CMA"],
     "french_momentum_monthly": ["Mom"],
@@ -117,35 +133,38 @@ class Membership:
 
     in_set: pd.DataFrame
     sigma: pd.DataFrame
-    has_return: pd.DataFrame
     enough_history: pd.DataFrame
+    clean_lookback: pd.DataFrame
 
 
-def membership(returns: pd.DataFrame, months: pd.PeriodIndex) -> Membership:
-    """Apply the membership rule and R1's sigma month by month.
+def membership(returns: pd.DataFrame, missing: pd.DataFrame, months: pd.PeriodIndex) -> Membership:
+    """Apply the amendment 2 membership rule and R1's sigma month by month.
 
-    Factor i is in month t's set when its month-t return exists and it has at
-    least 24 non-missing returns in months t-36 to t-1. sigma_i,t is the ddof-1
-    standard deviation of those returns and stays NaN with fewer than 24.
-    ``returns`` must carry every calendar month from t-36 to t.
+    For return month t the window is months t-37 to t-2, ending at the signal
+    month. Factor i is in the set when the window holds at least 24 non-missing
+    returns and no bad-data code (``BAD_DATA``); an ``absent`` month counts only
+    against the 24. sigma_i,t is the ddof-1 standard deviation over the window
+    and stays NaN outside the set. The month-t and month t-1 returns are never
+    read, so a missing holding-month return cannot move the target.
     """
 
-    sigma_rows, history_rows, return_rows = [], [], []
+    sigma_rows, history_rows, clean_rows = [], [], []
     for month in months:
-        window = returns.loc[month - LOOKBACK_MONTHS: month - 1]
-        count = window.notna().sum()
-        enough = count >= MIN_OBSERVATIONS
-        sigma_rows.append(window.std(ddof=1).where(enough))
+        signal = month - SIGNAL_LAG_MONTHS
+        window = returns.loc[signal - (LOOKBACK_MONTHS - 1): signal]
+        enough = window.notna().sum() >= MIN_OBSERVATIONS
+        clean = ~missing.loc[window.index].isin(BAD_DATA).any()
+        sigma_rows.append(window.std(ddof=1).where(enough & clean))
         history_rows.append(enough)
-        return_rows.append(returns.loc[month].notna())
+        clean_rows.append(clean)
 
     def frame(rows: list[pd.Series]) -> pd.DataFrame:
         return pd.DataFrame(rows, index=months, columns=returns.columns)
 
-    has_return = frame(return_rows).astype(bool)
     enough_history = frame(history_rows).astype(bool)
-    return Membership(has_return & enough_history, frame(sigma_rows).astype(float),
-                      has_return, enough_history)
+    clean_lookback = frame(clean_rows).astype(bool)
+    return Membership(enough_history & clean_lookback, frame(sigma_rows).astype(float),
+                      enough_history, clean_lookback)
 
 
 def rule_weights(rule: str, in_set: pd.DataFrame, sigma: pd.DataFrame) -> pd.DataFrame:
@@ -188,8 +207,12 @@ def portfolio(weights: pd.DataFrame, returns: pd.DataFrame, cost_bps: float) -> 
 
     held = returns.loc[weights.index, weights.columns]
     exposed = weights > 0
-    if (held.isna() & exposed).to_numpy().any():
-        raise PublicDataRefusal("a held factor has a missing return in its holding month")
+    unpriced = held.isna() & exposed
+    if unpriced.to_numpy().any():
+        raise PublicDataRefusal(
+            f"{int(unpriced.to_numpy().sum())} held factor-months have a missing return in their holding month "
+            f"(first {unpriced.any(axis=1).idxmax()})"
+        )
     gross = (weights * held).where(exposed).sum(axis=1)
     turnover = (weights - weights.shift(1, fill_value=0.0)).abs().sum(axis=1)
     net = gross - cost_bps / 10_000.0 * turnover
@@ -279,14 +302,14 @@ def membership_counts(member: Membership, missing: pd.DataFrame,
     result = {}
     for period, (start, end) in bounds.items():
         inside = (member.in_set.index >= start) & (member.in_set.index <= end)
-        no_return = ~member.has_return[inside]
         short = ~member.enough_history[inside]
+        bad = ~member.clean_lookback[inside]
         result[period] = {
-            "factor_months_declared": int(no_return.size),
+            "factor_months_declared": int(short.size),
             "factor_months_in_set": int(member.in_set[inside].to_numpy().sum()),
-            "excluded_no_return_in_month": int(no_return.to_numpy().sum()),
             "excluded_fewer_than_24_prior_returns": int(short.to_numpy().sum()),
-            "excluded_both_conditions": int((no_return & short).to_numpy().sum()),
+            "excluded_bad_data_in_lookback": int(bad.to_numpy().sum()),
+            "excluded_both_conditions": int((short & bad).to_numpy().sum()),
             "typed_missing_by_reason": typed_missing_counts(missing.loc[start:end]),
         }
     return result
@@ -428,7 +451,7 @@ def universe_panel(values: pd.DataFrame, missing: pd.DataFrame, first: pd.Period
     Months added before a file starts are typed ``absent``; no value is filled.
     """
 
-    index = pd.period_range(min(values.index[0], first - LOOKBACK_MONTHS), last, freq="M")
+    index = pd.period_range(min(values.index[0], first - FIRST_LOOKBACK_MONTH), last, freq="M")
     return values.reindex(index), missing.reindex(index).fillna(MISSING_ABSENT)
 
 
@@ -453,14 +476,14 @@ def run_universe(panel: MonthlyPanel, first: pd.Period, last: pd.Period, trial: 
     returns, missing = universe_panel(panel.values, panel.missing, first, last)
     months = pd.period_range(first, last, freq="M")
     bounds = period_bounds(trial, last)
-    member = membership(returns, months)
+    member = membership(returns, missing, months)
     result: dict[str, Any] = {
         "first_evaluated_month": str(first), "last_evaluated_month": str(last),
         "declared_factors": int(returns.shape[1]),
         "counts": membership_counts(member, missing, bounds),
         "lookback_typed_missing": {
-            "months": f"{first - LOOKBACK_MONTHS} to {first - 1}",
-            "by_reason": typed_missing_counts(missing.loc[first - LOOKBACK_MONTHS: first - 1]),
+            "months": f"{first - FIRST_LOOKBACK_MONTH} to {first - 1}",
+            "by_reason": typed_missing_counts(missing.loc[first - FIRST_LOOKBACK_MONTH: first - 1]),
         },
         "missing_by_month": missing_by_month(missing.loc[first:last]),
         "volatility_forecast_accuracy": volatility_accuracy(
@@ -484,9 +507,23 @@ def run_universe(panel: MonthlyPanel, first: pd.Period, last: pd.Period, trial: 
     return result
 
 
+def years_since_publication(months: pd.PeriodIndex, years: dict[str, int | None]) -> pd.DataFrame:
+    """Amendment 2 trait: year of the signal month t-2 minus the publication year.
+
+    Defined only when positive. A factor not yet published at its signal month,
+    or without a publication year, stays NaN, so a later publication year never
+    reaches month t.
+    """
+
+    signal_year = pd.Series((months - SIGNAL_LAG_MONTHS).year, index=months, dtype=float)
+    trait = pd.DataFrame({name: signal_year - year if year is not None else np.nan
+                          for name, year in years.items()}, index=months)
+    return trait.where(trait > 0)
+
+
 def post_publication(universe: dict[str, Any], years: dict[str, int | None], trial: dict[str, Any],
                      costs: list[int]) -> dict[str, Any]:
-    """R0 and R1 on the set restricted to factors published before year(t).
+    """R0 and R1 on the set restricted to factors with a defined years_since_publication.
 
     Amendment 1: the run starts at the first evaluated month with a non-empty
     subset; earlier months are counted as empty, and a later empty month
@@ -499,11 +536,8 @@ def post_publication(universe: dict[str, Any], years: dict[str, int | None], tri
     if no_year != declared:
         return {"status": "refused",
                 "reason": f"factors without a publication year {sorted(no_year)} differ from the declared list"}
-    calendar_year = pd.Series(member.in_set.index.year, index=member.in_set.index)
-    published = pd.DataFrame(
-        {name: (calendar_year > years[name]) if name not in no_year else False
-         for name in member.in_set.columns}, index=member.in_set.index,
-    ).astype(bool)
+    published = years_since_publication(
+        member.in_set.index, {name: years.get(name) for name in member.in_set.columns}).notna()
     subset = member.in_set & published
     last = member.in_set.index[-1]
     bounds = period_bounds(trial, last)
@@ -552,9 +586,10 @@ def run(repo_root: Path, git: dict[str, Any] | None = None) -> dict[str, Any]:
     trial_bytes, trial_sha = verify_trial_file(repo_root, TRIAL_PATH)
     if trial_sha != TRIAL_SHA256:
         raise PublicDataRefusal(f"trial file SHA-256 {trial_sha} differs from the pinned {TRIAL_SHA256}")
-    _, amendment_sha = verify_trial_file(repo_root, AMENDMENT_PATH)
-    if amendment_sha != AMENDMENT_SHA256:
-        raise PublicDataRefusal(f"amendment SHA-256 {amendment_sha} differs from the pinned {AMENDMENT_SHA256}")
+    for path, pinned in AMENDMENTS.items():
+        _, digest = verify_trial_file(repo_root, path)
+        if digest != pinned:
+            raise PublicDataRefusal(f"amendment {path} SHA-256 {digest} differs from the pinned {pinned}")
     trial = json.loads(trial_bytes)
     git = git if git is not None else git_state(repo_root)
     costs = [trial["costs"]["switch_cost_bps"]["primary"], trial["costs"]["switch_cost_bps"]["sensitivity"]]
@@ -589,12 +624,12 @@ def run(repo_root: Path, git: dict[str, Any] | None = None) -> dict[str, Any]:
         for key in ("_series", "_member", "_returns"):
             universe.pop(key, None)
     return {
-        "schema_version": "m5_factor_baseline_v1",
+        "schema_version": "m5_factor_baseline_v2",
         "evidence_ceiling": trial["evidence_ceiling"],
         "run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "trial_file": TRIAL_PATH, "trial_file_sha256": trial_sha,
-        "amendment_file": AMENDMENT_PATH, "amendment_file_sha256": amendment_sha, "git": git,
-        "timing": trial["timing"]["label"], "switch_cost_bps": costs,
+        "amendments": AMENDMENTS, "git": git,
+        "timing": TIMING, "switch_cost_bps": costs,
         "manifest": inputs["manifest"],
         "universes": universes, "s2_tests": s2, "decision": decision, "post_publication": post,
     }
@@ -644,13 +679,16 @@ def render_report(result: dict[str, Any]) -> str:
         "- **Prior exposures (R9).** Before this declaration the coordinator saw two diagnostics on overlapping "
         "months: the 2026-09-28 audit scratch run on 7 French factors (equal weight Sharpe 0.83, inverse volatility "
         "0.83) and the 2026-09-28 vision probe on JKP 153 factors (inverse volatility Sharpe 0.94 vs 0.72 for equal "
-        "weight). This run re-examines a comparison already seen and supports no confirmatory claim.",
+        "weight). Every result of the earlier step 2 runs under the v1 timing (commit `58f398c`) and both "
+        "round 1 review diagnostics were also seen before amendment 2; they stay visible. This run re-examines "
+        "comparisons already seen and supports no confirmatory claim.",
         f"- **Trial family.** `{result['trial_file']}`, SHA-256 `{result['trial_file_sha256']}`, verified equal "
-        "to its committed HEAD version before any data was read"
-        + (f"; amendment `{result['amendment_file']}`, SHA-256 `{result['amendment_file_sha256']}`, verified the "
-           "same way." if result.get("amendment_file") else "."),
-        f"- **Timing.** `{result['timing']}`: weights for month t use returns through month t-1 and the declared "
-        "availability of each factor's month-t return; the switch cost is charged in month t.",
+        "to its committed HEAD version before any data was read; amendments "
+        + "; ".join(f"`{path}` (SHA-256 `{digest}`)" for path, digest in result["amendments"].items())
+        + ", verified the same way.",
+        f"- **Timing.** `{result['timing']['label']}` (amendment 2): signal month {result['timing']['signal_month']}; "
+        f"execution at {result['timing']['execution']}; return month {result['timing']['return_month']}; switch "
+        f"cost {result['timing']['switch_cost']}. A missing return for a held factor refuses the run.",
         "",
         "## Result",
         "",
@@ -738,22 +776,24 @@ def render_report(result: dict[str, Any]) -> str:
             lines.append(f"| {PERIOD_LABEL[period]} | {_num(v['spearman'])} | {v['pairs']} | "
                          f"{v['excluded_window_past_last_month']} | {v['excluded_incomplete_realized_window']} |")
         lines += ["", "Membership and missingness counts (factor-months):", "",
-                  "| Period | Declared | In set | No month-t return | Fewer than 24 prior | Both | Typed missing |",
+                  "| Period | Declared | In set | Fewer than 24 in t-37..t-2 | Bad data in t-37..t-2 | Both | "
+                  "Typed missing |",
                   "| --- | ---: | ---: | ---: | ---: | ---: | --- |"]
         for period, c in universe["counts"].items():
             typed = ", ".join(f"{k} {v}" for k, v in c["typed_missing_by_reason"].items()) or "none"
             lines.append(f"| {PERIOD_LABEL[period]} | {c['factor_months_declared']} | {c['factor_months_in_set']} | "
-                         f"{c['excluded_no_return_in_month']} | {c['excluded_fewer_than_24_prior_returns']} | "
+                         f"{c['excluded_fewer_than_24_prior_returns']} | {c['excluded_bad_data_in_lookback']} | "
                          f"{c['excluded_both_conditions']} | {typed} |")
         lookback = universe["lookback_typed_missing"]
         typed = ", ".join(f"{k} {v}" for k, v in lookback["by_reason"].items()) or "none"
         lines += ["", f"Typed missing factor-months in the lookback-only months {lookback['months']}: {typed}. "
-                  "They count against the 24-return condition and are never filled."]
+                  "An absent month counts against the 24-return condition; a bad-data code excludes every "
+                  "window that contains it. Nothing is filled."]
 
     post = result["post_publication"]
     lines += ["", "## Post-Publication Split (jkp_factors_153, descriptive)", "",
               "For month t the set is restricted to factors whose publication year is before the calendar year of "
-              "t; R0 and R1 use the same rules and costs in one continuous run from the first month with a non-empty "
+              "the signal month t-2 (amendment 2); R0 and R1 use the same rules and costs in one continuous run from the first month with a non-empty "
               "subset (trial amendment 1).", "",
               f"Status `{post['status']}`; start month {post.get('start_month') or 'none'}."]
     if post["status"] == "completed":
@@ -774,7 +814,7 @@ def render_report(result: dict[str, Any]) -> str:
                   "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
         lines += _grid_rows(post["rules"], result["switch_cost_bps"])
     if "counts" in post:
-        lines += ["", "| Period | In set | In subset | Missing publication year | Published in or after year | "
+        lines += ["", "| Period | In set | In subset | Missing publication year | Published in or after signal year | "
                   "Empty-subset months |", "| --- | ---: | ---: | ---: | ---: | ---: |"]
         for period, c in post["counts"].items():
             lines.append(f"| {PERIOD_LABEL[period]} | {c['factor_months_in_set']} | {c['factor_months_in_subset']} | "
@@ -787,8 +827,8 @@ def render_report(result: dict[str, Any]) -> str:
               "books after costs is step 4.",
               "- The comparison of R0 and R1 was already seen in two prior diagnostics on overlapping months; the "
               "halves reuse the same history and are not out-of-sample confirmation.",
-              "- Month-t availability of a factor return enters the month-t set by declaration: a JKP return exists "
-              "only when both extreme portfolios met the minimum stock count at formation at the end of month t-1.",
+              "- Monthly observations only: the target executes at the month-end close after the signal month, so "
+              "one whole month separates signal and execution. A daily execution would need daily factor returns.",
               "- The JKP and French files are revised by their providers; a later download can change results. The "
               "manifest pins the SHA-256 of the files used here.",
               "- Target weights are compared without drift adjustment, as declared; the switch cost is a flat rate "

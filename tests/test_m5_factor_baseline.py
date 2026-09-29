@@ -40,13 +40,25 @@ def months(start: str, end: str) -> pd.PeriodIndex:
 
 
 def random_panel(seed: int = 7, start: str = "1990-01", end: str = "1996-12") -> pd.DataFrame:
+    """Four factors; C has 8 gaps and D starts late, all before the first evaluated month 1993-01."""
+
     rng = np.random.default_rng(seed)
     index = months(start, end)
     frame = pd.DataFrame(rng.normal(0.004, [0.01, 0.02, 0.03, 0.015], size=(len(index), 4)),
                          index=index, columns=["A", "B", "C", "D"])
-    frame.iloc[rng.choice(len(index), 20, replace=False), 2] = np.nan
+    frame.iloc[rng.choice(34, 8, replace=False), 2] = np.nan
     frame.loc["1990-01":"1991-06", "D"] = np.nan
     return frame
+
+
+def absent_where_missing(returns: pd.DataFrame) -> pd.DataFrame:
+    missing = pd.DataFrame(PRESENT, index=returns.index, columns=returns.columns, dtype=object)
+    missing[returns.isna()] = MISSING_ABSENT
+    return missing
+
+
+def member_of(returns: pd.DataFrame, evaluated: pd.PeriodIndex) -> m5.Membership:
+    return m5.membership(returns, absent_where_missing(returns), evaluated)
 
 
 def trial_like(first: str = "1993-01", first_half_end: str = "1994-12") -> dict:
@@ -60,37 +72,61 @@ def trial_like(first: str = "1993-01", first_half_end: str = "1994-12") -> dict:
 # Timing ----------------------------------------------------------------------
 
 @pytest.mark.parametrize("rule", ["R0", "R1"])
-def test_future_perturbation_leaves_month_t_set_sigma_and_weights_unchanged(rule: str) -> None:
+def test_returns_from_the_execution_month_on_leave_month_t_set_sigma_and_weights_unchanged(rule: str) -> None:
+    # Amendment 2: month t's signal month is t-2 and it executes at the month t-1 close. Changing any return
+    # in months t-1 and later, including finite to missing and missing to finite, must not move month t.
     returns = random_panel()
     evaluated = months("1993-01", "1996-12")
-    base = m5.membership(returns, evaluated)
+    base = member_of(returns, evaluated)
     base_weights = m5.rule_weights(rule, base.in_set, base.sigma)
     rng = np.random.default_rng(11)
     for month in (pd.Period("1993-01", freq="M"), pd.Period("1994-07", freq="M"),
                   pd.Period("1996-12", freq="M")):
         perturbed = returns.copy()
-        future = perturbed.index >= month
+        future = perturbed.index >= month - 1
         noise = rng.normal(0.0, 0.5, size=perturbed.loc[future].shape)
-        perturbed.loc[future] = perturbed.loc[future] + noise  # NaN stays NaN: availability is unchanged
-        assert perturbed.loc[future].notna().equals(returns.loc[future].notna())
-        after = m5.membership(perturbed, evaluated)
+        perturbed.loc[future] = perturbed.loc[future].fillna(0.0) + noise
+        perturbed.loc[month - 1, "A"] = np.nan
+        perturbed.loc[month, "B"] = np.nan
+        after = member_of(perturbed, evaluated)
         after_weights = m5.rule_weights(rule, after.in_set, after.sigma)
         pd.testing.assert_series_equal(after.in_set.loc[month], base.in_set.loc[month])
         pd.testing.assert_series_equal(after.sigma.loc[month], base.sigma.loc[month])
         pd.testing.assert_series_equal(after_weights.loc[month], base_weights.loc[month])
-        earlier = evaluated[evaluated < month]
+        earlier = evaluated[evaluated <= month]
         pd.testing.assert_frame_equal(after_weights.loc[earlier], base_weights.loc[earlier])
 
 
-def test_past_perturbation_changes_inverse_volatility_weights() -> None:
+def test_signal_month_return_moves_weights_but_the_execution_month_return_does_not() -> None:
     returns = random_panel()
     evaluated = months("1993-01", "1993-01")
-    changed = returns.copy()
-    changed.loc["1992-12", "A"] += 0.2
-    before = m5.membership(returns, evaluated)
-    after = m5.membership(changed, evaluated)
-    assert m5.rule_weights("R1", after.in_set, after.sigma).loc["1993-01", "A"] != pytest.approx(
-        m5.rule_weights("R1", before.in_set, before.sigma).loc["1993-01", "A"])
+    before = m5.rule_weights("R1", *_set_and_sigma(returns, evaluated)).loc["1993-01", "A"]
+    signal_month = returns.copy()
+    signal_month.loc["1992-11", "A"] += 0.2
+    assert m5.rule_weights("R1", *_set_and_sigma(signal_month, evaluated)).loc["1993-01", "A"] != pytest.approx(
+        before)
+    execution_month = returns.copy()
+    execution_month.loc["1992-12", "A"] += 0.2
+    assert m5.rule_weights("R1", *_set_and_sigma(execution_month, evaluated)).loc["1993-01", "A"] == before
+
+
+def _set_and_sigma(returns: pd.DataFrame, evaluated: pd.PeriodIndex) -> tuple[pd.DataFrame, pd.DataFrame]:
+    member = member_of(returns, evaluated)
+    return member.in_set, member.sigma
+
+
+def test_a_missing_holding_month_return_refuses_instead_of_reallocating() -> None:
+    returns = random_panel()
+    evaluated = months("1993-01", "1996-12")
+    member = member_of(returns, evaluated)
+    weights = m5.rule_weights("R1", member.in_set, member.sigma)
+    m5.portfolio(weights, returns, 20)
+    gapped = returns.copy()
+    gapped.loc["1994-07", "B"] = np.nan
+    after = member_of(gapped, evaluated)
+    pd.testing.assert_frame_equal(after.in_set.loc[:"1994-08"], member.in_set.loc[:"1994-08"])
+    with pytest.raises(PublicDataRefusal, match="1 held factor-months have a missing return.*1994-07"):
+        m5.portfolio(m5.rule_weights("R1", after.in_set, after.sigma), gapped, 20)
 
 
 # Weights and membership --------------------------------------------------------
@@ -99,7 +135,7 @@ def test_inverse_volatility_weights_on_known_example() -> None:
     index = months("1990-01", "1993-01")
     sign = np.where(np.arange(len(index)) % 2 == 0, 1.0, -1.0)
     returns = pd.DataFrame({"A": 0.01 * sign, "B": 0.02 * sign}, index=index)
-    member = m5.membership(returns, months("1993-01", "1993-01"))
+    member = member_of(returns, months("1993-01", "1993-01"))
     assert member.sigma.loc["1993-01", "A"] == pytest.approx(0.01 * math.sqrt(36 / 35), rel=1e-12)
     assert member.sigma.loc["1993-01", "B"] == pytest.approx(0.02 * math.sqrt(36 / 35), rel=1e-12)
     r1 = m5.rule_weights("R1", member.in_set, member.sigma).loc["1993-01"]
@@ -109,34 +145,37 @@ def test_inverse_volatility_weights_on_known_example() -> None:
 
 
 def test_minimum_observations_and_typed_missing_are_counted_never_filled() -> None:
-    index = months("1990-01", "1993-02")
+    # The window for 1993-01 is 1989-12 to 1992-11 and for 1993-02 it is 1990-01 to 1992-12.
+    index = months("1989-12", "1993-02")
     rng = np.random.default_rng(3)
     returns = pd.DataFrame(rng.normal(0, 0.01, size=(len(index), 4)), index=index,
-                           columns=["full", "has24", "has23", "no_t"])
-    returns.loc["1990-01":"1990-12", "has24"] = np.nan   # 24 of 36 prior months remain for 1993-01
-    returns.loc["1990-01":"1991-01", "has23"] = np.nan   # 23 remain
-    returns.loc["1993-01", "no_t"] = np.nan
-    missing = pd.DataFrame(PRESENT, index=index, columns=returns.columns, dtype=object)
-    missing[returns.isna()] = MISSING_ABSENT
-    missing.loc["1993-01", "no_t"] = MISSING_CODE
+                           columns=["full", "has24", "has23", "bad"])
+    returns.loc["1989-12":"1990-11", "has24"] = np.nan   # 24 of 36 window months remain for 1993-01
+    returns.loc["1989-12":"1990-12", "has23"] = np.nan   # 23 remain for 1993-01, 24 for 1993-02
+    returns.loc["1990-06", "bad"] = np.nan
+    missing = absent_where_missing(returns)
+    missing.loc["1990-06", "bad"] = MISSING_CODE          # 35 values remain, but the window holds bad data
     snapshot = returns.copy()
-    member = m5.membership(returns, months("1993-01", "1993-02"))
-    assert member.in_set.loc["1993-01"].to_dict() == {"full": True, "has24": True, "has23": False, "no_t": False}
-    assert math.isnan(member.sigma.loc["1993-01", "has23"])
-    assert member.in_set.loc["1993-02", "has23"]
+    member = m5.membership(returns, missing, months("1993-01", "1993-02"))
+    assert member.in_set.loc["1993-01"].to_dict() == {"full": True, "has24": True, "has23": False, "bad": False}
+    assert math.isnan(member.sigma.loc["1993-01", "has23"]) and math.isnan(member.sigma.loc["1993-01", "bad"])
+    assert member.in_set.loc["1993-02", "has23"] and not member.in_set.loc["1993-02", "bad"]
+    # The same gap typed absent is short history only, so the factor stays in the set.
+    assert m5.membership(returns, absent_where_missing(returns), months("1993-01", "1993-01")).in_set.loc[
+        "1993-01", "bad"]
     bounds = {"full": (pd.Period("1993-01", freq="M"), pd.Period("1993-02", freq="M"))}
     counts = m5.membership_counts(member, missing, bounds)["full"]
     assert counts["factor_months_declared"] == 8
-    assert counts["factor_months_in_set"] == 6
-    assert counts["excluded_no_return_in_month"] == 1
+    assert counts["factor_months_in_set"] == 5
     assert counts["excluded_fewer_than_24_prior_returns"] == 1
+    assert counts["excluded_bad_data_in_lookback"] == 2
     assert counts["excluded_both_conditions"] == 0
-    assert counts["typed_missing_by_reason"] == {MISSING_CODE: 1}
+    assert counts["typed_missing_by_reason"] == {}
     weights = m5.rule_weights("R1", member.in_set, member.sigma)
     m5.portfolio(weights, returns, 20)
     pd.testing.assert_frame_equal(returns, snapshot)
-    assert m5.missing_by_month(missing.loc["1993-01":"1993-02"]) == {"1993-01": {MISSING_CODE: 1}}
-    assert m5.typed_missing_counts(missing.loc[:"1992-12"]) == {MISSING_ABSENT: 12 + 13}
+    assert m5.missing_by_month(missing.loc["1990-06":"1990-06"]) == {"1990-06": {MISSING_CODE: 1, MISSING_ABSENT: 2}}
+    assert m5.typed_missing_counts(missing.loc[:"1992-12"]) == {MISSING_ABSENT: 12 + 13, MISSING_CODE: 1}
 
 
 def test_empty_set_and_degenerate_sigma_refuse() -> None:
@@ -174,7 +213,7 @@ def test_switch_cost_arithmetic_with_entering_and_leaving_factors() -> None:
 def test_missing_return_for_a_held_factor_refuses() -> None:
     index = months("2000-01", "2000-01")
     weights = pd.DataFrame({"A": [1.0]}, index=index)
-    with pytest.raises(PublicDataRefusal, match="missing return"):
+    with pytest.raises(PublicDataRefusal, match="missing return in their holding month"):
         m5.portfolio(weights, pd.DataFrame({"A": [np.nan]}, index=index), 20)
 
 
@@ -211,8 +250,9 @@ def test_halves_split_is_rebased_and_uses_the_continuous_run() -> None:
 
 def test_volatility_forecast_accuracy_counts_pairs_and_exclusions() -> None:
     returns = random_panel(seed=5)
+    returns.loc["1994-03", "C"] = np.nan
     evaluated = months("1993-01", "1996-12")
-    member = m5.membership(returns, evaluated)
+    member = member_of(returns, evaluated)
     realized = m5.realized_volatility(returns.loc[:"1996-12"], evaluated)
     bounds = m5.period_bounds(trial_like(), evaluated[-1])
     result = m5.volatility_accuracy(member.sigma, realized, member.in_set, bounds)
@@ -274,10 +314,26 @@ def test_s2_tests_use_hac_pvalues_and_by_adjustment_over_three() -> None:
     assert result["S2.c"]["status"] == "universe_refused" and result["S2.c"]["by_qvalue"] is None
 
 
+def test_years_since_publication_uses_the_signal_month_and_hides_later_publication_years() -> None:
+    evaluated = months("1993-01", "1996-12")
+    trait = m5.years_since_publication(evaluated, {"A": 1990, "B": 1993, "C": None})
+    assert trait.loc["1993-01", "A"] == 2 and trait.loc["1993-03", "A"] == 3   # signal months 1992-11, 1993-01
+    assert trait.loc[:"1994-02", "B"].isna().all() and trait.loc["1994-03", "B"] == 1
+    assert trait["C"].isna().all()
+    # A2-M1: moving a publication year between two years at or after year(t-2) leaves month t and every
+    # earlier month unchanged, so the trait cannot tell which factors will be published later.
+    for month in (pd.Period("1993-01", "M"), pd.Period("1995-02", "M")):
+        year = (month - 2).year
+        for early, late in ((year, year + 1), (year + 1, year + 7)):
+            first = m5.years_since_publication(evaluated, {"A": 1990, "B": early, "C": None})
+            second = m5.years_since_publication(evaluated, {"A": 1990, "B": late, "C": None})
+            pd.testing.assert_frame_equal(first.loc[:month], second.loc[:month])
+
+
 def test_post_publication_split_starts_at_first_non_empty_month_and_refuses_later_gaps() -> None:
     returns = random_panel()
     evaluated = months("1993-01", "1996-12")
-    member = m5.membership(returns, evaluated)
+    member = member_of(returns, evaluated)
     universe = {"_member": member, "_returns": returns.loc[:"1996-12"]}
     years = {"A": 1990, "B": 1993, "C": 1995, "D": None}
     result = m5.post_publication(universe, years, trial_like(), [20, 50])
@@ -285,19 +341,25 @@ def test_post_publication_split_starts_at_first_non_empty_month_and_refuses_late
     assert result["counts"]["full"]["excluded_missing_publication_year"] == int(member.in_set["D"].sum())
     late = {"A": 1993, "B": 1994, "C": 1995, "D": None}
     started = m5.post_publication(universe, late, trial_like(), [20, 50])
-    assert started["status"] == "completed" and started["start_month"] == "1994-01"
-    assert started["empty_subset_months"] == {"count": 12, "first": "1993-01", "last": "1993-12"}
-    assert started["rules"]["R0"]["20bp"]["first_half"]["months"] == 12
-    assert started["rules"]["R1"]["50bp"]["full"]["months"] == 36
+    # A is published before the signal year from signal month 1994-01, that is from month 1994-03.
+    assert started["status"] == "completed" and started["start_month"] == "1994-03"
+    assert started["empty_subset_months"] == {"count": 14, "first": "1993-01", "last": "1994-02"}
+    assert started["rules"]["R0"]["20bp"]["first_half"]["months"] == 10
+    assert started["rules"]["R1"]["50bp"]["full"]["months"] == 34
     assert started["rules"]["R0"]["20bp"]["second_half"]["months"] == 24
     # Entry turnover is charged in the start month, not in the leading empty months.
-    assert started["rules"]["R0"]["20bp"]["first_half"]["average_monthly_turnover"] >= 1 / 12
-    gap = returns.copy()
-    gap.loc["1995-03", "A"] = np.nan
-    gapped = {"_member": m5.membership(gap, evaluated), "_returns": gap.loc[:"1996-12"]}
+    assert started["rules"]["R0"]["20bp"]["first_half"]["average_monthly_turnover"] >= 1 / 10
+    held_gap = returns.copy()
+    held_gap.loc["1995-03", "A"] = np.nan
+    gapped = {"_member": member_of(held_gap, evaluated), "_returns": held_gap.loc[:"1996-12"]}
     refused = m5.post_publication(gapped, {"A": 1992, "B": 2000, "C": 2000, "D": None}, trial_like(), [20])
+    assert refused["status"] == "refused" and "missing return" in refused["reason"]
+    assert refused["start_month"] == "1993-03"
+    bad = absent_where_missing(returns)
+    bad.loc["1994-06", "A"] = MISSING_CODE
+    later_empty = {"_member": m5.membership(returns, bad, evaluated), "_returns": returns.loc[:"1996-12"]}
+    refused = m5.post_publication(later_empty, {"A": 1992, "B": 2000, "C": 2000, "D": None}, trial_like(), [20])
     assert refused["status"] == "refused" and "empty set" in refused["reason"]
-    assert refused["start_month"] == "1993-01"
     never = m5.post_publication(universe, {"A": 2000, "B": 2000, "C": 2000, "D": None}, trial_like(), [20])
     assert never["status"] == "refused" and never["empty_subset_months"]["count"] == 48
     wrong = m5.post_publication(universe, {"A": 1990, "B": None, "C": 1990, "D": None}, trial_like(), [20])
@@ -306,9 +368,7 @@ def test_post_publication_split_starts_at_first_non_empty_month_and_refuses_late
 
 def test_run_universe_and_report_on_a_synthetic_panel() -> None:
     returns = random_panel()
-    missing = pd.DataFrame(PRESENT, index=returns.index, columns=returns.columns, dtype=object)
-    missing[returns.isna()] = MISSING_ABSENT
-    panel = MonthlyPanel(returns, missing, 0)
+    panel = MonthlyPanel(returns, absent_where_missing(returns), 0)
     market = pd.Series(0.005, index=months("1985-01", "1996-12"))
     market.iloc[::2] = -0.003
     first, last = pd.Period("1993-01", "M"), pd.Period("1996-12", "M")
@@ -317,9 +377,10 @@ def test_run_universe_and_report_on_a_synthetic_panel() -> None:
     assert universe["rules"]["R1"]["20bp"]["full"]["months"] == 48
     assert universe["rules"]["R0"]["20bp"]["first_half"]["months"] == 24
     assert universe["lookback_typed_missing"] == {
-        "months": "1990-01 to 1992-12",
-        "by_reason": {MISSING_ABSENT: int(returns.loc[:"1992-12"].isna().to_numpy().sum())},
+        "months": "1989-12 to 1992-12",
+        "by_reason": {MISSING_ABSENT: 4 + int(returns.loc[:"1992-12"].isna().to_numpy().sum())},
     }
+    assert universe["counts"]["full"]["excluded_bad_data_in_lookback"] == 0
     diff = universe["_series"][("R1", 20)] - universe["_series"][("R0", 20)]
     post = m5.post_publication(universe, {"A": 1980, "B": 1980, "C": 1980, "D": None}, trial_like(), [20, 50])
     for key in ("_series", "_member", "_returns"):
@@ -327,7 +388,7 @@ def test_run_universe_and_report_on_a_synthetic_panel() -> None:
     result = {
         "run_utc": "2026-01-01T00:00:00Z", "git": {"commit": "abc", "tracked_changes": False},
         "evidence_ceiling": "DIAGNOSTIC_ONLY", "trial_file": "trial.json", "trial_file_sha256": "0" * 64,
-        "timing": "after_month_end_signal_next_month_return", "switch_cost_bps": [20, 50],
+        "amendments": m5.AMENDMENTS, "timing": m5.TIMING, "switch_cost_bps": [20, 50],
         "manifest": [{"id": "x", "rows": 1, "first_date": None, "last_date": None, "sha256": "f" * 64,
                       "retrieved_utc": "2026-01-01T00:00:00Z"}],
         "universes": {m5.PRIMARY_UNIVERSE: universe},
@@ -365,8 +426,8 @@ def test_trial_file_must_equal_its_committed_head_version(tmp_path: Path) -> Non
 def test_committed_trial_file_matches_the_pinned_sha256() -> None:
     _, digest = m5.verify_trial_file(m5.REPO_ROOT, m5.TRIAL_PATH)
     assert digest == m5.TRIAL_SHA256
-    _, amendment = m5.verify_trial_file(m5.REPO_ROOT, m5.AMENDMENT_PATH)
-    assert amendment == m5.AMENDMENT_SHA256
+    for path, pinned in m5.AMENDMENTS.items():
+        assert m5.verify_trial_file(m5.REPO_ROOT, path)[1] == pinned
 
 
 # Parsers --------------------------------------------------------------------
@@ -537,5 +598,5 @@ def test_universe_panel_types_added_months_absent() -> None:
     values = pd.DataFrame({"A": np.arange(len(index), dtype=float)}, index=index)
     missing = pd.DataFrame(PRESENT, index=index, columns=["A"], dtype=object)
     frame, reasons = m5.universe_panel(values, missing, pd.Period("1972-01", "M"), pd.Period("1972-02", "M"))
-    assert frame.index[0] == pd.Period("1969-01", "M") and frame.index[-1] == pd.Period("1972-02", "M")
-    assert reasons.loc["1969-01", "A"] == MISSING_ABSENT and reasons.loc["1970-01", "A"] == PRESENT
+    assert frame.index[0] == pd.Period("1968-12", "M") and frame.index[-1] == pd.Period("1972-02", "M")
+    assert reasons.loc["1968-12", "A"] == MISSING_ABSENT and reasons.loc["1970-01", "A"] == PRESENT
