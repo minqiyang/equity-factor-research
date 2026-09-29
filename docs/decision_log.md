@@ -15,6 +15,40 @@ investment performance.
 
 ---
 
+## 2026-09-28 - Milestone 5 Step 3 Reporting Conventions (Coordinator Technical Defaults)
+
+Context:
+
+- Freeze review round 2 on amendment 3 revision 2 (`f9c1152`) reported `MATERIAL: 0` from both seats. Its
+  advisories GPT-R2-A2 and S3O2-A1 note that no confidence interval is specified for the decision metric that
+  `docs/north_star.md` asks for. S3O2-A3 notes that the post-publication R2 is re-estimated on subset history.
+  S3O2-A4 lists definitions that no required test checks.
+
+Decision (set before any step 3 code or result; these add report outputs and tests and change no rule, test,
+threshold, or decision in amendment 3):
+
+- For S3.R2, S3.R3, and S3.R4, report a two-sided 95% pointwise interval for the mean of d_t (rule net minus R1 net
+  at 20 bp, jkp_factors_153, the full evaluated window): mean ± 1.959964 × se.
+  - se = sqrt(LRV / n), where LRV is `newey_west_long_run_variance(d, lags)` and `lags` is the lag that
+    `return_test_statistics` uses. A test checks that mean / se equals its `hac_statistic`.
+  - Units: percent per month, and that value × 12 per year.
+  - The interval is typed missing when that test is not `ok`.
+  - It is pointwise and not adjusted for selection or multiplicity.
+- The post-publication comparison is reported as "R2 re-estimated on post-publication factor-months only, with
+  history from the subset label span start". Beside it, report R2-sub's mean lambda per state and half, and the
+  share of subset months in which R2-sub weights differ from R1-sub weights.
+- The runner adds the S3O2-A4 tests below to amendment 3's required tests:
+  - the three labels at their boundaries: a trailing market return of exactly 0 is down, the volatility median
+    expands through month t-2, and the credit value at t-3 is compared with the median of months t-122 to t-3;
+  - R4's rank scaling, including average ranks and 0 when n = 1, and its 83-column layout;
+  - the class return as R1 within the class;
+  - the subset R2's span start and its subset-only histories.
+- Open advisories go to the backlog: GPT-R2-A1 (historical search completeness is not verifiable) and S3O2-A2,
+  A5, and A6 (wording).
+
+Rationale: an interval makes the size of the difference readable next to its test. The other items make the
+report say what was tested and test definitions that the future-perturbation test cannot check.
+
 ## 2026-09-28 - Milestone 5 Step 3 Trial Amendment 3 (Coordinator Technical Defaults)
 
 Context:
