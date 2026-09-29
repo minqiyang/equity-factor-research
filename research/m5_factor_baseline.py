@@ -546,7 +546,9 @@ def post_publication(universe: dict[str, Any], years: dict[str, int | None], tri
     return result
 
 
-def run(repo_root: Path) -> dict[str, Any]:
+def run(repo_root: Path, git: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run step 2. ``git`` is the tree state taken before the attempt log was appended."""
+
     trial_bytes, trial_sha = verify_trial_file(repo_root, TRIAL_PATH)
     if trial_sha != TRIAL_SHA256:
         raise PublicDataRefusal(f"trial file SHA-256 {trial_sha} differs from the pinned {TRIAL_SHA256}")
@@ -554,7 +556,7 @@ def run(repo_root: Path) -> dict[str, Any]:
     if amendment_sha != AMENDMENT_SHA256:
         raise PublicDataRefusal(f"amendment SHA-256 {amendment_sha} differs from the pinned {AMENDMENT_SHA256}")
     trial = json.loads(trial_bytes)
-    git = git_state(repo_root)
+    git = git if git is not None else git_state(repo_root)
     costs = [trial["costs"]["switch_cost_bps"]["primary"], trial["costs"]["switch_cost_bps"]["sensitivity"]]
     first = pd.Period(trial["evaluation_window"]["first_evaluated_month"], freq="M")
 
@@ -754,6 +756,11 @@ def render_report(result: dict[str, Any]) -> str:
               "t; R0 and R1 use the same rules and costs in one continuous run from the first month with a non-empty "
               "subset (trial amendment 1).", "",
               f"Status `{post['status']}`; start month {post.get('start_month') or 'none'}."]
+    if post["status"] == "completed":
+        members = post["rules"]["R0"]["members_per_month"]
+        lines += ["", f"Members per month: min {members['min']}, median {members['median']}, max {members['max']}. "
+                  "The first half holds few factors (see the subset counts below), so its figures describe a thin "
+                  "and changing set."]
     if "empty_subset_months" in post:
         empty = post["empty_subset_months"]
         lines += ["", f"Evaluated months with an empty subset: {empty['count']}"
@@ -820,7 +827,7 @@ def main(argv: list[str] | None = None) -> int:
         commit = {"commit": None, "tracked_changes": None}
     _append_attempt(REPO_ROOT, {"attempt": attempt, "event": "start", **commit})
     try:
-        result = run(REPO_ROOT)
+        result = run(REPO_ROOT, commit)
         (REPO_ROOT / REPORT_JSON).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         (REPO_ROOT / REPORT_MD).write_text(render_report(result), encoding="utf-8")
     except Exception as error:
