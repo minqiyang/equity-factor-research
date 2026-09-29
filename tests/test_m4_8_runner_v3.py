@@ -12,6 +12,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import pickle
 from datetime import date
 from pathlib import Path
 
@@ -79,9 +81,35 @@ def _run(base: Path, paths: dict[str, pd.DataFrame] | None) -> dict:
             "report": (base / "out" / runner.REPORT_V3).read_text()}
 
 
+def _once_per_session(tmp_path_factory, name, compute):
+    """Compute ``name`` once per xdist session; every other worker loads its exact pickle.
+
+    This is the pytest-xdist pattern for a once-only fixture: the lock and the pickle
+    live in the temporary root that only this session's workers share. Without xdist
+    workers that root is shared across sessions, so the value is computed directly.
+    """
+    if "PYTEST_XDIST_WORKER" not in os.environ:
+        return compute()
+    import fcntl  # POSIX file lock; CI runs on Linux and local runs on macOS
+    path = tmp_path_factory.getbasetemp().parent / f"{name}.pickle"
+    with open(f"{path}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if path.is_file():
+            return pickle.loads(path.read_bytes())
+        value = compute()
+        path.write_bytes(pickle.dumps(value))
+        return value
+
+
 @pytest.fixture(scope="module")
 def e2e(tmp_path_factory):
-    return _run(tmp_path_factory.mktemp("v3_clean"), None)
+    """The clean run, computed once per session and loaded by any other worker.
+
+    Under ``--dist loadgroup`` the ``v3_clean`` group computes this run on one worker
+    while the ``v3_poisoned`` group computes ``poisoned`` on the other.
+    """
+    return _once_per_session(tmp_path_factory, "m4_8_runner_v3_e2e",
+                             lambda: _run(tmp_path_factory.mktemp("v3_clean"), None))
 
 
 @pytest.fixture(scope="module")
@@ -184,7 +212,7 @@ def _pre_parts(run: dict) -> dict:
 
 
 @pytest.mark.xdist_group("v3_poisoned")
-def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(e2e, poisoned):
+def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(poisoned, e2e):
     clean, dirty = _pre_parts(e2e), _pre_parts(poisoned)
     assert json.dumps(clean, sort_keys=True) == json.dumps(dirty, sort_keys=True)
     post_clean = e2e["sidecar"]["benchmarks"]["equal_weight_pit"]["segments"]["post"]
@@ -413,3 +441,28 @@ def test_t_exp_2_full_overlap_reports_no_subsample_and_no_statistic_is_fresh(e2e
     assert result["per_segment"]["pre"]["static_50_name_cohort"] == 1.0
     assert "fresh" not in e2e["report"].lower()
     assert date(2016, 8, 8) == min(start for _, start, _ in windows)
+
+
+# ---------------------------------------------------------------- shared fixture helper
+
+
+def test_once_per_session_computes_once_under_xdist_and_directly_without_it(tmp_path, monkeypatch):
+    class Factory:
+        def getbasetemp(self):
+            return tmp_path / "popen-gw0"
+
+    calls = []
+
+    def compute():
+        calls.append(len(calls))
+        return {"frame": pd.DataFrame({"x": [0.1, np.nan, -0.0]}), "text": "report"}
+
+    monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
+    _once_per_session(Factory(), "probe", compute)
+    _once_per_session(Factory(), "probe", compute)
+    assert calls == [0, 1] and not (tmp_path / "probe.pickle").exists()  # no state across sessions
+    monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")
+    first = _once_per_session(Factory(), "probe", compute)
+    second = _once_per_session(Factory(), "probe", compute)
+    assert calls == [0, 1, 2] and second["text"] == first["text"]
+    pd.testing.assert_frame_equal(second["frame"], first["frame"])
