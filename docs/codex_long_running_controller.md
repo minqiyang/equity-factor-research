@@ -106,6 +106,15 @@ re-enter this gate before acting on a different PR or changed scope.
   finding resolution live in `coordinator.md`, `routing_table.json`, and
   `model_bindings.json`. The reviewer is read-only on a clean root at that exact
   head, never the producer worktree.
+- Each formal review seat runs as its bound model and writes its own report
+  file, which the coordinator reads directly (owner rules, 2026-09-28).
+  - A GPT seat is Codex started in its own Herdr tab, labeled with the model and
+    effort. No Claude agent launches, wraps, or relays it.
+  - A Claude seat or producer runs in Claude Code: in a labeled Herdr tab when
+    the owner should watch one long task, or as a Claude Code agent or workflow
+    for fan-out work.
+  - The coordinator monitors Claude work through Claude Code background tasks
+    (report file, process, transcript), not Herdr agent state.
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -199,6 +208,7 @@ first recorded the rule.
 | Short polling or checking background tasks without sufficient wait margin (under-waiting relative to task runtime) | `2c07ee4` (2026-09-25) |
 | Spending a stage on work that cannot change a real-data result or an owner decision in that step, including repeated data extension under a gate that cannot pass | North Star v2 PR (2026-09-28) |
 | Writing non-English text, including Chinese characters, to the repository, to GitHub (PR titles and bodies, comments, commit messages), or to any report | North Star v2 PR (2026-09-28) |
+| Running a formal review seat through an agent of another model, such as a GPT seat launched or relayed by a Claude agent | Milestone 5 step 3 PR (2026-09-28) |
 
 Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
 own incident record and owner confirmation.

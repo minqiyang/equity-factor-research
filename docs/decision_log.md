@@ -15,6 +15,114 @@ investment performance.
 
 ---
 
+## 2026-09-28 - Milestone 5 Step 3 Reporting Conventions (Coordinator Technical Defaults)
+
+Context:
+
+- Freeze review round 2 on amendment 3 revision 2 (`f9c1152`) reported `MATERIAL: 0` from both seats. Its
+  advisories GPT-R2-A2 and S3O2-A1 note that no confidence interval is specified for the decision metric that
+  `docs/north_star.md` asks for. S3O2-A3 notes that the post-publication R2 is re-estimated on subset history.
+  S3O2-A4 lists definitions that no required test checks.
+
+Decision (set before any step 3 code or result; these add report outputs and tests and change no rule, test,
+threshold, or decision in amendment 3):
+
+- For S3.R2, S3.R3, and S3.R4, report a two-sided 95% pointwise interval for the mean of d_t (rule net minus R1 net
+  at 20 bp, jkp_factors_153, the full evaluated window): mean ± 1.959964 × se.
+  - se = sqrt(LRV / n), where LRV is `newey_west_long_run_variance(d, lags)` and `lags` is the lag that
+    `return_test_statistics` uses. A test checks that mean / se equals its `hac_statistic`.
+  - Units: percent per month, and that value × 12 per year.
+  - The interval is typed missing when that test is not `ok`.
+  - It is pointwise and not adjusted for selection or multiplicity.
+- The post-publication comparison is reported as "R2 re-estimated on post-publication factor-months only, with
+  history from the subset label span start". Beside it, report R2-sub's mean lambda per state and half, and the
+  share of subset months in which R2-sub weights differ from R1-sub weights.
+- The runner adds the S3O2-A4 tests below to amendment 3's required tests:
+  - the three labels at their boundaries: a trailing market return of exactly 0 is down, the volatility median
+    expands through month t-2, and the credit value at t-3 is compared with the median of months t-122 to t-3;
+  - R4's rank scaling, including average ranks and 0 when n = 1, and its 83-column layout;
+  - the class return as R1 within the class;
+  - the subset R2's span start and its subset-only histories.
+- Open advisories go to the backlog: GPT-R2-A1 (historical search completeness is not verifiable) and S3O2-A2,
+  A5, and A6 (wording).
+
+Rationale: an interval makes the size of the difference readable next to its test. The other items make the
+report say what was tested and test definitions that the future-perturbation test cannot check.
+
+## 2026-09-28 - Milestone 5 Step 3 Trial Amendment 3 (Coordinator Technical Defaults)
+
+Context:
+
+- v1 leaves the R2, R3, and R4 parameters and the step 3 test details to "the v2 amendment", which must be
+  committed before any step 3 result. Review advisories A2-A2 (prior-exposure multiplicity) and A2R2-A1 (R4
+  coverage) wait on it.
+- Review round 1 of revision 1 (`cd1d578`, SHA-256 `b5c67cf1...0c62`) found one MATERIAL finding (GPT-R1-M1: the
+  R2 timing claim did not need the result to hold after publication) and 12 ADVISORY findings. No step 3 code or
+  result existed, so revision 2 repairs them in the same file.
+
+Decisions:
+
+- Amendment 3 revision 2 (`docs/preregistrations/m5_trial_family_v1_amendment_3.json`, SHA-256
+  `c59f69c8...bfbb`, committed alone in `f9c1152` before any step 3 code or result) is that amendment. It pins v1
+  and amendments 1 and 2 by SHA-256 and lists 26 technical defaults, one line each. The main ones:
+  - R2 tilts each theme by 1 + 0.5 x the mean over the three states of sign(past cell mean) x E / (E + 10), where
+    E is the cell's past episode count. R3 tilts by 1 + 0.5 x sign(trailing 12-month return). R4 fits one ridge
+    per return year (alpha = training rows; 83 trait, state, and trait x state columns; no cross-sectional
+    standardization), and its forecast ranks tilt R1 by factors in [0.5, 1.5]. Step 3 runs on `jkp_factors_153`
+    only.
+  - A2R2-A1: a factor-month without an R4 forecast keeps its exact R1 weight, including the 11 factors without a
+    publication year, so every comparison uses the R1 set.
+  - A2-A2: the S3 BY family counts 3 rule tests, 39 class x state tests, and 1005 prior-exposure slots at p = 1
+    (family size 1047). The slots are an exact count of every test statistic on a step 3 hypothesis in the
+    retained scratch scripts, full window and halves, with 32 exclusions each given a reason. A random-date null
+    of 999 circular label shifts (seed 20260928) is reported beside R2 and the state tests.
+  - The closure rule applies the 8 step 2 conditions to R2 against R1 on `jkp_factors_153`, with differences
+    below 1e-12 counted as equal. If R2 fails any of them in either half, the return-timing line closes and R1
+    alone goes to step 4.
+  - A claim that states improve on the baseline needs 6 conditions: the 8 closure conditions, a positive
+    full-window mean difference, S3.R2 q <= 0.05, a defined random-date p <= 0.05, R2 not losing to R1 on the
+    post-publication subset at 20 and 50 bp (Sharpe, drawdown, and a positive mean difference; undefined or empty
+    fails), and all three states with at least 10 episodes per cell and half. An open line without the claim
+    carries R2 to step 4 as "no evidence of state timing".
+- Round 1 repairs, by finding:
+  - GPT-R1-M1: the post-publication condition above, with a predicate test in which every full-set condition
+    passes and the post-publication condition fails.
+  - GPT-R1-A1 and S3O-A7: one label span for the observed R2 and every shifted rebuild; a missing label inside
+    it refuses; an undefined draw counts as an exceedance; an undefined observed statistic cannot survive; a
+    lookback class-month with a missing member return is typed missing and counted; an empty class in an
+    evaluated month refuses.
+  - GPT-R1-A2 and S3O-A1: the exact recount above replaces the "smallest consistent count" of 617.
+  - GPT-R1-A3: the 10-episode rule applies to each of R2's states; R2 credits no single state.
+  - S3O-A2: the momentum-after-a-falling-market row is listed as seen; state-effect tests are re-examinations
+    that support no confirmatory claim, and the report marks the six pre-seen cells.
+  - S3O-A4: the 1e-12 tie tolerance; the report gives the 8 margins and the share of months where R2 differs
+    from R1.
+  - S3O-A5: surviving cells stay surviving descriptive cells whether the line is open or closed and may be
+    named as step 5 candidates, which step 5 declares and tests on its own.
+  - S3O-A6: two hindsight limitations (full-sample JKP clusters; early Compustat backfill in R2 lookback).
+  - S3O-A8: the two roadmap backlog rows are updated.
+  - S3O-A9: R2 and R3 no longer run on `jkp_themes_13` and `french_7`, and R3 and R4 no longer run on the
+    post-publication subset; R3 stays because v1 declares it.
+- Advisories kept open, one line each:
+  - GPT-R1-A2 residual: 1005 counts the retained final scripts only; earlier script edits and interactive work
+    left no record, so the historical search stays a stated limitation.
+  - S3O-A3: with 19 down-trend episodes seen for 1972-2025, the per-half rule will very likely make the
+    market_trend tests and R2's timing claim description only; a full-window 10-episode rule is an owner choice
+    that must be made before any step 3 result.
+
+Rationale:
+
+- Counting every retained prior test keeps R9 intact without a narrower convention to defend. Keeping the R1
+  weight where R4 has no forecast stops the R4 comparison from measuring the publication effect. The
+  post-publication and episode conditions apply the North Star decision rule to the pooled R2 result. No choice
+  used a step 3 result; the amendment lists every result seen before it.
+
+Consequences:
+
+- The amendment settles the backlog rows for A2-A2 and A2R2-A1. The step 3 runner must verify all four trial-file
+  pins and pass the amendment's 17 required tests, including the R4 weight-level publication-year test and the
+  R2 timing-claim predicate test.
+
 ## 2026-09-28 - Milestone 5 Trial Amendments 1 and 2 (Coordinator Technical Defaults)
 
 Context:

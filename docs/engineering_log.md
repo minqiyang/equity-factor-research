@@ -12,6 +12,40 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Milestone 5 step 3 runner and real-data run (DIAGNOSTIC_ONLY)
+
+`research/m5_step3.py` (`343003d`, report fix `f522a23`) implements amendment 3 revision 2 and the step 3 reporting conventions on `jkp_factors_153`: state labels (`market_trend_labels`, `market_volatility_labels`, `credit_spread_labels`), class returns as R1 within each JKP cluster (`class_returns`), the label span (`label_span_start`), R2 (`r2_tilt`, `r2_weights`), R3 (`trailing_return`, `r3_weights`), R4 (`r4_design`, `r4_fit` with `sklearn` `Ridge`, `r4_weights`), the S3 tests with the 95% HAC interval (`rule_test`, `state_effect_statistic`, `s3_adjust`), the random-date null (`null_offsets`, `null_draw`), the episode rule, the closure rule, and the R2 timing claim; it reuses the step 2 loaders, `membership`, `rule_weights`, `portfolio`, `performance`, `period_bounds`, and `post_publication` unchanged, never calls `features/ml_combination.py`, refuses unless v1 and amendments 1 to 3 match HEAD and their pins, and adds `french_ff3_daily` and the pinned jkp-data `aux_functions.py` to `reports/m5_public_data_manifest.json`. `tests/test_m5_step3.py` has 47 synthetic-fixture tests covering the 17 amendment 3 required tests and the decision-log additions; the 33 step 2 tests pass unchanged. The real-data run takes about 6.5 seconds with 999 null draws; attempt `20260929T062523224474Z` (`232bd3b`) and attempt `20260929T062817683096Z` (`4711941`, rerun after a report-formatting fix, numbers unchanged) are both in `reports/m5_step3_attempts.jsonl`. Results at DIAGNOSTIC_ONLY: R2 meets all 8 closure conditions against R1, so the return-timing line stays open and R2 goes to step 4 labeled "no evidence of state timing"; the timing claim fails conditions 2 to 6 (S3.R2 mean -0.23 bp per month, 95% interval -0.76 to +0.29 bp, HAC p 0.379, BY q 1, random-date p 0.318; post-publication R2-sub loses on drawdown at 20 bp and on Sharpe and drawdown at 50 bp; market_trend has 9 down episodes in 2000-2025); S3.R3 and S3.R4 have BY q 1 and meet 4 and 1 of the 8 conditions; no state-effect cell survives.
+
+Code review round 1 at `1775e42` ran GPT (`gpt-6-astra`, high, Codex in its own Herdr tab) and Opus
+(`claude-opus-5-5`, high, Claude Code in its own Herdr tab). GPT reported `MATERIAL: 0 / ADVISORY: 1` and Opus
+`MATERIAL: 0 / ADVISORY: 5`. Each seat rebuilt the headline numbers from the raw cache with its own code:
+- GPT solved the 48 ridge fits by normal equations; the largest coefficient difference was 1.2e-18.
+- Opus matched every value to 1e-14 and all 40 random-date p-values exactly.
+The six advisories are in the roadmap backlog row "Milestone 5 step 3 runner advisories".
+
+## 2026-09-28 - Milestone 5 step 3 freeze review, and the review-seat visibility incident
+
+- Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_3.json` was committed alone before any step 3 code
+  or result. The first version was `cd1d578`; revision 2, `f9c1152` (SHA-256 `c59f69c8…`), follows review round 1.
+  The records commits are `7654c32` and `df8265d`.
+- Review: two seats from different model families, at most two rounds.
+  - GPT (`gpt-6-astra`, high): round 1 found MATERIAL 1 and ADVISORY 3; round 2 found MATERIAL 0 and ADVISORY 2.
+  - Opus (`claude-opus-5-5`): round 1 found MATERIAL 0 and ADVISORY 9; round 2 found MATERIAL 0 and ADVISORY 6.
+  - The round 1 MATERIAL finding: R2's timing-claim gate did not require the post-publication comparison to hold.
+    Revision 2 adds that condition and a predicate test.
+  - The reports are in the main checkout under `coord/reports/m5_step3/`, untracked.
+- Incident (owner correction, 2026-09-28): both seats ran inside a Claude Code workflow.
+  - The GPT seat was an Opus workflow agent that ran `codex exec -m gpt-6-astra`. The review itself was GPT's: the
+    Codex logs name the model, and GPT wrote its own report files.
+  - The progress view still showed the seat as "Opus 5.5". The owner could not see or check which model reviewed,
+    and the wrapper could have filtered GPT's output.
+  - The owner accepted this round and set the rule: every formal review seat runs as its bound model and writes
+    its own report. A GPT seat is Codex in its own labeled Herdr tab, never launched or relayed by a Claude agent.
+    In a follow-up the owner let Claude work run through Claude Code's own agents and workflows, or in a Herdr tab
+    when a long task should be watched. The coordinator monitors Claude work through Claude Code background
+    tasks, because a Claude pane in Herdr can switch to showing the coordinator's session.
+  - The rule is in `docs/codex_long_running_controller.md` (review bullets and process-failure table).
+
 ## 2026-09-28 - CI wall time: four disjoint test lanes and a once-per-session runner v3 fixture
 
 - Scope: owner request to shorten PR CI. Branch `claude/ci-speed` from `main` at `edbd34c`. CI and test files

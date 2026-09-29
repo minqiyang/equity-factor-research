@@ -8,6 +8,16 @@
     "french_ff3_daily": "consumed in step 3",
     "jkp_accounting_characteristics_list": "consumed in step 3"
   },
+  "step3": {
+    "code_commit": "f522a2342d71e561188d9ac50e7e64724319bb65",
+    "amendment_3": "docs/preregistrations/m5_trial_family_v1_amendment_3.json",
+    "amendment_3_sha256": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb",
+    "retrieved_in_step3": [
+      "french_ff3_daily",
+      "jkp_accounting_characteristics_list"
+    ],
+    "rows_note": "rows for jkp_accounting_characteristics_list counts the names in acc_chars_list(); rows for french_ff3_daily counts YYYYMMDD data rows"
+  },
   "sources": [
     {
       "id": "jkp_cluster_labels",
@@ -108,6 +118,26 @@
       "rows": 1292,
       "first_date": "1919-01",
       "last_date": "2026-08"
+    },
+    {
+      "id": "french_ff3_daily",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
+      "retrieved_utc": "2026-09-29T06:25:12Z",
+      "sha256": "2f29e22546069914890a712680a6f81f3680ebc3543b52864484d209ca13a7db",
+      "bytes": 178184,
+      "rows": 26317,
+      "first_date": "1926-07-01",
+      "last_date": "2026-08-31"
+    },
+    {
+      "id": "jkp_accounting_characteristics_list",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/aux_functions.py",
+      "retrieved_utc": "2026-09-29T06:25:12Z",
+      "sha256": "b3cab651d62bd1214651c9e0aab1fdcafec9125911a6ddc1435967bf8c8732aa",
+      "bytes": 375719,
+      "rows": 315,
+      "first_date": null,
+      "last_date": null
     }
   ]
 }
