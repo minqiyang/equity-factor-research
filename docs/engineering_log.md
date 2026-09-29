@@ -32,8 +32,11 @@ This is a living engineering log for review notes, correctness audits, bug fixes
     Codex logs name the model, and GPT wrote its own report files.
   - The progress view still showed the seat as "Opus 5.5". The owner could not see or check which model reviewed,
     and the wrapper could have filtered GPT's output.
-  - The owner accepted this round and set the rule: every formal review seat runs as its bound model in its own
-    labeled Herdr tab, with no wrapper agent.
+  - The owner accepted this round and set the rule: every formal review seat runs as its bound model and writes
+    its own report. A GPT seat is Codex in its own labeled Herdr tab, never launched or relayed by a Claude agent.
+    In a follow-up the owner let Claude work run through Claude Code's own agents and workflows, or in a Herdr tab
+    when a long task should be watched. The coordinator monitors Claude work through Claude Code background
+    tasks, because a Claude pane in Herdr can switch to showing the coordinator's session.
   - The rule is in `docs/codex_long_running_controller.md` (review bullets and process-failure table).
 
 ## 2026-09-28 - CI wall time: four disjoint test lanes and a once-per-session runner v3 fixture
