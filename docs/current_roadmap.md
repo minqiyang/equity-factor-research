@@ -208,9 +208,18 @@ carry to that point. The seal window stays unaccessed.
 
 Design basis: `coord/reports/north_star_vision_assessment_opus.md`.
 
-Status 2026-09-29: steps 1 and 2 are delivered. The trial file and amendments 1 and 2 are in
-`docs/preregistrations/`, the catalog has 1,160 rows, and the declared rule picks R1 (inverse volatility) as the
-baseline product (`reports/m5_factor_baseline.md`, `DIAGNOSTIC_ONLY`). Step 3 is next.
+Status 2026-09-29:
+- Steps 1 and 2 are delivered. The trial file and amendments 1 and 2 are in `docs/preregistrations/`, the catalog
+  has 1,160 rows, and the declared rule picks R1 (inverse volatility) as the baseline product
+  (`reports/m5_factor_baseline.md`, `DIAGNOSTIC_ONLY`).
+- Step 3 is delivered (`reports/m5_step3.md`, `DIAGNOSTIC_ONLY`), under amendment 3 and committed before any step 3
+  result.
+  - Closure: open. R2, the state tilt, meets all 8 conditions against R1.
+  - The state-timing claim does not qualify. R2's mean monthly return is 0.23 bp below R1's, with HAC p 0.38,
+    BY q 1, and random-date p 0.32. Its Sharpe edge comes from lower volatility.
+  - None of the 39 class x state cells survives.
+  - R2 goes to step 4 beside R1, labeled "no evidence of state timing". R3 and R4 change no decision.
+- Step 4 is next.
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most
@@ -255,6 +264,7 @@ status.
 | Advanced multiple-testing statistics | Statistics | Multiplicity and adaptive research affect inference | Existing DSR uses run-family Sharpe dispersion. M4.3 adds Bonferroni, Holm, BH and BY over all semantic book trials, primary HAC BY diagnostics, and explicitly conditional IID Sharpe haircuts. Undefined and conflicting trials retain family slots. Historical search completeness, finite-sample HAC calibration, and empirical-population Harvey-Liu simulation remain open. | Stronger formal research claims and accepted historical-family evidence | Implemented diagnostic layer; DIAGNOSTIC_ONLY; formal promotion limits remain |
 | Milestone 5 step 3 BY family and prior exposures | Statistics | The 612 factor x state pairs and the T1 and T3 rules seen before the trial freeze overlap step 3 tests; leaving them out of the step 3 BY family size would understate multiplicity (review advisory A2-A2) | Amendment 3 counts every test statistic on a step 3 hypothesis in the retained scratch scripts, full window and halves: 1005 slots at p = 1, family size 1047, 32 stated exclusions (`docs/decision_log.md`, Milestone 5 Step 3 Trial Amendment 3) | Recovery of earlier script edits or unrecorded prior runs | Settled by amendment 3; the historical search beyond the retained scripts stays a stated limitation |
 | Milestone 5 step 3 R4 coverage | Statistics | Amendment 2 removes not-yet-published factor-months from R4's inputs (65% of the jkp_factors_153 set, 94% in 1972-1999); comparing R4 with baselines on the full set would measure the publication effect (review advisory A2R2-A1) | Amendment 3: a factor-month without an R4 forecast, including the 11 no-year factors, keeps its exact R1 weight, so R4 is compared with R1 on the same set; the report states the covered share and uncovered counts by half | A change to R4's inputs or weighting | Settled by amendment 3 |
+| Milestone 5 step 3 runner advisories | Engineering | Code review round 1 at `1775e42` found no MATERIAL issue and six advisories, none of which changes a number: an all-uncovered R4 input crashes before its R1 fallback (GPT-S3-CODE-R1-A1); the manifest is written before a run can refuse (S3C-O-A1); a step 2 rerun would drop the step 3 manifest entries (S3C-O-A2); the report does not say that a thin early subset decides condition 5's drawdown check (S3C-O-A3); the future-perturbation test does not move RF or AAA (S3C-O-A4); a closure-table heading (S3C-O-A5) | Reports in the main checkout under `coord/reports/m5_step3/` (untracked) | The next edit to `research/m5_step3.py` or a step 2 rerun | Open; fix with the next runner change |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
 | Support v2 look-ahead exclusion (R1) | Timing / Invariants | Retrospective asset exclusion at r-1 for mid-month missing bar / unevidenced delisting | Confined to 27 cells of 26,237 (0.103%) on real_v1; DIAGNOSTIC_ONLY ceiling; zero ranking/selection/profitability claim; owner-accepted risk | Revisit immediately if any rerun produces a Family A BY survivor, or if excluded fraction exceeds 0.005; expires at next registration freeze | Owner-accepted, expires at next registration freeze |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities. M4.4 requires identity-backed interval tables and exact permanent-ID axes in its optional PIT path; synthetic ticker-reassignment tests preserve separate security returns. External identity evidence remains caller-supplied. | Never deferrable | **BLOCKING (Cannot Defer)**; optional runtime enforcement implemented |
