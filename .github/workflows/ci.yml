@@ -34,9 +34,10 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 4
       matrix:
-        lane: [core, diagnostics]
+        # Four disjoint shards; tests/test_ci_workflow.py checks that each test file runs in exactly one.
+        lane: [runner-v3, m4-pipelines, core, diagnostics]
     # Repository tests use committed synthetic fixtures only.
     # This job is not result-bearing and does not read a private panel.
 
@@ -65,7 +66,8 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/ci-evidence/checkout-sha.txt"
           python --version > "$RUNNER_TEMP/ci-evidence/python.txt"
           python -m pip freeze --all > "$RUNNER_TEMP/ci-evidence/dependencies.txt"
-          nproc > "$RUNNER_TEMP/ci-evidence/cpus.txt"
+          # Plain nproc honors OMP_NUM_THREADS=1; --all reports the runner vCPU count.
+          nproc --all > "$RUNNER_TEMP/ci-evidence/cpus.txt"
           free -m > "$RUNNER_TEMP/ci-evidence/memory-start.txt"
           python -m threadpoolctl -i numpy scipy sklearn > "$RUNNER_TEMP/ci-evidence/threadpools.json"
 
@@ -90,16 +92,28 @@ jobs:
           CI_LANE: ${{ matrix.lane }}
         run: |
           case "$CI_LANE" in
+            runner-v3)
+              selection=(tests/test_m4_8_runner_v3.py)
+              ;;
+            m4-pipelines)
+              selection=(tests/test_m4_7_sp500_pit_rerun.py tests/test_m4_8_integration_v3.py)
+              ;;
             core)
-              selection=(tests --ignore=tests/test_multifactor_diagnostic_mvp.py --ignore=tests/test_m3_10_hardening.py)
+              selection=(tests
+                --ignore=tests/test_m4_8_runner_v3.py
+                --ignore=tests/test_m4_7_sp500_pit_rerun.py
+                --ignore=tests/test_m4_8_integration_v3.py
+                --ignore=tests/test_multifactor_diagnostic_mvp.py
+                --ignore=tests/test_m3_10_hardening.py)
               ;;
             diagnostics)
               selection=(tests/test_multifactor_diagnostic_mvp.py tests/test_m3_10_hardening.py)
               ;;
             *) exit 2 ;;
           esac
+          # loadgroup keeps each xdist_group (an expensive shared fixture) on one worker.
           /usr/bin/time -v -o "$RUNNER_TEMP/ci-evidence/pytest-resource.txt" \
-            python -m pytest -q -n 2 --dist worksteal \
+            python -m pytest -q -n 2 --dist loadgroup \
             --max-worker-restart=0 --durations=50 --durations-min=0.1 \
             --junitxml="$RUNNER_TEMP/ci-evidence/pytest.xml" \
             "${selection[@]}" \

@@ -98,6 +98,7 @@ def poisoned(tmp_path_factory):
 # ---------------------------------------------------------------- end to end
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_v3_synthetic_run_completes_with_the_registered_segments(e2e):
     sidecar = e2e["sidecar"]
     assert sidecar["run_status"] == "completed" and sidecar["outputs_written"] is True
@@ -115,11 +116,13 @@ def test_v3_synthetic_run_completes_with_the_registered_segments(e2e):
     assert len(e2e["trials"]) == runner.UNION_SIZE + 6 * 3 * 2 + 63 * 2
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_causal_5_the_v3_runner_never_calls_support_exclusions(e2e):
     assert e2e["sidecar"]["run_status"] == "completed"  # the fixture ran with support_exclusions raising
     assert all(t.get("support_contract") == runner.CAUSAL_SUPPORT_CONTRACT for t in e2e["trials"])
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_4_one_engine_call_per_segment_over_anchor_to_last_book_row(e2e):
     calls = e2e["log"]["engine"]
     book_trials = [t for t in e2e["trials"] if t["hypothesis"] == "book_return"]
@@ -134,6 +137,7 @@ def test_t_seg_4_one_engine_call_per_segment_over_anchor_to_last_book_row(e2e):
         assert pre["first_month"] == sup.CAL[sup.PRE.first_reset_row].strftime("%Y-%m")
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_5_concatenated_series_carry_segment_ids_and_no_return_spans_the_gap(e2e):
     trial = next(t for t in e2e["trials"] if t["factor_id"] == "MOM_12_1" and t["hypothesis"] == "rank_ic_mean")
     by_month = trial["segment_id_by_month"]
@@ -147,6 +151,7 @@ def test_t_seg_5_concatenated_series_carry_segment_ids_and_no_return_spans_the_g
         assert ew["segments"][segment]["first_row_net_return"] == 0.0
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seg_6_one_composite_builder_call_per_segment(e2e):
     calls = e2e["log"]["composites"]
     assert len(calls) == 2
@@ -178,6 +183,7 @@ def _pre_parts(run: dict) -> dict:
     return parts
 
 
+@pytest.mark.xdist_group("v3_poisoned")
 def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(e2e, poisoned):
     clean, dirty = _pre_parts(e2e), _pre_parts(poisoned)
     assert json.dumps(clean, sort_keys=True) == json.dumps(dirty, sort_keys=True)
@@ -186,6 +192,7 @@ def test_t_seg_7_poisoning_one_side_leaves_the_other_segment_byte_identical(e2e,
     assert post_clean != post_dirty  # the poison reached the post segment
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_seal_br_2_every_panel_stays_on_one_side_and_the_first_post_return_is_missing(e2e):
     start, end = pd.Timestamp(sup.HOLDOUT_START), pd.Timestamp(sup.HOLDOUT_END)
     for result in e2e["log"]["panels"]:
@@ -238,6 +245,7 @@ def test_an_unevidenced_held_possible_disappearance_stops_before_inference(tmp_p
 # ---------------------------------------------------------------- registration v3
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_reg3_3_family_hashes_equal_registration_v2(e2e):
     committed = json.loads(runner.REGISTRATION_PATH.read_bytes())
     assert runner.family_hashes(e2e["doc"]) == runner.family_hashes(committed)
@@ -343,6 +351,7 @@ def test_t_reg3_5_power_projection_reproduces_section_5_4():
     assert power_projection(356)["kill_reachable_projection"] is True
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_reg3_6_the_report_states_looks_exposure_and_the_unexposed_subsample(e2e):
     report = e2e["report"]
     assert "Sequential looks: 3" in report and "carried seal with stated prior exposures" in report
@@ -352,6 +361,7 @@ def test_t_reg3_6_the_report_states_looks_exposure_and_the_unexposed_subsample(e
     assert "residual_disappearance_minus_100pct_bound_v1` vacuous_no_residual" in report
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_gate3_the_v3_gate_is_the_carried_decide_gate(e2e):
     gate = e2e["sidecar"]["gate"]
     rows = e2e["sidecar"]["families"]["A"]["rows"]
@@ -392,6 +402,7 @@ def test_t_exp_1_overlap_reproduces_the_carried_computation():
     assert fewer["calendar_unexposed_pre_subsample"]["status"] == "not_reported_below_30_valid_months"
 
 
+@pytest.mark.xdist_group("v3_clean")
 def test_t_exp_2_full_overlap_reports_no_subsample_and_no_statistic_is_fresh(e2e):
     windows = runner.prior_exposure_windows()
     valid = pd.DataFrame({"reset_date": pd.date_range("2016-09-30", periods=40, freq="ME"),

@@ -26,6 +26,10 @@ from research.m4_7_coverage_census import aggregate_terminal_summary
 from research.m4_7_universe_build import Snapshot, discovery_segments
 
 
+# One worker runs the whole module under --dist loadgroup, so the chain fixture runs once.
+pytestmark = pytest.mark.xdist_group("m4_8_integration")
+
+
 @pytest.fixture(scope="module")
 def chain(tmp_path_factory):
     base = tmp_path_factory.mktemp("integration")
