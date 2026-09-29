@@ -12,6 +12,17 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-29 - Milestone 5 step 4 private-data authorization (O-5)
+
+- The owner explicitly authorized Milestone 5 step 4 to read the local S&P 500 point-in-time snapshots `real_v1`
+  and `real_v2` (asked and answered in the coordinator session, 2026-09-29).
+- Scope: local reads for the step 4 bridge runs only, under the written terms in
+  `docs/stage1_accepted_public_record_v1.json`.
+  - The repository and reports carry aggregates and hashed manifests only.
+  - No raw provider rows, provider-derived membership lists, security codes, or private paths (R11).
+  - The M4.8 seal window stays unaccessed.
+- The step 4 trial amendment must be committed before any step 4 result.
+
 ## 2026-09-28 - Milestone 5 step 3 runner and real-data run (DIAGNOSTIC_ONLY)
 
 `research/m5_step3.py` (`343003d`, report fix `f522a23`) implements amendment 3 revision 2 and the step 3 reporting conventions on `jkp_factors_153`: state labels (`market_trend_labels`, `market_volatility_labels`, `credit_spread_labels`), class returns as R1 within each JKP cluster (`class_returns`), the label span (`label_span_start`), R2 (`r2_tilt`, `r2_weights`), R3 (`trailing_return`, `r3_weights`), R4 (`r4_design`, `r4_fit` with `sklearn` `Ridge`, `r4_weights`), the S3 tests with the 95% HAC interval (`rule_test`, `state_effect_statistic`, `s3_adjust`), the random-date null (`null_offsets`, `null_draw`), the episode rule, the closure rule, and the R2 timing claim; it reuses the step 2 loaders, `membership`, `rule_weights`, `portfolio`, `performance`, `period_bounds`, and `post_publication` unchanged, never calls `features/ml_combination.py`, refuses unless v1 and amendments 1 to 3 match HEAD and their pins, and adds `french_ff3_daily` and the pinned jkp-data `aux_functions.py` to `reports/m5_public_data_manifest.json`. `tests/test_m5_step3.py` has 47 synthetic-fixture tests covering the 17 amendment 3 required tests and the decision-log additions; the 33 step 2 tests pass unchanged. The real-data run takes about 6.5 seconds with 999 null draws; attempt `20260929T062523224474Z` (`232bd3b`) and attempt `20260929T062817683096Z` (`4711941`, rerun after a report-formatting fix, numbers unchanged) are both in `reports/m5_step3_attempts.jsonl`. Results at DIAGNOSTIC_ONLY: R2 meets all 8 closure conditions against R1, so the return-timing line stays open and R2 goes to step 4 labeled "no evidence of state timing"; the timing claim fails conditions 2 to 6 (S3.R2 mean -0.23 bp per month, 95% interval -0.76 to +0.29 bp, HAC p 0.379, BY q 1, random-date p 0.318; post-publication R2-sub loses on drawdown at 20 bp and on Sharpe and drawdown at 50 bp; market_trend has 9 down episodes in 2000-2025); S3.R3 and S3.R4 have BY q 1 and meet 4 and 1 of the 8 conditions; no state-effect cell survives.
