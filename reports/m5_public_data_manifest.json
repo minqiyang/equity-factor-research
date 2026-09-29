@@ -2,7 +2,7 @@
   "schema_version": "m5_public_data_manifest_v1",
   "trial_file": "docs/preregistrations/m5_trial_family_v1.json",
   "trial_file_sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
-  "code_commit": "2fd16a86475c634aaf1aab15b1afb448fcb0602f",
+  "code_commit": "fd8789baa7c00f6dbfd541406bb5e177628ebb30",
   "cache_dir": "data/public_cache/ (gitignored; raw files are never committed)",
   "not_retrieved_in_step2": {
     "french_ff3_daily": "consumed in step 3",

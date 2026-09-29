@@ -1,11 +1,13 @@
 {
   "schema_version": "m5_factor_baseline_v1",
   "evidence_ceiling": "DIAGNOSTIC_ONLY",
-  "run_utc": "2026-09-28T23:41:00Z",
+  "run_utc": "2026-09-29T00:12:16Z",
   "trial_file": "docs/preregistrations/m5_trial_family_v1.json",
   "trial_file_sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+  "amendment_file": "docs/preregistrations/m5_trial_family_v1_amendment_1.json",
+  "amendment_file_sha256": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751",
   "git": {
-    "commit": "2fd16a86475c634aaf1aab15b1afb448fcb0602f",
+    "commit": "fd8789baa7c00f6dbfd541406bb5e177628ebb30",
     "tracked_changes": false
   },
   "timing": "after_month_end_signal_next_month_return",
@@ -911,12 +913,164 @@
         "months_with_empty_subset": 0
       }
     },
+    "start_month": "1974-01",
     "empty_subset_months": {
       "count": 24,
       "first": "1972-01",
       "last": "1973-12"
     },
-    "status": "refused",
-    "reason": "24 evaluated months have an empty set (first 1972-01, last 1973-12)"
+    "volatility_forecast_accuracy": {
+      "full": {
+        "spearman": 0.6258927103453846,
+        "pairs": 33730,
+        "excluded_window_past_last_month": 1562,
+        "excluded_incomplete_realized_window": 0
+      },
+      "first_half": {
+        "spearman": 0.46931366337020713,
+        "pairs": 3060,
+        "excluded_window_past_last_month": 0,
+        "excluded_incomplete_realized_window": 0
+      },
+      "second_half": {
+        "spearman": 0.6331216683216236,
+        "pairs": 30670,
+        "excluded_window_past_last_month": 1562,
+        "excluded_incomplete_realized_window": 0
+      }
+    },
+    "status": "completed",
+    "rules": {
+      "R0": {
+        "members_per_month": {
+          "min": 1,
+          "median": 34,
+          "max": 142
+        },
+        "20bp": {
+          "full": {
+            "months": 624,
+            "annualized_mean": 0.008449326471437566,
+            "volatility": 0.06010687398472914,
+            "sharpe": 0.14057171686526598,
+            "max_drawdown": -0.5297863330109758,
+            "worst_12_month_return": -0.2546680133092979,
+            "average_monthly_turnover": 0.0150008006756391
+          },
+          "first_half": {
+            "months": 312,
+            "annualized_mean": -0.006315712368824408,
+            "volatility": 0.07479711243282833,
+            "sharpe": -0.08443791696499306,
+            "max_drawdown": -0.5297863330109758,
+            "worst_12_month_return": -0.2546680133092979,
+            "average_monthly_turnover": 0.02140542547782367
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.02321436531169954,
+            "volatility": 0.04007780162312252,
+            "sharpe": 0.5792325020718258,
+            "max_drawdown": -0.09248236089287365,
+            "worst_12_month_return": -0.07726304042788801,
+            "average_monthly_turnover": 0.008596175873454534
+          }
+        },
+        "50bp": {
+          "full": {
+            "months": 624,
+            "annualized_mean": 0.007909297647114557,
+            "volatility": 0.06023288833952909,
+            "sharpe": 0.13131194377613659,
+            "max_drawdown": -0.5317587641951946,
+            "worst_12_month_return": -0.2577944984720075,
+            "average_monthly_turnover": 0.0150008006756391
+          },
+          "first_half": {
+            "months": 312,
+            "annualized_mean": -0.007086307686026062,
+            "volatility": 0.07497590759492521,
+            "sharpe": -0.09451446355690002,
+            "max_drawdown": -0.5317587641951946,
+            "worst_12_month_return": -0.2577944984720075,
+            "average_monthly_turnover": 0.02140542547782367
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.022904902980255177,
+            "volatility": 0.04010837836775892,
+            "sharpe": 0.5710752693673414,
+            "max_drawdown": -0.09263763853911366,
+            "worst_12_month_return": -0.07734150224540315,
+            "average_monthly_turnover": 0.008596175873454534
+          }
+        }
+      },
+      "R1": {
+        "members_per_month": {
+          "min": 1,
+          "median": 34,
+          "max": 142
+        },
+        "20bp": {
+          "full": {
+            "months": 624,
+            "annualized_mean": 0.0050435603027192705,
+            "volatility": 0.053067317201704274,
+            "sharpe": 0.09504080041486053,
+            "max_drawdown": -0.5261222054953295,
+            "worst_12_month_return": -0.24886003359188047,
+            "average_monthly_turnover": 0.034836634306310475
+          },
+          "first_half": {
+            "months": 312,
+            "annualized_mean": -0.005961002972931489,
+            "volatility": 0.07105867700787581,
+            "sharpe": -0.0838884598466532,
+            "max_drawdown": -0.5261222054953295,
+            "worst_12_month_return": -0.24886003359188047,
+            "average_monthly_turnover": 0.03844080849726731
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.01604812357837003,
+            "volatility": 0.023911326695822695,
+            "sharpe": 0.6711515334351412,
+            "max_drawdown": -0.07386666569418077,
+            "worst_12_month_return": -0.06277374153561821,
+            "average_monthly_turnover": 0.031232460115353636
+          }
+        },
+        "50bp": {
+          "full": {
+            "months": 624,
+            "annualized_mean": 0.003789441467692095,
+            "volatility": 0.05317541551618187,
+            "sharpe": 0.07126303444754326,
+            "max_drawdown": -0.528226506937209,
+            "worst_12_month_return": -0.2521955452632344,
+            "average_monthly_turnover": 0.034836634306310475
+          },
+          "first_half": {
+            "months": 312,
+            "annualized_mean": -0.007344872078833109,
+            "volatility": 0.07120924675532836,
+            "sharpe": -0.10314492026674213,
+            "max_drawdown": -0.528226506937209,
+            "worst_12_month_return": -0.2521955452632344,
+            "average_monthly_turnover": 0.03844080849726731
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.0149237550142173,
+            "volatility": 0.023934415685832905,
+            "sharpe": 0.6235270252722679,
+            "max_drawdown": -0.07535788007380306,
+            "worst_12_month_return": -0.063912595459376,
+            "average_monthly_turnover": 0.031232460115353636
+          }
+        }
+      }
+    }
   }
 }

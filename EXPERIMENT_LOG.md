@@ -1517,8 +1517,11 @@ Sharpe is at least R0's.
 
 ### Trial Family Declared Before Results
 
-`docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`), committed alone in `8c4f2e2` before
-any repository download of factor returns. S2 family: 3 HAC tests of R1 net minus R0 net at 20 bp, one per
+`docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`), committed alone in `bdad7fd` before
+any repository download of factor returns. Amendment 1
+(`docs/preregistrations/m5_trial_family_v1_amendment_1.json`, SHA-256 `b3992b32...0751`, committed alone in
+`f77b4ed` before any post-publication metric) starts the descriptive post-publication split at its first month with
+a non-empty subset; it lists every result seen before it. S2 family: 3 HAC tests of R1 net minus R0 net at 20 bp, one per
 universe, Benjamini-Yekutieli with family size 3. Prior exposures seen before the declaration: the 2026-09-28
 audit scratch run (7 French factors) and the 2026-09-28 vision probe (JKP 153 factors and 13 themes); this run
 re-examines a comparison already seen and supports no confirmatory claim.
@@ -1537,11 +1540,15 @@ re-examines a comparison already seen and supports no confirmatory claim.
 
 ### Output Artifacts
 
-- `reports/m5_factor_baseline.md` (SHA-256 `b372d61c...96fd`)
-- `reports/m5_factor_baseline.json` (SHA-256 `69a27f4f...f5dd`, aggregates only)
-- `reports/m5_public_data_manifest.json` (SHA-256 `1d0b45ae...0bc2`)
-- `reports/m5_factor_baseline_attempts.jsonl` (two attempts, both completed; the second changed only report
-  formatting)
+- `reports/m5_factor_baseline.md` (SHA-256 `380eccde...400f`)
+- `reports/m5_factor_baseline.json` (SHA-256 `3d8214d0...d92d`, aggregates only)
+- `reports/m5_public_data_manifest.json` (SHA-256 `016d71b9...1e49`)
+- `reports/m5_factor_baseline_attempts.jsonl`: four attempts, all completed with decision `R1`. The first two ran
+  before the branch was rebased onto `main` (their commits `a27b6b4` and `2fd16a8` have the same trees as `46d4347`
+  and `291d6c8`); the second changed only report formatting. The third ran under amendment 1; its outputs were
+  discarded to fix the recorded tree state and its records were re-added by hand. The fourth, at `fd8789b`, wrote
+  the committed outputs. One more invocation failed at import (`src` missing from the import path) before it
+  read any data or wrote an attempt record.
 
 ### Results (DIAGNOSTIC_ONLY)
 
@@ -1560,8 +1567,11 @@ re-examines a comparison already seen and supports no confirmatory claim.
 - Volatility-forecast accuracy (Spearman of trailing 36-month sigma with next-12-month realized volatility, full
   window, then 1972-1999 / 2000-2025): 0.607, 0.600 / 0.619 (jkp_factors_153); 0.698, 0.676 / 0.716
   (jkp_themes_13); 0.426, 0.349 / 0.474 (french_7).
-- Post-publication split: refused. 1972-01 to 1973-12 have an empty subset (earliest publication year 1973), and
-  the trial file refuses any evaluated month with an empty set.
+- Post-publication split (descriptive, amendment 1, from 1974-01; 24 empty months in 1972-1973): members per month
+  min 1, median 34, max 142. 2000-2025 at 20 bp: Sharpe R0 / R1 0.579 / 0.671, drawdown -9.25% / -7.39%, mean
+  2.32% / 1.60%. 1974-1999 holds only a few early-published factors (3,060 factor-months) and loses money under
+  both rules: Sharpe -0.084 / -0.084, drawdown -52.98% / -52.61%. Results at 50 bp point the same way. R0, R1, the
+  S2 tests, and the decision are unchanged by the amendment.
 - Market excess (French Mkt-RF, context): Sharpe 0.480 and maximum drawdown -54.16% over 1972-2025.
 
 ### Limitations
@@ -1572,12 +1582,12 @@ re-examines a comparison already seen and supports no confirmatory claim.
 - Month-t return availability enters the month-t set by declaration.
 - 88 jkp_factors_153 factor-months in 1972-1973 are excluded for short history (140 absent factor-months in the
   1969-1971 lookback).
-- The post-publication check has no metrics until its empty-month handling is decided.
+- The post-publication first half rests on a thin, changing set of early-published factors.
 
 ### Next Action
 
-Two cross-family review seats for the step 2 real-data code and the trial-family freeze; a coordinator or owner
-decision on the post-publication split's empty months; then the v2 amendment for R2 to R4 before step 3.
+Two cross-family review seats for the step 2 real-data code and the trial-family freeze and amendment; then the v2
+amendment for R2 to R4 before step 3.
 
 ## Local CSV Experiment Records
 

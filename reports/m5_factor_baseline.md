@@ -1,6 +1,6 @@
 # Milestone 5 Step 2: Public Factor Baseline (Equal Weight vs Inverse Volatility)
 
-Run 2026-09-28T23:41:00Z from code commit `2fd16a86475c634aaf1aab15b1afb448fcb0602f` (tracked changes at run time: False).
+Run 2026-09-29T00:12:16Z from code commit `fd8789baa7c00f6dbfd541406bb5e177628ebb30` (tracked changes at run time: False).
 
 ## Read This First
 
@@ -9,7 +9,7 @@ Run 2026-09-28T23:41:00Z from code commit `2fd16a86475c634aaf1aab15b1afb448fcb06
 - **Small caps included.** JKP capped value-weight factors and the French factors hold small and micro caps, which a long-only large-cap book cannot trade at these returns.
 - **Hindsight in the factor list.** The JKP list was assembled after the underlying papers; months before each publication were in the original authors' samples. The post-publication split below is the declared check.
 - **Prior exposures (R9).** Before this declaration the coordinator saw two diagnostics on overlapping months: the 2026-09-28 audit scratch run on 7 French factors (equal weight Sharpe 0.83, inverse volatility 0.83) and the 2026-09-28 vision probe on JKP 153 factors (inverse volatility Sharpe 0.94 vs 0.72 for equal weight). This run re-examines a comparison already seen and supports no confirmatory claim.
-- **Trial family.** `docs/preregistrations/m5_trial_family_v1.json`, SHA-256 `a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a`, verified equal to its committed HEAD version before any data was read.
+- **Trial family.** `docs/preregistrations/m5_trial_family_v1.json`, SHA-256 `a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a`, verified equal to its committed HEAD version before any data was read; amendment `docs/preregistrations/m5_trial_family_v1_amendment_1.json`, SHA-256 `b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751`, verified the same way.
 - **Timing.** `after_month_end_signal_next_month_return`: weights for month t use returns through month t-1 and the declared availability of each factor's month-t return; the switch cost is charged in month t.
 
 ## Result
@@ -203,13 +203,28 @@ Typed missing factor-months in the lookback-only months 1969-01 to 1971-12: none
 
 ## Post-Publication Split (jkp_factors_153, descriptive)
 
-For month t the set is restricted to factors whose publication year is before the calendar year of t; R0 and R1 use the same rules and costs in one continuous run from 1972-01.
+For month t the set is restricted to factors whose publication year is before the calendar year of t; R0 and R1 use the same rules and costs in one continuous run from the first month with a non-empty subset (trial amendment 1).
 
-Status `refused`.
+Status `completed`; start month 1974-01.
+
+Members per month: min 1, median 34, max 142. The first half holds few factors (see the subset counts below), so its figures describe a thin and changing set.
 
 Evaluated months with an empty subset: 24 (1972-01 to 1973-12).
 
-Refusal: 24 evaluated months have an empty set (first 1972-01, last 1973-12). The trial family refuses any evaluated month with an empty set, and it declares no other handling for this split, so the split has no metrics.
+| Rule | Cost | Period | Months | Ann. mean | Volatility | Sharpe | Max drawdown | Worst 12 months | Avg turnover |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| R0 | 20 bp | full | 624 | 0.84% | 6.01% | 0.141 | -52.98% | -25.47% | 0.015 |
+| R0 | 20 bp | 1972-1999 | 312 | -0.63% | 7.48% | -0.084 | -52.98% | -25.47% | 0.021 |
+| R0 | 20 bp | 2000-end | 312 | 2.32% | 4.01% | 0.579 | -9.25% | -7.73% | 0.009 |
+| R0 | 50 bp | full | 624 | 0.79% | 6.02% | 0.131 | -53.18% | -25.78% | 0.015 |
+| R0 | 50 bp | 1972-1999 | 312 | -0.71% | 7.50% | -0.095 | -53.18% | -25.78% | 0.021 |
+| R0 | 50 bp | 2000-end | 312 | 2.29% | 4.01% | 0.571 | -9.26% | -7.73% | 0.009 |
+| R1 | 20 bp | full | 624 | 0.50% | 5.31% | 0.095 | -52.61% | -24.89% | 0.035 |
+| R1 | 20 bp | 1972-1999 | 312 | -0.60% | 7.11% | -0.084 | -52.61% | -24.89% | 0.038 |
+| R1 | 20 bp | 2000-end | 312 | 1.60% | 2.39% | 0.671 | -7.39% | -6.28% | 0.031 |
+| R1 | 50 bp | full | 624 | 0.38% | 5.32% | 0.071 | -52.82% | -25.22% | 0.035 |
+| R1 | 50 bp | 1972-1999 | 312 | -0.73% | 7.12% | -0.103 | -52.82% | -25.22% | 0.038 |
+| R1 | 50 bp | 2000-end | 312 | 1.49% | 2.39% | 0.624 | -7.54% | -6.39% | 0.031 |
 
 | Period | In set | In subset | Missing publication year | Published in or after year | Empty-subset months |
 | --- | ---: | ---: | ---: | ---: | ---: |

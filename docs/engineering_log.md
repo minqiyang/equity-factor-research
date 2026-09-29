@@ -15,8 +15,9 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 ## 2026-09-28 - Milestone 5 step 2: public factor loaders and the R0 versus R1 baseline run
 
 - Scope: step 2 of `docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`, committed alone
-  in `8c4f2e2` before any repository result). Branch `claude/m5-baseline`. Evidence ceiling `DIAGNOSTIC_ONLY`.
-- Code (`a27b6b4`, `2fd16a8`): `src/data/public_factors.py` downloads once into the gitignored
+  in `bdad7fd` before any repository result; commit hashes in this entry are after the rebase onto `main` at PR
+  #276). Branch `claude/m5-baseline`. Evidence ceiling `DIAGNOSTIC_ONLY`.
+- Code (`46d4347`, `291d6c8`): `src/data/public_factors.py` downloads once into the gitignored
   `data/public_cache/` with a URL, UTC time, and SHA-256 sidecar, refuses a cached file whose bytes or URL
   disagree, parses the JKP long files and the Ken French monthly blocks with typed missing values (`absent`,
   `blank_field`, `provider_missing_code`), loads FRED CSVs for step 3, reads the JKP `factor_details.xlsx` with the
@@ -42,10 +43,16 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   0.735 vs 0.610 (2000-2025) at 20 bp; maximum drawdown -3.67% vs -8.57% and -7.23% vs -9.27%. S2 BY q-values
   0.294 (jkp_factors_153), 0.294 (jkp_themes_13), 0.720 (french_7); every S2 mean difference is negative (R1 earns
   a lower mean with lower volatility). french_7 favors R0 in 1972-1999 (Sharpe 1.343 vs 1.467), descriptive only.
-- Trial-file gap: the declared post-publication split refuses, because no factor has a publication year before
-  1974 (earliest 1973), so 1972-01 to 1973-12 have an empty subset, and the trial file refuses any evaluated month
-  with an empty set and declares no other handling. The trial file is unchanged; the amendment policy covers only
-  R2 to R4 and step 3 tests, so this needs a coordinator or owner decision.
+- Trial-file gap and coordinator default: the declared post-publication split refused, because no factor has a
+  publication year before 1974 (earliest 1973), so 1972-01 to 1973-12 had an empty subset. Amendment 1
+  (`f77b4ed`, committed alone before any post-publication metric) starts the split at its first non-empty month
+  (1974-01); `2679c28` implements it and still refuses a later empty month. The v1 file is unchanged.
+- Run-record fix (`fd8789b`): the runner read the tree state after appending to the tracked attempt log, so a run
+  on a clean tree recorded tracked changes. It now uses the state taken before the append. One attempt's outputs
+  were discarded for this fix and its records re-added by hand; one invocation failed at import before reading
+  data. The committed outputs come from attempt 4 at `fd8789b`, with R0, R1, S2, and the decision unchanged.
+- Catalog test fix (`5fd15ee`): `tests/test_factor_catalog.py` wrote its CJK pattern with literal Chinese
+  characters, which the English-only guard rejects; the pattern now uses escape sequences.
 - Not retrieved in step 2: `french_ff3_daily` and `jkp_accounting_characteristics_list` (step 3 consumers).
 - Needs follow-up: the two cross-family review seats for the step 2 real-data code and the trial-family freeze
   have not run; the step 2 results were produced before those reviews.
