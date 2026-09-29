@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Milestone 5 step 3 freeze review, and the review-seat visibility incident
+
+- Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_3.json` was committed alone before any step 3 code
+  or result. The first version was `cd1d578`; revision 2, `f9c1152` (SHA-256 `c59f69c8…`), follows review round 1.
+  The records commits are `7654c32` and `df8265d`.
+- Review: two seats from different model families, at most two rounds.
+  - GPT (`gpt-6-astra`, high): round 1 found MATERIAL 1 and ADVISORY 3; round 2 found MATERIAL 0 and ADVISORY 2.
+  - Opus (`claude-opus-5-5`): round 1 found MATERIAL 0 and ADVISORY 9; round 2 found MATERIAL 0 and ADVISORY 6.
+  - The round 1 MATERIAL finding: R2's timing-claim gate did not require the post-publication comparison to hold.
+    Revision 2 adds that condition and a predicate test.
+  - The reports are in the main checkout under `coord/reports/m5_step3/`, untracked.
+- Incident (owner correction, 2026-09-28): both seats ran inside a Claude Code workflow.
+  - The GPT seat was an Opus workflow agent that ran `codex exec -m gpt-6-astra`. The review itself was GPT's: the
+    Codex logs name the model, and GPT wrote its own report files.
+  - The progress view still showed the seat as "Opus 5.5". The owner could not see or check which model reviewed,
+    and the wrapper could have filtered GPT's output.
+  - The owner accepted this round and set the rule: every formal review seat runs as its bound model in its own
+    labeled Herdr tab, with no wrapper agent.
+  - The rule is in `docs/codex_long_running_controller.md` (review bullets and process-failure table).
+
 ## 2026-09-28 - CI wall time: four disjoint test lanes and a once-per-session runner v3 fixture
 
 - Scope: owner request to shorten PR CI. Branch `claude/ci-speed` from `main` at `edbd34c`. CI and test files
