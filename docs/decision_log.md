@@ -15,6 +15,32 @@ investment performance.
 
 ---
 
+## 2026-09-29 - Owner Decisions O-5 and O-9 for Milestone 5 Step 4, and Coordinator Scope Defaults
+
+Context:
+
+- Step 4 (the bridge) forms long-only top-quintile point-in-time S&P 500 books on the local snapshots. The design
+  note (`coord/reports/m5_step4/design_note.md`, untracked) lists the owner decisions it needs.
+
+Decision:
+
+- **O-5 (owner):** step 4 may read `real_v1` and `real_v2` locally. The scope is recorded in the 2026-09-29 entry of
+  `docs/engineering_log.md`.
+- **O-9 (owner):** premise VP-2 is re-ratified under `DIAGNOSTIC_ONLY` for Milestone 5 step 4.
+  - VP-2 is the premise that the vendor's adjusted close applies each declared distribution.
+  - The M4.8 census measured `S_D > 0.05` on 22.5 percent of eligible member-days, which expired O-8.
+  - The step 4 report header discloses VP-2 and the measured shares.
+- **Coordinator scope defaults.** None of these loosens R1, R2, R4, R6, R8, or R9.
+  - Step 4 writes nothing inside either snapshot and accepts no terminal evidence.
+  - A held disappearance without accepted evidence settles at the R4 adverse default, -100 percent for a long
+    position. The equal-weight benchmark gets the same events.
+  - A rerun that settles every such disappearance at the last close is also reported. A sign flip between the two
+    runs labels the result fragile.
+  - The M4.8 seal window stays unaccessed.
+  - The first run uses price classes only.
+  - The factor-ETF blend and the SEC as-filed classes (step 4b) wait. SEC EDGAR retrieval needs its own owner
+    decision, both on the R11 source list and on the User-Agent contact.
+
 ## 2026-09-28 - Milestone 5 Step 3 Reporting Conventions (Coordinator Technical Defaults)
 
 Context:
