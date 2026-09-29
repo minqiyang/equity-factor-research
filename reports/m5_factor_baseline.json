@@ -1,0 +1,1084 @@
+{
+  "schema_version": "m5_factor_baseline_v2",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "run_utc": "2026-09-29T00:39:22Z",
+  "trial_file": "docs/preregistrations/m5_trial_family_v1.json",
+  "trial_file_sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+  "amendments": {
+    "docs/preregistrations/m5_trial_family_v1_amendment_1.json": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751",
+    "docs/preregistrations/m5_trial_family_v1_amendment_2.json": "59461b150a957959f0fc9ac36aef9889168d6924f17bc33c3f15dab25eae72f1"
+  },
+  "git": {
+    "commit": "272109f7c80985ed722450f68953ce263bc97e29",
+    "tracked_changes": false
+  },
+  "timing": {
+    "label": "after_month_end_signal_next_month_end_execution",
+    "signal_month": "t-2 (feature observation end: the close of the last trading day of month t-2)",
+    "execution": "the close of the last trading day of month t-1",
+    "return_month": "t (close of month t-1 to close of month t)",
+    "switch_cost": "recorded at the execution close and deducted from the month-t return"
+  },
+  "switch_cost_bps": [
+    20,
+    50
+  ],
+  "manifest": [
+    {
+      "id": "jkp_cluster_labels",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/cluster_labels.csv",
+      "retrieved_utc": "2026-09-28T23:39:11Z",
+      "sha256": "22c7fdd214218d1210ab9922efed59bf607538098cc06b6f2c5f326d2e6cf64b",
+      "bytes": 3207,
+      "rows": 153,
+      "first_date": null,
+      "last_date": null
+    },
+    {
+      "id": "jkp_factor_details",
+      "url": "https://raw.githubusercontent.com/bkelly-lab/jkp-data/666e8960ed81a664f1e9f189f92925ab2eeffcd5/src/jkp/data/resources/factor_details.xlsx",
+      "retrieved_utc": "2026-09-28T23:39:11Z",
+      "sha256": "4c579e4dcb93eed0897941d8f5f84e9cc784a2d3fc696be68a29a24e68206141",
+      "bytes": 40330,
+      "rows": 153,
+      "first_date": null,
+      "last_date": null
+    },
+    {
+      "id": "jkp_usa_all_factors_monthly_vw_cap",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_factors%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "retrieved_utc": "2026-09-28T23:39:12Z",
+      "sha256": "f766aa2c7db1f97594f79f9063275161b7038e936db9ea960eac6eb7ec27ca80",
+      "bytes": 2674337,
+      "rows": 146457,
+      "first_date": "1926-01",
+      "last_date": "2025-12"
+    },
+    {
+      "id": "jkp_usa_all_themes_monthly_vw_cap",
+      "url": "https://jkpfactors-data.s3.amazonaws.com/public/%5Busa%5D_%5Ball_themes%5D_%5Bmonthly%5D_%5Bvw_cap%5D.zip",
+      "retrieved_utc": "2026-09-28T23:39:13Z",
+      "sha256": "9cf3bfa2a2941846e1ec5872dc5b613c9b40a0eed4b3fbc95e2979355ef93c53",
+      "bytes": 204444,
+      "rows": 14945,
+      "first_date": "1926-01",
+      "last_date": "2025-12"
+    },
+    {
+      "id": "french_ff5_2x3_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "36756c5c2559648519ac4b22913d860c6afd865cfebce920e3e8927f8e2d10b7",
+      "bytes": 11964,
+      "rows": 758,
+      "first_date": "1963-07",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_momentum_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "c06d1c2e9a5e4f6985879722f23c6bb585f46b34eaf3fcb681d4de887e353f3e",
+      "bytes": 5600,
+      "rows": 1196,
+      "first_date": "1927-01",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_st_reversal_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_ST_Reversal_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:14Z",
+      "sha256": "06c0d46d819f51f060a149b9f613aed3a8d8fea7da3fc6bbae7e14dbd048119e",
+      "bytes": 5573,
+      "rows": 1207,
+      "first_date": "1926-02",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_lt_reversal_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_LT_Reversal_Factor_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:15Z",
+      "sha256": "f4432f4c1dfc32adaae95648bb2dbca23a50511d1dd4855d3c35ca50b1849f4f",
+      "bytes": 5333,
+      "rows": 1148,
+      "first_date": "1931-01",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "french_ff3_monthly",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+      "retrieved_utc": "2026-09-28T23:39:15Z",
+      "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "bytes": 13065,
+      "rows": 1202,
+      "first_date": "1926-07",
+      "last_date": "2026-08"
+    },
+    {
+      "id": "fred_baa_aaa_monthly",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAA,AAA",
+      "retrieved_utc": "2026-09-28T23:39:16Z",
+      "sha256": "7cf737a14461f9e073ef5c832f33a7c8f9be449358601149126ce86cdf85a5c2",
+      "bytes": 27398,
+      "rows": 1292,
+      "first_date": "1919-01",
+      "last_date": "2026-08"
+    }
+  ],
+  "universes": {
+    "jkp_factors_153": {
+      "first_evaluated_month": "1972-01",
+      "last_evaluated_month": "2025-12",
+      "declared_factors": 153,
+      "counts": {
+        "full": {
+          "factor_months_declared": 99144,
+          "factor_months_in_set": 99052,
+          "excluded_fewer_than_24_prior_returns": 92,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "first_half": {
+          "factor_months_declared": 51408,
+          "factor_months_in_set": 51316,
+          "excluded_fewer_than_24_prior_returns": 92,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "second_half": {
+          "factor_months_declared": 47736,
+          "factor_months_in_set": 47736,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        }
+      },
+      "lookback_typed_missing": {
+        "months": "1968-12 to 1971-12",
+        "by_reason": {
+          "absent": 144
+        }
+      },
+      "missing_by_month": {},
+      "volatility_forecast_accuracy": {
+        "full": {
+          "spearman": 0.5952880817431846,
+          "pairs": 97369,
+          "excluded_window_past_last_month": 1683,
+          "excluded_incomplete_realized_window": 0
+        },
+        "first_half": {
+          "spearman": 0.5916784316639017,
+          "pairs": 51316,
+          "excluded_window_past_last_month": 0,
+          "excluded_incomplete_realized_window": 0
+        },
+        "second_half": {
+          "spearman": 0.6037505450196698,
+          "pairs": 46053,
+          "excluded_window_past_last_month": 1683,
+          "excluded_incomplete_realized_window": 0
+        }
+      },
+      "market_excess": {
+        "full": {
+          "months": 648,
+          "annualized_mean": 0.07570555555555555,
+          "volatility": 0.1576796356826587,
+          "sharpe": 0.4801225930526519,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "first_half": {
+          "months": 336,
+          "annualized_mean": 0.07773571428571427,
+          "volatility": 0.15844859465177194,
+          "sharpe": 0.4906052619561366,
+          "max_drawdown": -0.5310491231297882,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "second_half": {
+          "months": 312,
+          "annualized_mean": 0.07351923076923078,
+          "volatility": 0.15709930861245067,
+          "sharpe": 0.4679793400656897,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.43303467583593647,
+          "average_monthly_turnover": null
+        }
+      },
+      "status": "completed",
+      "rules": {
+        "R0": {
+          "members_per_month": {
+            "min": 149,
+            "median": 153,
+            "max": 153
+          },
+          "20bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.02572440097928981,
+              "volatility": 0.032772687207621456,
+              "sharpe": 0.7849341378789185,
+              "max_drawdown": -0.13966037169166456,
+              "worst_12_month_return": -0.11834363412130411,
+              "average_monthly_turnover": 0.0016239005890421993
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.02592622509177435,
+              "volatility": 0.021186761346720814,
+              "sharpe": 1.223699302951137,
+              "max_drawdown": -0.08568938182408581,
+              "worst_12_month_return": -0.06903630590832466,
+              "average_monthly_turnover": 0.0031318082788670985
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.02550705193507569,
+              "volatility": 0.041843873599706684,
+              "sharpe": 0.609576737065148,
+              "max_drawdown": -0.0927312435079305,
+              "worst_12_month_return": -0.07740677261217743,
+              "average_monthly_turnover": 0.0
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.025665940558084285,
+              "volatility": 0.03278489653609283,
+              "sharpe": 0.7828586718225174,
+              "max_drawdown": -0.13966037169166423,
+              "worst_12_month_return": -0.11834363412130411,
+              "average_monthly_turnover": 0.0016239005890421993
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.02581347999373514,
+              "volatility": 0.021223289634867703,
+              "sharpe": 1.216280814041487,
+              "max_drawdown": -0.08568938182408548,
+              "worst_12_month_return": -0.06903630590832466,
+              "average_monthly_turnover": 0.0031318082788670985
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.02550705193507569,
+              "volatility": 0.041843873599706684,
+              "sharpe": 0.609576737065148,
+              "max_drawdown": -0.0927312435079305,
+              "worst_12_month_return": -0.07740677261217743,
+              "average_monthly_turnover": 0.0
+            }
+          }
+        },
+        "R1": {
+          "members_per_month": {
+            "min": 149,
+            "median": 153,
+            "max": 153
+          },
+          "20bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.022717194165008885,
+              "volatility": 0.02150965651567178,
+              "sharpe": 1.0561393273973156,
+              "max_drawdown": -0.07273942487299045,
+              "worst_12_month_return": -0.06821952495213857,
+              "average_monthly_turnover": 0.024273305109826917
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.02571856129784749,
+              "volatility": 0.015559112840817764,
+              "sharpe": 1.6529580806418112,
+              "max_drawdown": -0.03689635582928452,
+              "worst_12_month_return": -0.0352563390460674,
+              "average_monthly_turnover": 0.024688366069747194
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.01948495263733654,
+              "volatility": 0.026458837475593633,
+              "sharpe": 0.7364251228085891,
+              "max_drawdown": -0.07273942487299045,
+              "worst_12_month_return": -0.06105508317723085,
+              "average_monthly_turnover": 0.023826316383758928
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.021843355181055117,
+              "volatility": 0.021526806945544687,
+              "sharpe": 1.014704839241193,
+              "max_drawdown": -0.07415693343133944,
+              "worst_12_month_return": -0.06916534490673032,
+              "average_monthly_turnover": 0.024273305109826917
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.02482978011933659,
+              "volatility": 0.015594068638808783,
+              "sharpe": 1.592257972851485,
+              "max_drawdown": -0.03812737900648078,
+              "worst_12_month_return": -0.03603797451651747,
+              "average_monthly_turnover": 0.024688366069747194
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.01862720524752122,
+              "volatility": 0.026466002890312024,
+              "sharpe": 0.7038163384445097,
+              "max_drawdown": -0.07415693343133933,
+              "worst_12_month_return": -0.062138125595420424,
+              "average_monthly_turnover": 0.023826316383758928
+            }
+          }
+        }
+      }
+    },
+    "jkp_themes_13": {
+      "first_evaluated_month": "1972-01",
+      "last_evaluated_month": "2025-12",
+      "declared_factors": 13,
+      "counts": {
+        "full": {
+          "factor_months_declared": 8424,
+          "factor_months_in_set": 8424,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "first_half": {
+          "factor_months_declared": 4368,
+          "factor_months_in_set": 4368,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "second_half": {
+          "factor_months_declared": 4056,
+          "factor_months_in_set": 4056,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        }
+      },
+      "lookback_typed_missing": {
+        "months": "1968-12 to 1971-12",
+        "by_reason": {}
+      },
+      "missing_by_month": {},
+      "volatility_forecast_accuracy": {
+        "full": {
+          "spearman": 0.6887044536352614,
+          "pairs": 8281,
+          "excluded_window_past_last_month": 143,
+          "excluded_incomplete_realized_window": 0
+        },
+        "first_half": {
+          "spearman": 0.6692144054765293,
+          "pairs": 4368,
+          "excluded_window_past_last_month": 0,
+          "excluded_incomplete_realized_window": 0
+        },
+        "second_half": {
+          "spearman": 0.7041053617421267,
+          "pairs": 3913,
+          "excluded_window_past_last_month": 143,
+          "excluded_incomplete_realized_window": 0
+        }
+      },
+      "market_excess": {
+        "full": {
+          "months": 648,
+          "annualized_mean": 0.07570555555555555,
+          "volatility": 0.1576796356826587,
+          "sharpe": 0.4801225930526519,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "first_half": {
+          "months": 336,
+          "annualized_mean": 0.07773571428571427,
+          "volatility": 0.15844859465177194,
+          "sharpe": 0.4906052619561366,
+          "max_drawdown": -0.5310491231297882,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "second_half": {
+          "months": 312,
+          "annualized_mean": 0.07351923076923078,
+          "volatility": 0.15709930861245067,
+          "sharpe": 0.4679793400656897,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.43303467583593647,
+          "average_monthly_turnover": null
+        }
+      },
+      "status": "completed",
+      "rules": {
+        "R0": {
+          "members_per_month": {
+            "min": 13,
+            "median": 13,
+            "max": 13
+          },
+          "20bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.02369208043824425,
+              "volatility": 0.020762775740576025,
+              "sharpe": 1.141084445272102,
+              "max_drawdown": -0.050589017050371554,
+              "worst_12_month_return": -0.042167981749714256,
+              "average_monthly_turnover": 0.0015432098765432096
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.026269135926343994,
+              "volatility": 0.01425860833529944,
+              "sharpe": 1.842335192089581,
+              "max_drawdown": -0.020540770547510467,
+              "worst_12_month_return": -0.014658621553234497,
+              "average_monthly_turnover": 0.0029761904761904756
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.020916789912598377,
+              "volatility": 0.02601154304269851,
+              "sharpe": 0.8041349134214382,
+              "max_drawdown": -0.05058901705037133,
+              "worst_12_month_return": -0.042167981749714256,
+              "average_monthly_turnover": 0.0
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.0236365248826887,
+              "volatility": 0.020771145203308736,
+              "sharpe": 1.1379500095605477,
+              "max_drawdown": -0.050589017050371554,
+              "worst_12_month_return": -0.042167981749714256,
+              "average_monthly_turnover": 0.0015432098765432096
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.02616199306920114,
+              "volatility": 0.014283731056475818,
+              "sharpe": 1.8315937877687827,
+              "max_drawdown": -0.020540770547510467,
+              "worst_12_month_return": -0.014658621553234497,
+              "average_monthly_turnover": 0.0029761904761904756
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.020916789912598377,
+              "volatility": 0.02601154304269851,
+              "sharpe": 0.8041349134214382,
+              "max_drawdown": -0.05058901705037133,
+              "worst_12_month_return": -0.042167981749714256,
+              "average_monthly_turnover": 0.0
+            }
+          }
+        },
+        "R1": {
+          "members_per_month": {
+            "min": 13,
+            "median": 13,
+            "max": 13
+          },
+          "20bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.020569989949423842,
+              "volatility": 0.012670718078908055,
+              "sharpe": 1.6234273244280513,
+              "max_drawdown": -0.03479126463740567,
+              "worst_12_month_return": -0.02833505422211091,
+              "average_monthly_turnover": 0.024094803817040406
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.025361772366181118,
+              "volatility": 0.010823178580625878,
+              "sharpe": 2.343283184071283,
+              "max_drawdown": -0.012224566136500026,
+              "worst_12_month_return": 0.001413607229840519,
+              "average_monthly_turnover": 0.024361881146972502
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.015409608885223709,
+              "volatility": 0.014266231854284713,
+              "sharpe": 1.0801456924727881,
+              "max_drawdown": -0.03479126463740578,
+              "worst_12_month_return": -0.02833505422211091,
+              "average_monthly_turnover": 0.023807182077113544
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 648,
+              "annualized_mean": 0.01970257701201039,
+              "volatility": 0.012677028219601988,
+              "sharpe": 1.5541952475537661,
+              "max_drawdown": -0.03631779703768212,
+              "worst_12_month_return": -0.029429392150040812,
+              "average_monthly_turnover": 0.024094803817040406
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.024484744644890102,
+              "volatility": 0.010836224142517361,
+              "sharpe": 2.2595273337712682,
+              "max_drawdown": -0.012384463425343384,
+              "worst_12_month_return": 0.00026781101463480006,
+              "average_monthly_turnover": 0.024361881146972502
+            },
+            "second_half": {
+              "months": 312,
+              "annualized_mean": 0.014552550330447622,
+              "volatility": 0.014267830001915038,
+              "sharpe": 1.0199554051663335,
+              "max_drawdown": -0.03631779703768201,
+              "worst_12_month_return": -0.029429392150040812,
+              "average_monthly_turnover": 0.023807182077113544
+            }
+          }
+        }
+      }
+    },
+    "french_7": {
+      "first_evaluated_month": "1972-01",
+      "last_evaluated_month": "2026-08",
+      "declared_factors": 7,
+      "counts": {
+        "full": {
+          "factor_months_declared": 4592,
+          "factor_months_in_set": 4592,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "first_half": {
+          "factor_months_declared": 2352,
+          "factor_months_in_set": 2352,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        },
+        "second_half": {
+          "factor_months_declared": 2240,
+          "factor_months_in_set": 2240,
+          "excluded_fewer_than_24_prior_returns": 0,
+          "excluded_bad_data_in_lookback": 0,
+          "excluded_both_conditions": 0,
+          "typed_missing_by_reason": {}
+        }
+      },
+      "lookback_typed_missing": {
+        "months": "1968-12 to 1971-12",
+        "by_reason": {}
+      },
+      "missing_by_month": {},
+      "volatility_forecast_accuracy": {
+        "full": {
+          "spearman": 0.40641459806980323,
+          "pairs": 4515,
+          "excluded_window_past_last_month": 77,
+          "excluded_incomplete_realized_window": 0
+        },
+        "first_half": {
+          "spearman": 0.3336788893720782,
+          "pairs": 2352,
+          "excluded_window_past_last_month": 0,
+          "excluded_incomplete_realized_window": 0
+        },
+        "second_half": {
+          "spearman": 0.4496652950335551,
+          "pairs": 2163,
+          "excluded_window_past_last_month": 77,
+          "excluded_incomplete_realized_window": 0
+        }
+      },
+      "market_excess": {
+        "full": {
+          "months": 656,
+          "annualized_mean": 0.07668841463414633,
+          "volatility": 0.15759063016732067,
+          "sharpe": 0.48663054746797435,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "first_half": {
+          "months": 336,
+          "annualized_mean": 0.07773571428571427,
+          "volatility": 0.15844859465177194,
+          "sharpe": 0.4906052619561366,
+          "max_drawdown": -0.5310491231297882,
+          "worst_12_month_return": -0.4584346682620132,
+          "average_monthly_turnover": null
+        },
+        "second_half": {
+          "months": 320,
+          "annualized_mean": 0.07558875000000001,
+          "volatility": 0.1569321858676763,
+          "sharpe": 0.48166505540001664,
+          "max_drawdown": -0.5416486267083405,
+          "worst_12_month_return": -0.43303467583593647,
+          "average_monthly_turnover": null
+        }
+      },
+      "status": "completed",
+      "rules": {
+        "R0": {
+          "members_per_month": {
+            "min": 7,
+            "median": 7,
+            "max": 7
+          },
+          "20bp": {
+            "full": {
+              "months": 656,
+              "annualized_mean": 0.035656620209059235,
+              "volatility": 0.042697675225666934,
+              "sharpe": 0.8350951198304329,
+              "max_drawdown": -0.16407967730508,
+              "worst_12_month_return": -0.10002888868464521,
+              "average_monthly_turnover": 0.0015243902439024386
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.04745306122448979,
+              "volatility": 0.03235727757319829,
+              "sharpe": 1.4665344177099566,
+              "max_drawdown": -0.05813936975992595,
+              "worst_12_month_return": -0.039432722918077534,
+              "average_monthly_turnover": 0.0029761904761904756
+            },
+            "second_half": {
+              "months": 320,
+              "annualized_mean": 0.02327035714285714,
+              "volatility": 0.051174131520105484,
+              "sharpe": 0.4547289118861665,
+              "max_drawdown": -0.1640796773050801,
+              "worst_12_month_return": -0.10002888868464521,
+              "average_monthly_turnover": 0.0
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 656,
+              "annualized_mean": 0.035601742160278754,
+              "volatility": 0.04268853189703069,
+              "sharpe": 0.8339884408804212,
+              "max_drawdown": -0.1640796773050801,
+              "worst_12_month_return": -0.10002888868464521,
+              "average_monthly_turnover": 0.0015243902439024386
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.04734591836734694,
+              "volatility": 0.032336940988460676,
+              "sharpe": 1.4641433889569877,
+              "max_drawdown": -0.05813936975992606,
+              "worst_12_month_return": -0.039432722918077534,
+              "average_monthly_turnover": 0.0029761904761904756
+            },
+            "second_half": {
+              "months": 320,
+              "annualized_mean": 0.02327035714285714,
+              "volatility": 0.051174131520105484,
+              "sharpe": 0.4547289118861665,
+              "max_drawdown": -0.1640796773050801,
+              "worst_12_month_return": -0.10002888868464521,
+              "average_monthly_turnover": 0.0
+            }
+          }
+        },
+        "R1": {
+          "members_per_month": {
+            "min": 7,
+            "median": 7,
+            "max": 7
+          },
+          "20bp": {
+            "full": {
+              "months": 656,
+              "annualized_mean": 0.034451803088495166,
+              "volatility": 0.04123973985692626,
+              "sharpe": 0.8354030167993155,
+              "max_drawdown": -0.17051763926105512,
+              "worst_12_month_return": -0.09503739353027618,
+              "average_monthly_turnover": 0.023069679857766368
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.0427188319917393,
+              "volatility": 0.03140874168032773,
+              "sharpe": 1.3600937097870252,
+              "max_drawdown": -0.06828130460533366,
+              "worst_12_month_return": -0.04815604631287829,
+              "average_monthly_turnover": 0.02350391195687559
+            },
+            "second_half": {
+              "months": 320,
+              "annualized_mean": 0.025771422740088836,
+              "volatility": 0.04943459656514202,
+              "sharpe": 0.5213236180885741,
+              "max_drawdown": -0.170517639261055,
+              "worst_12_month_return": -0.09503739353027618,
+              "average_monthly_turnover": 0.022613736153701686
+            }
+          },
+          "50bp": {
+            "full": {
+              "months": 656,
+              "annualized_mean": 0.033621294613615585,
+              "volatility": 0.04124100872708481,
+              "sharpe": 0.815239385537507,
+              "max_drawdown": -0.17211353187611844,
+              "worst_12_month_return": -0.0957106191530035,
+              "average_monthly_turnover": 0.023069679857766368
+            },
+            "first_half": {
+              "months": 336,
+              "annualized_mean": 0.04187269116129179,
+              "volatility": 0.03139167832902867,
+              "sharpe": 1.3338787025786722,
+              "max_drawdown": -0.06934097490465374,
+              "worst_12_month_return": -0.04890808375588496,
+              "average_monthly_turnover": 0.02350391195687559
+            },
+            "second_half": {
+              "months": 320,
+              "annualized_mean": 0.024957328238555565,
+              "volatility": 0.04944862006419761,
+              "sharpe": 0.504712329811312,
+              "max_drawdown": -0.17211353187611866,
+              "worst_12_month_return": -0.0957106191530035,
+              "average_monthly_turnover": 0.022613736153701686
+            }
+          }
+        }
+      }
+    }
+  },
+  "s2_tests": {
+    "S2.jkp_factors_153": {
+      "status": "ok",
+      "n_observations": 648,
+      "nonfinite_count": 0,
+      "periods_per_year": 12,
+      "hac_lags": 6,
+      "mean_return": -0.0002506005678567438,
+      "observed_sharpe": -0.2309266639195494,
+      "iid_statistic": -1.6969574838182238,
+      "iid_pvalue": 0.09018565085664183,
+      "hac_statistic": -1.5637175289120673,
+      "hac_pvalue": 0.11788391934660274,
+      "by_qvalue": 0.32418077820315744
+    },
+    "S2.jkp_themes_13": {
+      "status": "ok",
+      "n_observations": 648,
+      "nonfinite_count": 0,
+      "periods_per_year": 12,
+      "hac_lags": 6,
+      "mean_return": -0.00026017420740170075,
+      "observed_sharpe": -0.2669539741112864,
+      "iid_statistic": -1.9617030641424062,
+      "iid_pvalue": 0.05022542776797573,
+      "hac_statistic": -1.8665594783777821,
+      "hac_pvalue": 0.0619631307766408,
+      "by_qvalue": 0.32418077820315744
+    },
+    "S2.french_7": {
+      "status": "ok",
+      "n_observations": 656,
+      "nonfinite_count": 0,
+      "periods_per_year": 12,
+      "hac_lags": 6,
+      "mean_return": -0.00010040142671367137,
+      "observed_sharpe": -0.11286736902046032,
+      "iid_statistic": -0.8345064510025323,
+      "iid_pvalue": 0.40429990395602317,
+      "hac_statistic": -0.7458147133975155,
+      "hac_pvalue": 0.4557793506240694,
+      "by_qvalue": 0.8355954761441271
+    }
+  },
+  "decision": {
+    "outcome": "R1",
+    "conditions": [
+      {
+        "period": "first_half",
+        "cost_bps": 20,
+        "metric": "max_drawdown",
+        "R0": -0.08568938182408581,
+        "R1": -0.03689635582928452,
+        "holds": true
+      },
+      {
+        "period": "first_half",
+        "cost_bps": 20,
+        "metric": "sharpe",
+        "R0": 1.223699302951137,
+        "R1": 1.6529580806418112,
+        "holds": true
+      },
+      {
+        "period": "first_half",
+        "cost_bps": 50,
+        "metric": "max_drawdown",
+        "R0": -0.08568938182408548,
+        "R1": -0.03812737900648078,
+        "holds": true
+      },
+      {
+        "period": "first_half",
+        "cost_bps": 50,
+        "metric": "sharpe",
+        "R0": 1.216280814041487,
+        "R1": 1.592257972851485,
+        "holds": true
+      },
+      {
+        "period": "second_half",
+        "cost_bps": 20,
+        "metric": "max_drawdown",
+        "R0": -0.0927312435079305,
+        "R1": -0.07273942487299045,
+        "holds": true
+      },
+      {
+        "period": "second_half",
+        "cost_bps": 20,
+        "metric": "sharpe",
+        "R0": 0.609576737065148,
+        "R1": 0.7364251228085891,
+        "holds": true
+      },
+      {
+        "period": "second_half",
+        "cost_bps": 50,
+        "metric": "max_drawdown",
+        "R0": -0.0927312435079305,
+        "R1": -0.07415693343133933,
+        "holds": true
+      },
+      {
+        "period": "second_half",
+        "cost_bps": 50,
+        "metric": "sharpe",
+        "R0": 0.609576737065148,
+        "R1": 0.7038163384445097,
+        "holds": true
+      }
+    ],
+    "conditions_held": 8
+  },
+  "post_publication": {
+    "counts": {
+      "full": {
+        "factor_months_in_set": 99052,
+        "factor_months_in_subset": 35008,
+        "excluded_missing_publication_year": 7128,
+        "excluded_published_in_or_after_year": 56916,
+        "months_with_empty_subset": 26
+      },
+      "first_half": {
+        "factor_months_in_set": 51316,
+        "factor_months_in_subset": 2992,
+        "excluded_missing_publication_year": 3696,
+        "excluded_published_in_or_after_year": 44628,
+        "months_with_empty_subset": 26
+      },
+      "second_half": {
+        "factor_months_in_set": 47736,
+        "factor_months_in_subset": 32016,
+        "excluded_missing_publication_year": 3432,
+        "excluded_published_in_or_after_year": 12288,
+        "months_with_empty_subset": 0
+      }
+    },
+    "start_month": "1974-03",
+    "empty_subset_months": {
+      "count": 26,
+      "first": "1972-01",
+      "last": "1974-02"
+    },
+    "volatility_forecast_accuracy": {
+      "full": {
+        "spearman": 0.6134451940601909,
+        "pairs": 33446,
+        "excluded_window_past_last_month": 1562,
+        "excluded_incomplete_realized_window": 0
+      },
+      "first_half": {
+        "spearman": 0.44914505877577765,
+        "pairs": 2992,
+        "excluded_window_past_last_month": 0,
+        "excluded_incomplete_realized_window": 0
+      },
+      "second_half": {
+        "spearman": 0.6207115482514585,
+        "pairs": 30454,
+        "excluded_window_past_last_month": 1562,
+        "excluded_incomplete_realized_window": 0
+      }
+    },
+    "status": "completed",
+    "rules": {
+      "R0": {
+        "members_per_month": {
+          "min": 1,
+          "median": 34,
+          "max": 142
+        },
+        "20bp": {
+          "full": {
+            "months": 622,
+            "annualized_mean": 0.01110572549941258,
+            "volatility": 0.05964082787847536,
+            "sharpe": 0.18621011636595147,
+            "max_drawdown": -0.5087891357315755,
+            "worst_12_month_return": -0.22138552098319253,
+            "average_monthly_turnover": 0.01504903476141286
+          },
+          "first_half": {
+            "months": 310,
+            "annualized_mean": -0.0015871410564583677,
+            "volatility": 0.07408593740801832,
+            "sharpe": -0.02142297326572791,
+            "max_drawdown": -0.5087891357315755,
+            "worst_12_month_return": -0.22138552098319253,
+            "average_monthly_turnover": 0.02154352499703543
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.023717227526079222,
+            "volatility": 0.0402804060342884,
+            "sharpe": 0.5888030896682149,
+            "max_drawdown": -0.09274308664327602,
+            "worst_12_month_return": -0.07752287389880386,
+            "average_monthly_turnover": 0.008596175873454534
+          }
+        },
+        "50bp": {
+          "full": {
+            "months": 622,
+            "annualized_mean": 0.010563960248001714,
+            "volatility": 0.05953494747651612,
+            "sharpe": 0.1774413297696907,
+            "max_drawdown": -0.5105993086804228,
+            "worst_12_month_return": -0.22425481189270136,
+            "average_monthly_turnover": 0.01504903476141286
+          },
+          "first_half": {
+            "months": 310,
+            "annualized_mean": -0.002362707956351646,
+            "volatility": 0.07390778077499664,
+            "sharpe": -0.03196832500687074,
+            "max_drawdown": -0.5105993086804228,
+            "worst_12_month_return": -0.22425481189270136,
+            "average_monthly_turnover": 0.02154352499703543
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.02340776519463486,
+            "volatility": 0.04028051037745594,
+            "sharpe": 0.5811188829358935,
+            "max_drawdown": -0.09282035663192467,
+            "worst_12_month_return": -0.07760144017480908,
+            "average_monthly_turnover": 0.008596175873454534
+          }
+        }
+      },
+      "R1": {
+        "members_per_month": {
+          "min": 1,
+          "median": 34,
+          "max": 142
+        },
+        "20bp": {
+          "full": {
+            "months": 622,
+            "annualized_mean": 0.007900151511990687,
+            "volatility": 0.052629769918567854,
+            "sharpe": 0.15010803817334384,
+            "max_drawdown": -0.5061993289905482,
+            "worst_12_month_return": -0.21728043867923663,
+            "average_monthly_turnover": 0.034412898221360254
+          },
+          "first_half": {
+            "months": 310,
+            "annualized_mean": -0.0007599151795282619,
+            "volatility": 0.070509648114207,
+            "sharpe": -0.010777463791868598,
+            "max_drawdown": -0.5061993289905482,
+            "worst_12_month_return": -0.21728043867923663,
+            "average_monthly_turnover": 0.03789715414252768
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.016504704955487077,
+            "volatility": 0.024058697303660077,
+            "sharpe": 0.6860182306286466,
+            "max_drawdown": -0.07455750212945056,
+            "worst_12_month_return": -0.06319648439273162,
+            "average_monthly_turnover": 0.030950977274046467
+          }
+        },
+        "50bp": {
+          "full": {
+            "months": 622,
+            "annualized_mean": 0.006661287176021718,
+            "volatility": 0.05250591803866733,
+            "sharpe": 0.12686735943015215,
+            "max_drawdown": -0.5081058956100003,
+            "worst_12_month_return": -0.22030252243816717,
+            "average_monthly_turnover": 0.034412898221360254
+          },
+          "first_half": {
+            "months": 310,
+            "annualized_mean": -0.0021242127286592574,
+            "volatility": 0.07031435298647053,
+            "sharpe": -0.030210229326407736,
+            "max_drawdown": -0.5081058956100003,
+            "worst_12_month_return": -0.22030252243816717,
+            "average_monthly_turnover": 0.03789715414252768
+          },
+          "second_half": {
+            "months": 312,
+            "annualized_mean": 0.015390469773621403,
+            "volatility": 0.02407868947208254,
+            "sharpe": 0.6391738965472151,
+            "max_drawdown": -0.07643525846547017,
+            "worst_12_month_return": -0.06418968496454536,
+            "average_monthly_turnover": 0.030950977274046467
+          }
+        }
+      }
+    }
+  }
+}

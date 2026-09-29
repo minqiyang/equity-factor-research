@@ -1494,6 +1494,138 @@ Family A books under three cost cases and Family B books at primary costs (231 t
 Owner review of the support v2 correction and registration v2; the program decision stays "extend breadth or
 history under a new registration; the holdout stays sealed."
 
+## 20260928-001-m5-public-factor-baseline
+
+### Experiment ID
+
+`20260928-001-m5-public-factor-baseline`
+
+### Date
+
+`2026-09-28`
+
+### Milestone & Phase
+
+Milestone 5 step 2 (baseline product): R0 equal weight against R1 inverse volatility on public long-short
+factor returns, run by `python -m research.m5_factor_baseline`.
+
+### Objective
+
+Pick the baseline weighting rule with the declared step 2 decision rule: R1 becomes the baseline product if, on
+jkp_factors_153, in both halves and at both 20 and 50 bp, R1's maximum drawdown magnitude is at most R0's and R1's
+Sharpe is at least R0's.
+
+### Trial Family Declared Before Results
+
+`docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`), committed alone in `bdad7fd` before
+any repository download of factor returns. Amendment 1
+(`docs/preregistrations/m5_trial_family_v1_amendment_1.json`, SHA-256 `b3992b32...0751`, committed alone in
+`f77b4ed` before any post-publication metric) starts the descriptive post-publication split at its first month with
+a non-empty subset; it lists every result seen before it. Amendment 2
+(`docs/preregistrations/m5_trial_family_v1_amendment_2.json`, SHA-256 `59461b15...72f1`, committed alone in
+`261d84f` before any result under it) repairs review round 1 findings A1-M5-01 and A2-M1: month t's set, sigma,
+and weights use returns through month t-2, the target executes at the month t-1 close and first earns month t,
+month-t return availability is no longer a set condition (a missing held return refuses), a bad-data code in the
+36-month window excludes the factor, and `years_since_publication` uses the signal month's year and stays missing
+until after publication. It lists every result seen, including both review seats' diagnostics. S2 family: 3 HAC tests of R1 net minus R0 net at 20 bp, one per
+universe, Benjamini-Yekutieli with family size 3. Prior exposures seen before the declaration: the 2026-09-28
+audit scratch run (7 French factors) and the 2026-09-28 vision probe (JKP 153 factors and 13 themes); this run
+re-examines a comparison already seen and supports no confirmatory claim.
+
+### Bound Inputs
+
+- Public data (manifest `reports/m5_public_data_manifest.json`, retrieved 2026-09-28 UTC): JKP US all factors
+  monthly vw_cap (SHA-256 `f766aa2c...ca80`, 146,457 rows, 1926-01 to 2025-12), JKP US all themes monthly vw_cap
+  (`9cf3bfa2...3c53`, 14,945 rows, 1926-01 to 2025-12), JKP cluster labels and factor details at the pinned
+  jkp-data commit (hashes equal the declared values), Ken French FF5 2x3, Mom, ST_Rev, LT_Rev, and FF3 monthly
+  (through 2026-08), FRED BAA and AAA (retrieved for step 3, unused here).
+- Evaluation: 1972-01 to 2025-12 for the JKP universes and 1972-01 to 2026-08 for french_7; halves 1972-1999 and
+  2000 to the end; timing `after_month_end_signal_next_month_end_execution` (amendment 2: signal month t-2,
+  execution at the month t-1 close, return month t; the v1 runs used `after_month_end_signal_next_month_return`).
+- Costs: switch cost 20 bp primary and 50 bp sensitivity on weight turnover; results are gross of each factor's
+  internal trading and borrow costs.
+
+### Output Artifacts
+
+- `reports/m5_factor_baseline.md` (SHA-256 `2fa8a5d6...6b0d`)
+- `reports/m5_factor_baseline.json` (SHA-256 `21f017b1...24a6`, aggregates only)
+- `reports/m5_public_data_manifest.json` (SHA-256 `732ba2c0...f9f7`)
+- `reports/m5_factor_baseline_attempts.jsonl`: five attempts, all completed with decision `R1`. The first two ran
+  before the branch was rebased onto `main` (their commits `a27b6b4` and `2fd16a8` have the same trees as `46d4347`
+  and `291d6c8`); the second changed only report formatting. The third ran under amendment 1; its outputs were
+  discarded to fix the recorded tree state and its records were re-added by hand. The fourth, at `fd8789b`, wrote
+  the v1-timing outputs committed in `58f398c`. The fifth, `20260929T003920038139Z` at `272109f` on a clean tree,
+  runs under amendment 2 and wrote the current outputs (`c0ce46d`). One more invocation failed at import (`src`
+  missing from the import path) before it read any data or wrote an attempt record.
+
+### Results Under Amendment 2 (DIAGNOSTIC_ONLY)
+
+- Decision outcome `R1`: 8 of 8 conditions hold on jkp_factors_153.
+- jkp_factors_153, Sharpe R0 / R1 and maximum drawdown R0 / R1: 1972-1999 at 20 bp 1.224 / 1.653 and -8.57% /
+  -3.69%; at 50 bp 1.216 / 1.592 and -8.57% / -3.81%. 2000-2025 at 20 bp 0.610 / 0.736 and -9.27% / -7.27%; at 50
+  bp 0.610 / 0.704 and -9.27% / -7.42%. Full window at 20 bp: annualized mean 2.57% / 2.27%, volatility 3.28% /
+  2.15%, Sharpe 0.785 / 1.056, maximum drawdown -13.97% / -7.27%.
+- Change against the v1 timing: every R1 month moves; R1 full-window Sharpe 1.060 to 1.056 and maximum drawdown
+  -7.23% to -7.27% at 20 bp. These equal the AUDIT seat's one-month-delay sensitivity (1.056139, -7.273942%).
+  R0 moves only through the 1972-1973 set (92 short-history exclusions instead of 88).
+- jkp_themes_13 (descriptive): Sharpe 1.842 / 2.343 and 0.804 / 1.080 by half at 20 bp; drawdown -2.05% / -1.22%
+  and -5.06% / -3.48%.
+- french_7 (descriptive): Sharpe 1.467 / 1.360 and 0.455 / 0.521 by half at 20 bp; drawdown -5.81% / -6.83% and
+  -16.41% / -17.05%. R1 still does not beat R0 on the French set in 1972-1999, and its 2000-2026 drawdown is now
+  0.64 points deeper than R0's.
+- S2 (R1 minus R0 at 20 bp): mean monthly difference -2.51 bp (jkp_factors_153, HAC p 0.118, BY q 0.324), -2.60
+  bp (jkp_themes_13, p 0.062, q 0.324), -1.00 bp (french_7, p 0.456, q 0.836). No test survives; R1's gain is in
+  risk, with a lower mean.
+- Volatility-forecast accuracy (full window, then 1972-1999 / 2000-2025): 0.595, 0.592 / 0.604
+  (jkp_factors_153); 0.689, 0.669 / 0.704 (jkp_themes_13); 0.406, 0.334 / 0.450 (french_7).
+- Missingness and exclusions: 0 bad-data exclusions and 0 held missing returns in every universe; jkp_factors_153
+  excludes 92 factor-months in 1972-1973 for short history (144 absent factor-months in the 1968-12 to 1971-12
+  lookback). No rule dropped a return-related share of the sample.
+- Post-publication split (descriptive; publication year before the signal month's year; from 1974-03, 26 empty
+  months 1972-01 to 1974-02): members per month min 1, median 34, max 142. This is the declared hindsight check on
+  the decision: in 2000-2025 (32,016 subset factor-months) it points the same way at 20 bp, Sharpe R0 / R1 0.589 /
+  0.686 and drawdown -9.27% / -7.46%, mean 2.37% / 1.65%. The 1974-1999 figures (2,992 subset factor-months, as few
+  as one member a month) describe a thin, changing set of early-published factors and lose money under both
+  rules: Sharpe -0.021 / -0.011, drawdown -50.88% / -50.62%. Results at 50 bp point the same way.
+- Market excess (French Mkt-RF, context): Sharpe 0.480 and maximum drawdown -54.16% over 1972-2025.
+
+### Prior Results Under The v1 Timing (retained under R9, commit `58f398c`)
+
+- Decision outcome `R1`: 8 of 8 conditions hold on jkp_factors_153.
+- jkp_factors_153, Sharpe R0 / R1 and maximum drawdown R0 / R1: 1972-1999 at 20 bp 1.224 / 1.659 and -8.57% /
+  -3.67%; at 50 bp 1.217 / 1.597 and -8.57% / -3.80%. 2000-2025 at 20 bp 0.610 / 0.735 and -9.27% / -7.23%; at 50
+  bp 0.610 / 0.703 and -9.27% / -7.36%. Full window at 20 bp: annualized mean 2.57% / 2.26%, volatility 3.28% /
+  2.13%.
+- jkp_themes_13 (descriptive): Sharpe 1.842 / 2.338 and 0.804 / 1.086 by half at 20 bp; drawdown -2.05% / -1.22%
+  and -5.06% / -3.43%.
+- french_7 (descriptive): Sharpe 1.467 / 1.343 and 0.455 / 0.529 by half at 20 bp; drawdown -5.81% / -6.97% and
+  -16.41% / -16.58%. R1 does not beat R0 on the French set in 1972-1999.
+- S2 (R1 minus R0 at 20 bp): mean monthly difference -2.63 bp (jkp_factors_153, HAC p 0.107, BY q 0.294), -2.67
+  bp (jkp_themes_13, p 0.058, q 0.294), -1.18 bp (french_7, p 0.393, q 0.720). No test survives; R1's gain is in
+  risk, with a lower mean.
+- Volatility-forecast accuracy (Spearman of trailing 36-month sigma with next-12-month realized volatility, full
+  window, then 1972-1999 / 2000-2025): 0.607, 0.600 / 0.619 (jkp_factors_153); 0.698, 0.676 / 0.716
+  (jkp_themes_13); 0.426, 0.349 / 0.474 (french_7).
+- Post-publication split (descriptive, amendment 1, from 1974-01; 24 empty months in 1972-1973): members per month
+  min 1, median 34, max 142. 2000-2025 at 20 bp: Sharpe R0 / R1 0.579 / 0.671, drawdown -9.25% / -7.39%, mean
+  2.32% / 1.60%. 1974-1999 holds only a few early-published factors (3,060 factor-months) and loses money under
+  both rules: Sharpe -0.084 / -0.084, drawdown -52.98% / -52.61%. Results at 50 bp point the same way. R0, R1, the
+  S2 tests, and the decision are unchanged by the amendment.
+- Market excess (French Mkt-RF, context): Sharpe 0.480 and maximum drawdown -54.16% over 1972-2025.
+
+### Limitations
+
+- Public long-short series, gross of internal costs, including small caps; the implementable long-only check is
+  step 4.
+- The halves reuse history already seen in two prior diagnostics, in the v1-timing runs, and in the AUDIT seat's
+  sensitivity, which equals this rerun's primary figures; no out-of-sample claim.
+- Monthly observations only: one whole month separates the signal close and the execution close.
+- The post-publication first half rests on a thin, changing set of early-published factors.
+
+### Next Action
+
+Review round 2 (two fresh seats) on this head; then the v2 amendment for R2 to R4 before step 3.
+
 ## Local CSV Experiment Records
 
 Any future run that uses user-provided local CSV data must add or prepare a full

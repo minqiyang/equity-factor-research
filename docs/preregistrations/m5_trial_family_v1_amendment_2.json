@@ -1,0 +1,45 @@
+{
+  "schema_version": "m5_trial_family_v1_amendment_2",
+  "declared_on": "2026-09-28",
+  "amends": {
+    "path": "docs/preregistrations/m5_trial_family_v1.json",
+    "sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
+    "also_in_force": {"path": "docs/preregistrations/m5_trial_family_v1_amendment_1.json", "sha256": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751"},
+    "sections": ["timing", "universes.membership_rule", "universes.return_availability_note", "rules.R1", "rules.R3", "rules.R4", "states", "traits", "post_publication_months.definition"]
+  },
+  "authority": "Coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md. It repairs review round 1 findings A1-M5-01 (execution at the signal's own close) and A2-M1 (years_since_publication carries future publication information). It tightens R1 and R6 and loosens none of R1, R2, R4, R6, R8, or R9. The v1 amendment_policy lists only R2 to R4 and the step 3 tests, so this amendment is recorded as a coordinator default outside that list, as amendment 1 was.",
+  "problem": {
+    "A1-M5-01": "v1 forms month t's weights from returns through month t-1, whose last observation is the close of month t-1, and earns the whole month-t return from that same close. A signal known only after a close cannot be executed at that close.",
+    "A2-M1": "v1 defines years_since_publication as year(t) minus the publication year, which is negative before publication. Only hindsight reveals that a factor will be published, so the negative values tell R4 which factors are still to be published.",
+    "month_t_availability": "v1 admits factor i to month t only if its month-t return exists. Under the corrected order that return is not known at decision time, and removing a member for a missing holding-month return reallocates its weight (review advisories A1-M5-02 and A2-A4)."
+  },
+  "change": {
+    "timing": {
+      "label": "after_month_end_signal_next_month_end_execution",
+      "event_order": "For return month t: the signal month is t-2 and the feature observation end is the close of the last trading day of month t-2; signal availability and decision are strictly after that close; the execution (target reset and switch cost) is the close of the last trading day of month t-1, the next observed close on the monthly observation grid; the target first earns the month-t return, from the close of month t-1 to the close of month t. The month t-1 return is earned by the previous target.",
+      "rule": "Every input to month t's set, weights, states, and traits uses observations through month t-2 only. The switch cost recorded at the execution close is deducted from the month-t return, as in v1.",
+      "first_month": "The 1972-01 target executes at the 1971-12 close from no holdings, so 1972-01 turnover is 1 as in v1.",
+      "relation_to_repository_contract": "after_close_signal_next_observed_close_v1 on a monthly observation grid with a signal lag of one observed row: signal row month t-2, execution row month t-1, first return row month t.",
+      "required_test": "On a synthetic fixture: changing any return in months t-1 and later, including a finite-to-missing change, leaves the set, sigma, weights, states, and traits for month t unchanged; changing a month t-2 return can change month t's sigma; a set member whose month-t return is missing refuses the run."
+    },
+    "window_shift": "Every window in v1 that ends at month t-1 ends at month t-2 instead, with its length unchanged: R1 sigma and membership use months t-37 to t-2; R3 and trailing_12m_return use months t-13 to t-2; market_trend uses months t-13 to t-2; market_volatility uses the 63 trading days ending on the last trading day of month t-2 and the expanding median through month t-2; credit_spread uses the value for month t-3, one month behind the signal month, against the median of months t-122 to t-3.",
+    "membership_rule": "Factor i enters the set for month t only if it has at least 24 non-missing monthly returns in months t-37 to t-2 and none of those 36 months carries a bad-data code (blank_field or provider_missing_code). A month typed absent (no provider row) counts only against the 24-return condition. The v1 condition that factor i has a month-t return is removed. A set member whose month-t return is missing refuses that universe's run; nothing is reallocated. The report counts factor-months excluded for short history and for bad data in the lookback.",
+    "return_availability_note": "Replaced by the membership rule above; month-t return availability is not a set condition.",
+    "R4": "R4's target for features at signal month t-2 is the month-t return. A refit for month t uses only (feature, return) pairs whose return month is t-2 or earlier. The v2 amendment fixes how R4 weights a factor-month that has no forecast.",
+    "years_since_publication": {
+      "definition": "calendar year of the signal month t-2 minus the publication year from jkp_factor_details, defined only when that difference is positive; jkp_factors_153 only",
+      "not_yet_published": "for year(t-2) at or before the publication year the trait is typed missing (not_yet_published), the factor-month leaves R4's training and forecasting inputs, and the count is reported under R6",
+      "missing_publication_year": "unchanged: the 11 v1 factors keep a typed missing value and are counted",
+      "required_test": "changing a factor's publication year from one year to another, both at or after year(t-2), leaves the trait for month t and every earlier month unchanged; when R4 exists, the same change leaves every R4 input and weight for month t unchanged"
+    },
+    "post_publication_months": "For month t, the post-publication subset is the month's set restricted to factors whose publication year is before the calendar year of the signal month t-2, that is the factor-months with a defined years_since_publication. Amendment 1's start-month rule applies unchanged.",
+    "unchanged": "Data sources, universes and their members, the evaluation window and halves, R0, R1's weight formula, R2, costs and turnover, step 2 metrics, step 2 tests, the step 2 decision rule, and every other v1 and amendment 1 section."
+  },
+  "results_seen_before_this_amendment": {
+    "runs": "step 2 attempts 20260928T233911076549Z, 20260928T234058902138Z, 20260929T001110965667Z, and 20260929T001213752153Z under the v1 timing, committed in 58f398c",
+    "seen": "every R0 and R1 metric for jkp_factors_153, jkp_themes_13, and french_7; the S2 tests; the decision outcome R1 (8 of 8); the market excess return; the volatility-forecast accuracy; and every post-publication metric under amendment 1 (start 1974-01)",
+    "review_round_1": "the AUDIT seat's one-month-delay sensitivity (jkp_factors_153 R1 full-window Sharpe 1.056139 and maximum drawdown -7.273942% at 20 bp; french_7 R1 maximum drawdown -17.051764%; largest monthly change 17.46 bp and 37.83 bp; decision R1) and the AUDIT_2 seat's pre- versus post-publication return comparison on the cached JKP file (27.86 versus 11.22 bp a month; within-factor gap 17.9 bp, t 8.86)",
+    "not_seen": "no result under this amendment's timing and membership, no step 3 rule, state, or state-conditional result"
+  },
+  "prior_exposure_status": "The results above stay visible under R9. The rerun under this amendment re-examines comparisons already seen and supports no confirmatory claim."
+}

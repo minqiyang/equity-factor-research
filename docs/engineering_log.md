@@ -12,6 +12,128 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-28 - Milestone 5 steps 1-2 remediation: review round 1 findings (task m5-s12-fix, attempt 1)
+
+- Scope: the two MATERIAL findings of review round 1 on `58f398c` (AUDIT seat A1-M5-01, AUDIT_2 seat A2-M1) and
+  the cheap in-scope advisories. Branch `claude/m5-baseline`. Evidence ceiling `DIAGNOSTIC_ONLY`.
+- Authorship record: commits `2679c28`, `5fd15ee`, `fd8789b`, and the rerun in `58f398c` were written by the
+  coordinator session, not by a producer session. This remediation was written by a producer session.
+- Commit order: `261d84f` adds amendment 2 alone (SHA-256 `59461b15...72f1`) before any result under it;
+  `272109f` implements it; `c0ce46d` records the rerun; a records commit follows.
+- A1-M5-01 (execution at the signal's own close): `membership()` in `research/m5_factor_baseline.py` now reads
+  months t-37 to t-2 for return month t (`SIGNAL_LAG_MONTHS = 2`); the target executes at the month t-1 close and
+  first earns month t. The month-t and month t-1 returns are never read for the target. The result JSON and report
+  carry the event order (`TIMING`).
+- A1-M5-02 and A2-A4 (month-t availability): the month-t return condition is removed from the set, so a missing
+  held return refuses in `portfolio()` with a count and first month instead of reallocating.
+- A1-M5-03 (bad data in a lookback): a `blank_field` or `provider_missing_code` cell in the 36-month window
+  excludes the factor for that month and is counted (`excluded_bad_data_in_lookback`); an `absent` month counts
+  only against the 24-return rule.
+- A2-M1 (`years_since_publication`): new `years_since_publication()` uses the signal month's year and returns NaN
+  until the difference is positive; `post_publication()` now takes its subset from that trait.
+- A1-M5-04 and A2-A1: `docs/decision_log.md` records amendments 1 and 2. A2-A3: the experiment log cites the
+  2000-2025 post-publication result as the hindsight check and labels 1974-1999 as a thin set. A2-A2 is carried to
+  the step 3 v2 amendment (roadmap backlog), since it concerns the step 3 BY family.
+- Tests (`tests/test_m5_factor_baseline.py`): perturbing any return in months t-1 and later, including finite to
+  missing and missing to finite, leaves month t's set, sigma, and weights unchanged (R0 and R1); a month t-2 change
+  moves R1 weights while a month t-1 change does not; a missing holding-month return keeps the set and refuses;
+  the same gap typed `provider_missing_code` excludes while typed `absent` does not; moving a publication year
+  between two years at or after year(t-2) leaves the trait for month t and earlier unchanged. Setting
+  `SIGNAL_LAG_MONTHS` back to 1 fails 8 tests. `docs/repo_map.md` regenerated for the new amendment file.
+- Rerun: attempt `20260929T003920038139Z` at `272109f`, clean tree. Decision R1, 8 of 8. jkp_factors_153 R1
+  full-window Sharpe 1.056 (was 1.060) and maximum drawdown -7.27% (was -7.23%) at 20 bp, equal to the AUDIT
+  seat's sensitivity; french_7 R1 drawdown -17.05% (was -16.58%). S2 BY q 0.324, 0.324, 0.836. 0 bad-data
+  exclusions and 0 held missing returns in every universe.
+- QA: full suite 3,338 passed and 2 skipped (platform longdouble); `ruff check .` clean; English-only guard passes.
+- Ablation: the repair deleted the month-t availability condition, its count, and the inline publication frame in
+  `post_publication()`. One further removal was tried in isolation, the `excluded_both_conditions` count; only its
+  own assertion failed, but it is retained because without it the two exclusion counts do not reconcile with the
+  set size when a factor-month fails both rules.
+
+---
+
+## 2026-09-28 - Milestone 5 step 2: public factor loaders and the R0 versus R1 baseline run
+
+- Scope: step 2 of `docs/preregistrations/m5_trial_family_v1.json` (SHA-256 `a99a862c...417a`, committed alone
+  in `bdad7fd` before any repository result; commit hashes in this entry are after the rebase onto `main` at PR
+  #276). Branch `claude/m5-baseline`. Evidence ceiling `DIAGNOSTIC_ONLY`.
+- Code (`46d4347`, `291d6c8`): `src/data/public_factors.py` downloads once into the gitignored
+  `data/public_cache/` with a URL, UTC time, and SHA-256 sidecar, refuses a cached file whose bytes or URL
+  disagree, parses the JKP long files and the Ken French monthly blocks with typed missing values (`absent`,
+  `blank_field`, `provider_missing_code`), loads FRED CSVs for step 3, reads the JKP `factor_details.xlsx` with the
+  standard library (openpyxl is not installed), and writes the manifest. `research/m5_factor_baseline.py`
+  refuses a trial file that differs from HEAD or from its pinned SHA-256, forms R0 and R1 month by month from
+  returns through t-1, charges 20 and 50 bp on weight turnover, and writes the report, the aggregate JSON, the
+  manifest, and one start and one end record per attempt.
+- Guard change: `NETWORK_ALLOWLIST` in `tests/test_project_structure.py` adds `src/data/public_factors.py`, and a new
+  assertion pins its network imports to exactly `urllib.request` (R11 authorizes these public downloads).
+  `scripts/repo_map.py` names the second network-capable module; `docs/repo_map.md` is regenerated.
+- Tests: `tests/test_m5_factor_baseline.py` adds 31 synthetic tests (future perturbation for R0 and R1, a
+  non-vacuity check, inverse-volatility weights on a known example, the 24-of-36 boundary, typed missing counts,
+  refusals, switch-cost arithmetic with entry and exit, drawdown and worst 12 months on known paths, halves,
+  volatility-forecast counts, S2 BY adjustment, the decision rule, the post-publication refusal, parsers, the
+  cache, the manifest, and the trial-file refusal in a temporary git repository).
+- Attempts (`reports/m5_factor_baseline_attempts.jsonl`): two, both completed. Attempt `20260928T233911Z` at
+  `a27b6b4`; attempt `20260928T234058Z` at `2fd16a8` changed only report formatting (lookback typed-missing counts,
+  the S2 difference in bp) and reproduced every number. No failed attempt.
+- Independent cross-check: a separate rolling-window script on the cached files reproduced the jkp_factors_153
+  half-period Sharpe and maximum drawdown for R0 and R1 at both cost levels, the french_7 full-window values, and
+  the jkp_factors_153 volatility-forecast Spearman (0.6073, 97,373 pairs) to six decimals.
+- Result: decision outcome `R1` (8 of 8 conditions on jkp_factors_153). R1 Sharpe 1.659 vs 1.224 (1972-1999) and
+  0.735 vs 0.610 (2000-2025) at 20 bp; maximum drawdown -3.67% vs -8.57% and -7.23% vs -9.27%. S2 BY q-values
+  0.294 (jkp_factors_153), 0.294 (jkp_themes_13), 0.720 (french_7); every S2 mean difference is negative (R1 earns
+  a lower mean with lower volatility). french_7 favors R0 in 1972-1999 (Sharpe 1.343 vs 1.467), descriptive only.
+- Trial-file gap and coordinator default: the declared post-publication split refused, because no factor has a
+  publication year before 1974 (earliest 1973), so 1972-01 to 1973-12 had an empty subset. Amendment 1
+  (`f77b4ed`, committed alone before any post-publication metric) starts the split at its first non-empty month
+  (1974-01); `2679c28` implements it and still refuses a later empty month. The v1 file is unchanged.
+- Run-record fix (`fd8789b`): the runner read the tree state after appending to the tracked attempt log, so a run
+  on a clean tree recorded tracked changes. It now uses the state taken before the append. One attempt's outputs
+  were discarded for this fix and its records re-added by hand; one invocation failed at import before reading
+  data. The committed outputs come from attempt 4 at `fd8789b`, with R0, R1, S2, and the decision unchanged.
+- Catalog test fix (`5fd15ee`): `tests/test_factor_catalog.py` wrote its CJK pattern with literal Chinese
+  characters, which the English-only guard rejects; the pattern now uses escape sequences.
+- Not retrieved in step 2: `french_ff3_daily` and `jkp_accounting_characteristics_list` (step 3 consumers).
+- Needs follow-up: the two cross-family review seats for the step 2 real-data code and the trial-family freeze
+  have not run; the step 2 results were produced before those reviews.
+
+## 2026-09-28 - Milestone 5 step 1: factor catalog seeded with 1,160 rows
+
+- `research/factor_catalog.csv` has 1,160 rows with columns id, source, formula_or_ref, inputs, horizon, status.
+  Rows by source: Open Source Asset Pricing 326 (212 predictors and 114 placebos; the 5 `Drop` rows are left out),
+  Hou-Xue-Zhang 206 (201 testing-portfolio anomalies and 5 q5 factors), Guotai Junan 191, Qlib Alpha158 158,
+  JKP 153, WorldQuant 101 101, Ken French 8, AQR 7, Repository Family A 6, Stambaugh 4.
+- Rows by inputs: ohlcv 450, accounting 335, return_series 176, price 101, analyst 28, trading 23, other 22,
+  options 9, holdings_13f 8, event 8. By horizon: monthly 522, daily 450, annual 179, quarterly 9. By status:
+  cataloged 1,102, implemented 58 (the 52 `def alpha_` functions in `src/features/alphas.py` and the 6 Family A
+  factors in `research/m4_7_family_a.py`, added as `repo.*` rows that name their nearest OSAP and JKP rows).
+- Sources, retrieved 2026-09-28 UTC, with the SHA-256 of each file read:
+  - OSAP `SignalDoc.csv`, `OpenSourceAP/CrossSection` master at `8db89244`:
+    `f6c055120bad7afe97c16e23e0f49bce0982269026605a955e8064bd661cf415`.
+  - JKP `GlobalFactors/Cluster Labels.csv`, `bkelly-lab/ReplicationCrisis` master at `67174c7f`:
+    `22c7fdd214218d1210ab9922efed59bf607538098cc06b6f2c5f326d2e6cf64b`; citations come from the same
+    repository's `Factor Details.xlsx`.
+  - global-q.org `testingportfolios.html` (release 2026-07-30):
+    `227ef76d074085ad69b035dd5c6eecd24e1bf2395fb59bca3e06de1c6cd6ad13`; q5 names from `factors.html`.
+  - Qlib `qlib/contrib/data/loader.py`, `microsoft/qlib` main at `be725493`:
+    `814b7f7ab3d418ae3c87ce352220080b239eba2670eac9e38376b794be4075cb`, read as text; the 158 names follow the
+    `Alpha158DL` default handler config.
+  - Ken French Data Library, AQR Data Sets, and Robert Stambaugh's data page supply series titles. WorldQuant 101
+    and Guotai Junan 191 rows carry IDs and references only. Every source was reachable; no raw data rows are
+    committed.
+- Mapping rules: OSAP inputs follow `Cat.Data`; OSAP horizon follows `Portfolio Period` (1 monthly, 3 and 6
+  quarterly, 12 and 36 annual; the 6, 36, and unstated periods are named in the row). JKP, French, AQR, q5, and
+  Stambaugh traded series use `return_series`, and each JKP row records its theme and a name-based underlying-data
+  tag. HXZ horizon is monthly for a holding-period suffix or a monthly-by-construction anomaly (srev,
+  seasonality) and annual otherwise.
+- Attribution: JKP data, Jensen, Kelly, and Pedersen, jkpfactors.com (CC BY-NC 4.0); Ken French data, Copyright
+  Eugene F. Fama and Kenneth R. French; Qlib Alpha158 expressions, Microsoft Corporation (MIT).
+- `tests/test_factor_catalog.py` checks the column list, row-count band, unique ASCII ids, allowed values, the
+  exact WorldQuant and Family A implemented sets, and the absence of Chinese characters. `.gitignore` gains
+  `data/public_cache/` for raw public downloads; `docs/repo_map.md` is regenerated for the new file counts.
+- Limitations: WorldQuant rows do not flag industry-neutralized or market-cap inputs; the `aqr.UMD` reference names
+  the series without a paper; catalog status says nothing about data availability or screening results.
+
 ## 2026-09-28 - Owner-identified process failure: PR text full of process jargon; controller review rules updated
 
 - Incident (owner, 2026-09-28): the PR #263 body carried a "Lane" section and an "Out of scope" section and cited a
