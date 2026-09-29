@@ -9,7 +9,7 @@
     "jkp_accounting_characteristics_list": "consumed in step 3"
   },
   "step3": {
-    "code_commit": "343003d0598d59b4871bc70b5290c730af81be04",
+    "code_commit": "f522a2342d71e561188d9ac50e7e64724319bb65",
     "amendment_3": "docs/preregistrations/m5_trial_family_v1_amendment_3.json",
     "amendment_3_sha256": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb",
     "retrieved_in_step3": [

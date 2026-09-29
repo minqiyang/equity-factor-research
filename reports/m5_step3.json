@@ -1,7 +1,7 @@
 {
   "schema_version": "m5_step3_v1",
   "evidence_ceiling": "DIAGNOSTIC_ONLY",
-  "run_utc": "2026-09-29T06:25:29Z",
+  "run_utc": "2026-09-29T06:28:24Z",
   "trial_files": {
     "docs/preregistrations/m5_trial_family_v1.json": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a",
     "docs/preregistrations/m5_trial_family_v1_amendment_1.json": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751",
@@ -9,7 +9,7 @@
     "docs/preregistrations/m5_trial_family_v1_amendment_3.json": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb"
   },
   "git": {
-    "commit": "343003d0598d59b4871bc70b5290c730af81be04",
+    "commit": "f522a2342d71e561188d9ac50e7e64724319bb65",
     "tracked_changes": false
   },
   "timing": {
@@ -146,7 +146,7 @@
     }
   ],
   "manifest_step3": {
-    "code_commit": "343003d0598d59b4871bc70b5290c730af81be04",
+    "code_commit": "f522a2342d71e561188d9ac50e7e64724319bb65",
     "amendment_3": "docs/preregistrations/m5_trial_family_v1_amendment_3.json",
     "amendment_3_sha256": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb",
     "retrieved_in_step3": [
@@ -286,7 +286,7 @@
       "5",
       "6"
     ],
-    "post_publication_detail": "Sharpe and drawdown checks [True, False, False, False]; mean R2-sub minus R1-sub 3.255919791098219e-05"
+    "post_publication_detail": "at 20 bp, Sharpe margin +0.0057 (holds) and drawdown margin -0.1273 pp (fails); at 50 bp, Sharpe margin -0.0081 (fails) and drawdown margin -0.1472 pp (fails); mean R2-sub minus R1-sub at 20 bp +0.33 bp per month (holds)"
   },
   "rule_conditions": {
     "R0": [
@@ -8140,6 +8140,20 @@
       }
     },
     "span_start": "1974-03",
+    "periods": {
+      "full": [
+        "1974-03",
+        "2025-12"
+      ],
+      "first_half": [
+        "1974-03",
+        "1999-12"
+      ],
+      "second_half": [
+        "2000-01",
+        "2025-12"
+      ]
+    },
     "mean_difference_20bp": 3.255919791098219e-05,
     "mean_lambda": {
       "full": {
@@ -8650,5 +8664,5 @@
     "family_size": 1047,
     "method": "by"
   },
-  "runtime_seconds": 6.0
+  "runtime_seconds": 6.5
 }

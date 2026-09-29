@@ -2,11 +2,13 @@
 
 **Evidence ceiling: DIAGNOSTIC_ONLY.** Public long-short factor series on jkp_factors_153, gross of each factor's internal trading and borrow costs, small caps included. Nothing here supports a profitability, ranking, or promotion claim. Every S3 test re-examines comparisons already seen in the prior exposures and supports no confirmatory claim.
 
-Run 2026-09-29T06:25:29Z from code commit `343003d0598d59b4871bc70b5290c730af81be04` (tracked changes at run time: False); runtime 6.0 seconds.
+Run 2026-09-29T06:28:24Z from code commit `f522a2342d71e561188d9ac50e7e64724319bb65` (tracked changes at run time: False); runtime 6.5 seconds.
 
 ## Conclusion
 
 **The return-timing line stays open.** R2 meets all 8 closure conditions and goes to step 4 beside R1, labeled 'no evidence of state timing'.
+
+S3.R2 (R2 net minus R1 net at 20 bp, 648 months): mean -0.23 bp per month, 95% interval [-0.0076%, 0.0029%] per month, HAC p 0.3794, BY q 1, random-date p 0.318.
 
 R2 timing claim: **does not qualify** (failed conditions: 2, 3, 4, 5, 6).
 
@@ -109,9 +111,9 @@ BY family: 42 observed p-values plus 1005 prior-exposure slots at p = 1 (family 
 
 | Test | Status | Months | Mean (bp/month) | 95% interval (%/month) | 95% interval (%/year) | HAC t | HAC p | BY q | Random-date p |
 | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: |
-| S3.R2 | ok | 648 | -0.23 | [-0.008%, 0.003%] | [-0.091%, 0.035%] | -0.88 | 0.3794 | 1 | 0.318 |
-| S3.R3 | ok | 648 | 2.08 | [-0.013%, 0.054%] | [-0.151%, 0.651%] | 1.22 | 0.222 | 1 | not run |
-| S3.R4 | ok | 648 | -0.53 | [-0.011%, 0.000%] | [-0.130%, 0.002%] | -1.89 | 0.05905 | 1 | not run |
+| S3.R2 | ok | 648 | -0.23 | [-0.0076%, 0.0029%] | [-0.0909%, 0.0346%] | -0.88 | 0.3794 | 1 | 0.318 |
+| S3.R3 | ok | 648 | 2.08 | [-0.0126%, 0.0542%] | [-0.1511%, 0.6507%] | 1.22 | 0.222 | 1 | not run |
+| S3.R4 | ok | 648 | -0.53 | [-0.0108%, 0.0002%] | [-0.1299%, 0.0024%] | -1.89 | 0.05905 | 1 | not run |
 
 Random-date null: 999 circular shifts of the three label series inside the label span (1131 months), seed 20260928, offsets 60 to 1071. S3.R2: 317 exceedances, 0 undefined draws (counted as exceedances). R3 and R4 have no random-date null.
 
@@ -274,7 +276,9 @@ R2 re-estimated on post-publication factor-months only, with history from the su
 | R2 | 50 bp | 1972-1999 | 310 | -0.13% | 7.10% | -0.019 | -50.96% | -22.26% | 0.056 |
 | R2 | 50 bp | 2000-end | 312 | 1.39% | 2.46% | 0.565 | -8.77% | -6.88% | 0.054 |
 
-Mean R2-sub net minus R1-sub net at 20 bp over the full subset period: 0.33 bp per month. Sharpe and drawdown checks [True, False, False, False]; mean R2-sub minus R1-sub 3.255919791098219e-05.
+Subset periods: full 1974-03 to 2025-12; 1972-1999 1974-03 to 1999-12; 2000-end 2000-01 to 2025-12. Subset members per month: min 1, median 34, max 142; the early subset holds very few factors, so its first-half figures describe a thin and changing set.
+
+Condition 5 over the full subset period: at 20 bp, Sharpe margin +0.0057 (holds) and drawdown margin -0.1273 pp (fails); at 50 bp, Sharpe margin -0.0081 (fails) and drawdown margin -0.1472 pp (fails); mean R2-sub minus R1-sub at 20 bp +0.33 bp per month (holds).
 
 R2-sub mean lambda per state: full market_trend 0.467, market_volatility 0.602, credit_spread 0.519; 1972-1999 market_trend 0.349, market_volatility 0.442, credit_spread 0.395; 2000-end market_trend 0.584, market_volatility 0.760, credit_spread 0.644.
 
