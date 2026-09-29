@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-09-28 - Milestone 5 Step 3 Trial Amendment 3 (Coordinator Technical Defaults)
+
+Context:
+
+- v1 leaves the R2, R3, and R4 parameters and the step 3 test details to "the v2 amendment", which must be
+  committed before any step 3 result. Review advisories A2-A2 (prior-exposure multiplicity) and A2R2-A1 (R4
+  coverage) wait on it.
+
+Decisions:
+
+- Amendment 3 (`docs/preregistrations/m5_trial_family_v1_amendment_3.json`, SHA-256 `b5c67cf1...0c62`, committed
+  alone in `cd1d578` before any step 3 code or result) is that amendment. It pins v1 and amendments 1 and 2 by
+  SHA-256 and lists 22 technical defaults, one line each. The main ones:
+  - R2 tilts each theme by 1 + 0.5 x the mean over the three states of sign(past cell mean) x E / (E + 10), where
+    E is the cell's past episode count. R3 tilts by 1 + 0.5 x sign(trailing 12-month return). R4 fits one ridge
+    per return year (alpha = training rows; 83 trait, state, and trait x state columns; no cross-sectional
+    standardization), and its forecast ranks tilt R1 by factors in [0.5, 1.5].
+  - A2R2-A1: a factor-month without an R4 forecast keeps its exact R1 weight, including the 11 factors without a
+    publication year, so every comparison uses the R1 set.
+  - A2-A2: the S3 BY family counts 3 rule tests, 39 class x state tests, and 617 prior-exposure slots at p = 1
+    (family size 659). A random-date null of 999 circular label shifts (seed 20260928) is reported beside R2 and
+    the state tests.
+  - The closure rule applies the 8 step 2 conditions to R2 against R1 on `jkp_factors_153`. If R2 fails any of
+    them in either half, the return-timing line closes and R1 alone goes to step 4.
+
+Rationale:
+
+- Counting the prior variants keeps R9 intact. Keeping the R1 weight where R4 has no forecast stops the R4
+  comparison from measuring the publication effect. No choice used a step 3 result; the amendment lists every
+  result seen before it.
+
+Consequences:
+
+- The amendment settles the backlog rows for A2-A2 and A2R2-A1. The step 3 runner must verify all four trial-file
+  pins and pass the amendment's required tests, including the R4 weight-level publication-year test.
+
 ## 2026-09-28 - Milestone 5 Trial Amendments 1 and 2 (Coordinator Technical Defaults)
 
 Context:
