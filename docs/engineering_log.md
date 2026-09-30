@@ -42,6 +42,17 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   pre condition and both post drawdown conditions fail. S4b.ADD mean 0.00051 a month over 99 months, HAC p 0.418,
   BY q 1.0 (family 481). Not fragile, not coverage-tilted, last-close outcome `not_join` (2 of 8). Outputs
   `reports/m5_step4b.md` and `reports/m5_step4b.json` (`0b53cea`).
+- Code review round 1 at `27133b9`: `MATERIAL: 0` from both seats (GPT 1 advisory, Opus 4). Each seat reran `run`
+  in full and matched `reports/m5_step4b.json` exactly apart from `run_utc` and `git`; Opus also rebuilt the
+  as-filed rule from the amendment text and matched every status and value.
+  - The report fix (`8ebd853`) adds a method, cost, and provenance section built from the JSON and module constants
+    (GPT-S4BC-R1-A1), notes on the `unknown` exit-class days on row m_in - 1 (OPUS-S4BC-A1), the GP_AT_AF COGS
+    restriction (A2), and the NCI-inclusive and `ProfitLoss` tagging causes (A3), and a step 4b VP-2 line (A4).
+  - `reports/m5_step4b.md` was re-rendered from the committed JSON, whose SHA-256 is unchanged
+    (`6d4e9762...fbfdd`); every table row is unchanged, and the segment and run order is now fixed. A test checks
+    that the committed report equals `render_report` of the committed JSON.
+  - Open in the backlog: a future amendment on the COGS chain and the NCI-inclusive concepts, and the side
+    loader's temporary inventory write, which a write-blocking review harness must virtualize.
 
 ## 2026-09-30 - Milestone 5 step 4b SEC data build: CIK map and company facts (DIAGNOSTIC_ONLY)
 
