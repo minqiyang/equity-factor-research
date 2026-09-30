@@ -33,8 +33,12 @@ from data.sec_edgar import COMPANYFACTS_URL
 
 pytestmark = pytest.mark.xdist_group("m5_step4b")
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# The step 4 synthetic summary before the step 4b parameterization (base `aad02a0`), as sorted JSON text, and the
+# step 4 report rendered from that stored document. The regression test compares the recomputed summary with it.
+STEP4_GOLDEN = Path(__file__).resolve().parent / "fixtures" / "m5_step4_synthetic_summary.json"
 STEP4_JSON_SHA256 = "8868e0175dfeb9fa5821b970f5b0164f12bd524ce4e3cf947b5441f49ba34af5"
-STEP4_MD_SHA256 = "c915eab5b4841700bcc49b52a3d3b58a5fc948f48dd58157178f0e2ee80d513b"
+STEP4_GOLDEN_MD_SHA256 = "9b5c0512502cd56c2b01caefcb1db41e22de2b41ff84a504540f1190599a5b96"
+REL_TOL, ABS_TOL = 1e-9, 1e-12       # 1-ulp input noise moves the summary by at most 4.6e-11 relative
 
 
 @pytest.fixture(scope="module")
@@ -403,6 +407,13 @@ def _sec_repo(tmp_path: Path) -> tuple[Path, Path, dict[str, str], dict[str, str
     return repo, snap, pins, code, files
 
 
+def _cached(repo: Path, suffix: str = "") -> list[Path]:
+    """The cached companyfacts payloads (or, with ``suffix``, their retrieval records), sorted: glob order is
+    filesystem order, and ``*.json`` also matches the ``*.json.retrieval.json`` records."""
+    files = sorted((repo / dm.CACHE_DIR / "companyfacts").glob("*.json"))
+    return [p for p in files if p.name.endswith(s4b.SIDECAR) == bool(suffix)]
+
+
 def test_sec_pins_offline(tmp_path):
     repo, snap, pins, code, _ = _sec_repo(tmp_path)
     calls = []
@@ -412,7 +423,8 @@ def test_sec_pins_offline(tmp_path):
     assert sum(v is None for v in sec.facts.values()) == 1 and len(sec.facts) == 26
     for label, mutate in (
             ("map", lambda: (tmp_path / dm.PRIVATE_DIRNAME / dm.MAP_FILE).write_bytes(b"changed")),
-            ("file", lambda: next((repo / dm.CACHE_DIR / "companyfacts").glob("*.json")).write_bytes(b"{}")),
+            ("file", lambda: _cached(repo)[0].write_bytes(b"{}")),
+            ("sidecar", lambda: _cached(repo, s4b.SIDECAR)[0].write_bytes(b"{}")),
             ("code", lambda: (repo / "code.py").write_text("x = 2\n"))):
         backup = {p: p.read_bytes() for p in [tmp_path / dm.PRIVATE_DIRNAME / dm.MAP_FILE, repo / "code.py",
                                               *sorted((repo / dm.CACHE_DIR / "companyfacts").glob("*.json"))]}
@@ -566,12 +578,46 @@ def test_empty_sec_sleeve_refuses(chain):
     assert stop.value.reason == "empty_sleeve_target"
 
 
-def test_step4_regression_outputs_are_byte_identical():
-    segments, public = fx.prepared(), fx.public()
-    doc = s4.summarize(s4.evaluate(segments, public, {fx.STOP_ASSET}, None))
-    text = json.dumps(s4._clean(doc), sort_keys=True, allow_nan=False)
+def _step4_summary(segments=None, public=None) -> dict:
+    doc = s4.summarize(s4.evaluate(segments or fx.prepared(), public or fx.public(), {fx.STOP_ASSET}, None))
+    return json.loads(json.dumps(s4._clean(doc), sort_keys=True, allow_nan=False))
+
+
+def _differences(got, want, path: str = "") -> list[str]:
+    """Paths where ``got`` differs from ``want``: exact for keys, lengths, and every non-float leaf; floats within
+    REL_TOL relative plus ABS_TOL absolute (last-bit platform differences only)."""
+    if isinstance(want, dict):
+        if not isinstance(got, dict) or set(got) != set(want):
+            return [path or "/"]
+        return [d for k in sorted(want) for d in _differences(got[k], want[k], f"{path}/{k}")]
+    if isinstance(want, list):
+        if not isinstance(got, list) or len(got) != len(want):
+            return [path]
+        return [d for i, (g, w) in enumerate(zip(got, want)) for d in _differences(g, w, f"{path}[{i}]")]
+    if isinstance(want, float) and isinstance(got, float) and not isinstance(got, bool):
+        return [] if abs(got - want) <= REL_TOL * max(abs(got), abs(want)) + ABS_TOL else [path]
+    return [] if (type(got), got) == (type(want), want) else [path]
+
+
+def test_step4_regression_matches_the_pre_change_golden():
+    """The parameterized step 4 reproduces its pre-change synthetic output; the golden is that output byte for byte."""
+    text = STEP4_GOLDEN.read_text(encoding="utf-8")
     assert hashlib.sha256(text.encode()).hexdigest() == STEP4_JSON_SHA256
-    assert hashlib.sha256(s4.render_report({**doc, "unpriced": {}}).encode()).hexdigest() == STEP4_MD_SHA256
+    golden = json.loads(text)
+    assert _differences(_step4_summary(), golden) == []
+    report = s4.render_report({**golden, "unpriced": {}})
+    assert hashlib.sha256(report.encode()).hexdigest() == STEP4_GOLDEN_MD_SHA256
+
+
+def test_step4_regression_check_catches_a_one_line_change(monkeypatch):
+    """A one-line change to a step 4 cost constant fails the comparison (hundreds of leaves move)."""
+    golden = json.loads(STEP4_GOLDEN.read_text(encoding="utf-8"))
+    monkeypatch.setitem(s4.SWITCH_BPS, "primary", 21)
+    assert len(_differences(_step4_summary(), golden)) > 100
+    assert _differences(json.loads(json.dumps(golden)), golden) == []
+    nudged = json.loads(json.dumps(golden))
+    nudged["runs"]["primary"]["rules"]["R0"]["primary"]["pre"]["sharpe"] *= 1 + 1e-8
+    assert _differences(nudged, golden) == ["/runs/primary/rules/R0/primary/pre/sharpe"]
 
 
 def test_comparator_mismatch_refuses(chain):

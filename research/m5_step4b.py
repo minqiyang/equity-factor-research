@@ -129,8 +129,11 @@ def cache_files(client: SecClient) -> dict[str, SecFile]:
     files = {}
     for sidecar in sorted(client.cache_dir.rglob("*" + SIDECAR)):
         relative = sidecar.relative_to(client.cache_dir).as_posix()[:-len(SIDECAR)]
-        record = json.loads(sidecar.read_text(encoding="utf-8"))
-        files[relative] = client.get(record["url"], relative, allow_absent=True)
+        try:
+            url = json.loads(sidecar.read_text(encoding="utf-8"))["url"]
+        except (ValueError, KeyError, TypeError) as exc:
+            raise refuse("sec_pin_mismatch", "unreadable retrieval record") from exc
+        files[relative] = client.get(url, relative, allow_absent=True)
     return files
 
 
