@@ -417,8 +417,10 @@ def render_report(doc: Mapping[str, Any]) -> str:
         f"pairs; same ISIN {ids['reused_pairs_same_isin']}, same normalized name {ids['reused_pairs_same_name']}.",
         f"- Reading: {doc['identifier_reading']}", "",
         "## Limitations", "",
-        "- The mapped sample tilts toward survivors: unmapped and ambiguous IDs concentrate in ended exit classes "
-        "(table above). Step 4b's coverage-tilt guard addresses this; this build makes no claim.",
+        "- Not uniquely mapped, by later exit class: " + "; ".join(
+            f"{k} {sum(v.values()) - v['unique']} of {sum(v.values())}" for k, v in m["by_exit_class"].items())
+        + ". Where the not-mapped share differs by exit class, the mapped sample is tilted; step 4b's "
+        "coverage-tilt guard addresses this, and this build makes no claim.",
         "- SEC's ticker files are current, not point-in-time; rule F uses them only as candidates and requires a "
         "name match and a periodic filing inside the member window.",
         "- Multi-class and foreign-form IDs are typed missing, not repaired; there is no hand override list.", "",
@@ -429,7 +431,8 @@ def render_report(doc: Mapping[str, Any]) -> str:
 def identifier_reading(ids: Mapping[str, Any]) -> str:
     if ids["renamed_in_window_mapped_ids"] and ids["vendor_name_equals_current_sec_name"] > \
             ids["vendor_name_equals_only_former_sec_name"]:
-        name = "vendor_name behaves as a current (latest) value, not a point-in-time one"
+        name = (f"vendor_name behaves mostly as a current (latest) value, not a point-in-time one "
+                f"({ids['vendor_name_equals_current_sec_name']} of {ids['renamed_in_window_mapped_ids']} renamed IDs)")
     elif ids["renamed_in_window_mapped_ids"]:
         name = "vendor_name often carries an earlier name, so it is not reliably current"
     else:

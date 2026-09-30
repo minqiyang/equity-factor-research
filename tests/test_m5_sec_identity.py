@@ -236,7 +236,7 @@ def test_collect_maps_fetches_facts_for_unique_ciks_only_and_reproduces_offline(
 
 PRIVATE_PATTERNS = {
     "vendor code": re.compile(r"\b[A-Z][A-Z0-9-]{0,6}(?:_old\d*)?\.US\b"),
-    "CIK": re.compile(r"CIK\d|\b\d{10}\b"),
+    "CIK": re.compile(r"CIK\d|\b0\d{9}\b"),  # SEC pads a CIK to ten digits
     "email": re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"),
     "private path": re.compile(r"/Users/|private_data|\\Users\\|/home/"),
     "permanent id": re.compile(r"#E\d+\b|\bP\d\b"),
