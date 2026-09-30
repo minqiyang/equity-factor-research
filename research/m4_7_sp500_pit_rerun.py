@@ -1372,8 +1372,14 @@ def _segment_calendar(run: SegmentRun, registered: dict[str, Any], holdout: dict
     return calendar
 
 
-def prepare_segment(run: SegmentRun, registered: dict[str, Any], holdout: dict[str, Any], horizon: int) -> dict[str, Any]:
-    """Every per-segment computation before inference (B-1, B-5, 4.1, 4.2, 4.6): one side's inputs only."""
+def segment_support(run: SegmentRun, registered: dict[str, Any], holdout: dict[str, Any],
+                    horizon: int | None) -> dict[str, Any]:
+    """The per-segment support before labels and signals (B-1, 4.1, 4.6): one side's inputs only.
+
+    Returns the segment calendar, assets, research panels, SPY, prices, bars,
+    intervals, events, schedule, IC resets, and the residual disappearances.
+    ``horizon`` None skips the reset-span check, which only label horizons need.
+    """
     seg = run.segment
     calendar = _segment_calendar(run, registered, holdout)
     columns = set(run.fields["adjusted_close"].columns)
@@ -1396,12 +1402,24 @@ def prepare_segment(run: SegmentRun, registered: dict[str, Any], holdout: dict[s
     ic_resets, unmeasured = ic_month_set(schedule)
     if schedule.d_last != len(calendar) - 1 or not ic_resets or ic_resets[-1] != seg.last_ic_reset_row - offset:
         raise RunnerStop("census_runner_inconsistency:segment_rows", f"{seg.segment_id} schedule")
-    if schedule.max_reset_to_reset_rows > horizon:
+    if horizon is not None and schedule.max_reset_to_reset_rows > horizon:
         raise RunnerStop("census_runner_inconsistency:max_reset_span", seg.segment_id)
     last_bars = {row["permanent_id"]: pd.Timestamp(row["last_bar"]) for row in run.master.to_dict(orient="records")
                  if row["permanent_id"] in assets and row["has_delisting_candidate_interval"] == "True"}
     candidates = {pid: int(calendar.get_loc(day)) + 1 for pid, day in last_bars.items() if day in calendar}
     residual = residual_disappearances(schedule, bars, set(events["permanent_id"]), candidates)
+    return {"calendar": calendar, "assets": assets, "research": research, "spy": spy, "prices": prices,
+            "bars": bars, "intervals": intervals, "events": events, "schedule": schedule, "ic_resets": ic_resets,
+            "ic_months_unmeasured": unmeasured, "residual": residual}
+
+
+def prepare_segment(run: SegmentRun, registered: dict[str, Any], holdout: dict[str, Any], horizon: int) -> dict[str, Any]:
+    """Every per-segment computation before inference (B-1, B-5, 4.1, 4.2, 4.6): one side's inputs only."""
+    seg = run.segment
+    support = segment_support(run, registered, holdout, horizon)
+    calendar, assets, research, spy, prices = (support[k] for k in ("calendar", "assets", "research", "spy", "prices"))
+    intervals, events, schedule, residual = (support[k] for k in ("intervals", "events", "schedule", "residual"))
+    ic_resets, unmeasured = support["ic_resets"], support["ic_months_unmeasured"]
     if residual:  # census rule R3-4 requires an empty residual; Branch R is dormant (plan 4.6, 4.7)
         raise RunnerStop("residual_unevidenced_disappearance", f"{seg.segment_id}: {len(residual)} held-possible stops")
     labels, label_records = reset_to_reset_labels(prices, schedule.s_mask, schedule.reset_rows, ic_resets,
@@ -1715,10 +1733,14 @@ def load_segment_runs(bound: dict[str, Any]) -> tuple[list[SegmentRun], dict[str
     segment's last book row; ``_segment_calendar`` refuses any row on the other
     side or in the seal.
     """
+    return load_side_runs(bound, read_engine_events(bound["snapshot"].root))
+
+
+def load_side_runs(bound: dict[str, Any], events: pd.DataFrame) -> tuple[list[SegmentRun], dict[str, list[str]]]:
+    """``load_segment_runs`` with the engine events supplied by the caller (Milestone 5 step 4 passes none)."""
     root, calendar = bound["snapshot"].root, bound["calendar"]
     intervals = load_constituent_intervals_csv(root / INTERVAL_CSV).data
     master = pd.read_csv(root / SECURITY_MASTER, dtype=str, keep_default_na=False)
-    events = read_engine_events(root)
     runs, access = [], {}
     for segment in bound["segments"]:
         records = {r["symbol"]: r for r in bound["inventory"]["files"] if r["side"] == segment.side}
