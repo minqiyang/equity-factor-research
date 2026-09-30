@@ -111,7 +111,8 @@ def eligible_pool(intervals: pd.DataFrame, master: pd.DataFrame,
     resolved = intervals[intervals["resolution"] == "resolved"]
     if resolved["permanent_id"].duplicated().any():
         raise refuse("registration_invalid", "more than one resolved interval for a permanent ID")
-    merged = resolved.merge(master[["permanent_id", "vendor_code", "vendor_name", "isin"]],
+    rows_of = master[master["permanent_id"].isin(set(resolved["permanent_id"]))]
+    merged = resolved.merge(rows_of[["permanent_id", "vendor_code", "vendor_name", "isin"]],
                             on=["permanent_id", "vendor_code"], how="left", validate="one_to_one")
     if merged["vendor_name"].isna().any():
         raise refuse("registration_invalid", "resolved interval without a security master row")

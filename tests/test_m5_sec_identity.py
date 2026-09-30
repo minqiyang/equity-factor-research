@@ -154,6 +154,8 @@ def test_eligible_pool_needs_resolution_a_side_panel_and_window_overlap() -> Non
     ])
     master = pd.DataFrame([{"permanent_id": p, "vendor_code": c, "vendor_name": f"{c} Corp", "isin": ""}
                            for p, c in zip(intervals["permanent_id"], intervals["vendor_code"])])
+    unresolved_rows = pd.DataFrame([{"permanent_id": "", "vendor_code": "DDD.US", "vendor_name": "D", "isin": ""}] * 2)
+    master = pd.concat([master, unresolved_rows], ignore_index=True)  # the snapshot repeats blank-ID rows
     inventory = [{"side": "discovery_pre", "symbol": p} for p in ("P1", "P2", "P3")] + [
         {"side": "discovery_post", "symbol": "P1"}]
     pool = drv.eligible_pool(intervals, master, inventory)
