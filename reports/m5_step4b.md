@@ -2,7 +2,7 @@
 
 **Evidence ceiling: `DIAGNOSTIC_ONLY`.** Simulated research on the local `real_v2` snapshot and the pinned SEC companyfacts cache; no profitability claim. Aggregates only.
 
-- **VP-2.** Premise VP-2 (the vendor's adjusted close applies each declared distribution) holds under owner decision O-9 for step 4 only; the M4.8 census measured S_D > 0.05 on 22.5 percent of eligible member-days. Owner decision O-9 extends it to step 4b.
+- **VP-2.** Premise VP-2 (the vendor's adjusted close applies each declared distribution) holds for step 4b under owner decision O-9, as extended on 2026-09-30; the M4.8 census measured S_D > 0.05 on 22.5 percent of eligible member-days.
 - **R4.** No terminal evidence is accepted. Every residual held stop settles at -100 percent in every price and SEC sleeve and in the equal-weight benchmark; a last-close rerun is reported beside it.
 - **Unpriced members** are never held. Unpriced member-day share: pre 27.83% (upper bound 27.97%); post 15.72% (upper bound 15.89%). 111 of 448 members at D0_pre have no pre-side panel (Stage D count).
 - **Missing crash.** The seal window and its buffers exclude 2019-07 to 2021-08, including the 2020 crash, so drawdowns are understated.
@@ -16,6 +16,13 @@
 - **Coverage tilt: not coverage-tilted** (0 margin signs differ against R0_6_mapped; R0_9 meets 2 of 8 against it).
 - **Last-close outcome: not_join** (2 of 8; S4b.ADD mean 0.00032, no p-value).
 - The labels, the q-value, and the last-close outcome are reported beside the outcome and do not change it.
+
+## Method, Costs, and Provenance
+
+- Specification: `docs/preregistrations/m5_trial_family_v1_amendment_5.json` revision 2 (SHA-256 `a712188c877621af675e9986ae5c3da834fb66ad5adf90480c5d475555b0c75c`) on v1 and amendments 1 to 4; the aggregates are in `reports/m5_step4b.json` (code commit `4200cf1d3fcd55e7e2dea33dfa9cea3ab484f918`, tracked changes at run time: False).
+- Sleeves: long only, the top 20% of ranked members at equal weight, rebalanced at each month-end row r under `after_close_signal_next_observed_close_v1`: the signal uses row r - 1, the target executes at the close of row r, and it first earns the return of row r + 1.
+- Class layer: R0_9, R0_6, R0_6_mapped, and R1_9 weights for month t use sleeve returns through month t-2 (R1_9's sigma: 126 daily rows ending on the last trading day of month t-2), execute at the month t-1 close, and earn month t; the first comparison month of each segment starts from cash.
+- Costs: primary 1 + 4 bp stock with a 20 bp switch cost; sensitivity 2 + 8 bp stock with a 50 bp switch cost. Stock costs apply to traded notional inside each sleeve; the switch cost applies to drift-adjusted class turnover. No position is short, so no borrow cost applies. Nothing nets across sleeves, which overstates costs, and there is no market-impact model. The equal-weight benchmark and SPY are cost-free.
 
 ## Conditions: R0_9 Against R0_6 Beside the Public Margins (primary run)
 
@@ -149,6 +156,10 @@ Rule R1 over nine sleeves (R1_9) is descriptive: no test and no decision. R2 is 
 
 Every evaluation-mask member-day over [first reset, last book row] carries exactly one status per SEC sleeve; a ranking-set member carries its rebalance status, any other member-day is not_ranked_at_rebalance. A not_ranked_at_rebalance member-day means the member cannot be newly selected at that rebalance. The engine's halt_gap_return_v1 accounting is unchanged: a previously held position locked by a missing execution price stays held, so status counts and holdings are distinct (coordinator ruling on GPT-S4BF-R2-A1 and OPUS-S4BF-R2-A3).
 
+- **Unknown exit class.** Every `unknown` exit-class member-day (130 pre, 77 post in each SEC sleeve) falls on row m_in - 1, the signal row of a rebalance at m_in: signal eligibility reads the next row's membership, while the exit-class split uses the half-open member window [m_in, m_out). These days are counted as not_ranked_at_rebalance, not dropped (code review round 1, OPUS-S4BC-A1).
+- **GP_AT_AF coverage.** GP_AT_AF ranks 53.39% of member-days pre and 56.83% of member-days post. In most concept_missing member-rebalances a revenue-chain key exists at E* but no COGS key does (6,641 of 8,566 pre and 8,324 of 9,698 post, OPUS-S4BC-A2). The frozen chain therefore excludes filers without a cost-of-revenue line, such as many financial and service firms, which the public gp_at covers.
+- **Tagging causes.** BM_AF no_annual_fact is mostly filers that tag only StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest (1,203 of 1,647 member-rebalances pre, 874 of 1,047 post). EP_AF stale is mostly filers that moved from NetIncomeLoss to ProfitLoss (a newer annual ProfitLoss key in 1,010 of 1,312 pre and 1,385 of 1,455 post; OPUS-S4BC-A3). Both follow from the frozen anchor concepts, not from a fallback or a fill.
+
 pre, BM_AF: 469213 member-days. preferred_zero_by_absence: 186428 ranked member-days.
 
 | Status | Days | Share | index_removal_still_trading | delisting_candidate | disappearance_outside_membership | seal_gap_identity_split | unknown |
@@ -279,18 +290,18 @@ post, GP_AT_AF: 526151 member-days.
 
 | Scope | Exit class | Member-days | Not mapped | Share |
 | --- | --- | --- | --- | --- |
-| post | all | 526610 | 27665 | 5.25% |
-| post | index_removal_still_trading | 507341 | 27087 | 5.34% |
-| post | delisting_candidate | 17342 | 577 | 3.33% |
-| post | disappearance_outside_membership | 1927 | 1 | 0.05% |
-| post | seal_gap_identity_split | 0 | 0 | n/a |
-| post | unknown | 0 | 0 | n/a |
 | pre | all | 469574 | 29903 | 6.37% |
 | pre | index_removal_still_trading | 402561 | 24693 | 6.13% |
 | pre | delisting_candidate | 52257 | 4958 | 9.49% |
 | pre | disappearance_outside_membership | 14756 | 252 | 1.71% |
 | pre | seal_gap_identity_split | 0 | 0 | n/a |
 | pre | unknown | 0 | 0 | n/a |
+| post | all | 526610 | 27665 | 5.25% |
+| post | index_removal_still_trading | 507341 | 27087 | 5.34% |
+| post | delisting_candidate | 17342 | 577 | 3.33% |
+| post | disappearance_outside_membership | 1927 | 1 | 0.05% |
+| post | seal_gap_identity_split | 0 | 0 | n/a |
+| post | unknown | 0 | 0 | n/a |
 | pooled | all | 996184 | 57568 | 5.78% |
 | pooled | index_removal_still_trading | 909902 | 51780 | 5.69% |
 | pooled | delisting_candidate | 69599 | 5535 | 7.95% |
@@ -300,15 +311,15 @@ post, GP_AT_AF: 526151 member-days.
 
 | Scope | Status: reason | Member-days | Share of all |
 | --- | --- | --- | --- |
-| post | ambiguous: ticker_cik_disagrees | 1239 | 0.24% |
-| post | multi_class: shared_cik_overlapping | 3872 | 0.74% |
-| post | unmapped: name_mismatch | 16513 | 3.14% |
-| post | unmapped: no_periodic_filing_in_window | 6041 | 1.15% |
 | pre | ambiguous: several_survivors | 1544 | 0.33% |
 | pre | ambiguous: ticker_cik_disagrees | 1547 | 0.33% |
 | pre | multi_class: shared_cik_overlapping | 6085 | 1.30% |
 | pre | unmapped: name_mismatch | 15503 | 3.30% |
 | pre | unmapped: no_periodic_filing_in_window | 5224 | 1.11% |
+| post | ambiguous: ticker_cik_disagrees | 1239 | 0.24% |
+| post | multi_class: shared_cik_overlapping | 3872 | 0.74% |
+| post | unmapped: name_mismatch | 16513 | 3.14% |
+| post | unmapped: no_periodic_filing_in_window | 6041 | 1.15% |
 | pooled | ambiguous: several_survivors | 1544 | 0.15% |
 | pooled | ambiguous: ticker_cik_disagrees | 2786 | 0.28% |
 | pooled | multi_class: shared_cik_overlapping | 9957 | 1.00% |
@@ -379,7 +390,8 @@ post, GP_AT_AF: 526151 member-days.
 ## Limitations
 
 - Companyfacts carries no dimensional facts, so unlisted share classes are not detected.
-- Concept chains are frozen; a filer whose tag is outside a chain is concept_missing, not repaired.
+- Concept chains are frozen; a filer whose tag is outside a chain is concept_missing, not repaired (the sizes and causes are under SEC Missingness above).
+- Costs do not net across sleeves and include no market-impact model; the switch cost is a proxy for the stock trades a class reweighting needs.
 - The mapped universe keeps 563 of 632 eligible IDs; the not-mapped share differs by later exit class (identity exposure above), which the coverage-tilt label addresses descriptively.
 - SEC facts filed inside the seal window may enter an early post-segment signal; no seal-window price is read.
 

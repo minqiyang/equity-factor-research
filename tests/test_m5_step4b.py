@@ -551,7 +551,7 @@ def test_locked_holding_stays_held_while_its_day_is_not_ranked(chain):
     assert (held > 0).all()                                 # the locked position stays held
     counts = s4b.member_day_statuses(halted, panels, None)[sig.EP]
     assert counts["by_status"][sig.NOT_RANKED] >= len(after)
-    assert s4b.LOCKED_HOLDINGS in s4b.render_report({**chain["doc"], "unpriced": {}, "identity_exposure": {}})
+    assert s4b.LOCKED_HOLDINGS in s4b.render_report(_render_doc(chain))
 
 
 # ---------------------------------------------------------------- empty target (13), step 4 regression (14)
@@ -714,8 +714,16 @@ def _scan(text: str, extra: tuple[str, ...] = ()) -> None:
         assert token not in text, token
 
 
+def _render_doc(chain) -> dict:
+    """The synthetic summary plus the run-level fields ``run`` adds (no snapshot accounting)."""
+    return {**chain["doc"], "unpriced": {}, "identity_exposure": {},
+            "costs": {"stock": s4.STOCK_COSTS, "switch_bps": s4.SWITCH_BPS}, "top_pct": s4.TOP_PCT,
+            "sigma_rows": s4.SIGMA_ROWS, "git": {"commit": "synthetic", "tracked_changes": False},
+            "sec": {"identity_counts": dict(fb.identity()["status"].value_counts())}}
+
+
 def test_outputs_hold_no_identifier_or_path(chain):
-    doc = {**chain["doc"], "unpriced": {}, "identity_exposure": {}}
+    doc = _render_doc(chain)
     text = json.dumps(s4._clean(doc)) + s4b.render_report(doc)
     ciks = tuple(f"{c:010d}" for c in fb.CIK_OF.values())
     _scan(text, tuple(fx.ASSETS) + tuple(a.split(".")[0] for a in fx.ASSETS) + ciks)
@@ -726,7 +734,7 @@ def test_outputs_hold_no_identifier_or_path(chain):
 
 
 def test_report_leads_with_the_decision_and_every_table_row_fits(chain):
-    report = s4b.render_report({**chain["doc"], "unpriced": {}, "identity_exposure": {}})
+    report = s4b.render_report(_render_doc(chain))
     sections = [line for line in report.splitlines() if line.startswith("## ")]
     assert sections[0] == "## Decision Outcome (primary run)"
     lead = report.split("## Decision Outcome")[1].split("\n## ")[0]
@@ -741,6 +749,42 @@ def test_report_leads_with_the_decision_and_every_table_row_fits(chain):
             assert cells == width, line
         else:
             width = None
+
+
+def test_report_states_method_costs_and_sample_causes(chain):
+    """GPT-S4BC-R1-A1 and OPUS-S4BC-A1 to A4: disclosures come from the document and the module constants."""
+    from backtest.portfolio import _TIMING_CONTRACT
+
+    report = s4b.render_report(_render_doc(chain))
+    method = report.split("## Method, Costs, and Provenance")[1].split("\n## ")[0]
+    assert s4b.TIMING_CONTRACT == _TIMING_CONTRACT and _TIMING_CONTRACT in method
+    for case in s4.CASES:
+        stock = s4.STOCK_COSTS[case]
+        assert (f"{case} {stock['transaction_cost_bps']:g} + {stock['slippage_bps']:g} bp stock with a "
+                f"{s4.SWITCH_BPS[case]:g} bp switch cost") in method
+    for token in ("row r - 1", "close of row r", "row r + 1", "month t-2", "month t-1 close", "no borrow",
+                  "Nothing nets across sleeves", "no market-impact model", s4b.AMENDMENT_5_SHA256, s4b.REPORT_JSON,
+                  f"{s4.SIGMA_ROWS} daily rows", "top 20%"):
+        assert token in method, token
+    header = report.split("## Decision Outcome")[0]
+    assert s4b.VP2_STEP4B in header and "for step 4 only" not in header
+    assert "for step 4 only" in s4.VP2                     # the step 4 constant and outputs are unchanged
+    missing = report.split("## SEC Missingness")[1].split("\n## ")[0]
+    for token in ("row m_in - 1", "not dropped", "OPUS-S4BC-A1", "GP_AT_AF ranks", "no COGS key",
+                  "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "ProfitLoss"):
+        assert token in missing, token
+    share = chain["doc"]["sec_share"]
+    assert f"{share['pre'][sig.BM]['by_status_and_exit_class'][sig.NOT_RANKED]['unknown']} pre" in missing
+
+
+def test_committed_report_renders_from_the_committed_json():
+    """The committed report is ``render_report`` of the committed JSON, in the declared segment and run order."""
+    md, doc = REPO_ROOT / s4b.REPORT_MD, REPO_ROOT / s4b.REPORT_JSON
+    if not (md.is_file() and doc.is_file()):
+        pytest.skip("step 4b outputs not present")
+    text = s4b.render_report(json.loads(doc.read_text(encoding="utf-8")))
+    assert text == md.read_text(encoding="utf-8")
+    assert text.index("| pre | all |") < text.index("| post | all |") < text.index("| pooled | all |")
 
 
 def test_trial_file_pins_refuse_a_changed_pin(tmp_path, monkeypatch):

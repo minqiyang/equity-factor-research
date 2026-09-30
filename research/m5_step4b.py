@@ -79,6 +79,10 @@ IDENTITY_REASON = {ident.UNMAPPED: "identity_unmapped", ident.AMBIGUOUS: "identi
                    ident.MULTI_CLASS: "identity_multi_class"}
 STATUSES = (sig.RANKED, *sig.REASON_ORDER)
 EXIT_CLASSES = (*s4.EXIT_CLASSES, s4.UNKNOWN)
+TIMING_CONTRACT = "after_close_signal_next_observed_close_v1"   # the engine's contract (src/backtest/portfolio.py)
+VP2_STEP4B = ("Premise VP-2 (the vendor's adjusted close applies each declared distribution) holds for step 4b under "
+              "owner decision O-9, as extended on 2026-09-30; " + s4.VP2.split("; ", 1)[1])
+SCOPE_ORDER = (*s4.SEGMENTS, "pooled")
 LOCKED_HOLDINGS = ("A not_ranked_at_rebalance member-day means the member cannot be newly selected at that "
                    "rebalance. The engine's halt_gap_return_v1 accounting is unchanged: a previously held "
                    "position locked by a missing execution price stays held, so status counts and holdings are "
@@ -646,6 +650,67 @@ def summarize(result: dict[str, Any]) -> dict[str, Any]:
 _f, _book = s4._f, s4._book
 
 
+def _ordered(table: Mapping[str, Any], order: tuple[str, ...] = SCOPE_ORDER) -> list[tuple[str, Any]]:
+    """Items in the declared order (segments, then pooled; or runs), whatever order the JSON stored them in."""
+    known = [(k, table[k]) for k in order if k in table]
+    return known + sorted((k, v) for k, v in table.items() if k not in order)
+
+
+def _method(doc: Mapping[str, Any]) -> list[str]:
+    """Method, costs, and provenance, from the JSON and the module constants (AGENTS.md R8 and R10)."""
+
+    stock = doc["costs"]["stock"]
+    switch = doc["costs"]["switch_bps"]
+    cases = [f"{c} {_bp(stock[c]['transaction_cost_bps'])} + {_bp(stock[c]['slippage_bps'])} bp stock with a "
+             f"{_bp(switch[c])} bp switch cost" for c in s4.CASES]
+    git = doc.get("git", {})
+    return [
+        "## Method, Costs, and Provenance", "",
+        f"- Specification: `{AMENDMENT_5_PATH}` revision 2 (SHA-256 `{AMENDMENT_5_SHA256}`) on v1 and amendments 1 "
+        f"to 4; the aggregates are in `{REPORT_JSON}` (code commit `{git.get('commit', 'n/a')}`, tracked changes "
+        f"at run time: {git.get('tracked_changes')}).",
+        f"- Sleeves: long only, the top {_f(doc['top_pct'], 1, True)} of ranked members at equal weight, rebalanced "
+        f"at each month-end row r under `{TIMING_CONTRACT}`: the signal uses row r - 1, the target executes at the "
+        "close of row r, and it first earns the return of row r + 1.",
+        f"- Class layer: R0_9, R0_6, R0_6_mapped, and R1_9 weights for month t use sleeve returns through month t-2 "
+        f"(R1_9's sigma: {doc['sigma_rows']} daily rows ending on the last trading day of month t-2), execute at "
+        "the month t-1 close, and earn month t; the first comparison month of each segment starts from cash.",
+        "- Costs: " + "; ".join(cases) + ". Stock costs apply to traded notional inside each sleeve; the switch cost "
+        "applies to drift-adjusted class turnover. No position is short, so no borrow cost applies. Nothing nets "
+        "across sleeves, which overstates costs, and there is no market-impact model. The equal-weight benchmark "
+        "and SPY are cost-free.", ""]
+
+
+def _bp(value: float) -> str:
+    return f"{value:g}"
+
+
+def _tagging_notes(doc: Mapping[str, Any]) -> list[str]:
+    """Why the frozen concept rules leave members unranked (code review round 1, OPUS-S4BC-A1 to A3)."""
+
+    share = doc["sec_share"]
+    unknown = {sid: share[sid][sig.BM]["by_status_and_exit_class"][sig.NOT_RANKED][s4.UNKNOWN] for sid, _ in
+               _ordered(share)}
+    ranked = {sid: share[sid][sig.GP_AT]["share"][sig.RANKED] for sid, _ in _ordered(share)}
+    return [
+        "- **Unknown exit class.** Every `unknown` exit-class member-day ("
+        + ", ".join(f"{n} {sid}" for sid, n in unknown.items())
+        + " in each SEC sleeve) falls on row m_in - 1, the signal row of a rebalance at m_in: signal eligibility "
+        "reads the next row's membership, while the exit-class split uses the half-open member window "
+        "[m_in, m_out). These days are counted as not_ranked_at_rebalance, not dropped (code review round 1, "
+        "OPUS-S4BC-A1).",
+        "- **GP_AT_AF coverage.** GP_AT_AF ranks "
+        + " and ".join(f"{_f(v, 3, True)} of member-days {sid}" for sid, v in ranked.items())
+        + ". In most concept_missing member-rebalances a revenue-chain key exists at E* but no COGS key does (6,641 "
+        "of 8,566 pre and 8,324 of 9,698 post, OPUS-S4BC-A2). The frozen chain therefore excludes filers without a "
+        "cost-of-revenue line, such as many financial and service firms, which the public gp_at covers.",
+        "- **Tagging causes.** BM_AF no_annual_fact is mostly filers that tag only "
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest (1,203 of 1,647 member-rebalances "
+        "pre, 874 of 1,047 post). EP_AF stale is mostly filers that moved from NetIncomeLoss to ProfitLoss (a newer "
+        "annual ProfitLoss key in 1,010 of 1,312 pre and 1,385 of 1,455 post; OPUS-S4BC-A3). Both follow from the "
+        "frozen anchor concepts, not from a fallback or a fill.", ""]
+
+
 def _conditions_table(rows: list[dict], with_public: bool = False) -> list[str]:
     head = "| Segment | Cost case | Metric | R0_9 | Comparator | Margin | Holds |"
     rule = "| --- | --- | --- | --- | --- | --- | --- |"
@@ -667,17 +732,18 @@ def render_report(doc: dict[str, Any]) -> str:
     frag, tilt = doc["fragility"], doc["coverage_tilt"]
     unpriced = doc.get("unpriced", {})
     outcome = doc["decision"]["outcome"]
+    ids = doc.get("sec", {}).get("identity_counts", {})
     joined = "join" if outcome == "join" else "do not join"
     lines = [
         "# Milestone 5 Step 4b: SEC Value and Quality Sleeves on Point-in-Time S&P 500 Books", "",
         "**Evidence ceiling: `DIAGNOSTIC_ONLY`.** Simulated research on the local `real_v2` snapshot and the pinned "
         "SEC companyfacts cache; no profitability claim. Aggregates only.", "",
-        f"- **VP-2.** {s4.VP2} Owner decision O-9 extends it to step 4b.",
+        f"- **VP-2.** {VP2_STEP4B}",
         "- **R4.** No terminal evidence is accepted. Every residual held stop settles at -100 percent in every price "
         "and SEC sleeve and in the equal-weight benchmark; a last-close rerun is reported beside it.",
         "- **Unpriced members** are never held. Unpriced member-day share: "
         + "; ".join(f"{sid} {_f(u.get('unpriced_share'), 3, True)} (upper bound "
-                    f"{_f(u.get('unpriced_share_upper_bound'), 3, True)})" for sid, u in unpriced.items())
+                    f"{_f(u.get('unpriced_share_upper_bound'), 3, True)})" for sid, u in _ordered(unpriced))
         + f". {s4.STAGE_D_PRE_UNPRICED}.",
         "- **Missing crash.** The seal window and its buffers exclude 2019-07 to 2021-08, including the 2020 crash, "
         "so drawdowns are understated.",
@@ -699,6 +765,7 @@ def render_report(doc: dict[str, Any]) -> str:
         f"{_f(lc['s4b_mean'], 5)}, no p-value).",
         "- The labels, the q-value, and the last-close outcome are reported beside the outcome and do not change it.",
         "",
+        *_method(doc),
         "## Conditions: R0_9 Against R0_6 Beside the Public Margins (primary run)", "",
         *_conditions_table(p["survival"], with_public=True),
         "## Coverage Tilt: R0_9 Against R0_6_mapped (primary run)", "",
@@ -709,10 +776,10 @@ def render_report(doc: dict[str, Any]) -> str:
         "| Run | Book | Cost case | Segment | Months | Ann. mean | Volatility | Sharpe | Max drawdown | Turnover |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
-    for name, run in doc["runs"].items():
+    for name, run in _ordered(doc["runs"], tuple(s4.EVENT_RUNS)):
         for book in BOOKS:
             for case in s4.CASES:
-                for sid, m in run["rules"][book][case].items():
+                for sid, m in _ordered(run["rules"][book][case]):
                     lines.append(f"| {name} | {book} | {case} | {sid} | {m['months']} | {_f(m['annualized_mean'], 3, True)}"
                                  f" | {_f(m['volatility'], 3, True)} | {_f(m['sharpe'])} | "
                                  f"{_f(m['max_drawdown'], 3, True)} | {_f(m['average_monthly_turnover'])} |")
@@ -720,7 +787,7 @@ def render_report(doc: dict[str, Any]) -> str:
               "## SEC Sleeves (primary run)", "",
               "| Segment | Sleeve | Months | Ann. mean | Sharpe | Max drawdown | Stock turnover / month | "
               "Stock cost / month |", "| --- | --- | --- | --- | --- | --- | --- | --- |"]
-    for sid, rows in p["sleeves"].items():
+    for sid, rows in _ordered(p["sleeves"]):
         for key, m in rows.items():
             lines.append(f"| {sid} | {_book(key)} | {m['months']} | {_f(m['annualized_mean'], 3, True)} | "
                          f"{_f(m['sharpe'])} | {_f(m['max_drawdown'], 3, True)} | "
@@ -728,9 +795,10 @@ def render_report(doc: dict[str, Any]) -> str:
     lines += ["", "## Benchmarks: Net Excess (primary run, comparison months for books)", "",
               "| Segment | Book | Ann. excess vs SPY | Compounded vs SPY | Ann. excess vs EW | Compounded vs EW | "
               "Unpriced share |", "| --- | --- | --- | --- | --- | --- | --- |"]
-    for sid, rows in p["excess"].items():
+    for sid, rows in _ordered(p["excess"]):
         share = _f(unpriced.get(sid, {}).get("unpriced_share"), 3, True)
-        for key, e in rows.items():
+        keys = [f"{b}|{c}" for c in s4.CASES for b in (*BOOKS, *SEC_IDS)]
+        for key, e in _ordered(rows, tuple(keys)):
             lines.append(f"| {sid} | {_book(key)} | {_f(e['vs_spy']['annualized_mean_excess'], 3, True)} | "
                          f"{_f(e['vs_spy']['excess_total_return'], 3, True)} | "
                          f"{_f(e['vs_equal_weight']['annualized_mean_excess'], 3, True)} | "
@@ -738,13 +806,13 @@ def render_report(doc: dict[str, Any]) -> str:
     lines += ["", "## SEC Missingness by Reason and Later Exit Class (member-days)", "",
               "Every evaluation-mask member-day over [first reset, last book row] carries exactly one status per SEC "
               "sleeve; a ranking-set member carries its rebalance status, any other member-day is "
-              f"not_ranked_at_rebalance. {LOCKED_HOLDINGS}", ""]
+              f"not_ranked_at_rebalance. {LOCKED_HOLDINGS}", "", *_tagging_notes(doc)]
     lines += _share_tables(doc["sec_share"])
     lines += ["## Identity Exposure (member-days of the eligible pool)", ""]
     lines += _exposure_tables(doc.get("identity_exposure", {}))
     lines += ["## Affected Events (primary run, R4 default)", "",
               "| Segment | Book | Events | Weight sum | Weight max |", "| --- | --- | --- | --- | --- |"]
-    for sid, rows in p["events"].items():
+    for sid, rows in _ordered(p["events"]):
         for key, e in rows.items():
             if "unique_events" in e:
                 lines.append(f"| {sid} | {_book(key)} | {e['unique_events']} | {_f(e['weight_sum'], 4)} | "
@@ -755,25 +823,30 @@ def render_report(doc: dict[str, Any]) -> str:
     lines += ["", "## Transmission (descriptive, primary cost case)", "",
               "| Segment | Sleeve or class | Months | PIT mean active | Public mean | Ratio | Correlation |",
               "| --- | --- | --- | --- | --- | --- | --- |"]
-    for sid, rows in {**p["transmission"], **{f"{k} (class)": v for k, v in p["class_transmission"].items()}}.items():
-        for key, t in rows.items():
+    classes = [(f"{k} (class)", v) for k, v in _ordered(p["class_transmission"])]
+    for sid, rows in [*_ordered(p["transmission"]), *classes]:
+        for key, t in _ordered(rows, (*SEC_IDS, *SEC_THEMES)):
             lines.append(f"| {sid} | {key} | {t['months']} | {_f(t['pit_mean_active'], 5)} | {_f(t['public_mean'], 5)} "
                          f"| {_f(t['ratio'], 2)} | {_f(t['correlation'], 2)} |")
     lines += ["", "## Halts in the SEC Sleeves (primary run)", "",
               "| Segment | Sleeve | Unmarked halt rows | Locked execution rows |", "| --- | --- | --- | --- |"]
-    for sid, rows in p["halts"].items():
+    for sid, rows in _ordered(p["halts"]):
         for key, h in rows.items():
             lines.append(f"| {sid} | {_book(key)} | {h['unmarked_halt_rows']} | {h['locked_execution_rows']} |")
     lines += ["", "## Data Quality", "",
               f"- First-filed value ties with distinct values inside one accession: {doc['first_filed_value_conflicts']} "
               "keys; the lowest accession's first fact in file order is used.",
               "- Rebalance statuses (member-rebalances, each ranking-set member exactly once): "
-              + "; ".join(f"{sid} {i} ranked {rs[i]['ranked']}" for sid, rs in doc["rebalance_statuses"].items()
+              + "; ".join(f"{sid} {i} ranked {rs[i]['ranked']}" for sid, rs in _ordered(doc["rebalance_statuses"])
                           for i in SEC_IDS) + ".", "",
               "## Limitations", "",
               "- Companyfacts carries no dimensional facts, so unlisted share classes are not detected.",
-              "- Concept chains are frozen; a filer whose tag is outside a chain is concept_missing, not repaired.",
-              "- The mapped universe keeps 563 of 632 eligible IDs; the not-mapped share differs by later exit class "
+              "- Concept chains are frozen; a filer whose tag is outside a chain is concept_missing, not repaired "
+              "(the sizes and causes are under SEC Missingness above).",
+              "- Costs do not net across sleeves and include no market-impact model; the switch cost is a proxy for "
+              "the stock trades a class reweighting needs.",
+              f"- The mapped universe keeps {ids.get('unique', 'n/a')} of {sum(ids.values()) or 'n/a'} eligible IDs; "
+              "the not-mapped share differs by later exit class "
               "(identity exposure above), which the coverage-tilt label addresses descriptively.",
               "- SEC facts filed inside the seal window may enter an early post-segment signal; no seal-window price "
               "is read.", ""]
@@ -786,8 +859,8 @@ def _interval(pair: Any) -> str:
 
 def _share_tables(share: Mapping[str, Any]) -> list[str]:
     lines = []
-    for sid, sleeves in share.items():
-        for signal_id, entry in sleeves.items():
+    for sid, sleeves in _ordered(share):
+        for signal_id, entry in _ordered(sleeves, SEC_IDS):
             lines += [f"{sid}, {signal_id}: {entry['denominator']} member-days."
                       + (f" preferred_zero_by_absence: {entry['preferred_zero_by_absence']['days']} ranked member-days."
                          if "preferred_zero_by_absence" in entry else ""), "",
@@ -803,13 +876,13 @@ def _share_tables(share: Mapping[str, Any]) -> list[str]:
 
 def _exposure_tables(exposure: Mapping[str, Any]) -> list[str]:
     lines = ["| Scope | Exit class | Member-days | Not mapped | Share |", "| --- | --- | --- | --- | --- |"]
-    for scope, t in exposure.items():
+    for scope, t in _ordered(exposure):
         lines.append(f"| {scope} | all | {t['days']} | {t['not_mapped']} | {_f(t['share'], 3, True)} |")
-        for klass, c in t["by_exit_class"].items():
+        for klass, c in _ordered(t["by_exit_class"], EXIT_CLASSES):
             lines.append(f"| {scope} | {klass} | {c['days']} | {c['not_mapped']} | {_f(c['share'], 3, True)} |")
     lines += ["", "| Scope | Status: reason | Member-days | Share of all |", "| --- | --- | --- | --- |"]
-    for scope, t in exposure.items():
-        for reason, c in t["by_reason"].items():
+    for scope, t in _ordered(exposure):
+        for reason, c in sorted(t["by_reason"].items()):
             lines.append(f"| {scope} | {reason} | {c['days']} | {_f(c['share'], 3, True)} |")
     return lines + [""]
 
