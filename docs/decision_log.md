@@ -15,6 +15,112 @@ investment performance.
 
 ---
 
+## 2026-09-29 - Milestone 5 Step 4 Trial Amendment 4 (Coordinator Technical Defaults)
+
+Context:
+
+- Step 4 is the first run of the price-class bridge on the point-in-time S&P 500 snapshot `real_v2`. Owner
+  decisions O-5 and O-9 and the scope defaults in the entry below bind it. The design note
+  (`coord/reports/m5_step4/design_note.md`, untracked) proposed the definitions.
+- Revision 1 (`f2539c6`, SHA-256 `fe27d0be...cb80`) went to freeze review round 1. GPT reported MATERIAL 0 and
+  ADVISORY 3; Opus reported MATERIAL 2 and ADVISORY 7. The reports are under `coord/reports/m5_step4/` in the main
+  checkout, untracked.
+  - OPUS-S4F-M1: the long-only Sharpe omitted the risk-free rate, which favors the lower-volatility book.
+  - OPUS-S4F-M2: rule R1 used active risk, so it was not step 2's rule.
+  - No step 4 code or result existed, so revision 2 repairs both in the same file.
+
+Decision:
+
+- Amendment 4 revision 2 (`docs/preregistrations/m5_trial_family_v1_amendment_4.json`, SHA-256
+  `c2b1f8de...c617`, committed alone in `bddbf02` before any step 4 code, sleeve, return, or rule weight) freezes
+  step 4.
+  - It pins v1 and amendments 1 to 3 by SHA-256.
+  - It pins `real_v2` by its id and the SHA-256 of its manifest, inventory, discovery inputs, seal carry, build
+    manifest, interval CSV, interval results, and security master.
+  - The seal guard is `_segment_calendar` (`seal_bracket_computation_forbidden`) plus the seal carry check
+    (`holdout_overlap_refused`).
+- Decision outcomes:
+  - Rule R1 stays the point-in-time baseline only if it meets all 8 step 2 conditions against R0 on point-in-time
+    books; otherwise R0 becomes the baseline.
+  - R2 continues, labeled "no evidence of state timing", only if it meets all 8 against rule R1, and against R0
+    too when R0 is the baseline; otherwise the timing line closes.
+  - S4 q-values and the fragility label are reported beside the outcomes and do not change them.
+- Coordinator technical defaults, one line each. None loosens R1, R2, R4, R6, R8, or R9.
+  - `real_v2` only; the six Family A signals are the price classes, in four JKP themes (Momentum: MOM_12_1,
+    HIGH_52W; Short-Term Reversal: REV_1M; Low Risk: LOW_VOL_252, LOW_BETA_252; Size: AMIHUD_ILLIQ_63).
+  - The class return is rule R1 within the class, descriptive only.
+  - Sleeves: top quintile, ceil(0.2 n) names, equal weight, month-end rebalance on the engine's after-close
+    contract, `halt_gap_return_v1`, one engine call per segment from cash.
+  - Monthly sleeve returns compound daily net returns; the first month includes the initial purchase cost; the
+    partial month 2026-08 is excluded.
+  - Segments load without `read_engine_events` and with empty event frames; nothing under `terminal/` is read.
+  - An empty sleeve target refuses the run.
+  - Unpriced member-days are counted over each segment's reset-to-last-book rows, against every interval in the
+    pinned interval results. The buckets `unresolved_no_permanent_id` and `unknown` are included, and a total that
+    does not reconcile refuses. The share is printed beside every excess figure.
+  - Stock costs 1 + 4 bp and 2 + 8 bp; switch costs 20 and 50 bp on drift-adjusted class turnover, paired as
+    (1 + 4, 20) and (2 + 8, 50); no zero-cost sleeve; no borrow cost, since nothing is shorted.
+  - Rule R1 sigma is the ddof-1 standard deviation of the sleeve's own daily net return, over the 126 trading
+    days ending on the last trading day of month t-2. This is step 2's rule with a daily window. No active-risk
+    variant is run.
+  - The long-only Sharpe is 12 x mean(r_net - RF) / (sqrt(12) x sd(r_net)), with the French FF3 monthly RF. The
+    public long-short counterparts keep the v1 Sharpe.
+  - The class layer starts at the first month with a full sigma window; R0, rule R1, and R2 start together from
+    cash.
+  - R2 uses the step 3 multipliers unchanged, from the pinned public inputs.
+  - Rule comparisons end at 2025-12, the last month of the public counterpart, so every comparison and its
+    counterpart use the same months. The halves are the two segments, each a separate run.
+  - Survival counts the 8 conditions (1e-12 tolerance) beside the same conditions on the public jkp_factors_153
+    books over the same months, with the margin ratio when the public margin is positive.
+  - Transmission compares each sleeve with its matched JKP characteristic and each class with its amendment 3
+    class return.
+  - S4.R1 and S4.R2 use `rule_test` on the pooled comparison months at the primary cost case, in the primary run.
+    The pooled HAC treats the segment boundary as adjacent.
+  - The BY family is 480: 2 observed tests, 6 public rule-test slots (S2 x3, S3.R2 to S3.R4), and 472 Family A
+    statistics from the committed M4.7 v1 and v2 records at p = 1, with HAC and iid counted separately. The
+    static-cohort record holds no Family A test statistic.
+  - No random-date null.
+  - Residual held stops settle at -100 percent in every sleeve and in the equal-weight benchmark. This includes
+    seal-gap stops, which are counted separately.
+  - A last-close rerun is reported beside the primary run. It reports S4 means and signs, with no p-value. A sign
+    change in any S4 mean, closure margin, or outcome labels the result fragile.
+  - With R0 as the baseline, R2 must also meet the 8 conditions against R0.
+  - Affected events are reported per book as a count and as the sum and maximum of incoming weights, taken at the
+    close before the stop. At rule level, sleeve shares drift from the month's targets, and each event counts
+    once, with sleeve-event incidences beside it.
+  - Metrics come from the step 2 `performance` function on monthly net returns, with the long-only Sharpe in place
+    of its Sharpe.
+
+Rationale: every definition is fixed before any step 4 number exists, so the step 4 result cannot shape its own
+test. Where the design note was silent, the stricter reading was chosen. The -100 percent default is a coordinator
+scope default; curating the 68 terminal candidates remains an owner option.
+
+## 2026-09-29 - Owner Decisions O-5 and O-9 for Milestone 5 Step 4, and Coordinator Scope Defaults
+
+Context:
+
+- Step 4 (the bridge) forms long-only top-quintile point-in-time S&P 500 books on the local snapshots. The design
+  note (`coord/reports/m5_step4/design_note.md`, untracked) lists the owner decisions it needs.
+
+Decision:
+
+- **O-5 (owner):** step 4 may read `real_v1` and `real_v2` locally. The scope is recorded in the 2026-09-29 entry of
+  `docs/engineering_log.md`.
+- **O-9 (owner):** premise VP-2 is re-ratified under `DIAGNOSTIC_ONLY` for Milestone 5 step 4.
+  - VP-2 is the premise that the vendor's adjusted close applies each declared distribution.
+  - The M4.8 census measured `S_D > 0.05` on 22.5 percent of eligible member-days, which expired O-8.
+  - The step 4 report header discloses VP-2 and the measured shares.
+- **Coordinator scope defaults.** None of these loosens R1, R2, R4, R6, R8, or R9.
+  - Step 4 writes nothing inside either snapshot and accepts no terminal evidence.
+  - A held disappearance without accepted evidence settles at the R4 adverse default, -100 percent for a long
+    position. The equal-weight benchmark gets the same events.
+  - A rerun that settles every such disappearance at the last close is also reported. A sign flip between the two
+    runs labels the result fragile.
+  - The M4.8 seal window stays unaccessed.
+  - The first run uses price classes only.
+  - The factor-ETF blend and the SEC as-filed classes (step 4b) wait. SEC EDGAR retrieval needs its own owner
+    decision, both on the R11 source list and on the User-Agent contact.
+
 ## 2026-09-28 - Milestone 5 Step 3 Reporting Conventions (Coordinator Technical Defaults)
 
 Context:

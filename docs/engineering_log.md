@@ -12,6 +12,64 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-29 - Milestone 5 step 4 freeze, review, runner, and real_v2 run (DIAGNOSTIC_ONLY)
+
+- Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_4.json` was committed alone before any step 4 code or
+  result.
+  - Revision 1: `f2539c6` (SHA-256 `fe27d0be…`), records `ee65aae`.
+  - Revision 2: `bddbf02` (SHA-256 `c2b1f8de…c617`) after review round 1, records `73ff73a`.
+- Review: two seats from different model families, two rounds.
+  - GPT (`gpt-6-astra`, high, Codex): round 1 MATERIAL 0 and ADVISORY 3; round 2 MATERIAL 0 and ADVISORY 3.
+  - Opus (`claude-opus-5-5`, high): round 1 MATERIAL 2 and ADVISORY 7; round 2 MATERIAL 0 and ADVISORY 4.
+  - Round 1 MATERIAL, both fixed in revision 2: the long-only Sharpe omitted the risk-free rate; rule R1 on the
+    sleeves used active risk under step 2's name, and now uses each sleeve's own volatility.
+  - The seven round 2 advisories are implementation edges; the implementation resolved each without loosening a
+    rule (below). The reports are in the main checkout under `coord/reports/m5_step4/`, untracked.
+- Runner: `research/m5_step4.py` (`ff02458`, report fix `d0f05db`), tests `tests/test_m5_step4.py` (37 tests) with
+  the synthetic fixtures in `tests/m5_step4_support.py`.
+  - Reuse: `research/m4_7_sp500_pit_rerun.py` gains `segment_support` (the per-segment support before labels) and
+    `load_side_runs` (the per-side loader with caller-supplied events). `prepare_segment` and `load_segment_runs`
+    call them, and their outputs are unchanged; the reused-module tests passed (315).
+  - `bind_step4` keeps every pre-load check of `bind_snapshot_v3` against the amendment's eight pins and adds the
+    declared `d0_pre`; nothing under the snapshot's `terminal/` directory is read.
+- Run on `real_v2` under O-5 (`reports/m5_step4.md`, `.json`, `_attempts.jsonl`, committed `6478502`); each
+  completed attempt took about 12 minutes.
+  - Attempt 1 refused before any load: the snapshot directory argument was empty because the data-root variable
+    was unset in the shell.
+  - Attempt 2 completed, but its Markdown tables split at book labels containing a pipe.
+  - Attempt 3 is the recorded rerun after the renderer fix. Its JSON equals attempt 2 apart from the run time and
+    commit.
+- Result, `DIAGNOSTIC_ONLY`:
+  - Rule R1 meets 4 of 8 conditions against R0 on point-in-time books (6 of 8 on the public books over the same
+    months), so R0 is the point-in-time baseline.
+  - R2 meets 6 of 8 against rule R1 and 3 of 8 against R0, so the timing line closes.
+  - Fragile: three R2 Sharpe margins change sign in the last-close rerun; no decision outcome changes.
+  - S4.R1 has HAC p 0.193 and S4.R2 has HAC p 0.352, both with BY q 1.000 in the family of 480.
+  - Unpriced member-day share: 27.83 percent pre and 15.72 percent post.
+  - Residual held stops settled at -100 percent: 30 pre and 27 post.
+- Edge readings (round 2 advisories):
+  - An undated `entry_missing_field` interval is counted by interval, beside an upper-bound share that charges it
+    the whole span.
+  - A member-day is a row in the build's [m_in, m_out).
+  - The additive switch cost is kept.
+  - Step 4 computes no labels and no Family B, and a Family A failure refuses.
+  - Rule-level affected events cover class-layer months; sleeve counts show the rest.
+  - The amendment is the only specification.
+- Needs follow-up:
+  - the two-seat code review of the runner (real-data path);
+  - the `docs/current_handoff.md` refresh before a PR.
+
+## 2026-09-29 - Milestone 5 step 4 private-data authorization (O-5)
+
+- The owner explicitly authorized Milestone 5 step 4 to read the local S&P 500 point-in-time snapshots `real_v1`
+  and `real_v2` (asked and answered in the coordinator session, 2026-09-29).
+- Scope: local reads for the step 4 bridge runs only, under the written terms in
+  `docs/stage1_accepted_public_record_v1.json`.
+  - The repository and reports carry aggregates and hashed manifests only.
+  - No raw provider rows, provider-derived membership lists, security codes, or private paths (R11).
+  - The M4.8 seal window stays unaccessed.
+- The step 4 trial amendment must be committed before any step 4 result.
+
 ## 2026-09-28 - Milestone 5 step 3 runner and real-data run (DIAGNOSTIC_ONLY)
 
 `research/m5_step3.py` (`343003d`, report fix `f522a23`) implements amendment 3 revision 2 and the step 3 reporting conventions on `jkp_factors_153`: state labels (`market_trend_labels`, `market_volatility_labels`, `credit_spread_labels`), class returns as R1 within each JKP cluster (`class_returns`), the label span (`label_span_start`), R2 (`r2_tilt`, `r2_weights`), R3 (`trailing_return`, `r3_weights`), R4 (`r4_design`, `r4_fit` with `sklearn` `Ridge`, `r4_weights`), the S3 tests with the 95% HAC interval (`rule_test`, `state_effect_statistic`, `s3_adjust`), the random-date null (`null_offsets`, `null_draw`), the episode rule, the closure rule, and the R2 timing claim; it reuses the step 2 loaders, `membership`, `rule_weights`, `portfolio`, `performance`, `period_bounds`, and `post_publication` unchanged, never calls `features/ml_combination.py`, refuses unless v1 and amendments 1 to 3 match HEAD and their pins, and adds `french_ff3_daily` and the pinned jkp-data `aux_functions.py` to `reports/m5_public_data_manifest.json`. `tests/test_m5_step3.py` has 47 synthetic-fixture tests covering the 17 amendment 3 required tests and the decision-log additions; the 33 step 2 tests pass unchanged. The real-data run takes about 6.5 seconds with 999 null draws; attempt `20260929T062523224474Z` (`232bd3b`) and attempt `20260929T062817683096Z` (`4711941`, rerun after a report-formatting fix, numbers unchanged) are both in `reports/m5_step3_attempts.jsonl`. Results at DIAGNOSTIC_ONLY: R2 meets all 8 closure conditions against R1, so the return-timing line stays open and R2 goes to step 4 labeled "no evidence of state timing"; the timing claim fails conditions 2 to 6 (S3.R2 mean -0.23 bp per month, 95% interval -0.76 to +0.29 bp, HAC p 0.379, BY q 1, random-date p 0.318; post-publication R2-sub loses on drawdown at 20 bp and on Sharpe and drawdown at 50 bp; market_trend has 9 down episodes in 2000-2025); S3.R3 and S3.R4 have BY q 1 and meet 4 and 1 of the 8 conditions; no state-effect cell survives.
