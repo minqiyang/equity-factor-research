@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Milestone 5 step 4b SEC data build: CIK map and company facts (DIAGNOSTIC_ONLY)
+
+- Authority: O-10 (SEC EDGAR download, User-Agent from `EFR_SEC_USER_AGENT`, never recorded; publication terms),
+  and O-5 and O-9 as extended to step 4b (local `real_v2` reads, aggregates only). No signal, sleeve, return, or
+  rule result was computed.
+- Code: `src/data/sec_edgar.py` (the only SEC network path: `www.sec.gov` and `data.sec.gov` over HTTPS, at most
+  4 requests a second, retry on 429 and 5xx, typed 404 absences, offline mode refusing on a hash mismatch),
+  `research/m5_sec_identity.py` (fail-closed rule F, R3), and `research/m5_step4b_data.py` (driver). Tests
+  `tests/test_sec_edgar.py` and `tests/test_m5_sec_identity.py` (29) use synthetic fixtures and a fake opener only.
+  Commits `8682902`, `9a52090`, `ccca775`.
+- Data access: the driver bound `real_v2` through `m5_step4.bind_step4` (amendment 4 pins) and read only the
+  interval results, the security master, and the inventory. An audit hook refused writes inside the snapshot and
+  any open under `terminal/` or `quarantine/`.
+- Run (`reports/m5_step4b_data_attempts.jsonl`, four attempts):
+  - Attempt 1 refused before any SEC request: the security-master join check also saw repeated blank-ID rows of
+    unresolved intervals. Fixed in `9a52090` with a synthetic fixture.
+  - Attempt 2 completed in 17 minutes: 2,427 requests, no retries, 2.45 GB cached.
+  - Attempt 3 regenerated the report from the cache (0 requests) after the renderer printed counts in place of
+    two general phrases.
+  - Attempt 4, offline, rebuilt the CIK map and the hash list from the cache and matched the manifest.
+- Outcome: rule F maps 563 of 632 eligible IDs to one CIK. 7 ambiguous, 54 unmapped, and 8 multi-class IDs (4
+  shared CIKs, overlapping windows) are typed missing. Company facts exist for all 563 mapped CIKs. The committed
+  outputs are `reports/m5_step4b_sec_manifest.json` and `reports/m5_step4b_data.md` (`78659bd`); the CIK map and
+  per-file hashes stay local beside the snapshot (R11).
+- The scouting downloads, which had no retrieval records, were moved to the gitignored
+  `data/public_cache/sec_scout_20260930/`. The build downloaded a fresh cache.
+- `tests/test_project_structure.py` T-STRUCT-1 now lists `src/data/sec_edgar.py` as the third network-capable
+  module and pins its imports to `urllib.request` and `urllib.error`. Commit `8682902` failed that test until then,
+  because only the new tests were run before it. `docs/repo_map.md` was regenerated. The full suite passed (3,454).
+
 ## 2026-09-29 - Milestone 5 step 4 freeze, review, runner, and real_v2 run (DIAGNOSTIC_ONLY)
 
 - Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_4.json` was committed alone before any step 4 code or
