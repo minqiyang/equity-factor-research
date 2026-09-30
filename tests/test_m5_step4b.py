@@ -434,6 +434,14 @@ def test_identity_pool_mismatch_refuses(chain):
     with pytest.raises(runner.RunnerStop) as stop:
         s4b.check_identity_pool(chain["segments"], short)
     assert stop.value.reason == "sec_identity_pool_mismatch"
+    # An asset in the mask only on warm-up rows before d0 - 1 enters no ranking set and no member-day.
+    seg = chain["segments"]["pre"]
+    col = list(seg.prices.columns).index(fx.ASSETS[20])
+    mask = seg.schedule.evaluation_mask.copy()
+    mask.iloc[seg.schedule.d0 - 1:, col] = False
+    warm_only = dataclasses.replace(seg, schedule=dataclasses.replace(seg.schedule, exclusions=~mask | seg.schedule.exclusions))
+    assert warm_only.schedule.evaluation_mask.iloc[:seg.schedule.d0 - 1, col].any()
+    s4b.check_identity_pool({"pre": warm_only}, short)
 
 
 # ---------------------------------------------------------------- reasons (11) and member-day statuses (12)

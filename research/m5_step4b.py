@@ -173,12 +173,17 @@ def load_sec(repo_root: Path, snapshot_dir: Path, pins: Mapping[str, str] = SEC_
 
 
 def check_identity_pool(segments: Mapping[str, s4.SegmentInputs], sec: SecInputs) -> None:
-    """Every asset ever in a segment's evaluation mask has a row in the pinned map."""
+    """Every asset in a segment's evaluation mask over rows [d0 - 1, last book row] has a row in the pinned map.
+
+    Those rows hold every ranking set (signal rows r - 1) and every member-day; warm-up rows before them feed
+    only the price signals' lookbacks, as the pool's segment-overlap rule states.
+    """
 
     known = set(sec.identity["permanent_id"])
     for sid, seg in segments.items():
         mask = seg.schedule.evaluation_mask
-        used = set(mask.columns[mask.to_numpy(dtype=bool).any(axis=0)])
+        rows = mask.to_numpy(dtype=bool)[seg.schedule.d0 - 1:seg.schedule.d_last + 1]
+        used = set(mask.columns[rows.any(axis=0)])
         missing = used - known
         if missing:
             raise refuse("sec_identity_pool_mismatch", f"{sid}: {len(missing)} assets")
