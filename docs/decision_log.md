@@ -15,6 +15,36 @@ investment performance.
 
 ---
 
+## 2026-09-30 - Owner Decision O-10: SEC EDGAR Access for Milestone 5 Step 4b
+
+Context:
+
+- Step 4b adds the SEC as-filed value and quality classes to the step 4 books. The O-5 entry below left SEC EDGAR
+  retrieval to a separate owner decision on the R11 source list and on the User-Agent contact.
+- SEC EDGAR requires every automated request to declare a name and a contact email in its `User-Agent` header,
+  and limits a client to 10 requests a second.
+
+Decision:
+
+- **O-10 (owner):** Milestone 5 may download SEC EDGAR data, including XBRL company facts, submissions, and the
+  filing index, for step 4b.
+  - The `User-Agent` contact is an owner-provided research email. It is held in a local environment variable and is
+    never written to the repository, a report, or an output file.
+  - Retrieval stays under 10 requests a second.
+- **Publication terms (owner):**
+  - Downloaded SEC files stay in a gitignored local cache. The repository commits a manifest with SHA-256 hashes.
+  - Per-company as-filed values stay local, because they can be joined to the private membership.
+  - Aggregates (sleeve and rule returns, counts, and test statistics) may be committed at `DIAGNOSTIC_ONLY`.
+  - Security codes, CIK or ticker lists tied to the membership, membership lists, and private paths are never
+    committed (R11 unchanged).
+
+Consequences:
+
+- The step 4b trial amendment is committed before any step 4b result. Coverage counts seen while building the
+  mapping are listed in its `results_seen_before_this_amendment`.
+- An unresolved CIK mapping fails closed for that security (R3) and is counted in the missingness report (R6); it
+  never blocks the run.
+
 ## 2026-09-29 - Milestone 5 Step 4 Trial Amendment 4 (Coordinator Technical Defaults)
 
 Context:
