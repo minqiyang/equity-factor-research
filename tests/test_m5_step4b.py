@@ -130,6 +130,17 @@ def test_engine_reads_the_signal_only_at_row_r_minus_1(chain):
     pd.testing.assert_frame_equal(books[0].holdings, books[1].holdings)
 
 
+def test_engine_rebalances_on_the_schedule_resets(chain):
+    seg = chain["segments"]["post"]
+    books = chain["result"]["runs"]["primary"]["seg"]["post"]["sec_books"]
+    s4b.check_rebalance_rows(seg, books)
+    shifted = dataclasses.replace(seg, schedule=dataclasses.replace(
+        seg.schedule, reset_rows=seg.schedule.reset_rows[:-1]))
+    with pytest.raises(runner.RunnerStop) as stop:
+        s4b.check_rebalance_rows(shifted, books)
+    assert stop.value.reason == "sec_rebalance_rows_mismatch"
+
+
 # ---------------------------------------------------------------- first_filed (2) and annual keys (3)
 
 def _se_doc(facts, flows=True):

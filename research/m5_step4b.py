@@ -386,6 +386,15 @@ def sleeve_series(seg: s4.SegmentInputs, books: dict[str, Any], signal_ids: tupl
     return {"monthly": monthly, "sigma": sigma}
 
 
+def check_rebalance_rows(seg: s4.SegmentInputs, books: dict[str, Any]) -> None:
+    """The engine's scheduled rebalances are the schedule's resets, so the SEC panels' rows r - 1 are the ones read."""
+
+    expected = list(seg.calendar[seg.schedule.evaluation_resets])
+    for key, result in books["sleeves"].items():
+        if [row.ledger_date for row in result.timing_ledger if row.is_scheduled_rebalance] != expected:
+            raise refuse("sec_rebalance_rows_mismatch", f"{seg.segment_id} {key[0]}")
+
+
 def r0_book(monthly: pd.DataFrame, months: pd.PeriodIndex, bps: float) -> pd.DataFrame:
     in_set = pd.DataFrame(True, index=months, columns=monthly.columns)
     return s4.drift_portfolio(base.rule_weights("R0", in_set, in_set.astype(float)), monthly, bps)
@@ -466,6 +475,7 @@ def evaluate_run(segments: Mapping[str, s4.SegmentInputs], panels: Mapping[str, 
         six = step4_run["seg"][sid]
         sec_seg = dataclasses.replace(seg, signals=panels[sid].signals)
         sec_books = s4.run_books(sec_seg, terminal_return, SEC_IDS)
+        check_rebalance_rows(sec_seg, sec_books)
         sec_series = sleeve_series(sec_seg, sec_books, SEC_IDS)
         monthly = {c: pd.concat([six["monthly"][c], sec_series["monthly"][c]], axis=1) for c in s4.CASES}
         sigma = {c: pd.concat([six["sigma"][c], sec_series["sigma"][c]], axis=1) for c in s4.CASES}
