@@ -6,7 +6,12 @@
   "revision_history": [
     {
       "revision": 1,
-      "reason": "Initial freeze after the SEC data build (code 7560b4a) and its two-seat review round 1 (MATERIAL 0; OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2 reading 2 folded in); no step 4b result exists."
+      "commit": "acc1f5a",
+      "sha256": "136fa9f73b4d2c1ba56b35f4a3bb998a8b66748982bf7e369784fc107ab1c1dd"
+    },
+    {
+      "revision": 2,
+      "reason": "Freeze review round 1 repairs before any step 4b signal code or result: GPT-S4BF-R1-M1 (every member-day gets one status; not_ranked_at_rebalance), OPUS-S4BF-M1 (preferred is 0 when no chain concept has a key at E*, counted as preferred_zero_by_absence), GPT-S4BF-R1-A2 and OPUS-S4BF-A4 (order of period discovery, amendment-first classification, value selection, and staleness), GPT-S4BF-R1-A1 (share-count order and ambiguity scope), OPUS-S4BF-A2 (a share date after filed is shares_missing, so p is on or before r - 1), OPUS-S4BF-A3 (companyfacts carries no dimensional facts), OPUS-S4BF-A1 (CostOfGoodsSold joins the COGS chain; measured chain coverage), OPUS-S4BF-A5 (survivor tilt on both bases), OPUS-S4BF-A6 (the coverage-tilt label errs toward coverage-tilted), and both seats' schema counts under results_seen."
     }
   ],
   "naming": "Price sleeves are the six amendment 4 Family A sleeves. SEC sleeves are BM_AF, EP_AF, and GP_AT_AF. The candidate is R0 over the 6 price sleeves plus the 3 SEC sleeves (R0_9). The comparator is amendment 4's six-sleeve R0 (R0_6), recomputed. Rule R1 means the inverse-volatility rule and invariant R1 the AGENTS.md timing invariant, as in amendment 4.",
@@ -90,13 +95,18 @@
     "facts": "From the CIK's companyfacts: us-gaap facts (dei only for the shares of classes_and_signals.me) with form 10-K or 10-KT; unit USD for monetary concepts and shares for share counts.",
     "key": "(concept, unit, start, end); an instant has no start",
     "first_filed": "The key's value is the value of its earliest-filed fact among forms 10-K and 10-KT; ties go to the lowest accn. 10-K/A, 10-KT/A, 10-Q, 10-Q/A, 8-K, and every later comparative never supply or replace a value.",
-    "amendment_first": "A key whose earliest-filed fact among the forms 10-K, 10-KT, 10-K/A, and 10-KT/A is an /A filing takes no value and is typed amendment_first where a signal needs it.",
+    "amendment_first": "A key whose earliest-filed fact among the forms 10-K, 10-KT, 10-K/A, and 10-KT/A is an /A filing takes no value; where the procedure below reaches it, the signal is typed amendment_first.",
     "not_used": "frame, fy, and fp are never read (the scouting probes showed frame sits on the last-filed version of a restated key)",
     "flows": "a flow key is annual when end - start is 350 to 380 days inclusive; other flow keys are never used",
-    "instants": "an instant key is a fiscal-year-end instant when its end equals the end of an annual flow key whose earliest-filed 10-K or 10-KT fact has the same accn; other instant keys are never used",
+    "instants": "an instant key is a fiscal-year-end instant when its end equals the end of an annual flow key and the two keys' earliest facts among 10-K, 10-KT, 10-K/A, and 10-KT/A have the same accn; other instant keys are never used",
     "timing": "A fact is usable from the first calendar row strictly after its filed date (invariant R1, AGENTS.md: filing date plus one trading day). It enters the signal of rebalance row r only if that row is on or before row r - 1, that is, only if filed is before the date of row r - 1. The engine reads the signal at row r - 1 (after_close_signal_next_observed_close_v1, signal_lag_periods 1).",
-    "selection": "At row r - 1 each signal takes its fiscal year E*: the latest end among the usable annual keys of its anchor concept (StockholdersEquity for BM_AF, NetIncomeLoss for EP_AF, Assets for GP_AT_AF). Every other component of that signal must come from a usable key with the same end E*, and for flows the same annual key period.",
-    "staleness": "E* is stale when it is earlier than the date of row r - 1 minus 18 calendar months; the signal is then typed stale.",
+    "procedure": {
+      "order": "At row r - 1, for each SEC signal, in this order: period discovery, amendment-first classification, value selection, staleness.",
+      "1_period_discovery": "A key is discovered when its earliest fact among 10-K, 10-KT, 10-K/A, and 10-KT/A was filed before the date of row r - 1. E* is the latest end among the discovered annual keys (flows) or fiscal-year-end instant keys (instants) of the signal's anchor concept in USD: StockholdersEquity for BM_AF, NetIncomeLoss for EP_AF, Assets for GP_AT_AF. With no discovered anchor key the signal is non_usd (a discovered anchor key exists only in another unit) or no_annual_fact. When several annual flow keys end at E*, the key whose earliest fact was filed first is taken, ties to the lowest accn.",
+      "2_amendment_first": "If the E* anchor key's earliest fact is an /A filing, the signal is amendment_first. There is no fallback to an older year.",
+      "3_value_selection": "Every value comes from the key's earliest 10-K or 10-KT fact (as_filed.first_filed). Every other component uses a discovered key with end E* (and, for a flow, the annual period ending at E*). In a chain, the concepts are tried in order, and the first concept with a discovered key at E* decides: its value, or amendment_first when that key is amendment-first. A chain never falls through past a discovered key; it moves to the next concept only when a concept has no discovered key at E*. A required component with no discovered key at E* in any chain concept is concept_missing, except preferred (classes_and_signals.be).",
+      "4_staleness": "E* is stale when it is earlier than the date of row r - 1 minus 18 calendar months; the signal is then typed stale. E* exactly 18 months earlier is not stale."
+    },
     "no_fallback": "There is no fallback to quarterly data, to an older fiscal year, or to a trailing-twelve-month construction, so no Q4 is derived.",
     "xbrl_start": "XBRL begins 2009-07 to 2009-10 in the scouting probes, more than 4.5 years before d0_pre 2014-04-30."
   },
@@ -135,10 +145,17 @@
       }
     ],
     "direction": "higher is better for all three",
-    "be": "BE = StockholdersEquity (instant at E*) minus preferred. Preferred is the first usable key at E* in the frozen chain PreferredStockValue, PreferredStockValueOutstanding, PreferredStockIncludingAdditionalPaidInCapitalNetOfDiscount. Preferred counts as 0 only when no fact of any chain concept, at any end, is usable at row r - 1; when some chain fact is usable but none at E*, BE is typed preferred_missing. BE <= 0 is typed be_nonpositive (undefined).",
+    "be": "BE = StockholdersEquity (instant at E*) minus preferred. Preferred is the value of the first concept in the frozen chain PreferredStockValue, PreferredStockValueOutstanding, PreferredStockIncludingAdditionalPaidInCapitalNetOfDiscount with a discovered key at E* (as_filed.procedure). If no chain concept has a key at E*, preferred is 0, whatever earlier years tagged; this is the Fama-French and JKP convention and matches the public counterpart be_me. The zero-by-absence cases are the counted status preferred_zero_by_absence, reported beside the typed reasons; they are ranked and are not missing. An amendment-first chain key at E* makes BE amendment_first; it does not fall through to the next concept or to 0. BE <= 0 is typed be_nonpositive (undefined).",
     "net_income": "NetIncomeLoss, the annual flow key ending at E*",
-    "gross_profit": "GP = GrossProfit (annual key ending at E*) when usable; otherwise Revenue - COGS, where Revenue is the first concept in RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet with a usable annual key ending at E*, and COGS is the first in CostOfGoodsAndServicesSold, CostOfRevenue with a usable annual key of the same start and end. A missing component (for example a bank with no cost of revenue) is typed concept_missing. Assets is the instant at E*; Assets <= 0 is typed assets_nonpositive.",
-    "me": "ME at row r - 1 = shares_s * close(p) * (split-only close at r - 1 / split-only close at p), where the split-only close is close / cum_split from research/real_data_multifactor_diagnostic.py build_adjusted_research_panels (R7). shares_s is dei:EntityCommonStockSharesOutstanding (unit shares) from the filing (accn) that supplied the anchor key's value, dated at its cover date s = that fact's end; if that filing has none, us-gaap:CommonStockSharesOutstanding from the same accn at end E*, with s = E*. More than one distinct value for the chosen concept in that filing is typed shares_ambiguous; none, or a value <= 0, is typed shares_missing. p is the last row on or before s, inside the segment's loaded rows and within the 10 calendar rows ending at s, at which the asset has a finite close; without such a row, or without a finite close at r - 1, ME is typed price_missing. Algebraically ME equals shares_s restated to the row r - 1 split basis times the close at r - 1.",
+    "gross_profit": "GP = GrossProfit when it has a discovered annual key ending at E* (its value, or amendment_first); otherwise Revenue - COGS, where Revenue is the first concept in RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet with a discovered annual key ending at E*, and COGS is the first in CostOfGoodsAndServicesSold, CostOfRevenue, CostOfGoodsSold (the deprecated same-meaning tag) with a discovered annual key of the same start and end; the chains follow as_filed.procedure. No other tag enters: the other candidate tags change the concept (noncontrolling interest, assessed tax, goods-only revenue, or cost excluding D&A). A missing component (for example a bank with no cost of revenue) is typed concept_missing. Assets is the instant at E*; Assets <= 0 is typed assets_nonpositive.",
+    "me": "ME at row r - 1 = shares_s * close(p) * (split-only close at r - 1 / split-only close at p), where the split-only close is close / cum_split from research/real_data_multifactor_diagnostic.py build_adjusted_research_panels (R7). Algebraically ME equals shares_s restated to the row r - 1 split basis times the close at r - 1.",
+    "shares": {
+      "anchor_filing": "the accn of the E* anchor key's earliest 10-K or 10-KT fact, with that fact's filed date F",
+      "primary": "dei:EntityCommonStockSharesOutstanding (unit shares) facts of the anchor accn. If the accn has any, keep those with end on or before F; if none remains (every share date is after F), shares_missing. Take the latest remaining end as the share date s. Two or more distinct values at s are shares_ambiguous; one value <= 0 is shares_missing.",
+      "fallback": "Only when the anchor accn has no primary fact: us-gaap:CommonStockSharesOutstanding facts of the anchor accn, restricted first to end = E*; then two or more distinct values are shares_ambiguous, none is shares_missing, and a value <= 0 is shares_missing. s = E*.",
+      "dimensions": "companyfacts carries no dimensional facts, so per-class share counts never appear and the rule does not detect unlisted share classes; a dual-class filer outside multi_class is shares_missing when it reports only per-class counts, or takes a non-dimensional total (limitations)."
+    },
+    "share_date_price": "p is the last row on or before s, inside the segment's loaded rows and within the 10 calendar rows ending at s, at which the asset has a finite close. Since s <= F < date of row r - 1, p is on or before row r - 1, so a split after row r - 1 never enters ME. Without such a row, or without a finite close at r - 1, ME is typed price_missing.",
     "multi_class": "The 8 multi_class IDs are typed missing in every SEC sleeve (identity.statuses).",
     "waiting": "OPE_BE and OCF_AT (Profitability, cluster_labels lines 99 and 93) and AG (Investment, line 7) wait unless the owner widens the scope. Seasonality and share-based Size still wait.",
     "class_return": "Descriptive only, as in amendment 4: rule R1 within the class. Value holds BM_AF and EP_AF; Quality holds GP_AT_AF, so its class return equals its sleeve."
@@ -168,7 +185,7 @@
     "start": "The comparison months are amendment 4's: 2014-12 to 2019-06 (55) and 2022-05 to 2025-12 (44). If the nine-sleeve class layer yields a different set, the run refuses (comparison_months_mismatch)."
   },
   "coverage_tilt": {
-    "role": "descriptive, with a label; it never changes the decision",
+    "role": "descriptive, with a label; it never changes the decision. The label errs toward coverage-tilted: for the return margin, R0_9 - R0_6_mapped = (R0_9 - R0_6) + (R0_6 - R0_6_mapped), so the whole mapped-universe difference enters although the SEC sleeves carry only 3/9 of R0_9 (OPUS-S4BF-A6).",
     "universe": "The mapped universe: the permanent IDs with status unique in the pinned CIK map (563). Each price sleeve is rerun with its evaluation mask restricted to those IDs; prices, window, intervals, residual events, top_pct, costs, and every other input are unchanged. The universe is fixed for the whole run and does not depend on SEC value availability.",
     "comparator": "R0_6_mapped: R0 over the six mapped-universe price sleeves, with the same switch cost and months",
     "label": "The result is labeled coverage-tilted when the sign of any of the 8 margins of R0_9 against R0_6_mapped differs from the sign of the same margin against R0_6 in the primary run (sign as in amendment 4 disappearances.fragility, |x| < 1e-12 counted as 0).",
@@ -186,11 +203,17 @@
       "a price-sleeve asset without a row in the pinned CIK map (sec_identity_pool_mismatch)",
       "an empty SEC sleeve target at any scheduled rebalance (empty_sleeve_target)",
       "R0_6 metrics that differ from the committed step 4 R0 (comparator_mismatch)",
-      "comparison months different from amendment 4's (comparison_months_mismatch)"
+      "comparison months different from amendment 4's (comparison_months_mismatch)",
+      "SEC member-day statuses that do not partition the evaluation-mask member-days (sec_share_unreconciled)"
     ],
     "sec_reasons": {
-      "rule": "For each SEC sleeve, each rebalance row r, and each eligible member at row r - 1, exactly one status: ranked, or the first reason that applies in this order. Nothing is filled, clipped, or repaired (R6).",
+      "rule": "For each SEC sleeve, every member-day in the evaluation mask over the segment's [first reset, last book row] rows gets exactly one status. The ranking set of rebalance row r is the set of members in the evaluation mask at signal row r - 1, as run_book forms it; each member of that set gets one rebalance-r status, ranked or the first reason below that applies. A member-day belongs to the latest rebalance r at or before it; it carries that member's rebalance-r status when the member was in the ranking set, and not_ranked_at_rebalance otherwise (a between-rebalance entrant, or eligibility that resumes after a bar gap; no sleeve, price or SEC, can hold it before the next rebalance). Nothing is filled, clipped, or repaired (R6).",
+      "counted_status": "preferred_zero_by_absence (BM_AF): a ranked member whose preferred is 0 because no chain concept has a key at E*; reported beside the reasons, not missing",
       "order": [
+        {
+          "type": "not_ranked_at_rebalance",
+          "when": "member-day status: the member was not in the ranking set of the member-day's rebalance"
+        },
         {
           "type": "identity_unmapped",
           "when": "status unmapped in the pinned map"
@@ -209,15 +232,15 @@
         },
         {
           "type": "non_usd",
-          "when": "no usable USD annual key of the anchor concept exists, but a usable key in another unit does"
+          "when": "no discovered USD annual key of the anchor concept exists, but a discovered key in another unit does"
         },
         {
           "type": "no_annual_fact",
-          "when": "no usable annual key of the anchor concept exists (includes no 10-K yet)"
+          "when": "no discovered annual key of the anchor concept exists (includes no 10-K yet)"
         },
         {
           "type": "amendment_first",
-          "when": "a required key at E* is amendment-first"
+          "when": "the E* anchor key, or the deciding chain or component key at E*, is amendment-first"
         },
         {
           "type": "stale",
@@ -225,11 +248,7 @@
         },
         {
           "type": "concept_missing",
-          "when": "another required component has no usable key at E*"
-        },
-        {
-          "type": "preferred_missing",
-          "when": "BM_AF only: a preferred fact is usable but none at E*"
+          "when": "a required component has no discovered key at E* in any of its chain concepts"
         },
         {
           "type": "be_nonpositive",
@@ -241,11 +260,11 @@
         },
         {
           "type": "shares_ambiguous",
-          "when": "more than one distinct share value in the anchor filing"
+          "when": "two or more distinct share values at the chosen share date (classes_and_signals.shares)"
         },
         {
           "type": "shares_missing",
-          "when": "no share value, or a value <= 0"
+          "when": "no share value, a value <= 0, or only primary share dates after the anchor filing's filed date"
         },
         {
           "type": "price_missing",
@@ -255,7 +274,7 @@
     },
     "identity_exposure": "Reported, not a gate: the not-mapped share weighted by in-segment member-days, beside the per-ID counts. An ID's member-days in a segment are the calendar rows of its member window [m_in, m_out) clipped to the segment's [first reset, last book row] (the amendment 4 member-day semantics). The share is split by later exit class and by identity status and reason (ambiguous: several_survivors, ambiguous: ticker_cik_disagrees, multi_class: shared_cik_overlapping, unmapped: name_mismatch, unmapped: no_periodic_filing_in_window, unmapped: foreign_form_in_window), per segment and pooled.",
     "no_periodic_filing_in_window": "This reason is dominated by member windows shorter than one filing cycle: 30 of its 36 IDs have windows under 120 days (results_seen_before_this_amendment.data_review). Such a CIK typically had no 10-K filed before m_out, so it could not supply a usable annual fact during membership. The rule is unchanged.",
-    "sec_share": "Per segment and SEC sleeve: the eligible member-day share by status and reason, split by later exit class (the amendment 4 classes, unresolved excluded because unresolved intervals are not eligible). The status of a member at rebalance r applies to each row from r to the row before the next rebalance at which the member is in the evaluation mask. The split reconciles to the eligible member-days; a gap refuses.",
+    "sec_share": "Per segment and SEC sleeve: the eligible member-day share by status and reason (sec_reasons.rule), split by later exit class (the amendment 4 classes; unresolved intervals are never eligible), with not_ranked_at_rebalance and preferred_zero_by_absence reported beside the reasons. The statuses partition the evaluation-mask member-days; a gap or a double count refuses (sec_share_unreconciled).",
     "unpriced_share": "amendment 4 missingness.unpriced_share, unchanged and reprinted",
     "halts": "amendment 4 missingness.halts, unchanged"
   },
@@ -376,12 +395,15 @@
     "future_perturbation_filing: on a synthetic fixture, a fact filed on the date of row r - 1 or later leaves the SEC sleeve target at row r unchanged, and one filed the calendar day before that date can change it; changing any price after row r - 1 leaves the target unchanged",
     "first_filed: a later 10-K/A, a later 10-K comparative, and a 10-Q never replace a key's value; a key first filed in a 10-K/A is typed amendment_first; changing frame, fy, or fp changes nothing",
     "annual_and_instant: flows of 349 and 381 days are not annual, 350 and 380 are; an instant whose end is not the end of an annual flow key in the same accn is not used",
-    "selection_and_staleness: E* is the latest usable anchor end; a component at another end is concept_missing; E* exactly 18 months before row r - 1 is usable, one day earlier is stale; there is no fallback to an older year",
-    "chains: the first chain concept with a usable key at E* is used; preferred counts as 0 only when no preferred fact is usable at row r - 1, a later-filed preferred fact does not change an earlier rebalance, a usable preferred fact without an E* key is preferred_missing; BE <= 0 is be_nonpositive; GrossProfit precedes Revenue - COGS, whose keys must share start and end; a bank without COGS is concept_missing",
-    "me_split_continuity (R7): a 2-for-1 split between p and r - 1 leaves ME continuous; shares come from the anchor accn with the CommonStockSharesOutstanding fallback; two distinct values are shares_ambiguous; p outside the loaded rows or more than 10 rows before s is price_missing",
+    "selection_and_staleness: E* is the latest discovered anchor end; a component at another end is concept_missing; E* exactly 18 months before row r - 1 is usable, one day earlier is stale; there is no fallback to an older year",
+    "amendment_first_order: an amendment-first E* anchor with an older usable year is amendment_first (no fallback to the older year); an amendment-first E* anchor without an older year is amendment_first, not no_annual_fact; an amendment-first first chain concept at E* (preferred, GrossProfit, a revenue or a COGS concept) makes the signal amendment_first and does not fall through to the next concept or to 0",
+    "chains: the first chain concept with a discovered key at E* decides; an untagged preferred line at E* after an earlier tagged year gives preferred 0 and the status preferred_zero_by_absence; a later-filed preferred fact does not change an earlier rebalance; BE <= 0 is be_nonpositive; GrossProfit precedes Revenue - COGS, whose keys must share start and end; CostOfGoodsSold is used only after CostOfGoodsAndServicesSold and CostOfRevenue have no key at E*; a bank without COGS is concept_missing",
+    "shares_order: a normal comparative filing with CommonStockSharesOutstanding at E* and at the prior year end takes the E* value (the E* filter precedes the ambiguity check); two distinct values at the same share date are shares_ambiguous; equal primary values at two different dates take the latest date on or before filed; a primary share date after filed is shares_missing and does not fall back",
+    "me_split_continuity (R7): a 2-for-1 split between p and r - 1 leaves ME continuous; a split after row r - 1 leaves ME at r - 1 unchanged; p outside the loaded rows or more than 10 rows before s is price_missing",
     "identity_gate: only unique IDs are ranked; unmapped, ambiguous, and multi_class IDs are typed and counted by later exit class and stay in the price sleeves",
     "sec_pins_offline: a changed CIK map, a changed cached file, or a hash-list mismatch refuses before any sleeve; the runner makes no network request (a sentinel opener that raises on any call is never called)",
-    "sec_reasons: each eligible member-rebalance gets exactly one status in the frozen order; the member-day split reconciles, and a gap refuses",
+    "sec_reasons: each member of a ranking set gets exactly one rebalance status in the frozen order",
+    "member_day_statuses: on a synthetic fixture with a member entering between rebalances, a member exiting between rebalances, a bar gap covering signal row r - 1 after which eligibility resumes before the next rebalance, and a bar gap between rebalances that does not cover row r - 1, every evaluation-mask member-day gets exactly one status (the entrant's days and the days resumed after a gap covering r - 1 are not_ranked_at_rebalance; days resumed after the other gap carry the member's rebalance status; the exited member's days stop at exit), no status uses a later rebalance's information, and a dropped or double-counted day refuses sec_share_unreconciled",
     "empty_sec_sleeve_refuses: a rebalance with no ranked member refuses",
     "step4_regression: after parameterizing FAMILY_A_IDS and SLEEVES, the step 4 synthetic outputs are byte-identical; R0_6 metrics different from the committed step 4 R0 refuse comparator_mismatch",
     "comparison_months: a nine-sleeve class layer whose months differ from amendment 4's refuses",
@@ -409,11 +431,14 @@
     "Other forms (10-Q, 8-K, S-1 and similar) neither supply a value nor make a key amendment-first: they are outside the annual rule, and ignoring them only delays a value.",
     "A fiscal-year-end instant is one whose end equals the end of an annual flow key first filed in the same accn: the design note's 'fiscal-year-end end' made checkable without fy or fp.",
     "All components of a signal share the anchor concept's fiscal year E*, with no mixing of years: the design note's 'within one period' applied to every component.",
-    "The preferred rule reads only facts usable at row r - 1: 'any of its eligible filings' must not look ahead (invariant R1).",
+    "Preferred is the first chain concept with a discovered key at E*, and 0 when no chain concept has a key at E*, counted as preferred_zero_by_absence: the Fama-French and JKP convention, matching be_me; it replaces revision 1's preferred_missing rule, which typed BE missing whenever a filer stopped tagging a nil preferred line (OPUS-S4BF-M1).",
     "Flow ties at E* (more than one annual key ending at E*) go to the first-filed key, then the lowest accn: the first-filed rule applied to the period choice.",
-    "The share filing is the accn that supplied the anchor key's value, and two distinct share values in it are typed shares_ambiguous: 'the same 10-K' made exact, and fail-closed on unlisted classes.",
+    "Shares come from the anchor accn: the primary dei count at the latest end on or before filed, else CommonStockSharesOutstanding restricted to end = E* before the ambiguity check (GPT-S4BF-R1-A1). companyfacts carries no dimensional facts, so the rule does not detect unlisted classes (OPUS-S4BF-A3).",
+    "A primary share date after the anchor filing's filed date is shares_missing, so the share date and p are on or before row r - 1 and no later split enters ME (OPUS-S4BF-A2).",
     "The share-date price p is the last finite close on or before s within 10 calendar rows and inside the segment's loaded rows: s is often not a trading day, and in the post segment the loaded rows start at the seal end, so no seal-window price is read.",
-    "The SEC missing reasons use one fixed precedence order and member-day weights over each holding month: one status per member-rebalance makes the split reconcile.",
+    "Every evaluation-mask member-day gets one status: the rebalance status of a ranking-set member, or not_ranked_at_rebalance for a between-rebalance entrant or a resumed eligibility, placed first in the order and counted by later exit class; the reconciliation refusal stays (GPT-S4BF-R1-M1).",
+    "As-filed order: period discovery over 10-K, 10-KT, 10-K/A, and 10-KT/A filed before row r - 1, then amendment-first classification, then value selection, then staleness; in a chain the first concept with a discovered key at E* decides and never falls through (GPT-S4BF-R1-A2, OPUS-S4BF-A4).",
+    "CostOfGoodsSold joins the COGS chain after CostOfRevenue as the deprecated same-meaning tag; no other tag is added, because each changes the concept (OPUS-S4BF-A1).",
     "The coverage-tilt universe is the 563 IDs with status unique, fixed for the run, applied through the evaluation mask: a static universe that does not depend on SEC value availability, which is what the SEC sleeves could ever rank.",
     "The comparator R0_6 is recomputed and must equal the committed step 4 R0 exactly: the design note's byte-identical recomputation, checked in the run.",
     "The two S4 tests enter the 481 family at p = 1 as slots: every prior test is a slot, as in amendment 4.",
@@ -422,14 +447,17 @@
     "The foreign-form exclusion applies to 20-F and 40-F filings inside the member window only; earlier foreign filings do not exclude a CIK (GPT-S4BD-A2 reading 2; 7 accepted IDs have them).",
     "SEC facts filed inside the seal window [2019-07-31, 2020-07-31) may enter a post-segment signal: the seal governs snapshot rows and O-3, an SEC fact carries no snapshot row or return, and no seal-window price is read (classes_and_signals.me). The post comparison months start 2022-05, after the seal window.",
     "The identity exposure share (not-mapped member-days by exit class and identity reason) is reported beside the per-ID counts and gates nothing (OPUS-S4B-D-01).",
-    "Comparison months that differ from amendment 4's refuse the run rather than redefine the window."
+    "Comparison months that differ from amendment 4's refuse the run rather than redefine the window.",
+    "The coverage-tilt label errs toward coverage-tilted, the conservative direction; it stays descriptive (OPUS-S4BF-A6)."
   ],
   "limitations": [
     "Every result is DIAGNOSTIC_ONLY and rests on premise VP-2 (O-9 for step 4b), with the R4 -100 percent default and the last-close rerun of amendment 4.",
-    "The mapped sample tilts toward survivors: 12 of 31 disappearance_outside_membership IDs are not uniquely mapped, against 49 of 530 still trading; the coverage-tilt guard reports the effect but does not gate the decision.",
+    "Identity coverage on two bases (OPUS-S4BF-A5). Per ID, the mapped sample tilts toward survivors: not uniquely mapped are 12 of 31 disappearance_outside_membership, 8 of 71 delisting_candidate, and 49 of 530 still trading. By in-segment calendar days the direction differs: 1.5 percent for disappearance_outside_membership, 8.0 percent for delisting_candidate (the class carrying most residual stops), and 5.7 percent still trading. The coverage-tilt guard reports the effect but does not gate the decision.",
     "Identity uses SEC files retrieved on 2026-09-30, including current ticker files; rule F requires an in-window name and filing match, but a CIK map built on another date could differ.",
     "Annual 10-K values only: a value can be up to 18 months old, no quarterly update enters, and a restated value never replaces the first-filed one.",
-    "Multi-class, ambiguous, unmapped, and amendment-first cases are typed missing, never repaired; banks and insurers often lack a gross profit and drop out of GP_AT_AF.",
+    "Multi-class, ambiguous, unmapped, and amendment-first cases are typed missing, never repaired.",
+    "Concept-chain coverage, measured over the 6,962 10-K and 10-KT filings of the 563 mapped CIKs filed 2013-01-01 to 2026-08-07 under the revision 1 chains (OPUS-S4BF-A1): StockholdersEquity is absent at the fiscal-year end in 471 (6.8 percent; 439 of them tag only the total including noncontrolling interest), NetIncomeLoss in 609 (8.7 percent), and gross profit is missing in 2,736 (39 percent), of which 2,283 (33 percent) carry no cost tag at all; 448 would be recoverable with other tags, part of them by CostOfGoodsSold, now in the chain. GP missing is 1,416 of 3,440 filings filed before 2019-07-31 and 1,320 of 3,522 filed later; the recoverable part is 286 before and 162 after. GP_AT_AF is effectively a sleeve of firms that tag a cost of revenue, and its pre and post coverage differ for tagging reasons.",
+    "Share counts (OPUS-S4BF-A3): 515 of the 6,962 filings (7.4 percent) have no non-dimensional dei share count; 53 of them have the CommonStockSharesOutstanding fallback at E* and 462 (6.6 percent) are shares_missing; 18 carry more than one dei value. Because companyfacts has no dimensional facts, unlisted share classes are not detected.",
     "ME uses the cover-date share count of one filing, not a daily share series.",
     "The same 99 months and every step 4 number are seen, including the comparator; no step 4b result is confirmatory.",
     "With 481 slots, the S4b p-value needs about 1.5e-5 (HAC |t| about 4.3) to reach BY q 0.05.",
@@ -443,6 +471,7 @@
     "scouting_schema_findings": "in the three probes, frame sat on the last-filed version of each restated key (787 of 787, 340 of 340, 350 of 350), 57 to 59 percent of 10-K facts had an end year different from fy, and XBRL began 2009-07 to 2009-10; no value was used as a signal",
     "data_build": "reports/m5_step4b_data.md and reports/m5_step4b_sec_manifest.json: the eligible pool (632 IDs; pre 468, post 510), rule F outcomes by status, reason, segment, and later exit class, companyfacts availability for the 563 mapped IDs (all present; 554 with a 10-K or 10-KT us-gaap fact filed inside the member window, 9 without), and the vendor_name and isin checks (188 of 205 in-window renames carry the current SEC name; isin one undated value per ID, 23 blank, 36 non-US)",
     "data_review": "coord/reports/m5_step4b/data_review_gpt_r1.md and data_review_opus_r1.md (untracked): both seats MATERIAL 0; the map, hash list, and data report reproduced offline byte for byte. Their counts: by in-segment calendar days, the not-mapped share is 75,173 of 1,321,136 (5.7 percent) for index_removal_still_trading, 8,028 of 100,944 (8.0 percent) for delisting_candidate, and 364 of 24,175 (1.5 percent) for disappearance_outside_membership, 6.7 percent for ended filers combined; 30 of the 36 no_periodic_filing_in_window IDs have member windows under 120 days (all 10 disappearance IDs and 20 of 25 still trading); in 26 name-matched cases the CIK's first periodic filing came 5 to 81 days after m_out (median 30); 4 IDs belong to a CIK whose periodic filings straddle a short window; 3 of the 4 ticker_cik_disagrees IDs are delisting candidates whose ticker CIK was inactive in the window, and applying that step only to an active ticker CIK would lower not-mapped delisting candidates from 8 to 5 of 71 (diagnostic counterfactual, not adopted); the 3 several_survivors IDs are ended; 81 of the 82 mapped ended IDs were accepted on the name route alone, and each accepted ended CIK filed a Form 25 or Form 15 on or after m_in; 7 accepted IDs have foreign-form filings before their member windows",
+    "freeze_review_round_1": "coord/reports/m5_step4b/freeze_review_gpt_r1.md and freeze_review_opus_r1.md (untracked), with their schema counts in scratch_freeze_gpt_r1/schema_counts.json and scratch_freeze_opus_r1/*_out.txt, as review-round coverage counts; no fact value, signal, rank, sleeve, return, or rebalance-level missing count. Opus, over the 6,962 10-K and 10-KT filings (filed 2013-01-01 to 2026-08-07; 3,440 before 2019-07-31, 3,522 after): the chain gaps and share counts in limitations; preferred chain at the fiscal-year end in 3,387, no chain fact yet in 2,708, and a chain fact seen earlier but none at the fiscal-year end in 867 (365 before, 502 after; 91 and 104 filers; 756 with the last tagged end more than a year earlier); 7 dei share dates after filed, 49 before the fiscal-year end, 27 more than 120 days before filed; 1 filing more than 18 months after its fiscal-year end; 9 NetIncomeLoss fiscal-year-end keys only in a 10-K/A and 0 StockholdersEquity keys; the fiscal-year-end instant rule rejects the latest StockholdersEquity key in 15 filings (12 with an older passing key); StockholdersEquity first filed in another accn in 147 filings, Assets in 39; the revenue and cost tag combinations of schema_scan3. GPT, over the 563 documents: fact-row counts by form for the relevant concepts (10-K 208,123; 10-KT 316; 10-K/A 3,221; 20-F 122); document counts per concept (dei share count 540, CommonStockSharesOutstanding 448, GrossProfit 296, CostOfGoodsAndServicesSold 298, CostOfRevenue 167, PreferredStockValue 356); annual accessions with several share end dates (dei 24 of 7,575; CommonStockSharesOutstanding 5,180 of 5,327, 829 with three or more); and a synthetic membership probe (11 of 11 between-rebalance entrant rows without a revision 1 status)",
     "data_build_metadata_read": "during the data build, under O-5: the column headers and aggregate value counts of identity/interval_results.csv and identity/security_master.csv (resolution, exit class against open windows, duplicate master rows, identifier shapes); no price, volume, return, or terminal row, and no individual identity row, was printed",
     "public_cache_read": "the jkp_cluster_labels.csv lines of be_me (11, Value), gp_at (54, Quality), and ni_me (81, Value)",
     "computed_for_this_amendment": "SHA-256 values of the trial files and the data-build code files, and the BY threshold. No SEC signal value, sleeve, return, sigma, rule weight, or missing share.",
