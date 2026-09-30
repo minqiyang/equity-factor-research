@@ -12,6 +12,53 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-29 - Milestone 5 step 4 freeze, review, runner, and real_v2 run (DIAGNOSTIC_ONLY)
+
+- Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_4.json` was committed alone before any step 4 code or
+  result.
+  - Revision 1: `f2539c6` (SHA-256 `fe27d0be…`), records `ee65aae`.
+  - Revision 2: `bddbf02` (SHA-256 `c2b1f8de…c617`) after review round 1, records `73ff73a`.
+- Review: two seats from different model families, two rounds.
+  - GPT (`gpt-6-astra`, high, Codex): round 1 MATERIAL 0 and ADVISORY 3; round 2 MATERIAL 0 and ADVISORY 3.
+  - Opus (`claude-opus-5-5`, high): round 1 MATERIAL 2 and ADVISORY 7; round 2 MATERIAL 0 and ADVISORY 4.
+  - Round 1 MATERIAL, both fixed in revision 2: the long-only Sharpe omitted the risk-free rate; rule R1 on the
+    sleeves used active risk under step 2's name, and now uses each sleeve's own volatility.
+  - The seven round 2 advisories are implementation edges; the implementation resolved each without loosening a
+    rule (below). The reports are in the main checkout under `coord/reports/m5_step4/`, untracked.
+- Runner: `research/m5_step4.py` (`ff02458`, report fix `d0f05db`), tests `tests/test_m5_step4.py` (37 tests) with
+  the synthetic fixtures in `tests/m5_step4_support.py`.
+  - Reuse: `research/m4_7_sp500_pit_rerun.py` gains `segment_support` (the per-segment support before labels) and
+    `load_side_runs` (the per-side loader with caller-supplied events). `prepare_segment` and `load_segment_runs`
+    call them, and their outputs are unchanged; the reused-module tests passed (315).
+  - `bind_step4` keeps every pre-load check of `bind_snapshot_v3` against the amendment's eight pins and adds the
+    declared `d0_pre`; nothing under the snapshot's `terminal/` directory is read.
+- Run on `real_v2` under O-5 (`reports/m5_step4.md`, `.json`, `_attempts.jsonl`, committed `6478502`); each
+  completed attempt took about 12 minutes.
+  - Attempt 1 refused before any load: the snapshot directory argument was empty because the data-root variable
+    was unset in the shell.
+  - Attempt 2 completed, but its Markdown tables split at book labels containing a pipe.
+  - Attempt 3 is the recorded rerun after the renderer fix. Its JSON equals attempt 2 apart from the run time and
+    commit.
+- Result, `DIAGNOSTIC_ONLY`:
+  - Rule R1 meets 4 of 8 conditions against R0 on point-in-time books (6 of 8 on the public books over the same
+    months), so R0 is the point-in-time baseline.
+  - R2 meets 6 of 8 against rule R1 and 3 of 8 against R0, so the timing line closes.
+  - Fragile: three R2 Sharpe margins change sign in the last-close rerun; no decision outcome changes.
+  - S4.R1 has HAC p 0.193 and S4.R2 has HAC p 0.352, both with BY q 1.000 in the family of 480.
+  - Unpriced member-day share: 27.83 percent pre and 15.72 percent post.
+  - Residual held stops settled at -100 percent: 30 pre and 27 post.
+- Edge readings (round 2 advisories):
+  - An undated `entry_missing_field` interval is counted by interval, beside an upper-bound share that charges it
+    the whole span.
+  - A member-day is a row in the build's [m_in, m_out).
+  - The additive switch cost is kept.
+  - Step 4 computes no labels and no Family B, and a Family A failure refuses.
+  - Rule-level affected events cover class-layer months; sleeve counts show the rest.
+  - The amendment is the only specification.
+- Needs follow-up:
+  - the two-seat code review of the runner (real-data path);
+  - the `docs/current_handoff.md` refresh before a PR.
+
 ## 2026-09-29 - Milestone 5 step 4 private-data authorization (O-5)
 
 - The owner explicitly authorized Milestone 5 step 4 to read the local S&P 500 point-in-time snapshots `real_v1`
