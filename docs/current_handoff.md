@@ -59,8 +59,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   - SEC data build (`src/data/sec_edgar.py`, `research/m5_sec_identity.py`, `research/m5_step4b_data.py`, code
     `7560b4a`): fail-closed rule F maps 563 of 632 eligible IDs to one CIK; two-seat review `MATERIAL: 0`, and the
     map and hash list reproduced offline. The map and raw files stay local; the manifest holds hashes only.
-  - Amendment 5 revision 2 (SHA-256 `a712188c...`) was committed alone before any step 4b code or result and
-    passed two rounds of GPT and Opus review with `MATERIAL: 0`.
+  - Amendment 5 was frozen in two GPT and Opus review rounds, each revision committed alone before any step 4b
+    code or result. Round 1 found one MATERIAL finding per seat in revision 1; revision 2 (SHA-256
+    `a712188c...`) resolved both, and both seats reported `MATERIAL: 0` in round 2.
   - `research/m5_sec_signals.py` implements the as-filed rule (first-filed 10-K values, no amendment or older-year
     fallback, 18-month staleness, 15 typed missing reasons) for BM_AF, EP_AF, and GP_AT_AF; `research/m5_step4b.py`
     runs them beside the six step 4 sleeves, recomputes step 4, and runs S4b.ADD (BY family 481).
