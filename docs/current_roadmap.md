@@ -226,8 +226,11 @@ Status 2026-09-29:
   - R2 closes. It meets 6 of 8 against rule R1 and 3 of 8 against R0.
   - The result is fragile: three R2-against-R1 Sharpe margins change sign in the last-close rerun, and no decision
     changes. Every rule book trails SPY and the equal-weight benchmark.
-- Step 4b (SEC as-filed value and quality classes) waits for an owner decision on SEC EDGAR access. Step 5 can be
-  frozen in the meantime.
+- Step 4b (SEC as-filed value and quality classes) is frozen. O-10 granted SEC EDGAR access (`261e326`). The data
+  build maps 563 of 632 `real_v2` IDs to one CIK (`reports/m5_step4b_data.md`). Amendment 5 revision 2 (`e4d73ce`)
+  freezes the decision: whether R0 over the 6 price sleeves plus 3 SEC sleeves meets all 8 conditions against the
+  six-sleeve R0. It awaits freeze review round 2, then the implementation card. Step 5 can be frozen in the
+  meantime.
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most

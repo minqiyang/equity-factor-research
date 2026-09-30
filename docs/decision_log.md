@@ -27,11 +27,14 @@ Context:
 
 Decision:
 
-- Amendment 5 revision 1 (`docs/preregistrations/m5_trial_family_v1_amendment_5.json`, SHA-256
-  `136fa9f7...c1dd`, committed alone in `acc1f5a`) freezes step 4b. It was committed before any step 4b signal
-  code, SEC signal value, sleeve, return, or rule result.
-  - It follows the data-build review round 1: both seats reported MATERIAL 0. OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2
-    reading 2 are folded in; the other advisories are in the roadmap backlog.
+- Amendment 5 (`docs/preregistrations/m5_trial_family_v1_amendment_5.json`) freezes step 4b. Each revision was
+  committed alone, before any step 4b signal code, SEC signal value, sleeve, return, or rule result.
+  - Revision 1: `acc1f5a`, SHA-256 `136fa9f7...c1dd`. It follows the data-build review round 1: both seats reported
+    MATERIAL 0. OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2 reading 2 are folded in; the other advisories are in the
+    roadmap backlog.
+  - Revision 2: `e4d73ce`, SHA-256 `a712188c...0c75c`. It repairs freeze review round 1: GPT reported MATERIAL 1
+    and ADVISORY 2, and Opus reported MATERIAL 1 and ADVISORY 7. The coordinator rulings are the revision 2
+    defaults below.
   - It amends amendment 4 and pins it, v1, and amendments 1 to 3 by SHA-256. The `real_v2` pins are amendment 4's,
     unchanged.
   - It pins the SEC data by the CIK-map SHA-256 `09d163b9...120a` and the per-file hash-list SHA-256
@@ -49,13 +52,31 @@ Decision:
   - Annual 10-K and 10-KT facts only. A key's value comes from its first-filed 10-K or 10-KT fact, ties to the
     lowest accn; a key first filed in an amendment is typed missing; `frame`, `fy`, and `fp` are never read.
   - A fact is usable only if its filing date is before the date of row r - 1.
-  - Every component of a signal takes the anchor concept's latest usable fiscal year E*, with no mixing of years.
+  - Every component of a signal takes the anchor concept's latest fiscal year E*, with no mixing of years.
     E* earlier than row r - 1 minus 18 months is stale. There is no older-year or quarterly fallback.
-  - The preferred-stock rule reads only facts usable at row r - 1, so it cannot look ahead.
-  - Shares come from the filing that supplied the anchor value; two distinct values are typed ambiguous.
   - The share-date price is the last finite close within 10 rows on or before the cover date, inside the segment's
     loaded rows; in the post segment no seal-window price is read.
-  - Each SEC sleeve gives every eligible member-rebalance one status, in a fixed order of 15 typed reasons. The
+  - Revision 2 rulings, one line each:
+    1. GPT-S4BF-R1-M1: every evaluation-mask member-day gets one status. A ranking-set member at signal row r - 1
+       carries its rebalance-r status until the next rebalance. A between-rebalance entrant, or eligibility
+       resuming after a bar gap over r - 1, is `not_ranked_at_rebalance`, first in the order and counted by later
+       exit class. The reconciliation refusal stays.
+    2. OPUS-S4BF-M1: preferred is the first chain concept with a key at E*, and 0 when none has one. The
+       zero-by-absence cases are counted as `preferred_zero_by_absence`, not missing (the Fama-French and JKP
+       convention, matching `be_me`). An amendment-first chain key at E* makes BE `amendment_first`. This replaces
+       the revision 1 preferred rule.
+    3. GPT-S4BF-R1-A2 and OPUS-S4BF-A4: the order is period discovery, amendment-first classification, value
+       selection, staleness. E* is the latest end among anchor keys whose earliest 10-K-family fact was filed
+       before row r - 1. An amendment-first E* anchor is `amendment_first`, with no fallback. In a chain, the first
+       concept with a key at E* decides, with no fall-through.
+    4. GPT-S4BF-R1-A1: the primary dei share count comes from the anchor accession, at its latest end on or before
+       filed. The `CommonStockSharesOutstanding` fallback is restricted to end = E* before the ambiguity check.
+    5. OPUS-S4BF-A2: a primary share date after filed is `shares_missing`, so p is on or before r - 1.
+    6. OPUS-S4BF-A3: companyfacts carries no dimensional facts, so unlisted classes are not detected (515 filings
+       without a non-dimensional dei count, 462 of them `shares_missing`).
+    7. OPUS-S4BF-A1: `CostOfGoodsSold` joins the COGS chain after `CostOfRevenue`. No other tag is added, and the
+       measured chain coverage is stated in the amendment's limitations.
+  - The missing statuses are 15 typed reasons in a fixed order, plus the counted `preferred_zero_by_absence`. The
     member-day split by reason and exit class reconciles, or the run refuses.
   - Rule F stays as built, with no relaxation of the ticker-disagreement step (OPUS-S4B-D-03). It is fail-closed
     under R3, so the 3 affected delisting candidates stay ambiguous.
