@@ -15,6 +15,33 @@ investment performance.
 
 ---
 
+## 2026-09-30 - O-5 and O-9 Extended to Milestone 5 Step 4b, and Step 4b Scope Defaults
+
+Context:
+
+- The step 4b design note (`coord/reports/m5_step4b/design_note.md`, untracked) proposes one decision: whether SEC
+  as-filed value and quality sleeves join the step 4 baseline class set. It needs `real_v2` identity tables to map
+  securities to SEC CIKs, and the same books as step 4. O-5 and O-9 were granted for step 4 only.
+
+Decision:
+
+- **Owner:** O-5 (local reads of `real_v1` and `real_v2`, aggregates only, nothing written inside a snapshot, the seal
+  window unaccessed) and O-9 (VP-2 at `DIAGNOSTIC_ONLY`, disclosed in the report header) extend to step 4b on the same
+  terms.
+- **Coordinator scope defaults.** None of these loosens R1, R2, R3, R4, R6, R8, or R9.
+  - Three SEC sleeves: book-to-market and earnings yield (Value) and gross profit over assets (Quality).
+    Profitability and Investment wait.
+  - The decision compares R0 over the six price sleeves plus the SEC sleeves with the step 4 six-sleeve R0 on the
+    step 4 conditions, months, costs, R4 events, and last-close rerun. Rule R1 on the enlarged set is descriptive,
+    and R2 is not run.
+  - CIK mapping fails closed. A security with no unique CIK stays typed missing, with no hand override list;
+    20-F and 40-F filers and predecessor CIKs are not accepted. Missing securities are counted by later exit class.
+  - Annual 10-K facts only, first filed, usable from the trading day after filing, stale after 18 months. A key first
+    filed in an amendment is typed missing.
+  - A descriptive coverage-tilt check reruns price R0 on the mapped universe only and labels the result if any
+    margin sign changes.
+  - The SEC data build (CIK map, company facts, manifest) computes identity, so its code gets two review seats.
+
 ## 2026-09-30 - Owner Decision O-10: SEC EDGAR Access for Milestone 5 Step 4b
 
 Context:
