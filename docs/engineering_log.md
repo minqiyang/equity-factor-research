@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Milestone 5 step 4b runner and real_v2 run (DIAGNOSTIC_ONLY)
+
+- Authority: amendment 5 revision 2 (`e4d73ce`, SHA-256 `a712188c...0c75c`), O-5 and O-9 as extended to step 4b, and
+  O-10 (offline cache reads only). The run made 0 SEC requests and wrote nothing inside the snapshot, the SEC cache,
+  or the local CIK-map directory; an audit hook guarded all three.
+- Code: `research/m5_sec_signals.py` (the as-filed rule and BM_AF, EP_AF, GP_AT_AF) and `research/m5_step4b.py`
+  (pins, offline SEC reads, member-day statuses, R0_9 against R0_6, S4b.ADD, coverage tilt, report). Commits
+  `3744acc`, `e88cea8`, `4200cf1`.
+  - `research/m5_step4.py` gained default-preserving parameters only: `run_books` signal IDs, `class_layer` and
+    `rule_weights` without R2, `class_returns` and `load_public` sleeve and theme sets, and the split-only close
+    kept in `SegmentInputs`. The step 4 synthetic JSON and report keep their SHA-256 values (`8868e017...`,
+    `c915eab5...`), and the real run recomputed the step 4 results equal to `reports/m5_step4.json` apart from run
+    metadata (a new refusal, `step4_regeneration_mismatch`, guards this).
+  - A second new refusal, `sec_rebalance_rows_mismatch`, checks that the engine's scheduled rebalances equal the
+    evaluation resets, because the SEC panels hold values only at signal rows r - 1.
+- Tests: `tests/test_m5_step4b.py` (33) with synthetic companyfacts in `tests/m5_step4b_support.py`; they cover the
+  23 amendment 5 required tests and the three round 2 rulings (same-day 10-K and 10-K/A, stale before
+  `concept_missing`, a retained halt whose status and holding stay distinct). Step 4, reused-module, and structure
+  tests passed (377) before the code commit.
+- Pre-run counts on the SEC cache (counts only): 0 first-filed keys with distinct values inside one accession, and 0
+  fiscal-year-end instants whose status depends on which same-day accession is used, so neither edge binds.
+- Run (`reports/m5_step4b_attempts.jsonl`, two attempts):
+  - Attempt 1 refused `sec_identity_pool_mismatch` after 24 seconds, before any sleeve. The check read warm-up rows
+    before row d0 - 1, where 23 assets outside the pinned map (16 pre, 7 post) appear before any ranking set or
+    member-day. Fixed in `4200cf1` to rows [d0 - 1, last book row], with a synthetic test.
+  - Attempt 2 completed in 2,059 seconds.
+- Outcome: `not_join`. R0_9 meets 2 of 8 conditions against R0_6: both post Sharpe conditions hold, and every
+  pre condition and both post drawdown conditions fail. S4b.ADD mean 0.00051 a month over 99 months, HAC p 0.418,
+  BY q 1.0 (family 481). Not fragile, not coverage-tilted, last-close outcome `not_join` (2 of 8). Outputs
+  `reports/m5_step4b.md` and `reports/m5_step4b.json` (`0b53cea`).
+
 ## 2026-09-30 - Milestone 5 step 4b SEC data build: CIK map and company facts (DIAGNOSTIC_ONLY)
 
 - Authority: O-10 (SEC EDGAR download, User-Agent from `EFR_SEC_USER_AGENT`, never recorded; publication terms),

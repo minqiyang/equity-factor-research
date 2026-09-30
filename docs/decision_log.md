@@ -97,6 +97,35 @@ Decision:
     transmission are descriptive and add no slot. R2 is not run.
   - Two review seats for the freeze and the implementation. The SEC data-build code also takes two seats, as the
     coordinator confirmed on 2026-09-30.
+  - Implementation readings (code `3744acc`, `e88cea8`, and `4200cf1`), one line each. None loosens R1, R2, R4, R6, R8, or R9.
+    1. OPUS-S4BF-R2-A1 (coordinator ruling): a key is amendment-first only when every earliest-filed fact is an /A
+       filing. Otherwise it takes the 10-K or 10-KT value under `first_filed`, lowest accn on a tie.
+    2. OPUS-S4BF-R2-A2 (coordinator ruling): the procedure computes the signal, and a non-ranked member's reason is
+       the first entry of `sec_reasons.order` that applies; stale wins over `concept_missing`.
+    3. GPT-S4BF-R2-A1 and OPUS-S4BF-R2-A3 (coordinator ruling): the engine's `halt_gap_return_v1` accounting is
+       unchanged. `not_ranked_at_rebalance` means the member cannot be newly selected at that rebalance; a
+       previously held locked position stays held, so status counts and holdings are distinct.
+    4. A key's earliest fact is the minimum (filed, accn). The fiscal-year-end instant match uses the lowest accn
+       among the earliest-date facts; before the run, 0 instants had a status that depends on that choice.
+    5. A distinct-value tie inside one first-filed accession would take the first fact in file order; before the
+       run, 0 such keys existed, and the count is reported.
+    6. Staleness compares E* with the date of row r - 1 minus 18 calendar months, the day clipped to the month's
+       length.
+    7. The hash list is rebuilt from the cache's retrieval records, and every cached file is re-hashed against its
+       record. Only the companyfacts of `unique` CIKs are parsed.
+    8. For `sec_identity_pool_mismatch`, a price-sleeve asset is any asset in a segment's evaluation mask over rows
+       [d0 - 1, last book row], which hold every ranking set and member-day. The eligible pool rebuilt from the
+       snapshot must also equal the map's IDs.
+    9. The share-date price also needs a finite, positive cumulative split factor, since the raw close is the
+       split-only close times that factor.
+    10. The public counterpart runs R0 over the 9 and the 6 characteristics from the first month all 9 exist and
+        slices each comparison window, as step 4's public books did.
+    11. A member-day's later exit class is its resolved member window's class (step 4 `classify`), else `unknown`.
+    12. R0_6_mapped uses R0_6's comparison months, weights 1/6, and the drift turnover and switch cost.
+    13. Two refusals were added, both stricter: `step4_regeneration_mismatch` (the recomputed step 4 results must
+        equal `reports/m5_step4.json` apart from run metadata) and `sec_rebalance_rows_mismatch` (the engine's
+        scheduled rebalances must equal the evaluation resets, because the SEC panels hold values only at rows
+        r - 1).
 
 ## 2026-09-30 - O-5 and O-9 Extended to Milestone 5 Step 4b, and Step 4b Scope Defaults
 
