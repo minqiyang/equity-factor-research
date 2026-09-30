@@ -728,6 +728,24 @@ def _scan(text: str, extra: tuple[str, ...] = ()) -> None:
         assert token not in text, token
 
 
+def test_report_leads_with_decisions_and_every_table_row_fits_its_header(chain):
+    report = s4.render_report({**chain["doc"], "unpriced": {}})
+    sections = [line for line in report.splitlines() if line.startswith("## ")]
+    assert sections[:2] == ["## Decision Outcomes (primary run)",
+                            "## Survival: Point-in-Time Conditions Beside the Public Margins"]
+    decision = report.split("## Decision Outcomes")[1].split("## Survival")[0]
+    assert "of 8 on public books" in decision and "Fragility: **" in decision
+    assert report.index("DIAGNOSTIC_ONLY") < report.index("VP-2") < report.index("## Decision Outcomes")
+    width = None
+    for line in report.splitlines():
+        if line.startswith("|"):
+            cells = line.count("|") - 1
+            width = cells if width is None else width
+            assert cells == width, line
+        else:
+            width = None
+
+
 def test_outputs_hold_no_identifier_or_path(chain):
     doc = {**chain["doc"], "unpriced": {}}
     text = json.dumps(s4._clean(doc)) + s4.render_report(doc)

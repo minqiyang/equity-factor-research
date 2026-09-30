@@ -958,10 +958,22 @@ def _f(value: Any, digits: int = 3, pct: bool = False) -> str:
     return f"{100 * value:.{digits - 1}f}%" if pct else f"{value:.{digits}f}"
 
 
+def _book(key: str) -> str:
+    """A table label for a ``book|case`` key; a pipe inside a Markdown cell would split the cell."""
+    return key.replace("|", " (") + ")" if "|" in key else key
+
+
+def _survival_counts(run: dict[str, Any], key: str) -> str:
+    rows = run["survival"][key]
+    return (f"{sum(bool(r['holds']) for r in rows)} of 8 on point-in-time books, "
+            f"{sum(bool(r['public_holds']) for r in rows)} of 8 on public books over the same months")
+
+
 def render_report(doc: dict[str, Any]) -> str:
     p, lc = doc["runs"]["primary"], doc["runs"]["last_close"]
     frag = doc["fragility"]
     unpriced = doc.get("unpriced", {})
+    label = "FRAGILE" if frag["fragile"] else "not fragile"
     lines = [
         "# Milestone 5 Step 4: Price-Class Bridge on Point-in-Time S&P 500 Books",
         "",
@@ -971,8 +983,8 @@ def render_report(doc: dict[str, Any]) -> str:
         f"- **VP-2.** {VP2}",
         "- **R4.** No terminal evidence is accepted. Every residual held stop settles at -100 percent in every sleeve "
         "and in the equal-weight benchmark; a last-close rerun is reported beside it.",
-        f"- **Fragility: {'FRAGILE' if frag['fragile'] else 'not fragile'}** "
-        f"({len(frag['sign_changes'])} sign changes, outcome changes: {', '.join(frag['outcome_changes']) or 'none'}).",
+        f"- **Fragility: {label}** ({len(frag['sign_changes'])} sign changes between the -100 percent run and the "
+        f"last-close rerun; outcome changes: {', '.join(frag['outcome_changes']) or 'none'}).",
         "- **Unpriced members** are never held. Unpriced member-day share: "
         + "; ".join(f"{sid} {_f(u.get('unpriced_share'), 3, True)} (upper bound {_f(u.get('unpriced_share_upper_bound'), 3, True)})"
                     for sid, u in unpriced.items()) + f". {STAGE_D_PRE_UNPRICED}.",
@@ -983,11 +995,11 @@ def render_report(doc: dict[str, Any]) -> str:
         "",
         "## Decision Outcomes (primary run)",
         "",
-        f"- Point-in-time baseline product: **{p['decision']['baseline']}** "
-        f"(rule R1 meets {p['decision']['counts']['R1_vs_R0']} of 8 conditions against R0).",
+        f"- Point-in-time baseline product: **{p['decision']['baseline']}**. Rule R1 against R0: "
+        f"{_survival_counts(p, 'R1_vs_R0')}.",
         f"- R2: **{p['decision']['r2']}**" + (f", labeled '{p['decision']['r2_label']}'" if p['decision']['r2_label'] else "")
-        + f" (meets {p['decision']['counts']['R2_vs_R1']} of 8 against rule R1; {p['decision']['counts']['R2_vs_R0']} of 8 "
-        "against R0).",
+        + f". R2 against rule R1: {_survival_counts(p, 'R2_vs_R1')}; R2 against R0: {_survival_counts(p, 'R2_vs_R0')}.",
+        f"- Fragility: **{label}**. Sign changes: {', '.join(frag['sign_changes']) or 'none'}.",
         f"- Last-close rerun: baseline {lc['decision']['baseline']}, R2 {lc['decision']['r2']}.",
         "- S4 q-values and the fragility label are reported beside the outcomes and do not change them.",
         "",
@@ -1038,7 +1050,7 @@ def render_report(doc: dict[str, Any]) -> str:
     for sid, table in p["excess"].items():
         share = _f(unpriced.get(sid, {}).get("unpriced_share"), 3, True)
         for book, e in table.items():
-            lines.append(f"| {sid} | {book} | {_f(e['vs_spy']['annualized_mean_excess'], 3, True)} | "
+            lines.append(f"| {sid} | {_book(book)} | {_f(e['vs_spy']['annualized_mean_excess'], 3, True)} | "
                          f"{_f(e['vs_spy']['excess_total_return'], 3, True)} | "
                          f"{_f(e['vs_equal_weight']['annualized_mean_excess'], 3, True)} | "
                          f"{_f(e['vs_equal_weight']['excess_total_return'], 3, True)} | {share} |")
@@ -1083,11 +1095,11 @@ def render_report(doc: dict[str, Any]) -> str:
         for sid, table in run["events"].items():
             for book, e in table.items():
                 if "all" in e:
-                    lines.append(f"| {run_name} | {sid} | {book} | {e['all']['count']} | {_f(e['all']['weight_sum'], 4)} | "
+                    lines.append(f"| {run_name} | {sid} | {_book(book)} | {e['all']['count']} | {_f(e['all']['weight_sum'], 4)} | "
                                  f"{_f(e['all']['weight_max'], 4)} | {e['seal_gap']['count']} | "
                                  f"{e['outside_comparison_months']['count']} |")
                 else:
-                    lines.append(f"| {run_name} | {sid} | {book} | {e['unique_events']} unique, {e['incidences']} "
+                    lines.append(f"| {run_name} | {sid} | {_book(book)} | {e['unique_events']} unique, {e['incidences']} "
                                  f"incidences | {_f(e['weight_sum'], 4)} | {_f(e['weight_max'], 4)} | "
                                  f"{e['seal_gap_events']} | rule level: comparison months only |")
     lines += ["", "Residual stops per segment: " + "; ".join(f"{sid} {r['count']} (seal-gap {r['seal_gap']})"
@@ -1104,13 +1116,33 @@ def render_report(doc: dict[str, Any]) -> str:
                      + ", ".join(f"{k} {v['total']}" for k, v in table.items()) + ".")
     for sid, table in p["halts"].items():
         primary_rows = {k: v for k, v in table.items() if k.endswith("|primary")}
-        lines.append(f"- {sid} unmarked halt rows (primary cost case): "
-                     + ", ".join(f"{k.split('|')[0]} {v['unmarked_halt_rows']}" for k, v in primary_rows.items()) + ".")
+        lines.append(f"- {sid} unmarked halt rows and locked execution rows (primary cost case): "
+                     + ", ".join(f"{k.split('|')[0]} {v['unmarked_halt_rows']} and {v['locked_execution_rows']}"
+                                 for k, v in primary_rows.items()) + ".")
     lines += ["", "## Windows", ""]
     for sid, cases in p["comparison_months"].items():
         lines.append(f"- {sid}: comparison months " + "; ".join(f"{c} {v[0]} to {v[1]} ({v[2]})" for c, v in cases.items())
                      + f"; sleeve months {p['benchmarks'][sid]['sleeve_months'][0]} to "
                      f"{p['benchmarks'][sid]['sleeve_months'][1]} ({p['benchmarks'][sid]['sleeve_months'][2]}).")
+    snapshot = doc.get("snapshot", {})
+    git = doc.get("git", {})
+    lines += ["", "## Method and Provenance", "",
+              "- Specification: `docs/preregistrations/m5_trial_family_v1_amendment_4.json` revision 2 (SHA-256 "
+              f"`{AMENDMENT_4_SHA256}`) with v1 and amendments 1 to 3; the runner refuses unless all five match HEAD "
+              "and their pins.",
+              f"- Code commit `{git.get('commit', 'n/a')}`; tracked changes at run time: {git.get('tracked_changes')}.",
+              f"- Data: the local `{snapshot.get('id', SNAPSHOT_ID)}` snapshot, bound by the SHA-256 pins in "
+              f"`{REPORT_JSON}` (snapshot.pins) and the recomputed discovery inputs; public inputs from "
+              f"`{base.MANIFEST_JSON}` (SHA-256 `{PUBLIC_MANIFEST_SHA256}`). Nothing under the snapshot's terminal "
+              "directory is read, and the seal window stays unaccessed.",
+              "- Timing: `after_close_signal_next_observed_close_v1`. A sleeve signal uses row r - 1, executes at the "
+              "close of month-end row r, and first earns row r + 1. Class weights for month t use inputs through month "
+              "t-2, execute at the month t-1 close, and earn month t.",
+              "- Costs: stock 1 + 4 bp (primary) or 2 + 8 bp (sensitivity) on traded notional inside each sleeve; a "
+              "class switch cost of 20 or 50 bp on drift-adjusted class turnover; no borrow (long only); the equal-weight "
+              "benchmark and SPY are cost-free.",
+              "- Sample reuse: every comparison re-examines months or factors seen in M4.7 or in steps 2 and 3; the S4 "
+              "family counts 478 prior slots.", ""]
     lines += ["", "## Limitations", "",
               "- Costs do not net across sleeves and include no market-impact model; the switch cost is a proxy.",
               "- Rule R1 uses a 126-day sigma, not the v1 36-month window.",
