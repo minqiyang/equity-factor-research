@@ -1,0 +1,451 @@
+{
+  "schema_version": "m5_trial_family_v1_amendment_5",
+  "declared_on": "2026-09-30",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "purpose": "The step 4b amendment: one decision, whether SEC as-filed value and quality sleeves join the step 4 baseline class set. It fixes the SEC data pins, the CIK identity rule, the as-filed point-in-time rule, the three SEC signals, their sleeves and missingness types, the candidate and comparator rules, the coverage-tilt comparator, the S4b test and its BY family, the decision outcomes, the prior exposures, and the required tests for the step 4b code. Everything else is amendment 4 unchanged. It is committed alone, before any step 4b signal code, SEC signal value, sleeve, return, or rule result exists.",
+  "revision_history": [
+    {
+      "revision": 1,
+      "reason": "Initial freeze after the SEC data build (code 7560b4a) and its two-seat review round 1 (MATERIAL 0; OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2 reading 2 folded in); no step 4b result exists."
+    }
+  ],
+  "naming": "Price sleeves are the six amendment 4 Family A sleeves. SEC sleeves are BM_AF, EP_AF, and GP_AT_AF. The candidate is R0 over the 6 price sleeves plus the 3 SEC sleeves (R0_9). The comparator is amendment 4's six-sleeve R0 (R0_6), recomputed. Rule R1 means the inverse-volatility rule and invariant R1 the AGENTS.md timing invariant, as in amendment 4.",
+  "amends": {
+    "path": "docs/preregistrations/m5_trial_family_v1_amendment_4.json",
+    "sha256": "c2b1f8dea064ef1852d55bfda365faef8bd1c658897877037aae2fc0714ac617",
+    "also_in_force": [
+      {
+        "path": "docs/preregistrations/m5_trial_family_v1.json",
+        "sha256": "a99a862c651fd4e52e9904e62c8dfc539b85f57f1910d2a17b9bd03a6723417a"
+      },
+      {
+        "path": "docs/preregistrations/m5_trial_family_v1_amendment_1.json",
+        "sha256": "b3992b3282910a5bf056d3d6061e4456e6b4d4a923f4e6d3493898a445b90751"
+      },
+      {
+        "path": "docs/preregistrations/m5_trial_family_v1_amendment_2.json",
+        "sha256": "59461b150a957959f0fc9ac36aef9889168d6924f17bc33c3f15dab25eae72f1"
+      },
+      {
+        "path": "docs/preregistrations/m5_trial_family_v1_amendment_3.json",
+        "sha256": "c59f69c8262190ad7a1807d42a02e572667dcffa03c11a11c4d2e17a2bb5bfbb"
+      }
+    ],
+    "sections": [
+      "classes_and_signals (three SEC as-filed signals and their themes; new)",
+      "sec_data, identity, and as_filed (new)",
+      "sleeves and missingness (SEC sleeves and their typed missing reasons)",
+      "rules (the candidate R0_9 and the comparator R0_6; rule R1 over nine sleeves descriptive; R2 not run)",
+      "coverage_tilt (new)",
+      "step 4b test, BY family, decision outcomes, and required tests (new)"
+    ],
+    "unchanged": "Every other amendment 4 section binds unchanged: the snapshot and its pins, the universe, returns and volume, disappearances, costs, benchmarks, metrics, halves_and_window, and the step 4 decision and its result. No public-data definition, result, or decision of steps 2, 3, and 4 changes."
+  },
+  "authority": "Owner decisions O-5 and O-9, extended to step 4b on the same terms (docs/decision_log.md, 2026-09-30), and O-10 (SEC EDGAR download and publication terms) bind this amendment, together with the coordinator step 4b scope defaults of 2026-09-30. Amendment 4 names step 4b as the next consumer of its survival figure (question_and_decision.decides; classes_and_signals.waiting). This amendment is a coordinator amendment recorded as amendments 1 to 4 were. Each choice under technical_defaults is a coordinator technical default under the AGENTS.md Owner Process Constraints, logged in docs/decision_log.md; none loosens R1, R2, R4, R6, R8, or R9 relative to amendment 4. The freeze takes two review seats from different model families.",
+  "question_and_decision": {
+    "question": "On the step 4 point-in-time books after costs, does adding three SEC as-filed sleeves (two Value, one Quality) to the six price sleeves under R0 meet all 8 step 2 conditions against the six-sleeve R0?",
+    "decides": "whether the SEC Value and Quality classes join the baseline class set that step 5 inherits",
+    "looks": "One declared run: the primary run under the R4 adverse default and its last-close rerun, computed and reported together. A rerun happens only to fix a defect; every attempt is appended to reports/m5_step4b_attempts.jsonl and stays visible under R9.",
+    "out_of_scope": "R2 and theme multipliers (the closed line); a rule R1 re-test; shorts; any new snapshot; the Profitability and Investment signals."
+  },
+  "snapshot": {
+    "id": "real_v2",
+    "pins": "the eight amendment 4 pins and every panel hash, unchanged (amendment 4 snapshot.pins and snapshot.panel_files)",
+    "declared_properties": "amendment 4 snapshot.declared_properties, unchanged",
+    "binding": "research/m5_step4.py bind_step4 and the amendment 4 file hash; any mismatch refuses before a panel load",
+    "loader": "research/m5_step4.py load_segment_runs_step4 (terminal-free), unchanged",
+    "seal_guard": "amendment 4 snapshot.seal_guard, unchanged; the seal window stays unaccessed",
+    "writes": "Nothing is written inside the snapshot. The runner writes reports/m5_step4b.md, reports/m5_step4b.json, and reports/m5_step4b_attempts.jsonl, aggregates and hashes only (R11). Per-company SEC values stay in memory and are never written."
+  },
+  "sec_data": {
+    "source": "SEC company_tickers.json, company_tickers_exchange.json, cik-lookup-data.txt, submissions with history pages, and XBRL companyfacts, retrieved 2026-09-30 07:58:31Z to 08:15:33Z through src/data/sec_edgar.py (O-10) by the data-build driver research/m5_step4b_data.py",
+    "pins": {
+      "cik_map_sha256": "09d163b91d386064553935d0648424fa1bd1d1469fec2404a440c65c3fed120a",
+      "file_hash_list_sha256": "3c73ffe2210bd87147ecc79e1963ef08a86843a937b06fe62ede372e27c6698a",
+      "manifest_path": "reports/m5_step4b_sec_manifest.json",
+      "manifest_rule": "The manifest's own file hash is not pinned, because its code_commit field changes on any rebuild. The runner refuses unless the manifest's cik_map.sha256 and file_hash_list.sha256 equal the two pins above."
+    },
+    "build_code": {
+      "commit": "7560b4a",
+      "research/m5_sec_identity.py": "98c7cb9390cfff24ae8aa141c6a3922ddf0e5be4090162300fe8039a4a858641",
+      "src/data/sec_edgar.py": "a077eee5e82fd985efabe5acbed7bf0437dcbb0494ba98e33e367e97dc931472",
+      "research/m5_step4b_data.py": "81c4dfacc78cb6b182cfac3898adec22bb7cfd5b8190bb854e2b94860e2b0fd7"
+    },
+    "reads": "The step 4b runner reads the SEC cache offline only (SecClient offline mode): it makes no network request, and every file it opens must match its retrieval record. It recomputes the SHA-256 of the local CIK map and of the sorted per-file hash list rebuilt from the cache's retrieval records, and refuses (sec_pin_mismatch) unless both equal the pins. It reads only the companyfacts files of CIKs with status unique in the pinned map.",
+    "location": "The CIK map and the per-file hash list stay local, beside the snapshot, in <snapshot parent>/m5_step4b_sec/, derived from the snapshot directory argument; no private path is written to the repository (R11, O-10).",
+    "publication": "O-10: raw SEC files stay in the gitignored cache data/public_cache/sec/; per-company as-filed values, CIK lists, and security codes are never committed; aggregates may be committed at DIAGNOSTIC_ONLY."
+  },
+  "identity": {
+    "rule": "Rule F, fail-closed (R3), exactly as implemented in research/m5_sec_identity.py at 7560b4a and recorded in the pinned CIK map: candidates from SEC's current ticker files and from the EDGAR name list (current or former names); a candidate survives only with a matching SEC name or formerNames entry and a 10-K or 10-Q (the /A, 405, and T variants included) filed inside the member window [m_in, m_out); with several survivors a ticker tie-break must leave exactly one; a unique ticker-route CIK that disagrees makes the ID ambiguous; an accepted CIK that filed a 20-F or 40-F (or its /A) inside the member window is not accepted, while such filings before m_in or on or after m_out do not exclude a CIK (7 accepted IDs have earlier foreign filings, none inside or after the window); a CIK accepted for more than one permanent ID types all of them multi_class. No hand override exists, and no predecessor or successor CIK is ever joined to the accepted one.",
+    "statuses": {
+      "unique": "exactly one CIK; the only status an SEC sleeve can rank",
+      "ambiguous": "typed missing (identity_ambiguous)",
+      "unmapped": "typed missing (identity_unmapped)",
+      "multi_class": "typed missing (identity_multi_class)"
+    },
+    "seen_counts": "Of 632 eligible permanent IDs: unique 563, ambiguous 7, unmapped 54, multi_class 8 (4 shared CIKs, all with overlapping member windows). No ID was rejected for a foreign form. By later exit class, not uniquely mapped: index_removal_still_trading 49 of 530, delisting_candidate 8 of 71, disappearance_outside_membership 12 of 31 (reports/m5_step4b_data.md).",
+    "scope": "The map is keyed by permanent ID. A price-sleeve asset outside the pinned map's 632 IDs cannot occur (the pool is every resolved, panel-backed ID whose member window overlaps a segment); if one occurs, the run refuses (sec_identity_pool_mismatch)."
+  },
+  "as_filed": {
+    "facts": "From the CIK's companyfacts: us-gaap facts (dei only for the shares of classes_and_signals.me) with form 10-K or 10-KT; unit USD for monetary concepts and shares for share counts.",
+    "key": "(concept, unit, start, end); an instant has no start",
+    "first_filed": "The key's value is the value of its earliest-filed fact among forms 10-K and 10-KT; ties go to the lowest accn. 10-K/A, 10-KT/A, 10-Q, 10-Q/A, 8-K, and every later comparative never supply or replace a value.",
+    "amendment_first": "A key whose earliest-filed fact among the forms 10-K, 10-KT, 10-K/A, and 10-KT/A is an /A filing takes no value and is typed amendment_first where a signal needs it.",
+    "not_used": "frame, fy, and fp are never read (the scouting probes showed frame sits on the last-filed version of a restated key)",
+    "flows": "a flow key is annual when end - start is 350 to 380 days inclusive; other flow keys are never used",
+    "instants": "an instant key is a fiscal-year-end instant when its end equals the end of an annual flow key whose earliest-filed 10-K or 10-KT fact has the same accn; other instant keys are never used",
+    "timing": "A fact is usable from the first calendar row strictly after its filed date (invariant R1, AGENTS.md: filing date plus one trading day). It enters the signal of rebalance row r only if that row is on or before row r - 1, that is, only if filed is before the date of row r - 1. The engine reads the signal at row r - 1 (after_close_signal_next_observed_close_v1, signal_lag_periods 1).",
+    "selection": "At row r - 1 each signal takes its fiscal year E*: the latest end among the usable annual keys of its anchor concept (StockholdersEquity for BM_AF, NetIncomeLoss for EP_AF, Assets for GP_AT_AF). Every other component of that signal must come from a usable key with the same end E*, and for flows the same annual key period.",
+    "staleness": "E* is stale when it is earlier than the date of row r - 1 minus 18 calendar months; the signal is then typed stale.",
+    "no_fallback": "There is no fallback to quarterly data, to an older fiscal year, or to a trailing-twelve-month construction, so no Q4 is derived.",
+    "xbrl_start": "XBRL begins 2009-07 to 2009-10 in the scouting probes, more than 4.5 years before d0_pre 2014-04-30."
+  },
+  "universe": {
+    "segments": "amendment 4 universe.segments, unchanged",
+    "membership": "amendment 4 universe.membership, unchanged (invariant R2)",
+    "assets": "amendment 4 universe.assets, unchanged; every price and SEC sleeve of a segment uses the same assets and evaluation mask",
+    "sec_rankable": "At rebalance row r, an SEC sleeve ranks an eligible member only when its permanent ID has status unique and the signal is finite at row r - 1. Every other eligible member is not ranked by that sleeve, is typed with one missing reason (missingness.sec_reasons), and stays in every price sleeve and in the equal-weight benchmark."
+  },
+  "classes_and_signals": {
+    "price_signals": "the six amendment 4 Family A signals and their JKP map, unchanged",
+    "sec_signals": [
+      {
+        "signal": "BM_AF",
+        "formula": "BE / ME",
+        "jkp_characteristic": "be_me",
+        "theme": "Value",
+        "cluster_labels_line": 11,
+        "public_counterparts": "jkp be_me; French HML"
+      },
+      {
+        "signal": "EP_AF",
+        "formula": "NetIncomeLoss / ME; negative values are ranked, not dropped",
+        "jkp_characteristic": "ni_me",
+        "theme": "Value",
+        "cluster_labels_line": 81,
+        "public_counterparts": "jkp ni_me; French HML"
+      },
+      {
+        "signal": "GP_AT_AF",
+        "formula": "GP / Assets",
+        "jkp_characteristic": "gp_at",
+        "theme": "Quality",
+        "cluster_labels_line": 54,
+        "public_counterparts": "jkp gp_at"
+      }
+    ],
+    "direction": "higher is better for all three",
+    "be": "BE = StockholdersEquity (instant at E*) minus preferred. Preferred is the first usable key at E* in the frozen chain PreferredStockValue, PreferredStockValueOutstanding, PreferredStockIncludingAdditionalPaidInCapitalNetOfDiscount. Preferred counts as 0 only when no fact of any chain concept, at any end, is usable at row r - 1; when some chain fact is usable but none at E*, BE is typed preferred_missing. BE <= 0 is typed be_nonpositive (undefined).",
+    "net_income": "NetIncomeLoss, the annual flow key ending at E*",
+    "gross_profit": "GP = GrossProfit (annual key ending at E*) when usable; otherwise Revenue - COGS, where Revenue is the first concept in RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet with a usable annual key ending at E*, and COGS is the first in CostOfGoodsAndServicesSold, CostOfRevenue with a usable annual key of the same start and end. A missing component (for example a bank with no cost of revenue) is typed concept_missing. Assets is the instant at E*; Assets <= 0 is typed assets_nonpositive.",
+    "me": "ME at row r - 1 = shares_s * close(p) * (split-only close at r - 1 / split-only close at p), where the split-only close is close / cum_split from research/real_data_multifactor_diagnostic.py build_adjusted_research_panels (R7). shares_s is dei:EntityCommonStockSharesOutstanding (unit shares) from the filing (accn) that supplied the anchor key's value, dated at its cover date s = that fact's end; if that filing has none, us-gaap:CommonStockSharesOutstanding from the same accn at end E*, with s = E*. More than one distinct value for the chosen concept in that filing is typed shares_ambiguous; none, or a value <= 0, is typed shares_missing. p is the last row on or before s, inside the segment's loaded rows and within the 10 calendar rows ending at s, at which the asset has a finite close; without such a row, or without a finite close at r - 1, ME is typed price_missing. Algebraically ME equals shares_s restated to the row r - 1 split basis times the close at r - 1.",
+    "multi_class": "The 8 multi_class IDs are typed missing in every SEC sleeve (identity.statuses).",
+    "waiting": "OPE_BE and OCF_AT (Profitability, cluster_labels lines 99 and 93) and AG (Investment, line 7) wait unless the owner widens the scope. Seasonality and share-based Size still wait.",
+    "class_return": "Descriptive only, as in amendment 4: rule R1 within the class. Value holds BM_AF and EP_AF; Quality holds GP_AT_AF, so its class return equals its sleeve."
+  },
+  "sleeves": {
+    "count": "Per segment: the 6 amendment 4 price sleeves and 3 SEC sleeves, each at 2 cost cases, in each of the two event runs.",
+    "engine_call": "research/m4_7_sp500_pit_rerun.py run_book('long_only', prices, signal, calendar, window, intervals, events, cost, top_pct = 0.20, missing_price_policy = 'halt_gap_return_v1') on the same prices, window, intervals, residual events, and evaluation mask as the price sleeves; the SEC signal panel holds the row r - 1 SEC value at each eligible member-row and NaN elsewhere",
+    "holdings": "amendment 4 sleeves.holdings: ceil(0.2 * n) of the n ranked members, equal weight",
+    "timing": "amendment 4 sleeves.timing, unchanged",
+    "monthly_return": "amendment 4 sleeves.monthly_return and sleeve_months, unchanged",
+    "empty_target": "research/m5_step4.py check_sleeve_targets applies to the SEC sleeves: a scheduled rebalance with no ranked member refuses the run (empty_sleeve_target)."
+  },
+  "costs": {
+    "stock_costs": "amendment 4 costs.stock_costs, unchanged (1 + 4 bp and 2 + 8 bp inside every sleeve)",
+    "switch_cost": "amendment 4 costs.switch_cost on drift-adjusted class turnover over the sleeves of each rule, 20 and 50 bp, paired as (1 + 4, 20) and (2 + 8, 50); the first comparison month of each segment starts from cash with turnover 1",
+    "zero_cost": "No zero-cost sleeve or rule is run.",
+    "borrow": "No short position, so no borrow cost applies.",
+    "netting_and_impact": "amendment 4 costs.netting and costs.impact, unchanged"
+  },
+  "rules": {
+    "candidate": "R0_9: w_s,t = 1/9 over the 6 price sleeves and 3 SEC sleeves of the segment (research/m5_factor_baseline.py rule_weights 'R0'), all present in every comparison month",
+    "comparator": "R0_6: w_s,t = 1/6 over the 6 price sleeves, amendment 4's R0, recomputed in the same run on the same inputs. Its metrics must equal the committed reports/m5_step4.json runs.primary.rules.R0 and runs.last_close.rules.R0 exactly; otherwise the run refuses (comparator_mismatch).",
+    "same_sleeves": "The 6 price sleeves of R0_9 are the same sleeve series as those of R0_6.",
+    "R1_descriptive": "Rule R1 over the nine sleeves, with amendment 4's own-sleeve 126-row sigma ending at month t-2, is reported beside R0_9 and R0_6. It computes no test and decides nothing.",
+    "R2": "Not run: the timing line closed in step 4.",
+    "timing": "amendment 4 rules.timing, unchanged; weights execute at the month t-1 close and earn month t",
+    "start": "The comparison months are amendment 4's: 2014-12 to 2019-06 (55) and 2022-05 to 2025-12 (44). If the nine-sleeve class layer yields a different set, the run refuses (comparison_months_mismatch)."
+  },
+  "coverage_tilt": {
+    "role": "descriptive, with a label; it never changes the decision",
+    "universe": "The mapped universe: the permanent IDs with status unique in the pinned CIK map (563). Each price sleeve is rerun with its evaluation mask restricted to those IDs; prices, window, intervals, residual events, top_pct, costs, and every other input are unchanged. The universe is fixed for the whole run and does not depend on SEC value availability.",
+    "comparator": "R0_6_mapped: R0 over the six mapped-universe price sleeves, with the same switch cost and months",
+    "label": "The result is labeled coverage-tilted when the sign of any of the 8 margins of R0_9 against R0_6_mapped differs from the sign of the same margin against R0_6 in the primary run (sign as in amendment 4 disappearances.fragility, |x| < 1e-12 counted as 0).",
+    "reported": "R0_6_mapped's metrics and its 8 margins beside the primary comparison; no test"
+  },
+  "disappearances": {
+    "events": "amendment 4 disappearances, unchanged: residual held stops settle at -100 percent in every price and SEC sleeve and in the equal-weight benchmark, with a last-close rerun at 0.0",
+    "fragility": "The step 4b result is labeled fragile when the sign of the S4b.ADD mean difference, the sign of any of the 8 margins of R0_9 against R0_6, or the decision outcome differs between the primary run and the last-close rerun. The label is reported and does not change the decision.",
+    "affected_events": "amendment 4 disappearances.affected_events, reported for each SEC sleeve and for R0_9"
+  },
+  "missingness": {
+    "refusals": [
+      "every amendment 4 refusal",
+      "a CIK map or hash-list SHA-256 different from sec_data.pins, a cached SEC file that fails its retrieval record, or any network request (sec_pin_mismatch)",
+      "a price-sleeve asset without a row in the pinned CIK map (sec_identity_pool_mismatch)",
+      "an empty SEC sleeve target at any scheduled rebalance (empty_sleeve_target)",
+      "R0_6 metrics that differ from the committed step 4 R0 (comparator_mismatch)",
+      "comparison months different from amendment 4's (comparison_months_mismatch)"
+    ],
+    "sec_reasons": {
+      "rule": "For each SEC sleeve, each rebalance row r, and each eligible member at row r - 1, exactly one status: ranked, or the first reason that applies in this order. Nothing is filled, clipped, or repaired (R6).",
+      "order": [
+        {
+          "type": "identity_unmapped",
+          "when": "status unmapped in the pinned map"
+        },
+        {
+          "type": "identity_ambiguous",
+          "when": "status ambiguous"
+        },
+        {
+          "type": "identity_multi_class",
+          "when": "status multi_class"
+        },
+        {
+          "type": "facts_absent",
+          "when": "the CIK's companyfacts is a recorded 404 (0 at the data build)"
+        },
+        {
+          "type": "non_usd",
+          "when": "no usable USD annual key of the anchor concept exists, but a usable key in another unit does"
+        },
+        {
+          "type": "no_annual_fact",
+          "when": "no usable annual key of the anchor concept exists (includes no 10-K yet)"
+        },
+        {
+          "type": "amendment_first",
+          "when": "a required key at E* is amendment-first"
+        },
+        {
+          "type": "stale",
+          "when": "E* is more than 18 months before the date of row r - 1"
+        },
+        {
+          "type": "concept_missing",
+          "when": "another required component has no usable key at E*"
+        },
+        {
+          "type": "preferred_missing",
+          "when": "BM_AF only: a preferred fact is usable but none at E*"
+        },
+        {
+          "type": "be_nonpositive",
+          "when": "BM_AF only: BE <= 0 (undefined)"
+        },
+        {
+          "type": "assets_nonpositive",
+          "when": "GP_AT_AF only: Assets <= 0 (undefined)"
+        },
+        {
+          "type": "shares_ambiguous",
+          "when": "more than one distinct share value in the anchor filing"
+        },
+        {
+          "type": "shares_missing",
+          "when": "no share value, or a value <= 0"
+        },
+        {
+          "type": "price_missing",
+          "when": "no finite close at p or at r - 1 (classes_and_signals.me)"
+        }
+      ]
+    },
+    "identity_exposure": "Reported, not a gate: the not-mapped share weighted by in-segment member-days, beside the per-ID counts. An ID's member-days in a segment are the calendar rows of its member window [m_in, m_out) clipped to the segment's [first reset, last book row] (the amendment 4 member-day semantics). The share is split by later exit class and by identity status and reason (ambiguous: several_survivors, ambiguous: ticker_cik_disagrees, multi_class: shared_cik_overlapping, unmapped: name_mismatch, unmapped: no_periodic_filing_in_window, unmapped: foreign_form_in_window), per segment and pooled.",
+    "no_periodic_filing_in_window": "This reason is dominated by member windows shorter than one filing cycle: 30 of its 36 IDs have windows under 120 days (results_seen_before_this_amendment.data_review). Such a CIK typically had no 10-K filed before m_out, so it could not supply a usable annual fact during membership. The rule is unchanged.",
+    "sec_share": "Per segment and SEC sleeve: the eligible member-day share by status and reason, split by later exit class (the amendment 4 classes, unresolved excluded because unresolved intervals are not eligible). The status of a member at rebalance r applies to each row from r to the row before the next rebalance at which the member is in the evaluation mask. The split reconciles to the eligible member-days; a gap refuses.",
+    "unpriced_share": "amendment 4 missingness.unpriced_share, unchanged and reprinted",
+    "halts": "amendment 4 missingness.halts, unchanged"
+  },
+  "benchmarks": {
+    "spy_and_equal_weight": "amendment 4 benchmarks, unchanged",
+    "reported": "for R0_9, R0_6, R0_6_mapped, rule R1 over nine sleeves, and each SEC sleeve, per segment and cost case: the annualized mean monthly net excess over SPY and over the equal-weight benchmark and the compounded excess, each beside the segment's unpriced share"
+  },
+  "metrics": "amendment 4 metrics, unchanged (sharpe_long_only with the French FF3 RF; research/m5_factor_baseline.py performance)",
+  "survival": {
+    "primary": "The 8 conditions of R0_9 against R0_6 on point-in-time books: 2 segments x 2 cost cases x {sharpe_long_only at least, maximum-drawdown magnitude at most}, through research/m5_step4.py conditions and research/m5_step3.py closure_conditions (1e-12 tolerance; an undefined value fails).",
+    "public_counterpart": "Descriptive: R0 over the 9 matched JKP characteristics (the 6 of amendment 4 plus be_me, ni_me, gp_at) against R0 over the 6, from jkp_usa_all_factors_monthly_vw_cap in the pinned public cache, computed as the step 2 public books are (research/m5_factor_baseline.py, v1 Sharpe, switch cost 20 and 50 bp), over the same comparison months; the 8 margins and the ratio as in amendment 4 survival.ratio.",
+    "role": "The decision uses the point-in-time conditions only."
+  },
+  "transmission": {
+    "role": "descriptive only; no test and no decision",
+    "sleeve": "amendment 4 transmission.sleeve for each SEC sleeve against its matched JKP characteristic",
+    "class": "amendment 4 transmission.class for Value and Quality against their amendment 3 class returns"
+  },
+  "halves_and_window": "amendment 4 halves_and_window, unchanged: 55 pre and 44 post comparison months, 99 in all, through 2025-12; sleeve months 2026-01 to 2026-07 descriptive",
+  "step4b_tests": {
+    "family": "S4b",
+    "tests": [
+      {
+        "id": "S4b.ADD",
+        "statistic": "d_t = R0_9 net return minus R0_6 net return at the primary cost case over the 99 pooled comparison months of both segments, in time order, in the primary run"
+      }
+    ],
+    "method": "research/m5_step3.py rule_test, as amendment 4 step4_tests.method: two-sided HAC p-value with Bartlett lag floor(4 * (n / 100) ** (2 / 9)) and the pointwise 95 percent interval; the pooled HAC treats the segment boundary as adjacent; an undefined test keeps its slot with p = 1",
+    "not_tested": "The last-close rerun reports the mean of d_t and its sign only. Rule R1 over nine sleeves, R0_6_mapped, the public counterpart, class returns, and transmission compute no test statistic and add no slot.",
+    "correction": "src/features/multiple_testing.py adjust_pvalues(p, method = 'by', family_size = 481) on the 1 observed S4b p-value; the other 480 slots enter as p = 1 through family_size",
+    "family_size": {
+      "count": 481,
+      "counting_rule": "amendment 4 step4_tests.family_size (480, counted conservatively) plus the 1 S4b test. The two S4 tests of step 4 enter as slots at p = 1, like the other prior slots.",
+      "items": [
+        {
+          "source": "step 4b",
+          "variant": "S4b.ADD (observed, primary run)",
+          "slots": 1
+        },
+        {
+          "source": "step 4",
+          "variant": "S4.R1 and S4.R2 (reports/m5_step4.json)",
+          "slots": 2
+        },
+        {
+          "source": "public rule tests",
+          "variant": "S2.jkp_factors_153, S2.jkp_themes_13, S2.french_7, S3.R2, S3.R3, S3.R4",
+          "slots": 6
+        },
+        {
+          "source": "committed M4.7 v1 and v2 records",
+          "variant": "Family A statistics, as itemized in amendment 4 step4_tests.family_size.items",
+          "slots": 472
+        }
+      ],
+      "left_outside": "amendment 4 step4_tests.family_size.left_outside, unchanged; in addition the step 4 last-close rerun computed no statistic, and the SEC data build computed none"
+    },
+    "random_date_null": "None, as in amendment 4",
+    "role": "The S4b q-value and interval are reported beside the decision outcome and do not change it."
+  },
+  "decision_outcomes": {
+    "join": "The SEC Value and Quality classes join the baseline class set when R0_9 meets all 8 conditions against R0_6 in the primary run.",
+    "not_join": "Otherwise they do not join, and the result is reported as a negative.",
+    "undefined": "An undefined Sharpe or drawdown fails its condition.",
+    "beside": "Fragility, the coverage-tilt label, the last-close outcome, and the S4b q-value are reported beside the outcome and never change it.",
+    "claims": "No outcome is a profitability claim; each is a DIAGNOSTIC_ONLY result on exposed months (prior_exposures)."
+  },
+  "data_and_timing": [
+    {
+      "input": "price sleeves and their signals",
+      "source": "amendment 4 data_and_timing",
+      "window": "unchanged"
+    },
+    {
+      "input": "SEC signal at rebalance row r",
+      "source": "pinned companyfacts of unique CIKs",
+      "window": "facts with filed before the date of row r - 1 (usable from the trading day after filed); fiscal year E* at most 18 months before row r - 1"
+    },
+    {
+      "input": "ME at row r - 1",
+      "source": "shares from the anchor 10-K; the segment's side panel close and split-only close",
+      "window": "rows p (on or before the cover date s) and r - 1, both loaded rows of the segment"
+    },
+    {
+      "input": "CIK status",
+      "source": "pinned CIK map",
+      "window": "identity fixed once from the member window and SEC files retrieved 2026-09-30; it gates ranking only and carries no return"
+    },
+    {
+      "input": "rule R1 sigma (descriptive)",
+      "source": "each sleeve's own daily net returns",
+      "window": "126 rows ending on the last trading day of month t-2"
+    },
+    {
+      "input": "public JKP counterparts",
+      "source": "reports/m5_public_data_manifest.json inputs",
+      "window": "month-t returns are outcomes only"
+    },
+    {
+      "input": "month-t sleeve, benchmark, and rule returns",
+      "source": "the engine and the class layer",
+      "window": "outcome only"
+    }
+  ],
+  "prior_exposures": {
+    "step_4": "Every step 4 number is seen, on the same 99 comparison months, including the R0_6 comparator's metrics and margins (reports/m5_step4.md, reports/m5_step4.json).",
+    "stock_level_fundamentals": "No committed record tests a fundamental signal at stock level; the M4.7 families use prices and volume only.",
+    "public": "be_me, ni_me, and gp_at are in jkp_factors_153, used in steps 2 and 3; HML is in french_7. The public value and quality factor histories are therefore seen as parts of those books.",
+    "m4_7_and_seal_record": "amendment 4 prior_exposures, unchanged",
+    "consequence": "No step 4b result is confirmatory."
+  },
+  "records": {
+    "report": "reports/m5_step4b.md and reports/m5_step4b.json, headed DIAGNOSTIC_ONLY with VP-2 (O-9), the R4 default and fragility label, the coverage-tilt label, the unpriced share and the SEC missing shares by reason and exit class, the missing 2020 crash, and the prior exposures",
+    "attempts": "reports/m5_step4b_attempts.jsonl: every attempt with the code commit, the amendment 5 SHA-256, the snapshot and SEC pins, and the outcome",
+    "trial_file_pins": "The runner refuses unless v1 and amendments 1 to 5 match their pinned SHA-256 and HEAD."
+  },
+  "required_tests": [
+    "future_perturbation_filing: on a synthetic fixture, a fact filed on the date of row r - 1 or later leaves the SEC sleeve target at row r unchanged, and one filed the calendar day before that date can change it; changing any price after row r - 1 leaves the target unchanged",
+    "first_filed: a later 10-K/A, a later 10-K comparative, and a 10-Q never replace a key's value; a key first filed in a 10-K/A is typed amendment_first; changing frame, fy, or fp changes nothing",
+    "annual_and_instant: flows of 349 and 381 days are not annual, 350 and 380 are; an instant whose end is not the end of an annual flow key in the same accn is not used",
+    "selection_and_staleness: E* is the latest usable anchor end; a component at another end is concept_missing; E* exactly 18 months before row r - 1 is usable, one day earlier is stale; there is no fallback to an older year",
+    "chains: the first chain concept with a usable key at E* is used; preferred counts as 0 only when no preferred fact is usable at row r - 1, a later-filed preferred fact does not change an earlier rebalance, a usable preferred fact without an E* key is preferred_missing; BE <= 0 is be_nonpositive; GrossProfit precedes Revenue - COGS, whose keys must share start and end; a bank without COGS is concept_missing",
+    "me_split_continuity (R7): a 2-for-1 split between p and r - 1 leaves ME continuous; shares come from the anchor accn with the CommonStockSharesOutstanding fallback; two distinct values are shares_ambiguous; p outside the loaded rows or more than 10 rows before s is price_missing",
+    "identity_gate: only unique IDs are ranked; unmapped, ambiguous, and multi_class IDs are typed and counted by later exit class and stay in the price sleeves",
+    "sec_pins_offline: a changed CIK map, a changed cached file, or a hash-list mismatch refuses before any sleeve; the runner makes no network request (a sentinel opener that raises on any call is never called)",
+    "sec_reasons: each eligible member-rebalance gets exactly one status in the frozen order; the member-day split reconciles, and a gap refuses",
+    "empty_sec_sleeve_refuses: a rebalance with no ranked member refuses",
+    "step4_regression: after parameterizing FAMILY_A_IDS and SLEEVES, the step 4 synthetic outputs are byte-identical; R0_6 metrics different from the committed step 4 R0 refuse comparator_mismatch",
+    "comparison_months: a nine-sleeve class layer whose months differ from amendment 4's refuses",
+    "coverage_tilt: the mapped universe holds only unique IDs; a margin sign that differs against R0_6_mapped sets the label; the label never changes the decision",
+    "decide_4b: all 8 conditions give join; any single failure, or an undefined value, gives not_join; a difference below 1e-12 holds",
+    "fragility_4b: a sign change in the S4b.ADD mean, any of the 8 margins, or the outcome labels the result fragile; the rerun computes no p-value",
+    "s4b_family: adjust_pvalues receives 1 observed p-value and family_size 481; any other count refuses",
+    "rule_r1_descriptive: rule R1 over nine sleeves computes no test statistic and no decision",
+    "no_identifier_in_outputs (R11): the step 4b report, JSON, and attempts carry no CIK, security code, permanent ID, email, or private path",
+    "reused: amendment 4 required tests r4_events, terminal_free_loader, seal_and_pins, no_snapshot_write, halt_versus_bad_data, costs, drift_turnover, and long_only_sharpe still pass on the parameterized code",
+    "trial_file_pins: the runner refuses when v1 or any of amendments 1 to 5 differs from its pinned SHA-256 or from HEAD"
+  ],
+  "technical_defaults": [
+    "File name amendment_5: it follows the existing amendment sequence.",
+    "Scope (step 4b defaults, 2026-09-30): three SEC sleeves, BM_AF and EP_AF (Value) and GP_AT_AF (Quality); Profitability and Investment wait.",
+    "Decision (step 4b defaults): R0 over the 6 price sleeves plus the SEC sleeves against the step 4 six-sleeve R0, on the step 4 conditions, months, costs, R4 events, and last-close rerun; rule R1 on the enlarged set is descriptive; R2 is not run.",
+    "Identity (step 4b defaults; design note 9.3 and 9.4): fail-closed rule F; a security with no unique CIK stays typed missing with no hand override list; 20-F and 40-F filers and predecessor CIKs are not accepted; missing securities are counted by later exit class.",
+    "As-filed (step 4b defaults; design note 9.5): annual 10-K facts only, first filed, usable from the trading day after filing, stale after 18 months, amendment-first keys typed missing, and the preferred rule as frozen.",
+    "Family (design note 9.6): 481, and the 39 S3 state-effect tests stay outside because they test other questions.",
+    "Coverage tilt (step 4b defaults; design note 9.7): descriptive, with a label, never a decision gate.",
+    "Review (step 4b defaults, confirmed by the coordinator on 2026-09-30): the SEC data-build code computes identity and takes two review seats; this freeze and the implementation take two seats.",
+    "Only status unique is rankable, and multi_class IDs are typed missing even though each has a single CIK: shares and prices differ by class.",
+    "A multi_class status covers every ID sharing an accepted CIK, overlapping or not: fail-closed (all 8 seen overlap).",
+    "10-KT counts as an annual form beside 10-K, and 10-KT/A beside 10-K/A as an amendment: a transition-period annual report follows the same rule as the design note's 10-K.",
+    "Other forms (10-Q, 8-K, S-1 and similar) neither supply a value nor make a key amendment-first: they are outside the annual rule, and ignoring them only delays a value.",
+    "A fiscal-year-end instant is one whose end equals the end of an annual flow key first filed in the same accn: the design note's 'fiscal-year-end end' made checkable without fy or fp.",
+    "All components of a signal share the anchor concept's fiscal year E*, with no mixing of years: the design note's 'within one period' applied to every component.",
+    "The preferred rule reads only facts usable at row r - 1: 'any of its eligible filings' must not look ahead (invariant R1).",
+    "Flow ties at E* (more than one annual key ending at E*) go to the first-filed key, then the lowest accn: the first-filed rule applied to the period choice.",
+    "The share filing is the accn that supplied the anchor key's value, and two distinct share values in it are typed shares_ambiguous: 'the same 10-K' made exact, and fail-closed on unlisted classes.",
+    "The share-date price p is the last finite close on or before s within 10 calendar rows and inside the segment's loaded rows: s is often not a trading day, and in the post segment the loaded rows start at the seal end, so no seal-window price is read.",
+    "The SEC missing reasons use one fixed precedence order and member-day weights over each holding month: one status per member-rebalance makes the split reconcile.",
+    "The coverage-tilt universe is the 563 IDs with status unique, fixed for the run, applied through the evaluation mask: a static universe that does not depend on SEC value availability, which is what the SEC sleeves could ever rank.",
+    "The comparator R0_6 is recomputed and must equal the committed step 4 R0 exactly: the design note's byte-identical recomputation, checked in the run.",
+    "The two S4 tests enter the 481 family at p = 1 as slots: every prior test is a slot, as in amendment 4.",
+    "The runner reads the SEC cache offline only and checks the two reproducible SHA-256 values, not the manifest's own hash (its code_commit changes on a rebuild).",
+    "Rule F stays as built, with no relaxation of the ticker-disagreement step (OPUS-S4B-D-03): fail-closed under R3, so the 3 delisting candidates whose current ticker holder filed nothing in their window stay ambiguous.",
+    "The foreign-form exclusion applies to 20-F and 40-F filings inside the member window only; earlier foreign filings do not exclude a CIK (GPT-S4BD-A2 reading 2; 7 accepted IDs have them).",
+    "SEC facts filed inside the seal window [2019-07-31, 2020-07-31) may enter a post-segment signal: the seal governs snapshot rows and O-3, an SEC fact carries no snapshot row or return, and no seal-window price is read (classes_and_signals.me). The post comparison months start 2022-05, after the seal window.",
+    "The identity exposure share (not-mapped member-days by exit class and identity reason) is reported beside the per-ID counts and gates nothing (OPUS-S4B-D-01).",
+    "Comparison months that differ from amendment 4's refuse the run rather than redefine the window."
+  ],
+  "limitations": [
+    "Every result is DIAGNOSTIC_ONLY and rests on premise VP-2 (O-9 for step 4b), with the R4 -100 percent default and the last-close rerun of amendment 4.",
+    "The mapped sample tilts toward survivors: 12 of 31 disappearance_outside_membership IDs are not uniquely mapped, against 49 of 530 still trading; the coverage-tilt guard reports the effect but does not gate the decision.",
+    "Identity uses SEC files retrieved on 2026-09-30, including current ticker files; rule F requires an in-window name and filing match, but a CIK map built on another date could differ.",
+    "Annual 10-K values only: a value can be up to 18 months old, no quarterly update enters, and a restated value never replaces the first-filed one.",
+    "Multi-class, ambiguous, unmapped, and amendment-first cases are typed missing, never repaired; banks and insurers often lack a gross profit and drop out of GP_AT_AF.",
+    "ME uses the cover-date share count of one filing, not a daily share series.",
+    "The same 99 months and every step 4 number are seen, including the comparator; no step 4b result is confirmatory.",
+    "With 481 slots, the S4b p-value needs about 1.5e-5 (HAC |t| about 4.3) to reach BY q 0.05.",
+    "Costs do not net across sleeves and include no market-impact model; the switch cost is a proxy.",
+    "The seal window and its buffers exclude 2019-07 to 2021-08, including the 2020 crash."
+  ],
+  "results_seen_before_this_amendment": {
+    "prior_amendments": "everything listed in the results_seen sections of amendments 1 to 4 and in v1 prior_exposures",
+    "step_4": "every number in reports/m5_step4.md, reports/m5_step4.json, and reports/m5_step4_attempts.jsonl: among them R0 as the point-in-time baseline (rule R1 4 of 8 against R0), R2 closed (6 of 8 against rule R1, 3 of 8 against R0), the fragile label with 3 sign changes, and the R0 metrics used as R0_6 here",
+    "design_note": "coord/reports/m5_step4b/design_note.md (untracked), which states no step 4b result; its section 8 lists the schema counts, the eligible pool, the rule F and ticker-route scouting coverage, three companyfacts probes of public filers chosen without reference to membership, and the bulk zip metadata (1.41 GB, 20,418 entries)",
+    "scouting_schema_findings": "in the three probes, frame sat on the last-filed version of each restated key (787 of 787, 340 of 340, 350 of 350), 57 to 59 percent of 10-K facts had an end year different from fy, and XBRL began 2009-07 to 2009-10; no value was used as a signal",
+    "data_build": "reports/m5_step4b_data.md and reports/m5_step4b_sec_manifest.json: the eligible pool (632 IDs; pre 468, post 510), rule F outcomes by status, reason, segment, and later exit class, companyfacts availability for the 563 mapped IDs (all present; 554 with a 10-K or 10-KT us-gaap fact filed inside the member window, 9 without), and the vendor_name and isin checks (188 of 205 in-window renames carry the current SEC name; isin one undated value per ID, 23 blank, 36 non-US)",
+    "data_review": "coord/reports/m5_step4b/data_review_gpt_r1.md and data_review_opus_r1.md (untracked): both seats MATERIAL 0; the map, hash list, and data report reproduced offline byte for byte. Their counts: by in-segment calendar days, the not-mapped share is 75,173 of 1,321,136 (5.7 percent) for index_removal_still_trading, 8,028 of 100,944 (8.0 percent) for delisting_candidate, and 364 of 24,175 (1.5 percent) for disappearance_outside_membership, 6.7 percent for ended filers combined; 30 of the 36 no_periodic_filing_in_window IDs have member windows under 120 days (all 10 disappearance IDs and 20 of 25 still trading); in 26 name-matched cases the CIK's first periodic filing came 5 to 81 days after m_out (median 30); 4 IDs belong to a CIK whose periodic filings straddle a short window; 3 of the 4 ticker_cik_disagrees IDs are delisting candidates whose ticker CIK was inactive in the window, and applying that step only to an active ticker CIK would lower not-mapped delisting candidates from 8 to 5 of 71 (diagnostic counterfactual, not adopted); the 3 several_survivors IDs are ended; 81 of the 82 mapped ended IDs were accepted on the name route alone, and each accepted ended CIK filed a Form 25 or Form 15 on or after m_in; 7 accepted IDs have foreign-form filings before their member windows",
+    "data_build_metadata_read": "during the data build, under O-5: the column headers and aggregate value counts of identity/interval_results.csv and identity/security_master.csv (resolution, exit class against open windows, duplicate master rows, identifier shapes); no price, volume, return, or terminal row, and no individual identity row, was printed",
+    "public_cache_read": "the jkp_cluster_labels.csv lines of be_me (11, Value), gp_at (54, Quality), and ni_me (81, Value)",
+    "computed_for_this_amendment": "SHA-256 values of the trial files and the data-build code files, and the BY threshold. No SEC signal value, sleeve, return, sigma, rule weight, or missing share.",
+    "not_seen": "No step 4b signal code, SEC signal value, sleeve, portfolio, return, sigma, rule weight, missing-reason count, or coverage-tilt figure exists. The data build parsed companyfacts only to test whether an annual fact was filed inside each member window; no fact value was printed or stored."
+  }
+}
