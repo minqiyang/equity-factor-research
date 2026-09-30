@@ -15,6 +15,68 @@ investment performance.
 
 ---
 
+## 2026-09-30 - Milestone 5 Step 4b Trial Amendment 5 (Coordinator Technical Defaults)
+
+Context:
+
+- Step 4b asks one question: do SEC as-filed value and quality sleeves join the step 4 baseline class set? The
+  entries below bind it: O-5 and O-9 extended to step 4b with the step 4b scope defaults, and O-10. The design note
+  (`coord/reports/m5_step4b/design_note.md`, untracked) proposed the definitions.
+- The SEC data build (code `7560b4a`) produced the local CIK map and the companyfacts cache. It computed no signal
+  or return (`reports/m5_step4b_data.md`).
+
+Decision:
+
+- Amendment 5 revision 1 (`docs/preregistrations/m5_trial_family_v1_amendment_5.json`, SHA-256
+  `136fa9f7...c1dd`, committed alone in `acc1f5a`) freezes step 4b. It was committed before any step 4b signal
+  code, SEC signal value, sleeve, return, or rule result.
+  - It follows the data-build review round 1: both seats reported MATERIAL 0. OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2
+    reading 2 are folded in; the other advisories are in the roadmap backlog.
+  - It amends amendment 4 and pins it, v1, and amendments 1 to 3 by SHA-256. The `real_v2` pins are amendment 4's,
+    unchanged.
+  - It pins the SEC data by the CIK-map SHA-256 `09d163b9...120a` and the per-file hash-list SHA-256
+    `3c73ffe2...698a`, not by the manifest's own hash. The runner reads the cache offline only and refuses on any
+    mismatch.
+- Decision outcome:
+  - The SEC Value and Quality classes join the baseline class set when R0 over the 6 price sleeves plus the 3 SEC
+    sleeves meets all 8 step 2 conditions against the step 4 six-sleeve R0 in the primary run.
+  - Otherwise they do not join, reported as a negative.
+  - Fragility, the coverage-tilt label, the last-close outcome, and the S4b q-value are reported beside the outcome
+    and do not change it.
+- Coordinator technical defaults, one line each. None loosens R1, R2, R4, R6, R8, or R9.
+  - Only IDs with rule F status `unique` (563 of 632) are rankable. Unmapped, ambiguous, and multi-class IDs are
+    typed missing and stay in the price sleeves.
+  - Annual 10-K and 10-KT facts only. A key's value comes from its first-filed 10-K or 10-KT fact, ties to the
+    lowest accn; a key first filed in an amendment is typed missing; `frame`, `fy`, and `fp` are never read.
+  - A fact is usable only if its filing date is before the date of row r - 1.
+  - Every component of a signal takes the anchor concept's latest usable fiscal year E*, with no mixing of years.
+    E* earlier than row r - 1 minus 18 months is stale. There is no older-year or quarterly fallback.
+  - The preferred-stock rule reads only facts usable at row r - 1, so it cannot look ahead.
+  - Shares come from the filing that supplied the anchor value; two distinct values are typed ambiguous.
+  - The share-date price is the last finite close within 10 rows on or before the cover date, inside the segment's
+    loaded rows; in the post segment no seal-window price is read.
+  - Each SEC sleeve gives every eligible member-rebalance one status, in a fixed order of 15 typed reasons. The
+    member-day split by reason and exit class reconciles, or the run refuses.
+  - Rule F stays as built, with no relaxation of the ticker-disagreement step (OPUS-S4B-D-03). It is fail-closed
+    under R3, so the 3 affected delisting candidates stay ambiguous.
+  - The foreign-form exclusion covers 20-F and 40-F filings inside the member window only. Earlier foreign
+    filings do not exclude a CIK; 7 accepted IDs have them.
+  - SEC facts filed inside the seal window may enter a post-segment signal. The seal governs snapshot rows and
+    O-3; an SEC fact carries no snapshot row or return, and no seal-window price is read. The post comparison
+    months start 2022-05, after the seal window.
+  - The not-mapped share by in-segment member-days, split by exit class and identity reason, is reported beside
+    the per-ID counts and gates nothing (OPUS-S4B-D-01).
+  - The comparator R0 is recomputed and must equal the committed step 4 R0 metrics exactly.
+  - The comparison months must equal amendment 4's 99.
+  - The coverage-tilt universe is the 563 unique IDs, fixed for the run. The result is labeled coverage-tilted
+    when any of the 8 margin signs changes against that comparator.
+  - One test, S4b.ADD (R0 over nine sleeves minus R0 over six, primary cost, 99 pooled months, `rule_test`). BY
+    family 481 = amendment 4's 480 slots at p = 1 plus the 1 observed test.
+  - Rule R1 over nine sleeves, the public counterpart over the matched JKP characteristics, class returns, and
+    transmission are descriptive and add no slot. R2 is not run.
+  - Two review seats for the freeze and the implementation. The SEC data-build code also takes two seats, as the
+    coordinator confirmed on 2026-09-30.
+
 ## 2026-09-30 - O-5 and O-9 Extended to Milestone 5 Step 4b, and Step 4b Scope Defaults
 
 Context:

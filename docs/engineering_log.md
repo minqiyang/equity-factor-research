@@ -22,9 +22,11 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   `research/m5_sec_identity.py` (fail-closed rule F, R3), and `research/m5_step4b_data.py` (driver). Tests
   `tests/test_sec_edgar.py` and `tests/test_m5_sec_identity.py` (29) use synthetic fixtures and a fake opener only.
   Commits `8682902`, `9a52090`, `ccca775`.
-- Data access: the driver bound `real_v2` through `m5_step4.bind_step4` (amendment 4 pins) and read only the
-  interval results, the security master, and the inventory. An audit hook refused writes inside the snapshot and
-  any open under `terminal/` or `quarantine/`.
+- Data access: the driver bound `real_v2` through `m5_step4.bind_step4` (amendment 4 pins) and built the pool
+  from the interval results, the security master, and the inventory.
+  - Binding also read the manifest, calendar, seal carry, and build manifest, and it hashed every inventoried
+    panel file's bytes as an integrity check; no panel value was used (GPT-S4BD-A4).
+  - An audit hook refused writes inside the snapshot and any open under `terminal/` or `quarantine/`.
 - Run (`reports/m5_step4b_data_attempts.jsonl`, four attempts):
   - Attempt 1 refused before any SEC request: the security-master join check also saw repeated blank-ID rows of
     unresolved intervals. Fixed in `9a52090` with a synthetic fixture.
