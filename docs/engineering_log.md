@@ -12,6 +12,16 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-01 - AGENTS.md simplified and the ablation rule removed (O-14)
+
+- `AGENTS.md` 200 to 136 lines; R1–R12 and Owner Process Constraints verified unchanged by diff. The controller gains
+  the same-PR lifecycle authorization, Review Priorities, and the process-failure procedure, and loses its Ablation
+  section. `docs/ablation_round2.md` is deleted.
+- The governance tests that pinned moved text now read it from the controller. The ablation section test is replaced
+  by a test that the retirement rule exists and that no Ablation section remains.
+- The auto-mode classifier blocked the coordinator's direct rewrite of `AGENTS.md`; the owner copied the
+  coordinator's draft into the worktree.
+
 ## 2026-10-01 - Ablation rule changed to triggered, budget-capped passes (O-13)
 
 - The ablation evaluation measured production-line deletions by path class from git history and token use from

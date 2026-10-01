@@ -76,7 +76,7 @@ Sources for this section: `reports/m5_step4.md` (Method and Provenance, Windows)
 
 ## What Comes Next
 
-- **Freeze.** R0 will be frozen in a dated file after the milestone ablation, so no one can tune it later. Two formal
+- **Freeze.** R0 will be frozen in a dated file, so no one can tune it later. Two formal
   review seats from different model families review the freeze, the AGENTS.md gate for a trial-family freeze
   (`docs/current_roadmap.md`, step 6 status).
 - **No seal look.** The sealed window 2019-07-31 to 2020-07-31 stays closed. It is kept for a future candidate with a

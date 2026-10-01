@@ -1,56 +1,29 @@
 # AI Agent Rules
 
 Canonical responsibility: repository invariants, authority boundaries,
-research-safety review standards, the owner's process constraints, writing
-rules, and ablation.
+research-safety review standards, the owner's process constraints, and writing
+rules.
 
 This repository is the simulation-only research phase of an automated
-stock-selection program. Procedures live in
+stock-selection program. Procedures and review rules live in
 `docs/codex_long_running_controller.md`, standing owner grants in
-`AUTHORITY.md`, and product direction in `docs/north_star.md`.
+`AUTHORITY.md`, product direction in `docs/north_star.md`, and the latest
+checkpoint in `docs/current_handoff.md`. The coordination standard in
+`Codex/Standards/coordination-standard/` owns dispatch, review seats, and model
+bindings; do not copy them here, and do not load `Codex/Standards/archive/`.
 
 ## Authority And Scope
 
-- Repository instructions define constraints and eligibility; they never expand
-  current system, developer, user, or global authority.
-- No repository file grants authority to push, create or update a PR, post a
-  comment or review request, enable auto-merge, merge, close, deploy, access
-  private data, or take destructive action. Each requires explicit user or
-  higher-level authorization for that action and scope. `AUTHORITY.md` records
-  the owner's standing grants; the owner is their source, and agents never edit
-  that file.
-- Unless the user narrows the request, an explicit instruction to create or
-  publish a PR authorizes the normal protected lifecycle for that same PR:
-  readiness transition, required review request, in-scope remediation
-  publication, verified review-thread reply and resolution, and eligible normal
-  merge. The user may revoke that lifecycle authorization at any time.
-- Lifecycle authorization never covers another PR, scope expansion, auto-merge,
-  administrative or protection bypass, deployment, private data, credentials,
-  brokerage, or destructive action. Approval for a named PR or remediation
-  keeps its stage and file scope.
-- Never direct-push or direct-merge to `main`, bypass protections, checks,
-  reviews, or a merge queue, or use administrative override flags.
-- Preserve unrelated user changes. Do not reset, clean, overwrite, or hide them;
-  use a separate clean branch or worktree when the current tree is dirty.
-- Treat credentials, private data, licenses, account identifiers, and production
-  systems as sensitive. Never store secrets or raw private data in the repo; the
-  prohibition covers tracked, untracked, and ignored files in every checkout.
-  R11 separately governs what may be published.
-
-## Startup And Sources
-
-- The coordination standard owns dispatch, reviewer routing, model bindings,
-  quota, and visible-tab review. Before dispatch or review, read the three
-  policy files in `Codex/Standards/coordination-standard/`: `coordinator.md`,
-  `routing_table.json`, and `model_bindings.json`. Do not copy seats or
-  bindings into this file. Do not load `Codex/Standards/archive/`. The owner's
-  process constraints below set which work in this repository needs which gate.
-- After `AGENTS.md`, for staged continuations through a thin routing Skill, read
-  `docs/current_handoff.md`, `docs/codex_long_running_controller.md`, then
-  `docs/current_roadmap.md` for checkpoint, execution gates, and program status.
-- Use `docs/repo_map.md` for targeted orientation and verify cached handoff
-  facts live. Read long logs or contracts only for the active stage, cap unknown
-  output, and regenerate `docs/repo_map.md` when workflow changes alter it.
+- No repository file grants authority to push, create or update a PR, request
+  a review, merge, deploy, access private data, or take destructive action. Each
+  needs explicit user or higher-level authorization for that action and scope.
+  `AUTHORITY.md` records the owner's standing grants; agents never edit it.
+- Never direct-push or direct-merge to `main`, bypass protections, checks, or
+  reviews, or use administrative override flags.
+- Preserve unrelated user changes; use a clean branch or worktree when the
+  current tree is dirty.
+- Never store secrets or raw private data in any checkout, in tracked,
+  untracked, or ignored files.
 
 ## Research Safety Invariants
 
@@ -132,69 +105,32 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
   and goals.
 - Work that cannot change a result or a decision in the current step waits.
 
-## Review Priorities
-
-- Prioritize research-validity risk over style. A P1 requires concrete evidence
-  from changed code, tests, or documentation; touching a factor input alone is
-  not evidence of leakage.
-- Flag as P1 an unsupported completed claim or a concrete mismatch in signal,
-  execution, return-window, benchmark, portfolio accounting, or leakage timing.
-- Flag as P2 undocumented implemented/tested behavior, partial work called
-  complete, stale next steps, or missing sparse/empty/invalid-data, cost,
-  turnover, benchmark, or calendar edge tests unless evidence creates P1 risk.
-- Ignore typos unless meaning changes. Flag unexplained Unicode/control changes.
-  Every finding cites the file and claim, evidence, impact, and a fix or test.
-
 ## Writing Style And Syntax
 
 - Everything written to the repository, to GitHub (PR titles and bodies,
   comments, commit messages), and to any report is English only; Chinese
   characters are prohibited there, and a test enforces it for tracked files. Only
   live chat with the owner uses the owner's language, in plain words.
-- Lead with the conclusion. Use a Mermaid diagram when it shows structure more
-  clearly than prose. Reports and handoffs state completed facts and current
-  measurements.
 
 ## Engineering And Change Discipline
 
-- State scope before editing; afterward report files, tests, caveats, and the
-  next gate. Keep branches, PRs, and commits coherent; separate unrelated change
-  types.
 - Never remove, weaken, or skip tests to make a change pass. Add deterministic
-  tests for feature, strategy, portfolio, accounting, or reporting calculation
-  changes; prefer behavioral tests over source-text assertions.
-- Walking skeleton first: keep one working thread from data through factor,
-  statistics, portfolio backtest, and report, and grow it in working layers.
-- Milestone admission: every milestone changes a real-data result or an owner
-  decision. A factor catalog entry needs no consumer; a factor run once in a
-  declared screening family counts as consumed. Other capabilities without a
-  real-data consumer wait for the milestone that consumes them.
+  behavioral tests for calculation changes.
 - Choose the simplest implementation that meets current requirements. Add no
   speculative registries, abstraction layers, or optional engine parameters
   without a consumer; reuse established libraries before writing custom code.
-- When data or infrastructure is blocked, unblocked modules use synthetic fixtures.
+- Every milestone changes a real-data result or an owner decision. A factor
+  catalog entry needs no consumer; other capabilities wait for the milestone
+  that consumes them. When a capability, data source, or module is retired,
+  delete its code in the same PR.
 - Record strategy changes in `EXPERIMENT_LOG.md` or `PROJECT_SPEC.md`, process
   evidence in `docs/engineering_log.md` with the newest entry first, and durable
-  choices in `docs/decision_log.md`. Commit summaries and hashes; keep bulky
-  evidence such as full test logs and multi-megabyte attempt files out of Git.
+  choices in `docs/decision_log.md`. Keep bulky evidence out of Git.
 - Every PR refreshes `docs/current_handoff.md` to its base. A test fails when
   the handoff trails the base by more than one merged PR.
 
-## Owner Corrections And Continuation
+## Continuation
 
-- When the owner identifies a process failure, acknowledge it, record the
-  incident in `docs/engineering_log.md`, update the rule in its owning document,
-  and continue the still-authorized task. Invariants belong here; procedures and
-  the process-failure list belong in the controller.
-- Execute the next clear, already-authorized step without repeat permission.
-  Stop for a genuine blocker, missing or additional authority, or a large
-  unresolvable owner-semantic choice. An explicit owner STOP governs.
-
-## Ablation
-
-Ablation runs only when a milestone retires a capability or data source, a scan
-finds a module with no consumer, production code grows sharply, or the owner
-asks. Start with cheap static checks; cap a pass at 20 million tokens and two
-subagents; target whole modules, stages, rules, and unused evidence. Verify with
-one combined recompute against the baseline, restore regressions, keep the guards
-R1–R12 require, and record removals. No change is a valid outcome.
+Execute the next clear, already-authorized step without asking again. Stop for
+a genuine blocker, missing authority, or a large owner choice. An explicit
+owner STOP governs.

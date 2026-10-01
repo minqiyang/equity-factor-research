@@ -15,6 +15,31 @@ investment performance.
 
 ---
 
+## 2026-10-01 - Owner Decision O-14: AGENTS.md Simplified and the Ablation Rule Removed
+
+Context:
+
+- After O-13 the owner asked whether `AGENTS.md` needed all of its content. The coordinator found text that repeated
+  the controller, the handoff, or the coordination standard; generic habits; and a rule (the walking skeleton) the
+  project has outgrown. O-13's own evidence showed that routine ablation removed almost no code.
+
+Decision:
+
+- **O-14 (owner, 2026-10-01):** the owner approved both proposals: simplify `AGENTS.md` with R1–R12 and the owner process constraints
+  unchanged, and delete the ablation rule entirely. The local Milestone 5 ablation worktree, branch, and patches are
+  deleted.
+
+Consequences:
+
+- `AGENTS.md` goes from 200 to 136 lines. Its R1–R12 and Owner Process Constraints sections are unchanged word for
+  word. The same-PR lifecycle authorization, the review priorities, and the process-failure procedure move to the
+  controller. The startup reading list, the scope-reporting and diagram habits, and the walking skeleton rule are
+  removed because other sources already cover them.
+- The Ablation sections of `AGENTS.md` and the controller are removed, with `docs/ablation_round2.md`. One line in
+  Engineering And Change Discipline replaces them: when a capability, data source, or module is retired, its code is
+  deleted in the same PR. A deeper cleanup happens only when the owner asks for one.
+- Tests named for past ablation passes stay; they guard computed behavior.
+
 ## 2026-10-01 - Owner Decision O-13: Triggered, Budget-Capped Ablation; Milestone 5 Ablation Patches Dropped
 
 Context:

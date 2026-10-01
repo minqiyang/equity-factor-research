@@ -76,7 +76,15 @@ authorization, stop after local validation. The owner's standing same-change
 publication grant in `AUTHORITY.md` is that explicit authorization for the
 matching PR.
 
-When the same-PR lifecycle authorization defined in `AGENTS.md` is current,
+Unless the user narrows the request, an explicit instruction to create or
+publish a PR authorizes the normal protected lifecycle for that same PR:
+readiness transition, required review request, in-scope remediation
+publication, verified review-thread reply and resolution, and eligible normal
+merge. The user may revoke it at any time. It never covers another PR, scope
+expansion, auto-merge, administrative or protection bypass, deployment,
+private data, credentials, brokerage, or destructive action.
+
+When that same-PR lifecycle authorization is current,
 apply the lifecycle below to that PR. Otherwise, stop after local validation and
 re-enter this gate before acting on a different PR or changed scope.
 
@@ -128,7 +136,7 @@ re-enter this gate before acting on a different PR or changed scope.
   head and requires validation, CI, and one new current-head review.
 - Every finding from any review channel is classified `MATERIAL` or
   `ADVISORY` under the materiality test in `coordinator.md` section 3. A P1 or
-  P2 label from the `AGENTS.md` review priorities ranks review attention;
+  P2 label from the review priorities below ranks review attention;
   blocking status comes from that classification alone. `ADVISORY` findings
   are recorded and never block merge.
 - Review rounds follow the owner process constraints in `AGENTS.md`: at most
@@ -158,12 +166,17 @@ re-enter this gate before acting on a different PR or changed scope.
 - Technical eligibility alone never grants merge authority; full-lifecycle or
   explicit merge authorization must also be current for that same PR and scope.
 
-## Post-Delivery Ablation
+## Review Priorities
 
-Ablation experiments follow `AGENTS.md`. ABLATION dispatch lives in the live
-Herdr coordination standard. Revalidation of an ablated candidate follows
-this file's ordinary QA and review gates; ablation revalidation itself does
-not trigger a recursive ablation loop.
+- Prioritize research-validity risk over style. A P1 requires concrete evidence
+  from changed code, tests, or documentation; touching a factor input alone is
+  not evidence of leakage.
+- Flag as P1 an unsupported completed claim or a concrete mismatch in signal,
+  execution, return-window, benchmark, portfolio accounting, or leakage timing.
+- Flag as P2 undocumented implemented/tested behavior, partial work called
+  complete, stale next steps, or missing sparse/empty/invalid-data, cost,
+  turnover, benchmark, or calendar edge tests unless evidence creates P1 risk.
+- Every finding cites the file and claim, evidence, impact, and a fix or test.
 
 ## Herdr Tab Cleanup Before Next Round
 
@@ -211,8 +224,10 @@ first recorded the rule.
 | Running a formal review seat through an agent of another model, such as a GPT seat launched or relayed by a Claude agent | Milestone 5 step 3 PR (2026-09-28) |
 | Merging a PR whose head includes a commit pushed after the last required review round that the required seats have not reviewed, even when the commit only fixes CI and every check passes | PR #281 incident, recorded by `e36a4a2` (PR #282); owner confirmed 2026-09-30 |
 
-Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
-own incident record and owner confirmation.
+When the owner identifies a process failure, acknowledge it, record the
+incident in `docs/engineering_log.md`, update the rule in its owning document,
+and continue the still-authorized task. A new entry needs its own incident
+record and owner confirmation.
 
 ## Waiting And Follow-Up
 
