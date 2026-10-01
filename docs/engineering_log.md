@@ -12,6 +12,35 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Incident: PR #281 merged a commit no review seat had seen; live step 4 report check restored
+
+- Incident (identified by the coordinator): PR #281 was squash-merged as `03e06b5`. Its last commit, `7d24903`
+  (the fix for two CI failures that depend on the platform), changed `research/m5_step4b.py` and
+  `tests/test_m5_step4b.py` after the last formal review round, and no formal seat reviewed it before the merge.
+  That code is on the real-data path, so the merge lacked its required review.
+- Retrospective review: one GPT seat reviewed the exact merged commit `03e06b5` (tree equal to `7d24903^{tree}`).
+  Result `MATERIAL: 0`, one ADVISORY (RETRO-GPT-01). The `cache_files` refusal leaves every valid record on the old
+  path; the new golden is the pre-change summary byte for byte (`8868e017...`); `reports/` is unchanged.
+- RETRO-GPT-01: `7d24903` replaced the byte pin on the report rendered from the recomputed summary (`c915eab5...`)
+  with a pin on the report rendered from the stored, key-sorted golden. Summary comparison ignores dictionary
+  order, so a change to the order of report rows passed every check: reversing the sleeve table's segment order
+  moved 24 report lines and no test failed.
+- Fix (`tests/test_m5_step4b.py`, new `tests/fixtures/m5_step4_synthetic_report.md`, the pre-change live report,
+  SHA-256 `c915eab5...`):
+  - `test_step4_live_report_matches_the_pre_change_report` renders the report from the recomputed in-memory summary
+    and compares it with that file line for line. Text outside decimal numbers must match exactly, in order; each
+    decimal number must keep its printed places and may differ by one unit in its last place, because a last-bit
+    difference can move a value across a rounding boundary.
+  - `test_step4_live_report_check_catches_an_order_change` reverses the sleeve segment order: the summary comparison
+    passes, the report check fails on lines inside the sleeve table only. It also shows that the comparator accepts
+    one unit in a last place and rejects two.
+  - The summary comparison and the stored-golden render pin stay. Their docstrings now state that the float bound
+    (1e-9 relative plus 1e-12 absolute) also accepts deterministic changes smaller than it.
+- Evidence: the same mutation in the source (`describe` in `research/m5_step4.py`, reverted) passes the merged
+  test and fails the new one. Moving every other synthetic price by 1 ulp, up or down, changes the summary SHA-256
+  but changes no report byte, so the one-unit allowance is a margin, not a measured need. No Linux run was made.
+- No committed output or result changes.
+
 ## 2026-09-30 - Milestone 5 step 4b runner and real_v2 run (DIAGNOSTIC_ONLY)
 
 - Authority: amendment 5 revision 2 (`e4d73ce`, SHA-256 `a712188c...0c75c`), O-5 and O-9 as extended to step 4b, and

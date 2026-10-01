@@ -33,12 +33,18 @@ from data.sec_edgar import COMPANYFACTS_URL
 
 pytestmark = pytest.mark.xdist_group("m5_step4b")
 REPO_ROOT = Path(__file__).resolve().parents[1]
-# The step 4 synthetic summary before the step 4b parameterization (base `aad02a0`), as sorted JSON text, and the
-# step 4 report rendered from that stored document. The regression test compares the recomputed summary with it.
-STEP4_GOLDEN = Path(__file__).resolve().parent / "fixtures" / "m5_step4_synthetic_summary.json"
+# The step 4 synthetic outputs before the step 4b parameterization (base `aad02a0`): the summary as sorted JSON text,
+# and the report rendered from the in-memory summary (`STEP4_REPORT`). The regression tests compare the recomputed
+# summary with the first and the report rendered from the recomputed summary with the second; a third pin covers the
+# report rendered from the stored summary.
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+STEP4_GOLDEN = FIXTURES / "m5_step4_synthetic_summary.json"
+STEP4_REPORT = FIXTURES / "m5_step4_synthetic_report.md"
 STEP4_JSON_SHA256 = "8868e0175dfeb9fa5821b970f5b0164f12bd524ce4e3cf947b5441f49ba34af5"
+STEP4_MD_SHA256 = "c915eab5b4841700bcc49b52a3d3b58a5fc948f48dd58157178f0e2ee80d513b"
 STEP4_GOLDEN_MD_SHA256 = "9b5c0512502cd56c2b01caefcb1db41e22de2b41ff84a504540f1190599a5b96"
 REL_TOL, ABS_TOL = 1e-9, 1e-12       # 1-ulp input noise moves the summary by at most 4.6e-11 relative
+DECIMAL = re.compile(r"-?\d+\.\d+")
 
 
 @pytest.fixture(scope="module")
@@ -578,14 +584,24 @@ def test_empty_sec_sleeve_refuses(chain):
     assert stop.value.reason == "empty_sleeve_target"
 
 
-def _step4_summary(segments=None, public=None) -> dict:
-    doc = s4.summarize(s4.evaluate(segments or fx.prepared(), public or fx.public(), {fx.STOP_ASSET}, None))
+@pytest.fixture(scope="module")
+def step4_live() -> dict:
+    """The recomputed step 4 synthetic summary in its in-memory order, as the step 4 runner renders it."""
+    return s4.summarize(s4.evaluate(fx.prepared(), fx.public(), {fx.STOP_ASSET}, None))
+
+
+def _sorted(doc: dict) -> dict:
     return json.loads(json.dumps(s4._clean(doc), sort_keys=True, allow_nan=False))
+
+
+def _step4_summary(segments=None, public=None) -> dict:
+    return _sorted(s4.summarize(s4.evaluate(segments or fx.prepared(), public or fx.public(), {fx.STOP_ASSET}, None)))
 
 
 def _differences(got, want, path: str = "") -> list[str]:
     """Paths where ``got`` differs from ``want``: exact for keys, lengths, and every non-float leaf; floats within
-    REL_TOL relative plus ABS_TOL absolute (last-bit platform differences only)."""
+    REL_TOL relative plus ABS_TOL absolute. The bound absorbs last-bit platform differences, so a deterministic
+    change smaller than it (a Sharpe times 1 + 1e-10) also passes; dictionary order is not compared."""
     if isinstance(want, dict):
         if not isinstance(got, dict) or set(got) != set(want):
             return [path or "/"]
@@ -599,18 +615,72 @@ def _differences(got, want, path: str = "") -> list[str]:
     return [] if (type(got), got) == (type(want), want) else [path]
 
 
-def test_step4_regression_matches_the_pre_change_golden():
-    """The parameterized step 4 reproduces its pre-change synthetic output; the golden is that output byte for byte."""
+def _report_differences(got: str, want: str) -> list[int]:
+    """Line numbers (1-based) where ``got`` differs from ``want``. Lines match in count and order, and all text
+    outside decimal numbers matches exactly. Each decimal number prints with the same number of places and differs by
+    at most one unit in its last place, because a last-bit platform difference can move a value across a rounding
+    boundary; integers are text and match exactly."""
+    got_lines, want_lines = got.split("\n"), want.split("\n")
+    out = [i for i, (g, w) in enumerate(zip(got_lines, want_lines), 1) if not _same_line(g, w)]
+    return out + list(range(min(len(got_lines), len(want_lines)) + 1, max(len(got_lines), len(want_lines)) + 1))
+
+
+def _same_line(got: str, want: str) -> bool:
+    if DECIMAL.split(got) != DECIMAL.split(want):
+        return False
+    pairs = zip(DECIMAL.findall(got), DECIMAL.findall(want))
+    return all(len(g.split(".")[1]) == len(w.split(".")[1])
+               and abs(float(g) - float(w)) <= 1.5 * 10.0 ** -len(w.split(".")[1]) for g, w in pairs)
+
+
+def test_step4_regression_matches_the_pre_change_golden(step4_live):
+    """The parameterized step 4 reproduces its pre-change synthetic summary within the float bound; the golden is that
+    summary byte for byte, and the report rendered from the stored golden keeps its pin."""
     text = STEP4_GOLDEN.read_text(encoding="utf-8")
     assert hashlib.sha256(text.encode()).hexdigest() == STEP4_JSON_SHA256
     golden = json.loads(text)
-    assert _differences(_step4_summary(), golden) == []
+    assert _differences(_sorted(step4_live), golden) == []
     report = s4.render_report({**golden, "unpriced": {}})
     assert hashlib.sha256(report.encode()).hexdigest() == STEP4_GOLDEN_MD_SHA256
 
 
+def test_step4_live_report_matches_the_pre_change_report(step4_live):
+    """The report rendered from the recomputed summary equals the pre-change live report (byte pin `c915eab5`) line
+    for line, up to one unit in the last printed place of a decimal number."""
+    want = STEP4_REPORT.read_text(encoding="utf-8")
+    assert hashlib.sha256(want.encode()).hexdigest() == STEP4_MD_SHA256
+    assert _report_differences(s4.render_report({**step4_live, "unpriced": {}}), want) == []
+
+
+def test_step4_live_report_check_catches_an_order_change(step4_live):
+    """Reversing each run's segment order in the sleeve table keeps every number, so the summary comparison passes,
+    but the live report check fails; the comparator absorbs one unit in a last place and rejects two."""
+    want = STEP4_REPORT.read_text(encoding="utf-8")
+    reordered = json.loads(json.dumps(step4_live))
+    for run in reordered["runs"].values():
+        run["sleeves"] = dict(reversed(run["sleeves"].items()))
+    assert _differences(_sorted(reordered), _sorted(step4_live)) == []
+    moved = _report_differences(s4.render_report({**reordered, "unpriced": {}}), want)
+    lines = want.split("\n")
+    start = next(i for i, x in enumerate(lines, 1) if x.startswith("## Sleeves (primary run"))
+    end = next(i for i, x in enumerate(lines, 1) if i > start and x.startswith("## "))
+    assert len(moved) >= 2 and all(start < i < end for i in moved)
+    first = DECIMAL.search(want)
+    assert first is not None
+    places = len(first.group().split(".")[1])
+
+    def bumped(units: int) -> str:
+        value = f"{float(first.group()) + units * 10.0 ** -places:.{places}f}"
+        return want[:first.start()] + value + want[first.end():]
+
+    assert _report_differences(bumped(1), want) == []
+    line = want.count("\n", 0, first.start()) + 1
+    assert _report_differences(bumped(2), want) == [line]
+
+
 def test_step4_regression_check_catches_a_one_line_change(monkeypatch):
-    """A one-line change to a step 4 cost constant fails the comparison (hundreds of leaves move)."""
+    """A one-line change to a step 4 cost constant fails the summary comparison (hundreds of leaves move), and a
+    single-leaf change of 1e-8 relative, above the float bound, is caught at its path."""
     golden = json.loads(STEP4_GOLDEN.read_text(encoding="utf-8"))
     monkeypatch.setitem(s4.SWITCH_BPS, "primary", 21)
     assert len(_differences(_step4_summary(), golden)) > 100
