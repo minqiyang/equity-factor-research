@@ -15,6 +15,37 @@ investment performance.
 
 ---
 
+## 2026-10-01 - Owner Decision O-13: Triggered, Budget-Capped Ablation; Milestone 5 Ablation Patches Dropped
+
+Context:
+
+- The coordinator evaluated every ablation pass since PR #202 (`coord/reports/m5_ablation/ablation_value_review.md`,
+  untracked). The two whole-codebase passes of 2026-09-07 and 2026-09-08 removed 18 production lines net. The
+  per-delivery passes of 2026-09-16 to 2026-09-28 removed 3 lines of code already on `main`. The Milestone 5 pass,
+  stopped by the owner before its combined recompute, held 24 patches with a net of 75 production lines (about
+  0.16%) and was never merged. The one large cut, PR #259 (35.5% of production code), came from a strategic audit
+  and an owner decision, not from the ablation rule.
+- The Milestone 5 pass used about 195.6 million tokens, 96% of them cache reads: about 22 times the step 6 session
+  and about 23% of all Claude tokens on this project from 2026-09-28 to 2026-10-01.
+
+Decision:
+
+- **O-13 (owner, 2026-10-01):**
+  - Ablation runs only on a trigger: a milestone retires a whole capability or data source, a scan finds a module
+    with no consumer, production code grows sharply, or the owner asks.
+  - A pass starts with one agent running cheap static checks, has a hard budget of 20 million tokens, and uses at
+    most two subagents.
+  - A pass targets whole units only: modules, stages, rules, and unused committed evidence. Ordinary code review
+    handles small surplus.
+  - Removals that can change a result are verified by one combined recompute against the baseline, not one
+    recompute per removal.
+  - The 24 Milestone 5 ablation patches are dropped.
+
+Consequences:
+
+- The AGENTS.md Ablation section states the new rule; the guards R1–R12 require stay.
+- No Milestone 5 ablation result is merged. The dated freeze of R0 is the next research step.
+
 ## 2026-09-30 - Owner Decision O-12: Owner Report Conclusion, No Seal Look, No Forward Observation
 
 Context:

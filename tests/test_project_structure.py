@@ -192,7 +192,7 @@ def test_governance_documents_define_unique_policy_owners() -> None:
         "agents": (
             "Canonical responsibility: repository invariants, authority boundaries, "
             "research-safety review standards, the owner's process constraints, writing "
-            "rules, and milestone ablation."
+            "rules, and ablation."
         ),
         "controller": (
             "Canonical responsibility: staged workflow state transitions, external "
@@ -6657,18 +6657,20 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
     assert "an unresolved `MATERIAL` finding or other high risk" in stop_conditions
 
 
-def test_agents_ablation_section_runs_once_per_milestone() -> None:
-    # Owner decision 2026-09-28: one ablation pass per milestone replaces the
-    # per-delivery pass, and it targets whole stages and rules as well as code.
+def test_agents_ablation_section_is_triggered_and_budget_capped() -> None:
+    # Owner decision O-13 (2026-10-01): a triggered, budget-capped pass on whole
+    # units replaces the routine pass at the end of each milestone.
     agents = (PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     ablation = " ".join(_markdown_section(agents, "Ablation").split())
 
-    assert "At the end of each milestone" in ablation
-    assert "run one ablation pass" in ablation
-    assert "whole stages, rules, and modules" in ablation
-    assert "Preserve the baseline" in ablation
+    assert "Ablation runs only when a milestone retires" in ablation
+    assert "or the owner asks" in ablation
+    assert "At the end of each milestone" not in ablation
+    assert "cap a pass at 20 million tokens and two subagents" in ablation
+    assert "target whole modules, stages, rules" in ablation
+    assert "one combined recompute against the baseline" in ablation
     assert "keep the guards R1–R12 require" in ablation
-    assert "A supported no-change outcome is valid" in ablation
+    assert "No change is a valid outcome" in ablation
 
 
 def test_staged_quant_workflow_skill_is_a_thin_router() -> None:
