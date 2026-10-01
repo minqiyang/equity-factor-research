@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-01 - Ablation rule changed to triggered, budget-capped passes (O-13)
+
+- The ablation evaluation measured production-line deletions by path class from git history and token use from
+  session transcripts, deduplicated by message ID. A second agent recomputed the 195.6 million token total and
+  the PR #259 diff (+187/-36,713) independently. The report and its scratch evidence stay out of Git.
+- AGENTS.md "Ablation" and its governance test now describe the triggered, budget-capped rule. Docs and one
+  governance test; no code, data, or result changes.
+
 ## 2026-09-30 - Process failure rule: no merge of a commit added after the last review round
 
 - The owner confirmed the PR #281 incident (the incident entry of the same date) as a P1 process failure. The controller's Process Failures

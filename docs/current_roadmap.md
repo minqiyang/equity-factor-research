@@ -246,7 +246,7 @@ Status 2026-09-30:
   - Under O-12 step 6 makes no seal-window look and runs no forward observation. No price or membership data after
     August 2026 is bought or used. The seal window stays sealed for a future candidate with a real edge or for the
     later M4.8 stages.
-  - The dated freeze of R0 follows the milestone ablation. Two formal review seats from different model families
+  - The Milestone 5 ablation pass was stopped and its patches dropped (O-13). The dated freeze of R0 is next. Two formal review seats from different model families
     review it, the AGENTS.md gate for a trial-family freeze (coordinator default). The next line of work after
     Milestone 5 is open.
 

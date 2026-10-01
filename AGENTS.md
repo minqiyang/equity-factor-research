@@ -2,7 +2,7 @@
 
 Canonical responsibility: repository invariants, authority boundaries,
 research-safety review standards, the owner's process constraints, writing
-rules, and milestone ablation.
+rules, and ablation.
 
 This repository is the simulation-only research phase of an automated
 stock-selection program. Procedures live in
@@ -192,9 +192,9 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
 
 ## Ablation
 
-At the end of each milestone, run one ablation pass aimed at deleting whole
-stages, rules, and modules as well as surplus code. Preserve the baseline, test
-each removal in isolation, keep justified simplifications, restore regressions,
-and keep the guards R1–R12 require. Record removals, retained necessities, and
-known limitations. A supported no-change outcome is valid. Ablation
-revalidation is not a recursive ablation loop.
+Ablation runs only when a milestone retires a capability or data source, a scan
+finds a module with no consumer, production code grows sharply, or the owner
+asks. Start with cheap static checks; cap a pass at 20 million tokens and two
+subagents; target whole modules, stages, rules, and unused evidence. Verify with
+one combined recompute against the baseline, restore regressions, keep the guards
+R1–R12 require, and record removals. No change is a valid outcome.
