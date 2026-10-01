@@ -6846,7 +6846,7 @@ NETWORK_MODULES = (
     "ib_insync",
 )
 # The public factor loader downloads the public academic files that R11 authorizes.
-NETWORK_ALLOWLIST = {"src/data/eodhd_retrieval.py", "src/data/public_factors.py"}
+NETWORK_ALLOWLIST = {"src/data/eodhd_retrieval.py", "src/data/public_factors.py", "src/data/sec_edgar.py"}
 
 
 def _imported_modules(tree: ast.AST) -> set[str]:
@@ -6894,6 +6894,10 @@ def test_t_struct_1_only_the_retrieval_module_imports_network_modules() -> None:
     public = PROJECT_ROOT / "src/data/public_factors.py"
     assert _network_imports(_imported_modules(ast.parse(public.read_text(encoding="utf-8")))) == {
         "urllib.request"
+    }
+    sec_client = PROJECT_ROOT / "src/data/sec_edgar.py"
+    assert _network_imports(_imported_modules(ast.parse(sec_client.read_text(encoding="utf-8")))) == {
+        "urllib.request", "urllib.error"
     }
 
     dependencies = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))

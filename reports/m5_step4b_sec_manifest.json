@@ -1,0 +1,82 @@
+{
+  "schema_version": "m5_step4b_sec_manifest_v1",
+  "evidence_ceiling": "DIAGNOSTIC_ONLY",
+  "code_commit": "ccca7759686a89ad92b8c4f491a6982f0bb11115",
+  "tracked_changes": false,
+  "snapshot": {
+    "id": "real_v2",
+    "amendment_4_sha256": "c2b1f8dea064ef1852d55bfda365faef8bd1c658897877037aae2fc0714ac617"
+  },
+  "cache_dir": "data/public_cache/sec/ (gitignored; raw SEC files are never committed)",
+  "user_agent": "owner-provided contact read from EFR_SEC_USER_AGENT; never recorded",
+  "rate_limit": "at most 4 requests a second; retry with backoff on HTTP 429 and 5xx",
+  "sources": [
+    {
+      "id": "company_tickers",
+      "url": "https://www.sec.gov/files/company_tickers.json",
+      "retrieved_utc": "2026-09-30T07:58:31Z",
+      "sha256": "a1d4b030a746f83f68852c2d081aad7e9468529d9e5b1eda9c93489e967ed405",
+      "bytes": 798399
+    },
+    {
+      "id": "company_tickers_exchange",
+      "url": "https://www.sec.gov/files/company_tickers_exchange.json",
+      "retrieved_utc": "2026-09-30T07:58:31Z",
+      "sha256": "ec78fbd272ecb158e65b60d774e2ee5715b454eaadc3c9a670214fa0c2bcce13",
+      "bytes": 523357
+    },
+    {
+      "id": "cik_lookup_data",
+      "url": "https://www.sec.gov/Archives/edgar/cik-lookup-data.txt",
+      "retrieved_utc": "2026-09-30T07:58:32Z",
+      "sha256": "917d07697eaa4043b992be5dccce2e834e5ce2d3f86fe472f7175a5b847df2d6",
+      "bytes": 40209988
+    },
+    {
+      "id": "submissions",
+      "url_template": "https://data.sec.gov/submissions/CIK{cik:010d}.json",
+      "files": 917,
+      "recorded_absent_404": 0,
+      "bytes": 115385331,
+      "retrieved_utc_first": "2026-09-30T07:58:35Z",
+      "retrieved_utc_last": "2026-09-30T08:11:38Z"
+    },
+    {
+      "id": "submissions_history_pages",
+      "url_template": "https://data.sec.gov/submissions/CIK{cik:010d}-submissions-{page:03d}.json",
+      "files": 944,
+      "recorded_absent_404": 0,
+      "bytes": 212291728,
+      "retrieved_utc_first": "2026-09-30T07:58:35Z",
+      "retrieved_utc_last": "2026-09-30T08:11:26Z"
+    },
+    {
+      "id": "companyfacts",
+      "url_template": "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json",
+      "files": 563,
+      "recorded_absent_404": 0,
+      "bytes": 2081565096,
+      "retrieved_utc_first": "2026-09-30T08:11:39Z",
+      "retrieved_utc_last": "2026-09-30T08:15:33Z"
+    }
+  ],
+  "file_hash_list": {
+    "files": 2427,
+    "sha256": "3c73ffe2210bd87147ecc79e1963ef08a86843a937b06fe62ede372e27c6698a",
+    "format": "tab-separated relative_path, status, sha256, bytes; one header line; rows sorted; kept local because paths name CIKs"
+  },
+  "cik_map": {
+    "sha256": "09d163b91d386064553935d0648424fa1bd1d1469fec2404a440c65c3fed120a",
+    "rows": 632,
+    "columns": [
+      "permanent_id",
+      "vendor_code",
+      "segments",
+      "exit_class",
+      "status",
+      "reason",
+      "cik"
+    ],
+    "location": "local only, beside the snapshot (never in a repository checkout)"
+  }
+}

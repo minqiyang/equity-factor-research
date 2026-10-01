@@ -12,6 +12,80 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Milestone 5 step 4b runner and real_v2 run (DIAGNOSTIC_ONLY)
+
+- Authority: amendment 5 revision 2 (`e4d73ce`, SHA-256 `a712188c...0c75c`), O-5 and O-9 as extended to step 4b, and
+  O-10 (offline cache reads only). The run made 0 SEC requests and wrote nothing inside the snapshot, the SEC cache,
+  or the local CIK-map directory; an audit hook guarded all three.
+- Code: `research/m5_sec_signals.py` (the as-filed rule and BM_AF, EP_AF, GP_AT_AF) and `research/m5_step4b.py`
+  (pins, offline SEC reads, member-day statuses, R0_9 against R0_6, S4b.ADD, coverage tilt, report). Commits
+  `3744acc`, `e88cea8`, `4200cf1`.
+  - `research/m5_step4.py` gained default-preserving parameters only: `run_books` signal IDs, `class_layer` and
+    `rule_weights` without R2, `class_returns` and `load_public` sleeve and theme sets, and the split-only close
+    kept in `SegmentInputs`. The step 4 synthetic JSON and report keep their SHA-256 values (`8868e017...`,
+    `c915eab5...`), and the real run recomputed the step 4 results equal to `reports/m5_step4.json` apart from run
+    metadata (a new refusal, `step4_regeneration_mismatch`, guards this).
+  - A second new refusal, `sec_rebalance_rows_mismatch`, checks that the engine's scheduled rebalances equal the
+    evaluation resets, because the SEC panels hold values only at signal rows r - 1.
+- Tests: `tests/test_m5_step4b.py` (33) with synthetic companyfacts in `tests/m5_step4b_support.py`; they cover the
+  23 amendment 5 required tests and the three round 2 rulings (same-day 10-K and 10-K/A, stale before
+  `concept_missing`, a retained halt whose status and holding stay distinct). Step 4, reused-module, and structure
+  tests passed (377) before the code commit.
+- Pre-run counts on the SEC cache (counts only): 0 first-filed keys with distinct values inside one accession, and 0
+  fiscal-year-end instants whose status depends on which same-day accession is used, so neither edge binds.
+- Run (`reports/m5_step4b_attempts.jsonl`, two attempts):
+  - Attempt 1 refused `sec_identity_pool_mismatch` after 24 seconds, before any sleeve. The check read warm-up rows
+    before row d0 - 1, where 23 assets outside the pinned map (16 pre, 7 post) appear before any ranking set or
+    member-day. Fixed in `4200cf1` to rows [d0 - 1, last book row], with a synthetic test.
+  - Attempt 2 completed in 2,059 seconds.
+- Outcome: `not_join`. R0_9 meets 2 of 8 conditions against R0_6: both post Sharpe conditions hold, and every
+  pre condition and both post drawdown conditions fail. S4b.ADD mean 0.00051 a month over 99 months, HAC p 0.418,
+  BY q 1.0 (family 481). Not fragile, not coverage-tilted, last-close outcome `not_join` (2 of 8). Outputs
+  `reports/m5_step4b.md` and `reports/m5_step4b.json` (`0b53cea`).
+- Code review round 1 at `27133b9`: `MATERIAL: 0` from both seats (GPT 1 advisory, Opus 4). Each seat reran `run`
+  in full and matched `reports/m5_step4b.json` exactly apart from `run_utc` and `git`; Opus also rebuilt the
+  as-filed rule from the amendment text and matched every status and value.
+  - The report fix (`8ebd853`) adds a method, cost, and provenance section built from the JSON and module constants
+    (GPT-S4BC-R1-A1), notes on the `unknown` exit-class days on row m_in - 1 (OPUS-S4BC-A1), the GP_AT_AF COGS
+    restriction (A2), and the NCI-inclusive and `ProfitLoss` tagging causes (A3), and a step 4b VP-2 line (A4).
+  - `reports/m5_step4b.md` was re-rendered from the committed JSON, whose SHA-256 is unchanged
+    (`6d4e9762...fbfdd`); every table row is unchanged, and the segment and run order is now fixed. A test checks
+    that the committed report equals `render_report` of the committed JSON.
+  - Open in the backlog: a future amendment on the COGS chain and the NCI-inclusive concepts, and the side
+    loader's temporary inventory write, which a write-blocking review harness must virtualize.
+
+## 2026-09-30 - Milestone 5 step 4b SEC data build: CIK map and company facts (DIAGNOSTIC_ONLY)
+
+- Authority: O-10 (SEC EDGAR download, User-Agent from `EFR_SEC_USER_AGENT`, never recorded; publication terms),
+  and O-5 and O-9 as extended to step 4b (local `real_v2` reads, aggregates only). No signal, sleeve, return, or
+  rule result was computed.
+- Code: `src/data/sec_edgar.py` (the only SEC network path: `www.sec.gov` and `data.sec.gov` over HTTPS, at most
+  4 requests a second, retry on 429 and 5xx, typed 404 absences, offline mode refusing on a hash mismatch),
+  `research/m5_sec_identity.py` (fail-closed rule F, R3), and `research/m5_step4b_data.py` (driver). Tests
+  `tests/test_sec_edgar.py` and `tests/test_m5_sec_identity.py` (29) use synthetic fixtures and a fake opener only.
+  Commits `8682902`, `9a52090`, `ccca775`.
+- Data access: the driver bound `real_v2` through `m5_step4.bind_step4` (amendment 4 pins) and built the pool
+  from the interval results, the security master, and the inventory.
+  - Binding also read the manifest, calendar, seal carry, and build manifest, and it hashed every inventoried
+    panel file's bytes as an integrity check; no panel value was used (GPT-S4BD-A4).
+  - An audit hook refused writes inside the snapshot and any open under `terminal/` or `quarantine/`.
+- Run (`reports/m5_step4b_data_attempts.jsonl`, four attempts):
+  - Attempt 1 refused before any SEC request: the security-master join check also saw repeated blank-ID rows of
+    unresolved intervals. Fixed in `9a52090` with a synthetic fixture.
+  - Attempt 2 completed in 17 minutes: 2,427 requests, no retries, 2.45 GB cached.
+  - Attempt 3 regenerated the report from the cache (0 requests) after the renderer printed counts in place of
+    two general phrases.
+  - Attempt 4, offline, rebuilt the CIK map and the hash list from the cache and matched the manifest.
+- Outcome: rule F maps 563 of 632 eligible IDs to one CIK. 7 ambiguous, 54 unmapped, and 8 multi-class IDs (4
+  shared CIKs, overlapping windows) are typed missing. Company facts exist for all 563 mapped CIKs. The committed
+  outputs are `reports/m5_step4b_sec_manifest.json` and `reports/m5_step4b_data.md` (`78659bd`); the CIK map and
+  per-file hashes stay local beside the snapshot (R11).
+- The scouting downloads, which had no retrieval records, were moved to the gitignored
+  `data/public_cache/sec_scout_20260930/`. The build downloaded a fresh cache.
+- `tests/test_project_structure.py` T-STRUCT-1 now lists `src/data/sec_edgar.py` as the third network-capable
+  module and pins its imports to `urllib.request` and `urllib.error`. Commit `8682902` failed that test until then,
+  because only the new tests were run before it. `docs/repo_map.md` was regenerated. The full suite passed (3,454).
+
 ## 2026-09-29 - Milestone 5 step 4 freeze, review, runner, and real_v2 run (DIAGNOSTIC_ONLY)
 
 - Freeze: `docs/preregistrations/m5_trial_family_v1_amendment_4.json` was committed alone before any step 4 code or

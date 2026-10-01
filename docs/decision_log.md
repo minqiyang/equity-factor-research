@@ -15,6 +15,175 @@ investment performance.
 
 ---
 
+## 2026-09-30 - Milestone 5 Step 4b Trial Amendment 5 (Coordinator Technical Defaults)
+
+Context:
+
+- Step 4b asks one question: do SEC as-filed value and quality sleeves join the step 4 baseline class set? The
+  entries below bind it: O-5 and O-9 extended to step 4b with the step 4b scope defaults, and O-10. The design note
+  (`coord/reports/m5_step4b/design_note.md`, untracked) proposed the definitions.
+- The SEC data build (code `7560b4a`) produced the local CIK map and the companyfacts cache. It computed no signal
+  or return (`reports/m5_step4b_data.md`).
+
+Decision:
+
+- Amendment 5 (`docs/preregistrations/m5_trial_family_v1_amendment_5.json`) freezes step 4b. Each revision was
+  committed alone, before any step 4b signal code, SEC signal value, sleeve, return, or rule result.
+  - Revision 1: `acc1f5a`, SHA-256 `136fa9f7...c1dd`. It follows the data-build review round 1: both seats reported
+    MATERIAL 0. OPUS-S4B-D-01 to D-03 and GPT-S4BD-A2 reading 2 are folded in; the other advisories are in the
+    roadmap backlog.
+  - Revision 2: `e4d73ce`, SHA-256 `a712188c...0c75c`. It repairs freeze review round 1: GPT reported MATERIAL 1
+    and ADVISORY 2, and Opus reported MATERIAL 1 and ADVISORY 7. The coordinator rulings are the revision 2
+    defaults below.
+  - It amends amendment 4 and pins it, v1, and amendments 1 to 3 by SHA-256. The `real_v2` pins are amendment 4's,
+    unchanged.
+  - It pins the SEC data by the CIK-map SHA-256 `09d163b9...120a` and the per-file hash-list SHA-256
+    `3c73ffe2...698a`, not by the manifest's own hash. The runner reads the cache offline only and refuses on any
+    mismatch.
+- Decision outcome:
+  - The SEC Value and Quality classes join the baseline class set when R0 over the 6 price sleeves plus the 3 SEC
+    sleeves meets all 8 step 2 conditions against the step 4 six-sleeve R0 in the primary run.
+  - Otherwise they do not join, reported as a negative.
+  - Fragility, the coverage-tilt label, the last-close outcome, and the S4b q-value are reported beside the outcome
+    and do not change it.
+- Coordinator technical defaults, one line each. None loosens R1, R2, R4, R6, R8, or R9.
+  - Only IDs with rule F status `unique` (563 of 632) are rankable. Unmapped, ambiguous, and multi-class IDs are
+    typed missing and stay in the price sleeves.
+  - Annual 10-K and 10-KT facts only. A key's value comes from its first-filed 10-K or 10-KT fact, ties to the
+    lowest accn; a key first filed in an amendment is typed missing; `frame`, `fy`, and `fp` are never read.
+  - A fact is usable only if its filing date is before the date of row r - 1.
+  - Every component of a signal takes the anchor concept's latest fiscal year E*, with no mixing of years.
+    E* earlier than row r - 1 minus 18 months is stale. There is no older-year or quarterly fallback.
+  - The share-date price is the last finite close within 10 rows on or before the cover date, inside the segment's
+    loaded rows; in the post segment no seal-window price is read.
+  - Revision 2 rulings, one line each:
+    1. GPT-S4BF-R1-M1: every evaluation-mask member-day gets one status. A ranking-set member at signal row r - 1
+       carries its rebalance-r status until the next rebalance. A between-rebalance entrant, or eligibility
+       resuming after a bar gap over r - 1, is `not_ranked_at_rebalance`, first in the order and counted by later
+       exit class. The reconciliation refusal stays.
+    2. OPUS-S4BF-M1: preferred is the first chain concept with a key at E*, and 0 when none has one. The
+       zero-by-absence cases are counted as `preferred_zero_by_absence`, not missing (the Fama-French and JKP
+       convention, matching `be_me`). An amendment-first chain key at E* makes BE `amendment_first`. This replaces
+       the revision 1 preferred rule.
+    3. GPT-S4BF-R1-A2 and OPUS-S4BF-A4: the order is period discovery, amendment-first classification, value
+       selection, staleness. E* is the latest end among anchor keys whose earliest 10-K-family fact was filed
+       before row r - 1. An amendment-first E* anchor is `amendment_first`, with no fallback. In a chain, the first
+       concept with a key at E* decides, with no fall-through.
+    4. GPT-S4BF-R1-A1: the primary dei share count comes from the anchor accession, at its latest end on or before
+       filed. The `CommonStockSharesOutstanding` fallback is restricted to end = E* before the ambiguity check.
+    5. OPUS-S4BF-A2: a primary share date after filed is `shares_missing`, so p is on or before r - 1.
+    6. OPUS-S4BF-A3: companyfacts carries no dimensional facts, so unlisted classes are not detected (515 filings
+       without a non-dimensional dei count, 462 of them `shares_missing`).
+    7. OPUS-S4BF-A1: `CostOfGoodsSold` joins the COGS chain after `CostOfRevenue`. No other tag is added, and the
+       measured chain coverage is stated in the amendment's limitations.
+  - The missing statuses are 15 typed reasons in a fixed order, plus the counted `preferred_zero_by_absence`. The
+    member-day split by reason and exit class reconciles, or the run refuses.
+  - Rule F stays as built, with no relaxation of the ticker-disagreement step (OPUS-S4B-D-03). It is fail-closed
+    under R3, so the 3 affected delisting candidates stay ambiguous.
+  - The foreign-form exclusion covers 20-F and 40-F filings inside the member window only. Earlier foreign
+    filings do not exclude a CIK; 7 accepted IDs have them.
+  - SEC facts filed inside the seal window may enter a post-segment signal. The seal governs snapshot rows and
+    O-3; an SEC fact carries no snapshot row or return, and no seal-window price is read. The post comparison
+    months start 2022-05, after the seal window.
+  - The not-mapped share by in-segment member-days, split by exit class and identity reason, is reported beside
+    the per-ID counts and gates nothing (OPUS-S4B-D-01).
+  - The comparator R0 is recomputed and must equal the committed step 4 R0 metrics exactly.
+  - The comparison months must equal amendment 4's 99.
+  - The coverage-tilt universe is the 563 unique IDs, fixed for the run. The result is labeled coverage-tilted
+    when any of the 8 margin signs changes against that comparator.
+  - One test, S4b.ADD (R0 over nine sleeves minus R0 over six, primary cost, 99 pooled months, `rule_test`). BY
+    family 481 = amendment 4's 480 slots at p = 1 plus the 1 observed test.
+  - Rule R1 over nine sleeves, the public counterpart over the matched JKP characteristics, class returns, and
+    transmission are descriptive and add no slot. R2 is not run.
+  - Two review seats for the freeze and the implementation. The SEC data-build code also takes two seats, as the
+    coordinator confirmed on 2026-09-30.
+  - Implementation readings (code `3744acc`, `e88cea8`, and `4200cf1`), one line each. None loosens R1, R2, R4, R6, R8, or R9.
+    1. OPUS-S4BF-R2-A1 (coordinator ruling): a key is amendment-first only when every earliest-filed fact is an /A
+       filing. Otherwise it takes the 10-K or 10-KT value under `first_filed`, lowest accn on a tie.
+    2. OPUS-S4BF-R2-A2 (coordinator ruling): the procedure computes the signal, and a non-ranked member's reason is
+       the first entry of `sec_reasons.order` that applies; stale wins over `concept_missing`.
+    3. GPT-S4BF-R2-A1 and OPUS-S4BF-R2-A3 (coordinator ruling): the engine's `halt_gap_return_v1` accounting is
+       unchanged. `not_ranked_at_rebalance` means the member cannot be newly selected at that rebalance; a
+       previously held locked position stays held, so status counts and holdings are distinct.
+    4. A key's earliest fact is the minimum (filed, accn). The fiscal-year-end instant match uses the lowest accn
+       among the earliest-date facts; before the run, 0 instants had a status that depends on that choice.
+    5. A distinct-value tie inside one first-filed accession would take the first fact in file order; before the
+       run, 0 such keys existed, and the count is reported.
+    6. Staleness compares E* with the date of row r - 1 minus 18 calendar months, the day clipped to the month's
+       length.
+    7. The hash list is rebuilt from the cache's retrieval records, and every cached file is re-hashed against its
+       record. Only the companyfacts of `unique` CIKs are parsed.
+    8. For `sec_identity_pool_mismatch`, a price-sleeve asset is any asset in a segment's evaluation mask over rows
+       [d0 - 1, last book row], which hold every ranking set and member-day. The eligible pool rebuilt from the
+       snapshot must also equal the map's IDs.
+    9. The share-date price also needs a finite, positive cumulative split factor, since the raw close is the
+       split-only close times that factor.
+    10. The public counterpart runs R0 over the 9 and the 6 characteristics from the first month all 9 exist and
+        slices each comparison window, as step 4's public books did.
+    11. A member-day's later exit class is its resolved member window's class (step 4 `classify`), else `unknown`.
+    12. R0_6_mapped uses R0_6's comparison months, weights 1/6, and the drift turnover and switch cost.
+    13. Two refusals were added, both stricter: `step4_regeneration_mismatch` (the recomputed step 4 results must
+        equal `reports/m5_step4.json` apart from run metadata) and `sec_rebalance_rows_mismatch` (the engine's
+        scheduled rebalances must equal the evaluation resets, because the SEC panels hold values only at rows
+        r - 1).
+
+## 2026-09-30 - O-5 and O-9 Extended to Milestone 5 Step 4b, and Step 4b Scope Defaults
+
+Context:
+
+- The step 4b design note (`coord/reports/m5_step4b/design_note.md`, untracked) proposes one decision: whether SEC
+  as-filed value and quality sleeves join the step 4 baseline class set. It needs `real_v2` identity tables to map
+  securities to SEC CIKs, and the same books as step 4. O-5 and O-9 were granted for step 4 only.
+
+Decision:
+
+- **Owner:** O-5 (local reads of `real_v1` and `real_v2`, aggregates only, nothing written inside a snapshot, the seal
+  window unaccessed) and O-9 (VP-2 at `DIAGNOSTIC_ONLY`, disclosed in the report header) extend to step 4b on the same
+  terms.
+- **Coordinator scope defaults.** None of these loosens R1, R2, R3, R4, R6, R8, or R9.
+  - Three SEC sleeves: book-to-market and earnings yield (Value) and gross profit over assets (Quality).
+    Profitability and Investment wait.
+  - The decision compares R0 over the six price sleeves plus the SEC sleeves with the step 4 six-sleeve R0 on the
+    step 4 conditions, months, costs, R4 events, and last-close rerun. Rule R1 on the enlarged set is descriptive,
+    and R2 is not run.
+  - CIK mapping fails closed. A security with no unique CIK stays typed missing, with no hand override list;
+    20-F and 40-F filers and predecessor CIKs are not accepted. Missing securities are counted by later exit class.
+  - Annual 10-K facts only, first filed, usable from the trading day after filing, stale after 18 months. A key first
+    filed in an amendment is typed missing.
+  - A descriptive coverage-tilt check reruns price R0 on the mapped universe only and labels the result if any
+    margin sign changes.
+  - The SEC data build (CIK map, company facts, manifest) computes identity, so its code gets two review seats.
+
+## 2026-09-30 - Owner Decision O-10: SEC EDGAR Access for Milestone 5 Step 4b
+
+Context:
+
+- Step 4b adds the SEC as-filed value and quality classes to the step 4 books. The O-5 entry below left SEC EDGAR
+  retrieval to a separate owner decision on the R11 source list and on the User-Agent contact.
+- SEC EDGAR requires every automated request to declare a name and a contact email in its `User-Agent` header,
+  and limits a client to 10 requests a second.
+
+Decision:
+
+- **O-10 (owner):** Milestone 5 may download SEC EDGAR data, including XBRL company facts, submissions, and the
+  filing index, for step 4b.
+  - The `User-Agent` contact is an owner-provided research email. It is held in a local environment variable and is
+    never written to the repository, a report, or an output file.
+  - Retrieval stays under 10 requests a second.
+- **Publication terms (owner):**
+  - Downloaded SEC files stay in a gitignored local cache. The repository commits a manifest with SHA-256 hashes.
+  - Per-company as-filed values stay local, because they can be joined to the private membership.
+  - Aggregates (sleeve and rule returns, counts, and test statistics) may be committed at `DIAGNOSTIC_ONLY`.
+  - Security codes, CIK or ticker lists tied to the membership, membership lists, and private paths are never
+    committed (R11 unchanged).
+
+Consequences:
+
+- The step 4b trial amendment is committed before any step 4b result. Coverage counts seen while building the
+  mapping are listed in its `results_seen_before_this_amendment`.
+- An unresolved CIK mapping fails closed for that security (R3) and is counted in the missingness report (R6); it
+  never blocks the run.
+
 ## 2026-09-29 - Milestone 5 Step 4 Trial Amendment 4 (Coordinator Technical Defaults)
 
 Context:

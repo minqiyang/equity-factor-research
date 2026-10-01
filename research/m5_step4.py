@@ -209,6 +209,8 @@ class SegmentInputs:
     intervals: pd.DataFrame
     schedule: SupportSchedule
     residual: tuple[tuple[str, int, int], ...]
+    split_close: pd.DataFrame | None = None   # research close (split-only) and cumulative split factor, for step 4b
+    split_factor: pd.DataFrame | None = None
 
     @property
     def window(self) -> tuple[int, int]:
@@ -237,7 +239,8 @@ def prepare(run: runner.SegmentRun, registered: dict[str, str],
                          full_calendar=run.full_calendar, offset=run.segment.feature_floor_row,
                          prices=support["prices"], spy=support["spy"], signals=signals,
                          intervals=support["intervals"], schedule=support["schedule"],
-                         residual=tuple(support["residual"]))
+                         residual=tuple(support["residual"]), split_close=research["close"],
+                         split_factor=research["split_factor"])
 
 
 def segment_events(seg: SegmentInputs, terminal_return: float) -> pd.DataFrame:
@@ -262,13 +265,14 @@ def check_sleeve_targets(seg: SegmentInputs) -> None:
             raise refuse("empty_sleeve_target", f"{seg.segment_id} {signal_id}: {len(empty)} rebalances")
 
 
-def run_books(seg: SegmentInputs, terminal_return: float) -> dict[str, Any]:
-    """Every sleeve at both cost cases and the equal-weight benchmark, for one event run."""
+def run_books(seg: SegmentInputs, terminal_return: float,
+              signal_ids: tuple[str, ...] = FAMILY_A_IDS) -> dict[str, Any]:
+    """Every sleeve in ``signal_ids`` at both cost cases and the equal-weight benchmark, for one event run."""
 
     check_sleeve_targets(seg)
     events = segment_events(seg, terminal_return)
     sleeves = {}
-    for signal_id in FAMILY_A_IDS:
+    for signal_id in signal_ids:
         for case in CASES:
             sleeves[(signal_id, case)] = runner.run_book(
                 "long_only", seg.prices, book_signal(seg, signal_id), seg.calendar, seg.window, intervals=seg.intervals,
@@ -381,20 +385,27 @@ def theme_multipliers(r2_multipliers: pd.DataFrame, months: pd.PeriodIndex) -> p
     return frame
 
 
-def rule_weights(sigma: pd.DataFrame, multipliers: pd.DataFrame) -> dict[str, pd.DataFrame]:
+def rule_weights(sigma: pd.DataFrame, multipliers: pd.DataFrame | None) -> dict[str, pd.DataFrame]:
+    """R0 and rule R1 weights, and R2 unless ``multipliers`` is ``None`` (step 4b runs no R2)."""
+
     in_set = pd.DataFrame(True, index=sigma.index, columns=sigma.columns)
     try:
         w0 = base.rule_weights("R0", in_set, sigma)
         w1 = base.rule_weights("R1", in_set, sigma)
     except PublicDataRefusal as exc:
         raise refuse("sigma_degenerate", str(exc)) from exc
+    if multipliers is None:
+        return {"R0": w0, "R1": w1}
     w2 = step3.tilt(w1, multipliers.reindex_like(w1), in_set)
     return {"R0": w0, "R1": w1, "R2": w2}
 
 
-def class_layer(monthly: dict[str, pd.DataFrame], sigma: dict[str, pd.DataFrame], multipliers: pd.DataFrame,
+def class_layer(monthly: dict[str, pd.DataFrame], sigma: dict[str, pd.DataFrame], multipliers: pd.DataFrame | None,
                 last_month: pd.Period) -> dict[str, Any]:
-    """Comparison months, weights, and rule books for one segment and event run, per cost case."""
+    """Comparison months, weights, and rule books for one segment and event run, per cost case.
+
+    ``multipliers`` ``None`` builds R0 and rule R1 only, over whatever sleeves ``monthly`` holds (step 4b).
+    """
 
     out: dict[str, Any] = {}
     for case in CASES:
@@ -406,19 +417,20 @@ def class_layer(monthly: dict[str, pd.DataFrame], sigma: dict[str, pd.DataFrame]
         months = pd.period_range(months[0], months[-1], freq="M")
         if not defined.reindex(months).fillna(False).all():
             raise refuse("sigma_gap", case)
-        weights = rule_weights(sig.loc[months], theme_multipliers(multipliers, months))
-        books = {rule: drift_portfolio(weights[rule], monthly[case], SWITCH_BPS[case]) for rule in RULES}
+        weights = rule_weights(sig.loc[months], None if multipliers is None else theme_multipliers(multipliers, months))
+        books = {rule: drift_portfolio(weights[rule], monthly[case], SWITCH_BPS[case]) for rule in weights}
         out[case] = {"months": months, "weights": weights, "books": books}
     return out
 
 
-def class_returns(monthly: pd.DataFrame, sigma: pd.DataFrame, months: pd.PeriodIndex) -> pd.DataFrame:
+def class_returns(monthly: pd.DataFrame, sigma: pd.DataFrame, months: pd.PeriodIndex,
+                  sleeves: dict[str, tuple[str, str]] = SLEEVES, themes: tuple[str, ...] = THEMES) -> pd.DataFrame:
     """Rule R1 within each theme on the sleeves (descriptive)."""
 
     inverse = 1.0 / sigma.loc[months]
     values = {}
-    for theme in THEMES:
-        members = [s for s in FAMILY_A_IDS if SLEEVES[s][1] == theme]
+    for theme in themes:
+        members = [s for s in sleeves if sleeves[s][1] == theme]
         values[theme] = (inverse[members] * monthly.loc[months, members]).sum(axis=1) / inverse[members].sum(axis=1)
     return pd.DataFrame(values)
 
@@ -709,8 +721,13 @@ class PublicInputs:
     manifest: list[dict[str, Any]]
 
 
-def load_public(repo_root: Path) -> PublicInputs:
-    """Step 2 and step 3 public inputs from the cache; any source missing or unlike the committed manifest refuses."""
+def load_public(repo_root: Path, sleeves: dict[str, tuple[str, str]] = SLEEVES,
+                themes: tuple[str, ...] = THEMES) -> PublicInputs:
+    """Step 2 and step 3 public inputs from the cache; any source missing or unlike the committed manifest refuses.
+
+    ``jkp`` holds the matched characteristic of each sleeve in ``sleeves`` and ``class_values`` each theme in
+    ``themes`` (step 4b passes its nine sleeves and adds Value and Quality).
+    """
 
     manifest_path = repo_root / base.MANIFEST_JSON
     if sha256_file(manifest_path) != PUBLIC_MANIFEST_SHA256:
@@ -743,9 +760,9 @@ def load_public(repo_root: Path) -> PublicInputs:
         nets["R0"][case] = step2["_series"][("R0", cost)]
         nets["R1"][case] = step2["_series"][("R1", cost)]
         nets["R2"][case] = base.portfolio(built["weights"]["R2"], built["returns"], cost)["net"]
-    jkp = inputs["panels"]["jkp_usa_all_factors_monthly_vw_cap"].values[[SLEEVES[s][0] for s in FAMILY_A_IDS]]
+    jkp = inputs["panels"]["jkp_usa_all_factors_monthly_vw_cap"].values[[sleeves[s][0] for s in sleeves]]
     return PublicInputs(rf=inputs["panels"]["french_ff3_monthly"].values["RF"],
-                        multipliers=built["r2"]["multipliers"], class_values=built["class_values"][list(THEMES)],
+                        multipliers=built["r2"]["multipliers"], class_values=built["class_values"][list(themes)],
                         jkp=jkp, nets=nets, last_month=data.last, manifest=entries)
 
 
