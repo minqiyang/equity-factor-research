@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-28 after the owner's North Star v2 decision (M4.8 paused after Stage D; Milestone 5 redefined as the factor-class allocator).
+Updated: 2026-09-30 after owner decisions O-11 (step 5 deferred) and O-12 (owner report delivered; no seal look or forward observation).
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -208,7 +208,7 @@ carry to that point. The seal window stays unaccessed.
 
 Design basis: `coord/reports/north_star_vision_assessment_opus.md`.
 
-Status 2026-09-29:
+Status 2026-09-30:
 - Steps 1 and 2 are delivered. The trial file and amendments 1 and 2 are in `docs/preregistrations/`, the catalog
   has 1,160 rows, and the declared rule picks R1 (inverse volatility) as the baseline product
   (`reports/m5_factor_baseline.md`, `DIAGNOSTIC_ONLY`).
@@ -234,6 +234,21 @@ Status 2026-09-29:
   - S4b.ADD: +0.051 percent a month, HAC p 0.42, BY q 1 (family 481). Not fragile, not coverage-tilted, and the
     last-close rerun also gives 2 of 8.
   - The baseline class set stays the four price classes under R0. Step 5 inherits it.
+- Step 5 (discovery) is deferred by owner decision O-11 (2026-09-30) for insufficient power. Its design note
+  (untracked) computed no result. One added sleeve would need about 0.6 to 0.9 percent a month over R0 to be
+  detected over the 44 post months, so the expected outcome was a null. No step 5 trial was run or counted.
+  - It reopens only by owner decision, for example when new stock-level months or a new candidate source would make
+    a plausible gain detectable. The power check is redone first, and its trial amendment is frozen before any
+    result. The 4 OSAP placebos would stay a descriptive control.
+- Step 6: the owner report is delivered (`reports/m5_owner_report.md`, `DIAGNOSTIC_ONLY`). Its conclusion, approved
+  by the owner under O-12 (2026-09-30), is that at this evidence ceiling no rule beats an index fund, and Milestone 6
+  does not start on this allocator.
+  - Under O-12 step 6 makes no seal-window look and runs no forward observation. No price or membership data after
+    August 2026 is bought or used. The seal window stays sealed for a future candidate with a real edge or for the
+    later M4.8 stages.
+  - The dated freeze of R0 follows the milestone ablation. Two formal review seats from different model families
+    review it, the AGENTS.md gate for a trial-family freeze (coordinator default). The next line of work after
+    Milestone 5 is open.
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most
@@ -282,6 +297,7 @@ status.
 | Milestone 5 step 4 runner and report advisories | Reporting | Code review round 1 at `66961fb` found no MATERIAL issue and ten advisories, none of which changes a decision: 18 of 935 signal exclusions are classed `unknown` instead of by the execution-row interval (GPT-S4-CR1-A1); the five excluded partial-month rows are not counted in the outputs (GPT-S4-CR1-A2); the report does not say that R2 equals rule R1 in 45 of 55 pre comparison months (OPUS-S4C-A1); the survival note names R1 as the comparator in all three tables (OPUS-S4C-A2); the excess table mixes comparison and sleeve windows without a note (OPUS-S4C-A3); the last-close excess levels appear only in the JSON, for example R0 pre excess over SPY of -4.61 percent against -1.60 percent (OPUS-S4C-A4); the report does not state that 71.8 percent of the pre unpriced member-days belong to later index removals, which likely lifts the reported levels (OPUS-S4C-A5); SPY's first sleeve month carries the anchor-to-first-reset return (OPUS-S4C-A6); an empty `--snapshot-dir` resolves to the working directory (OPUS-S4C-A7); the handoff refresh (OPUS-S4C-A8, done in this PR) | Reports in the main checkout under `coord/reports/m5_step4/` (untracked) | The next edit to `research/m5_step4.py`, or step 4b | Open, except A8; fix with the next runner change |
 | Milestone 5 step 4b data build advisories | Engineering | Data-build review round 1 at `7560b4a` found no MATERIAL issue; the map and hash list reproduced offline byte for byte. Open advisories, none of which changes the map: SEC exception text carries identifier-bearing paths (CIK filenames) into tracebacks (GPT-S4BD-A1); HTTP redirects are followed by the default opener without rechecking the host allowlist or the throttle, and would carry the User-Agent (GPT-S4BD-A2, OPUS-S4B-D-04); the private-output checkout guard checks only the supplied repository and the target leaf, not the target's ancestors (GPT-S4BD-A3, OPUS-S4B-D-05); the engineering log's access record omitted the binding reads (GPT-S4BD-A4, fixed in the records commit after amendment 5) | Reports in the main checkout under `coord/reports/m5_step4b/` (untracked); OPUS-S4B-D-01 to D-03 are folded into amendment 5 | Fix A2 and D-04 before any further online SEC run; the others with the next edit to `src/data/sec_edgar.py` or `research/m5_step4b_data.py` | Open, except A4 |
 | Milestone 5 step 4b runner and report advisories | Research | Code review round 1 at `27133b9` found no MATERIAL issue; both seats reran `run` and matched `reports/m5_step4b.json` exactly. The five report advisories (GPT-S4BC-R1-A1, OPUS-S4BC-A1 to A4) are fixed in the report renderer without changing a number. Open: the frozen COGS chain excludes filers without a cost-of-revenue line, so GP_AT_AF ranks about 55 percent of member-days (OPUS-S4BC-A2); the frozen anchors drop filers that tag only `StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest` or moved from `NetIncomeLoss` to `ProfitLoss` (OPUS-S4BC-A3); `run` writes a temporary membership inventory through `research/m4_7_sp500_pit_rerun.py:1752-1756`, which a write-blocking review harness must virtualize (GPT seat) | Reports in the main checkout under `coord/reports/m5_step4b/` (untracked) | A future amendment that revisits the COGS chain and the NCI-inclusive and `ProfitLoss` concepts; the inventory write with the next edit to the side loader | Open, except the five fixed report advisories |
+| VP-2 census attribution in Milestone 5 records | Reporting | The VP-2 exposure figure (22.5 percent of eligible member-days with `S_D > 0.05`) is attributed to "the M4.8 census" in `reports/m5_step4.md`, `reports/m5_step4b.md`, `research/m5_step4.py` (header text), the O-9 entry in `docs/decision_log.md`, and amendment 4 `limitations`. The measurement comes from the M4.7a-3 coverage census on `real_v1` (`reports/m4_7_coverage_census.md`; `reports/m4_8_membership_census.json` has no `S_D` field). No number or decision changes (owner report check V6-05) | `reports/m5_owner_report.md` cites the M4.7 coverage census; committed reports, research code, and the frozen amendment are left unchanged | The next edit to the step 4 or 4b report text in `research/m5_step4.py` or `research/m5_step4b.py`; a frozen amendment is never edited | Open |
 | Plotting and visual dashboard generation | Presentation | Text and markdown/JSON output only | Generate clean, human-readable terminal and Markdown comparison reports | Post-v0 visualization polish | Safe to defer |
 | Support v2 look-ahead exclusion (R1) | Timing / Invariants | Retrospective asset exclusion at r-1 for mid-month missing bar / unevidenced delisting | Confined to 27 cells of 26,237 (0.103%) on real_v1; DIAGNOSTIC_ONLY ceiling; zero ranking/selection/profitability claim; owner-accepted risk | Revisit immediately if any rerun produces a Family A BY survivor, or if excluded fraction exceeds 0.005; expires at next registration freeze | Owner-accepted, expires at next registration freeze |
 | Identity mis-stitching & ticker reuse (PIT-005) | Lineage Correctness | Spurious continuity across distinct permanent securities | Must fail closed on ticker reassignment; never stitch returns across permanent securities. M4.4 requires identity-backed interval tables and exact permanent-ID axes in its optional PIT path; synthetic ticker-reassignment tests preserve separate security returns. External identity evidence remains caller-supplied. | Never deferrable | **BLOCKING (Cannot Defer)**; optional runtime enforcement implemented |

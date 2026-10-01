@@ -12,6 +12,23 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Milestone 5 owner report and O-12 record
+
+- Docs only: `reports/m5_owner_report.md`, the O-12 entry in `docs/decision_log.md`, and the step 6 status in
+  `docs/current_roadmap.md`. Every number in the report is quoted from a committed report or record named beside it;
+  no code, data, or result changed.
+- Coordinator verification of `b6464da` checked 88 claims: `MATERIAL: 0` and 8 ADVISORY findings (V6-01 to V6-08:
+  wording, period labels, the census attribution, and missing citations; no wrong number). All 8 are fixed in the
+  report. V6-05 traced the VP-2 exposure figure to the M4.7 coverage census on `real_v1`, not the M4.8 census; the
+  upstream mislabel in committed files is a roadmap backlog row, and those files are unchanged.
+
+## 2026-09-30 - Milestone 5 step 5 deferral record (O-11)
+
+- Records only: the O-11 entry in `docs/decision_log.md` and the step 5 status in `docs/current_roadmap.md`. No code,
+  data, or result changed; no step 5 trial amendment, signal, or return exists.
+- The step 6 design note is untracked (`coord/reports/m5_step6/design_note.md`). Its checks were schema, coverage,
+  and file-count checks only; the seal-window files were counted, not opened.
+
 ## 2026-09-30 - Incident: PR #281 merged a commit no review seat had seen; live step 4 report check restored
 
 - Incident (identified by the coordinator): PR #281 was squash-merged as `03e06b5`. Its last commit, `7d24903`
