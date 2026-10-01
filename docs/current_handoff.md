@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-09-30 for Milestone 5 step 4b (SEC as-filed value and quality classes on point-in-time books).
+Updated: 2026-09-30 for the step 4 live report regression check (RETRO-GPT-01) after PR #281.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `c7d2d8da101c0788f3295b7d2676b8561c32f9c7` (main after PR #280).
+  `03e06b53e75116d81701a7da21a81843071f78b6` (main after PR #281).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -36,14 +36,15 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   inverse-volatility baseline on public factor data, `DIAGNOSTIC_ONLY`), and the CI speed change (PR #278: four
   parallel test lanes, one shared runner v3 run, about 10 minutes per PR), and Milestone 5 step 3 (PR #279: state
   tilt, factor momentum tilt, and pooled ridge against R1; closure open, no state-timing claim), and Milestone 5
-  step 4 (PR #280: price classes on `real_v2`; R0 is the point-in-time baseline, R2 closes, fragile).
+  step 4 (PR #280: price classes on `real_v2`; R0 is the point-in-time baseline, R2 closes, fragile), and
+  Milestone 5 step 4b (PR #281: SEC as-filed Value and Quality classes on `real_v2`; they do not join).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
   `45fe5adc` (PR #267), `0d87d7eb` (PR #268), `a9c94dca` (PR #269), `e4662859` (PR #270),
   `dcf7b86a` (PR #271), `bfdca57a` (PR #272), `f416af8c` (PR #273), `1c56939b` (PR #274), and
   `9dee2df2` (PR #275), `5b74d35a` (PR #276), `23b1c734` (PR #263), `edbd34c3` (PR #277), `cb77a4e8` (PR #278),
-  `e6d04cdf` (PR #279), and `c7d2d8da` (PR #280).
+  `e6d04cdf` (PR #279), `c7d2d8da` (PR #280), and `03e06b53` (PR #281).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -53,31 +54,20 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m5-step4b` delivers Milestone 5 step 4b on the private `real_v2` snapshot and a local
-  SEC companyfacts cache, under owner decisions O-5 and O-9 as extended to step 4b and O-10 (SEC EDGAR access),
-  at `DIAGNOSTIC_ONLY`.
-  - SEC data build (`src/data/sec_edgar.py`, `research/m5_sec_identity.py`, `research/m5_step4b_data.py`, code
-    `7560b4a`): fail-closed rule F maps 563 of 632 eligible IDs to one CIK; two-seat review `MATERIAL: 0`, and the
-    map and hash list reproduced offline. The map and raw files stay local; the manifest holds hashes only.
-  - Amendment 5 was frozen in two GPT and Opus review rounds, each revision committed alone before any step 4b
-    code or result. Round 1 found one MATERIAL finding per seat in revision 1; revision 2 (SHA-256
-    `a712188c...`) resolved both, and both seats reported `MATERIAL: 0` in round 2.
-  - `research/m5_sec_signals.py` implements the as-filed rule (first-filed 10-K values, no amendment or older-year
-    fallback, 18-month staleness, 15 typed missing reasons) for BM_AF, EP_AF, and GP_AT_AF; `research/m5_step4b.py`
-    runs them beside the six step 4 sleeves, recomputes step 4, and runs S4b.ADD (BY family 481).
-    `tests/test_m5_step4b.py` has 35 tests.
-  - Code review round 1 at `27133b9`: `MATERIAL: 0` from both seats; each reran the full run and matched the JSON.
-    The five report advisories were fixed in the renderer; the JSON is unchanged.
-- Result (`reports/m5_step4b.md`): the SEC classes do not join. R0 over nine sleeves meets 2 of 8 conditions
-  against the six-sleeve R0 (the two post Sharpe conditions); S4b.ADD +0.051 percent a month, HAC p 0.42, BY q 1;
-  not fragile, not coverage-tilted, last-close rerun 2 of 8. GP_AT_AF ranks about 55 percent of member-days
-  because the frozen COGS chain excludes filers without a cost-of-revenue line.
-- Records: the engineering-log entry, the implementation readings in the decision log, and the step 4b data-build
-  and runner advisories in the roadmap backlog.
+- Candidate branch `claude/m5-s4b-retro-fix` restores the step 4 regression check on the report rendered from the
+  recomputed summary (RETRO-GPT-01), test-only, and records the PR #281 merge-gate incident.
+  - PR #281's last commit `7d24903` merged without a formal review; a retrospective one-seat review of `03e06b5`
+    found `MATERIAL: 0` and RETRO-GPT-01 (engineering log).
+  - `tests/test_m5_step4b.py` compares the live report with `tests/fixtures/m5_step4_synthetic_report.md` (the
+    pre-change live report, `c915eab5...`), allowing one unit in the last printed place of a decimal number, and
+    a mutation test shows a sleeve-table order change fails it while the summary comparison passes.
+- Step 4b result (PR #281, `reports/m5_step4b.md`): the SEC classes do not join. R0 over nine sleeves meets 2 of 8
+  conditions against the six-sleeve R0; S4b.ADD +0.051 percent a month, HAC p 0.42, BY q 1; not fragile.
+- No committed output or result changes.
 
 ## Current Research Gate Summary
 
-See `docs/current_roadmap.md` for milestone status. Milestone 5 steps 1 to 4b are delivered on this candidate. On
+See `docs/current_roadmap.md` for milestone status. Milestone 5 steps 1 to 4b are merged. On
 point-in-time books, R0 over the four price classes is the baseline product; the return-timing line through R2 is
 closed, and the SEC Value and Quality classes do not join. M4.8 stays paused after Stage D, and the seal window
 remains unaccessed.
