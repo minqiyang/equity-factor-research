@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-09-30 - Owner Decision O-11: Step 5 Deferred, Seal Window Kept, Step 6 Next
+
+Context:
+
+- Steps 1 to 4b are merged (`03e06b5`, PR #281). On point-in-time books the baseline class set is the four price
+  classes (six sleeves) under R0; the SEC Value and Quality classes do not join.
+- The step 5 design note (`coord/reports/m5_step5/design_note.md`, untracked) computed no result. What it records:
+  - Question: does any new price-volume sleeve join R0? Search pool: 15 JKP market characteristics in the four kept
+    themes. Controls: 20 random-grammar replicates of 15 signals, and the 4 OSAP placebos computable from OHLCV
+    (DownsideBeta, BetaDimson, IdioVolCAPM, ReturnSkewCAPM), each a near twin of one candidate.
+  - Plan: screen on the 55 pre months, freeze a shortlist of at most 10, confirm on the 44 post months.
+  - Premise check: no trait region survived with evidence in steps 3 to 4b, so the search would look inside the
+    region R0 already holds.
+  - Power (rough): one added sleeve needs about 0.6 percent a month over R0 for p 0.05 over 44 months, and about
+    0.9 percent after BY over a shortlist of 10. The expected outcome is a null.
+- No step 5 trial amendment was committed and no step 5 signal, return, or statistic exists, so no trial is
+  appended and the cumulative BY family stays at 481.
+
+Decision:
+
+- **O-11 (owner, 2026-09-30):**
+  - Step 5: "Skip step 5 for now and do step 6." Step 5 is deferred for insufficient power. The reason and the design
+    note are kept.
+  - Seal window `[2019-07-31, 2020-07-31)`: "Keep it sealed." It is reserved for confirming the frozen allocator
+    after step 6.
+  - OSAP placebos, if step 5 runs later: "Keep the 4, descriptive only." The random search stays the gate.
+
+Consequences:
+
+- Step 6 (owner report, dated freeze, forward observation) is the next step, on the four-price-class R0 baseline.
+- Step 5 reopens only by owner decision, for example when new stock-level months or a new candidate source would
+  bring the minimum detectable gain of one added sleeve near a plausible size. The design note's power check is
+  redone first, and a reopened step 5 freezes its own trial amendment before any result.
+- The seal window stays unaccessed. Spending it on the frozen allocator leaves no unused stock-level holdout for
+  M4.8 Stages E to H.
+
 ## 2026-09-30 - Milestone 5 Step 4b Trial Amendment 5 (Coordinator Technical Defaults)
 
 Context:

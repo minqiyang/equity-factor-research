@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-28 after the owner's North Star v2 decision (M4.8 paused after Stage D; Milestone 5 redefined as the factor-class allocator).
+Updated: 2026-09-30 after owner decision O-11 (step 5 deferred for insufficient power; step 6 next; seal window kept).
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -208,7 +208,7 @@ carry to that point. The seal window stays unaccessed.
 
 Design basis: `coord/reports/north_star_vision_assessment_opus.md`.
 
-Status 2026-09-29:
+Status 2026-09-30:
 - Steps 1 and 2 are delivered. The trial file and amendments 1 and 2 are in `docs/preregistrations/`, the catalog
   has 1,160 rows, and the declared rule picks R1 (inverse volatility) as the baseline product
   (`reports/m5_factor_baseline.md`, `DIAGNOSTIC_ONLY`).
@@ -234,6 +234,13 @@ Status 2026-09-29:
   - S4b.ADD: +0.051 percent a month, HAC p 0.42, BY q 1 (family 481). Not fragile, not coverage-tilted, and the
     last-close rerun also gives 2 of 8.
   - The baseline class set stays the four price classes under R0. Step 5 inherits it.
+- Step 5 (discovery) is deferred by owner decision O-11 (2026-09-30) for insufficient power. Its design note
+  (untracked) computed no result. One added sleeve would need about 0.6 to 0.9 percent a month over R0 to be
+  detected over the 44 post months, so the expected outcome was a null. No step 5 trial was run or counted.
+  - It reopens only by owner decision, for example when new stock-level months or a new candidate source would make
+    a plausible gain detectable. The power check is redone first, and its trial amendment is frozen before any
+    result. The 4 OSAP placebos would stay a descriptive control.
+- Step 6 is next. The seal window stays sealed and is reserved for confirming the frozen allocator after step 6.
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most
