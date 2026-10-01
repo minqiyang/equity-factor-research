@@ -12,6 +12,12 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Milestone 5 owner report and O-12 record
+
+- Docs only: `reports/m5_owner_report.md`, the O-12 entry in `docs/decision_log.md`, and the step 6 status in
+  `docs/current_roadmap.md`. Every number in the report is quoted from a committed report or record named beside it;
+  no code, data, or result changed.
+
 ## 2026-09-30 - Milestone 5 step 5 deferral record (O-11)
 
 - Records only: the O-11 entry in `docs/decision_log.md` and the step 5 status in `docs/current_roadmap.md`. No code,

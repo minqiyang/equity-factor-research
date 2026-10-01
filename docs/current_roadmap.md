@@ -1,6 +1,6 @@
 # Current Roadmap
 
-Updated: 2026-09-30 after owner decision O-11 (step 5 deferred for insufficient power; step 6 next; seal window kept).
+Updated: 2026-09-30 after owner decisions O-11 (step 5 deferred) and O-12 (owner report delivered; no seal look or forward observation).
 
 Canonical responsibility: program stage sequence, dependency order, gate and
 completion criteria, and coarse stage status.
@@ -240,7 +240,13 @@ Status 2026-09-30:
   - It reopens only by owner decision, for example when new stock-level months or a new candidate source would make
     a plausible gain detectable. The power check is redone first, and its trial amendment is frozen before any
     result. The 4 OSAP placebos would stay a descriptive control.
-- Step 6 is next. The seal window stays sealed and is reserved for confirming the frozen allocator after step 6.
+- Step 6: the owner report is delivered (`reports/m5_owner_report.md`, `DIAGNOSTIC_ONLY`). Its conclusion, approved
+  by the owner under O-12 (2026-09-30), is that at this evidence ceiling no rule beats an index fund, and Milestone 6
+  does not start on this allocator.
+  - Under O-12 step 6 makes no seal-window look and runs no forward observation. No price or membership data after
+    August 2026 is bought or used. The seal window stays sealed for a future candidate with a real edge or for the
+    later M4.8 stages.
+  - The dated freeze of R0 follows the milestone ablation. The next line of work after Milestone 5 is open.
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most

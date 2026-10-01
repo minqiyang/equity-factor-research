@@ -15,6 +15,36 @@ investment performance.
 
 ---
 
+## 2026-09-30 - Owner Decision O-12: Owner Report Conclusion, No Seal Look, No Forward Observation
+
+Context:
+
+- The step 6 design note (`coord/reports/m5_step6/design_note.md`, untracked) found that R0, the baseline candidate,
+  trails SPY and the equal-weight point-in-time book in both segments (`reports/m5_step4.md`). It also found that no
+  authorized source supplies stock prices or membership after `real_v2` ends on 2026-08-07. It asked the owner four
+  questions.
+
+Decision:
+
+- **O-12 (owner, 2026-09-30):**
+  - Forward data: "Can we not use new data after August 2026, and use only the data through August 2026? I think the
+    extra month of data would not help, and it would cost me a lot of money." No new price or membership source and
+    no spending is authorized, and forward observation is not run.
+  - Seal window `[2019-07-31, 2020-07-31)`: "Keep it reserved." It is kept for a future candidate with a real edge or
+    for the later M4.8 stages. Step 6 makes no seal-window look. This replaces the O-11 reservation of the window for
+    confirming the frozen allocator.
+  - Report conclusion: "Yes, write it that way," for "At this evidence ceiling, no rule beats an index fund; Milestone
+    6 does not start on this allocator."
+  - Next line of work after Milestone 5: "Not decided yet; discuss after the report."
+
+Consequences:
+
+- `reports/m5_owner_report.md` states the approved conclusion. It quotes committed results only and computes
+  nothing new.
+- The dated freeze of R0 follows the milestone ablation and pins no seal or forward look. Forward observation needs a
+  new owner decision on data and money.
+- The factor-ETF blend benchmark stays absent, because no source is authorized.
+
 ## 2026-09-30 - Owner Decision O-11: Step 5 Deferred, Seal Window Kept, Step 6 Next
 
 Context:
