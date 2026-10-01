@@ -209,6 +209,7 @@ first recorded the rule.
 | Spending a stage on work that cannot change a real-data result or an owner decision in that step, including repeated data extension under a gate that cannot pass | North Star v2 PR (2026-09-28) |
 | Writing non-English text, including Chinese characters, to the repository, to GitHub (PR titles and bodies, comments, commit messages), or to any report | North Star v2 PR (2026-09-28) |
 | Running a formal review seat through an agent of another model, such as a GPT seat launched or relayed by a Claude agent | Milestone 5 step 3 PR (2026-09-28) |
+| Merging a PR whose head includes a commit pushed after the last required review round that the required seats have not reviewed, even when the commit only fixes CI and every check passes | PR #281 incident, recorded by `e36a4a2` (PR #282); owner confirmed 2026-09-30 |
 
 Each incident is recorded in `docs/engineering_log.md`. A new entry needs its
 own incident record and owner confirmation.
@@ -244,6 +245,11 @@ Technical eligibility requires low/clear risk, expected author/head owner,
 verified protections, checks and reviews, conflict/queue state, and file scope.
 Pending or unverifiable evidence is ineligible; eligibility never authorizes
 auto-merge or merge.
+
+Reviews must cover the merge head. A commit pushed after the last required
+review round, including a fix for a CI failure, makes the PR ineligible until
+the required seats have reviewed that commit; passing checks do not substitute
+for that review.
 
 When full-lifecycle authorization is current and every technical condition
 passes, perform the normal protected PR merge without another prompt. Never use

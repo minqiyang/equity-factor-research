@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-09-30 - Process failure rule: no merge of a commit added after the last review round
+
+- The owner confirmed the PR #281 incident (the incident entry of the same date) as a P1 process failure. The controller's Process Failures
+  table gains the row "Merging a PR whose head includes a commit pushed after the last required review round that
+  the required seats have not reviewed", and Protected Merge Eligibility now states that reviews must cover the
+  merge head: a later commit, a CI fix included, makes the PR ineligible until the required seats review it.
+- Docs only; no code, data, or result changes.
+
 ## 2026-09-30 - Milestone 5 owner report and O-12 record
 
 - Docs only: `reports/m5_owner_report.md`, the O-12 entry in `docs/decision_log.md`, and the step 6 status in
