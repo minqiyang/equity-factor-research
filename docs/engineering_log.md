@@ -19,6 +19,25 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   again from `reports/m5_step4.json`.
 - `reports/m5_owner_report.md` gains the O-16 headline and its limits, and it closes GPT-S6-R1-A1 to A3. Every added
   number is quoted from a committed file.
+- Correction found by the next-milestone inventory: the exit class `index_removal_still_trading` means "still
+  trading at the data end" and includes current members (`research/m4_7_universe_build.py`, `exit_class`). The
+  report and the OPUS-S4C-A5 backlog row no longer say that these unpriced members are later index removals that
+  likely lift the levels; the direction is not known.
+
+## 2026-10-02 - Incident: an inventory script opened seal-listed private files
+
+- What happened: the coordinator dispatched an untracked inventory of the step 4 unpriced members. Its prompt named
+  the quarantine folders as places to look and did not list the seal's never-opened files. A scratch script then
+  opened files that both seal records in `src/data/holdout_partition.py` list under
+  `holdout_value_files_never_opened_downstream`: `raw/**` (`real_v1`), `raw/eod/*.json` (`real_v2`),
+  `quarantine/**`, and one older raw acquisition snapshot. Some of these hold rows from the seal window.
+- Scope: the script kept date columns only and printed counts within the two segment spans. A scan of every agent
+  transcript of that workflow found no seal-window date next to a price or return value. No model saw a seal-window
+  value. Every count in the inventory was rerun from `read_discovery` partitions only.
+- Cause: the dispatch prompt, not the agent. Proposed rule for the owner to confirm: a card that lets an agent read
+  private data lists the seal's never-opened paths, and any script reads bars only through `read_discovery`.
+- Owner rulings needed: whether the seal stays usable as is, and whether a later part 2 diagnostic may open
+  `quarantine/**`. The coordinator recommends yes and no.
 
 ## 2026-10-02 - Simplified Technical English writing target (O-15)
 

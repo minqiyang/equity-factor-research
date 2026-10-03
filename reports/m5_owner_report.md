@@ -118,9 +118,10 @@ Sources for this section: `reports/m5_step4.md` (Method and Provenance, Windows)
 
 - **Missing prices.** 27.83 percent of member-days in the earlier segment (2014-04 to 2019-06) and 15.72 percent in
   the later segment (2021-08 to 2026-08) have no price and are never held (`reports/m5_step4.md`; segment dates from
-  `research/m5_step4.py`, `SEGMENT_DATES`). 71.8 percent of the
-  early ones belong to stocks later removed from the index, which likely flatters the reported levels
-  (`docs/current_roadmap.md`, backlog).
+  `research/m5_step4.py`, `SEGMENT_DATES`). 71.8 percent of the early ones are in the exit class
+  `index_removal_still_trading` (`reports/m5_step4.md`). Despite its name, this class means "still trading at the
+  end of the data" and includes current members (`research/m4_7_universe_build.py`, `exit_class`). So the effect of
+  these members on the reported levels is not known.
 - **Missing crash.** The sealed window and its buffers remove 2019-07 to 2021-08, including the 2020 crash, from the
   stock books (`reports/m5_step4.md`). The stock-book drawdowns above are therefore too mild.
 - **Delistings.** No terminal evidence is accepted, so any held stock that disappears counts as a total loss. The
