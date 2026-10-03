@@ -62,7 +62,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 - Candidate branch `claude/m5-report-correction` records owner decision O-16. Docs only; no code, data, or result
   changes. `reports/m5_owner_report.md` gets the exact headline, its limits, and the three step 6 advisories; the
-  roadmap step 6 line follows.
+  roadmap step 6 line follows. It also corrects the reading of the `index_removal_still_trading` exit class and
+  records the seal-file incident of the next-milestone inventory in the engineering log.
   - `AGENTS.md`: one Writing Style line, "Write at about 80% of ASD-STE100 (Simplified Technical English)."
   - The O-15 decision and engineering log entries, and a wording fix to the O-14 entry (advisory O14-R1-A2).
 
