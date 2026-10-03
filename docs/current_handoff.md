@@ -60,12 +60,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m5-report-correction` records owner decision O-16. Docs only; no code, data, or result
-  changes. `reports/m5_owner_report.md` gets the exact headline, its limits, and the three step 6 advisories; the
-  roadmap step 6 line follows. It also corrects the reading of the `index_removal_still_trading` exit class and
-  records the seal-file incident of the next-milestone inventory in the engineering log.
-  - `AGENTS.md`: one Writing Style line, "Write at about 80% of ASD-STE100 (Simplified Technical English)."
-  - The O-15 decision and engineering log entries, and a wording fix to the O-14 entry (advisory O14-R1-A2).
+- Candidate branch `claude/m6-direction` records owner decisions O-17 (index tilt) and O-18 (seal kept, new
+  process-failure row), adds the Milestone 5.5 roadmap section, and sets the next safe action. Docs only.
+- Stacked on branch `claude/m5-report-correction` (PR #288), which records owner decision O-16: the exact owner
+  report headline and limits, the still-trading exit class correction, and the seal-file incident record.
 
 ## Current Research Gate Summary
 
@@ -82,12 +80,13 @@ unaccessed and reserved (O-12).
 - Owner items carried: the iCloud sync of the private data root (A2-D-ADV-6); the Stage C Wikipedia request that
   sent the owner's account email in its user agent (engineering log, c2 entry); the registration v2 validator
   accepting a cash completion after the calendar end (A2-05).
-- Owner: the next line of work after Milestone 5 (O-12: decided after the report). Forward observation and a
-  factor-ETF benchmark need a new owner decision on data and money.
+- Owner: the R11 grant for WRDS CRSP once access is approved (O-17, Q4), and extending O-5 and O-9 to the `real_v2`
+  tilt diagnostic (Q5). Forward observation and a factor-ETF benchmark still need an owner decision.
 
 ## Next Safe Action
 
-- The dated R0 freeze with two formal review seats; it pins no seal or forward look (O-12).
+- Build the cap-weight and index-tilt engine on synthetic fixtures, with two review seats (O-17). No tilt or
+  cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 

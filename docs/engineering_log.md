@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-02 - Index tilt chosen as the next line of work (O-17, O-18)
+
+- Three design notes (untracked, `coord/reports/m6_prep/`) each got one adversarial critique and one revision. The
+  tilt note's critique found eight MATERIAL issues, including an overstated power estimate and a missing rule for
+  members without market equity. The CRSP note's critique found seven, including the link path for unpriced members
+  and the share-count lag (R1). All were fixed before the owner saw the notes.
+- The controller gains the owner-confirmed process-failure row for private-data cards (O-18).
+
 ## 2026-10-02 - Milestone 5 owner report corrected (O-16)
 
 - A workflow traced the Milestone 5 conclusion through every step report, trial file, and review record. A second
