@@ -18,7 +18,8 @@ from research.m4_7_family_a import FAMILY_A_IDS
 from research.m4_7_sp500_pit_rerun import RunnerStop
 
 
-CAL = pd.bdate_range("1999-06-01", "2001-08-31", name="date")
+CAL = pd.bdate_range("1999-06-01", "2001-09-07", name="date")
+END = pd.Timestamp("2001-08-31")
 ASSETS = [f"S{k:02d}.US#E1" for k in range(12)]
 SHARES = np.array([40, 20, 12, 8, 6, 5, 4, 3, 2.5, 2, 1.5, 1]) * 1e6
 START = pd.Timestamp("2000-06-30")
@@ -57,9 +58,10 @@ def fixture(seed: int = 7, stop: bool = False) -> tilt.TiltInputs:
     disappearances = pd.DataFrame(columns=FIELDS)
     if stop:
         disappearances = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE,
-                                         "cause": "failure", "delisting_return": np.nan}], columns=FIELDS)
+                                         "known_at": STOP_DATE, "cause": "failure", "delisting_return": np.nan}],
+                                       columns=FIELDS)
     return tilt.TiltInputs(prices=prices, signals=signals, eligible=eligible, market_equity=me, me_reason=reason,
-                           intervals=intervals(), disappearances=disappearances, start=START, end=CAL[-1])
+                           intervals=intervals(), disappearances=disappearances, start=START, end=END)
 
 
 @pytest.fixture(scope="module")
@@ -168,8 +170,10 @@ def test_zero_scores_everywhere_give_cap_weight_exactly() -> None:
 
 
 def test_score_rules_and_counts() -> None:
-    assert tilt.percentile_ranks(pd.Series([3.0, 1.0, 2.0, 2.0])).tolist() == [1.0, 0.0, 0.5, 0.5]
-    assert tilt.percentile_ranks(pd.Series([7.0])).tolist() == [0.5]
+    assert tilt.signed_ranks(pd.Series([3.0, 1.0, 2.0, 2.0])).tolist() == [1.0, -1.0, 0.0, 0.0]
+    assert tilt.signed_ranks(pd.Series([7.0])).tolist() == [0.0]
+    thirds = tilt.signed_ranks(pd.Series([4.0, 3.0, 2.0, 1.0])).tolist()
+    assert thirds[1] == -thirds[2] and thirds[1] == pytest.approx(1.0 / 3.0)
     names = ["A", "B", "C", "D"]
     rows = {s: pd.Series([4.0, 3.0, 2.0, 1.0], index=names) for s in FAMILY_A_IDS}
     for s in FAMILY_A_IDS[:3]:
@@ -184,7 +188,8 @@ def test_score_rules_and_counts() -> None:
     # C: u = 0.5 among (A, C, D) on signals 1-3, u = 1/3 among all four on signals 4-5, u = 0.5 among (B, C, D).
     expected_c = np.mean([0.0, 0.0, 0.0, -1.0 / 3.0, -1.0 / 3.0, 0.0])
     assert c["C"] == pytest.approx(expected_c)
-    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 1}
+    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 1, "c_zero_window_gap": 0,
+                      "c_zero_natural": 0}
 
 
 def test_fixture_counts_c_zero_cases(built: dict) -> None:
@@ -204,10 +209,12 @@ def test_hand_computed_cap_and_renormalize_loop() -> None:
     # Identical returns for every stock: any zero-sum active vector has zero TE.
     window = pd.DataFrame(np.tile(np.resize([0.01, -0.01], 252)[:, None], 4), columns=names)
     w, info = tilt.tilt_weights(b, c, window, pd.Series(False, index=names))
-    # Tilt (0.6, 0.15, 0.25, 0.1); cap (0.41, 0.29, 0.21, 0.10). Renormalizing pushes B below the cap
-    # again, so the loop converges to B = 0.29 and the rest scaled by x = 0.71 / 0.72.
-    x = 0.71 / 0.72
-    assert w.tolist() == pytest.approx([0.41 * x, 0.29, 0.21 * x, 0.10 * x], abs=1e-11)
+    # Tilt (0.6, 0.15, 0.25, 0.1); cap (0.41, 0.29, 0.21, 0.10). D has c = 0, so it stays at 0.1 exactly.
+    # Renormalizing A, B, C to their cap-weight sum 0.9 pushes B below the cap again, so the loop
+    # converges to B = 0.29 and A, C scaled by x = 0.61 / 0.62.
+    x = 0.61 / 0.62
+    assert w.tolist() == pytest.approx([0.41 * x, 0.29, 0.21 * x, 0.10], abs=1e-11)
+    assert w["D"] == 0.1
     assert info["loops"] > 1 and info["te_scale"] == 1.0
     assert info["ex_ante_te"] == pytest.approx(0.0, abs=1e-15)
 
@@ -239,7 +246,7 @@ def test_loop_refuses_when_it_does_not_converge(monkeypatch: pytest.MonkeyPatch)
 
 
 def _four_stock_inputs() -> tilt.TiltInputs:
-    calendar = pd.bdate_range("1999-01-01", "2000-03-31", name="date")
+    calendar = pd.bdate_range("1999-01-01", "2000-04-07", name="date")
     names = ["A.US#E1", "B.US#E1", "C.US#E1", "D.US#E1"]
     prices = pd.DataFrame(100.0, index=calendar, columns=names)
     prices.loc["2000-03-15":, "A.US#E1"] = 110.0          # +10 percent on 2000-03-15 only
@@ -331,8 +338,8 @@ def test_invalid_or_conflicting_me_refuses() -> None:
 def test_held_disappearance_settles_identically_in_both_books(cause: str, supplied: float, run: str,
                                                               expected: float) -> None:
     inputs = fixture(stop=True)
-    table = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE, "cause": cause,
-                           "delisting_return": supplied}], columns=FIELDS)
+    table = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE, "known_at": STOP_DATE,
+                           "cause": cause, "delisting_return": supplied}], columns=FIELDS)
     built = tilt.build_targets(replace(inputs, disappearances=table))
     events = tilt.terminal_events(built["disappearances"], CAL, run)
     costs = tilt.dated_cost_frame(CAL)
@@ -363,8 +370,8 @@ def test_full_run_reports_r4_events_and_fragility(full_run: dict) -> None:
 
 def test_disappearance_table_is_validated() -> None:
     inputs = fixture(stop=True)
-    bad = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE, "cause": "merger",
-                         "delisting_return": np.nan}], columns=FIELDS)
+    bad = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE, "known_at": STOP_DATE,
+                         "cause": "merger", "delisting_return": np.nan}], columns=FIELDS)
     with pytest.raises(RunnerStop, match="disappearances_invalid"):
         tilt.build_targets(replace(inputs, disappearances=bad))
     bad = bad.assign(cause="failure", delisting_return=-1.5)
@@ -419,3 +426,251 @@ def test_engine_membership_disagreement_fails_closed() -> None:
     with pytest.raises(RunnerStop, match="engine_target_mismatch"):
         tilt.run_book(replace(inputs, intervals=short), built["targets"]["cw"],
                       tilt.terminal_events(built["disappearances"], CAL, "primary"), tilt.dated_cost_frame(CAL))
+
+
+# Repair round 1 ------------------------------------------------------------------------------
+
+def _event(asset: str, effective: str, known: str, cause: str = "unknown") -> pd.DataFrame:
+    return pd.DataFrame([{"permanent_id": asset, "effective_date": pd.Timestamp(effective),
+                          "known_at": pd.Timestamp(known), "cause": cause, "delisting_return": np.nan}],
+                        columns=FIELDS)
+
+
+def test_event_known_at_the_cutoff_leaves_the_pool_at_r() -> None:
+    # GPT-R1-01: A settles at the 2000-02-29 close and the caller says it was known on 2000-02-28.
+    inputs = _four_stock_inputs()
+    built = tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-02-29", "2000-02-28")))
+    first = pd.Timestamp("2000-02-29")
+    cw = built["targets"]["cw"].loc[first]
+    assert np.isnan(cw["A.US#E1"])
+    assert cw.dropna().tolist() == pytest.approx([0.5, 1.0 / 3.0, 1.0 / 6.0], abs=1e-15)
+    assert built["rebalances"].loc[first, "settled_excluded"] == 1
+
+
+def test_event_unknown_at_the_cutoff_that_settles_at_execution_refuses() -> None:
+    # GPT-R1-01: the same event, first known at the effective close, may not change the target; it refuses.
+    inputs = _four_stock_inputs()
+    with pytest.raises(RunnerStop, match="event_unknown_at_cutoff"):
+        tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-02-29", "2000-02-29")))
+
+
+def test_event_known_early_but_effective_later_keeps_the_member_until_it_settles() -> None:
+    inputs = _four_stock_inputs()
+    base = tilt.build_targets(inputs)
+    built = tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-03-15", "1999-12-01",
+                                                                     "cash_merger")))
+    first, second = pd.Timestamp("2000-02-29"), pd.Timestamp("2000-03-31")
+    for book in tilt.BOOKS:
+        assert_series_equal(built["targets"][book].loc[first], base["targets"][book].loc[first], check_exact=True)
+        assert np.isnan(built["targets"][book].loc[second, "A.US#E1"])
+
+
+@pytest.mark.parametrize(("effective", "known"), [("2001-02-15", "2001-01-31"), ("2001-02-15", "2001-02-15"),
+                                                  ("2001-03-30", "2001-02-01"), ("2001-01-31", "2001-01-31")])
+def test_events_unknown_at_r_minus_1_change_no_target_at_or_before_r(built: dict, effective: str, known: str) -> None:
+    # Events known at or after r (or effective after r) change nothing at r; an event effective and first
+    # known at r itself refuses instead of changing the target.
+    inputs = replace(fixture(), disappearances=_event(ASSETS[2], effective, known))
+    if pd.Timestamp(effective) == PERTURB_AT:
+        with pytest.raises(RunnerStop, match="event_unknown_at_cutoff"):
+            tilt.build_targets(inputs)
+        return
+    after = tilt.build_targets(inputs)
+    for book in tilt.BOOKS:
+        assert_frame_equal(after["targets"][book].loc[:PERTURB_AT], built["targets"][book].loc[:PERTURB_AT],
+                           check_exact=True)
+
+
+def test_event_known_at_r_minus_1_does_change_row_r(built: dict) -> None:
+    inputs = replace(fixture(), disappearances=_event(ASSETS[2], "2001-01-31", "2001-01-30"))
+    after = tilt.build_targets(inputs)
+    assert np.isnan(after["targets"]["cw"].loc[PERTURB_AT, ASSETS[2]])
+    assert_frame_equal(after["targets"]["cw"].loc[:"2000-12-29"], built["targets"]["cw"].loc[:"2000-12-29"],
+                       check_exact=True)
+
+
+@pytest.mark.parametrize(("effective", "known"), [("2001-02-15", "2001-02-16"), ("2001-02-15", "2001-02-17")])
+def test_known_at_is_validated(effective: str, known: str) -> None:
+    inputs = fixture(stop=True)
+    with pytest.raises(RunnerStop, match="disappearances_invalid"):
+        tilt.build_targets(replace(inputs, disappearances=_event(STOP_ASSET, effective, known)))
+
+
+@pytest.mark.parametrize("case", ["few_signals", "natural_zero"])
+def test_members_with_zero_score_stay_at_cap_weight_in_target_and_holdings(case: str) -> None:
+    # GPT-R1-02: a complete-history member with c = 0 keeps w = b while the others tilt.
+    inputs = _four_stock_inputs()
+    names = list(inputs.prices.columns)
+    signals = {s: f.copy() for s, f in inputs.signals.items()}
+    if case == "few_signals":
+        for s in FAMILY_A_IDS[:3]:
+            signals[s]["D.US#E1"] = np.nan
+        zero = ["D.US#E1"]
+    else:
+        # D is top on three signals and bottom on three; C ranks 1/3 and 2/3: both composites are exactly 0.
+        for s in FAMILY_A_IDS[:3]:
+            signals[s].loc[:, names] = [3.0, 0.0, 1.0, 4.0]
+        for s in FAMILY_A_IDS[3:]:
+            signals[s].loc[:, names] = [4.0, 2.0, 3.0, 1.0]
+        zero = ["C.US#E1", "D.US#E1"]
+    inputs = replace(inputs, signals=signals)
+    built = tilt.build_targets(inputs)
+    table = built["rebalances"]
+    if case == "few_signals":
+        assert (table["c_zero_few_signals"] == 1).all()
+    else:
+        assert (table["c_zero_natural"] == 2).all()
+    events = tilt.terminal_events(built["disappearances"], inputs.prices.index, "primary")
+    result = tilt.run_book(inputs, built["targets"]["tilt"], events, tilt.dated_cost_frame(inputs.prices.index))
+    for date in built["targets"]["tilt"].index:
+        w, b = built["targets"]["tilt"].loc[date], built["targets"]["cw"].loc[date]
+        assert (w[zero] == b[zero]).all()
+        assert (result.holdings.loc[date, zero] == b[zero]).all()
+        assert (w.drop(zero) != b.drop(zero)).all()
+        assert math.fsum(w) == pytest.approx(1.0, abs=1e-15)
+
+
+@pytest.mark.parametrize("case", ["primary", "sensitivity_2x"])
+def test_monthly_returns_keep_the_first_purchase_cost(case: str) -> None:
+    # GPT-R1-03: flat prices; the only return is the first purchase cost on 2000-02-29.
+    inputs = _four_stock_inputs()
+    flat = pd.DataFrame(100.0, index=inputs.prices.index, columns=inputs.prices.columns)
+    inputs = replace(inputs, prices=flat, market_equity=flat * np.array([4.0, 3.0, 2.0, 1.0]))
+    result = tilt.run_index_tilt(inputs)
+    rate = 0.0025 * tilt.COST_SCALES[case]
+    for book in tilt.BOOKS:
+        out = result["runs"][(case, "primary")][book]
+        assert out["daily_net"].index[0] == pd.Timestamp("2000-02-29")
+        assert out["initial_purchase_cost"] == pytest.approx(rate, abs=1e-15)
+        assert out["monthly_net"].loc["2000-03"] == pytest.approx(-rate, abs=1e-15)
+        assert np.prod(1.0 + out["monthly_net"]) == pytest.approx(np.prod(1.0 + out["daily_net"]), abs=1e-15)
+
+
+def test_monthly_growth_equals_daily_growth_with_active_returns(full_run: dict) -> None:
+    for run in full_run["runs"].values():
+        for book in tilt.BOOKS:
+            out = run[book]
+            assert np.prod(1.0 + out["monthly_net"]) == pytest.approx(np.prod(1.0 + out["daily_net"]), rel=1e-12)
+            assert str(out["monthly_net"].index[0]) == "2000-08"
+            assert out["daily_net"].index[0] == pd.Timestamp("2000-07-31")     # no all-cash rows (A3)
+        assert run["active"]["monthly"].abs().max() > 0.0
+
+
+@pytest.mark.parametrize("value", [np.inf, -np.inf, 0.0, -5.0])
+def test_invalid_present_price_before_the_window_refuses(value: float) -> None:
+    # GPT-R1-04: the bad close is in the covariance window and before the accounting start.
+    inputs = _four_stock_inputs()
+    inputs.prices.loc["1999-10-15", "A.US#E1"] = value
+    with pytest.raises(RunnerStop, match="price_invalid"):
+        tilt.build_targets(inputs)
+
+
+@pytest.mark.parametrize("break_it", ["nan", "negative", "budget", "cap", "te"])
+def test_target_check_refuses_invalid_books(break_it: str) -> None:
+    b = np.array([0.4, 0.3, 0.2, 0.1])
+    w = np.array([0.41, 0.29, 0.21, 0.09])
+    info = {"loops": 1, "ex_ante_te": 0.01}
+    if break_it == "nan":
+        w = np.array([np.nan, 0.29, 0.21, 0.09])
+    elif break_it == "negative":
+        w = np.array([0.51, 0.29, 0.21, -0.01])
+    elif break_it == "budget":
+        w = np.array([0.41, 0.29, 0.21, 0.10])
+    elif break_it == "cap":
+        w = np.array([0.42, 0.28, 0.21, 0.09])
+    else:
+        info = {"loops": 1, "ex_ante_te": 0.03}
+    tilt.check_target(b, np.array([0.41, 0.29, 0.21, 0.09]), {"loops": 1, "ex_ante_te": 0.01})
+    with pytest.raises(RunnerStop, match="target_invalid"):
+        tilt.check_target(b, w, info)
+
+
+@pytest.mark.parametrize("end", ["2001-08-15", "2001-09-07"])
+def test_window_end_must_be_a_month_end_row(end: str) -> None:
+    # A2: a mid-month end, or an end with no later row in a later month, refuses.
+    with pytest.raises(RunnerStop, match="window_end_not_month_end"):
+        tilt.build_targets(replace(fixture(), end=pd.Timestamp(end)))
+
+
+def test_terminal_rebalance_cost_is_reported(full_run: dict) -> None:
+    out = full_run["runs"][("primary", "primary")]["tilt"]
+    assert out["terminal_rebalance_cost"] == out["cost"].loc[END] > 0.0
+
+
+def test_halt_gap_is_counted_apart_from_short_history() -> None:
+    # A4: a three-day gap inside the window pins the member as a window gap, not as a short history.
+    base = tilt.build_targets(fixture())
+    inputs = fixture()
+    inputs.prices.loc["2000-08-14":"2000-08-16", ASSETS[5]] = np.nan
+    after = tilt.build_targets(inputs)
+    inside = slice("2000-08-31", "2001-07-31")            # rebalances whose 252-row window holds the gap
+    later = after["rebalances"].loc[inside]
+    assert (later["c_zero_window_gap"] == 1).all()
+    assert after["rebalances"].loc["2001-08-31", "c_zero_window_gap"] == 0
+    assert_series_equal(later["c_zero_short_history"], base["rebalances"].loc[inside, "c_zero_short_history"])
+    assert (after["targets"]["tilt"].loc[inside, ASSETS[5]] == after["targets"]["cw"].loc[inside, ASSETS[5]]).all()
+
+
+def test_future_me_reason_changes_no_target(built: dict) -> None:
+    inputs = fixture()
+    r = CAL.get_loc(PERTURB_AT)
+    inputs.market_equity.iloc[r:, 0] = np.nan
+    inputs.me_reason.iloc[r:, 0] = "ambiguous"
+    after = tilt.build_targets(inputs)
+    assert_frame_equal(after["targets"]["tilt"].loc[:PERTURB_AT], built["targets"]["tilt"].loc[:PERTURB_AT],
+                       check_exact=True)
+    assert np.isnan(after["targets"]["tilt"].loc["2001-02-28", ASSETS[0]])
+
+
+def test_empty_book_and_one_member_book() -> None:
+    inputs = _four_stock_inputs()
+    nobody = inputs.eligible.copy()
+    nobody.loc["2000-02-28"] = False
+    with pytest.raises(RunnerStop, match="empty_book"):
+        tilt.build_targets(replace(inputs, eligible=nobody))
+    alone = inputs.eligible.copy()
+    alone.loc[:, ["B.US#E1", "C.US#E1", "D.US#E1"]] = False
+    built = tilt.build_targets(replace(inputs, eligible=alone))
+    for book in tilt.BOOKS:
+        assert built["targets"][book]["A.US#E1"].tolist() == [1.0, 1.0]
+
+
+def test_engine_rebalance_mismatch_refuses() -> None:
+    inputs = _four_stock_inputs()
+    built = tilt.build_targets(inputs)
+    events = tilt.terminal_events(built["disappearances"], inputs.prices.index, "primary")
+    with pytest.raises(RunnerStop, match="engine_rebalance_mismatch"):
+        tilt.check_engine_targets(tilt.run_book(inputs, built["targets"]["cw"], events,
+                                                tilt.dated_cost_frame(inputs.prices.index)),
+                                  built["targets"]["cw"].iloc[:1], inputs.prices.index)
+
+
+def test_member_leaving_the_index_between_rebalances() -> None:
+    # S01 leaves on 2000-11-15 in both the intervals and the eligibility: it is sold at the next rebalance.
+    inputs = fixture()
+    table = intervals()
+    table.loc[1, ["end_date", "end_known_at"]] = pd.Timestamp("2000-11-15")
+    eligible = inputs.eligible.copy()
+    eligible.loc["2000-11-15":, ASSETS[1]] = False
+    inputs = replace(inputs, intervals=table, eligible=eligible)
+    built = tilt.build_targets(inputs)
+    events = tilt.terminal_events(built["disappearances"], CAL, "primary")
+    for book in tilt.BOOKS:
+        result = tilt.run_book(inputs, built["targets"][book], events, tilt.dated_cost_frame(CAL))
+        assert result.holdings.loc["2000-10-31", ASSETS[1]] > 0.0
+        assert result.holdings.loc["2000-11-30":, ASSETS[1]].eq(0.0).all()
+
+
+def test_loop_converges_on_a_concentrated_book_with_adversarial_scores() -> None:
+    # A1 stress: 500 Zipf cap weights (top weight about 15 percent); the top 20 at c = +1, all others at c = -1.
+    n = 500
+    names = [f"N{k:03d}" for k in range(n)]
+    raw = 1.0 / np.arange(1, n + 1)
+    b = pd.Series(raw / raw.sum(), index=names)
+    c = pd.Series(np.where(np.arange(n) < 20, 1.0, -1.0), index=names)
+    rng = np.random.default_rng(5)
+    window = pd.DataFrame(rng.normal(0.0, 0.02, (252, n)), columns=names)
+    w, info = tilt.tilt_weights(b, c, window, pd.Series(False, index=names))
+    assert info["loops"] < tilt.RENORMALIZE_LOOPS
+    assert (w >= 0.0).all() and math.fsum(w) == pytest.approx(1.0, abs=1e-12)
+    assert (w - b).abs().max() <= tilt.STOCK_CAP + tilt.CAP_TOLERANCE

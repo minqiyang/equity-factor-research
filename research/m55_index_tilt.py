@@ -46,9 +46,10 @@ MIN_VALID_SIGNALS = 4
 RENORMALIZE_LOOPS = 100              # cap-and-renormalize passes before the loop refuses
 CAP_TOLERANCE = 1e-12                # absolute slack on the stock cap after the last pass
 TE_TOLERANCE = 1e-9                  # relative slack on the tracking-error target after scaling
+BUDGET_TOLERANCE = 1e-12             # absolute slack on sum w = 1 for each book
 ME_REASONS = ("unmapped", "ambiguous", "multi_class", "no_share_fact", "stale_share_fact")
 CAUSES = ("cash_merger", "failure", "unknown")
-DISAPPEARANCE_FIELDS = ("permanent_id", "effective_date", "cause", "delisting_return")
+DISAPPEARANCE_FIELDS = ("permanent_id", "effective_date", "known_at", "cause", "delisting_return")
 EVENT_RUNS = ("primary", "last_close")
 COST_SCALES = {"primary": 1.0, "sensitivity_2x": 2.0}
 # One-way bp per traded notional: (first date or None, commission, spread). Design note section 1.
@@ -69,7 +70,11 @@ class TiltInputs:
     ``eligible`` is the boolean M5 eligibility at row ``t``. ``market_equity`` is
     ME at row ``t`` (missing as NaN) and ``me_reason`` its sub-reason where it is
     missing. ``disappearances`` has one row per security with the fields
-    ``DISAPPEARANCE_FIELDS``. ``start`` is the all-cash anchor row.
+    ``DISAPPEARANCE_FIELDS``: ``effective_date`` is the settlement row, the row
+    after the last observed close; ``known_at`` is the first row at whose close
+    the event is known (``known_at <= effective_date``). ``start`` is the
+    all-cash anchor row; ``end`` is the last row of its month, and the calendar
+    holds a later row in a later month.
     """
 
     prices: pd.DataFrame
@@ -98,8 +103,15 @@ def check_inputs(inputs: TiltInputs) -> None:
         values = frame.to_numpy(dtype=float)
         if np.isinf(values).any():
             raise refuse("signal_value_invalid", signal_id)
+    # R6: a price is missing (NaN) or a finite positive close; any other present value refuses.
+    values = prices.to_numpy(dtype=float)
+    if (~np.isnan(values) & ~(np.isfinite(values) & (values > 0.0))).any():
+        raise refuse("price_invalid", "a present close is not finite and positive")
     if inputs.start not in prices.index or inputs.end not in prices.index or not inputs.start < inputs.end:
         raise refuse("window_invalid")
+    later = prices.index[prices.index > inputs.end]
+    if not len(later) or later[0].to_period("M") == inputs.end.to_period("M"):
+        raise refuse("window_end_not_month_end", "the calendar must show a later row in a later month")
 
 
 # Rebalance schedule, costs, and events --------------------------------------------------
@@ -129,6 +141,7 @@ def check_disappearances(table: pd.DataFrame, calendar: pd.DatetimeIndex, assets
         raise refuse("disappearances_invalid", "fields")
     clean = table.copy()
     clean["effective_date"] = pd.to_datetime(clean["effective_date"])
+    clean["known_at"] = pd.to_datetime(clean["known_at"])
     clean["delisting_return"] = clean["delisting_return"].astype(float)
     if clean["permanent_id"].duplicated().any() or not clean["permanent_id"].isin(assets).all():
         raise refuse("disappearances_invalid", "permanent_id")
@@ -136,6 +149,8 @@ def check_disappearances(table: pd.DataFrame, calendar: pd.DatetimeIndex, assets
         raise refuse("disappearances_invalid", "cause")
     if not clean["effective_date"].isin(calendar).all() or (clean["effective_date"] <= calendar[0]).any():
         raise refuse("disappearances_invalid", "effective_date")
+    if not clean["known_at"].isin(calendar).all() or (clean["known_at"] > clean["effective_date"]).any():
+        raise refuse("disappearances_invalid", "known_at must be a calendar row on or before effective_date")
     supplied = clean["delisting_return"].dropna()
     if not np.isfinite(supplied).all() or (supplied < -1.0).any():
         raise refuse("disappearances_invalid", "delisting_return")
@@ -143,9 +158,11 @@ def check_disappearances(table: pd.DataFrame, calendar: pd.DatetimeIndex, assets
 
 
 def terminal_events(table: pd.DataFrame, calendar: pd.DatetimeIndex, run: str) -> pd.DataFrame:
-    """R4: one engine event per disappearance, settled from the prior observed close.
+    """R4: one engine event per disappearance, settled at its effective close.
 
-    ``primary`` applies the supplied delisting return when present, else the
+    The reference row is the calendar row before ``effective_date``, which must
+    carry the last observed close (the engine refuses otherwise). ``known_at``
+    is the caller's availability date. ``primary`` applies the supplied delisting return when present, else the
     declared default: last close (return 0) for a typed cash merger and -100
     percent otherwise. ``last_close`` settles every event at the last close.
     """
@@ -162,7 +179,8 @@ def terminal_events(table: pd.DataFrame, calendar: pd.DatetimeIndex, run: str) -
         else:
             value = 0.0 if record["cause"] == "cash_merger" else -1.0
         rows.append({"event_id": f"DE-{record['permanent_id']}-{effective.date().isoformat()}",
-                     "permanent_id": record["permanent_id"], "effective_date": effective, "known_at": prior,
+                     "permanent_id": record["permanent_id"], "effective_date": effective,
+                     "known_at": pd.Timestamp(record["known_at"]),
                      "reference_date": prior, "terminal_return": value,
                      "return_basis": "prior_observed_close_to_cash"})
     return pd.DataFrame(rows, columns=["event_id", "permanent_id", "effective_date", "known_at", "reference_date",
@@ -171,30 +189,47 @@ def terminal_events(table: pd.DataFrame, calendar: pd.DatetimeIndex, run: str) -
 
 # Scores and weights at one rebalance ----------------------------------------------------
 
-def percentile_ranks(values: pd.Series) -> pd.Series:
-    """u = (average rank - 1) / (n - 1) in [0, 1]; a single value gets 0.5."""
+def signed_ranks(values: pd.Series) -> pd.Series:
+    """2u - 1 with u = (average rank - 1) / (n - 1); a single value gets 0.
+
+    The form (2 rank - n - 1) / (n - 1) has an exact numerator, so mirror ranks
+    give exactly opposite values and a balanced composite is exactly zero.
+    """
     if len(values) == 1:
-        return pd.Series(0.5, index=values.index)
-    return (values.rank(method="average") - 1.0) / (len(values) - 1.0)
+        return pd.Series(0.0, index=values.index)
+    n = float(len(values))
+    return (2.0 * values.rank(method="average") - n - 1.0) / (n - 1.0)
 
 
-def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Series) -> tuple[pd.Series, dict[str, int]]:
+def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Series,
+                     short_history: pd.Series | None = None) -> tuple[pd.Series, dict[str, int]]:
     """c = mean of (2u - 1) over the valid signals; c = 0 under the two rules, which are counted.
 
     Each ``signal_rows`` series holds row ``r - 1`` values of the book members
-    only, so the rank pool is the eligible members with a valid value.
+    only, so the rank pool is the eligible members with a valid value. A member
+    without a complete window is ``short_history`` when its first valid return
+    is inside the window and ``window_gap`` otherwise. ``c_zero_natural`` counts
+    members whose composite is exactly zero without a rule. The counts can overlap;
+    ``c_zero`` counts each member once.
     """
+    short_history = ~full_history if short_history is None else short_history
     parts = []
     for signal_id in SIGNAL_IDS:
         valid = signal_rows[signal_id].dropna()
-        parts.append((2.0 * percentile_ranks(valid) - 1.0).reindex(full_history.index))
+        parts.append(signed_ranks(valid).reindex(full_history.index))
     frame = pd.concat(parts, axis=1)
-    few = frame.notna().sum(axis=1) < MIN_VALID_SIGNALS
-    short = ~full_history
-    zero = few | short
-    c = frame.mean(axis=1).where(~zero, 0.0)
-    return c, {"c_zero": int(zero.sum()), "c_zero_few_signals": int(few.sum()),
-               "c_zero_short_history": int(short.sum())}
+    count = frame.notna().sum(axis=1)
+    few = count < MIN_VALID_SIGNALS
+    incomplete = ~full_history
+    # fsum is exactly rounded, so the mean is exactly zero when the signed ranks cancel.
+    raw = pd.Series([math.fsum(row[~np.isnan(row)].tolist()) for row in frame.to_numpy(dtype=float)],
+                    index=frame.index) / count.where(count > 0, 1)
+    c = raw.where(~(few | incomplete), 0.0)
+    natural = ~few & ~incomplete & (raw == 0.0)
+    return c, {"c_zero": int((c == 0.0).sum()), "c_zero_few_signals": int(few.sum()),
+               "c_zero_short_history": int((incomplete & short_history).sum()),
+               "c_zero_window_gap": int((incomplete & ~short_history).sum()),
+               "c_zero_natural": int(natural.sum())}
 
 
 def tracking_error(window: np.ndarray, active: np.ndarray) -> float:
@@ -207,16 +242,18 @@ def tracking_error(window: np.ndarray, active: np.ndarray) -> float:
 def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Series) -> tuple[pd.Series, dict]:
     """Tilt, cap, renormalize, and scale, in that order.
 
-    Pinned members (no complete covariance window) keep ``w = b``. Each pass
+    Pinned members (c = 0 for any cause, or no complete covariance window) keep
+    ``w = b`` exactly; only the other members absorb the active budget. Each pass
     caps ``|w - b|`` at ``STOCK_CAP`` and rescales the free weights so their sum
     equals the free cap weight, so active weights sum to zero and ``w >= 0``.
     The loop ends when the cap holds within ``CAP_TOLERANCE`` and refuses after
     ``RENORMALIZE_LOOPS`` passes. The last step mixes ``w`` with ``b`` until the
     ex-ante TE of the active weights is at most ``TE_TARGET``.
     """
-    bv, cv, free = b.to_numpy(dtype=float), c.to_numpy(dtype=float), ~pinned.to_numpy(dtype=bool)
-    if np.any(cv[~free] != 0.0):
+    bv, cv = b.to_numpy(dtype=float), c.to_numpy(dtype=float)
+    if np.any(cv[pinned.to_numpy(dtype=bool)] != 0.0):
         raise refuse("pinned_member_scored")
+    free = cv != 0.0          # c = 0 for any cause, natural zeros included, keeps w = b
     w = bv * (1.0 + TILT_STRENGTH * cv)
     for loops in range(1, RENORMALIZE_LOOPS + 1):
         w = bv + np.clip(w - bv, -STOCK_CAP, STOCK_CAP)
@@ -235,15 +272,38 @@ def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Se
         raise refuse("tracking_error_above_target", f"{te_after}")
     info = {"loops": loops, "ex_ante_te_before_scale": te_before, "te_scale": scale, "ex_ante_te": te_after,
             "max_abs_active": float(np.max(np.abs(final - bv)))}
+    check_target(bv, final, info)
     return pd.Series(final, index=b.index), info
 
 
-def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFrame,
-                      disappearances: pd.DataFrame) -> tuple[pd.Series, pd.Series, dict[str, Any]]:
-    """CW-PIT and TILT targets for the rebalance at ``date``, from row ``r - 1`` and earlier only."""
+def check_target(b: np.ndarray, w: np.ndarray, info: Mapping[str, float]) -> None:
+    """Refuse unless both books are finite, sum to 1, are non-negative, meet the cap, and meet the TE limit."""
+    for name, weights in (("cw", b), ("tilt", w)):
+        if not np.isfinite(weights).all() or (weights < 0.0).any():
+            raise refuse("target_invalid", f"{name} weights not finite and non-negative")
+        if abs(math.fsum(weights.tolist()) - 1.0) > BUDGET_TOLERANCE:
+            raise refuse("target_invalid", f"{name} weights do not sum to 1")
+    if not all(math.isfinite(float(v)) for v in info.values()):
+        raise refuse("target_invalid", "non-finite tracking-error record")
+    if np.max(np.abs(w - b)) > STOCK_CAP + CAP_TOLERANCE or info["ex_ante_te"] > TE_TARGET * (1.0 + TE_TOLERANCE):
+        raise refuse("target_invalid", "cap or tracking-error limit")
+
+
+def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFrame, disappearances: pd.DataFrame,
+                      first_return: pd.Series) -> tuple[pd.Series, pd.Series, dict[str, Any]]:
+    """CW-PIT and TILT targets for the rebalance at ``date``, from row ``r - 1`` and earlier only.
+
+    ``first_return`` is each member's first row with a valid return (the row
+    count when it has none). It is compared only with rows up to ``r - 1``.
+    """
     calendar = inputs.prices.index
     t = calendar.get_loc(date) - 1
-    settled = set(disappearances.loc[disappearances["effective_date"] <= date, "permanent_id"])
+    cutoff = calendar[t]
+    # R1 and R2: only events known at the cutoff change the pool; the engine masks the same cells.
+    by_r = disappearances["effective_date"] <= date
+    known = disappearances["known_at"] <= cutoff
+    settled = set(disappearances.loc[by_r & known, "permanent_id"])
+    surprise = set(disappearances.loc[by_r & ~known, "permanent_id"])     # effective = known_at = r
     pool = inputs.eligible.iloc[t] & ~inputs.prices.columns.isin(sorted(settled))
     me, reason = inputs.market_equity.iloc[t].astype(float), inputs.me_reason.iloc[t]
     missing = me.isna()
@@ -258,11 +318,16 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
     if not members.any():
         raise refuse("empty_book", str(date.date()))
     names = members.index[members.to_numpy()]
+    if surprise & set(names):
+        # Declared execution rule: a target member that settles at r on an event unknown at r - 1 refuses.
+        raise refuse("event_unknown_at_cutoff", f"{str(date.date())}: {sorted(surprise & set(names))[0]}")
     me_members = me[names]
     b = me_members / math.fsum(me_members.to_list())
-    window = returns.iloc[max(t - COV_ROWS + 1, 0):t + 1][names]
+    first = t - COV_ROWS + 1
+    window = returns.iloc[max(first, 0):t + 1][names]
     full = window.notna().sum() == COV_ROWS
-    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in SIGNAL_IDS}, full)
+    short = first_return[names] > first      # no valid return before the window: a short history, not a gap
+    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in SIGNAL_IDS}, full, short)
     w, info = tilt_weights(b, c, window, ~full)
     record = {"date": date, "members": len(names), "settled_excluded": int((inputs.eligible.iloc[t] & ~pool).sum()),
               "me_missing": int(len(reasons)),
@@ -274,13 +339,15 @@ def build_targets(inputs: TiltInputs) -> dict[str, Any]:
     check_inputs(inputs)
     disappearances = check_disappearances(inputs.disappearances, inputs.prices.index, inputs.prices.columns)
     returns = simple_returns(inputs.prices)
+    valid = returns.notna().to_numpy()
+    first_return = pd.Series(np.where(valid.any(axis=0), valid.argmax(axis=0), len(returns)), index=returns.columns)
     dates = rebalance_dates(inputs.prices.index, inputs.start, inputs.end)
     if not len(dates):
         raise refuse("window_invalid", "no rebalance inside the window")
     targets = {book: pd.DataFrame(np.nan, index=dates, columns=inputs.prices.columns) for book in BOOKS}
     records = []
     for date in dates:
-        b, w, record = rebalance_targets(inputs, date, returns, disappearances)
+        b, w, record = rebalance_targets(inputs, date, returns, disappearances, first_return)
         targets["cw"].loc[date, b.index] = b.to_numpy()
         targets["tilt"].loc[date, w.index] = w.to_numpy()
         records.append(record)
@@ -336,24 +403,35 @@ def run_book(inputs: TiltInputs, target: pd.DataFrame, events: pd.DataFrame, cos
     return result
 
 
-def monthly_returns(daily: pd.Series, first_rebalance: pd.Timestamp) -> pd.Series:
-    """Compound the daily returns after the first rebalance row by calendar month of the return date."""
-    rows = daily[daily.index > first_rebalance]
-    monthly = (1.0 + rows).groupby(rows.index.to_period("M")).prod() - 1.0
+def monthly_returns(daily: pd.Series) -> pd.Series:
+    """Compound measured daily returns by calendar month; the first row (the first rebalance) joins the next month.
+
+    The first rebalance is the last row of its month, so its purchase cost
+    falls in the first measured month (the M5 ``month_labels`` convention), and
+    the product of monthly growth equals the product of daily growth.
+    """
+    labels = daily.index.to_period("M").to_numpy().copy()
+    labels[0] = labels[0] + 1
+    monthly = (1.0 + daily).groupby(labels).prod() - 1.0
+    monthly.index = pd.PeriodIndex(monthly.index, freq="M")
     return monthly
 
 
 def book_summary(result: Any, target: pd.DataFrame) -> dict[str, Any]:
-    first = target.index[0]
-    measured = slice(1, None)
-    daily = result.returns.iloc[measured]
+    """Measured rows run from the first rebalance row to ``end``; the all-cash rows before it are left out."""
+    first, last = target.index[0], target.index[-1]
+    measured = result.returns.index >= first
+    daily = result.returns[measured]
+    turnover, cost = result.turnover[measured], result.total_trading_costs[measured]
     held = [r for r in result.terminal_event_log if float(r["incoming_weight"]) > 0.0]
     weights = [float(r["incoming_weight"]) for r in held]
-    return {"daily_net": daily, "daily_gross": result.gross_returns.iloc[measured],
-            "monthly_net": monthly_returns(daily, first), "turnover": result.turnover.iloc[measured],
-            "cost": result.total_trading_costs.iloc[measured], "weights": result.holdings.loc[target.index],
-            "annual_turnover": float(result.turnover.iloc[measured].mean() * ANNUAL_ROWS),
-            "annual_cost_drag": float(result.total_trading_costs.iloc[measured].mean() * ANNUAL_ROWS),
+    return {"daily_net": daily, "daily_gross": result.gross_returns[measured],
+            "monthly_net": monthly_returns(daily), "turnover": turnover, "cost": cost,
+            "weights": result.holdings.loc[target.index],
+            "annual_turnover": float(turnover.mean() * ANNUAL_ROWS),
+            "annual_cost_drag": float(cost.mean() * ANNUAL_ROWS),
+            "initial_purchase_cost": float(cost.loc[first]),
+            "terminal_rebalance_cost": float(cost.loc[last]),     # TIMING-012: the reset at end earns nothing
             "held_events": {"count": len(held), "weight_sum": float(sum(weights)),
                             "weight_max": float(max(weights, default=0.0))}}
 

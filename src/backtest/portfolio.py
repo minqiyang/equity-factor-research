@@ -726,6 +726,16 @@ def _resolve_dated_costs(
     return aligned[:, 0].copy(), aligned[:, 1].copy()
 
 
+def _dated_cost_segments(row_cost_bps: tuple[np.ndarray, np.ndarray], dates: pd.DatetimeIndex) -> list[dict[str, Any]]:
+    """The applied schedule as runs of equal rates: first accounting row and both rates of each run."""
+    segments: list[dict[str, Any]] = []
+    for date, commission, slippage in zip(dates, row_cost_bps[0], row_cost_bps[1]):
+        if not segments or (segments[-1]["transaction_cost_bps"], segments[-1]["slippage_bps"]) != (commission, slippage):
+            segments.append({"first_date": date.date().isoformat(), "transaction_cost_bps": float(commission),
+                             "slippage_bps": float(slippage)})
+    return segments
+
+
 def _require_no_open_halt(weights: np.ndarray, valid: np.ndarray, date: pd.Timestamp, columns: pd.Index) -> None:
     """H-5: an asset still unmarked at the last row is an unresolved disappearance (R4)."""
     open_halts = (weights != 0.0) & ~valid
@@ -1054,7 +1064,9 @@ def run_long_only_backtest(
             } if terminal_events is not None else {}),
             "transaction_cost_bps": transaction_cost_bps,
             "slippage_bps": slippage_bps,
-            **({"dated_costs": "per_row_transaction_and_slippage_bps"} if row_cost_bps is not None else {}),
+            **({"dated_costs": "per_row_transaction_and_slippage_bps",
+                "dated_cost_segments": _dated_cost_segments(row_cost_bps, accounting_dates)}
+               if row_cost_bps is not None else {}),
             "signal_lag_periods": signal_lag_periods,
             "missing_price_policy": missing_price_policy,
             "benchmark_missing_policy": benchmark_missing_policy,

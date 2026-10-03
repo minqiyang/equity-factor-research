@@ -1264,3 +1264,59 @@ def test_dated_costs_refuse_invalid_schedules(change: str, extra: dict[str, floa
             prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
             dated_costs=rates, **extra,
         )
+
+
+def test_dated_costs_record_the_applied_schedule() -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": [5.0, 5.0, 2.0, 2.0], "slippage_bps": [20.0, 20.0, 8.0, 8.0]},
+                         index=prices.index)
+
+    result = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1, dated_costs=rates,
+    )
+
+    assert result.assumptions["dated_cost_segments"] == [
+        {"first_date": "2024-01-01", "transaction_cost_bps": 5.0, "slippage_bps": 20.0},
+        {"first_date": "2024-01-03", "transaction_cost_bps": 2.0, "slippage_bps": 8.0},
+    ]
+
+
+@pytest.mark.parametrize("change", ["duplicate_index", "text", "volume_aware"])
+def test_dated_costs_refuse_more_invalid_inputs(change: str) -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 5.0}, index=prices.index)
+    extra: dict[str, object] = {}
+    if change == "duplicate_index":
+        rates = pd.concat([rates, rates.iloc[:1]])
+    elif change == "text":
+        rates = rates.astype(object)
+        rates.iloc[1, 0] = "five"
+    else:
+        extra = {"volume_aware_slippage_mode": "apply_precomputed_impact",
+                 "volume_aware_slippage_impact": pd.Series(0.0, index=prices.index),
+                 "volume_aware_slippage_metadata": _volume_aware_metadata()}
+
+    with pytest.raises(portfolio.BacktestValidationError, match="dated_costs_invalid"):
+        run_long_only_backtest(
+            prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
+            dated_costs=rates, **extra,
+        )
+
+
+def test_dated_costs_apply_on_a_halt_locked_row() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, np.nan, 100.0], "BBB": 100.0, "CCC": 100.0}, index=dates)
+    rates = pd.DataFrame({"transaction_cost_bps": [0.0, 10.0, 30.0, 0.0], "slippage_bps": [0.0, 10.0, 30.0, 0.0]},
+                         index=dates)
+    flat = pd.DataFrame(1.0, index=dates, columns=prices.columns)
+    flat.iloc[1, 1] = 3.0           # row 2 targets (0.2, 0.6, 0.2), but AAA has no close: the row is locked
+
+    result = run_long_only_backtest(
+        prices, flat, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_pct=1.0,
+        weighting_scheme="proportional", dated_costs=rates, missing_price_policy="halt_gap_return_v1",
+    )
+
+    assert len(result.halt_ledger["locked_execution_rows"]) == 1
+    assert result.turnover.loc[dates[2]] > 0.0
+    assert result.total_trading_costs.loc[dates[2]] == pytest.approx(
+        result.turnover.loc[dates[2]] * 60.0 / 10_000.0 * (1.0 + result.gross_returns.loc[dates[2]]))
