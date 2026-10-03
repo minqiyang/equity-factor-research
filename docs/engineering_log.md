@@ -12,6 +12,11 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-02 - Simplified Technical English writing target (O-15)
+
+- `AGENTS.md` gains one Writing Style line: write at about 80% of ASD-STE100. No test enforces it.
+- The O-14 decision entry now separates relocated instructions from habits dropped as unneeded (advisory O14-R1-A2).
+
 ## 2026-10-01 - AGENTS.md simplified and the ablation rule removed (O-14)
 
 - `AGENTS.md` 200 to 136 lines; R1–R12 and Owner Process Constraints verified unchanged by diff. The controller gains

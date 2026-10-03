@@ -15,6 +15,24 @@ investment performance.
 
 ---
 
+## 2026-10-02 - Owner Decision O-15: Simplified Technical English as the Writing Target
+
+Context:
+
+- The owner wants repository text that is easy to read and translate.
+
+Decision:
+
+- **O-15 (owner, 2026-10-02):** add to `AGENTS.md`: "Write at about 80% of ASD-STE100 (Simplified Technical
+  English)."
+
+Consequences:
+
+- The rule is a target, not a test. It applies to new text in the repository, on GitHub, and in reports. Existing
+  text is not rewritten for it.
+- The owner also had the ablation route and rules removed from the shared coordination standards (commit `85f29f5` in
+  that repository), outside this repository. That closes advisory O14-R1-A1.
+
 ## 2026-10-01 - Owner Decision O-14: AGENTS.md Simplified and the Ablation Rule Removed
 
 Context:
@@ -33,8 +51,9 @@ Consequences:
 
 - `AGENTS.md` goes from 200 to 136 lines. Its R1–R12 and Owner Process Constraints sections are unchanged word for
   word. The same-PR lifecycle authorization, the review priorities, and the process-failure procedure move to the
-  controller. The startup reading list, the scope-reporting and diagram habits, and the walking skeleton rule are
-  removed because other sources already cover them.
+  controller. The startup reading list and the scope-reporting habit are removed because the controller already
+  covers them. The Mermaid diagram habit and the walking skeleton rule are dropped as unneeded; no other source keeps
+  them.
 - The Ablation sections of `AGENTS.md` and the controller are removed, with `docs/ablation_round2.md`. One line in
   Engineering And Change Discipline replaces them: when a capability, data source, or module is retired, its code is
   deleted in the same PR. A deeper cleanup happens only when the owner asks for one.
