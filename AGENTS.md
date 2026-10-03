@@ -111,6 +111,7 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
   comments, commit messages), and to any report is English only; Chinese
   characters are prohibited there, and a test enforces it for tracked files. Only
   live chat with the owner uses the owner's language, in plain words.
+- Write at about 80% of ASD-STE100 (Simplified Technical English).
 
 ## Engineering And Change Discipline
 
