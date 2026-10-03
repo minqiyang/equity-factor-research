@@ -247,9 +247,20 @@ Status 2026-09-30:
     August 2026 is bought or used. The seal window stays sealed for a future candidate with a real edge or for the
     later M4.8 stages.
   - The Milestone 5 ablation pass was stopped and its patches dropped (O-13), and the standing ablation rule
-    was removed (O-14). The dated freeze of R0 is next. Two formal review seats from different model families
-    review it, the AGENTS.md gate for a trial-family freeze (coordinator default). The next line of work after
-    Milestone 5 is open.
+    was removed (O-14). The dated R0 freeze is not scheduled: under O-17 the next line of work is the index tilt.
+
+## Milestone 5.5: Index Tilt (Design)
+
+Owner decision O-17 (2026-10-02). Start from point-in-time S&P 500 cap weights, tilt toward factor scores, and test
+the net active return against SPY and a cap-weight book. The test is declared before any result.
+
+- Part 1: priced point-in-time members, tracking error at most 2 percent, at most 1 point active weight per stock.
+- Part 2: the members that step 4 left unpriced, as a diagnostic. `quarantine/**` stays closed (O-18).
+- Data: `real_v2` for a diagnostic run; WRDS CRSP for the test, after the owner's R11 grant (Q4).
+- Sequence: engine on synthetic fixtures, then the CRSP loader, then coverage counts, then the trial-file freeze
+  (two seats), then one cap-weight check against SPY, then the tilt runs.
+- Power is low: at 2 percent tracking error over 1993-2014, the test detects about 1.0 to 1.4 percent a year
+  (design note appendix).
 
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most

@@ -15,6 +15,52 @@ investment performance.
 
 ---
 
+## 2026-10-02 - Owner Decision O-18: Seal Kept After the Inventory Incident; Quarantine Stays Closed
+
+Context:
+
+- An untracked inventory script opened private files that the seal records list as never opened downstream. It
+  kept date columns only, and no model saw a seal-window value (`docs/engineering_log.md`, incident entry).
+
+Decision:
+
+- **O-18 (owner, 2026-10-02):** the seal window stays usable as is. The new process-failure row is confirmed: a card
+  that lets an agent read private data lists the seal's never-opened paths, and scripts read bars only through
+  `read_discovery`. The part 2 diagnostic of unpriced members does not open `quarantine/**`; CRSP fills those days.
+
+## 2026-10-02 - Owner Decision O-17: Index Tilt Is the Next Line of Work
+
+Context:
+
+- Milestone 5 left the next line of work open (O-12). The equal-weight top-20 percent sleeves trailed SPY, and the
+  gap mixed the size bet, the disappearance default, and unpriced members (O-16).
+- The coordinator proposed a construction that starts from point-in-time cap weights and tilts toward factor
+  scores, judged against SPY. Design notes (untracked): `coord/reports/m6_prep/index_tilt_design_note.md`,
+  `coord/reports/m6_prep/crsp_intake_design_note.md`, and `coord/reports/m6_prep/unpriced_inventory.md`.
+
+Decision:
+
+- **O-17 (owner, 2026-10-02):** the owner chose the index tilt ("a very good method") and the coordinator's plan:
+  - Part 1: test factor tilts on priced, point-in-time S&P 500 members against SPY. A survivor-only cohort runs
+    only as a labeled `DIAGNOSTIC_ONLY` check (R2), if at all.
+  - Part 2: report the returns of the members that step 4 left unpriced, as a diagnostic.
+  - Tracking error cap 2 percent a year against the cap-weight book; at most 1 percentage point active weight per
+    stock (Q1).
+  - CRSP results carry the label "stock-level out-of-sample, factor-level in-sample" and are not called
+    confirmation (Q3).
+- The owner applied for WRDS access on 2026-10-02. The approval is not yet known.
+
+Consequences:
+
+- The milestone is named Milestone 5.5 (coordinator default). In `docs/north_star.md`, Milestone 6 stays the future
+  execution system.
+- The dated R0 freeze is not scheduled; R0 is not the candidate any more.
+- Coordinator defaults, logged: six price signals only on CRSP months (Q2); a SEC variant only on `real_v2`.
+- Still open for the owner: the R11 grant for CRSP with its tables, storage, and publication terms, and the CRSP
+  start year (Q4); and extending O-5 and O-9 to the `real_v2` tilt diagnostic (Q5).
+- Next build, before any data: the cap-weight and tilt engine on synthetic fixtures, with two review seats. No tilt
+  or cap-weight return exists before the trial file is frozen.
+
 ## 2026-10-02 - Owner Decision O-16: Exact Wording for the Milestone 5 Conclusion
 
 Context:

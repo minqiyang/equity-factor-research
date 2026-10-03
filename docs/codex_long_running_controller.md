@@ -223,6 +223,7 @@ first recorded the rule.
 | Writing non-English text, including Chinese characters, to the repository, to GitHub (PR titles and bodies, comments, commit messages), or to any report | North Star v2 PR (2026-09-28) |
 | Running a formal review seat through an agent of another model, such as a GPT seat launched or relayed by a Claude agent | Milestone 5 step 3 PR (2026-09-28) |
 | Merging a PR whose head includes a commit pushed after the last required review round that the required seats have not reviewed, even when the commit only fixes CI and every check passes | PR #281 incident, recorded by `e36a4a2` (PR #282); owner confirmed 2026-09-30 |
+| Dispatching a card that lets an agent read private data without listing the seal's never-opened paths, or reading bars outside `read_discovery` | Seal-file incident, engineering log (2026-10-02); owner-confirmed under O-18 |
 
 When the owner identifies a process failure, acknowledge it, record the
 incident in `docs/engineering_log.md`, update the rule in its owning document,
