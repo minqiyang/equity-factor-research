@@ -21,39 +21,43 @@ factors (step 5) was deferred before any result (O-11).
 
 Read this answer with four limits:
 
-- **No test against SPY.** The trial file reports the gap to SPY but declares no test of it; the only stock-book
-  tests compare one rule with another (S4.R1 and S4.R2). So the gap has no p-value or q-value
-  (`docs/preregistrations/m5_trial_family_v1_amendment_4.json`, `benchmarks` and `step4_tests`).
+- **No test against SPY.** The trial file reports the gap to SPY but declares no test of it; the only stock-book tests
+  compare one rule or book with another (S4.R1, S4.R2, and S4b.ADD). So the gap has no p-value or q-value
+  (`docs/preregistrations/m5_trial_family_v1_amendment_4.json`, `benchmarks` and `step4_tests`;
+  `docs/preregistrations/m5_trial_family_v1_amendment_5.json`, `step4b_tests`).
 - **The size of the gap depends on the disappearance rule.** The main run settles each held stock that disappears at
-  -100 percent. In the rerun that settles it at its last close, R0 trailed SPY by 1.60 and 8.39 percent a year, and the
-  equal-weight book by 0.33 and 2.66 percent (`reports/m5_step4.json`, `runs.last_close.excess`, `R0|primary`). The
+  -100 percent. In the rerun that settles it at its last close, R0 trailed SPY by 1.60 and 8.39 points a year, and the
+  equal-weight book by 0.33 and 2.66 points (`reports/m5_step4.json`, `runs.last_close.excess`, `R0|primary`). The
   sign does not change.
 - **Most of the gap to SPY lies between the equal-weight book and SPY, and it is not only weighting.** The
   equal-weight book uses no factor and no cost. It made 7.35 and 9.53 percent a year, against 10.41 and 16.41 percent
   for SPY (`reports/m5_step4.md`). That gap mixes equal against cap weight with the -100 percent default and the
   unpriced members, which affect the equal-weight book but not SPY. In the last-close rerun the equal-weight book made
-  9.14 and 10.68 percent a year against the same SPY figures (`reports/m5_step4.json`,
-  `runs.last_close.benchmarks`, comparison months). So in 2014-2019 most of that gap comes from the disappearance
-  default; in 2022-2025 most of it remains. The gap between R0 and the equal-weight book measures the factor sleeves,
-  the rule, and their costs together.
+  9.14 and 10.68 percent a year against the same SPY figures (`reports/m5_step4.json`, `runs.last_close.benchmarks`,
+  comparison months). Read side by side, these figures show that in 2014-2019 most of that gap moves with the
+  disappearance default, and in 2022-2025 most of it remains. The gap between R0 and the equal-weight book measures
+  the factor sleeves, the rule, and their costs together.
 - **Not every rule was compared with SPY.** Only R0, rule R1, and R2 on the six price sleeves, and R0 and rule R1 on
   nine sleeves with the SEC classes (with the mapped-universe R0 as a diagnostic book), were compared with SPY
   (`reports/m5_step4.md`, `reports/m5_step4b.md`). The factor momentum tilt (rule R3) and the pooled ridge (rule R4)
-  ran only on public data, and factor discovery (step 5) never ran. Single sleeves are not rules and carry no test;
-  one of them, MOM_12_1, was above SPY in the last-close rerun of 2022-2025 (`reports/m5_step4.json`,
-  `runs.last_close.excess`).
+  ran only on public data, and factor discovery (step 5) never ran. Single sleeves are not rules and carry no test.
+  Their gaps to SPY are reported over sleeve months, not comparison months, and a few are above SPY in the
+  last-close rerun (`reports/m5_step4.json` and `reports/m5_step4b.json`, `runs.last_close.excess`).
 
 This wording replaces the O-12 sentence "At this evidence ceiling, no rule beats an index fund"; the owner approved
 the change in O-16 (`docs/decision_log.md`).
 
 ## What We Tested, in Plain Words
 
-0. **How the rules get their numbers.** No factor was invented or fitted. The signals are published definitions
-   (`research/factor_catalog.csv`). R0 has no parameter. Rule R1 uses each input's trailing volatility: 36 months on
-   public factors, 126 trading days on stock sleeves. R2 uses past class returns in each market state, from history
-   that grows each month. Rule R4 is the only fitted model: a ridge regression refit once a year on all earlier months.
-   Every estimate uses past data only, in one walk-forward pass. R2's multipliers come from public long-short data and
-   are not re-estimated on stock books (`docs/preregistrations/m5_trial_family_v1.json`, `rules`;
+0. **How the rules get their numbers.** No factor was invented or fitted. The signals are repository versions of
+   published definitions (`research/factor_catalog.csv`; the SEC signals in amendment 5). R0 has no parameter. Rule R1
+   uses each input's trailing volatility: 36 months on public factors, 126 trading days on stock sleeves. R2 uses past
+   class returns in each market state, from history that grows each month. Rule R4 is the only fitted model: a ridge
+   regression refit once a year on all months up to the prior November. Every estimate uses past data only, in one
+   walk-forward pass, with two exceptions: the JKP class map comes from full-sample correlations (hindsight), and
+   early R2 lookback years carry Compustat backfill bias (`reports/m5_step3.md`, Limitations). R2's multipliers come
+   from public long-short data and are not re-estimated on stock books
+   (`docs/preregistrations/m5_trial_family_v1.json`, `rules`;
    `docs/preregistrations/m5_trial_family_v1_amendment_3.json`, `rules`; `reports/m5_step4.md`, Limitations).
 1. **Public factor data, 1972 to 2025** (`reports/m5_factor_baseline.md`). These are long-short academic factor series
    (JKP, 153 factors), gross of the factors' own trading and borrowing costs, and they include small caps.
@@ -87,7 +91,7 @@ the change in O-16 (`docs/decision_log.md`).
 4. **Accounting data** (`reports/m5_step4b_data.md`, `reports/m5_step4b.md`). We built value and quality classes from
    SEC filings as first filed, mapping 563 of 632 eligible securities to a company filer.
    - Adding them to R0 met 2 of 8 conditions, at +0.051 percent a month (HAC p 0.42, BY q 1.0). They do not join.
-   - The nine-sleeve R0 trailed SPY by 4.43 and 8.58 percent a year (`reports/m5_step4b.md`, Benchmarks).
+   - The nine-sleeve R0 trailed SPY by 4.43 and 8.58 points a year (`reports/m5_step4b.md`, Benchmarks).
 5. **Discovery** (`docs/decision_log.md`, O-11). This step was deferred before any result. Under the step 5 plan
    (screen on 55 months, confirm on 44), a rough check put the needed gain of one new sleeve at about 0.6 percent a
    month for p 0.05, and about 0.9 percent after BY over 10 candidates.
@@ -127,8 +131,9 @@ Sources for this section: `reports/m5_step4.md` (Method and Provenance, Windows)
   last close changes no decision, but it makes the gaps smaller (see The Answer). Step 4 is labeled fragile: three
   Sharpe margins change sign, and no decision changes (`reports/m5_step4.md`).
 - **Distributions.** We accept the vendor's adjusted close as including each dividend (premise VP-2, owner decision
-  O-9). The M4.7 coverage census on `real_v1` flagged 22.5 percent of eligible member-days as exposed to this
-  premise (`S_D` above 0.05; `reports/m4_7_coverage_census.md`, and the M4.7a-3 entry in `docs/decision_log.md`).
+  O-9). The M4.7 coverage census on `real_v1` flagged 22.5 percent of eligible member-days as exposed to this premise
+  (`S_D` above 0.05; `reports/m4_7_coverage_census.md`, and the O-3 Option A entry for the M4.7a-3 run in
+  `docs/decision_log.md`).
 - **Sample reuse.** The later stock segment re-examines Milestone 4.7 factors and months, and the earlier segment
   overlaps Milestone 4.7 checks from 2016-08; only 2014-05 to 2016-07 is unexposed
   (`docs/preregistrations/m5_trial_family_v1_amendment_4.json`, limitations). No stock-level result here is
