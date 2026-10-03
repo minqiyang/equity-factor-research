@@ -466,19 +466,24 @@ def test_event_known_early_but_effective_later_keeps_the_member_until_it_settles
 
 
 @pytest.mark.parametrize(("effective", "known"), [("2001-02-15", "2001-01-31"), ("2001-02-15", "2001-02-15"),
-                                                  ("2001-03-30", "2001-02-01"), ("2001-01-31", "2001-01-31")])
-def test_events_unknown_at_r_minus_1_change_no_target_at_or_before_r(built: dict, effective: str, known: str) -> None:
+                                                  ("2001-03-30", "2001-02-01"), ("2001-01-31", "2001-01-31"),
+                                                  ("2001-01-31", "2001-01-30")])
+def test_events_change_the_target_at_r_only_when_known_at_r_minus_1(built: dict, effective: str,
+                                                                     known: str) -> None:
     # Events known at or after r (or effective after r) change nothing at r; an event effective and first
-    # known at r itself refuses instead of changing the target.
+    # known at r itself refuses instead of changing the target. The pair of that case (B3): the same event
+    # known at r - 1 removes the member at r and changes no earlier target.
     inputs = replace(fixture(), disappearances=_event(ASSETS[2], effective, known))
-    if pd.Timestamp(effective) == PERTURB_AT:
+    if pd.Timestamp(effective) == pd.Timestamp(known) == PERTURB_AT:
         with pytest.raises(RunnerStop, match="event_unknown_at_cutoff"):
             tilt.build_targets(inputs)
         return
     after = tilt.build_targets(inputs)
+    used = pd.Timestamp(effective) <= PERTURB_AT
+    same = pd.Timestamp("2000-12-29") if used else PERTURB_AT
     for book in tilt.BOOKS:
-        assert_frame_equal(after["targets"][book].loc[:PERTURB_AT], built["targets"][book].loc[:PERTURB_AT],
-                           check_exact=True)
+        assert_frame_equal(after["targets"][book].loc[:same], built["targets"][book].loc[:same], check_exact=True)
+        assert np.isnan(after["targets"][book].loc[PERTURB_AT, ASSETS[2]]) == used
 
 
 def test_event_known_at_r_minus_1_does_change_row_r(built: dict) -> None:
@@ -553,6 +558,10 @@ def test_monthly_growth_equals_daily_growth_with_active_returns(full_run: dict) 
             assert np.prod(1.0 + out["monthly_net"]) == pytest.approx(np.prod(1.0 + out["daily_net"]), rel=1e-12)
             assert str(out["monthly_net"].index[0]) == "2000-08"
             assert out["daily_net"].index[0] == pd.Timestamp("2000-07-31")     # no all-cash rows (A3)
+            # GPT-R2-01: one monthly row per holding month, all inside the span (August 2000 to the end month).
+            assert out["monthly_net"].index.equals(pd.period_range("2000-08", "2001-08", freq="M"))
+            assert len(out["monthly_net"]) == len(full_run["rebalances"]) - 1
+            assert out["daily_net"].index[-1] == END
         assert run["active"]["monthly"].abs().max() > 0.0
 
 
@@ -674,3 +683,112 @@ def test_loop_converges_on_a_concentrated_book_with_adversarial_scores() -> None
     assert info["loops"] < tilt.RENORMALIZE_LOOPS
     assert (w >= 0.0).all() and math.fsum(w) == pytest.approx(1.0, abs=1e-12)
     assert (w - b).abs().max() <= tilt.STOCK_CAP + tilt.CAP_TOLERANCE
+
+
+# Expert repair after review round 2 ------------------------------------------------------------
+
+@pytest.mark.parametrize("start", ["2000-01-31", "2000-02-15"])
+def test_window_with_one_rebalance_refuses(start: str) -> None:
+    # GPT-R2-01: the only rebalance is at ``end``, so no holding month follows it inside the window. The full
+    # run refuses in ``build_targets``, before either cost case runs, and returns no monthly row.
+    inputs = replace(_four_stock_inputs(), start=pd.Timestamp(start), end=pd.Timestamp("2000-02-29"))
+    with pytest.raises(RunnerStop, match="window_too_short"):
+        tilt.run_index_tilt(inputs)
+
+
+@pytest.mark.parametrize("case", list(tilt.COST_SCALES))
+def test_minimum_window_reports_one_month_inside_the_span(case: str) -> None:
+    # GPT-R2-01: two rebalances (2000-02-29 and ``end`` 2000-03-31) give exactly one monthly row, March 2000.
+    result = tilt.run_index_tilt(_four_stock_inputs())
+    march = pd.PeriodIndex(["2000-03"], freq="M")
+    rows = 1 + len(pd.bdate_range("2000-03-01", "2000-03-31"))
+    for event_run in tilt.EVENT_RUNS:
+        run = result["runs"][(case, event_run)]
+        for book in tilt.BOOKS:
+            out = run[book]
+            assert out["daily_net"].index[0] == pd.Timestamp("2000-02-29")
+            assert out["daily_net"].index[-1] == pd.Timestamp("2000-03-31")
+            assert len(out["daily_net"]) == rows
+            assert out["monthly_net"].index.equals(march)
+            assert np.prod(1.0 + out["monthly_net"]) == pytest.approx(np.prod(1.0 + out["daily_net"]), rel=1e-12)
+        active = run["active"]
+        assert active["monthly"].index.equals(march)
+        assert active["mean_monthly"] == active["monthly"].iloc[0]
+        assert active["realized_te_monthly"] is None
+        assert len(active["daily"]) == rows and math.isfinite(active["realized_te_daily"])
+
+
+def test_monthly_row_after_the_last_rebalance_refuses() -> None:
+    # GPT-R2-01: the summary refuses a monthly row outside the evaluation span. Measured from ``end`` only, the
+    # one daily row would report April 2000.
+    inputs = _four_stock_inputs()
+    built = tilt.build_targets(inputs)
+    target = built["targets"]["cw"]
+    events = tilt.terminal_events(built["disappearances"], inputs.prices.index, "primary")
+    result = tilt.run_book(inputs, target, events, tilt.dated_cost_frame(inputs.prices.index))
+    assert tilt.book_summary(result, target)["monthly_net"].index.equals(pd.PeriodIndex(["2000-03"], freq="M"))
+    with pytest.raises(RunnerStop, match="monthly_period_invalid"):
+        tilt.book_summary(result, target.iloc[-1:])
+    # A daily row after the last rebalance, in the same month, also refuses.
+    early = target.rename(index={pd.Timestamp("2000-03-31"): pd.Timestamp("2000-03-30")})
+    with pytest.raises(RunnerStop, match="monthly_period_invalid"):
+        tilt.book_summary(result, early)
+
+
+@pytest.mark.parametrize("start", ["2000-01-14", "1999-11-30"])
+def test_calendar_without_a_month_inside_the_window_refuses(start: str) -> None:
+    # An empty February 2000, right after the first rebalance or between two rebalances, would give a monthly row
+    # without daily rows or join two holding months, so the run refuses.
+    inputs = _four_stock_inputs()
+    keep = inputs.prices.index.to_period("M") != pd.Period("2000-02", freq="M")
+    inputs = replace(inputs, prices=inputs.prices.loc[keep], eligible=inputs.eligible.loc[keep],
+                     signals={s: f.loc[keep] for s, f in inputs.signals.items()},
+                     market_equity=inputs.market_equity.loc[keep], me_reason=inputs.me_reason.loc[keep],
+                     start=pd.Timestamp(start))
+    with pytest.raises(RunnerStop, match="calendar_month_missing"):
+        tilt.run_index_tilt(inputs)
+
+
+def test_eleven_member_natural_zero_is_exact_and_stays_at_cap_weight() -> None:
+    # Opus B1: X ranks 7 of 11 on three signals and 3 of 11 on the fourth, and misses two signals. Its signed
+    # ranks are (0.2, 0.2, 0.2, -0.6), so c = 0; in floating point the same sum is about 1.39e-17.
+    names = [f"M{k:02d}" for k in range(11)]
+    x = names[6]
+    rows = {s: pd.Series(np.arange(1.0, 12.0), index=names) for s in FAMILY_A_IDS[:3]}
+    rows[FAMILY_A_IDS[3]] = pd.Series([1.0, 2.0, 4.0, 5.0, 6.0, 7.0, 3.0, 8.0, 9.0, 10.0, 11.0], index=names)
+    for s in FAMILY_A_IDS[4:]:
+        rows[s] = pd.Series(np.arange(11.0), index=names)
+        rows[s][x] = np.nan
+    assert math.fsum([0.2, 0.2, 0.2, -0.6]) != 0.0
+    full = pd.Series(True, index=names)
+    c, counts = tilt.composite_scores(rows, full)
+    assert c[x] == 0.0
+    assert (c.drop(x) != 0.0).all()                   # every other composite has one sign on all six signals
+    assert counts["c_zero_natural"] == counts["c_zero"] == 1
+    b = pd.Series(np.arange(11.0, 0.0, -1.0) / 66.0, index=names)
+    window = pd.DataFrame(np.random.default_rng(3).normal(0.0, 0.1, (252, 11)), columns=names)
+    w, info = tilt.tilt_weights(b, c, window, pd.Series(False, index=names))
+    assert info["te_scale"] < 1.0
+    assert w[x] == b[x]
+    assert (w.drop(x) != b.drop(x)).all()
+
+
+def test_natural_zeros_are_exact_at_a_realistic_book_size() -> None:
+    # Opus B1: 500 members in four equal tie groups per signal. Level l has signed rank (250 l - 375) / 499, so a
+    # composite is zero exactly when the six levels sum to 9; many of these do not cancel in floating point.
+    n = 500
+    names = [f"N{k:03d}" for k in range(n)]
+    rng = np.random.default_rng(11)
+    levels = np.column_stack([rng.permutation(np.repeat(np.arange(4.0), n // 4)) for _ in FAMILY_A_IDS])
+    rows = {s: pd.Series(levels[:, k], index=names) for k, s in enumerate(FAMILY_A_IDS)}
+    zero = pd.Series(levels.sum(axis=1) == 9.0, index=names)
+    c, counts = tilt.composite_scores(rows, pd.Series(True, index=names))
+    assert zero.sum() > 50
+    assert (c[zero] == 0.0).all() and (c[~zero] != 0.0).all()
+    assert counts["c_zero_natural"] == counts["c_zero"] == int(zero.sum())
+    raw = 1.0 / np.arange(1, n + 1)
+    b = pd.Series(raw / raw.sum(), index=names)
+    window = pd.DataFrame(rng.normal(0.0, 0.2, (252, n)), columns=names)
+    w, info = tilt.tilt_weights(b, c, window, pd.Series(False, index=names))
+    assert info["te_scale"] < 1.0
+    assert (w[zero] == b[zero]).all()

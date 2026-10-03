@@ -1281,7 +1281,7 @@ def test_dated_costs_record_the_applied_schedule() -> None:
     ]
 
 
-@pytest.mark.parametrize("change", ["duplicate_index", "text", "volume_aware"])
+@pytest.mark.parametrize("change", ["duplicate_index", "text", "volume_aware", "impact_model"])
 def test_dated_costs_refuse_more_invalid_inputs(change: str) -> None:
     prices, signals = _dated_cost_fixture()
     rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 5.0}, index=prices.index)
@@ -1291,6 +1291,8 @@ def test_dated_costs_refuse_more_invalid_inputs(change: str) -> None:
     elif change == "text":
         rates = rates.astype(object)
         rates.iloc[1, 0] = "five"
+    elif change == "impact_model":
+        extra = {"impact_model": portfolio.SquareRootImpactModel()}
     else:
         extra = {"volume_aware_slippage_mode": "apply_precomputed_impact",
                  "volume_aware_slippage_impact": pd.Series(0.0, index=prices.index),

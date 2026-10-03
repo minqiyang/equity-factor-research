@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any, Mapping
 
 import numpy as np
@@ -74,7 +75,9 @@ class TiltInputs:
     after the last observed close; ``known_at`` is the first row at whose close
     the event is known (``known_at <= effective_date``). ``start`` is the
     all-cash anchor row; ``end`` is the last row of its month, and the calendar
-    holds a later row in a later month.
+    holds a later row in a later month. Every month from ``start`` to ``end``
+    has a calendar row, and the window holds at least two rebalances, so at
+    least one complete holding month follows the first.
     """
 
     prices: pd.DataFrame
@@ -112,6 +115,10 @@ def check_inputs(inputs: TiltInputs) -> None:
     later = prices.index[prices.index > inputs.end]
     if not len(later) or later[0].to_period("M") == inputs.end.to_period("M"):
         raise refuse("window_end_not_month_end", "the calendar must show a later row in a later month")
+    months = pd.period_range(inputs.start.to_period("M"), inputs.end.to_period("M"), freq="M")
+    if not months.isin(prices.index.to_period("M")).all():
+        # A month without rows would give a monthly row without daily rows, or join two holding months.
+        raise refuse("calendar_month_missing", "the calendar needs a row in every month from start to end")
 
 
 # Rebalance schedule, costs, and events --------------------------------------------------
@@ -190,15 +197,17 @@ def terminal_events(table: pd.DataFrame, calendar: pd.DatetimeIndex, run: str) -
 # Scores and weights at one rebalance ----------------------------------------------------
 
 def signed_ranks(values: pd.Series) -> pd.Series:
-    """2u - 1 with u = (average rank - 1) / (n - 1); a single value gets 0.
+    """2u - 1 with u = (average rank - 1) / (n - 1), as exact fractions; a single value gets 0.
 
-    The form (2 rank - n - 1) / (n - 1) has an exact numerator, so mirror ranks
-    give exactly opposite values and a balanced composite is exactly zero.
+    2u - 1 = (2 rank - n - 1) / (n - 1), and twice an average rank is an
+    integer, so each value is an exact fraction. A composite whose true value
+    is zero is then exactly zero at any book size.
     """
-    if len(values) == 1:
-        return pd.Series(0.0, index=values.index)
-    n = float(len(values))
-    return (2.0 * values.rank(method="average") - n - 1.0) / (n - 1.0)
+    n = len(values)
+    if n == 1:
+        return pd.Series([Fraction(0)], index=values.index, dtype=object)
+    twice = (2.0 * values.rank(method="average")).to_numpy()
+    return pd.Series([Fraction(int(round(k)) - n - 1, n - 1) for k in twice], index=values.index, dtype=object)
 
 
 def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Series,
@@ -213,17 +222,18 @@ def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Seri
     ``c_zero`` counts each member once.
     """
     short_history = ~full_history if short_history is None else short_history
-    parts = []
+    names = full_history.index
+    total = {name: Fraction(0) for name in names}
+    count = pd.Series(0, index=names)
     for signal_id in SIGNAL_IDS:
-        valid = signal_rows[signal_id].dropna()
-        parts.append(signed_ranks(valid).reindex(full_history.index))
-    frame = pd.concat(parts, axis=1)
-    count = frame.notna().sum(axis=1)
+        ranks = signed_ranks(signal_rows[signal_id].dropna())
+        for name, value in ranks.items():
+            total[name] += value
+        count[ranks.index] += 1
     few = count < MIN_VALID_SIGNALS
     incomplete = ~full_history
-    # fsum is exactly rounded, so the mean is exactly zero when the signed ranks cancel.
-    raw = pd.Series([math.fsum(row[~np.isnan(row)].tolist()) for row in frame.to_numpy(dtype=float)],
-                    index=frame.index) / count.where(count > 0, 1)
+    # One rounding of the exact mean: raw is zero exactly when the true composite is zero.
+    raw = pd.Series([float(total[name] / k) if k else 0.0 for name, k in count.items()], index=names)
     c = raw.where(~(few | incomplete), 0.0)
     natural = ~few & ~incomplete & (raw == 0.0)
     return c, {"c_zero": int((c == 0.0).sum()), "c_zero_few_signals": int(few.sum()),
@@ -247,8 +257,9 @@ def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Se
     caps ``|w - b|`` at ``STOCK_CAP`` and rescales the free weights so their sum
     equals the free cap weight, so active weights sum to zero and ``w >= 0``.
     The loop ends when the cap holds within ``CAP_TOLERANCE`` and refuses after
-    ``RENORMALIZE_LOOPS`` passes. The last step mixes ``w`` with ``b`` until the
-    ex-ante TE of the active weights is at most ``TE_TARGET``.
+    ``RENORMALIZE_LOOPS`` passes. The last step scales the active weights
+    ``w - b`` until their ex-ante TE is at most ``TE_TARGET``; a pinned member
+    has an active weight of exactly zero, so it stays at ``b`` exactly.
     """
     bv, cv = b.to_numpy(dtype=float), c.to_numpy(dtype=float)
     if np.any(cv[pinned.to_numpy(dtype=bool)] != 0.0):
@@ -266,7 +277,7 @@ def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Se
     returns = window.to_numpy(dtype=float)[:, free]
     te_before = tracking_error(returns, (w - bv)[free])
     scale = 1.0 if te_before <= TE_TARGET else TE_TARGET / te_before
-    final = (1.0 - scale) * bv + scale * w
+    final = bv + scale * (w - bv)
     te_after = tracking_error(returns, (final - bv)[free])
     if te_after > TE_TARGET * (1.0 + TE_TOLERANCE):
         raise refuse("tracking_error_above_target", f"{te_after}")
@@ -342,8 +353,10 @@ def build_targets(inputs: TiltInputs) -> dict[str, Any]:
     valid = returns.notna().to_numpy()
     first_return = pd.Series(np.where(valid.any(axis=0), valid.argmax(axis=0), len(returns)), index=returns.columns)
     dates = rebalance_dates(inputs.prices.index, inputs.start, inputs.end)
-    if not len(dates):
-        raise refuse("window_invalid", "no rebalance inside the window")
+    if len(dates) < 2:
+        # The first rebalance earns from the next month. With one rebalance (at ``end``), the only monthly row
+        # would fall after ``end``, so the window refuses (GPT-R2-01).
+        raise refuse("window_too_short", "no complete holding month after the first rebalance")
     targets = {book: pd.DataFrame(np.nan, index=dates, columns=inputs.prices.columns) for book in BOOKS}
     records = []
     for date in dates:
@@ -418,15 +431,24 @@ def monthly_returns(daily: pd.Series) -> pd.Series:
 
 
 def book_summary(result: Any, target: pd.DataFrame) -> dict[str, Any]:
-    """Measured rows run from the first rebalance row to ``end``; the all-cash rows before it are left out."""
+    """Measured rows run from the first rebalance row to ``end``; the all-cash rows before it are left out.
+
+    The monthly rows are exactly the months from the one after the first
+    rebalance to the month of the last rebalance (``end``): one row per
+    holding month, none outside the evaluation span.
+    """
     first, last = target.index[0], target.index[-1]
     measured = result.returns.index >= first
     daily = result.returns[measured]
+    monthly = monthly_returns(daily)
+    months = pd.period_range(first.to_period("M") + 1, last.to_period("M"), freq="M")
+    if daily.index[-1] != last or not monthly.index.equals(months):
+        raise refuse("monthly_period_invalid", f"{list(monthly.index.astype(str))} for {first.date()} to {last.date()}")
     turnover, cost = result.turnover[measured], result.total_trading_costs[measured]
     held = [r for r in result.terminal_event_log if float(r["incoming_weight"]) > 0.0]
     weights = [float(r["incoming_weight"]) for r in held]
     return {"daily_net": daily, "daily_gross": result.gross_returns[measured],
-            "monthly_net": monthly_returns(daily), "turnover": turnover, "cost": cost,
+            "monthly_net": monthly, "turnover": turnover, "cost": cost,
             "weights": result.holdings.loc[target.index],
             "annual_turnover": float(turnover.mean() * ANNUAL_ROWS),
             "annual_cost_drag": float(cost.mean() * ANNUAL_ROWS),
