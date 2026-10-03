@@ -191,8 +191,8 @@ def test_governance_documents_define_unique_policy_owners() -> None:
     owners = {
         "agents": (
             "Canonical responsibility: repository invariants, authority boundaries, "
-            "research-safety review standards, the owner's process constraints, writing "
-            "rules, and ablation."
+            "research-safety review standards, the owner's process constraints, and "
+            "writing rules."
         ),
         "controller": (
             "Canonical responsibility: staged workflow state transitions, external "
@@ -221,7 +221,6 @@ def test_governance_documents_define_unique_policy_owners() -> None:
         "agents": [
             "Authority And Scope",
             "Writing Style And Syntax",
-            "Ablation",
         ],
         "controller": [
             "External Authorization Gate",
@@ -285,10 +284,10 @@ def test_governance_documents_define_unique_policy_owners() -> None:
 
     assert "No repository file grants authority to" in authority
     assert "explicit user or higher-level authorization" in authority
-    assert "create or publish a PR" in authority
-    assert "normal protected lifecycle for that same PR" in authority
-    assert "The user may revoke that lifecycle authorization" in authority
-    assert "Lifecycle authorization never covers another PR" in authority
+    assert "create or publish a PR" in authorization_gate
+    assert "normal protected lifecycle for that same PR" in authorization_gate
+    assert "The user may revoke it at any time" in authorization_gate
+    assert "It never covers another PR" in authorization_gate
 
     for authorized_lifecycle_action in [
         "readiness transition",
@@ -297,7 +296,7 @@ def test_governance_documents_define_unique_policy_owners() -> None:
         "verified review-thread reply and resolution",
         "eligible normal merge",
     ]:
-        assert authorized_lifecycle_action in authority
+        assert authorized_lifecycle_action in authorization_gate
 
     for excluded_lifecycle_scope in [
         "another PR",
@@ -310,7 +309,7 @@ def test_governance_documents_define_unique_policy_owners() -> None:
         "brokerage",
         "destructive action",
     ]:
-        assert excluded_lifecycle_scope in authority
+        assert excluded_lifecycle_scope in authorization_gate
 
     assert "../AGENTS.md#authority-and-scope" in controller_scope
     assert "Authority remains in" in controller_scope
@@ -320,9 +319,8 @@ def test_governance_documents_define_unique_policy_owners() -> None:
     assert "explicit action-and-scope authorization" in authorization_gate
     assert "successful checks do not grant authority" in authorization_gate
     assert "stop after local validation" in authorization_gate
-    assert "same-PR lifecycle authorization defined in `AGENTS.md`" in (
-        authorization_gate
-    )
+    assert "never covers another PR, scope" in authorization_gate
+    assert "When that same-PR lifecycle authorization is current" in authorization_gate
     assert "apply the lifecycle below to that PR" in authorization_gate
     assert "re-enter this gate" in authorization_gate
 
@@ -653,7 +651,6 @@ def test_active_governance_sources_define_permanent_resume_routing() -> None:
         "docs/current_roadmap.md",
     ]
     for startup in [
-        _markdown_section(agents, "Startup And Sources"),
         _markdown_section(controller, "Startup And Freshness"),
         _markdown_section(handoff, "Resume Order"),
         workflow_skill,
@@ -676,7 +673,7 @@ def test_active_governance_sources_define_permanent_resume_routing() -> None:
     assert "owners named in" in completion_report
     assert "Select And Bound The Stage" in completion_report
     assert "This Skill routes to the canonical documents above" in workflow_skill
-    assert "through a thin routing Skill" in agents
+    assert "docs/current_handoff.md" in agents
 
     next_action = " ".join(_markdown_section(handoff, "Next Safe Action").split())
     for duplicated_workflow_inventory in [
@@ -6657,20 +6654,21 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
     assert "an unresolved `MATERIAL` finding or other high risk" in stop_conditions
 
 
-def test_agents_ablation_section_is_triggered_and_budget_capped() -> None:
-    # Owner decision O-13 (2026-10-01): a triggered, budget-capped pass on whole
-    # units replaces the routine pass at the end of each milestone.
+def test_retirement_deletes_code_and_no_ablation_section_remains() -> None:
+    # Owner decision O-14 (2026-10-01): the standing ablation rule is removed; a
+    # retired capability's code is deleted in the same PR instead.
     agents = (PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    ablation = " ".join(_markdown_section(agents, "Ablation").split())
+    controller = (PROJECT_ROOT / "docs/codex_long_running_controller.md").read_text(
+        encoding="utf-8"
+    )
+    discipline = " ".join(
+        _markdown_section(agents, "Engineering And Change Discipline").split()
+    )
 
-    assert "Ablation runs only when a milestone retires" in ablation
-    assert "or the owner asks" in ablation
-    assert "At the end of each milestone" not in ablation
-    assert "cap a pass at 20 million tokens and two subagents" in ablation
-    assert "target whole modules, stages, rules" in ablation
-    assert "one combined recompute against the baseline" in ablation
-    assert "keep the guards R1–R12 require" in ablation
-    assert "No change is a valid outcome" in ablation
+    assert "When a capability, data source, or module is retired" in discipline
+    assert "delete its code in the same PR" in discipline
+    for text in (agents, controller):
+        assert not re.search(r"^## .*Ablation", text, re.MULTILINE)
 
 
 def test_staged_quant_workflow_skill_is_a_thin_router() -> None:
