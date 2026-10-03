@@ -15,6 +15,32 @@ investment performance.
 
 ---
 
+## 2026-10-02 - Owner Decision O-16: Exact Wording for the Milestone 5 Conclusion
+
+Context:
+
+- The owner asked how the Milestone 5 conclusion was reached. A coordinator check of the committed records found that
+  the O-12 sentence "At this evidence ceiling, no rule beats an index fund" says more than the evidence:
+  - No test against SPY was declared, so the gap has no p-value or q-value.
+  - The quoted gaps use the -100 percent disappearance default. In the last-close rerun, R0 trails SPY by 1.60 and
+    8.39 percent a year, not 4.61 and 9.73 (`reports/m5_step4.json`, `runs.last_close.excess`).
+  - Most of the gap is equal weight against cap weight.
+  - R3, R4, and discovery never ran on stock books.
+- The three step 6 review advisories (GPT-S6-R1-A1 to A3: q-values, public-factor hindsight, disappearance counts
+  and weights) were not in the merged report.
+
+Decision:
+
+- **O-16 (owner, 2026-10-02):** correct the report. The headline becomes "No rule that we tested beat SPY after costs
+  on our point-in-time S&P 500 books. Milestone 6 does not start on this allocator."
+
+Consequences:
+
+- `reports/m5_owner_report.md` states the new headline, four limits under it, the last-close gaps, the committed
+  q-values, the public-factor hindsight caveat, and the R0 disappearance counts and weights. It still computes
+  nothing new. GPT-S6-R1-A1 to A3 are closed.
+- The decision does not change: Milestone 6 does not start on this allocator.
+
 ## 2026-10-02 - Owner Decision O-15: Simplified Technical English as the Writing Target
 
 Context:

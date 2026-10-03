@@ -12,6 +12,14 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-02 - Milestone 5 owner report corrected (O-16)
+
+- A workflow traced the Milestone 5 conclusion through every step report, trial file, and review record. A second
+  agent checked each extracted claim, and a critic tested the conclusion. The coordinator read the key numbers
+  again from `reports/m5_step4.json`.
+- `reports/m5_owner_report.md` gains the O-16 headline and its limits, and it closes GPT-S6-R1-A1 to A3. Every added
+  number is quoted from a committed file.
+
 ## 2026-10-02 - Simplified Technical English writing target (O-15)
 
 - `AGENTS.md` gains one Writing Style line: write at about 80% of ASD-STE100. No test enforces it.

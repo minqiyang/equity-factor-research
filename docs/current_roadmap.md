@@ -241,8 +241,8 @@ Status 2026-09-30:
     a plausible gain detectable. The power check is redone first, and its trial amendment is frozen before any
     result. The 4 OSAP placebos would stay a descriptive control.
 - Step 6: the owner report is delivered (`reports/m5_owner_report.md`, `DIAGNOSTIC_ONLY`). Its conclusion, approved
-  by the owner under O-12 (2026-09-30), is that at this evidence ceiling no rule beats an index fund, and Milestone 6
-  does not start on this allocator.
+  by the owner under O-12 (2026-09-30) and made more exact under O-16 (2026-10-02), is that no rule we tested beat
+  SPY after costs on our point-in-time books, and Milestone 6 does not start on this allocator.
   - Under O-12 step 6 makes no seal-window look and runs no forward observation. No price or membership data after
     August 2026 is bought or used. The seal window stays sealed for a future candidate with a real edge or for the
     later M4.8 stages.

@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-02 for the Simplified Technical English writing target (O-15) after PR #286.
+Updated: 2026-10-02 for the O-15 writing target (PR #287) and the O-16 owner report correction.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -59,8 +59,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/ste-writing-rule` records owner decision O-15. Docs only; no code, data, or result
-  changes.
+- Candidate branch `claude/m5-report-correction` records owner decision O-16. Docs only; no code, data, or result
+  changes. `reports/m5_owner_report.md` gets the exact headline, its limits, and the three step 6 advisories; the
+  roadmap step 6 line follows.
+- Stacked on branch `claude/ste-writing-rule` (PR #287), which records owner decision O-15.
   - `AGENTS.md`: one Writing Style line, "Write at about 80% of ASD-STE100 (Simplified Technical English)."
   - The O-15 decision and engineering log entries, and a wording fix to the O-14 entry (advisory O14-R1-A2).
 
