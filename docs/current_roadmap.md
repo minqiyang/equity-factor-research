@@ -249,19 +249,6 @@ Status 2026-09-30:
   - The Milestone 5 ablation pass was stopped and its patches dropped (O-13), and the standing ablation rule
     was removed (O-14). The dated R0 freeze is not scheduled: under O-17 the next line of work is the index tilt.
 
-## Milestone 5.5: Index Tilt (Design)
-
-Owner decision O-17 (2026-10-02). Start from point-in-time S&P 500 cap weights, tilt toward factor scores, and test
-the net active return against SPY and a cap-weight book. The test is declared before any result.
-
-- Part 1: priced point-in-time members, tracking error at most 2 percent, at most 1 point active weight per stock.
-- Part 2: the members that step 4 left unpriced, as a diagnostic. `quarantine/**` stays closed (O-18).
-- Data: `real_v2` for a diagnostic run; WRDS CRSP for the test, after the owner's R11 grant (Q4).
-- Sequence: engine on synthetic fixtures, then the CRSP loader, then coverage counts, then the trial-file freeze
-  (two seats), then one cap-weight check against SPY, then the tilt runs.
-- Power is low: at 2 percent tracking error over 1993-2014, the test detects about 1.0 to 1.4 percent a year
-  (design note appendix).
-
 1. **Trial file and catalog.** A hashed trial file committed before any repository result: at most 3 real-time
    states (12-month market trend, 63-day realized volatility, lagged credit spread) with fixed thresholds, at most
    6 traits and 5 rules, baselines of equal weight, inverse volatility, and the market; the 2026-09-28 audit and
@@ -280,6 +267,25 @@ the net active return against SPY and a cap-weight book. The test is declared be
 5. **Discovery.** A counted search for new candidates in trait regions that survived, against a random search with
    the same number of candidates and the Open Source Asset Pricing placebo signals as a control.
 6. **Owner report and freeze.** A plain-language report, a dated freeze, and forward observation.
+
+## Milestone 5.5: Index Tilt (Design)
+
+Owner decisions O-17 and O-19 (2026-10-02). Start from point-in-time S&P 500 cap weights, tilt toward factor scores,
+and test the net active return against SPY and a cap-weight book. The test is declared before any result.
+
+- Part 1: priced point-in-time members, tracking error at most 2 percent, at most 1 point active weight per stock.
+- Part 2: the members that step 4 left unpriced, as a diagnostic. `quarantine/**` stays closed (O-18).
+- Data: `real_v2` for a diagnostic run; WRDS CRSP, Compustat, and IBES for the test (O-19), after the owner's R11
+  grant (Q4).
+- Success (O-19): the tilt beats SPY after costs, or it gives about the same return with materially lower drawdown
+  and volatility. The numeric thresholds go into the trial file before any result.
+- Signals: a declared screen picks large-cap signals before the test. It screens on early years, confirms on later
+  years, keeps a shortlist of at most 10, and states a stop rule. The owner sees its design note before it is locked.
+- Sequence: the engine on synthetic fixtures (delivered), the delisting-at-rebalance execution rule, the CRSP
+  loader, coverage counts, the signal screen and the trial-file freeze (two seats), one cap-weight check against
+  SPY, then the tilt runs.
+- Power is low: at 2 percent tracking error over 1993-2014, the test detects about 1.0 to 1.4 percent a year
+  (design note appendix).
 
 ## Imperfection Policy And Lightweight Backlog
 
