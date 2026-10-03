@@ -306,6 +306,14 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
 
     ``first_return`` is each member's first row with a valid return (the row
     count when it has none). It is compared only with rows up to ``r - 1``.
+
+    Declared execution rule (B2): a target member that settles at ``r`` on an
+    event first known at ``r`` has no close at ``r``, so it cannot trade. Its
+    held position settles under R4 in both books. The traded set is the target
+    members without these names. Scores, ranks, and the covariance stay at
+    ``r - 1``, and the ranks keep the excluded names. CW-PIT renormalizes the
+    cap weights pro rata over the traded set; TILT runs the same tilt, cap, and
+    TE step on the traded set.
     """
     calendar = inputs.prices.index
     t = calendar.get_loc(date) - 1
@@ -329,18 +337,24 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
     if not members.any():
         raise refuse("empty_book", str(date.date()))
     names = members.index[members.to_numpy()]
-    if surprise & set(names):
-        # Declared execution rule: a target member that settles at r on an event unknown at r - 1 refuses.
-        raise refuse("event_unknown_at_cutoff", f"{str(date.date())}: {sorted(surprise & set(names))[0]}")
+    unknown = names.isin(sorted(surprise))
+    traded = names[~unknown]
+    if not len(traded):
+        raise refuse("traded_set_empty", f"{str(date.date())}: every target member settles at r on an event "
+                                         "first known at r")
     me_members = me[names]
-    b = me_members / math.fsum(me_members.to_list())
+    me_total = math.fsum(me_members.to_list())
+    b = me[traded] / math.fsum(me[traded].to_list())
     first = t - COV_ROWS + 1
     window = returns.iloc[max(first, 0):t + 1][names]
     full = window.notna().sum() == COV_ROWS
     short = first_return[names] > first      # no valid return before the window: a short history, not a gap
+    # The ranks use every target member, the excluded names included; only the traded set gets weights.
     c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in SIGNAL_IDS}, full, short)
-    w, info = tilt_weights(b, c, window, ~full)
+    w, info = tilt_weights(b, c[traded], window[traded], ~full[traded])
     record = {"date": date, "members": len(names), "settled_excluded": int((inputs.eligible.iloc[t] & ~pool).sum()),
+              "unknown_event_excluded": int(unknown.sum()),
+              "unknown_event_cw_share": math.fsum(me_members[unknown].to_list()) / me_total,
               "me_missing": int(len(reasons)),
               **{f"me_missing_{r}": int((reasons == r).sum()) for r in ME_REASONS}, **zero_counts, **info}
     return b, w, record
@@ -366,7 +380,8 @@ def build_targets(inputs: TiltInputs) -> dict[str, Any]:
         records.append(record)
     table = pd.DataFrame(records).set_index("date")
     counts = {key: int(table[key].sum()) for key in table.columns
-              if key.startswith("me_missing") or key.startswith("c_zero") or key == "settled_excluded"}
+              if key.startswith("me_missing") or key.startswith("c_zero")
+              or key in ("settled_excluded", "unknown_event_excluded")}
     return {"targets": targets, "rebalances": table, "counts": counts, "disappearances": disappearances}
 
 
