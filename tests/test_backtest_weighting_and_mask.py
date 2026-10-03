@@ -487,3 +487,61 @@ def test_weighting_and_turnover_validation_errors() -> None:
             min_volatility_periods=15,
         )
 
+
+
+def test_proportional_weighting_passes_target_weights_through() -> None:
+    prices, _ = _make_test_panels(assets=("AAA", "BBB", "CCC"))
+    signals = pd.DataFrame({"AAA": 0.5, "BBB": 0.3, "CCC": 0.2}, index=prices.index)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=capture_backtest_source_provenance(prices, signals),
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_pct=1.0,
+        weighting_scheme="proportional",
+    )
+
+    assert result.assumptions["weighting_scheme"] == "proportional"
+    for date in prices.index[2:]:
+        assert result.holdings.loc[date, "AAA"] == pytest.approx(0.5, abs=1e-15)
+        assert result.holdings.loc[date, "BBB"] == pytest.approx(0.3, abs=1e-15)
+        assert result.holdings.loc[date, "CCC"] == pytest.approx(0.2, abs=1e-15)
+
+
+def test_proportional_weighting_scales_to_the_selected_sum() -> None:
+    prices, _ = _make_test_panels(assets=("AAA", "BBB", "CCC"))
+    signals = pd.DataFrame({"AAA": 3.0, "BBB": 1.0, "CCC": 0.0}, index=prices.index)
+
+    result = run_long_only_backtest(
+        prices,
+        signals,
+        source_provenance=capture_backtest_source_provenance(prices, signals),
+        evaluation_start=prices.index[0],
+        evaluation_end=prices.index[-1],
+        rebalance_frequency="D",
+        top_pct=1.0,
+        weighting_scheme="proportional",
+    )
+
+    assert result.holdings.loc[prices.index[-1]].tolist() == pytest.approx([0.75, 0.25, 0.0])
+
+
+@pytest.mark.parametrize("scores", [(1.0, -0.1, 0.1), (0.0, 0.0, 0.0)])
+def test_proportional_weighting_refuses_negative_or_zero_scores(scores: tuple[float, float, float]) -> None:
+    prices, _ = _make_test_panels(assets=("AAA", "BBB", "CCC"))
+    signals = pd.DataFrame(dict(zip(("AAA", "BBB", "CCC"), scores)), index=prices.index)
+
+    with pytest.raises(BacktestValidationError, match="proportional_score_invalid"):
+        run_long_only_backtest(
+            prices,
+            signals,
+            source_provenance=capture_backtest_source_provenance(prices, signals),
+            evaluation_start=prices.index[0],
+            evaluation_end=prices.index[-1],
+            rebalance_frequency="D",
+            top_pct=1.0,
+            weighting_scheme="proportional",
+        )
