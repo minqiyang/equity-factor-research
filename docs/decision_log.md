@@ -24,8 +24,9 @@ Context:
   - No test against SPY was declared, so the gap has no p-value or q-value.
   - The quoted gaps use the -100 percent disappearance default. In the last-close rerun, R0 trails SPY by 1.60 and
     8.39 percent a year, not 4.61 and 9.73 (`reports/m5_step4.json`, `runs.last_close.excess`).
-  - Most of the gap is equal weight against cap weight.
-  - R3, R4, and discovery never ran on stock books.
+  - The gap mixes equal against cap weight with the disappearance default and the unpriced members; in the
+    last-close rerun the equal-weight book made 9.14 and 10.68 percent a year against SPY's 10.41 and 16.41.
+  - Rules R3 and R4 ran only on public data, and discovery never ran.
 - The three step 6 review advisories (GPT-S6-R1-A1 to A3: q-values, public-factor hindsight, disappearance counts
   and weights) were not in the merged report.
 
