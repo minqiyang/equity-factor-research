@@ -15,6 +15,72 @@ investment performance.
 
 ---
 
+## 2026-10-02 - Owner Decision O-19: Data and Success Criterion for the Index Tilt
+
+Context:
+
+- The index tilt removes the size bet of the Milestone 5 sleeves, but it beats SPY only if its signals carry an
+  edge in large caps. The six price signals did not beat the equal-weight book in Milestone 5, and test power is
+  low (about 16 to 18 percent for an information ratio of 0.3 over 1993-2014).
+
+Decision:
+
+- **O-19 (owner, 2026-10-02):**
+  - Data: when WRDS access is approved, use CRSP, Compustat, and IBES. First confirm that the university
+    subscription includes Compustat and IBES. The owner downloads; agents read local files only.
+  - Success: the tilt beats SPY after costs, or it gives about the same return as SPY with materially lower
+    drawdown and volatility. The numeric thresholds go into the trial file before any result.
+
+Consequences:
+
+- A declared signal screen comes before the test: screen on early years, confirm on later years that the screen
+  never used, keep a shortlist of at most 10 (R9), and state a stop rule. Its design note goes to the owner before
+  it is locked.
+- If the confirmed signals do not meet the criterion, the result is reported as a pre-declared negative result.
+
+## 2026-10-02 - Index-Tilt Engine: Coordinator Defaults and the Delisting-at-Rebalance Rule
+
+Context:
+
+- The engine (`research/m55_index_tilt.py`) was built on synthetic fixtures and reviewed by two seats from different
+  model families. The producer picked technical defaults where the design note left a choice.
+
+Decision:
+
+- Coordinator defaults, logged (state after the two repairs and the expert step):
+  1. Renormalization is multiplicative on the members free to tilt. The cap loop runs to max |w - b| <= cap +
+     1e-12 in at most 100 passes, else it refuses.
+  2. TE scaling is closed form, w = b + s (w - b) with s = min(1, 0.02 / TE); members pinned at b stay at b.
+  3. Ex-ante TE = sqrt(252) x the ddof-1 standard deviation of the daily active return over the 252 rows ending at
+     r - 1.
+  4. A member without a complete 252-row return window ending at r - 1 gets c = 0 and stays at b.
+  5. The rank pool is the book members with a valid signal value; ties take the average rank; ranks are exact
+     fractions, so a true zero score is exactly zero.
+  6. A disappearance event changes the target at r only when its caller-supplied `known_at` is at or before r - 1.
+     An event effective at r and first known at r refuses (`event_unknown_at_cutoff`).
+  7. The dated schedule rate (commission plus spread) is split between the engine's transaction and slippage
+     columns; annual turnover and cost drag include the first purchase from cash.
+  8. Monthly returns use calendar months after the first rebalance. A window needs at least two rebalances, and a
+     calendar month with no row refuses.
+  9. An infinite signal value refuses; a NaN is invalid for that signal only.
+- None of these loosens R1, R2, R4, R6, R8, or R9.
+- **Delisting at the rebalance row (Opus B2; the owner gave the choice to the expert step).** Default 6 stops a real
+  run when a held target member delists on a rebalance row with no earlier notice. CRSP gives the delisting date but
+  no announcement date, so an earlier `known_at` from the loader cannot remove the stop. Rule for the next card:
+  - The traded set at r is the target members minus the names that settle at r on an event first known at r. Their
+    held positions settle under R4 in both books.
+  - Scores, ranks, and the covariance stay at r - 1, and these names still count in the ranks of the others.
+    CW-PIT renormalizes pro rata over the traded set. TILT runs the same tilt, cap, and TE step on the traded set.
+  - The report states the count and weight share of these events at each rebalance.
+  - An earlier `known_at` is allowed only with real evidence (for example an 8-K date); no loader invents one. If a
+    reviewer asks for the strictest rule, the fallback holds that weight as cash until the next rebalance.
+
+Consequences:
+
+- The rule uses one execution-time fact, "no close at r", like the halt policy. All decision inputs stay at r - 1,
+  and the held loss is booked under R4, so no outcome leaves the sample. It is built and reviewed by two seats
+  before the first real-data run.
+
 ## 2026-10-02 - Owner Decision O-18: Seal Kept After the Inventory Incident; Quarantine Stays Closed
 
 Context:

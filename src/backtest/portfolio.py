@@ -699,6 +699,43 @@ def _locked_postcost_weights(
     return executable * scale / (1.0 - cost)
 
 
+DATED_COST_COLUMNS = ("transaction_cost_bps", "slippage_bps")
+
+
+def _resolve_dated_costs(
+    dated_costs: pd.DataFrame | None, accounting_dates: pd.DatetimeIndex, *, transaction_cost_bps: float,
+    slippage_bps: float, impact_model: SquareRootImpactModel | None, volume_aware_slippage_mode: str,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    """Per-row commission and slippage rates aligned to the accounting rows, or ``None`` for the fixed rates."""
+    if dated_costs is None:
+        return None
+    if not isinstance(dated_costs, pd.DataFrame) or tuple(dated_costs.columns) != DATED_COST_COLUMNS:
+        raise BacktestValidationError("dated_costs_invalid", "dated costs require the columns transaction_cost_bps and slippage_bps")
+    if transaction_cost_bps != 0.0 or slippage_bps != 0.0:
+        raise BacktestValidationError("dated_costs_invalid", "dated costs require both fixed rates at zero")
+    if impact_model is not None or volume_aware_slippage_mode != "diagnostic_only":
+        raise BacktestValidationError("dated_costs_invalid", "dated costs do not combine with an impact or volume-aware model")
+    if not isinstance(dated_costs.index, pd.DatetimeIndex) or not dated_costs.index.is_unique:
+        raise BacktestValidationError("dated_costs_invalid", "dated costs require a unique date index")
+    try:
+        aligned = dated_costs.reindex(accounting_dates).to_numpy(dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise BacktestValidationError("dated_costs_invalid", "dated costs require numeric rates") from exc
+    if not np.isfinite(aligned).all() or (aligned < 0.0).any():
+        raise BacktestValidationError("dated_costs_invalid", "dated costs require a finite non-negative rate on every accounting row")
+    return aligned[:, 0].copy(), aligned[:, 1].copy()
+
+
+def _dated_cost_segments(row_cost_bps: tuple[np.ndarray, np.ndarray], dates: pd.DatetimeIndex) -> list[dict[str, Any]]:
+    """The applied schedule as runs of equal rates: first accounting row and both rates of each run."""
+    segments: list[dict[str, Any]] = []
+    for date, commission, slippage in zip(dates, row_cost_bps[0], row_cost_bps[1]):
+        if not segments or (segments[-1]["transaction_cost_bps"], segments[-1]["slippage_bps"]) != (commission, slippage):
+            segments.append({"first_date": date.date().isoformat(), "transaction_cost_bps": float(commission),
+                             "slippage_bps": float(slippage)})
+    return segments
+
+
 def _require_no_open_halt(weights: np.ndarray, valid: np.ndarray, date: pd.Timestamp, columns: pd.Index) -> None:
     """H-5: an asset still unmarked at the last row is an unresolved disappearance (R4)."""
     open_halts = (weights != 0.0) & ~valid
@@ -717,7 +754,7 @@ def run_long_only_backtest(
     rebalance_frequency: str = "ME",
     top_n: int | None = None,
     top_pct: float | None = None,
-    weighting_scheme: Literal["equal", "rank", "inverse_volatility"] = "equal",
+    weighting_scheme: Literal["equal", "rank", "inverse_volatility", "proportional"] = "equal",
     volatility_window: int = 20,
     min_volatility_periods: int = 5,
     turnover_penalty_lambda: float = 0.0,
@@ -726,6 +763,7 @@ def run_long_only_backtest(
     terminal_events: pd.DataFrame | None = None,
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
+    dated_costs: pd.DataFrame | None = None,
     risk_model: CrossSectionalRiskModel | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_volumes: pd.DataFrame | None = None,
@@ -752,6 +790,13 @@ def run_long_only_backtest(
     The default path uses idealized close target resets. An active impact model
     retains cash-funded dollar positions and liquidity-deferred shares. Both
     paths provide simulated daily-close research accounting.
+
+    ``weighting_scheme="proportional"`` sets each selected weight to its lagged
+    score divided by the sum of the selected scores; every selected score must
+    be non-negative and their sum positive. ``dated_costs`` replaces the two
+    fixed rates with per-row rates: a frame indexed by source-row date with the
+    columns ``transaction_cost_bps`` and ``slippage_bps`` that covers every
+    accounting row. It requires both fixed rates at zero and no impact model.
     """
 
     _validate_backtest_inputs(
@@ -801,6 +846,10 @@ def run_long_only_backtest(
         )
     )
     signal_data = _validate_bounded_signal_values(bounded_signal_values)
+    row_cost_bps = _resolve_dated_costs(
+        dated_costs, accounting_dates, transaction_cost_bps=transaction_cost_bps, slippage_bps=slippage_bps,
+        impact_model=impact_model, volume_aware_slippage_mode=volume_aware_slippage_mode,
+    )
     if (constituent_intervals is not None or terminal_events is not None) and missing_price_policy == "zero_return":
         raise BacktestValidationError("pit_missing_price_policy_invalid", "PIT membership and terminal accounting require strict held-price validation")
     if missing_price_policy == HALT_GAP_POLICY and impact_model is not None:
@@ -872,6 +921,7 @@ def run_long_only_backtest(
         initial_capital=float(initial_capital),
         transaction_cost_bps=float(transaction_cost_bps),
         slippage_bps=float(slippage_bps),
+        row_cost_bps=row_cost_bps,
         raw_volume_impact=raw_volume_impact,
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
@@ -926,8 +976,14 @@ def run_long_only_backtest(
         volume_aware_slippage_mode == "apply_precomputed_impact"
         and volume_aware_slippage_costs.gt(0.0).any()
     )
-    zero_cost_or_slippage_is_diagnostic = transaction_cost_bps == 0.0 or (
-        slippage_bps == 0.0 and not volume_aware_slippage_applied
+    if row_cost_bps is None:
+        transaction_cost_is_zero = transaction_cost_bps == 0.0
+        slippage_is_zero = slippage_bps == 0.0
+    else:
+        transaction_cost_is_zero = bool((row_cost_bps[0] == 0.0).any())
+        slippage_is_zero = bool((row_cost_bps[1] == 0.0).any())
+    zero_cost_or_slippage_is_diagnostic = transaction_cost_is_zero or (
+        slippage_is_zero and not volume_aware_slippage_applied
     )
     timing_metadata = _build_timing_metadata(
         accounting_dates=accounting_dates,
@@ -1008,6 +1064,9 @@ def run_long_only_backtest(
             } if terminal_events is not None else {}),
             "transaction_cost_bps": transaction_cost_bps,
             "slippage_bps": slippage_bps,
+            **({"dated_costs": "per_row_transaction_and_slippage_bps",
+                "dated_cost_segments": _dated_cost_segments(row_cost_bps, accounting_dates)}
+               if row_cost_bps is not None else {}),
             "signal_lag_periods": signal_lag_periods,
             "missing_price_policy": missing_price_policy,
             "benchmark_missing_policy": benchmark_missing_policy,
@@ -1146,6 +1205,16 @@ def _build_target_weights(
                     target_weights.loc[date, selected_assets] = inv_vols / inv_sum
                 else:
                     target_weights.loc[date, selected_assets] = 1.0 / len(selected_assets)
+        elif weighting_scheme == "proportional":
+            selected_scores = valid_scores.loc[selected_assets]
+            score_sum = math.fsum(selected_scores.to_numpy(dtype=float).tolist())
+            if bool((selected_scores < 0.0).any()) or not score_sum > 0.0:
+                raise BacktestValidationError(
+                    "proportional_score_invalid",
+                    "proportional weighting requires non-negative selected scores with a positive sum",
+                    date=date,
+                )
+            target_weights.loc[date, selected_assets] = selected_scores / score_sum
 
         if turnover_penalty_lambda > 0.0 and previous_target.ne(0.0).any():
             target_weights.loc[date] = (
@@ -1173,6 +1242,7 @@ def _calculate_bounded_portfolio_path(
     raw_volume_impact: pd.Series,
     volume_impact_basis: str | None,
     missing_price_policy: str,
+    row_cost_bps: tuple[np.ndarray, np.ndarray] | None = None,
     terminal_events: dict[pd.Timestamp, tuple[dict[str, Any], ...]] | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_liquidity: MarketLiquidity | None = None,
@@ -1367,12 +1437,17 @@ def _calculate_bounded_portfolio_path(
                 next_holdings = pretrade_weights
 
             turnover[position] = row_turnover
+            if row_cost_bps is None:
+                row_transaction_bps, row_slippage_bps = transaction_cost_bps, slippage_bps
+            else:
+                row_transaction_bps = float(row_cost_bps[0][position])
+                row_slippage_bps = float(row_cost_bps[1][position])
             with np.errstate(over="ignore", invalid="ignore"):
                 fixed_transaction_cost = (
-                    row_turnover * (transaction_cost_bps / 10_000.0) * gross_multiplier
+                    row_turnover * (row_transaction_bps / 10_000.0) * gross_multiplier
                 )
                 fixed_slippage_cost = (
-                    row_turnover * (slippage_bps / 10_000.0) * gross_multiplier
+                    row_turnover * (row_slippage_bps / 10_000.0) * gross_multiplier
                 )
                 volume_cost = float(raw_volume_impact.loc[date])
                 if volume_impact_basis == "post_return_portfolio_value":
@@ -1918,10 +1993,10 @@ def _validate_backtest_inputs(
     min_volatility_periods: int = 5,
     turnover_penalty_lambda: float = 0.0,
 ) -> None:
-    if weighting_scheme not in {"equal", "rank", "inverse_volatility"}:
+    if weighting_scheme not in {"equal", "rank", "inverse_volatility", "proportional"}:
         raise BacktestValidationError(
             "weighting_scheme_invalid",
-            "weighting_scheme must be 'equal', 'rank', or 'inverse_volatility'",
+            "weighting_scheme must be 'equal', 'rank', 'inverse_volatility', or 'proportional'",
         )
     if not isinstance(volatility_window, int) or volatility_window <= 0:
         raise BacktestValidationError(

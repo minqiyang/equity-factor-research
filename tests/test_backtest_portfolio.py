@@ -1185,3 +1185,140 @@ def test_backtester_has_no_data_vendor_credential_or_execution_imports() -> None
 
     for module_name in imported_modules:
         assert not any(term.lower() in module_name.lower() for term in forbidden_terms)
+
+
+def _dated_cost_fixture() -> tuple[pd.DataFrame, pd.DataFrame]:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0, 100.0], "BBB": [100.0, 100.0, 100.0, 100.0]}, index=dates)
+    signals = pd.DataFrame({"AAA": [1.0, 0.0, 1.0, 1.0], "BBB": [0.0, 1.0, 0.0, 0.0]}, index=dates)
+    return prices, signals
+
+
+def test_dated_costs_apply_the_rate_of_each_row() -> None:
+    prices, signals = _dated_cost_fixture()
+    dates = prices.index
+    rates = pd.DataFrame({"transaction_cost_bps": [9.0, 10.0, 20.0, 30.0], "slippage_bps": [9.0, 40.0, 30.0, 0.5]},
+                         index=dates)
+
+    result = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1, dated_costs=rates,
+    )
+
+    # Row 1 buys AAA from cash (turnover 1); row 2 switches to BBB (2); row 3 switches back (2).
+    assert result.turnover.tolist() == pytest.approx([0.0, 1.0, 2.0, 2.0])
+    assert result.transaction_costs.tolist() == pytest.approx([0.0, 0.0010, 0.0040, 0.0060])
+    assert result.slippage_costs.tolist() == pytest.approx([0.0, 0.0040, 0.0060, 0.0001])
+    assert result.assumptions["dated_costs"] == "per_row_transaction_and_slippage_bps"
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is False
+
+
+def test_dated_costs_equal_fixed_costs_when_the_rate_is_constant() -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 7.0, "slippage_bps": 11.0}, index=prices.index)
+
+    dated = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1, dated_costs=rates,
+    )
+    fixed = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
+        transaction_cost_bps=7.0, slippage_bps=11.0,
+    )
+
+    assert_series_equal(dated.returns, fixed.returns)
+    assert_series_equal(dated.total_trading_costs, fixed.total_trading_costs)
+    assert "dated_costs" not in fixed.assumptions
+
+
+def test_dated_costs_with_a_zero_rate_row_are_diagnostic() -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": [5.0, 5.0, 0.0, 5.0], "slippage_bps": 5.0}, index=prices.index)
+
+    result = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1, dated_costs=rates,
+    )
+
+    assert result.assumptions["zero_cost_or_slippage_is_diagnostic"] is True
+
+
+@pytest.mark.parametrize(
+    ("change", "extra"),
+    [
+        ("missing_row", {}),
+        ("negative", {}),
+        ("columns", {}),
+        ("fixed_rate", {"transaction_cost_bps": 1.0}),
+    ],
+)
+def test_dated_costs_refuse_invalid_schedules(change: str, extra: dict[str, float]) -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 5.0}, index=prices.index)
+    if change == "missing_row":
+        rates = rates.iloc[:-1]
+    elif change == "negative":
+        rates.iloc[2, 0] = -1.0
+    elif change == "columns":
+        rates = rates[["slippage_bps", "transaction_cost_bps"]]
+
+    with pytest.raises(portfolio.BacktestValidationError, match="dated_costs_invalid"):
+        run_long_only_backtest(
+            prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
+            dated_costs=rates, **extra,
+        )
+
+
+def test_dated_costs_record_the_applied_schedule() -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": [5.0, 5.0, 2.0, 2.0], "slippage_bps": [20.0, 20.0, 8.0, 8.0]},
+                         index=prices.index)
+
+    result = run_long_only_backtest(
+        prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1, dated_costs=rates,
+    )
+
+    assert result.assumptions["dated_cost_segments"] == [
+        {"first_date": "2024-01-01", "transaction_cost_bps": 5.0, "slippage_bps": 20.0},
+        {"first_date": "2024-01-03", "transaction_cost_bps": 2.0, "slippage_bps": 8.0},
+    ]
+
+
+@pytest.mark.parametrize("change", ["duplicate_index", "text", "volume_aware", "impact_model"])
+def test_dated_costs_refuse_more_invalid_inputs(change: str) -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 5.0}, index=prices.index)
+    extra: dict[str, object] = {}
+    if change == "duplicate_index":
+        rates = pd.concat([rates, rates.iloc[:1]])
+    elif change == "text":
+        rates = rates.astype(object)
+        rates.iloc[1, 0] = "five"
+    elif change == "impact_model":
+        extra = {"impact_model": portfolio.SquareRootImpactModel()}
+    else:
+        extra = {"volume_aware_slippage_mode": "apply_precomputed_impact",
+                 "volume_aware_slippage_impact": pd.Series(0.0, index=prices.index),
+                 "volume_aware_slippage_metadata": _volume_aware_metadata()}
+
+    with pytest.raises(portfolio.BacktestValidationError, match="dated_costs_invalid"):
+        run_long_only_backtest(
+            prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
+            dated_costs=rates, **extra,
+        )
+
+
+def test_dated_costs_apply_on_a_halt_locked_row() -> None:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, np.nan, 100.0], "BBB": 100.0, "CCC": 100.0}, index=dates)
+    rates = pd.DataFrame({"transaction_cost_bps": [0.0, 10.0, 30.0, 0.0], "slippage_bps": [0.0, 10.0, 30.0, 0.0]},
+                         index=dates)
+    flat = pd.DataFrame(1.0, index=dates, columns=prices.columns)
+    flat.iloc[1, 1] = 3.0           # row 2 targets (0.2, 0.6, 0.2), but AAA has no close: the row is locked
+
+    result = run_long_only_backtest(
+        prices, flat, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_pct=1.0,
+        weighting_scheme="proportional", dated_costs=rates, missing_price_policy="halt_gap_return_v1",
+    )
+
+    assert len(result.halt_ledger["locked_execution_rows"]) == 1
+    assert result.turnover.loc[dates[2]] > 0.0
+    assert result.total_trading_costs.loc[dates[2]] == pytest.approx(
+        result.turnover.loc[dates[2]] * 60.0 / 10_000.0 * (1.0 + result.gross_returns.loc[dates[2]]))

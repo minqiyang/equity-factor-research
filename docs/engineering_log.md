@@ -12,6 +12,25 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-02 - Index-tilt engine on synthetic fixtures (Milestone 5.5)
+
+- New module `research/m55_index_tilt.py` builds a CW-PIT book and a TILT book per monthly rebalance and runs both
+  through the existing book engine. `src/backtest/portfolio.py` gains a `proportional` weighting scheme and a dated
+  cost schedule; no existing result path changes. Synthetic fixtures only; no real-data return was computed.
+- Review round 1: AUDIT (GPT) FAIL with 4 MATERIAL; AUDIT_2 (Opus) PASS with 9 ADVISORY. The MATERIAL findings were
+  event availability before the cutoff (`known_at`), members with c = 0 drifting under renormalization, the first
+  rebalance cost outside the first measured month, and non-finite inputs. All four were fixed with tests.
+- Review round 2: AUDIT FAIL with 1 MATERIAL (a one-rebalance window reported a month after `end`); AUDIT_2 PASS
+  with 3 ADVISORY (B1 inexact natural zeros, B2 delisting at the rebalance row, B3 test gaps). Per the two-round
+  limit the expert step fixed GPT-R2-01, B1, and B3, and checked the fix with a mutation run (9 of 9 caught), an
+  adversarial review, and a boundary probe of 728 random windows. The adversarial review found one more MATERIAL
+  case (a calendar month with no rows), fixed with `calendar_month_missing`.
+- B2 is decided as an execution rule for the next card (`docs/decision_log.md`, engine defaults entry).
+- Backlog, unchanged: Opus A1 (cap-loop stress; the loop refuses when one member holds about 47 to 87 percent of the
+  cap weight, which cannot occur on S&P 500 weights), A5, A6, and A9. For the freeze card: a held member with no
+  close on the `end` row stops the run (`halt_gap_return_v1`).
+- Full suite after the expert commit: 3584 passed, 2 skipped.
+
 ## 2026-10-02 - Index tilt chosen as the next line of work (O-17, O-18)
 
 - Three design notes (untracked, `coord/reports/m6_prep/`) each got one adversarial critique and one revision. The
