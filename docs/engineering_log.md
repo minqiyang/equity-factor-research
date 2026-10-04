@@ -12,6 +12,22 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-03 - Delisting-at-rebalance execution rule (Milestone 5.5 B2)
+
+- `rebalance_targets` no longer refuses when a target member settles at r on an event first known at r. The name
+  leaves the traded set at r; its held position settles under R4 in both books through the unchanged engine path.
+  Scores, ranks, the covariance window, and b stay at r - 1, and the ranks keep the excluded names. CW-PIT
+  renormalizes over the traded set; TILT runs the same tilt, cap, and TE step on it. Each rebalance records the
+  count and the r - 1 cap-weight share of these names.
+- Candidate `e13317f` on the engine branch. Review round 1: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus)
+  PASS, MATERIAL 0, ADVISORY 4. The Opus seat ran mutation probes (ranks over the traded set only, a wrong share
+  denominator, a constant share); each was caught by at least two tests.
+- Backlog: OPUS-B2-A1 (refuse when an excluded name has a close at r; the input contract already rules this out),
+  A2 (no B2 test row where the TE scale binds), A3 (hand values for the four-stock unknown case).
+- The engine branch also fixed a ruff E721 line in `check_inputs` (eligibility dtype) and added a dtype test; PR #290
+  CI had failed on it.
+- Full suite on the candidate: 3602 passed, 2 skipped.
+
 ## 2026-10-02 - Index-tilt engine on synthetic fixtures (Milestone 5.5)
 
 - New module `research/m55_index_tilt.py` builds a CW-PIT book and a TILT book per monthly rebalance and runs both
