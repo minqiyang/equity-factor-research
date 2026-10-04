@@ -100,7 +100,7 @@ def check_inputs(inputs: TiltInputs) -> None:
     for name, frame in frames.items():
         if not frame.index.equals(prices.index) or not frame.columns.equals(prices.columns):
             raise refuse("input_misaligned", name)
-    if not all(dtype == bool for dtype in inputs.eligible.dtypes):
+    if not all(dtype == np.dtype(bool) for dtype in inputs.eligible.dtypes):
         raise refuse("eligible_not_boolean")
     for signal_id, frame in inputs.signals.items():
         values = frame.to_numpy(dtype=float)

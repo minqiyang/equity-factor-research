@@ -323,6 +323,15 @@ def test_invalid_or_conflicting_me_refuses() -> None:
         tilt.build_targets(inputs)
 
 
+@pytest.mark.parametrize("dtype", ["boolean", "object", "float64"])
+def test_eligible_must_be_plain_boolean(dtype: str) -> None:
+    # R6: a nullable or non-boolean eligibility frame refuses; it is never coerced.
+    inputs = fixture()
+    inputs = replace(inputs, eligible=inputs.eligible.astype(dtype))
+    with pytest.raises(RunnerStop, match="eligible_not_boolean"):
+        tilt.build_targets(inputs)
+
+
 # Disappearance (R4) -------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
