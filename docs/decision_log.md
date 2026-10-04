@@ -15,6 +15,35 @@ investment performance.
 
 ---
 
+## 2026-10-03 - Owner Decision O-21: Signal-Screen Thresholds and Stop Rule Locked
+
+Context:
+
+- O-19 asks for a declared signal screen and numeric success thresholds before any result. The screen design note
+  (revision 3, after one adversarial critique) went to the owner. No data was read to write it.
+
+Decision:
+
+- **O-21 (owner, 2026-10-03):** the thresholds and the stop rule are locked as written:
+  - Periods: screen 1963-07 to 1992-12; confirm 1993-02 to 2014-03 (254 months); check 2014-04 to the last month.
+  - Shortlist: screen net information ratio at least 0.2 and HAC t at least 1.0. The primary test is one composite
+    (the mean of the shortlisted scores).
+  - Test A (the tilt): in the confirm period, net of dated costs, the annual active return is above zero against
+    SPY and against CW-PIT, each with a one-sided HAC t of at least 1.65 after Holm; the signs hold at 2x costs;
+    neither check-period estimate is negative.
+  - Test B (the O-20 low-risk version): a HAC non-inferiority test that the annual net return is no more than 0.5
+    point below SPY (one-sided 5 percent), and a volatility ratio to SPY of at most 0.90 with a block-bootstrap
+    one-sided 95 percent upper bound below 1.0. Drawdowns are reported, not tested. In the check period the return
+    gap is above -0.5 point and the volatility ratio is below 1.0.
+  - Stop rule: no shortlisted candidate means stop before any confirm month is opened. A confirm-period composite
+    estimate below 0.3 percent a year against SPY stops the line as a declared negative result; any later change is
+    a new counted trial with no clean confirm data left.
+
+Consequences:
+
+- The trial file carries these numbers and is frozen by two seats before the screen runs. The candidate list
+  depends on WRDS coverage (a first-reported Compustat source); a dropped candidate is recorded, not replaced.
+
 ## 2026-10-02 - Owner Decision O-20: A Separate Low-Risk Version for the Lower-Risk Criterion
 
 Context:

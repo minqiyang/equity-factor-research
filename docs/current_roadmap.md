@@ -270,7 +270,7 @@ Status 2026-09-30:
 
 ## Milestone 5.5: Index Tilt (Design)
 
-Owner decisions O-17, O-19, and O-20 (2026-10-02). Start from point-in-time S&P 500 cap weights, tilt toward factor scores,
+Owner decisions O-17, O-19, O-20 (2026-10-02), and O-21 (2026-10-03). Start from point-in-time S&P 500 cap weights, tilt toward factor scores,
 and test the net active return against SPY and a cap-weight book. The test is declared before any result.
 
 - Part 1: priced point-in-time members, tracking error at most 2 percent, at most 1 point active weight per stock.
@@ -283,7 +283,8 @@ and test the net active return against SPY and a cap-weight book. The test is de
   lower-risk criterion is judged on a separate version built from risk only (TE about 5 percent, at most 2 points
   per stock, budget set from 1963-1992 risk data). Holm correction across the two primary tests.
 - Signals: a declared screen picks large-cap signals before the test. It screens on early years, confirms on later
-  years, keeps a shortlist of at most 10, and states a stop rule. The owner sees its design note before it is locked.
+  years, keeps a shortlist of at most 10, and states a stop rule. The owner locked its thresholds and stop rule
+  (O-21).
 - Sequence: the engine on synthetic fixtures (delivered), the delisting-at-rebalance execution rule (delivered),
   the CRSP loader, coverage counts, the low-risk budget calibration, the signal screen and the trial-file freeze
   (two seats), one cap-weight check against SPY, then the runs.
