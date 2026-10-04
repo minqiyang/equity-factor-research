@@ -36,7 +36,8 @@ def intervals(assets: list[str] = ASSETS, calendar: pd.DatetimeIndex = CAL) -> p
                          "start_known_at": calendar[0], "end_date": pd.NaT, "end_known_at": pd.NaT})
 
 
-def fixture(seed: int = 7, stop: bool = False) -> tilt.TiltInputs:
+def fixture(seed: int = 7, stop: bool = False, stop_asset: str = STOP_ASSET,
+            stop_date: pd.Timestamp = STOP_DATE) -> tilt.TiltInputs:
     rng = np.random.default_rng(seed)
     vol = np.linspace(0.05, 0.15, len(ASSETS))
     steps = 0.0003 + vol * rng.standard_normal((len(CAL), len(ASSETS)))
@@ -44,7 +45,7 @@ def fixture(seed: int = 7, stop: bool = False) -> tilt.TiltInputs:
     late = CAL.get_loc(START) - 100
     prices.iloc[:late, ASSETS.index(LATE_ASSET)] = np.nan
     if stop:
-        prices.loc[STOP_DATE:, STOP_ASSET] = np.nan
+        prices.loc[stop_date:, stop_asset] = np.nan
     eligible = prices.notna()
     signals = {s: pd.DataFrame(rng.standard_normal(prices.shape), index=CAL, columns=ASSETS).where(eligible)
                for s in FAMILY_A_IDS}
@@ -57,8 +58,8 @@ def fixture(seed: int = 7, stop: bool = False) -> tilt.TiltInputs:
     reason.loc[october, ME_ASSET] = "stale_share_fact"
     disappearances = pd.DataFrame(columns=FIELDS)
     if stop:
-        disappearances = pd.DataFrame([{"permanent_id": STOP_ASSET, "effective_date": STOP_DATE,
-                                         "known_at": STOP_DATE, "cause": "failure", "delisting_return": np.nan}],
+        disappearances = pd.DataFrame([{"permanent_id": stop_asset, "effective_date": stop_date,
+                                         "known_at": stop_date, "cause": "failure", "delisting_return": np.nan}],
                                        columns=FIELDS)
     return tilt.TiltInputs(prices=prices, signals=signals, eligible=eligible, market_equity=me, me_reason=reason,
                            intervals=intervals(), disappearances=disappearances, start=START, end=END)
@@ -456,11 +457,31 @@ def test_event_known_at_the_cutoff_leaves_the_pool_at_r() -> None:
     assert built["rebalances"].loc[first, "settled_excluded"] == 1
 
 
-def test_event_unknown_at_the_cutoff_that_settles_at_execution_refuses() -> None:
-    # GPT-R1-01: the same event, first known at the effective close, may not change the target; it refuses.
+def test_event_unknown_at_the_cutoff_leaves_the_traded_set_but_not_the_ranks() -> None:
+    # B2: the same event, first known at the effective close, cannot trade at r. The r - 1 ranks keep A, so
+    # c = (-1, 1/3, -1/3) for B, C, D; the event known at r - 1 ranks B, C, D alone: c = (-1, 1, 0).
     inputs = _four_stock_inputs()
-    with pytest.raises(RunnerStop, match="event_unknown_at_cutoff"):
-        tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-02-29", "2000-02-29")))
+    unknown = tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-02-29", "2000-02-29")))
+    known = tilt.build_targets(replace(inputs, disappearances=_event("A.US#E1", "2000-02-29", "2000-02-28")))
+    first = pd.Timestamp("2000-02-29")
+    for built in (unknown, known):
+        assert np.isnan(built["targets"]["tilt"].loc[first, "A.US#E1"])
+        assert built["targets"]["cw"].loc[first].dropna().tolist() == pytest.approx([0.5, 1.0 / 3.0, 1.0 / 6.0],
+                                                                                  abs=1e-15)
+    # Known at r - 1: D has c = 0 and stays at b; B and C hit the cap.
+    assert known["targets"]["tilt"].loc[first].dropna().tolist() == pytest.approx([0.49, 1.0 / 3.0 + 0.01,
+                                                                                   1.0 / 6.0], abs=1e-15)
+    # Unknown at r - 1: D keeps its r - 1 rank below C, so it is not pinned and tilts down.
+    w = unknown["targets"]["tilt"].loc[first].dropna()
+    assert w["D.US#E1"] < 1.0 / 6.0 and w["B.US#E1"] < 0.5 and w["C.US#E1"] > 1.0 / 3.0
+    assert math.fsum(w) == pytest.approx(1.0, abs=1e-15) and (w >= 0.0).all()
+    assert (w - unknown["targets"]["cw"].loc[first].dropna()).abs().max() <= tilt.STOCK_CAP + tilt.CAP_TOLERANCE
+    rows = {name: built["rebalances"].loc[first] for name, built in (("unknown", unknown), ("known", known))}
+    assert (rows["unknown"]["unknown_event_excluded"], rows["unknown"]["settled_excluded"]) == (1, 0)
+    assert (rows["known"]["unknown_event_excluded"], rows["known"]["settled_excluded"]) == (0, 1)
+    assert rows["unknown"]["unknown_event_cw_share"] == pytest.approx(0.4, abs=1e-15)
+    assert rows["known"]["unknown_event_cw_share"] == 0.0
+    assert (rows["unknown"]["members"], rows["known"]["members"]) == (4, 3)
 
 
 def test_event_known_early_but_effective_later_keeps_the_member_until_it_settles() -> None:
@@ -480,13 +501,9 @@ def test_event_known_early_but_effective_later_keeps_the_member_until_it_settles
 def test_events_change_the_target_at_r_only_when_known_at_r_minus_1(built: dict, effective: str,
                                                                      known: str) -> None:
     # Events known at or after r (or effective after r) change nothing at r; an event effective and first
-    # known at r itself refuses instead of changing the target. The pair of that case (B3): the same event
-    # known at r - 1 removes the member at r and changes no earlier target.
+    # known at r itself leaves the traded set at r under the B2 rule. The pair of that case (B3): the same
+    # event known at r - 1 removes the member at r. Neither changes an earlier target.
     inputs = replace(fixture(), disappearances=_event(ASSETS[2], effective, known))
-    if pd.Timestamp(effective) == pd.Timestamp(known) == PERTURB_AT:
-        with pytest.raises(RunnerStop, match="event_unknown_at_cutoff"):
-            tilt.build_targets(inputs)
-        return
     after = tilt.build_targets(inputs)
     used = pd.Timestamp(effective) <= PERTURB_AT
     same = pd.Timestamp("2000-12-29") if used else PERTURB_AT
@@ -801,3 +818,151 @@ def test_natural_zeros_are_exact_at_a_realistic_book_size() -> None:
     w, info = tilt.tilt_weights(b, c, window, pd.Series(False, index=names))
     assert info["te_scale"] < 1.0
     assert (w[zero] == b[zero]).all()
+
+
+# B2: an event effective and first known at a rebalance row -----------------------------------
+
+B2_ASSET = ASSETS[2]            # last close 2001-01-30; settles at the rebalance row 2001-01-31, first known there
+
+
+def _b2_inputs(cause: str = "failure", supplied: float = np.nan, known: pd.Timestamp = PERTURB_AT) -> tilt.TiltInputs:
+    inputs = fixture(stop=True, stop_asset=B2_ASSET, stop_date=PERTURB_AT)
+    table = pd.DataFrame([{"permanent_id": B2_ASSET, "effective_date": PERTURB_AT, "known_at": known,
+                           "cause": cause, "delisting_return": supplied}], columns=FIELDS)
+    return replace(inputs, disappearances=table)
+
+
+def _tilt_calls(monkeypatch: pytest.MonkeyPatch, inputs: tilt.TiltInputs) -> dict:
+    """Run build_targets and keep the (b, c, window, pinned) arguments of each tilt step by rebalance date."""
+    calls = []
+    original = tilt.tilt_weights
+
+    def spy(b, c, window, pinned):
+        calls.append((b, c, window, pinned))
+        return original(b, c, window, pinned)
+
+    monkeypatch.setattr(tilt, "tilt_weights", spy)
+    built = tilt.build_targets(inputs)
+    monkeypatch.setattr(tilt, "tilt_weights", original)
+    return {"built": built, **dict(zip(built["targets"]["cw"].index, calls))}
+
+
+@pytest.mark.parametrize(
+    ("cause", "supplied", "run", "expected"),
+    [
+        ("failure", -0.3, "primary", -0.3),
+        ("failure", np.nan, "primary", -1.0),
+        ("unknown", np.nan, "primary", -1.0),
+        ("cash_merger", np.nan, "primary", 0.0),
+        ("failure", -0.3, "last_close", 0.0),
+    ],
+)
+def test_b2_unknown_event_at_r_settles_identically_in_both_books(cause: str, supplied: float, run: str,
+                                                                 expected: float) -> None:
+    inputs = _b2_inputs(cause, supplied)
+    built = tilt.build_targets(inputs)
+    assert built["rebalances"].loc[PERTURB_AT, "unknown_event_excluded"] == 1
+    events = tilt.terminal_events(built["disappearances"], CAL, run)
+    costs = tilt.dated_cost_frame(CAL)
+    logs = {}
+    for book in tilt.BOOKS:
+        target = built["targets"][book]
+        assert np.isnan(target.loc[PERTURB_AT, B2_ASSET])
+        assert target.loc[pd.Timestamp("2000-12-29"), B2_ASSET] > 0.0
+        result = tilt.run_book(inputs, target, events, costs)
+        (record,) = [r for r in result.terminal_event_log if r["permanent_id"] == B2_ASSET]
+        assert record["incoming_weight"] > 0.0
+        assert record["terminal_return"] == expected
+        assert result.holdings.loc[PERTURB_AT:, B2_ASSET].eq(0.0).all()
+        logs[book] = record
+    assert logs["cw"]["effective_date"] == logs["tilt"]["effective_date"]
+    assert pd.Timestamp(logs["cw"]["effective_date"]) == PERTURB_AT
+    assert built["targets"]["cw"].loc[PERTURB_AT].dropna().index.equals(
+        built["targets"]["tilt"].loc[PERTURB_AT].dropna().index)
+
+
+def test_b2_keeps_every_score_rank_and_covariance_at_r_minus_1(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The other members' c, pinned flags, and covariance window at r equal those of a run without the event.
+    base = _tilt_calls(monkeypatch, fixture())
+    event = _tilt_calls(monkeypatch, _b2_inputs())
+    b0, c0, window0, pinned0 = base[PERTURB_AT]
+    b1, c1, window1, pinned1 = event[PERTURB_AT]
+    traded = b0.index.drop(B2_ASSET)
+    assert b1.index.equals(traded)
+    assert_series_equal(c1, c0[traded], check_exact=True)
+    assert_series_equal(pinned1, pinned0[traded], check_exact=True)
+    assert_frame_equal(window1, window0[traded], check_exact=True)
+    me = fixture().market_equity.iloc[CAL.get_loc(PERTURB_AT) - 1][traded]
+    assert_series_equal(event["built"]["targets"]["cw"].loc[PERTURB_AT].dropna(), me / math.fsum(me),
+                        check_names=False, check_exact=True)
+    for book in tilt.BOOKS:
+        assert_frame_equal(event["built"]["targets"][book].loc[:"2000-12-29"],
+                           base["built"]["targets"][book].loc[:"2000-12-29"], check_exact=True)
+    # Contrast: the same event known at r - 1 leaves the rank pool, so the other members' c change.
+    known = _tilt_calls(monkeypatch, _b2_inputs(known=CAL[CAL.get_loc(PERTURB_AT) - 1]))
+    b2, c2, _, _ = known[PERTURB_AT]
+    assert b2.index.equals(traded)
+    assert_series_equal(known["built"]["targets"]["cw"].loc[PERTURB_AT],
+                        event["built"]["targets"]["cw"].loc[PERTURB_AT], check_exact=True)
+    assert (c2 != c1).any()
+    assert not known["built"]["targets"]["tilt"].loc[PERTURB_AT].equals(
+        event["built"]["targets"]["tilt"].loc[PERTURB_AT])
+
+
+def test_b2_rebalance_meets_the_cap_the_budget_and_the_te_limit() -> None:
+    inputs = _b2_inputs()
+    built = tilt.build_targets(inputs)
+    w = built["targets"]["tilt"].loc[PERTURB_AT].dropna()
+    b = built["targets"]["cw"].loc[PERTURB_AT].dropna()
+    assert w.index.equals(b.index) and B2_ASSET not in w.index
+    assert (w >= 0.0).all()
+    assert math.fsum(w) == pytest.approx(1.0, abs=1e-12) and math.fsum(b) == pytest.approx(1.0, abs=1e-12)
+    assert (w - b).abs().max() <= tilt.STOCK_CAP + tilt.CAP_TOLERANCE
+    t = CAL.get_loc(PERTURB_AT) - 1
+    window = inputs.prices.pct_change(fill_method=None).iloc[t - 251:t + 1][w.index]
+    full = window.notna().all()
+    assert ((w - b)[~full] == 0.0).all()
+    cov = np.cov(window.loc[:, full].to_numpy(), rowvar=False, ddof=1)
+    active = (w - b)[full].to_numpy()
+    te = math.sqrt(252.0 * active @ cov @ active)
+    assert te <= tilt.TE_TARGET * (1.0 + 1e-9)
+    assert te == pytest.approx(built["rebalances"].loc[PERTURB_AT, "ex_ante_te"], rel=1e-9, abs=1e-15)
+
+
+@pytest.mark.parametrize("field", ["score", "market_equity", "returns", "eligibility", "event_return", "cause"])
+def test_b2_inputs_after_r_minus_1_change_no_weight_at_r(field: str) -> None:
+    before = tilt.build_targets(_b2_inputs())
+    if field == "event_return":
+        after = tilt.build_targets(_b2_inputs(supplied=-0.9))
+    elif field == "cause":
+        after = tilt.build_targets(_b2_inputs(cause="cash_merger"))
+    else:
+        after = tilt.build_targets(_perturbed(_b2_inputs(), field, CAL.get_loc(PERTURB_AT)))
+    last = END if field in ("event_return", "cause") else PERTURB_AT
+    for book in tilt.BOOKS:
+        assert_frame_equal(after["targets"][book].loc[:last], before["targets"][book].loc[:last], check_exact=True)
+    assert_frame_equal(after["rebalances"].loc[:last], before["rebalances"].loc[:last], check_exact=True)
+
+
+def test_b2_reports_count_and_cap_weight_share() -> None:
+    built = tilt.build_targets(_b2_inputs())
+    table = built["rebalances"]
+    assert table["unknown_event_excluded"].tolist() == [int(d == PERTURB_AT) for d in table.index]
+    assert (table["unknown_event_cw_share"].drop(PERTURB_AT) == 0.0).all()
+    t = CAL.get_loc(PERTURB_AT) - 1
+    me = fixture().market_equity.iloc[t]
+    members = me.index[fixture().eligible.iloc[t] & me.notna()]
+    share = me[B2_ASSET] / math.fsum(me[members])
+    assert table.loc[PERTURB_AT, "unknown_event_cw_share"] == pytest.approx(share, rel=1e-15)
+    assert table.loc[PERTURB_AT, "members"] == len(members)
+    assert built["counts"]["unknown_event_excluded"] == 1
+    assert built["counts"]["settled_excluded"] == tilt.build_targets(fixture())["counts"]["settled_excluded"]
+
+
+def test_b2_rebalance_with_every_target_member_excluded_refuses() -> None:
+    inputs = _four_stock_inputs()
+    alone = inputs.eligible.copy()
+    alone.loc[:, ["B.US#E1", "C.US#E1", "D.US#E1"]] = False
+    with pytest.raises(RunnerStop, match="traded_set_empty"):
+        tilt.build_targets(replace(inputs, eligible=alone,
+                                   disappearances=_event("A.US#E1", "2000-02-29", "2000-02-29")))

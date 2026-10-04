@@ -15,6 +15,59 @@ investment performance.
 
 ---
 
+## 2026-10-03 - Owner Decision O-21: Signal-Screen Thresholds and Stop Rule Locked
+
+Context:
+
+- O-19 asks for a declared signal screen and numeric success thresholds before any result. The screen design note
+  (revision 3, after one adversarial critique) went to the owner. No data was read to write it.
+
+Decision:
+
+- **O-21 (owner, 2026-10-03):** the thresholds and the stop rule are locked as written:
+  - Periods: screen 1963-07 to 1992-12; confirm 1993-02 to 2014-03 (254 months); check 2014-04 to the last month.
+  - Shortlist: screen net information ratio at least 0.2 and HAC t at least 1.0. The primary test is one composite
+    (the mean of the shortlisted scores).
+  - Test A (the tilt): in the confirm period, net of dated costs, the annual active return is above zero against
+    SPY and against CW-PIT, each with a one-sided HAC t of at least 1.65 after Holm; the signs hold at 2x costs;
+    neither check-period estimate is negative.
+  - Test B (the O-20 low-risk version): a HAC non-inferiority test that the annual net return is no more than 0.5
+    point below SPY (one-sided 5 percent), and a volatility ratio to SPY of at most 0.90 with a block-bootstrap
+    one-sided 95 percent upper bound below 1.0. Drawdowns are reported, not tested. In the check period the return
+    gap is above -0.5 point and the volatility ratio is below 1.0.
+  - Stop rule: no shortlisted candidate means stop before any confirm month is opened. A confirm-period composite
+    estimate below 0.3 percent a year against SPY stops the line as a declared negative result; any later change is
+    a new counted trial with no clean confirm data left.
+
+Consequences:
+
+- The trial file carries these numbers and is frozen by two seats before the screen runs. The candidate list
+  depends on WRDS coverage (a first-reported Compustat source); a dropped candidate is recorded, not replaced.
+
+## 2026-10-02 - Owner Decision O-20: A Separate Low-Risk Version for the Lower-Risk Criterion
+
+Context:
+
+- O-19 counts two kinds of success: the tilt beats SPY after costs (A), or it gives about the same return with
+  materially lower drawdown and volatility (B). Under the 2 percent ex-ante TE limit and the 1-point cap, the tilt
+  stays close to the index; its volatility can be at most about 2 points below SPY's. So B cannot be met by the tilt.
+
+Decision:
+
+- **O-20 (owner, 2026-10-02):** criterion B is judged on a separate low-risk version.
+  - It is built from risk only: the 252-day volatility and covariance known at r - 1. It uses no screened return
+    signal, so no screen or confirm month selects it.
+  - Budget: ex-ante TE about 5 percent and at most 2 points active weight per stock. The exact numbers are set from
+    1963-1992 risk data only (no returns), for an ex-ante volatility about 10 to 15 percent below the index.
+  - It is judged only on B. Test A (the tilt) and test B (the low-risk version) form one primary family with a Holm
+    correction at 5 percent. The power of A for an information ratio of 0.3 drops from about 39 to about 30 percent.
+  - Label: factor-level in-sample, since the low-volatility effect was published in the 1970s.
+
+Consequences:
+
+- The signal-screen design note and the trial file carry both versions. The low-risk budget is calibrated after the
+  CRSP loader and before the trial file is frozen.
+
 ## 2026-10-02 - Owner Decision O-19: Data and Success Criterion for the Index Tilt
 
 Context:
@@ -57,7 +110,8 @@ Decision:
   5. The rank pool is the book members with a valid signal value; ties take the average rank; ranks are exact
      fractions, so a true zero score is exactly zero.
   6. A disappearance event changes the target at r only when its caller-supplied `known_at` is at or before r - 1.
-     An event effective at r and first known at r refuses (`event_unknown_at_cutoff`).
+     An event effective at r and first known at r follows the delisting-at-rebalance rule below (it refused before
+     that rule was built).
   7. The dated schedule rate (commission plus spread) is split between the engine's transaction and slippage
      columns; annual turnover and cost drag include the first purchase from cash.
   8. Monthly returns use calendar months after the first rebalance. A window needs at least two rebalances, and a
@@ -66,20 +120,23 @@ Decision:
 - None of these loosens R1, R2, R4, R6, R8, or R9.
 - **Delisting at the rebalance row (Opus B2; the owner gave the choice to the expert step).** Default 6 stops a real
   run when a held target member delists on a rebalance row with no earlier notice. CRSP gives the delisting date but
-  no announcement date, so an earlier `known_at` from the loader cannot remove the stop. Rule for the next card:
+  no announcement date, so an earlier `known_at` from the loader cannot remove the stop. Rule (built in
+  `rebalance_targets`; two seats PASS with no MATERIAL finding):
   - The traded set at r is the target members minus the names that settle at r on an event first known at r. Their
     held positions settle under R4 in both books.
   - Scores, ranks, and the covariance stay at r - 1, and these names still count in the ranks of the others.
     CW-PIT renormalizes pro rata over the traded set. TILT runs the same tilt, cap, and TE step on the traded set.
-  - The report states the count and weight share of these events at each rebalance.
+  - The report states the count and weight share of these events at each rebalance (`unknown_event_excluded`,
+    `unknown_event_cw_share`; the share is over the r - 1 ME of all target members). A rebalance with no traded
+    member refuses (`traded_set_empty`).
   - An earlier `known_at` is allowed only with real evidence (for example an 8-K date); no loader invents one. If a
     reviewer asks for the strictest rule, the fallback holds that weight as cash until the next rebalance.
 
 Consequences:
 
 - The rule uses one execution-time fact, "no close at r", like the halt policy. All decision inputs stay at r - 1,
-  and the held loss is booked under R4, so no outcome leaves the sample. It is built and reviewed by two seats
-  before the first real-data run.
+  and the held loss is booked under R4, so no outcome leaves the sample. `members` and the `c_zero` counts still
+  include these names; the traded count is `members - unknown_event_excluded`.
 
 ## 2026-10-02 - Owner Decision O-18: Seal Kept After the Inventory Incident; Quarantine Stays Closed
 
