@@ -19,7 +19,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   Scores, ranks, the covariance window, and b stay at r - 1, and the ranks keep the excluded names. CW-PIT
   renormalizes over the traded set; TILT runs the same tilt, cap, and TE step on it. Each rebalance records the
   count and the r - 1 cap-weight share of these names.
-- Candidate `e13317f` on the engine branch. Review round 1: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus)
+- Reviewed candidate `e13317f` on base `44caf32`; after PR #290 merged it was rebased onto `ddfb032` as `30d7c59`
+  with the same diff. Review round 1: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus)
   PASS, MATERIAL 0, ADVISORY 4. The Opus seat ran mutation probes (ranks over the traded set only, a wrong share
   denominator, a constant share); each was caught by at least two tests.
 - Backlog: OPUS-B2-A1 (refuse when an excluded name has a close at r; the input contract already rules this out),

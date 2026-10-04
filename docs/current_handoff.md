@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-02 for the index-tilt engine and owner decision O-19 after PR #289.
+Updated: 2026-10-03 for the delisting-at-rebalance rule and owner decisions O-20 and O-21 after PR #290.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `356ea7fdb476f51ae8703b2a0f26dc6cdccc2436` (main after PR #289).
+  `ddfb032295035167ec306ca13bdf1aacd5dbf05d` (main after PR #290).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -43,7 +43,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   and the post-review commit merge rule (PR #284), and the triggered ablation rule (PR #285: O-13), and the
   AGENTS.md simplification with the ablation rule removed (PR #286: O-14), and the Simplified Technical English
   writing target (PR #287: O-15), and the owner report correction (PR #288: O-16), and the index tilt direction
-  and the seal ruling (PR #289: O-17, O-18).
+  and the seal ruling (PR #289: O-17, O-18), and the cap-weight and index-tilt engine on synthetic fixtures
+  (PR #290: O-19).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -52,7 +53,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `9dee2df2` (PR #275), `5b74d35a` (PR #276), `23b1c734` (PR #263), `edbd34c3` (PR #277), `cb77a4e8` (PR #278),
   `e6d04cdf` (PR #279), `c7d2d8da` (PR #280), `03e06b53` (PR #281), `e36a4a28` (PR #282), `4f7d7096` (PR #283),
   `f6cfc610` (PR #284), `988b4443` (PR #285), `2f93032d` (PR #286), `d48b8114` (PR #287), `a72f1562` (PR #288),
-  and `356ea7fd` (PR #289).
+  `356ea7fd` (PR #289), and `ddfb0322` (PR #290).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -62,9 +63,11 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-tilt-engine` adds the cap-weight and index-tilt engine on synthetic fixtures
-  (`research/m55_index_tilt.py`, with a `proportional` scheme and dated costs in `src/backtest/portfolio.py`), and
-  records owner decision O-19, the engine defaults, and the delisting-at-rebalance rule. No real data is read.
+- Candidate branch `claude/m55-b2-rule` adds the delisting-at-rebalance rule to the index-tilt engine. A target
+  member that settles at r on an event first known at r leaves the traded set; scores, ranks, and the covariance
+  window stay at r - 1; each rebalance records the count and the r - 1 cap-weight share of these names. It also
+  records owner decisions O-20 (a separate low-risk version) and O-21 (signal-screen thresholds and stop rule).
+  No real data is read.
 
 ## Current Research Gate Summary
 
@@ -81,15 +84,16 @@ unaccessed and reserved (O-12).
 - Owner items carried: the iCloud sync of the private data root (A2-D-ADV-6); the Stage C Wikipedia request that
   sent the owner's account email in its user agent (engineering log, c2 entry); the registration v2 validator
   accepting a cash completion after the calendar end (A2-05).
-- Owner: the R11 grant for WRDS CRSP, Compustat, and IBES once access is approved (O-17 Q4, O-19), and extending
-  O-5 and O-9 to the `real_v2` tilt diagnostic (Q5). Forward observation and a factor-ETF benchmark still need
-  an owner decision.
+- Owner: the R11 grant for WRDS CRSP, Compustat, and IBES once access is approved (O-17 Q4, O-19), the CRSP start
+  year, and extending O-5 and O-9 to the `real_v2` tilt diagnostic (Q5). Forward observation and a factor-ETF
+  benchmark still need an owner decision.
 
 ## Next Safe Action
 
-- Add the delisting-at-rebalance execution rule to the engine, with two review seats. While WRDS access is
-  pending, draft the signal-screen design note for the owner (O-19). No tilt or cap-weight return exists before
-  the trial file is frozen.
+- When WRDS access is approved, confirm that the subscription has Compustat, IBES, the CRSP-Compustat link, and a
+  point-in-time Compustat source, and get the owner's R11 grant. Then build the CRSP loader, count coverage,
+  calibrate the low-risk budget on 1963-1992 risk data only (O-20), run the screen under O-21, and freeze the trial
+  file with two review seats. No tilt or cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 
