@@ -284,9 +284,10 @@ and test the net active return against SPY and a cap-weight book. The test is de
   per stock, budget set from 1963-1992 risk data). Holm correction across the two primary tests.
 - Signals: a declared screen picks large-cap signals before the test. It screens on early years, confirms on later
   years, keeps a shortlist of at most 10, and states a stop rule. The owner locked its thresholds and stop rule
-  (O-21).
+  (O-21). First-reported Compustat values start about 1986-12 (Compustat Snapshot), so the accounting signals
+  have about five screen years.
 - Sequence: the engine on synthetic fixtures (delivered), the delisting-at-rebalance execution rule (delivered),
-  the CRSP loader, coverage counts, the low-risk budget calibration, the signal screen and the trial-file freeze
+  the screen and success criteria module (delivered), the CRSP loader, coverage counts, the low-risk budget calibration, the signal screen and the trial-file freeze
   (two seats), one cap-weight check against SPY, then the runs.
 - Power is low: at 2 percent tracking error over 1993-2014, the test detects about 1.0 to 1.4 percent a year
   (design note appendix).

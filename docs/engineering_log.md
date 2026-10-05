@@ -12,6 +12,24 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
+
+- `research/m55_criteria.py` adds the period guards, the screen record and shortlist with a frozen digest, test A
+  (intersection-union against SPY and CW-PIT), test B (non-inferiority and the bootstrap volatility ratio), Holm over
+  the primary family, the stop rules, BY for the secondary family, drawdown episodes, and the dated screen cost
+  schedule (30 + 30 bp before 1975-05, 10 + 30 bp to 1992-12, then the engine schedule). Synthetic series only.
+- Review round 1 on `22f46a7`: AUDIT (GPT) FAIL, MATERIAL 2 (the confirm gate checked only the record's own digest;
+  complex and nullable boolean values passed the input check); AUDIT_2 (Opus) FAIL, MATERIAL 3 (the secondary family
+  had no gate; six wiring mutations and three bootstrap mutations passed the tests). Repair `3e57783` fixed all five
+  and six coordinator ADVISORY decisions; 18 of 18 producer mutations fail at least one test.
+- Review round 2 on `3e57783`: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus) PASS, MATERIAL 0,
+  ADVISORY 6. The Opus seat caught 60 of 64 mutation probes; the survivors are equivalent or nearly so.
+- For the run-script card: check months from 2020-08 still read seal-window prices through their 252-day or
+  12-month lookbacks (OPUS-R2-A1; decide where the post-seal check segment starts); tie the composite series to the
+  frozen shortlist and store the freeze record as plain JSON (R2-A5); `freeze_shortlist` should check record months
+  and refuse a `None` IR (R2-A4).
+- Backlog: OPUS-CRIT-A03, A05, and R2-A6 go to the trial file text; R2-A2 and R2-A3 (two small tests).
+
 ## 2026-10-03 - Delisting-at-rebalance execution rule (Milestone 5.5 B2)
 
 - `rebalance_targets` no longer refuses when a target member settles at r on an event first known at r. The name
