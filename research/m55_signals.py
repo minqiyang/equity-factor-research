@@ -2,15 +2,18 @@
 
 Card m55-signals (owner decisions O-19, O-21) builds the eight candidates of
 the signal-screen design note, section 3; card m55-signals-revision sets the
-coordinator definitions of S1, the S2 share basis, the fiscal keys, the IBES
-link, the S3 announcement date, and the S3 market return. This module reads no file; a later
-loader card maps the WRDS files into ``SCHEMA``. The tests drive it with
-synthetic fixtures only.
+coordinator definitions of S1, the fiscal keys, the S3 announcement date, and
+the S3 market return; card m55-signals-repair-r1 sets the first-reported rule,
+the S2 share basis, the IBES link at each statistics date, and the market
+anchors. This module reads no file; a later loader card maps the WRDS files
+into ``SCHEMA``. The tests drive it with synthetic fixtures only.
 
 Timing ``after_close_signal_next_observed_close_v1``: at rebalance row ``r``
 every value uses information usable at the close of the decision row
 ``t = r - 1``. A value known on day ``k`` is usable from the first calendar row
-after ``k``. Members are the S&P 500 spells that cover ``t``.
+after ``k``. Members are the S&P 500 spells that cover ``t``. A Compustat item
+of a record is its first-reported value: the first non-missing value over the
+record's point-in-time rows; a later revision never replaces it (R1).
 
 Each member cell holds a finite value or exactly one typed reason from
 ``REASONS`` (R6). Nothing is filled, clipped, winsorized, or dropped. The
@@ -34,10 +37,10 @@ SIGNS = {"S1": 1, "S2": 1, "S3": 1, "S4": 1, "S5": -1, "S6": -1, "S7": -1, "S8":
 REASONS = ("no_link", "ambiguous_link", "no_record", "not_yet_known", "stale", "short_history", "missing_item",
            "no_market_data", "fpe_changed", "be_nonpositive", "zero_denominator", "invalid_value")
 # A value is stale when t is later than its event date plus this many months (design note, section 3).
-# Events: S1 the statistics date, S2 and S3 the report date, S4 to S6 and S8 the fiscal period end,
-# S7 the share row against its month-end anchor.
+# Events: S1 the statistics date, S2 and S3 the report date, S4 to S6 and S8 the fiscal period end.
+# S7 and S8 read the month-end anchor row itself (age 0), so the S7 entry is never binding.
 MAX_AGE_MONTHS = {"S1": 2, "S2": 6, "S3": 6, "S4": 18, "S5": 18, "S6": 18, "S7": 1, "S8": 18}
-MARKET_AGE_MONTHS = 1                # a daily row read "at" a date is at most this old (the S7 rule)
+FACTOR_AGE_MONTHS = 1                # a split factor read as of a date comes from a row at most this old
 ANNUAL_READY_MONTHS = 6              # fiscal period end + 6 months before an annual value is used
 MIN_ANNUAL_RECORDS = 2               # backfill: two fiscal years known at t, the current one included
 MIN_QUARTER_RECORDS = 8              # backfill for S2 and S3: two fiscal years of quarters known at t
@@ -45,45 +48,48 @@ SUE_QUARTERS = 8                     # S2: differences of the eight quarters bef
 SUE_MIN_VALID = 6
 S1_REVISIONS = 3                     # S1: one-month revisions in the last three statistics months
 S1_MIN_VALID = 2
-IBES_LINK_STATUS = ("ok", "ambiguous")
+IBES_LINK_MAX_SCORE = 1              # WRDS IBES-CRSP link score: 0 and 1 are accepted matches
+MARKET_INDNO = 1000200               # S3 market return: the CRSP value-weighted market, total return
 COVERAGE_NUMERATOR, COVERAGE_DENOMINATOR = 4, 5   # real start: at least 80 percent of members valid
 
 ANNUAL_ITEMS = ("at", "revt", "cogs", "act", "che", "lct", "dlc", "txp", "dp", "seq", "ceq", "pstk", "pstkrv",
                 "pstkl", "txditc", "lt")
+QUARTER_ITEMS = ("epspxq", "ajexq", "rdq")
 SCHEMA = {
     "daily": ("permno", "date", "ret", "prc", "shrout", "cfacpr", "cfacshr"),
     "members": ("permno", "start", "end"),
     "fund_annual": ("gvkey", "datadate", "fyear", "known_date") + ANNUAL_ITEMS,
-    "fund_quarterly": ("gvkey", "datadate", "fyearq", "fqtr", "known_date", "epspxq", "ajexq", "rdq"),
+    "fund_quarterly": ("gvkey", "datadate", "fyearq", "fqtr", "known_date") + QUARTER_ITEMS,
     "announcements": ("gvkey", "datadate", "fyearq", "fqtr", "rdq"),
     "link": ("gvkey", "permno", "linkdt", "linkenddt"),
-    "ibes_link": ("permno", "ibes_ticker", "linkdt", "linkenddt", "status"),
-    "ibes": ("ibes_ticker", "statpers", "fpedats", "fpi", "meanest"),
-    "index_daily": ("date", "ret"),
+    "ibes_link": ("ticker", "permno", "sdate", "edate", "score"),
+    "ibes": ("ticker", "statpers", "fpedats", "fpi", "meanest"),
+    "index_daily": ("date", "indno", "ret"),
 }
 KEYS = {"daily": ("permno", "date"), "members": ("permno", "start"),
         "fund_annual": ("gvkey", "datadate", "known_date"), "fund_quarterly": ("gvkey", "datadate", "known_date"),
         "announcements": ("gvkey", "fyearq", "fqtr"), "link": ("gvkey", "permno", "linkdt"),
-        "ibes_link": ("permno", "ibes_ticker", "linkdt"), "ibes": ("ibes_ticker", "statpers", "fpi"),
+        "ibes_link": ("ticker", "permno", "sdate"), "ibes": ("ticker", "statpers", "fpi"),
         "index_daily": ("date",)}
 NOT_NULL = {**KEYS, "members": ("permno", "start", "end"),
             "fund_annual": ("gvkey", "datadate", "fyear", "known_date"),
             "fund_quarterly": ("gvkey", "datadate", "fyearq", "fqtr", "known_date"),
             "announcements": ("gvkey", "datadate", "fyearq", "fqtr"),
-            "ibes_link": ("permno", "ibes_ticker", "linkdt", "status"),
-            "ibes": ("ibes_ticker", "statpers", "fpi", "fpedats")}
+            "ibes_link": ("ticker", "permno", "sdate", "score"),
+            "ibes": ("ticker", "statpers", "fpi", "fpedats"), "index_daily": ("date", "indno")}
 DATE_COLUMNS = {"daily": ("date",), "members": ("start", "end"), "fund_annual": ("datadate", "known_date"),
                 "fund_quarterly": ("datadate", "known_date", "rdq"), "announcements": ("datadate", "rdq"),
-                "link": ("linkdt", "linkenddt"), "ibes_link": ("linkdt", "linkenddt"),
+                "link": ("linkdt", "linkenddt"), "ibes_link": ("sdate", "edate"),
                 "ibes": ("statpers", "fpedats"), "index_daily": ("date",)}
 NUMERIC_COLUMNS = {"daily": ("ret", "prc", "shrout", "cfacpr", "cfacshr"), "members": (),
                    "fund_annual": ("fyear",) + ANNUAL_ITEMS, "fund_quarterly": ("fyearq", "fqtr", "epspxq", "ajexq"),
-                   "announcements": ("fyearq", "fqtr"), "link": (), "ibes_link": (), "ibes": ("meanest",),
-                   "index_daily": ("ret",)}
+                   "announcements": ("fyearq", "fqtr"), "link": (), "ibes_link": ("score",), "ibes": ("meanest",),
+                   "index_daily": ("indno", "ret")}
 # One fiscal key per record and one record per fiscal key (card m55-signals-revision, item 4).
 FISCAL_KEYS = {"fund_annual": ("fyear",), "fund_quarterly": ("fyearq", "fqtr"), "announcements": ("fyearq", "fqtr")}
 NEVER = np.datetime64("2262-01-01", "ns")   # usable-from date of a value the calendar never reaches
 ITEM = {name: k for k, name in enumerate(ANNUAL_ITEMS)}
+LINK_REASONS = ("no_link", "ambiguous_link")
 
 
 @dataclass(frozen=True)
@@ -91,14 +97,16 @@ class SignalInputs:
     """The normalized point-in-time tables (the loader's contract; ``check_inputs`` enforces it).
 
     ``daily``: one row per (``permno``, ``date``) on the CRSP trading calendar; ``ret`` is the total return with
-    the delisting return included; ``prc`` is a positive close. ``members``: S&P 500 spells, ``end`` inclusive.
+    the delisting return included; ``prc`` is a positive close; ``cfacpr`` is the CRSP cumulative price factor
+    (a price on day d over ``cfacpr(d)`` is on the latest basis, so the factor falls at a split).
+    ``members``: S&P 500 spells, ``end`` inclusive.
     ``fund_annual`` and ``fund_quarterly``: point-in-time rows, one per (``gvkey``, ``datadate``, ``known_date``);
     a later ``known_date`` is a revision; ``fyear`` or (``fyearq``, ``fqtr``) is the fiscal key of the record.
     ``announcements``: one ``rdq`` per fiscal quarter, which may come from the standard quarterly file; the
     announcement is public on ``rdq``. ``link``: primary CRSP-Compustat links, ``linkenddt`` NaT when open.
-    ``ibes_link``: IBES ticker to PERMNO links with ``status`` ``ok`` or ``ambiguous``. ``ibes``: unadjusted
-    summary rows by IBES ticker. ``index_daily``: the CRSP value-weighted S&P 500 universe total return.
-    Missing values are NaN or NaT.
+    ``ibes_link``: IBES ticker to PERMNO link rows with their dates (``edate`` NaT when open) and WRDS ``score``.
+    ``ibes``: unadjusted summary rows by IBES ticker, ``fpi`` text. ``index_daily``: the CRSP index
+    ``MARKET_INDNO`` total return on calendar rows. Missing values are NaN or NaT.
     """
 
     daily: pd.DataFrame
@@ -139,6 +147,12 @@ def check_inputs(inputs: SignalInputs) -> None:
     prc = inputs.daily["prc"].to_numpy(dtype=float)
     if (prc[~np.isnan(prc)] <= 0.0).any():
         raise refuse("schema_value_invalid", "daily.prc is not positive")
+    if pd.api.types.infer_dtype(inputs.ibes["fpi"], skipna=False) not in ("string", "empty"):
+        raise refuse("schema_value_invalid", "ibes.fpi must be text")
+    if not (inputs.index_daily["indno"] == MARKET_INDNO).all():
+        raise refuse("schema_value_invalid", f"index_daily.indno must be {MARKET_INDNO}")
+    if not inputs.index_daily["date"].isin(inputs.daily["date"]).all():
+        raise refuse("schema_date_invalid", "index_daily.date is not a calendar row")
     for table in ("fund_annual", "fund_quarterly"):
         frame = getattr(inputs, table)
         if (frame["known_date"] < frame["datadate"]).any():
@@ -149,12 +163,10 @@ def check_inputs(inputs: SignalInputs) -> None:
     same = members["permno"].to_numpy()[1:] == members["permno"].to_numpy()[:-1]
     if (same & (members["start"].to_numpy()[1:] <= members["end"].to_numpy()[:-1])).any():
         raise refuse("spell_invalid", "overlapping spells")
-    for table in ("link", "ibes_link"):
+    for table, start, end in (("link", "linkdt", "linkenddt"), ("ibes_link", "sdate", "edate")):
         link = getattr(inputs, table)
-        if (link["linkenddt"] < link["linkdt"]).any():
-            raise refuse("link_invalid", f"{table}: linkenddt before linkdt")
-    if not inputs.ibes_link["status"].isin(IBES_LINK_STATUS).all():
-        raise refuse("link_invalid", "ibes_link.status is not ok or ambiguous")
+        if (link[end] < link[start]).any():
+            raise refuse("link_invalid", f"{table}: {end} before {start}")
     for table, fiscal in FISCAL_KEYS.items():
         frame = getattr(inputs, table)
         keys = frame[list(fiscal)].to_numpy(dtype=float)
@@ -163,8 +175,8 @@ def check_inputs(inputs: SignalInputs) -> None:
         pairs = frame[["gvkey", "datadate", *fiscal]].drop_duplicates()
         if pairs.duplicated(["gvkey", "datadate"]).any() or pairs.duplicated(["gvkey", *fiscal]).any():
             raise refuse("fiscal_key_invalid", f"{table}: a fiscal key and a datadate must match one to one")
-    fy1 = inputs.ibes[inputs.ibes["fpi"].astype(str) == "1"]
-    if pd.DataFrame({"ticker": fy1["ibes_ticker"], "month": fy1["statpers"].dt.to_period("M")}).duplicated().any():
+    fy1 = inputs.ibes[inputs.ibes["fpi"] == "1"]
+    if pd.DataFrame({"ticker": fy1["ticker"], "month": fy1["statpers"].dt.to_period("M")}).duplicated().any():
         raise refuse("duplicate_key", "ibes: two FY1 statistics dates in one month")
 
 
@@ -205,6 +217,18 @@ def _quarter_index(frame: pd.DataFrame) -> np.ndarray:
 
 # Prepared data --------------------------------------------------------------------------
 
+def _first_reported(frame: pd.DataFrame, keys: list[str], items: tuple[str, ...],
+                    usable: np.ndarray) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Per record: the first non-missing value of each item and the date it is usable from (NaT when none).
+
+    ``frame`` is sorted by ``keys`` and then by ``known_date``, so the first non-missing row is the earliest.
+    """
+    values = frame.groupby(keys, sort=True)[list(items)].first()
+    when = pd.DataFrame({c: pd.Series(usable, index=frame.index).where(frame[c].notna()) for c in items})
+    when[keys] = frame[keys]
+    return values, when.groupby(keys, sort=True)[list(items)].first().reindex(values.index)
+
+
 class _Signals:
     """The inputs, sorted and grouped once, and one function per signal."""
 
@@ -217,13 +241,11 @@ class _Signals:
         daily = inputs.daily.sort_values(["permno", "date"])
         self.market = _split(daily["permno"].to_numpy(), {
             "date": _ns(daily["date"]), **{c: daily[c].to_numpy(dtype=float) for c in ("ret", "prc", "shrout",
-                                                                                       "cfacshr")}})
+                                                                                       "cfacpr", "cfacshr")}})
         # The S3 market return on each calendar row; NaN where the index row is absent or missing.
         index = inputs.index_daily
         self.index_ret = np.full(len(cal), np.nan)
-        pos = np.searchsorted(cal, _ns(index["date"]))
-        on_calendar = (pos < len(cal)) & (cal[np.minimum(pos, len(cal) - 1)] == _ns(index["date"]))
-        self.index_ret[pos[on_calendar]] = index["ret"].to_numpy(dtype=float)[on_calendar]
+        self.index_ret[np.searchsorted(cal, _ns(index["date"]))] = index["ret"].to_numpy(dtype=float)
 
         spells = inputs.members
         self.spell_permno = spells["permno"].to_numpy()
@@ -234,44 +256,44 @@ class _Signals:
         self.link_start = _ns(link["linkdt"])
         end = _ns(link["linkenddt"])
         self.link_end = np.where(np.isnat(end), NEVER, end)
-        ibes_link = inputs.ibes_link
-        self.ibes_permno, self.ibes_ticker = ibes_link["permno"].to_numpy(), ibes_link["ibes_ticker"].to_numpy()
-        self.ibes_status = ibes_link["status"].to_numpy()
-        self.ibes_start = _ns(ibes_link["linkdt"])
-        end = _ns(ibes_link["linkenddt"])
-        self.ibes_end = np.where(np.isnat(end), NEVER, end)
 
         self.annual = self._annual(inputs.fund_annual)
         self.quarterly = self._quarterly(inputs.fund_quarterly)
         self.announcements = self._announcements(inputs.announcements)
-        self.ibes = self._ibes(inputs.ibes)
+        self.ibes, self.ibes_linked = self._ibes(inputs.ibes, inputs.ibes_link)
 
     def _annual(self, frame: pd.DataFrame) -> dict[Any, dict[str, Any]]:
         frame = frame.sort_values(["gvkey", "fyear", "known_date"])
-        gvkey, datadate = frame["gvkey"].to_numpy(), _ns(frame["datadate"])
         usable = _rows_after(self.calendar, _ns(frame["known_date"]), 1)
-        items = frame[list(ANNUAL_ITEMS)].to_numpy(dtype=float)
-        records = {}
-        for g, rows in _split(gvkey, {"datadate": datadate, "fyear": frame["fyear"].to_numpy(dtype=np.int64),
-                                      "usable": usable, "row": np.arange(len(frame))}).items():
-            # One record per fiscal year; its rows (revisions) are rows start:stop, sorted by known date.
-            start = np.flatnonzero(np.r_[True, rows["fyear"][1:] != rows["fyear"][:-1]])
-            dd = rows["datadate"][start]
-            records[g] = {"datadate": dd, "fyear": rows["fyear"][start], "first": rows["usable"][start],
-                          "ready": _shift_months(dd, ANNUAL_READY_MONTHS), "old": _shift_months(dd, MAX_AGE_MONTHS["S4"]),
-                          "start": start, "stop": np.r_[start[1:], len(rows["datadate"])],
-                          "usable": rows["usable"], "items": items[rows["row"]]}
-        return records
+        values, when = _first_reported(frame, ["gvkey", "fyear"], ANNUAL_ITEMS, usable)
+        records = frame.assign(usable=usable).groupby(["gvkey", "fyear"], sort=True).agg(
+            datadate=("datadate", "first"), first=("usable", "min"))
+        dd = _ns(records["datadate"])
+        return _split(records.index.get_level_values("gvkey").to_numpy(), {
+            "fyear": records.index.get_level_values("fyear").to_numpy(dtype=np.int64), "datadate": dd,
+            "first": _ns(records["first"]), "ready": _shift_months(dd, ANNUAL_READY_MONTHS),
+            "old": _shift_months(dd, MAX_AGE_MONTHS["S4"]), "items": values.to_numpy(dtype=float),
+            "when": np.where(when.isna().to_numpy(), NEVER, when.to_numpy(dtype="datetime64[ns]"))})
 
     def _quarterly(self, frame: pd.DataFrame) -> dict[Any, dict[str, np.ndarray]]:
-        # S2 uses first-known values only: the earliest row of each fiscal quarter.
-        frame = frame.assign(quarter=_quarter_index(frame))
-        frame = frame.sort_values(["gvkey", "quarter", "known_date"]).drop_duplicates(["gvkey", "quarter"])
-        rdq = _ns(frame["rdq"])
-        return _split(frame["gvkey"].to_numpy(), {
-            "quarter": frame["quarter"].to_numpy(), "first": _rows_after(self.calendar, _ns(frame["known_date"]), 1),
-            "eps": frame["epspxq"].to_numpy(dtype=float), "ajexq": frame["ajexq"].to_numpy(dtype=float),
-            "rdq": rdq, "rdq1": _rows_after(self.calendar, rdq, 1), "old": _shift_months(rdq, MAX_AGE_MONTHS["S2"])})
+        # S2 uses first-reported values: per item, the earliest non-missing row of each fiscal quarter.
+        frame = frame.assign(quarter=_quarter_index(frame)).sort_values(["gvkey", "quarter", "known_date"])
+        known = _ns(frame["known_date"])
+        usable = _rows_after(self.calendar, known, 1)
+        values, when = _first_reported(frame, ["gvkey", "quarter"], QUARTER_ITEMS, usable)
+        # The share basis of EPS is the date of the row that gives ajexq.
+        basis = pd.Series(known, index=frame.index).where(frame["ajexq"].notna()).groupby(
+            [frame["gvkey"], frame["quarter"]], sort=True).first().reindex(values.index)
+        first = pd.Series(usable, index=frame.index).groupby([frame["gvkey"], frame["quarter"]], sort=True).min()
+        when = np.where(when.isna().to_numpy(), NEVER, when.to_numpy(dtype="datetime64[ns]"))
+        rdq = _ns(values["rdq"])
+        basis = _ns(basis)
+        return _split(values.index.get_level_values("gvkey").to_numpy(), {
+            "quarter": values.index.get_level_values("quarter").to_numpy(), "first": _ns(first.reindex(values.index)),
+            "eps": values["epspxq"].to_numpy(dtype=float), "ajexq": values["ajexq"].to_numpy(dtype=float),
+            "eps_when": when[:, 0], "ajexq_when": when[:, 1], "rdq_when": when[:, 2], "rdq": rdq,
+            "rdq1": _rows_after(self.calendar, rdq, 1), "old": _shift_months(rdq, MAX_AGE_MONTHS["S2"]),
+            "basis": basis, "basis_floor": _shift_months(basis, -FACTOR_AGE_MONTHS)})
 
     def _announcements(self, frame: pd.DataFrame) -> dict[Any, dict[str, np.ndarray]]:
         # S3: an announcement is public on rdq, so rdq is its known date; it is usable from rdq + 2 rows.
@@ -281,10 +303,35 @@ class _Signals:
             "quarter": frame["quarter"].to_numpy(), "rdq": rdq, "rdq1": _rows_after(self.calendar, rdq, 1),
             "rdq2": _rows_after(self.calendar, rdq, 2), "old": _shift_months(rdq, MAX_AGE_MONTHS["S3"])})
 
-    def _ibes(self, frame: pd.DataFrame) -> dict[Any, dict[str, np.ndarray]]:
-        frame = frame[frame["fpi"].astype(str) == "1"].sort_values(["ibes_ticker", "statpers"])
-        statpers = _ns(frame["statpers"])
-        month = _month(statpers)
+    def _ibes(self, ibes: pd.DataFrame, link: pd.DataFrame) -> tuple[dict[Any, dict[str, np.ndarray]], set]:
+        """FY1 rows by PERMNO, each resolved at its own statistics date (R3).
+
+        A link row counts at a statistics date when ``sdate <= statpers <= edate`` and its score is at most
+        ``IBES_LINK_MAX_SCORE``. A row whose ticker has two PERMNOs there, or whose PERMNO has two tickers there,
+        is ambiguous for each of those PERMNOs; so is a PERMNO month with two rows. Unlinked rows belong to no one.
+        """
+        link = link[link["score"] <= IBES_LINK_MAX_SCORE].assign(edate=lambda x: x["edate"].fillna(pd.Timestamp(NEVER)))
+        fy1 = ibes[ibes["fpi"] == "1"]
+        est = pd.DataFrame({"est": np.arange(len(fy1)), "ticker": fy1["ticker"].to_numpy(),
+                            "statpers": _ns(fy1["statpers"])})
+        pairs = est.merge(link[["ticker", "permno", "sdate", "edate"]], on="ticker")
+        pairs = pairs[(pairs["sdate"] <= pairs["statpers"]) & (pairs["statpers"] <= pairs["edate"])]
+        pairs = pairs.drop_duplicates(["est", "permno"])[["est", "permno", "statpers"]]
+        permnos = pairs.groupby("est")["permno"].transform("size")
+        side = pairs.merge(link[["permno", "ticker", "sdate", "edate"]], on="permno")
+        side = side[(side["sdate"] <= side["statpers"]) & (side["statpers"] <= side["edate"])]
+        tickers = side.groupby(["est", "permno"])["ticker"].nunique().reindex(
+            pd.MultiIndex.from_frame(pairs[["est", "permno"]])).to_numpy()
+        rows = pairs.assign(ambiguous=(permnos.to_numpy() > 1) | (tickers > 1),
+                            fpedats=_ns(fy1["fpedats"])[pairs["est"]],
+                            meanest=fy1["meanest"].to_numpy(dtype=float)[pairs["est"]],
+                            month=_month(pairs["statpers"].to_numpy()))
+        rows = rows.sort_values(["permno", "statpers"]).groupby(["permno", "month"], sort=True).agg(
+            statpers=("statpers", "max"), fpedats=("fpedats", "first"), meanest=("meanest", "first"),
+            ambiguous=("ambiguous", "any"), n=("est", "size"))
+        rows["ambiguous"] |= rows["n"] > 1
+        statpers = _ns(rows["statpers"])
+        month = rows.index.get_level_values("month").to_numpy()
         # Usable from the first month-end row after the statistics date.
         pos = np.searchsorted(self.month_ends, statpers, side="right")
         usable = np.where(pos < len(self.month_ends), self.month_ends[np.minimum(pos, len(self.month_ends) - 1)],
@@ -292,11 +339,12 @@ class _Signals:
         # The month-end row of the statistics month (for the S1 price), NaT when the calendar lacks that month.
         k = np.minimum(np.searchsorted(self.month_end_month, month), len(self.month_ends) - 1)
         month_end = np.where(self.month_end_month[k] == month, self.month_ends[k], np.datetime64("NaT", "ns"))
-        return _split(frame["ibes_ticker"].to_numpy(), {
+        series = _split(rows.index.get_level_values("permno").to_numpy(), {
             "statpers": statpers, "month": month, "usable": usable, "old": _shift_months(statpers, MAX_AGE_MONTHS["S1"]),
-            "floor": _shift_months(statpers, -MARKET_AGE_MONTHS), "fpedats": _ns(frame["fpedats"]),
-            "meanest": frame["meanest"].to_numpy(dtype=float), "month_end": month_end,
-            "month_end_floor": _shift_months(month_end, -MARKET_AGE_MONTHS)})
+            "floor": _shift_months(statpers, -FACTOR_AGE_MONTHS), "fpedats": _ns(rows["fpedats"]),
+            "meanest": rows["meanest"].to_numpy(dtype=float), "ambiguous": rows["ambiguous"].to_numpy(dtype=bool),
+            "month_end": month_end})
+        return series, set(link["permno"].tolist())
 
     # Rebalance state ------------------------------------------------------------------
 
@@ -317,37 +365,32 @@ class _Signals:
             out[p] = g if len(gs) == 1 and len(permnos[g]) == 1 else "ambiguous_link"
         return out
 
-    def ibes_links_at(self, t: np.datetime64) -> dict[Any, Any]:
-        """permno -> IBES ticker for one ``ok`` link valid at t; ``ambiguous_link`` for an ambiguous status,
-        overlapping rows, or a ticker on two PERMNOs (R3)."""
-        mask = (self.ibes_start <= t) & (t <= self.ibes_end)
-        rows, permnos = defaultdict(list), defaultdict(set)
-        for p, ticker, status in zip(self.ibes_permno[mask].tolist(), self.ibes_ticker[mask].tolist(),
-                                     self.ibes_status[mask].tolist()):
-            rows[p].append((ticker, status))
-            permnos[ticker].add(p)
-        out = {}
-        for p, found in rows.items():
-            ticker, status = found[0]
-            out[p] = ticker if len(found) == 1 and status == "ok" and len(permnos[ticker]) == 1 else "ambiguous_link"
-        return out
-
     def anchors(self, t: np.datetime64) -> dict[str, np.datetime64 | None]:
         """S7 and S8 read shares at the month-end row before t's month, and S7 also 12 months earlier."""
         t_month = _month(np.array([t]))[0]
         k = int(np.searchsorted(self.month_end_month, t_month)) - 1
         if k < 0:
-            return {"a": None, "a_floor": None, "a12": None, "a12_floor": None}
+            return {"a": None, "a12": None}
         a, month = self.month_ends[k], self.month_end_month[k] - 12
         j = int(np.searchsorted(self.month_end_month, month))
         a12 = self.month_ends[j] if self.month_end_month[j] == month else None   # j <= k, so it is in range
-        floor = _shift_months(np.array([a, a12 if a12 is not None else np.datetime64("NaT", "ns")]), -MARKET_AGE_MONTHS)
-        return {"a": a, "a_floor": floor[0], "a12": a12, "a12_floor": floor[1]}
+        return {"a": a, "a12": a12}
 
     # Lookups --------------------------------------------------------------------------
 
-    def market_row(self, p: Any, date: np.datetime64, floor: np.datetime64) -> tuple[dict, int] | str:
-        """The latest daily row of ``p`` at or before ``date``, at most one month old."""
+    def anchor_row(self, p: Any, date: np.datetime64) -> tuple[dict, int] | str:
+        """The daily row of ``p`` on the calendar row ``date``; an absent row is ``no_market_data``, never filled."""
+        rows = self.market.get(p)
+        if rows is None:
+            return "no_market_data"
+        k = int(np.searchsorted(rows["date"], date))
+        if k >= len(rows["date"]) or rows["date"][k] != date:
+            return "no_market_data"
+        return rows, k
+
+    def price_factor(self, p: Any, date: np.datetime64, floor: np.datetime64) -> float | str:
+        """CRSP ``cfacpr`` of ``p`` on its latest row at or before ``date``, at most one month old (an as-of
+        factor read, not a market observation)."""
         rows = self.market.get(p)
         if rows is None:
             return "no_market_data"
@@ -356,20 +399,13 @@ class _Signals:
             return "no_market_data"
         if rows["date"][k] < floor:
             return "stale"
-        return rows, k
-
-    def share_factor(self, p: Any, date: np.datetime64, floor: np.datetime64) -> float | str:
-        found = self.market_row(p, date, floor)
-        if isinstance(found, str):
-            return found
-        rows, k = found
-        f = rows["cfacshr"][k]
+        f = rows["cfacpr"][k]
         if np.isnan(f):
             return "missing_item"
         return float(f) if f > 0.0 else "invalid_value"
 
     def annual_view(self, g: Any, t: np.datetime64) -> tuple[np.ndarray, np.ndarray | None] | str:
-        """The current fiscal year and the prior one, each as the latest revision usable at t."""
+        """The current fiscal year and the prior one: first-reported items usable at t, NaN otherwise."""
         rec = self.annual.get(g)
         if rec is None:
             return "no_record"
@@ -385,24 +421,20 @@ class _Signals:
         lag = None
         i = int(np.searchsorted(rec["fyear"], rec["fyear"][j] - 1))
         if i < j and rec["fyear"][i] == rec["fyear"][j] - 1 and known[i]:
-            lag = self._revision(rec, i, t)
-        return self._revision(rec, j, t), lag
+            lag = self._items(rec, i, t)
+        return self._items(rec, j, t), lag
 
     @staticmethod
-    def _revision(rec: dict[str, Any], j: int, t: np.datetime64) -> np.ndarray:
-        start, stop = rec["start"][j], rec["stop"][j]
-        k = int(np.searchsorted(rec["usable"][start:stop], t, side="right")) - 1
-        return rec["items"][start + k]
+    def _items(rec: dict[str, Any], j: int, t: np.datetime64) -> np.ndarray:
+        return np.where(rec["when"][j] <= t, rec["items"][j], np.nan)
 
     # Signals --------------------------------------------------------------------------
 
-    def s1(self, p: Any, ticker: Any, t: np.datetime64) -> float | str:
+    def s1(self, p: Any, t: np.datetime64) -> float | str:
         """3 x the mean of the valid one-month FY1 revisions of the last three statistics months (at least 2)."""
-        if ticker in ("no_link", "ambiguous_link"):
-            return ticker
-        rec = self.ibes.get(ticker)
+        rec = self.ibes.get(p)
         if rec is None:
-            return "no_record"
+            return "no_record" if p in self.ibes_linked else "no_link"
         usable = rec["usable"] <= t
         if not usable.any():
             return "not_yet_known"
@@ -423,32 +455,35 @@ class _Signals:
         early = late - 1
         if late >= len(rec["month"]) or rec["month"][late] != month or early < 0 or rec["month"][early] != month - 1:
             return "short_history"
+        if rec["ambiguous"][late] or rec["ambiguous"][early]:
+            return "ambiguous_link"
         if rec["fpedats"][early] != rec["fpedats"][late]:
             return "fpe_changed"
         if np.isnan(rec["meanest"][late]) or np.isnan(rec["meanest"][early]):
             return "missing_item"
-        f_late = self.share_factor(p, rec["statpers"][late], rec["floor"][late])
+        f_late = self.price_factor(p, rec["statpers"][late], rec["floor"][late])
         if isinstance(f_late, str):
             return f_late
-        f_early = self.share_factor(p, rec["statpers"][early], rec["floor"][early])
+        f_early = self.price_factor(p, rec["statpers"][early], rec["floor"][early])
         if isinstance(f_early, str):
             return f_early
         if np.isnat(rec["month_end"][early]):
             return "no_market_data"
-        found = self.market_row(p, rec["month_end"][early], rec["month_end_floor"][early])
+        found = self.anchor_row(p, rec["month_end"][early])
         if isinstance(found, str):
             return found
         rows, k = found
-        price, f_price = rows["prc"][k], rows["cfacshr"][k]
+        price, f_price = rows["prc"][k], rows["cfacpr"][k]
         if np.isnan(price) or np.isnan(f_price):
             return "missing_item"
         if f_price <= 0.0:
             return "invalid_value"
-        # Put both estimates on the share basis of the price row: EPS on date d over cfacshr(d) is basis-free.
+        # An estimate on day d times cfacpr(price row) / cfacpr(d) is on the share basis of the price row.
         return float(f_price * (rec["meanest"][late] / f_late - rec["meanest"][early] / f_early) / price)
 
-    def s2(self, g: Any, t: np.datetime64) -> float | str:
-        if g in ("no_link", "ambiguous_link"):
+    def s2(self, p: Any, g: Any, t: np.datetime64, t_floor: np.datetime64) -> float | str:
+        """(EPS q - EPS q-4) / sd of the eight prior such differences (at least 6), on the share basis of t."""
+        if g in LINK_REASONS:
             return g
         rec = self.quarterly.get(g)
         if rec is None:
@@ -457,24 +492,34 @@ class _Signals:
         if not known.any():
             return "not_yet_known"
         j = int(np.flatnonzero(known)[-1])
-        if np.isnat(rec["rdq"][j]):
+        if rec["rdq_when"][j] > t:          # the age needs rdq as known at t; eps() applies the rdq + 1 gate
             return "missing_item"
-        if rec["rdq1"][j] > t:
-            return "not_yet_known"
         if t > rec["old"][j]:
             return "stale"
         if known[: j + 1].sum() < MIN_QUARTER_RECORDS:
             return "short_history"
+        f_t = self.price_factor(p, t, t_floor)
+        if isinstance(f_t, str):
+            return f_t
 
         def eps(quarter: int) -> float | str:
-            # First-known EPS over its own ajexq: one share basis across splits.
+            # A quarter is read only when its first row and its rdq + 1 row are both at or before t.
             i = int(np.searchsorted(rec["quarter"], quarter))
             if i >= len(rec["quarter"]) or rec["quarter"][i] != quarter or not known[i]:
                 return "short_history"
-            value, factor = rec["eps"][i], rec["ajexq"][i]
-            if np.isnan(value) or np.isnan(factor):
+            if rec["rdq_when"][i] > t:
                 return "missing_item"
-            return value / factor if factor > 0.0 else "invalid_value"
+            if rec["rdq1"][i] > t:
+                return "not_yet_known"
+            if rec["eps_when"][i] > t or rec["ajexq_when"][i] > t:
+                return "missing_item"
+            if rec["ajexq"][i] <= 0.0:
+                return "invalid_value"
+            f_k = self.price_factor(p, rec["basis"][i], rec["basis_floor"][i])
+            if isinstance(f_k, str):
+                return f_k
+            # epspxq / ajexq is on the basis of its known date k; cfacpr(t) / cfacpr(k) carries the splits to t.
+            return rec["eps"][i] / rec["ajexq"][i] * (f_t / f_k)
 
         quarter = rec["quarter"][j]
         now, before = eps(quarter), eps(quarter - 4)
@@ -495,7 +540,7 @@ class _Signals:
 
     def s3(self, p: Any, g: Any, t: np.datetime64) -> float | str:
         """Stock minus index compound return over rows -1 to +1 around the latest announcement usable at t."""
-        if g in ("no_link", "ambiguous_link"):
+        if g in LINK_REASONS:
             return g
         rec = self.announcements.get(g)
         if rec is None:
@@ -575,18 +620,22 @@ class _Signals:
     def s7(self, p: Any, anchors: dict[str, Any]) -> float | str:
         if anchors["a"] is None:
             return "no_market_data"
-        now = self._shares(p, anchors["a"], anchors["a_floor"])
+        now = self._shares(p, anchors["a"])
         if isinstance(now, str):
             return now
         if anchors["a12"] is None:
             return "short_history"
-        before = self._shares(p, anchors["a12"], anchors["a12_floor"])
+        before = self._shares(p, anchors["a12"])
         if isinstance(before, str):
-            return "short_history" if before == "no_market_data" else before
+            rows = self.market.get(p)
+            # No row of p at or before the earlier anchor: the history does not reach it.
+            if before == "no_market_data" and (rows is None or rows["date"][0] > anchors["a12"]):
+                return "short_history"
+            return before
         return float(np.log(now) - np.log(before))
 
-    def _shares(self, p: Any, date: np.datetime64, floor: np.datetime64) -> float | str:
-        found = self.market_row(p, date, floor)
+    def _shares(self, p: Any, date: np.datetime64) -> float | str:
+        found = self.anchor_row(p, date)
         if isinstance(found, str):
             return found
         rows, k = found
@@ -596,16 +645,12 @@ class _Signals:
         return float(shares) if shares > 0.0 else "invalid_value"
 
     def s8(self, p: Any, view: tuple | str, anchors: dict[str, Any]) -> float | str:
+        # Market data before domain checks (producer default 14): be_nonpositive comes after the market read.
         if isinstance(view, str):
             return view
-        be = book_equity(view[0])
-        if isinstance(be, str):
-            return be
-        if be <= 0.0:
-            return "be_nonpositive"
         if anchors["a"] is None:
             return "no_market_data"
-        found = self.market_row(p, anchors["a"], anchors["a_floor"])
+        found = self.anchor_row(p, anchors["a"])
         if isinstance(found, str):
             return found
         rows, k = found
@@ -614,6 +659,11 @@ class _Signals:
             return "missing_item"
         if shares < 0.0:
             return "invalid_value"
+        be = book_equity(view[0])
+        if isinstance(be, str):
+            return be
+        if be <= 0.0:
+            return "be_nonpositive"
         return "zero_denominator" if shares == 0.0 else be / (price * shares)
 
 
@@ -658,15 +708,16 @@ def build_signals(inputs: SignalInputs, rebalances: pd.DatetimeIndex) -> dict[st
     values = {s: np.full((len(rows), len(permnos)), np.nan) for s in SIGNAL_IDS}
     reasons = {s: np.full((len(rows), len(permnos)), None, dtype=object) for s in SIGNAL_IDS}
     members = np.zeros((len(rows), len(permnos)), dtype=bool)
+    decision_floor = _shift_months(decision, -FACTOR_AGE_MONTHS)
     for i, (t, current) in enumerate(zip(decision, member_sets)):
-        links, ibes_links = data.links_at(t), data.ibes_links_at(t)
+        links = data.links_at(t)
         anchors = data.anchors(t)
         for p in current:
             c = column[p]
             members[i, c] = True
             g = links.get(p, "no_link")
-            annual = g if g in ("no_link", "ambiguous_link") else data.annual_view(g, t)
-            cells = {"S1": data.s1(p, ibes_links.get(p, "no_link"), t), "S2": data.s2(g, t), "S3": data.s3(p, g, t),
+            annual = g if g in LINK_REASONS else data.annual_view(g, t)
+            cells = {"S1": data.s1(p, t), "S2": data.s2(p, g, t, decision_floor[i]), "S3": data.s3(p, g, t),
                      "S4": data.s4(annual), "S5": data.s5(annual), "S6": data.s6(annual), "S7": data.s7(p, anchors),
                      "S8": data.s8(p, annual, anchors)}
             for s, cell in cells.items():
@@ -708,17 +759,21 @@ def reason_share(result: dict[str, Any], signal: str, reason: str) -> pd.Series:
 
 
 def real_start(reasons: pd.DataFrame, members: pd.DataFrame) -> int | None:
-    """First year from which every rebalance month has at least 80 percent of members valid, to the panel end.
+    """First year from which every year to the panel end is complete and has at least 80 percent of members valid
+    in each month.
 
-    The years are the calendar years of the panel rows. A month with no member fails. Reason panels only.
+    A year counts only when the panel has a row in each of its twelve months and every row passes; a partial first
+    or last year, a missing month, or a missing year never counts. A month with no member fails. Reason panels only.
     """
     valid = (members & reasons.isna()).sum(axis=1)
     total = members.sum(axis=1)
     month_ok = (total > 0) & (COVERAGE_DENOMINATOR * valid >= COVERAGE_NUMERATOR * total)
-    year_ok = month_ok.groupby(month_ok.index.year).all()
+    years = month_ok.index.year
+    complete = pd.Series(month_ok.index.month, index=month_ok.index).groupby(years).nunique() == 12
+    year_ok = month_ok.groupby(years).all() & complete
     start = None
     for year, ok in sorted(year_ok.items(), reverse=True):
-        if not ok:
+        if not ok or (start is not None and year != start - 1):
             break
         start = int(year)
     return start
