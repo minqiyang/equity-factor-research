@@ -20,6 +20,7 @@ from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype, is_complex_dtype, is_numeric_dtype
 from scipy.stats import norm
 
 from features.diagnostics import newey_west_mean_tstat
@@ -32,10 +33,15 @@ SCREEN_START, SCREEN_END = pd.Period("1963-07", "M"), pd.Period("1992-12", "M")
 CONFIRM_START, CONFIRM_END = pd.Period("1993-02", "M"), pd.Period("2014-03", "M")
 CHECK_START = pd.Period("2014-04", "M")
 CONFIRM_MONTHS = 254
+SCREEN_MIN_MONTHS = 36
+# Monthly returns that touch the seal window [2019-07-31, 2020-07-31) (O-11, O-12, O-18); a check series skips them.
+SEAL_MONTHS = pd.period_range("2019-07", "2020-07", freq="M")
 PERIODS = ("screen", "confirm", "check")
 IR_MIN = 0.2                         # screen net information ratio against CW-PIT
 T_MIN = 1.0                          # screen HAC t against CW-PIT
 SHORTLIST_CAP = 10                   # R9
+SHORTLIST_RULE = {"ir_min": IR_MIN, "t_min": T_MIN, "shortlist_cap": SHORTLIST_CAP}
+RECORD_STATUSES = ("ok", "undefined")
 ALPHA = 0.05                         # primary family, Holm
 NI_MARGIN = 0.005                    # test B: annual return at most 0.5 point below SPY
 VOL_RATIO_MAX = 0.90                 # test B: point estimate of the volatility ratio
@@ -57,37 +63,48 @@ SECONDARY_NOTE = "secondary family: reported with BY q-values; it decides nothin
 # Input checks ---------------------------------------------------------------------------
 
 def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
-    """Refuse unless ``series`` is a complete monthly series of finite values inside ``period``.
+    """Refuse unless ``series`` is a complete monthly series of finite real values inside ``period``.
 
-    Screen: every month is in 1963-07 to 1992-12 and the last month is 1992-12
-    (a signal may start later).
-    Confirm: the months are exactly 1993-02 to 2014-03. Check: the first month
-    is 2014-04.
+    Screen: every month is in 1963-07 to 1992-12, the last month is 1992-12 (a
+    signal may start later), and there are at least 36 months. Confirm: the
+    months are exactly 1993-02 to 2014-03. Check: the first month is 2014-04,
+    no month is in ``SEAL_MONTHS``, and the seal months are the only gap; the
+    statistics join the months on both sides with no fill. Complex and boolean
+    dtypes refuse before any cast. The input is not changed.
     """
     if period not in PERIODS:
         raise refuse("period_invalid", period)
     if not isinstance(series, pd.Series) or not isinstance(series.index, pd.PeriodIndex) \
             or series.index.freqstr != "M" or not len(series):
         raise refuse("series_invalid", f"{name}: a non-empty Series with a monthly PeriodIndex is required")
-    if series.dtype == bool or not pd.api.types.is_numeric_dtype(series.dtype):
-        raise refuse("series_invalid", f"{name}: values must be real numbers")
+    dtype = series.dtype
+    if is_bool_dtype(dtype) or is_complex_dtype(dtype) or not is_numeric_dtype(dtype):
+        raise refuse("series_invalid", f"{name}: values must be real numbers, not {dtype}")
     index = series.index
     if not index.is_unique or not index.is_monotonic_increasing:
         raise refuse("series_invalid", f"{name}: months must be sorted and unique")
-    if len(index) != len(pd.period_range(index[0], index[-1], freq="M")):
+    if period == "check" and index.isin(SEAL_MONTHS).any():
+        raise refuse("seal_month", f"{name}: a month from {SEAL_MONTHS[0]} to {SEAL_MONTHS[-1]} is sealed")
+    expected = pd.period_range(index[0], index[-1], freq="M")
+    if period == "check":
+        expected = expected[~expected.isin(SEAL_MONTHS)]
+    if not index.equals(expected):
         raise refuse("month_missing", f"{name}: a month between {index[0]} and {index[-1]} has no row")
-    if not np.isfinite(series.to_numpy(dtype=float)).all():
+    values = series.to_numpy(dtype=float, na_value=np.nan)
+    if not np.isfinite(values).all():
         raise refuse("missing_return", f"{name}: a value is NaN or infinite")
     first, last = index[0], index[-1]
     if period == "screen" and (first < SCREEN_START or last != SCREEN_END):
         raise refuse("period_violation", f"{name}: {first} to {last} must lie in the screen {SCREEN_START} to "
                                          f"{SCREEN_END} and end at {SCREEN_END}")
+    if period == "screen" and len(index) < SCREEN_MIN_MONTHS:
+        raise refuse("screen_too_short", f"{name}: {len(index)} < {SCREEN_MIN_MONTHS} months")
     if period == "confirm" and (first != CONFIRM_START or last != CONFIRM_END):
         raise refuse("period_violation", f"{name}: {first} to {last} is not the confirm {CONFIRM_START} to "
                                          f"{CONFIRM_END}")
     if period == "check" and first != CHECK_START:
         raise refuse("period_violation", f"{name}: the check period starts at {CHECK_START}, not {first}")
-    return series.astype(float)
+    return pd.Series(values, index=index, name=series.name)
 
 
 def check_paired(series: Mapping[str, pd.Series], period: str) -> dict[str, pd.Series]:
@@ -131,17 +148,25 @@ def mean_test(monthly: pd.Series) -> dict[str, Any]:
 # Screen and shortlist -------------------------------------------------------------------
 
 def screen_record(net: pd.Series, cw_net: pd.Series, annual_turnover: float | None = None) -> dict[str, Any]:
-    """One candidate: its net minus the CW-PIT net of the same run, screen months only."""
+    """One candidate: its net minus the CW-PIT net of the same run, screen months only.
+
+    A zero or undefined TE or an undefined HAC t gives a typed failed record
+    (``status = "undefined"``, the undefined values as ``None``); the screen
+    goes on and the record stays visible and hashed.
+    """
     clean = check_paired({"candidate": net, "cw": cw_net}, "screen")
     active = clean["candidate"] - clean["cw"]
     if annual_turnover is not None and not (math.isfinite(annual_turnover) and annual_turnover >= 0.0):
         raise refuse("turnover_invalid", f"{annual_turnover}")
-    test = mean_test(active)
-    te = annual_vol(active)
-    return {"first_month": str(active.index[0]), "last_month": str(active.index[-1]), "months": test["months"],
-            "annual_active_mean": test["annual_mean"], "annual_te": te,
-            "information_ratio": test["annual_mean"] / te, "hac_t": test["hac_t"],
-            "p_one_sided": test["p_one_sided"],
+    mean = annual_mean(active)
+    te = float(active.std(ddof=1)) * math.sqrt(MONTHS_PER_YEAR)
+    t = newey_west_mean_tstat(active)
+    defined = math.isfinite(te) and te > 0.0 and math.isfinite(t)
+    return {"status": "ok" if defined else "undefined", "first_month": str(active.index[0]),
+            "last_month": str(active.index[-1]), "months": len(active), "annual_active_mean": mean,
+            "annual_te": te if math.isfinite(te) else None,
+            "information_ratio": mean / te if defined else None, "hac_t": t if defined else None,
+            "p_one_sided": float(norm.sf(t)) if defined else None,
             "annual_turnover": None if annual_turnover is None else float(annual_turnover)}
 
 
@@ -165,25 +190,37 @@ def canonical_json(value: Any) -> str:
 
 
 def shortlist_digest(record: Mapping[str, Any]) -> str:
-    """SHA-256 of the canonical JSON of the record's rule, candidates, and shortlist."""
-    payload = {key: record.get(key) for key in ("rule", "candidates", "shortlist")}
+    """SHA-256 of the canonical JSON of the record's rule, candidates, shortlist, and decision."""
+    payload = {key: record.get(key) for key in ("rule", "candidates", "shortlist", "decision")}
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
-def check_frozen_screen(record: Mapping[str, Any]) -> None:
-    """Refuse a confirm run unless the screen record matches its digest and its decision opens the confirm months."""
-    if shortlist_digest(record) != record.get("digest_sha256"):
-        raise refuse("shortlist_digest_mismatch", "the screen record does not match its digest")
-    # The decision field is outside the digest, so the hashed shortlist must also be non-empty.
-    if record.get("decision") != "shortlist_frozen" or not record.get("shortlist"):
-        raise refuse("screen_empty_confirm", f"screen decision {record.get('decision')}: no confirm month is opened")
+def verify_frozen_screen(record: Mapping[str, Any], expected_digest: str) -> bool:
+    """Refuse unless the record is the one frozen before any confirm month; True when the shortlist is not empty.
+
+    ``expected_digest`` is the digest saved at the original freeze. The
+    recomputed digest, the record's own digest, and ``expected_digest`` must be
+    equal, so a replacement record with its own new digest refuses. The rule
+    values must equal the module constants.
+    """
+    recomputed = shortlist_digest(record)
+    if not isinstance(expected_digest, str) or not recomputed == record.get("digest_sha256") == expected_digest:
+        raise refuse("shortlist_digest_mismatch", "the screen record is not the frozen record")
+    if record.get("rule") != SHORTLIST_RULE:
+        raise refuse("shortlist_rule_mismatch", f"{record.get('rule')} differs from {SHORTLIST_RULE}")
+    decision = record.get("decision")
+    if decision not in ("shortlist_frozen", "screen_empty") or (decision == "shortlist_frozen") != bool(
+            record.get("shortlist")):
+        raise refuse("screen_record_invalid", f"decision {decision} does not match the shortlist")
+    return decision == "shortlist_frozen"
 
 
 def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
     """Apply the O-21 rule (IR >= 0.2 and HAC t >= 1.0) and hash the full record.
 
-    Every candidate stays in the record with its values and pass flag. The
-    digest covers every candidate record, the shortlist, and the rule values.
+    Every candidate stays in the record with its values and pass flag; a
+    record with ``status = "undefined"`` fails. The digest covers every
+    candidate record, the shortlist, the rule values, and the decision.
     More than ``SHORTLIST_CAP`` shortlisted candidates refuses; an empty
     shortlist gives the stop decision ``screen_empty`` (no confirm month is
     opened).
@@ -193,17 +230,22 @@ def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]
     candidates = {}
     for candidate_id in sorted(records):
         record = dict(records[candidate_id])
-        ir, t = float(record["information_ratio"]), float(record["hac_t"])
-        if not (math.isfinite(ir) and math.isfinite(t)):
-            raise refuse("statistic_undefined", candidate_id)
-        record["shortlisted"] = ir >= IR_MIN and t >= T_MIN
+        if record.get("status") not in RECORD_STATUSES:
+            raise refuse("record_invalid", f"{candidate_id}: status {record.get('status')}")
+        if record["status"] == "undefined":
+            record["shortlisted"] = False            # a typed failed record; it stays visible and hashed
+        else:
+            ir, t = float(record["information_ratio"]), float(record["hac_t"])
+            if not (math.isfinite(ir) and math.isfinite(t)):
+                raise refuse("statistic_undefined", candidate_id)
+            record["shortlisted"] = ir >= IR_MIN and t >= T_MIN
         candidates[candidate_id] = record
     shortlist = [c for c, record in candidates.items() if record["shortlisted"]]
     if len(shortlist) > SHORTLIST_CAP:
         raise refuse("shortlist_over_cap", f"{len(shortlist)} > {SHORTLIST_CAP}")
-    rule = {"ir_min": IR_MIN, "t_min": T_MIN, "shortlist_cap": SHORTLIST_CAP}
-    payload = {"rule": rule, "candidates": candidates, "shortlist": shortlist}
-    return {**payload, "digest_sha256": shortlist_digest(payload), "decision": "shortlist_frozen" if shortlist else "screen_empty"}
+    payload = {"rule": dict(SHORTLIST_RULE), "candidates": candidates, "shortlist": shortlist,
+               "decision": "shortlist_frozen" if shortlist else "screen_empty"}
+    return {**payload, "digest_sha256": shortlist_digest(payload)}
 
 
 def screen(candidates: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
@@ -231,20 +273,24 @@ def composite_means(composite: pd.Series, spy: pd.Series, cw: pd.Series, period:
 
 # Test B: the low-risk version -----------------------------------------------------------
 
-def bootstrap_vol_ratio(low: np.ndarray, spy: np.ndarray) -> dict[str, Any]:
-    """Paired moving-block bootstrap of vol(low) / vol(spy).
+def bootstrap_rows(n: int) -> np.ndarray:
+    """The row matrix of the moving-block bootstrap: one row of ``n`` month positions per draw.
 
     Each draw takes ``ceil(n / 12)`` blocks of 12 consecutive months with
-    starts drawn uniformly from ``0`` to ``n - 12`` (no wrap), cuts the joined
-    path to ``n`` months, and uses the same months for both series.
+    starts drawn uniformly from ``0`` to ``n - 12`` (no wrap) and cuts the
+    joined path to ``n`` months. The seed is fixed.
     """
-    n = len(low)
     if n < BLOCK_MONTHS:
         raise refuse("bootstrap_too_short", f"{n} < {BLOCK_MONTHS}")
     rng = np.random.default_rng(BOOTSTRAP_SEED)
     blocks = -(-n // BLOCK_MONTHS)
     starts = rng.integers(0, n - BLOCK_MONTHS + 1, size=(BOOTSTRAP_DRAWS, blocks))
-    rows = (starts[:, :, None] + np.arange(BLOCK_MONTHS)).reshape(BOOTSTRAP_DRAWS, -1)[:, :n]
+    return (starts[:, :, None] + np.arange(BLOCK_MONTHS)).reshape(BOOTSTRAP_DRAWS, -1)[:, :n]
+
+
+def bootstrap_vol_ratio(low: np.ndarray, spy: np.ndarray) -> dict[str, Any]:
+    """Paired moving-block bootstrap of vol(low) / vol(spy): both series use the same rows in each draw."""
+    rows = bootstrap_rows(len(low))
     ratios = low[rows].std(axis=1, ddof=1) / spy[rows].std(axis=1, ddof=1)
     if not np.isfinite(ratios).all():
         raise refuse("statistic_undefined", "a bootstrap draw has an undefined volatility ratio")
@@ -315,14 +361,23 @@ def holm_primary(p_a: float, p_b: float) -> dict[str, float]:
 
 def decide_a(adjusted_p_a: float, confirm: Mapping[str, float], confirm_2x: Mapping[str, float],
              check: Mapping[str, float]) -> dict[str, Any]:
-    """A is ``met`` when every condition holds; a failed A with both confirm means positive is
-    ``positive_not_shown``; anything else is ``not_met``."""
+    """A is ``met`` when every condition holds.
+
+    When the Holm condition fails, A is ``positive_not_shown`` if both confirm
+    means are above zero. When Holm passes but the 2x or check rule fails, A is
+    ``not_met_robustness``. Anything else is ``not_met``.
+    """
     conditions = {"holm_p_at_most_alpha": adjusted_p_a <= ALPHA,
                   "confirm_means_positive": confirm["vs_spy"] > 0.0 and confirm["vs_cw"] > 0.0,
                   "cost_2x_means_positive": confirm_2x["vs_spy"] > 0.0 and confirm_2x["vs_cw"] > 0.0,
                   "check_means_not_negative": check["vs_spy"] >= 0.0 and check["vs_cw"] >= 0.0}
     met = all(conditions.values())
-    label = "met" if met else ("positive_not_shown" if conditions["confirm_means_positive"] else "not_met")
+    if met:
+        label = "met"
+    elif not conditions["confirm_means_positive"]:
+        label = "not_met"
+    else:
+        label = "not_met_robustness" if conditions["holm_p_at_most_alpha"] else "positive_not_shown"
     return {"passed": met, "label": label, "conditions": conditions}
 
 
@@ -341,42 +396,57 @@ def stop_after_confirm(annual_mean_vs_spy: float) -> str | None:
     return "confirm_below_floor" if annual_mean_vs_spy < CONFIRM_FLOOR else None
 
 
-def primary_decision(screen_record: Mapping[str, Any], confirm: Mapping[str, pd.Series],
-                     confirm_2x: Mapping[str, pd.Series],
-                     check: Mapping[str, pd.Series]) -> dict[str, Any]:
+def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, confirm: Mapping[str, pd.Series],
+                     confirm_2x: Mapping[str, pd.Series], check: Mapping[str, pd.Series]) -> dict[str, Any]:
     """The O-21 primary family from net series, after the frozen screen record is checked.
 
-    ``screen_record`` is the ``freeze_shortlist`` output. Its digest is
-    recomputed before any confirm series is read; a mismatch or a
-    ``screen_empty`` decision refuses.
+    ``screen_record`` is the ``freeze_shortlist`` output and ``expected_digest``
+    the digest saved at the original freeze; ``verify_frozen_screen`` runs
+    before any confirm or check input is used.
 
     ``confirm`` holds ``composite``, ``cw``, ``spy``, and ``low_risk`` (confirm
     months, dated costs). ``confirm_2x`` holds ``composite`` and ``cw`` at 2x
     costs (SPY is the same series). ``check`` holds ``composite``, ``cw``,
-    ``spy``, and ``low_risk`` from 2014-04.
+    ``spy``, and ``low_risk`` from 2014-04, seal months left out.
+
+    After ``screen_empty``, test A and the composite stop rule are refused and
+    their inputs are not read. Test B still runs (it uses no screened signal,
+    O-20); the Holm family keeps size 2 with p_A = 1.0 (R9).
     """
-    check_frozen_screen(screen_record)
-    a = composite_test(confirm["composite"], confirm["spy"], confirm["cw"])
+    opened = verify_frozen_screen(screen_record, expected_digest)
+    if opened:
+        a = composite_test(confirm["composite"], confirm["spy"], confirm["cw"])
+        a_2x = composite_means(confirm_2x["composite"], confirm["spy"], confirm_2x["cw"], "confirm")
+        a_check = composite_means(check["composite"], check["spy"], check["cw"], "check")
     b = low_risk_test(confirm["low_risk"], confirm["spy"])
-    a_2x = composite_means(confirm_2x["composite"], confirm["spy"], confirm_2x["cw"], "confirm")
-    a_check = composite_means(check["composite"], check["spy"], check["cw"], "check")
     b_check = low_risk_check(check["low_risk"], check["spy"])
-    adjusted = holm_primary(a["p_a"], b["p_b"])
+    adjusted = holm_primary(a["p_a"] if opened else 1.0, b["p_b"])
+    test_b = {**b, "check": b_check, "holm_p": adjusted["B"],
+              **decide_b(adjusted["B"], b["vol_ratio"], b["bootstrap"]["upper_95"], b_check)}
+    if not opened:
+        return {"test_a": {"run": False, "refused": "screen_empty_confirm", "passed": False, "label": "not_run"},
+                "test_b": test_b, "stop": "screen_empty"}
     a_means = {"vs_spy": a["vs_spy"]["annual_mean"], "vs_cw": a["vs_cw"]["annual_mean"]}
-    return {"test_a": {**a, "cost_2x": a_2x, "check": a_check, "holm_p": adjusted["A"],
+    return {"test_a": {"run": True, **a, "cost_2x": a_2x, "check": a_check, "holm_p": adjusted["A"],
                        **decide_a(adjusted["A"], a_means, a_2x, a_check)},
-            "test_b": {**b, "check": b_check, "holm_p": adjusted["B"],
-                       **decide_b(adjusted["B"], b["vol_ratio"], b["bootstrap"]["upper_95"], b_check)},
-            "stop": stop_after_confirm(a_means["vs_spy"])}
+            "test_b": test_b, "stop": stop_after_confirm(a_means["vs_spy"])}
 
 
-def secondary_family(entries: Mapping[str, Mapping[str, pd.Series]]) -> dict[str, Any]:
+def secondary_family(screen_record: Mapping[str, Any], expected_digest: str,
+                     entries: Mapping[str, Mapping[str, pd.Series]], family_size: int) -> dict[str, Any]:
     """Test A statistics for each single signal and the baseline composite, with BY q-values of p_A.
 
-    Each entry holds ``composite``, ``spy``, and ``cw`` confirm series. The
-    family decides nothing.
+    The same frozen-screen gate as ``primary_decision`` runs before any series
+    is read; after ``screen_empty`` it refuses. Each entry holds ``composite``,
+    ``spy``, and ``cw`` confirm series. ``family_size`` is the declared size of
+    the secondary family; fewer members keep it. The family decides nothing.
     """
+    if not verify_frozen_screen(screen_record, expected_digest):
+        raise refuse("screen_empty_confirm", "screen_empty: no confirm month is opened for a tilt")
+    if isinstance(family_size, bool) or not isinstance(family_size, int) or family_size < max(len(entries), 1):
+        raise refuse("family_size_invalid", f"{family_size} for {len(entries)} members")
     stats = {name: composite_test(e["composite"], e["spy"], e["cw"]) for name, e in sorted(entries.items())}
-    q = adjust_pvalues(pd.Series({name: s["p_a"] for name, s in stats.items()}, dtype=float), method="by")
+    q = adjust_pvalues(pd.Series({name: s["p_a"] for name, s in stats.items()}, dtype=float), method="by",
+                       family_size=family_size)
     return {"members": {name: {**s, "q_by": float(q[name])} for name, s in stats.items()},
-            "decides_nothing": True, "note": SECONDARY_NOTE}
+            "family_size": family_size, "decides_nothing": True, "note": SECONDARY_NOTE}
