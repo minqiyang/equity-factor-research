@@ -92,7 +92,8 @@ unaccessed and reserved (O-12).
 
 - The owner runs the read-only WRDS subscription probe (names, dates, and counts only) and confirms Compustat,
   IBES, the CRSP-Compustat link, and Compustat Snapshot (first-reported values from about December 1986). Then the
-  owner runs the reviewed pull script under O-22, with the seal months in `sealed/`. Then build the loader, count
+  owner runs the reviewed pull script under O-22 into the local working copy, with the seal months in `sealed/`,
+  and writes the iCloud backup archive. Then build the loader, count
   coverage, calibrate the low-risk budget on 1963-1992 risk data only (O-20), run the screen under O-21, and freeze
   the trial file with two review seats. No tilt or cap-weight return exists before the trial file is frozen.
 

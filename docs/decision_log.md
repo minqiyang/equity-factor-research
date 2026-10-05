@@ -30,13 +30,17 @@ Decision:
     Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
   - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
     read the local files. No real money uses a rule derived from these data.
-  - Storage: `<private_data_root>/wrds_<vintage>/`, next to the EODHD folders, outside every Git checkout. The
-    owner accepts the iCloud backup of this folder; this closes A2-D-ADV-6 for the WRDS data.
+  - Storage: two copies, outside every Git checkout. The working copy is `<local_data_root>/wrds_<vintage>/` on
+    the local disk, in a folder that iCloud does not sync; all scripts read only this copy. The backup is one
+    archive per vintage, `<private_data_root>/wrds_backup/wrds_<vintage>.tar`, next to the EODHD folders, synced
+    by iCloud. No script reads the backup. It is written once after the manifest, and its SHA-256 is checked after
+    the copy. To restore, the owner extracts the archive and checks the manifest hashes. This keeps iCloud
+    conflict copies and cloud-only files away from the files that scripts read (A2-D-ADV-6).
   - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
     ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
     existing owner data terms.
   - Seal months: rows dated in `[2019-07-31, 2020-07-31)` are downloaded into a separate folder
-    `wrds_<vintage>/sealed/` and are never opened. It joins the O-18 never-opened paths. Its files are hashed as
+    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened. It joins the O-18 never-opened paths. Its files are hashed as
     bytes only. Rebalances whose windows touch the seal months stay typed missing.
 
 Consequences:
