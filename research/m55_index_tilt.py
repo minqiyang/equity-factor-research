@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, replace
 from fractions import Fraction
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -65,7 +65,7 @@ LOWRISK_CAP = 0.02                   # low-risk book: |w - b| at most 2 percenta
 LOWRISK_TE = 0.05                    # low-risk book: ex-ante tracking error against CW-PIT, per year
 LOWRISK_GRID = tuple(0.5 * k for k in range(1, 13))     # g = 0.5, 1.0, ..., 6.0 (O-20 calibration)
 LOWRISK_TARGET_RATIO = 0.87          # median ex-ante volatility ratio to CW-PIT that the calibration aims at
-LOWRISK_PINNED_MAX = 0.02            # above this pinned cap-weight share, the free sub-book ratio is undefined
+LOWRISK_RATIO_MIN_ROWS = 126         # complete-case rows the whole-book ratio needs (expert decision, R-d)
 LOWRISK_UNDEFINED_MAX = 0.10         # above this share of undefined rebalances, the calibration does not choose
 
 
@@ -329,6 +329,41 @@ def ex_ante_vol(returns: np.ndarray, weights: np.ndarray) -> float:
     return float(np.std(returns @ weights, ddof=1) * math.sqrt(ANNUAL_ROWS))
 
 
+def whole_book_ratio(window: pd.DataFrame, b: np.ndarray, w: np.ndarray) -> dict[str, Any]:
+    """The ex-ante volatility ratio of the whole traded book on its complete-case rows (expert decision, R-b to R-e).
+
+    ``window`` is the traded set's return window that ends at ``r - 1``. The
+    rows are the rows where every traded member has a return. A missing price
+    blanks two returns, so it removes two rows; no value is filled, clipped, or
+    repaired (R6). With at least ``LOWRISK_RATIO_MIN_ROWS`` rows, the status is
+    ``defined_full`` (``COV_ROWS`` rows) or ``defined_partial``; with fewer, the
+    volatilities and the ratio are NaN (``ratio_window_short``). The status and
+    the row counts depend on ``window`` only, never on ``g``. A row is
+    ``leading`` when only NaNs before a member's first return in the window
+    remove it, and ``gap`` when a NaN after a member's first return does.
+    """
+    values = window.to_numpy(dtype=float)
+    missing = np.isnan(values)
+    seen = np.logical_or.accumulate(~missing, axis=0)
+    gap = (missing & seen).any(axis=1)
+    complete = ~missing.any(axis=1)
+    limiting = missing.any(axis=0)
+    rows = int(complete.sum())
+    record = {"ratio_rows": rows, "ratio_rows_leading": int((~complete & ~gap).sum()),
+              "ratio_rows_gap": int(gap.sum()), "ratio_limiting_members": int(limiting.sum()),
+              "ratio_limiting_cw_share": math.fsum(b[limiting].tolist())}
+    if rows < LOWRISK_RATIO_MIN_ROWS:
+        return {"ex_ante_vol": math.nan, "cw_ex_ante_vol": math.nan, "vol_ratio": math.nan,
+                "ratio_status": "ratio_window_short", **record}
+    rows_used = window[complete].to_numpy(dtype=float)
+    vol_w, vol_b = ex_ante_vol(rows_used, w), ex_ante_vol(rows_used, b)
+    ratio = vol_w / vol_b if vol_b > 0.0 else math.nan
+    if not (math.isfinite(ratio) and ratio > 0.0):
+        raise refuse("lowrisk_vol_ratio_invalid", f"ex-ante volatilities {vol_w} and {vol_b}")
+    return {"ex_ante_vol": vol_w, "cw_ex_ante_vol": vol_b, "vol_ratio": ratio,
+            "ratio_status": "defined_full" if rows == COV_ROWS else "defined_partial", **record}
+
+
 def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float) -> tuple[pd.Series, dict]:
     """``lowrisk``: the shared engine step with ``m = (s / s_med)^(-g)``, cap ``LOWRISK_CAP``, TE ``LOWRISK_TE``.
 
@@ -339,12 +374,10 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
     the free cap weight before the cap loop; a multiplier that is not finite
     and positive refuses (``lowrisk_multiplier_invalid``).
 
-    The ex-ante volatilities use the free members only: a pinned member has no
-    full window, and no value is filled (R6). This free sub-book ratio stands
-    for the whole book only while the pinned weight is small. When the pinned
-    cap-weight share is above ``LOWRISK_PINNED_MAX``, the volatilities and the
-    ratio are undefined (NaN, ``ratio_status = "pinned_share_high"``). The
-    weights do not depend on this status.
+    The TE uses the free columns, where the pinned active weights are 0. The
+    ex-ante volatilities and their ratio measure the whole traded book on its
+    complete-case rows (``whole_book_ratio``). The weights do not depend on
+    the ratio status.
     """
     bv = b.to_numpy(dtype=float)
     free = b.index.isin(vol.index)
@@ -366,17 +399,9 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
         raise invalid
     returns = window.to_numpy(dtype=float)[:, free]
     w, info, capped = budget_weights(bv, m, free, returns, LOWRISK_CAP, LOWRISK_TE, "lowrisk")
-    pinned_share = math.fsum(bv[~free].tolist())
-    if pinned_share > LOWRISK_PINNED_MAX:
-        status, vol_w, vol_b, ratio = "pinned_share_high", math.nan, math.nan, math.nan
-    else:
-        status, vol_w, vol_b = "defined", ex_ante_vol(returns, w[free]), ex_ante_vol(returns, bv[free])
-        ratio = vol_w / vol_b if vol_b > 0.0 else math.nan
-        if not math.isfinite(ratio):
-            raise refuse("lowrisk_vol_ratio_invalid", f"ex-ante volatilities {vol_w} and {vol_b}")
-    info = {"g": float(g), "vol_median": vol_median, "ex_ante_vol": vol_w, "cw_ex_ante_vol": vol_b,
-            "vol_ratio": ratio, "ratio_status": status, **info, "capped": capped, "pinned": int((~free).sum()),
-            "pinned_cw_share": pinned_share}
+    ratio = whole_book_ratio(window, bv, w)
+    info = {"g": float(g), "vol_median": vol_median, **ratio, **info, "capped": capped,
+            "pinned": int((~free).sum()), "pinned_cw_share": math.fsum(bv[~free].tolist())}
     return pd.Series(w, index=b.index), info
 
 
@@ -511,24 +536,79 @@ def build_targets(inputs: TiltInputs, g: float | None = None) -> dict[str, Any]:
     return {"targets": targets, "rebalances": table, "counts": counts, "disappearances": disappearances}
 
 
+RATIO_DEFINED = ("defined_full", "defined_partial")
+RATIO_FIELDS = ("vol_ratio", "ratio_status", "ratio_rows", "ratio_rows_leading", "ratio_rows_gap",
+                "ratio_limiting_members", "ratio_limiting_cw_share", "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te",
+                "te_scale", "capped", "pinned", "pinned_cw_share")
+
+
+def lowrisk_bracket(ratios: Sequence[np.ndarray | None], rebalances: int, target: float,
+                    stops: bool = True) -> dict[str, Any]:
+    """Classify each grid value with a two-sided median bracket, then decide (expert decision, R-g and R-h).
+
+    ``ratios[k]`` holds the defined ratios of grid value ``k`` over
+    ``rebalances`` rebalances, or None when that value refused. Its ``u``
+    undefined rebalances enter the median once at +inf (``median_hi``) and once
+    at -inf (``median_lo``). A value *meets* when ``median_hi <= target``,
+    *fails* when ``median_lo > target``, and is *ambiguous* otherwise: the
+    missing ratios could move it to either side. Decisions, in this order:
+
+    - ``refused``: a refused value below the first value that meets, or any
+      refused value when none meets; ``index`` names the first one, and the
+      caller stops with its refusal.
+    - ``ratio_coverage_low``: ``u / rebalances > LOWRISK_UNDEFINED_MAX``.
+    - ``ratio_coverage_ambiguous``: an ambiguous value below the first value
+      that meets, or any ambiguous value when none meets. The owner decides.
+    - ``chosen``: the first value that meets; every smaller value fails.
+    - ``no_g_reaches_target``.
+
+    With ``stops=False`` (the window diagnostic, R-i), the first two steps are
+    skipped: a refused value is passed over, and the coverage stop does not
+    apply; ``undefined_share`` is still returned.
+    """
+    classes, hi, lo, undefined = [], [], [], []
+    for values in ratios:
+        if values is None:
+            classes.append(None)
+            hi.append(math.nan)
+            lo.append(math.nan)
+            continue
+        values = np.asarray(values, dtype=float)
+        u = rebalances - len(values)
+        undefined.append(u)
+        hi.append(float(np.median(np.concatenate([values, np.full(u, np.inf)]))))
+        lo.append(float(np.median(np.concatenate([values, np.full(u, -np.inf)]))))
+        classes.append("meets" if hi[-1] <= target else "fails" if lo[-1] > target else "ambiguous")
+    first = classes.index("meets") if "meets" in classes else len(classes)
+    record = {"classes": classes, "median_hi": hi, "median_lo": lo,
+              "undefined_share": max(undefined) / rebalances if undefined else math.nan}
+    if stops and None in classes[:first]:
+        return {**record, "decision": "refused", "index": classes.index(None)}
+    if stops and record["undefined_share"] > LOWRISK_UNDEFINED_MAX:
+        return {**record, "decision": "ratio_coverage_low", "index": None}
+    if "ambiguous" in classes[:first]:
+        return {**record, "decision": "ratio_coverage_ambiguous", "index": None}
+    if first < len(classes):
+        return {**record, "decision": "chosen", "index": first}
+    return {**record, "decision": "no_g_reaches_target", "index": None}
+
+
 def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio: float, start: pd.Timestamp,
                       end: pd.Timestamp) -> dict[str, Any]:
-    """Pick ``g`` from second moments only (low-risk design note, section 4; repair round 1).
+    """Pick ``g`` from second moments only (low-risk design note, section 4; expert decision of 2026-10-05).
 
-    For each ``g`` in ``grid``, the ex-ante ratio ``sd(window @ w) / sd(window
-    @ b)`` at each rebalance of a run anchored at ``start`` and ending at
-    ``end`` (the engine schedule), and its median over the rebalances where
-    the ratio is defined (pinned cap-weight share at most
-    ``LOWRISK_PINNED_MAX``). Decisions, in this order:
-
-    - A refusal at a grid value at or below the first value that meets the
-      target stops the calibration (fail closed); a refusal at a larger value
-      is recorded for that value (``status = "refused"``) and does not.
-    - ``ratio_coverage_low``: more than ``LOWRISK_UNDEFINED_MAX`` of the
-      rebalances have an undefined ratio. Nothing is chosen; the owner decides.
-    - ``chosen``: the smallest ``g`` whose median ratio is at most
-      ``target_ratio``; else ``no_g_reaches_target`` (the owner decides; the
-      budget is not loosened).
+    For each ``g`` in ``grid``, the whole-book ex-ante ratio at each rebalance
+    of a run anchored at ``start`` and ending at ``end`` (the engine schedule;
+    ``whole_book_ratio``), then the decision of ``lowrisk_bracket``. A refused
+    ``g`` keeps its rows from earlier rebalances in the rebalance table with
+    ``g_status = "refused"``; it gets no bracket class. The window diagnostic
+    (R-i; coordinator ruling of 2026-10-05) repeats the bracket classes and the
+    choice with every ``defined_partial`` rebalance treated as undefined, but
+    without the refusal and coverage stops. ``window_sensitive`` flags a
+    different choice (another ``g``, or a choice against an ambiguous or empty
+    result) for the owner and does not stop. The diagnostic undefined share and
+    ``window_diag_coverage_high`` (that share above ``LOWRISK_UNDEFINED_MAX``)
+    are recorded apart and never set ``window_sensitive``.
 
     Every grid value is recorded (R9). The function computes no mean return,
     Sharpe ratio, return gap, or realized portfolio return, and it runs no book.
@@ -557,42 +637,51 @@ def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio:
             except runner.RunnerStop as exc:
                 refused[g] = (date, exc)
                 continue
-            rows.append({"date": date, "g": g, **{key: low[key] for key in (
-                "vol_ratio", "ratio_status", "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te", "te_scale", "capped",
-                "pinned", "pinned_cw_share")}})
-    table = pd.DataFrame(rows, columns=["date", "g", "vol_ratio", "ratio_status", "ex_ante_vol", "cw_ex_ante_vol",
-                                        "ex_ante_te", "te_scale", "capped", "pinned", "pinned_cw_share"])
-    summary, chosen = [], None
-    for g in grid:
-        part = table[table["g"] == g]
+            rows.append({"date": date, "g": g, **{key: low[key] for key in RATIO_FIELDS}})
+    table = pd.DataFrame(rows, columns=["date", "g", *RATIO_FIELDS])
+    table.insert(2, "g_status", np.where(table["g"].isin(list(refused)), "refused", "ok"))
+
+    def defined_ratios(statuses: tuple[str, ...]) -> list[np.ndarray | None]:
+        return [None if g in refused else table.loc[(table["g"] == g) & table["ratio_status"].isin(statuses),
+                                                    "vol_ratio"].to_numpy(dtype=float) for g in grid]
+
+    bracket = lowrisk_bracket(defined_ratios(RATIO_DEFINED), len(dates), target_ratio)
+    if bracket["decision"] == "refused":
+        raise refused[grid[bracket["index"]]][1]
+    full_only = lowrisk_bracket(defined_ratios(("defined_full",)), len(dates), target_ratio, stops=False)
+    summary = []
+    for k, g in enumerate(grid):
         if g in refused:
-            if chosen is None:
-                raise refused[g][1]
             date, exc = refused[g]
             summary.append({"g": g, "status": "refused", "refusal": str(exc), "refusal_date": date,
                             "rebalances": len(dates)})
             continue
-        defined = part["ratio_status"] == "defined"
-        row = {"g": g, "status": "ok", "refusal": None, "refusal_date": pd.NaT, "rebalances": len(dates),
-               "defined": int(defined.sum()), "undefined": int((~defined).sum()),
-               "undefined_share": float((~defined).mean()),
-               "median_vol_ratio": float(np.median(part.loc[defined, "vol_ratio"])) if defined.any() else math.nan,
-               "share_cap_binds": float((part["capped"] > 0).mean()),
-               "share_te_scaled": float((part["te_scale"] < 1.0).mean()),
-               "share_pinned": float((part["pinned"] > 0).mean()),
-               "mean_pinned_cw_share": float(part["pinned_cw_share"].mean())}
-        summary.append(row)
-        if (chosen is None and row["undefined_share"] <= LOWRISK_UNDEFINED_MAX
-                and row["median_vol_ratio"] <= target_ratio):
-            chosen = g
-    undefined_share = summary[0]["undefined_share"]          # the status does not depend on g; grid[0] has no refusal
-    if undefined_share > LOWRISK_UNDEFINED_MAX:
-        decision = "ratio_coverage_low"
-    else:
-        decision = "no_g_reaches_target" if chosen is None else "chosen"
+        part = table[table["g"] == g]
+        defined = part["ratio_status"].isin(RATIO_DEFINED)
+        summary.append({
+            "g": g, "status": "ok", "refusal": None, "refusal_date": pd.NaT, "rebalances": len(dates),
+            "defined": int(defined.sum()), "undefined": int((~defined).sum()),
+            "undefined_share": float((~defined).mean()),
+            "defined_partial_share": float((part["ratio_status"] == "defined_partial").mean()),
+            "median_vol_ratio": float(np.median(part.loc[defined, "vol_ratio"])) if defined.any() else math.nan,
+            "median_hi": bracket["median_hi"][k], "median_lo": bracket["median_lo"][k],
+            "bracket": bracket["classes"][k], "bracket_full_windows": full_only["classes"][k],
+            "max_pinned_cw_share_defined": float(part.loc[defined, "pinned_cw_share"].max()),
+            "share_cap_binds": float((part["capped"] > 0).mean()),
+            "share_te_scaled": float((part["te_scale"] < 1.0).mean()),
+            "share_pinned": float((part["pinned"] > 0).mean()),
+            "mean_pinned_cw_share": float(part["pinned_cw_share"].mean())})
+
+    def chosen(result: dict[str, Any]) -> float | None:
+        return grid[result["index"]] if result["decision"] == "chosen" else None
+
     return {"grid": pd.DataFrame(summary), "rebalances": table, "target_ratio": float(target_ratio),
-            "start": window_inputs.start, "end": window_inputs.end, "undefined_share": undefined_share,
-            "chosen_g": chosen if decision == "chosen" else None, "decision": decision}
+            "start": window_inputs.start, "end": window_inputs.end, "undefined_share": bracket["undefined_share"],
+            "chosen_g": chosen(bracket), "decision": bracket["decision"],
+            "window_decision": full_only["decision"], "window_chosen_g": chosen(full_only),
+            "window_sensitive": chosen(bracket) != chosen(full_only),      # chosen() is None unless "chosen"
+            "window_diag_undefined_share": full_only["undefined_share"],
+            "window_diag_coverage_high": full_only["undefined_share"] > LOWRISK_UNDEFINED_MAX}
 
 
 # Engine runs ----------------------------------------------------------------------------
