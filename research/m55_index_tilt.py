@@ -65,6 +65,8 @@ LOWRISK_CAP = 0.02                   # low-risk book: |w - b| at most 2 percenta
 LOWRISK_TE = 0.05                    # low-risk book: ex-ante tracking error against CW-PIT, per year
 LOWRISK_GRID = tuple(0.5 * k for k in range(1, 13))     # g = 0.5, 1.0, ..., 6.0 (O-20 calibration)
 LOWRISK_TARGET_RATIO = 0.87          # median ex-ante volatility ratio to CW-PIT that the calibration aims at
+LOWRISK_PINNED_MAX = 0.02            # above this pinned cap-weight share, the free sub-book ratio is undefined
+LOWRISK_UNDEFINED_MAX = 0.10         # above this share of undefined rebalances, the calibration does not choose
 
 
 def refuse(reason: str, detail: str = "") -> runner.RunnerStop:
@@ -334,9 +336,15 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
     excluded names included; ``s_med`` is its median. ``b`` and ``window`` cover
     the traded set. A traded member without a full window is pinned at
     ``w = b``. The free multipliers are renormalized so that ``b m`` sums to
-    the free cap weight before the cap loop. The ex-ante volatilities in the
-    record use the free members only: the pinned weights are equal in both
-    books and have no full window.
+    the free cap weight before the cap loop; a multiplier that is not finite
+    and positive refuses (``lowrisk_multiplier_invalid``).
+
+    The ex-ante volatilities use the free members only: a pinned member has no
+    full window, and no value is filled (R6). This free sub-book ratio stands
+    for the whole book only while the pinned weight is small. When the pinned
+    cap-weight share is above ``LOWRISK_PINNED_MAX``, the volatilities and the
+    ratio are undefined (NaN, ``ratio_status = "pinned_share_high"``). The
+    weights do not depend on this status.
     """
     bv = b.to_numpy(dtype=float)
     free = b.index.isin(vol.index)
@@ -344,14 +352,31 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
         raise refuse("lowrisk_window_empty", "no traded member has a full window")
     vol_median = float(np.median(vol.to_numpy(dtype=float)))
     m = np.ones(len(bv))
-    m[free] = (vol[b.index[free]].to_numpy(dtype=float) / vol_median) ** -g
-    m[free] = m[free] * (math.fsum(bv[free]) / math.fsum((bv[free] * m[free]).tolist()))
+    invalid = refuse("lowrisk_multiplier_invalid", f"g = {g}: a multiplier is not finite and positive")
+    with np.errstate(over="ignore", under="ignore"):
+        m[free] = (vol[b.index[free]].to_numpy(dtype=float) / vol_median) ** -g
+        product = bv[free] * m[free]
+    if not (np.isfinite(product) & (product > 0.0)).all():
+        raise invalid
+    try:
+        m[free] = m[free] * (math.fsum(bv[free]) / math.fsum(product.tolist()))
+    except OverflowError:
+        raise invalid from None
+    if not (np.isfinite(m) & (m > 0.0)).all():
+        raise invalid
     returns = window.to_numpy(dtype=float)[:, free]
     w, info, capped = budget_weights(bv, m, free, returns, LOWRISK_CAP, LOWRISK_TE, "lowrisk")
-    vol_w, vol_b = ex_ante_vol(returns, w[free]), ex_ante_vol(returns, bv[free])
+    pinned_share = math.fsum(bv[~free].tolist())
+    if pinned_share > LOWRISK_PINNED_MAX:
+        status, vol_w, vol_b, ratio = "pinned_share_high", math.nan, math.nan, math.nan
+    else:
+        status, vol_w, vol_b = "defined", ex_ante_vol(returns, w[free]), ex_ante_vol(returns, bv[free])
+        ratio = vol_w / vol_b if vol_b > 0.0 else math.nan
+        if not math.isfinite(ratio):
+            raise refuse("lowrisk_vol_ratio_invalid", f"ex-ante volatilities {vol_w} and {vol_b}")
     info = {"g": float(g), "vol_median": vol_median, "ex_ante_vol": vol_w, "cw_ex_ante_vol": vol_b,
-            "vol_ratio": vol_w / vol_b, **info, "capped": capped, "pinned": int((~free).sum()),
-            "pinned_cw_share": math.fsum(bv[~free].tolist())}
+            "vol_ratio": ratio, "ratio_status": status, **info, "capped": capped, "pinned": int((~free).sum()),
+            "pinned_cw_share": pinned_share}
     return pd.Series(w, index=b.index), info
 
 
@@ -488,14 +513,23 @@ def build_targets(inputs: TiltInputs, g: float | None = None) -> dict[str, Any]:
 
 def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio: float, start: pd.Timestamp,
                       end: pd.Timestamp) -> dict[str, Any]:
-    """Pick ``g`` from second moments only (low-risk design note, section 4).
+    """Pick ``g`` from second moments only (low-risk design note, section 4; repair round 1).
 
     For each ``g`` in ``grid``, the ex-ante ratio ``sd(window @ w) / sd(window
     @ b)`` at each rebalance of a run anchored at ``start`` and ending at
-    ``end`` (the engine schedule), and its median over the rebalances. The
-    choice is the smallest ``g`` whose median ratio is at most
-    ``target_ratio``; when no ``g`` reaches it, the decision is
-    ``no_g_reaches_target`` and the owner decides (the budget is not loosened).
+    ``end`` (the engine schedule), and its median over the rebalances where
+    the ratio is defined (pinned cap-weight share at most
+    ``LOWRISK_PINNED_MAX``). Decisions, in this order:
+
+    - A refusal at a grid value at or below the first value that meets the
+      target stops the calibration (fail closed); a refusal at a larger value
+      is recorded for that value (``status = "refused"``) and does not.
+    - ``ratio_coverage_low``: more than ``LOWRISK_UNDEFINED_MAX`` of the
+      rebalances have an undefined ratio. Nothing is chosen; the owner decides.
+    - ``chosen``: the smallest ``g`` whose median ratio is at most
+      ``target_ratio``; else ``no_g_reaches_target`` (the owner decides; the
+      budget is not loosened).
+
     Every grid value is recorded (R9). The function computes no mean return,
     Sharpe ratio, return gap, or realized portfolio return, and it runs no book.
     """
@@ -511,28 +545,54 @@ def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio:
     dates = rebalance_dates(inputs.prices.index, window_inputs.start, window_inputs.end)
     if not len(dates):
         raise refuse("calibration_window_empty")
-    rows = []
+    rows, refused = [], {}
     for date in dates:
         setup = rebalance_members(window_inputs, date, returns, disappearances, first_return)
         vol = member_vols(setup["window"], setup["full"])
         for g in grid:
-            _, low = lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], g)
+            if g in refused:
+                continue
+            try:
+                _, low = lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], g)
+            except runner.RunnerStop as exc:
+                refused[g] = (date, exc)
+                continue
             rows.append({"date": date, "g": g, **{key: low[key] for key in (
-                "vol_ratio", "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te", "te_scale", "capped", "pinned",
-                "pinned_cw_share")}})
-    table = pd.DataFrame(rows)
-    summary = []
+                "vol_ratio", "ratio_status", "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te", "te_scale", "capped",
+                "pinned", "pinned_cw_share")}})
+    table = pd.DataFrame(rows, columns=["date", "g", "vol_ratio", "ratio_status", "ex_ante_vol", "cw_ex_ante_vol",
+                                        "ex_ante_te", "te_scale", "capped", "pinned", "pinned_cw_share"])
+    summary, chosen = [], None
     for g in grid:
         part = table[table["g"] == g]
-        summary.append({"g": g, "rebalances": len(part), "median_vol_ratio": float(np.median(part["vol_ratio"])),
-                        "share_cap_binds": float((part["capped"] > 0).mean()),
-                        "share_te_scaled": float((part["te_scale"] < 1.0).mean()),
-                        "share_pinned": float((part["pinned"] > 0).mean()),
-                        "mean_pinned_cw_share": float(part["pinned_cw_share"].mean())})
-    chosen = next((row["g"] for row in summary if row["median_vol_ratio"] <= target_ratio), None)
+        if g in refused:
+            if chosen is None:
+                raise refused[g][1]
+            date, exc = refused[g]
+            summary.append({"g": g, "status": "refused", "refusal": str(exc), "refusal_date": date,
+                            "rebalances": len(dates)})
+            continue
+        defined = part["ratio_status"] == "defined"
+        row = {"g": g, "status": "ok", "refusal": None, "refusal_date": pd.NaT, "rebalances": len(dates),
+               "defined": int(defined.sum()), "undefined": int((~defined).sum()),
+               "undefined_share": float((~defined).mean()),
+               "median_vol_ratio": float(np.median(part.loc[defined, "vol_ratio"])) if defined.any() else math.nan,
+               "share_cap_binds": float((part["capped"] > 0).mean()),
+               "share_te_scaled": float((part["te_scale"] < 1.0).mean()),
+               "share_pinned": float((part["pinned"] > 0).mean()),
+               "mean_pinned_cw_share": float(part["pinned_cw_share"].mean())}
+        summary.append(row)
+        if (chosen is None and row["undefined_share"] <= LOWRISK_UNDEFINED_MAX
+                and row["median_vol_ratio"] <= target_ratio):
+            chosen = g
+    undefined_share = summary[0]["undefined_share"]          # the status does not depend on g; grid[0] has no refusal
+    if undefined_share > LOWRISK_UNDEFINED_MAX:
+        decision = "ratio_coverage_low"
+    else:
+        decision = "no_g_reaches_target" if chosen is None else "chosen"
     return {"grid": pd.DataFrame(summary), "rebalances": table, "target_ratio": float(target_ratio),
-            "start": window_inputs.start, "end": window_inputs.end, "chosen_g": chosen,
-            "decision": "no_g_reaches_target" if chosen is None else "chosen"}
+            "start": window_inputs.start, "end": window_inputs.end, "undefined_share": undefined_share,
+            "chosen_g": chosen if decision == "chosen" else None, "decision": decision}
 
 
 # Engine runs ----------------------------------------------------------------------------
