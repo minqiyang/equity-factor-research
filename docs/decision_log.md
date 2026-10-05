@@ -40,8 +40,9 @@ Decision:
     ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
     existing owner data terms.
   - Seal months: rows dated in `[2019-07-31, 2020-07-31)` are downloaded into a separate folder
-    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened. It joins the O-18 never-opened paths. Its files are hashed as
-    bytes only. Rebalances whose windows touch the seal months stay typed missing.
+    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
+    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Rebalances whose windows touch the
+    seal months stay typed missing.
 
 Consequences:
 
