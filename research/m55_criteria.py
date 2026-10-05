@@ -39,6 +39,7 @@ SHORTLIST_CAP = 10                   # R9
 ALPHA = 0.05                         # primary family, Holm
 NI_MARGIN = 0.005                    # test B: annual return at most 0.5 point below SPY
 VOL_RATIO_MAX = 0.90                 # test B: point estimate of the volatility ratio
+BOOTSTRAP_UPPER_MAX = 1.0            # test B: the one-sided 95 percent upper bound must be below this
 CHECK_VOL_RATIO_MAX = 1.0            # test B check period: the ratio must be below this
 CONFIRM_FLOOR = 0.003                # stop rule: composite annual mean against SPY
 BLOCK_MONTHS = 12
@@ -58,7 +59,8 @@ SECONDARY_NOTE = "secondary family: reported with BY q-values; it decides nothin
 def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     """Refuse unless ``series`` is a complete monthly series of finite values inside ``period``.
 
-    Screen: every month is in 1963-07 to 1992-12 (a signal may start later).
+    Screen: every month is in 1963-07 to 1992-12 and the last month is 1992-12
+    (a signal may start later).
     Confirm: the months are exactly 1993-02 to 2014-03. Check: the first month
     is 2014-04.
     """
@@ -77,9 +79,9 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     if not np.isfinite(series.to_numpy(dtype=float)).all():
         raise refuse("missing_return", f"{name}: a value is NaN or infinite")
     first, last = index[0], index[-1]
-    if period == "screen" and (first < SCREEN_START or last > SCREEN_END):
-        raise refuse("period_violation", f"{name}: {first} to {last} is outside the screen {SCREEN_START} to "
-                                         f"{SCREEN_END}")
+    if period == "screen" and (first < SCREEN_START or last != SCREEN_END):
+        raise refuse("period_violation", f"{name}: {first} to {last} must lie in the screen {SCREEN_START} to "
+                                         f"{SCREEN_END} and end at {SCREEN_END}")
     if period == "confirm" and (first != CONFIRM_START or last != CONFIRM_END):
         raise refuse("period_violation", f"{name}: {first} to {last} is not the confirm {CONFIRM_START} to "
                                          f"{CONFIRM_END}")
@@ -162,6 +164,21 @@ def canonical_json(value: Any) -> str:
     return json.dumps(encode(value), sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
+def shortlist_digest(record: Mapping[str, Any]) -> str:
+    """SHA-256 of the canonical JSON of the record's rule, candidates, and shortlist."""
+    payload = {key: record.get(key) for key in ("rule", "candidates", "shortlist")}
+    return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def check_frozen_screen(record: Mapping[str, Any]) -> None:
+    """Refuse a confirm run unless the screen record matches its digest and its decision opens the confirm months."""
+    if shortlist_digest(record) != record.get("digest_sha256"):
+        raise refuse("shortlist_digest_mismatch", "the screen record does not match its digest")
+    # The decision field is outside the digest, so the hashed shortlist must also be non-empty.
+    if record.get("decision") != "shortlist_frozen" or not record.get("shortlist"):
+        raise refuse("screen_empty_confirm", f"screen decision {record.get('decision')}: no confirm month is opened")
+
+
 def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
     """Apply the O-21 rule (IR >= 0.2 and HAC t >= 1.0) and hash the full record.
 
@@ -186,8 +203,7 @@ def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]
         raise refuse("shortlist_over_cap", f"{len(shortlist)} > {SHORTLIST_CAP}")
     rule = {"ir_min": IR_MIN, "t_min": T_MIN, "shortlist_cap": SHORTLIST_CAP}
     payload = {"rule": rule, "candidates": candidates, "shortlist": shortlist}
-    digest = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
-    return {**payload, "digest_sha256": digest, "decision": "shortlist_frozen" if shortlist else "screen_empty"}
+    return {**payload, "digest_sha256": shortlist_digest(payload), "decision": "shortlist_frozen" if shortlist else "screen_empty"}
 
 
 def screen(candidates: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
@@ -310,9 +326,10 @@ def decide_a(adjusted_p_a: float, confirm: Mapping[str, float], confirm_2x: Mapp
     return {"passed": met, "label": label, "conditions": conditions}
 
 
-def decide_b(adjusted_p_b: float, vol_ratio: float, check: Mapping[str, float]) -> dict[str, Any]:
+def decide_b(adjusted_p_b: float, vol_ratio: float, upper_95: float, check: Mapping[str, float]) -> dict[str, Any]:
     conditions = {"holm_p_at_most_alpha": adjusted_p_b <= ALPHA,
                   "vol_ratio_at_most_max": vol_ratio <= VOL_RATIO_MAX,
+                  "bootstrap_upper_below_one": upper_95 < BOOTSTRAP_UPPER_MAX,
                   "check_gap_above_margin": check["annual_gap"] > -NI_MARGIN,
                   "check_vol_ratio_below_one": check["vol_ratio"] < CHECK_VOL_RATIO_MAX}
     met = all(conditions.values())
@@ -324,15 +341,21 @@ def stop_after_confirm(annual_mean_vs_spy: float) -> str | None:
     return "confirm_below_floor" if annual_mean_vs_spy < CONFIRM_FLOOR else None
 
 
-def primary_decision(confirm: Mapping[str, pd.Series], confirm_2x: Mapping[str, pd.Series],
+def primary_decision(screen_record: Mapping[str, Any], confirm: Mapping[str, pd.Series],
+                     confirm_2x: Mapping[str, pd.Series],
                      check: Mapping[str, pd.Series]) -> dict[str, Any]:
-    """The O-21 primary family from net series.
+    """The O-21 primary family from net series, after the frozen screen record is checked.
+
+    ``screen_record`` is the ``freeze_shortlist`` output. Its digest is
+    recomputed before any confirm series is read; a mismatch or a
+    ``screen_empty`` decision refuses.
 
     ``confirm`` holds ``composite``, ``cw``, ``spy``, and ``low_risk`` (confirm
     months, dated costs). ``confirm_2x`` holds ``composite`` and ``cw`` at 2x
     costs (SPY is the same series). ``check`` holds ``composite``, ``cw``,
     ``spy``, and ``low_risk`` from 2014-04.
     """
+    check_frozen_screen(screen_record)
     a = composite_test(confirm["composite"], confirm["spy"], confirm["cw"])
     b = low_risk_test(confirm["low_risk"], confirm["spy"])
     a_2x = composite_means(confirm_2x["composite"], confirm["spy"], confirm_2x["cw"], "confirm")
@@ -343,7 +366,7 @@ def primary_decision(confirm: Mapping[str, pd.Series], confirm_2x: Mapping[str, 
     return {"test_a": {**a, "cost_2x": a_2x, "check": a_check, "holm_p": adjusted["A"],
                        **decide_a(adjusted["A"], a_means, a_2x, a_check)},
             "test_b": {**b, "check": b_check, "holm_p": adjusted["B"],
-                       **decide_b(adjusted["B"], b["vol_ratio"], b_check)},
+                       **decide_b(adjusted["B"], b["vol_ratio"], b["bootstrap"]["upper_95"], b_check)},
             "stop": stop_after_confirm(a_means["vs_spy"])}
 
 

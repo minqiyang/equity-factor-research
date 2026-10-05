@@ -53,6 +53,11 @@ def test_screen_refuses_one_confirm_month():
         crit.check_series(noise(early, 1), "x", "screen")
     late_start = pd.period_range("1975-01", "1992-12", freq="M")      # a signal may start after 1963-07
     assert len(crit.check_series(noise(late_start, 1), "x", "screen")) == len(late_start)
+    early_end = pd.period_range("1975-01", "1992-11", freq="M")       # the screen must end at 1992-12
+    with stops("period_violation"):
+        crit.check_series(noise(early_end, 1), "x", "screen")
+    with stops("period_violation"):
+        crit.screen_record(noise(early_end, 1), noise(early_end, 2))
 
 
 def test_confirm_and_check_guards():
@@ -80,7 +85,7 @@ def test_missing_values_and_months_refuse_without_fill():
     with stops("month_missing"):
         crit.check_series(series.drop(series.index[5]), "x", "confirm")
     with stops("months_misaligned"):
-        crit.check_paired({"a": noise(SCREEN[:100], 1), "b": noise(SCREEN[1:101], 2)}, "screen")
+        crit.check_paired({"a": noise(SCREEN[-100:], 1), "b": noise(SCREEN[-101:], 2)}, "screen")
     with stops("series_invalid"):
         crit.check_series(series.iloc[::-1], "x", "confirm")
     with stops("series_invalid"):
@@ -94,7 +99,7 @@ def test_missing_values_and_months_refuse_without_fill():
 # Annual figures and the screen record ---------------------------------------------------
 
 def test_hand_computed_screen_record():
-    months = pd.period_range("1990-01", "1990-06", freq="M")
+    months = pd.period_range("1992-07", "1992-12", freq="M")
     cw = pd.Series([0.01, -0.02, 0.03, 0.00, 0.01, 0.02], index=months)
     active = [0.004, -0.001, 0.003, 0.002, -0.002, 0.006]
     net = cw + pd.Series(active, index=months)
@@ -106,15 +111,15 @@ def test_hand_computed_screen_record():
     assert out["information_ratio"] == pytest.approx(12 * mean / (sd * math.sqrt(12)), rel=1e-12)
     assert out["hac_t"] == pytest.approx(newey_west_mean_tstat(net - cw), rel=1e-12)
     assert out["p_one_sided"] == pytest.approx(norm.sf(out["hac_t"]), rel=1e-12)
-    assert (out["months"], out["first_month"], out["last_month"], out["annual_turnover"]) == (6, "1990-01",
-                                                                                             "1990-06", 0.4)
+    assert (out["months"], out["first_month"], out["last_month"], out["annual_turnover"]) == (6, "1992-07",
+                                                                                             "1992-12", 0.4)
     assert crit.screen_record(net, cw)["annual_turnover"] is None
     with stops("turnover_invalid"):
         crit.screen_record(net, cw, annual_turnover=-0.1)
 
 
 def test_constant_active_refuses():
-    cw = pd.Series(0.0, index=SCREEN[:60])
+    cw = pd.Series(0.0, index=SCREEN[-60:])
     with stops("statistic_undefined"):
         crit.screen_record(cw + 0.001, cw)
 
@@ -201,11 +206,19 @@ def test_decide_a_rules():
 
 def test_decide_b_rules():
     good = {"annual_gap": -0.004, "vol_ratio": 0.95}
-    assert crit.decide_b(0.05, 0.90, good)["passed"]
-    assert not crit.decide_b(0.05, np.nextafter(0.90, 1.0), good)["passed"]
-    assert not crit.decide_b(0.0500001, 0.85, good)["passed"]
-    assert not crit.decide_b(0.01, 0.85, {"annual_gap": -0.005, "vol_ratio": 0.95})["passed"]
-    assert not crit.decide_b(0.01, 0.85, {"annual_gap": 0.0, "vol_ratio": 1.0})["passed"]
+    assert crit.decide_b(0.05, 0.90, 0.95, good)["passed"]
+    assert not crit.decide_b(0.05, np.nextafter(0.90, 1.0), 0.95, good)["passed"]
+    assert not crit.decide_b(0.0500001, 0.85, 0.95, good)["passed"]
+    assert not crit.decide_b(0.01, 0.85, 0.95, {"annual_gap": -0.005, "vol_ratio": 0.95})["passed"]
+    assert not crit.decide_b(0.01, 0.85, 0.95, {"annual_gap": 0.0, "vol_ratio": 1.0})["passed"]
+
+
+def test_decide_b_bootstrap_upper_bound_boundary():
+    good = {"annual_gap": 0.0, "vol_ratio": 0.9}
+    assert crit.decide_b(0.01, 0.85, np.nextafter(1.0, 0.0), good)["passed"]
+    at_one = crit.decide_b(0.01, 0.85, 1.0, good)                     # O-21: the bound must be below 1.0
+    assert not at_one["passed"] and not at_one["conditions"]["bootstrap_upper_below_one"]
+    assert all(v for k, v in at_one["conditions"].items() if k != "bootstrap_upper_below_one")
 
 
 def test_stop_floor_boundary():
@@ -235,7 +248,7 @@ def test_bootstrap_ratio_cases():
     assert same["p_vol"] == 1.0 and same["upper_95"] == 1.0
     ratio = crit.annual_vol(spy) / crit.annual_vol(spy.copy())
     p_b = max(0.0, same["p_vol"])                    # even a perfect non-inferiority p cannot rescue it
-    assert ratio == 1.0 and not crit.decide_b(crit.holm_primary(0.0, p_b)["B"], ratio,
+    assert ratio == 1.0 and not crit.decide_b(crit.holm_primary(0.0, p_b)["B"], ratio, same["upper_95"],
                                               {"annual_gap": 0.0, "vol_ratio": 0.5})["passed"]
     with stops("statistic_undefined"):                # a gap of exactly zero has no HAC t
         crit.low_risk_test(spy.copy(), spy)
@@ -293,17 +306,41 @@ def primary_inputs(edge: float) -> tuple[dict, dict, dict]:
     return confirm, {"composite": composite - 0.0002, "cw": cw - 0.00005}, check
 
 
+FROZEN = crit.freeze_shortlist({"S1": record(0.5, 2.0), "S2": record(0.1, 0.5)})
+
+
 def test_primary_decision_end_to_end():
     confirm, confirm_2x, check = primary_inputs(edge=0.004)
-    out = crit.primary_decision(confirm, confirm_2x, check)
+    out = crit.primary_decision(FROZEN, confirm, confirm_2x, check)
     a, b = out["test_a"], out["test_b"]
     assert (a["holm_p"], b["holm_p"]) == pytest.approx(tuple(crit.holm_primary(a["p_a"], b["p_b"]).values()))
     assert a["passed"] and a["label"] == "met" and b["passed"] and out["stop"] is None
     weak_confirm, weak_2x, weak_check = primary_inputs(edge=-0.001)
-    weak = crit.primary_decision(weak_confirm, weak_2x, weak_check)
+    weak = crit.primary_decision(FROZEN, weak_confirm, weak_2x, weak_check)
     assert weak["stop"] == "confirm_below_floor"
     with stops("period_violation"):
-        crit.primary_decision(confirm, confirm_2x, {**check, "spy": confirm["spy"]})
+        crit.primary_decision(FROZEN, confirm, confirm_2x, {**check, "spy": confirm["spy"]})
+
+
+def test_primary_decision_checks_the_frozen_screen():
+    confirm, confirm_2x, check = primary_inputs(edge=0.004)
+    tampered = {**FROZEN, "candidates": {c: dict(r) for c, r in FROZEN["candidates"].items()}}
+    tampered["candidates"]["S2"]["hac_t"] = 0.6                        # a failed candidate's value changed
+    with stops("shortlist_digest_mismatch"):
+        crit.primary_decision(tampered, confirm, confirm_2x, check)
+    with stops("shortlist_digest_mismatch"):
+        crit.primary_decision({**FROZEN, "shortlist": ["S1", "S2"]}, confirm, confirm_2x, check)
+    with stops("shortlist_digest_mismatch"):
+        crit.primary_decision({**FROZEN, "digest_sha256": "0" * 64}, confirm, confirm_2x, check)
+    empty = crit.freeze_shortlist({"S1": record(0.1, 2.0)})
+    assert empty["decision"] == "screen_empty"
+    with stops("screen_empty_confirm"):
+        crit.primary_decision(empty, confirm, confirm_2x, check)
+    with stops("screen_empty_confirm"):                                 # refused before any confirm series is read
+        crit.primary_decision(empty, {}, {}, {})
+    with stops("screen_empty_confirm"):                                 # a relabeled empty screen still refuses
+        crit.primary_decision({**empty, "decision": "shortlist_frozen"}, confirm, confirm_2x, check)
+    assert crit.shortlist_digest(FROZEN) == FROZEN["digest_sha256"]
 
 
 def test_secondary_family_by_q_values():
