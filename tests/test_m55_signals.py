@@ -34,6 +34,10 @@ def gvkey(p: int) -> str:
     return f"G{p}"
 
 
+def ticker(p: int) -> str:
+    return f"T{p}"
+
+
 def base_inputs(seed: int = 3) -> sig.SignalInputs:
     rng = np.random.default_rng(seed)
     daily = []
@@ -47,6 +51,10 @@ def base_inputs(seed: int = 3) -> sig.SignalInputs:
     link = pd.DataFrame({"gvkey": [gvkey(p) for p in PERMNOS], "permno": PERMNOS,
                          "linkdt": pd.Timestamp("1990-01-01"), "linkenddt": pd.NaT})
     link["linkenddt"] = link["linkenddt"].astype("datetime64[ns]")
+    ibes_link = pd.DataFrame({"permno": PERMNOS, "ibes_ticker": [ticker(p) for p in PERMNOS],
+                              "linkdt": pd.Timestamp("1990-01-01"), "linkenddt": pd.NaT, "status": "ok"})
+    ibes_link["linkenddt"] = ibes_link["linkenddt"].astype("datetime64[ns]")
+    index_daily = pd.DataFrame({"date": CAL, "ret": rng.normal(0.0004, 0.008, len(CAL))})
     annual, quarterly, ibes = [], [], []
     shares = {"revt": 0.8, "cogs": 0.5, "act": 0.4, "che": 0.1, "lct": 0.3, "dlc": 0.05, "txp": 0.01, "dp": 0.03,
               "seq": 0.4, "ceq": 0.38, "pstk": 0.02, "pstkrv": 0.02, "pstkl": 0.02, "txditc": 0.01, "lt": 0.6}
@@ -54,21 +62,26 @@ def base_inputs(seed: int = 3) -> sig.SignalInputs:
         for n, year in enumerate(range(1992, 2002)):
             at = 100.0 * (1 + k) * 1.06 ** n * (1 + 0.02 * rng.standard_normal())
             datadate = pd.Timestamp(f"{year}-12-31")
-            row = {"gvkey": gvkey(p), "datadate": datadate, "known_date": datadate + pd.Timedelta(days=80), "at": at}
+            row = {"gvkey": gvkey(p), "datadate": datadate, "fyear": year, "known_date": datadate + pd.Timedelta(days=80),
+                   "at": at}
             row.update({name: at * f * (1 + 0.05 * rng.standard_normal()) for name, f in shares.items()})
             annual.append(row)
         for datadate in pd.date_range("1992-03-31", "2002-09-30", freq="QE"):
             rdq = datadate + pd.Timedelta(days=25)
-            quarterly.append({"gvkey": gvkey(p), "datadate": datadate, "known_date": rdq + pd.Timedelta(days=5),
-                              "epspxq": 1.0 + 0.1 * rng.standard_normal(), "rdq": rdq})
+            quarterly.append({"gvkey": gvkey(p), "datadate": datadate, "fyearq": datadate.year,
+                              "fqtr": datadate.quarter, "known_date": rdq + pd.Timedelta(days=5),
+                              "epspxq": 1.0 + 0.1 * rng.standard_normal(), "ajexq": 1.0, "rdq": rdq})
         estimate = 2.0
         for month in pd.date_range("1994-01-01", "2002-12-01", freq="MS"):
             estimate += 0.02 * rng.standard_normal()
             statpers = month + pd.Timedelta(days=14)
-            ibes.append({"permno": p, "statpers": statpers, "fpedats": pd.Timestamp(f"{statpers.year}-12-31"),
+            ibes.append({"ibes_ticker": ticker(p), "statpers": statpers, "fpedats": pd.Timestamp(f"{statpers.year}-12-31"),
                          "fpi": "1", "meanest": estimate})
-    return sig.SignalInputs(daily=daily, members=members, fund_annual=pd.DataFrame(annual),
-                            fund_quarterly=pd.DataFrame(quarterly), link=link, ibes=pd.DataFrame(ibes))
+    quarterly = pd.DataFrame(quarterly)
+    announcements = quarterly[["gvkey", "datadate", "fyearq", "fqtr", "rdq"]].copy()
+    return sig.SignalInputs(daily=daily, members=members, fund_annual=pd.DataFrame(annual), fund_quarterly=quarterly,
+                            announcements=announcements, link=link, ibes_link=ibes_link, ibes=pd.DataFrame(ibes),
+                            index_daily=index_daily)
 
 
 @pytest.fixture(scope="module")
@@ -102,6 +115,14 @@ def daily_mask(inputs: sig.SignalInputs, permno: int, date: str | pd.Timestamp) 
     return (inputs.daily["permno"] == permno) & (inputs.daily["date"] == pd.Timestamp(date))
 
 
+def ibes_mask(inputs: sig.SignalInputs, p: int, statpers: str) -> pd.Series:
+    return (inputs.ibes["ibes_ticker"] == ticker(p)) & (inputs.ibes["statpers"] == pd.Timestamp(statpers))
+
+
+def quarter_mask(frame: pd.DataFrame, p: int, datadate: str) -> pd.Series:
+    return (frame["gvkey"] == gvkey(p)) & (frame["datadate"] == pd.Timestamp(datadate))
+
+
 def annual_mask(inputs: sig.SignalInputs, p: int, datadate: str) -> pd.Series:
     return (inputs.fund_annual["gvkey"] == gvkey(p)) & (inputs.fund_annual["datadate"] == pd.Timestamp(datadate))
 
@@ -133,9 +154,9 @@ def test_reason_counts_match_cells_and_count_an_injected_gap(base: sig.SignalInp
     for s in sig.SIGNAL_IDS:
         total = counts[counts["signal"] == s].groupby("year")["count"].sum()
         assert total.to_dict() == per_year.to_dict()
-    # S1: an earlier estimate in the prior fiscal year changes FY1 every February to April.
-    s1 = counts[(counts["signal"] == "S1") & (counts["reason"] == "fpe_changed")].set_index("year")["count"]
-    assert s1.loc[1999] == 3 * 5
+    # S1: the yearly FY1 roll breaks one revision of three, so December fiscal-year firms stay valid all year.
+    s1 = counts[counts["signal"] == "S1"]
+    assert set(s1["reason"]) == {"valid"}
 
     gap = replace(base, fund_annual=edit(base.fund_annual, annual_mask(base, 104, "1999-12-31"), revt=np.nan))
     after = sig.reason_counts(sig.build_signals(gap, REBALANCES))
@@ -167,13 +188,24 @@ def perturb_from(inputs: sig.SignalInputs, r: pd.Timestamp) -> sig.SignalInputs:
     quarterly = inputs.fund_quarterly.copy()
     late = (quarterly["known_date"] >= r) | (quarterly["rdq"] >= r)
     quarterly.loc[late, "epspxq"] = quarterly.loc[late, "epspxq"] + 4.0
-    quarterly.loc[late, "rdq"] = quarterly.loc[late, "rdq"] - pd.Timedelta(days=20)
+    quarterly.loc[late, "ajexq"] = 3.0
+    quarterly.loc[late, "rdq"] = quarterly.loc[late, "rdq"] + pd.Timedelta(days=20)
+    announcements = inputs.announcements.copy()
+    late = announcements["rdq"] >= r
+    announcements.loc[late, "rdq"] = announcements.loc[late, "rdq"] + pd.Timedelta(days=20)
     ibes = inputs.ibes.copy()
     late = ibes["statpers"] >= r
     ibes.loc[late, "meanest"] = ibes.loc[late, "meanest"] + 9.0
     ibes.loc[late, "fpedats"] = pd.Timestamp("2099-12-31")
+    index_daily = inputs.index_daily.copy()
+    index_daily.loc[index_daily["date"] >= r, "ret"] = index_daily.loc[index_daily["date"] >= r, "ret"] * 1.7
+    # Links that start at r: a second gvkey and an ambiguous IBES link for permno 102.
+    link = pd.concat([inputs.link, inputs.link.iloc[[1]].assign(gvkey="G999", linkdt=r)], ignore_index=True)
+    ibes_link = pd.concat([inputs.ibes_link, inputs.ibes_link.iloc[[1]].assign(linkdt=r, status="ambiguous")],
+                          ignore_index=True)
     return sig.SignalInputs(daily=daily, members=inputs.members, fund_annual=annual, fund_quarterly=quarterly,
-                            link=inputs.link, ibes=ibes)
+                            announcements=announcements, link=link, ibes_link=ibes_link, ibes=ibes,
+                            index_daily=index_daily)
 
 
 @pytest.mark.parametrize("r", [R, pd.Timestamp("2001-03-30"), pd.Timestamp("2002-01-31")])
@@ -208,29 +240,29 @@ def test_positive_controls_at_the_latest_usable_row(base: sig.SignalInputs) -> N
             == expected
 
     # S2: a quarter reported and known at r - 2 is used at r; at r - 1 it is not.
-    q2 = (base.fund_quarterly["gvkey"] == "G101") & (base.fund_quarterly["datadate"] == pd.Timestamp("2000-06-30"))
+    q2 = quarter_mask(base.fund_quarterly, 101, "2000-06-30")
     for day, expected in (("2000-07-27", {"S2"}), ("2000-07-28", set())):
         quarterly = edit(base.fund_quarterly, q2, rdq=pd.Timestamp(day), known_date=pd.Timestamp(day))
-        assert changed(replace(base, fund_quarterly=quarterly)) - {"S3"} == expected
+        assert changed(replace(base, fund_quarterly=quarterly)) == expected
 
     # S3: usable from rdq + 2 trading days, so the last admitted report date is r - 3; the day +1 return is r - 2.
-    report = edit(base.fund_quarterly, q2, rdq=pd.Timestamp("2000-07-26"), known_date=pd.Timestamp("2000-07-26"))
-    s3_inputs = replace(base, fund_quarterly=report)
+    a2 = quarter_mask(base.announcements, 101, "2000-06-30")
+    s3_inputs = replace(base, announcements=edit(base.announcements, a2, rdq=pd.Timestamp("2000-07-26")))
     s3_before = at_r(s3_inputs)["S3"]
     assert isinstance(s3_before, float)
-    bumped = replace(s3_inputs, daily=edit(base.daily, daily_mask(base, 101, "2000-07-27"), ret=0.05))
-    assert at_r(bumped)["S3"] != s3_before
-    bumped = replace(s3_inputs, daily=edit(base.daily, daily_mask(base, 101, "2000-07-28"), ret=0.05))
-    assert at_r(bumped)["S3"] == s3_before
-    late = edit(base.fund_quarterly, q2, rdq=pd.Timestamp("2000-07-27"), known_date=pd.Timestamp("2000-07-27"))
-    assert at_r(replace(base, fund_quarterly=late))["S3"] == "not_yet_known"
+    for day, moves in (("2000-07-27", True), ("2000-07-28", False)):
+        bumped = replace(s3_inputs, daily=edit(base.daily, daily_mask(base, 101, day), ret=0.05))
+        assert (at_r(bumped)["S3"] != s3_before) == moves
+        index = edit(base.index_daily, base.index_daily["date"] == pd.Timestamp(day), ret=0.05)
+        assert (at_r(replace(s3_inputs, index_daily=index))["S3"] != s3_before) == moves
+    # Reported at r - 2, the quarter is not usable yet; S3 uses the previous announcement.
+    late = replace(base, announcements=edit(base.announcements, a2, rdq=pd.Timestamp("2000-07-27")))
+    assert at_r(late)["S3"] == at_r(replace(base, announcements=base.announcements[~a2]))["S3"]
 
     # S1: the June statistics date is usable from the June month end; the July one (before r) waits for 2000-07-31.
-    ibes = base.ibes
-    june = (ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-06-15"))
-    july = (ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-07-15"))
-    assert changed(replace(base, ibes=edit(ibes, june, meanest=7.0))) == {"S1"}
-    assert changed(replace(base, ibes=edit(ibes, july, meanest=7.0))) == set()
+    june, july = ibes_mask(base, 101, "2000-06-15"), ibes_mask(base, 101, "2000-07-15")
+    assert changed(replace(base, ibes=edit(base.ibes, june, meanest=7.0))) == {"S1"}
+    assert changed(replace(base, ibes=edit(base.ibes, july, meanest=7.0))) == set()
 
     # S7 and S8 read shares at the month end before t's month, not at r - 2.
     assert changed(replace(base, daily=edit(base.daily, daily_mask(base, 101, A), shrout=1300.0))) == {"S7", "S8"}
@@ -263,30 +295,32 @@ def hand_inputs(base: sig.SignalInputs) -> sig.SignalInputs:
     eps = [1.0, 1.0, 1.0, 1.0, 1.01, 1.02, 1.03, 1.04, 1.06, 1.08, 1.10, 1.12, 1.16]
     quarterly = base.fund_quarterly.copy()
     for datadate, value in zip(pd.date_range("1997-03-31", "2000-03-31", freq="QE"), eps):
-        mask = (quarterly["gvkey"] == "G101") & (quarterly["datadate"] == datadate)
-        quarterly.loc[mask, "epspxq"] = value
-    # S3: report date 2000-04-25 (base rule: quarter end + 25 days); window 04-24 to 04-26.
+        quarterly.loc[quarter_mask(quarterly, 101, datadate), "epspxq"] = value
+    # S3: the 2000Q2 announcement on 2000-07-25 (quarter end + 25 days); window 07-24 to 07-26.
     daily = base.daily.copy()
-    for day in ("2000-04-21", "2000-04-24", "2000-04-25"):
-        daily.loc[daily["date"] == pd.Timestamp(day), ["prc", "shrout"]] = [10.0, 1000.0]
-    for day, value in (("2000-04-24", 0.01), ("2000-04-25", 0.02), ("2000-04-26", -0.01)):
-        daily.loc[daily["date"] == pd.Timestamp(day), "ret"] = 0.0
-        daily.loc[daily_mask(base, 101, day), "ret"] = value
+    index_daily = base.index_daily.copy()
+    for day, stock, index in (("2000-07-24", 0.01, 0.002), ("2000-07-25", 0.02, 0.004), ("2000-07-26", -0.01, -0.002)):
+        daily.loc[daily_mask(base, 101, day), "ret"] = stock
+        index_daily.loc[index_daily["date"] == pd.Timestamp(day), "ret"] = index
     # S7 and S8: shares at A and A12; price at A.
     daily.loc[daily_mask(base, 101, A), ["prc", "shrout"]] = [25.0, 1100.0]
     daily.loc[daily_mask(base, 101, A12), "shrout"] = 1000.0
-    # S1: June and March 2000 statistics, same FY1; price at the March month end.
+    # S1: March to June 2000 estimates, one FY1; prices at the March, April, and May month ends.
     ibes = base.ibes.copy()
-    ibes.loc[(ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-06-15")), "meanest"] = 2.2
-    ibes.loc[(ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-03-15")), "meanest"] = 2.0
-    daily.loc[daily_mask(base, 101, "2000-03-31"), "prc"] = 40.0
-    return sig.SignalInputs(daily=daily, members=base.members, fund_annual=annual, fund_quarterly=quarterly,
-                            link=base.link, ibes=ibes)
+    for statpers, value in (("2000-03-15", 2.0), ("2000-04-15", 2.1), ("2000-05-15", 2.1), ("2000-06-15", 2.3)):
+        ibes.loc[ibes_mask(base, 101, statpers), "meanest"] = value
+    for day, price in (("2000-03-31", 40.0), ("2000-04-28", 50.0), ("2000-05-31", 20.0)):
+        daily.loc[daily_mask(base, 101, day), "prc"] = price
+    return replace(base, daily=daily, fund_annual=annual, fund_quarterly=quarterly, ibes=ibes,
+                   index_daily=index_daily)
+
+
+S1_HAND = 3 * (0.1 / 40.0 + 0.0 / 50.0 + 0.2 / 20.0) / 3
 
 
 def test_hand_computed_values(base: sig.SignalInputs) -> None:
     got = at_r(hand_inputs(base))
-    assert got["S1"] == pytest.approx((2.2 - 2.0) / 40.0, rel=1e-12)
+    assert got["S1"] == pytest.approx(S1_HAND, rel=1e-12)
     assert got["S2"] == pytest.approx(0.1 / statistics.stdev([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]),
                                       rel=1e-9)
     assert got["S3"] == pytest.approx(1.01 * 1.02 * 0.99 - 1.002 * 1.004 * 0.998, rel=1e-12)
@@ -299,15 +333,39 @@ def test_hand_computed_values(base: sig.SignalInputs) -> None:
 
 
 def test_s1_is_split_consistent(base: sig.SignalInputs) -> None:
-    """A 2-for-1 split between the two statistics dates leaves S1 as without the split."""
+    """A 2-for-1 split on 2000-05-01 halves the later estimates and prices; S1 does not change."""
     inputs = hand_inputs(base)
     daily = inputs.daily.copy()
     split = (daily["permno"] == 101) & (daily["date"] < pd.Timestamp("2000-05-01"))
     daily.loc[split, "cfacshr"] = 2.0                        # rows before the split: two new shares per old share
+    daily.loc[daily_mask(base, 101, "2000-05-31"), "prc"] = 10.0
     ibes = inputs.ibes.copy()
-    ibes.loc[(ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-06-15")), "meanest"] = 1.1
-    got = at_r(replace(inputs, daily=daily, ibes=ibes))
-    assert got["S1"] == pytest.approx((2.2 - 2.0) / 40.0, rel=1e-12)
+    for statpers, value in (("2000-05-15", 1.05), ("2000-06-15", 1.15)):
+        ibes.loc[ibes_mask(base, 101, statpers), "meanest"] = value
+    assert at_r(replace(inputs, daily=daily, ibes=ibes))["S1"] == pytest.approx(S1_HAND, rel=1e-12)
+
+
+def test_s1_stays_valid_through_the_fiscal_year_roll(base: sig.SignalInputs) -> None:
+    """At 2001-02-28 the January revision crosses the FY1 roll; the November and December revisions give S1."""
+    ibes, daily = base.ibes.copy(), base.daily.copy()
+    for statpers, value in (("2000-10-15", 2.0), ("2000-11-15", 2.1), ("2000-12-15", 2.4), ("2001-01-15", 1.0)):
+        ibes.loc[ibes_mask(base, 101, statpers), "meanest"] = value
+    for day, price in (("2000-10-31", 40.0), ("2000-11-30", 30.0)):
+        daily.loc[daily_mask(base, 101, day), "prc"] = price
+    day = pd.Timestamp("2001-02-28")
+    result = sig.build_signals(replace(base, ibes=ibes, daily=daily), pd.DatetimeIndex([day]))
+    assert result["values"]["S1"].loc[day, 101] == pytest.approx(3 * (0.1 / 40.0 + 0.3 / 30.0) / 2, rel=1e-12)
+
+
+def test_s1_needs_two_valid_revisions(base: sig.SignalInputs) -> None:
+    ibes = base.ibes.copy()
+    for statpers, fpe in (("2000-05-15", "2001-06-30"), ("2000-06-15", "2001-12-31")):   # two rolls in three months
+        ibes.loc[ibes_mask(base, 101, statpers), "fpedats"] = pd.Timestamp(fpe)
+    assert at_r(replace(base, ibes=ibes))["S1"] == "fpe_changed"
+    gone = ibes_mask(base, 101, "2000-03-15") | ibes_mask(base, 101, "2000-04-15")
+    assert at_r(replace(base, ibes=base.ibes[~gone]))["S1"] == "short_history"
+    one_nan = edit(base.ibes, ibes_mask(base, 101, "2000-04-15"), meanest=np.nan)
+    assert isinstance(at_r(replace(base, ibes=one_nan))["S1"], str)       # Apr NaN breaks two revisions
 
 
 @pytest.mark.parametrize(("items", "be"), [
@@ -339,8 +397,40 @@ def test_s2_zero_spread_and_short_history(base: sig.SignalInputs) -> None:
     # Three missing quarters remove six of the eight differences: fewer than six stay valid.
     quarterly = base.fund_quarterly.copy()
     for datadate in ("1998-03-31", "1998-06-30", "1998-09-30"):
-        quarterly.loc[g101 & (quarterly["datadate"] == pd.Timestamp(datadate)), "epspxq"] = np.nan
+        quarterly.loc[quarter_mask(quarterly, 101, datadate), "epspxq"] = np.nan
     assert at_r(replace(base, fund_quarterly=quarterly))["S2"] == "short_history"
+
+
+def test_s2_uses_ajexq_for_one_share_basis(base: sig.SignalInputs) -> None:
+    """Quarters before a 2-for-1 split carry ajexq 2 and twice the EPS; S2 does not change."""
+    inputs = hand_inputs(base)
+    quarterly = inputs.fund_quarterly.copy()
+    early = (quarterly["gvkey"] == "G101") & (quarterly["datadate"] < pd.Timestamp("1999-01-01"))
+    quarterly.loc[early, "epspxq"] = quarterly.loc[early, "epspxq"] * 2.0
+    quarterly.loc[early, "ajexq"] = 2.0
+    assert at_r(replace(inputs, fund_quarterly=quarterly))["S2"] == pytest.approx(at_r(inputs)["S2"], rel=1e-12)
+    missing = edit(inputs.fund_quarterly, quarter_mask(quarterly, 101, "2000-03-31"), ajexq=np.nan)
+    assert at_r(replace(inputs, fund_quarterly=missing))["S2"] == "missing_item"
+    zero = edit(inputs.fund_quarterly, quarter_mask(quarterly, 101, "2000-03-31"), ajexq=0.0)
+    assert at_r(replace(inputs, fund_quarterly=zero))["S2"] == "invalid_value"
+
+
+def test_fiscal_keys_match_years_and_quarters(base: sig.SignalInputs) -> None:
+    """A fiscal year-end change moves datadate to another month; the fiscal keys still match the prior period."""
+    before = at_r(base)
+    annual = edit(base.fund_annual, annual_mask(base, 101, "1999-12-31"), datadate=pd.Timestamp("1999-11-30"))
+    assert at_r(replace(base, fund_annual=annual))["S6"] == before["S6"]
+    q1 = quarter_mask(base.fund_quarterly, 101, "2000-03-31")
+    quarterly = edit(base.fund_quarterly, q1, datadate=pd.Timestamp("2000-02-29"))
+    assert at_r(replace(base, fund_quarterly=quarterly))["S2"] == before["S2"]
+
+
+def test_s5_missing_item_share_by_year(base: sig.SignalInputs) -> None:
+    txp = edit(base.fund_annual, annual_mask(base, 104, "1999-12-31"), txp=np.nan)
+    share = sig.reason_share(sig.build_signals(replace(base, fund_annual=txp), REBALANCES), "S5", "missing_item")
+    assert share.loc[1999] == 0.0
+    # FY1999 is the current year from 2000-07 to 2001-06 and the prior year from 2001-07 to 2001-12.
+    assert share.loc[2000] == pytest.approx(6 / 60) and share.loc[2001] == pytest.approx(12 / 54)
 
 
 # Maximum age ----------------------------------------------------------------------------
@@ -357,12 +447,14 @@ def test_max_age_annual(base: sig.SignalInputs) -> None:
 
 def test_max_age_quarterly(base: sig.SignalInputs) -> None:
     """S2 and S3 use a report date of t - 6 months; one day earlier they are stale."""
-    q = base.fund_quarterly
-    keep = ~((q["gvkey"] == "G101") & (q["datadate"] > pd.Timestamp("1999-12-31")))
-    last = ((q["gvkey"] == "G101") & (q["datadate"] == pd.Timestamp("1999-12-31")))[keep]
+    q, a = base.fund_quarterly, base.announcements
+    keep_q = ~((q["gvkey"] == "G101") & (q["datadate"] > pd.Timestamp("1999-12-31")))
+    keep_a = ~((a["gvkey"] == "G101") & (a["datadate"] > pd.Timestamp("1999-12-31")))
     for rdq, valid in (("2000-01-28", True), ("2000-01-27", False)):
-        quarterly = edit(q[keep], last, rdq=pd.Timestamp(rdq), known_date=pd.Timestamp(rdq))
-        got = at_r(replace(base, fund_quarterly=quarterly))
+        quarterly = edit(q[keep_q], quarter_mask(q, 101, "1999-12-31")[keep_q], rdq=pd.Timestamp(rdq),
+                         known_date=pd.Timestamp(rdq))
+        announcements = edit(a[keep_a], quarter_mask(a, 101, "1999-12-31")[keep_a], rdq=pd.Timestamp(rdq))
+        got = at_r(replace(base, fund_quarterly=quarterly, announcements=announcements))
         for s in ("S2", "S3"):
             assert isinstance(got[s], float) if valid else got[s] == "stale"
 
@@ -370,8 +462,8 @@ def test_max_age_quarterly(base: sig.SignalInputs) -> None:
 def test_max_age_ibes(base: sig.SignalInputs) -> None:
     """S1 uses a statistics date of t - 2 months; one day earlier it is stale."""
     ibes = base.ibes
-    keep = ~((ibes["permno"] == 101) & (ibes["statpers"] > pd.Timestamp("2000-05-31")))
-    may = ((ibes["permno"] == 101) & (ibes["statpers"] == pd.Timestamp("2000-05-15")))[keep]
+    keep = ~((ibes["ibes_ticker"] == "T101") & (ibes["statpers"] > pd.Timestamp("2000-05-31")))
+    may = ibes_mask(base, 101, "2000-05-15")[keep]
     for statpers, valid in (("2000-05-28", True), ("2000-05-27", False)):
         got = at_r(replace(base, ibes=edit(ibes[keep], may, statpers=pd.Timestamp(statpers))))["S1"]
         assert isinstance(got, float) if valid else got == "stale"
@@ -414,6 +506,27 @@ def test_one_gvkey_on_two_permnos_and_no_link(base: sig.SignalInputs) -> None:
     assert isinstance(got["S1"], float) and isinstance(got["S7"], float)
 
 
+def test_ibes_link_status_and_overlap(base: sig.SignalInputs, base_result: dict) -> None:
+    ambiguous = edit(base.ibes_link, base.ibes_link["permno"] == 102, status="ambiguous")
+    result = sig.build_signals(replace(base, ibes_link=ambiguous), REBALANCES)
+    assert (result["reasons"]["S1"][102] == "ambiguous_link").all()
+    others = [p for p in PERMNOS if p != 102]
+    assert_frame_equal(result["values"]["S1"][others], base_result["values"]["S1"][others], check_exact=True)
+    for s in sig.SIGNAL_IDS[1:]:
+        assert_frame_equal(result["values"][s], base_result["values"][s], check_exact=True)
+    # Two overlapping ok rows for one PERMNO, or one ticker on two PERMNOs, are ambiguous; no row is no_link.
+    overlap = pd.concat([base.ibes_link, base.ibes_link.iloc[[2]].assign(linkdt=pd.Timestamp("1999-01-04"))],
+                        ignore_index=True)
+    assert at_r(replace(base, ibes_link=overlap), permno=103)["S1"] == "ambiguous_link"
+    shared = edit(base.ibes_link, base.ibes_link["permno"] == 104, ibes_ticker="T103")
+    assert at_r(replace(base, ibes_link=shared), permno=103)["S1"] == "ambiguous_link"
+    assert at_r(replace(base, ibes_link=shared), permno=104)["S1"] == "ambiguous_link"
+    gone = base.ibes_link[base.ibes_link["permno"] != 104]
+    assert at_r(replace(base, ibes_link=gone), permno=104)["S1"] == "no_link"
+    ended = edit(base.ibes_link, base.ibes_link["permno"] == 104, linkenddt=pd.Timestamp("2000-07-27"))
+    assert at_r(replace(base, ibes_link=ended), permno=104)["S1"] == "no_link"
+
+
 def test_link_dates_bound_the_join(base: sig.SignalInputs) -> None:
     """A link is used only when it is valid at t."""
     for start, linked in (("2000-07-28", True), ("2000-07-29", False)):
@@ -443,16 +556,15 @@ def test_annual_value_waits_six_months_after_fiscal_end(base: sig.SignalInputs) 
 
 # Universe return and coverage -----------------------------------------------------------
 
-def test_missing_member_return_blanks_the_universe_day(base: sig.SignalInputs) -> None:
+def test_missing_index_return_gives_no_market_data(base: sig.SignalInputs) -> None:
     inputs = hand_inputs(base)
-    daily = edit(inputs.daily, daily_mask(base, 104, "2000-04-25"), ret=np.nan)
-    assert at_r(replace(inputs, daily=daily))["S3"] == "no_market_data"
-    # A non-member's gap does not touch the universe: 105 has left by 2001-07, so its return there is unused.
-    calendar = np.unique(inputs.daily["date"].to_numpy().astype("datetime64[ns]"))
-    late = edit(inputs.daily, daily_mask(base, 105, "2001-08-01"), ret=np.nan)
-    before = sig.universe_returns(inputs, calendar)
-    after = sig.universe_returns(replace(inputs, daily=late), calendar)
-    assert np.array_equal(before, after, equal_nan=True)
+    day = inputs.index_daily["date"] == pd.Timestamp("2000-07-25")
+    assert at_r(replace(inputs, index_daily=edit(inputs.index_daily, day, ret=np.nan)))["S3"] == "no_market_data"
+    assert at_r(replace(inputs, index_daily=inputs.index_daily[~day]))["S3"] == "no_market_data"
+    # Another member's missing return does not touch S3 of permno 101.
+    daily = edit(inputs.daily, daily_mask(base, 104, "2000-07-25"), ret=np.nan)
+    assert at_r(replace(inputs, daily=daily))["S3"] == at_r(inputs)["S3"]
+    assert at_r(replace(inputs, daily=daily), permno=104)["S3"] == "no_market_data"
 
 
 def coverage_panels(invalid: dict[pd.Timestamp, int], members: int = 10) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -501,6 +613,20 @@ def test_real_start_at_the_80_percent_boundary() -> None:
     (lambda i: replace(i, members=pd.concat([i.members, i.members.iloc[[0]].assign(
         start=pd.Timestamp("1999-01-04"))], ignore_index=True)), "spell_invalid"),
     (lambda i: replace(i, link=i.link.assign(gvkey=[None, "G102", "G103", "G104", "G105"])), "schema_key_missing"),
+    (lambda i: replace(i, announcements=i.announcements.drop(columns="fqtr")), "schema_column_missing"),
+    (lambda i: replace(i, index_daily=i.index_daily.drop(columns="ret")), "schema_column_missing"),
+    (lambda i: replace(i, ibes_link=i.ibes_link.drop(columns="status")), "schema_column_missing"),
+    (lambda i: replace(i, fund_quarterly=i.fund_quarterly.drop(columns="ajexq")), "schema_column_missing"),
+    (lambda i: replace(i, index_daily=pd.concat([i.index_daily, i.index_daily.iloc[[3]]], ignore_index=True)),
+     "duplicate_key"),
+    (lambda i: replace(i, ibes_link=i.ibes_link.assign(status=["ok", "ok", "maybe", "ok", "ok"])), "link_invalid"),
+    (lambda i: replace(i, fund_annual=edit(i.fund_annual, i.fund_annual.index == 4, fyear=1995)),
+     "fiscal_key_invalid"),
+    (lambda i: replace(i, fund_quarterly=edit(i.fund_quarterly, i.fund_quarterly.index == 4, fqtr=5)),
+     "fiscal_key_invalid"),
+    (lambda i: replace(i, announcements=i.announcements.assign(
+        fyearq=i.announcements["fyearq"].astype(float).where(i.announcements.index != 4, 1993.5))),
+     "fiscal_key_invalid"),
 ])
 def test_schema_violations_refuse(base: sig.SignalInputs, change, reason: str) -> None:
     with pytest.raises(RunnerStop) as stop:
