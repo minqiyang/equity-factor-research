@@ -15,6 +15,36 @@ investment performance.
 
 ---
 
+## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
+
+Context:
+
+- The owner's WRDS account is approved (2026-10-05). The intake note asks for an R11 grant that names the tables,
+  purpose, storage, and publication terms, and for answers to its risks 1 (purpose) and 2 (publication). It also
+  leaves open whether the seal months are dropped at the pull.
+
+Decision:
+
+- **O-22 (owner, 2026-10-05):**
+  - Scope: WRDS CRSP (CIZ stock, index, and S&P 500 constituent tables), Compustat North America and Compustat
+    Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
+  - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
+    read the local files. No real money uses a rule derived from these data.
+  - Storage: `<private_data_root>/wrds_<vintage>/`, next to the EODHD folders, outside every Git checkout. The
+    owner accepts the iCloud backup of this folder; this closes A2-D-ADV-6 for the WRDS data.
+  - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
+    ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
+    existing owner data terms.
+  - Seal months: rows dated in `[2019-07-31, 2020-07-31)` are downloaded into a separate folder
+    `wrds_<vintage>/sealed/` and are never opened. It joins the O-18 never-opened paths. Its files are hashed as
+    bytes only. Rebalances whose windows touch the seal months stay typed missing.
+
+Consequences:
+
+- The coordinator may build the WRDS loader and read the local files outside `sealed/`. Every card that lets an
+  agent read these files lists the never-opened paths, `wrds_<vintage>/sealed/**` included.
+- Next: the owner runs the read-only subscription probe, then the reviewed pull script.
+
 ## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
 
 Context:

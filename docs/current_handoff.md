@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-04 for the signal-screen criteria module after PR #291.
+Updated: 2026-10-05 for owner decision O-22 (WRDS grant) after PR #291; stacked on the criteria module branch.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -63,7 +63,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-criteria` adds `research/m55_criteria.py`: the locked O-19 and O-21 screen,
+- Candidate branch `claude/o22-wrds-grant` records owner decision O-22 (the R11 grant for WRDS data). It is
+  stacked on `claude/m55-criteria`, which adds `research/m55_criteria.py`: the locked O-19 and O-21 screen,
   shortlist, success, and stop decisions on monthly net return series, with a frozen-digest gate before any confirm
   month, and the dated screen cost schedule. It also logs the coordinator defaults and the WRDS source facts. No
   real data is read.
@@ -83,17 +84,17 @@ unaccessed and reserved (O-12).
 - Owner items carried: the iCloud sync of the private data root (A2-D-ADV-6); the Stage C Wikipedia request that
   sent the owner's account email in its user agent (engineering log, c2 entry); the registration v2 validator
   accepting a cash completion after the calendar end (A2-05).
-- Owner: the R11 grant for WRDS CRSP, Compustat, and IBES once access is approved (O-17 Q4, O-19), the CRSP start
-  year, and extending O-5 and O-9 to the `real_v2` tilt diagnostic (Q5). Forward observation and a factor-ETF
+- Owner: the R11 grant for WRDS is given (O-22). Still open: the CRSP start year and extending O-5 and O-9 to
+  the `real_v2` tilt diagnostic (Q5). Forward observation and a factor-ETF
   benchmark still need an owner decision.
 
 ## Next Safe Action
 
-- When WRDS access is approved, confirm that the subscription has Compustat, IBES, the CRSP-Compustat link, and a
-  point-in-time Compustat source (Compustat Snapshot, first-reported values from about December 1986), and get the
-  owner's R11 grant. Then build the CRSP loader, count coverage, calibrate the low-risk budget on 1963-1992 risk
-  data only (O-20), run the screen under O-21, and freeze the trial file with two review seats. No tilt or
-  cap-weight return exists before the trial file is frozen.
+- The owner runs the read-only WRDS subscription probe (names, dates, and counts only) and confirms Compustat,
+  IBES, the CRSP-Compustat link, and Compustat Snapshot (first-reported values from about December 1986). Then the
+  owner runs the reviewed pull script under O-22, with the seal months in `sealed/`. Then build the loader, count
+  coverage, calibrate the low-risk budget on 1963-1992 risk data only (O-20), run the screen under O-21, and freeze
+  the trial file with two review seats. No tilt or cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 
