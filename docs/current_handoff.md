@@ -92,7 +92,8 @@ unaccessed and reserved (O-12).
 - When WRDS access is approved, confirm that the subscription has Compustat, IBES, the CRSP-Compustat link, and a
   point-in-time Compustat source (Compustat Snapshot, first-reported values from about December 1986), and get the
   owner's R11 grant. Then build the CRSP loader, count coverage, calibrate the low-risk budget on 1963-1992 risk
-  data only (O-20), run the screen under O-21, and freeze the trial file with two review seats. No tilt or cap-weight return exists before the trial file is frozen.
+  data only (O-20), run the screen under O-21, and freeze the trial file with two review seats. No tilt or
+  cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 
