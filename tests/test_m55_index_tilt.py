@@ -1557,11 +1557,14 @@ def test_gpt_fixture_measures_the_whole_book(monkeypatch: pytest.MonkeyPatch, ma
         assert (table["ratio_status"] == "ratio_window_short").all() and table["vol_ratio"].isna().all()
         assert (table["ratio_rows_leading"] == 252 - table["ratio_rows"]).all() and (table["ratio_rows_gap"] == 0).all()
         assert result["decision"] == "ratio_coverage_low" and result["chosen_g"] is None
+        # ADV-R3-03 (b), addendum: neither the main bracket nor the diagnostic chooses a g, so no flag.
+        assert result["window_decision"] == "ratio_coverage_ambiguous" and result["window_chosen_g"] is None
+        assert not result["window_sensitive"]
     else:
         assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_rows"] == 248).all()
         assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_rows_leading"] == 0).all()
         assert np.allclose(table["vol_ratio"], oracle, rtol=1e-12, atol=0.0)
-        assert result["decision"] == "chosen"
+        assert result["decision"] == "chosen" and result["window_chosen_g"] is None and result["window_sensitive"]
     assert result["chosen_g"] == _oracle_choice(table, oracle, tilt.LOWRISK_TARGET_RATIO)
     assert result["chosen_g"] != 0.5
 
@@ -1683,6 +1686,62 @@ def test_b2_excluded_name_is_not_in_the_ratio_rows() -> None:
     assert_series_equal(infos[1][0], infos[0][0], check_exact=True)
 
 
+def _b2_oracle(inputs: tilt.TiltInputs, columns: list, b: np.ndarray, w: np.ndarray) -> tuple:
+    """Rows and ratio at PERTURB_AT from the prices: returns r - 252 to r - 1 of ``columns``, complete rows only."""
+    r = CAL.get_loc(PERTURB_AT)
+    x = inputs.prices[columns].to_numpy(dtype=float)[r - 253:r]
+    returns = x[1:] / x[:-1] - 1.0
+    ok = np.isfinite(returns).all(axis=1)
+    ratio = np.std(returns[ok] @ w, ddof=1) / np.std(returns[ok] @ b, ddof=1) if ok.any() else np.nan
+    return int(ok.sum()), ratio
+
+
+def test_b2_ratio_rows_on_the_production_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    # T6 end to end (GPT-R3-A01, Opus ADV-R3-01): calibrate_lowrisk and build_targets (rebalance_targets) pass only
+    # the traded columns to lowrisk_weights and to the row mask. The B2-excluded name has one NaN in the window.
+    inputs = _b2_inputs()
+    prices = inputs.prices.copy()
+    prices.iloc[CAL.get_loc(PERTURB_AT) - 100, ASSETS.index(B2_ASSET)] = np.nan
+    inputs = replace(inputs, prices=prices)
+    traded = [a for a in ASSETS if a != B2_ASSET]
+    assert _b2_oracle(inputs, ASSETS, np.ones(12), np.ones(12))[0] == 250     # the NaN would cost two rows
+    cw = inputs.market_equity.iloc[CAL.get_loc(PERTURB_AT) - 1][traded]
+    cw = (cw / cw.sum()).to_numpy()
+    calls, masks = [], []
+    weights, ratio_rows = tilt.lowrisk_weights, tilt.whole_book_ratio
+
+    def weights_spy(b, vol, window, g):
+        w, info = weights(b, vol, window, g)
+        calls.append((window.index[-1], list(window.columns), list(b.index), b.to_numpy(), w.to_numpy()))
+        return w, info
+
+    def mask_spy(window, b, w):
+        masks.append((window.index[-1], list(window.columns)))
+        return ratio_rows(window, b, w)
+
+    monkeypatch.setattr(tilt, "lowrisk_weights", weights_spy)
+    monkeypatch.setattr(tilt, "whole_book_ratio", mask_spy)
+    result = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    built = tilt.build_targets(inputs, g=LOW_G)
+    monkeypatch.setattr(tilt, "lowrisk_weights", weights)
+    monkeypatch.setattr(tilt, "whole_book_ratio", ratio_rows)
+    cutoff = CAL[CAL.get_loc(PERTURB_AT) - 1]
+    at_r = [c for c in calls if c[0] == cutoff]
+    assert len(calls) == len(masks) == len(result["rebalances"]) + len(built["rebalances"])
+    assert len(at_r) == len(CAL_GRID) + 1 and [m[1] for m in masks if m[0] == cutoff] == [traded] * len(at_r)
+    assert all(columns == names for _, columns, names, _, _ in calls)
+    table = result["rebalances"].set_index("date").loc[PERTURB_AT]
+    rows = [*table.to_dict("records"), {k[len("lowrisk_"):]: v for k, v in built["rebalances"].loc[PERTURB_AT].items()
+                                        if k.startswith("lowrisk_")}]
+    for (_, columns, _, b, w), row in zip(at_r, rows):
+        assert columns == traded and np.allclose(b, cw, rtol=1e-12, atol=0.0)
+        n, ratio = _b2_oracle(inputs, traded, b, w)
+        assert n == 252 and row["ratio_rows"] == n and row["ratio_status"] == "defined_full"
+        assert row["ratio_limiting_members"] == 0 and row["vol_ratio"] == pytest.approx(ratio, rel=1e-12)
+    assert_series_equal(built["targets"]["lowrisk"].loc[PERTURB_AT, traded], pd.Series(at_r[-1][4], index=traded),
+                        check_exact=True, check_names=False)
+
+
 def _bracket(ratios: list, rebalances: int, target: float = 0.87, stops: bool = True) -> dict:
     return tilt.lowrisk_bracket([None if r is None else np.array(r) for r in ratios], rebalances, target, stops)
 
@@ -1702,6 +1761,9 @@ def test_bracket_decisions() -> None:
     assert before["classes"] == ["fails", "ambiguous", "meets"] and before["decision"] == "ratio_coverage_ambiguous"
     after = _bracket([[0.80] * 9, [0.865] * 5 + [0.89] * 4], 10)   # an ambiguous value above the choice
     assert after["decision"] == "chosen" and after["index"] == 0
+    tie = _bracket([[0.87] * 5 + [0.90] * 4, [0.80] * 9], 10)      # ADV-R3-03 (a): median_lo equal to the target
+    assert tie["median_lo"][0] == 0.87 and tie["classes"] == ["ambiguous", "meets"]
+    assert tie["decision"] == "ratio_coverage_ambiguous" and tie["index"] is None
 
 
 def test_bracket_refusals_and_coverage() -> None:
@@ -1736,6 +1798,29 @@ def test_complete_history_ratio_is_the_round_one_value() -> None:
     window = pd.DataFrame(returns).to_numpy(dtype=float)[:, np.ones(4, dtype=bool)]
     expected = tilt.ex_ante_vol(window, w.to_numpy()) / tilt.ex_ante_vol(window, b.to_numpy())
     assert info["vol_ratio"] == expected and info["ratio_rows"] == 252 and info["ratio_limiting_members"] == 0
+
+
+def test_no_pin_ratio_is_the_round_one_value_on_the_fixture(low_built: dict) -> None:
+    # T9 on the 12-name fixture (Opus ADV-R3-02): at each rebalance with no pinned member, the volatilities and the
+    # ratio equal the ba71a67 expression bit for bit (written out here: free columns of the window, no row mask).
+    inputs = fixture()
+    disappearances, returns, first_return = tilt.prepare(inputs)
+    table = low_built["rebalances"]
+    dates = table.index[table["lowrisk_pinned"] == 0]
+    assert len(dates) >= 8
+    for date in dates:
+        setup = tilt.rebalance_members(inputs, date, returns, disappearances, first_return)
+        traded = setup["traded"]
+        free = traded.isin(setup["full"].index[setup["full"].to_numpy()])
+        assert free.all()
+        window = setup["window"][traded].to_numpy(dtype=float)[:, free]
+        b = setup["b"].to_numpy(dtype=float)
+        w = low_built["targets"]["lowrisk"].loc[date, traded].to_numpy(dtype=float)
+        vol_w = float(np.std(window @ w[free], ddof=1) * math.sqrt(tilt.ANNUAL_ROWS))
+        vol_b = float(np.std(window @ b[free], ddof=1) * math.sqrt(tilt.ANNUAL_ROWS))
+        row = table.loc[date]
+        assert row["lowrisk_ex_ante_vol"] == vol_w and row["lowrisk_cw_ex_ante_vol"] == vol_b
+        assert row["lowrisk_vol_ratio"] == vol_w / vol_b and row["lowrisk_ratio_status"] == "defined_full"
 
 
 def test_lowrisk_weights_do_not_depend_on_the_ratio_step(monkeypatch: pytest.MonkeyPatch, low_built: dict) -> None:
