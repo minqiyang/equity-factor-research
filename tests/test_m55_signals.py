@@ -701,9 +701,13 @@ def test_max_age_quarterly(base: sig.SignalInputs) -> None:
 
 
 def test_max_age_ibes(base: sig.SignalInputs) -> None:
-    """S1 uses a statistics date of t - 2 months; one day earlier it is stale."""
+    """S1 uses a statistics date of t - 2 months; one day earlier it is stale.
+
+    O3-A1: the 2000-08-15 row (dated after t) stays; the stale age comes from the last row usable at t.
+    """
     ibes = base.ibes
-    keep = ~((ibes["ticker"] == "T101") & (ibes["statpers"] > pd.Timestamp("2000-05-31")))
+    keep = ~((ibes["ticker"] == "T101") & (ibes["statpers"] > pd.Timestamp("2000-05-31"))
+             & (ibes["statpers"] != pd.Timestamp("2000-08-15")))
     may = ibes_mask(base, 101, "2000-05-15")[keep]
     for statpers, valid in (("2000-05-28", True), ("2000-05-27", False)):
         got = at_r(replace(base, ibes=edit(ibes[keep], may, statpers=pd.Timestamp(statpers))))["S1"]

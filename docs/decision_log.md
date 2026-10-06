@@ -15,6 +15,41 @@ investment performance.
 
 ---
 
+## 2026-10-05 - Signals S1 to S8 Rules (Milestone 5.5, coordinator decisions)
+
+Context:
+
+- `research/m55_signals.py` computes the candidate signals S1 to S8 for the O-21 screen on a normalized input
+  schema. Two review rounds found timing and share-basis defects; the coordinator decided each finding. Synthetic
+  fixtures only; no real data was read.
+
+Decision:
+
+- First-reported values: each Compustat item of a record is its first non-missing value, usable from its own
+  known date plus one trading row. A later revision is a look-ahead source, so it never replaces that value.
+- S2 takes `epspxq` and `ajexq` from one row (the first row with EPS) and puts each quarter on the CRSP share
+  factor (`cfacshr`) basis of the latest quarter's basis date, with no factor read at t. Two rows could mix share
+  bases, and `cfacpr` also moves at a spin-off; S2 is scale-free, so a read at t adds only a failure path.
+- The IBES link resolves at each `statpers` with `score <= 1`, and the usable date (the first month-end row after
+  `statpers`) is applied before the monthly grouping. A reused ticker then never crosses PERMNOs, and a row not
+  usable at t cannot change the selected month.
+- S3 uses the CRSP value-weighted market, INDNO 1000200, because INDNO 1000500 is not in the subscription.
+- Price anchors (S7, S8, the S1 price) are exact rows with no as-of fill: a filled price would hide a missing row
+  (R6). Only the CRSP factor reads are as-of reads, at most one month old.
+- Reason order is items, then market data, then domain, so one input gap gives the same reason in every signal.
+- Declared sample rule: an S2 quarter is read only when the PERMNO has a `cfacshr` row at the basis date. A
+  history from before the first CRSP row is not read, so a new listing has no S2 value for about 2.5 to 3 years.
+  The cells stay typed. This favors seasoned firms in the S2 ranks, and the first real run reports its size.
+- None of these rules loosens R1, R2, R3, or R6.
+
+Consequences:
+
+- The first real run owes three loader checks: a known-split check (direction of `cfacpr` and `cfacshr`), the
+  first-reported URQ `ajexq` from the same row as `epspxq` (never a current-vintage value), and the signal reason
+  shares by later exit class.
+- Backlog (O3-A2): the `no_record` versus `not_yet_known` label can depend on rows dated after t. Values and valid
+  counts do not change; the label is a diagnostic.
+
 ## 2026-10-03 - Owner Decision O-21: Signal-Screen Thresholds and Stop Rule Locked
 
 Context:

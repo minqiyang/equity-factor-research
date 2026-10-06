@@ -12,6 +12,27 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-05 - Point-in-time signals S1 to S8 on synthetic fixtures (Milestone 5.5)
+
+- New module `research/m55_signals.py` and `tests/test_m55_signals.py`. Card chain on base `8420e28`: `ac3530e`
+  (first build), `dd8a15b` (coordinator revision), `051d071` (repair round 1), `3a93573` (round 2 coordinator
+  decisions), then a records commit with one test. No real data was read.
+- Review round 1 on `dd8a15b`: GPT FAIL, MATERIAL 5; Opus FAIL, MATERIAL 2, ADVISORY 7. Main findings: later
+  revisions replaced first-reported values, the IBES link resolved at t and not at each `statpers`, a quarter was
+  read before its report date, and absent price anchors were filled.
+- Review round 2 on `051d071`: GPT FAIL, MATERIAL 2, ADVISORY 2; Opus FAIL, MATERIAL 1, ADVISORY 8. Main findings:
+  an IBES row not usable at t could change the selected month, and `epspxq` and `ajexq` could come from different
+  rows.
+- Coordinator decisions C-5 to C-9 (one S2 pair row, `cfacshr` basis with no read at t, the usable cut before the
+  monthly grouping, the declared CRSP-history sample rule, the reason order) are in `docs/decision_log.md`. Round 2
+  mutation run: 13 of 13 mutants killed.
+- Narrow verification of `3a93573`: GPT PASS, MATERIAL 0, ADVISORY 0; Opus PASS, MATERIAL 0, ADVISORY 3.
+  O3-A1: `test_max_age_ibes` now keeps the 2000-08-15 row (after t); the mutant that takes the stale age from the
+  last row of all dates survives the old test and fails the new one. O3-A3 is fixed in the card report. O3-A2
+  goes to the backlog.
+- Full suite on the records commit: exit code 0; 3679 passed, 2 skipped (platform `longdouble`), 0 failed,
+  69 warnings, in 361 s.
+
 ## 2026-10-03 - Delisting-at-rebalance execution rule (Milestone 5.5 B2)
 
 - `rebalance_targets` no longer refuses when a target member settles at r on an event first known at r. The name
