@@ -15,6 +15,49 @@ investment performance.
 
 ---
 
+## 2026-10-05 - Low-Risk Book Calibration Rules (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- The O-20 low-risk book (`research/m55_index_tilt.py`, `lowrisk_weights` and `calibrate_lowrisk`) picks the
+  volatility power `g` from ex-ante second moments only. Review round 2 left one MATERIAL finding open (GPT-R2-01:
+  the ratio did not bound missing risk). After two rounds, the expert step settled the rules. The ruling is in
+  `coord/reports/m55_lowrisk/expert_decision.md` (untracked).
+
+Decision (coordinator defaults, each with one line of reason):
+
+- **Complete-case whole-book ratio.** The ratio uses the whole traded book on the rows of the 252-row window that
+  ends at r - 1 where every traded member has a return. Reason: a suffix or free-only rule drops clean rows and
+  biases the estimate toward calm regimes; complete-case rows blank only the rows that touch a missing return (R6)
+  and keep crash rows.
+- **126-row floor.** At least `LOWRISK_RATIO_MIN_ROWS = 126` complete-case rows, else the ratio is undefined with
+  status `ratio_window_short`. Reason: 126 rows give a per-rebalance standard error of about 0.02 on the ratio,
+  which the median over about 350 rebalances absorbs; a shorter window is declared, not filled.
+- **Two-sided median bracket and decision order.** Undefined rebalances enter the median once at +inf and once at
+  -inf; each `g` meets, fails, or is ambiguous. Order: a refusal below the first `g` that meets stops; then
+  `ratio_coverage_low`; then `ratio_coverage_ambiguous` (an ambiguous `g` below the first `g` that meets; the owner
+  decides); then `chosen` (the first `g` that meets); else `no_g_reaches_target`. Reason: the choice holds for any
+  value of the missing ratios, so missing data cannot select `g`.
+- **10 percent undefined stop.** Above `LOWRISK_UNDEFINED_MAX = 0.10` undefined rebalances, nothing is chosen
+  (`ratio_coverage_low`). Reason: a calibration that rests on few defined months is not a calibration.
+- **`LOWRISK_PINNED_MAX` retired.** The pinned-share limit, its `pinned_share_high` status, and its test are deleted.
+  Reason: the whole-book ratio counts pinned weight directly, so the limit has no job.
+- **Window diagnostic (addendum).** The diagnostic treats every `defined_partial` rebalance as undefined and repeats
+  the bracket classes and the choice, with no coverage stop inside it. `window_sensitive` is set only when its
+  choice differs from the main decision; `window_diag_coverage_high` (diagnostic undefined share above 0.10) is
+  recorded apart. Reason: with the coverage stop inside, partial windows alone set the flag almost always.
+
+Consequences:
+
+- None of these defaults loosens R1, R2, R4, R6, R8, or R9. Weights, the cap loop, TE scaling, and every TILT
+  output are bit-identical to the round 1 code; only the ratio and the decision changed.
+- The real-data driver card must copy these defaults into the trial file before any real calibration output (R9).
+  The driver card also carries the 1963-1992 missingness census, the daily data span and first full 252-row
+  anchor, the R6 exit-class split of undefined and partial counts, the bid/ask-midpoint day rule, and Opus ADV-05
+  (cut and hash the calibration panel).
+- Residual limitation: a `defined_partial` ratio cannot measure risk on rows before a member existed. Such windows
+  are declared, counted (`ratio_rows_leading`, `ratio_rows_gap`), and checked by `window_sensitive`.
+
 ## 2026-10-03 - Owner Decision O-21: Signal-Screen Thresholds and Stop Rule Locked
 
 Context:

@@ -12,6 +12,32 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-05 - Low-risk book and its calibration on synthetic fixtures (Milestone 5.5, O-20)
+
+- Card chain on base `8420e28`: `667ff00` adds the `lowrisk` book (`budget_weights`, `lowrisk_weights`,
+  `calibrate_lowrisk`) with TILT bit-identical to the base; `ba71a67` (repair round 1) makes the ratio undefined
+  above a pinned-share limit, adds the 10 percent coverage stop, and records late-grid refusals; `a7eb43b` (repair
+  round 2, expert decision) measures the ratio on the whole book on complete-case rows with a two-sided median
+  bracket and retires `LOWRISK_PINNED_MAX`; `f64e816` (follow-up, tests only) tests the ratio rows on the
+  production path and the bracket and window-diagnostic boundaries. Synthetic fixtures only; no real data was read.
+- Review round 1: AUDIT (GPT) FAIL, MATERIAL 1 (GPT-R1-01: the free sub-book ratio drops pinned holdings);
+  AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 6. Review round 2: AUDIT FAIL, MATERIAL 1 (GPT-R2-01: the 2 percent
+  pinned-share limit does not bound missing risk); AUDIT_2 PASS, MATERIAL 0, ADVISORY 1 (ADV-R2-01, untagged rows of
+  a `g` refused later; fixed with `g_status`).
+- Expert step (two rounds used): a workflow with three critiques and one judge. The coordinator adopted the judge
+  rules R-a to R-j and tests T1 to T12 without change, plus one addendum on the window diagnostic. The rules are in
+  `docs/decision_log.md` (low-risk calibration entry). Mutation checks on `a7eb43b` killed all eight mutants
+  (suffix rows, defined-only median, floor 125, coverage stop in the diagnostic, constant `g_status`, free-only
+  ratio, `names` window in the row mask, no ambiguous stop).
+- Verification of the expert step: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 1 (GPT-R3-A01, T6 did not run the
+  calibration caller); AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 4. The follow-up `f64e816` closes GPT-R3-A01 and
+  Opus ADV-R3-01 to ADV-R3-04 with tests and report text only; the coordinator checked that its diff touches tests
+  only.
+- Carried to the real-data driver card: the 1963-1992 missingness census before the freeze, the daily data span and
+  first full 252-row anchor, the R6 exit-class split, the bid/ask-midpoint day rule, and Opus ADV-05. Open question
+  for the real run: cap-loop convergence at high `g` (`lowrisk_loop_not_converged` fails closed).
+- Full suite on `f64e816`: 3676 passed, 2 skipped, exit code 0.
+
 ## 2026-10-03 - Delisting-at-rebalance execution rule (Milestone 5.5 B2)
 
 - `rebalance_targets` no longer refuses when a target member settles at r on an event first known at r. The name
