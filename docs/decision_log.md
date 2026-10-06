@@ -15,6 +15,48 @@ investment performance.
 
 ---
 
+## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
+
+Context:
+
+- `research/m55_criteria.py` turns monthly net return series into the O-19 and O-21 screen, shortlist, success, and
+  stop decisions. It was built on synthetic series and reviewed by two seats from different model families. The
+  design note left some choices to the coordinator.
+
+Decision:
+
+- Coordinator defaults, logged:
+  1. Annual mean = 12 x the monthly mean; annual volatility or TE = the ddof-1 monthly standard deviation x sqrt(12).
+     HAC t uses `newey_west_mean_tstat` with its automatic lag; one-sided p = `norm.sf(t)`. The Holm rule is read as
+     an adjusted one-sided p of at most 0.05 (O-21 states it as a t of 1.65 after Holm).
+  2. Test A is an intersection-union test over the active series against SPY and against CW-PIT: p_A is the larger
+     one-sided p. Test B is an intersection-union test over the 0.5-point non-inferiority test and the volatility
+     ratio: p_B is the larger of p_NI and p_vol.
+  3. The volatility-ratio bootstrap is a paired moving-block bootstrap: 12-month blocks without wrap, 10,000 draws,
+     a fixed seed. p_vol is the share of draws with a ratio of at least 1.0; the bound is the 95th percentile, and
+     B also needs it below 1.0. A reviewer simulation found this percentile bound slightly liberal (about 6 to 7
+     percent at a true ratio of 1.0, against 5 percent); the 0.90 point rule, the non-inferiority test, and Holm make
+     B stricter overall. The trial file states it.
+  4. The screen record and the shortlist are hashed (SHA-256 of canonical JSON, failed and undefined candidates
+     included). Every confirm or check call takes the digest saved at the freeze as a separate input and refuses on
+     any mismatch or changed rule value.
+  5. A screen series covers at least 36 months and ends at 1992-12; a confirm series covers exactly 1993-02 to
+     2014-03; a check series starts at 2014-04 and leaves out the months 2019-07 to 2020-07, whose returns touch the
+     seal window (O-12, O-18).
+  6. After `screen_empty`, test A and the composite stop rule are not run, but test B may run: the low-risk version
+     uses no screened signal (O-20), and the O-21 stop rule closes the confirm months for a tilt only. The Holm
+     family stays at size 2 with p_A = 1.0.
+  7. The secondary family uses BY with a family size fixed by the caller (the trial file).
+- None of these loosens R6, R8, R9, or R10.
+- **WRDS source facts (coordinator check, two independent web checks per claim, 2026-10-04).** First-reported
+  Compustat values exist only in the point-in-time product (Compustat Snapshot) from about December 1986; standard
+  `funda` and `fundq` values are restated or re-standardized later, so R1 bars them. Under the locked design,
+  signals S2, S4, S5, S6, and S8 therefore have about five screen years (1987 to 1992); S1 (IBES, from 1976), S3,
+  and S7 are not affected, and the confirm period is fully covered. Legacy CRSP delisting code 232 is a stock merger
+  into an untracked acquirer, not a cash merger; the R4 cash class uses `DelPaymentType = 'CASH'` (legacy 233). In
+  the CRSP CIZ format the daily return already holds the delisting return; a missing delisting payoff still takes
+  the R4 default.
+
 ## 2026-10-03 - Owner Decision O-21: Signal-Screen Thresholds and Stop Rule Locked
 
 Context:
