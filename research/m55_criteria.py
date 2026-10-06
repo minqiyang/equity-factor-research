@@ -34,8 +34,9 @@ CONFIRM_START, CONFIRM_END = pd.Period("1993-02", "M"), pd.Period("2014-03", "M"
 CHECK_START = pd.Period("2014-04", "M")
 CONFIRM_MONTHS = 254
 SCREEN_MIN_MONTHS = 36
-# Monthly returns that touch the seal window [2019-07-31, 2020-07-31) (O-11, O-12, O-18); a check series skips them.
-SEAL_MONTHS = pd.period_range("2019-07", "2020-07", freq="M")
+# A check series skips these months: the holding months that touch the seal window [2019-07-31, 2020-07-31)
+# (O-11, O-12, O-18, O-22) plus the post-seal warm-up to 2021-08-31, the first month end with a full 252-row window.
+CHECK_GAP_MONTHS = pd.period_range("2019-07", "2021-08", freq="M")
 PERIODS = ("screen", "confirm", "check")
 IR_MIN = 0.2                         # screen net information ratio against CW-PIT
 T_MIN = 1.0                          # screen HAC t against CW-PIT
@@ -68,7 +69,7 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     Screen: every month is in 1963-07 to 1992-12, the last month is 1992-12 (a
     signal may start later), and there are at least 36 months. Confirm: the
     months are exactly 1993-02 to 2014-03. Check: the first month is 2014-04,
-    no month is in ``SEAL_MONTHS``, and the seal months are the only gap; the
+    no month is in ``CHECK_GAP_MONTHS``, and those months are the only gap; the
     statistics join the months on both sides with no fill. Complex and boolean
     dtypes refuse before any cast. The input is not changed.
     """
@@ -83,11 +84,12 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     index = series.index
     if not index.is_unique or not index.is_monotonic_increasing:
         raise refuse("series_invalid", f"{name}: months must be sorted and unique")
-    if period == "check" and index.isin(SEAL_MONTHS).any():
-        raise refuse("seal_month", f"{name}: a month from {SEAL_MONTHS[0]} to {SEAL_MONTHS[-1]} is sealed")
+    if period == "check" and index.isin(CHECK_GAP_MONTHS).any():
+        raise refuse("seal_month", f"{name}: a month from {CHECK_GAP_MONTHS[0]} to {CHECK_GAP_MONTHS[-1]} is in the "
+                     "check gap (seal months and post-seal warm-up)")
     expected = pd.period_range(index[0], index[-1], freq="M")
     if period == "check":
-        expected = expected[~expected.isin(SEAL_MONTHS)]
+        expected = expected[~expected.isin(CHECK_GAP_MONTHS)]
     if not index.equals(expected):
         raise refuse("month_missing", f"{name}: a month between {index[0]} and {index[-1]} has no row")
     values = series.to_numpy(dtype=float, na_value=np.nan)
@@ -407,7 +409,7 @@ def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, con
     ``confirm`` holds ``composite``, ``cw``, ``spy``, and ``low_risk`` (confirm
     months, dated costs). ``confirm_2x`` holds ``composite`` and ``cw`` at 2x
     costs (SPY is the same series). ``check`` holds ``composite``, ``cw``,
-    ``spy``, and ``low_risk`` from 2014-04, seal months left out.
+    ``spy``, and ``low_risk`` from 2014-04, ``CHECK_GAP_MONTHS`` left out.
 
     After ``screen_empty``, test A and the composite stop rule are refused and
     their inputs are not read. Test B still runs (it uses no screened signal,

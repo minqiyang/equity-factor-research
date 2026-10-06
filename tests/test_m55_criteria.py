@@ -22,7 +22,7 @@ from research.m55_index_tilt import COST_SCALES, dated_cost_frame
 
 SCREEN = pd.period_range("1963-07", "1992-12", freq="M")
 CONFIRM = pd.period_range("1993-02", "2014-03", freq="M")
-CHECK = pd.period_range("2014-04", "2019-06", freq="M").append(pd.period_range("2020-08", "2025-12", freq="M"))
+CHECK = pd.period_range("2014-04", "2019-06", freq="M").append(pd.period_range("2021-09", "2025-12", freq="M"))
 
 
 def noise(months: pd.PeriodIndex, seed: int, mean: float = 0.0, scale: float = 0.01) -> pd.Series:
@@ -43,7 +43,8 @@ def record(ir: float, t: float) -> dict:
 def test_confirm_window_has_254_months():
     assert len(pd.period_range(crit.CONFIRM_START, crit.CONFIRM_END, freq="M")) == crit.CONFIRM_MONTHS == 254
     assert crit.SCREEN_END + 2 == crit.CONFIRM_START and crit.CONFIRM_END + 1 == crit.CHECK_START
-    assert list(crit.SEAL_MONTHS.astype(str)) == [str(m) for m in pd.period_range("2019-07", "2020-07", freq="M")]
+    assert list(crit.CHECK_GAP_MONTHS.astype(str)) == [str(m) for m in pd.period_range("2019-07", "2021-08", freq="M")]
+    assert len(crit.CHECK_GAP_MONTHS) == 26
 
 
 def test_screen_refuses_one_confirm_month():
@@ -84,23 +85,29 @@ def test_confirm_and_check_guards():
         crit.check_series(noise(CHECK, 1), "x", "holdout")
 
 
-def test_check_period_skips_the_seal_months():
+def test_check_period_skips_the_check_gap():
     full = pd.period_range("2014-04", "2025-12", freq="M")
     with stops("seal_month"):
         crit.check_series(noise(full, 1), "x", "check")
-    for month in ("2019-07", "2020-07"):
+    for month in ("2019-07", "2020-07", "2020-08", "2021-08"):        # seal months and post-seal warm-up
         with stops("seal_month"):
             crit.check_series(noise(CHECK.insert(63, pd.Period(month, "M")).sort_values(), 1), "x", "check")
+    warm = pd.period_range("2020-08", "2021-08", freq="M")
+    with stops("seal_month"):                        # the old seal-only gap: rows for 2020-08 to 2021-08 after the seal
+        crit.check_series(noise(CHECK.append(warm).sort_values(), 1), "x", "check")
+    with stops("seal_month"):                        # warm-up rows with no row after them
+        crit.check_series(noise(pd.period_range("2014-04", "2019-06", freq="M").append(warm), 1), "x", "check")
+    assert len(crit.check_series(noise(CHECK, 1), "x", "check")) == len(CHECK)    # exactly 2019-07 to 2021-08 skipped
     before = pd.period_range("2014-04", "2019-06", freq="M")
     assert len(crit.check_series(noise(before, 1), "x", "check")) == len(before)
-    with stops("month_missing"):                     # the seal is the only allowed gap
+    with stops("month_missing"):                     # the check gap is the only allowed gap
         crit.check_series(noise(CHECK.delete(70), 1), "x", "check")
     with stops("month_missing"):
-        crit.check_series(noise(CHECK.delete(63), 1), "x", "check")       # 2020-08 missing after the seal
+        crit.check_series(noise(CHECK.delete(63), 1), "x", "check")       # 2021-09 missing after the gap
     spy, low = noise(CHECK, 2, scale=0.04), noise(CHECK, 3, scale=0.03)
     out = crit.low_risk_check(low, spy)              # the joined months, no fill
     assert out["annual_gap"] == pytest.approx(12 * float(np.mean(low.to_numpy() - spy.to_numpy())), rel=1e-12)
-    assert CHECK[62] == pd.Period("2019-06", "M") and CHECK[63] == pd.Period("2020-08", "M")
+    assert CHECK[62] == pd.Period("2019-06", "M") and CHECK[63] == pd.Period("2021-09", "M")
 
 
 def test_missing_values_and_months_refuse_without_fill():
