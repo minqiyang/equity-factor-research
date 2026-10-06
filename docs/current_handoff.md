@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-05 for owner decision O-22 (WRDS grant) after PR #291; stacked on the criteria module branch.
+Updated: 2026-10-06 for owner decision O-22 (WRDS grant) after PR #292.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `8420e286743704afec61b4898856c61d9fe99e06` (main after PR #291).
+  `28abd4ca506580941f413780ac5428818a4c3263` (main after PR #292).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -44,7 +44,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   AGENTS.md simplification with the ablation rule removed (PR #286: O-14), and the Simplified Technical English
   writing target (PR #287: O-15), and the owner report correction (PR #288: O-16), and the index tilt direction
   and the seal ruling (PR #289: O-17, O-18), and the cap-weight and index-tilt engine on synthetic fixtures
-  (PR #290: O-19), and the delisting-at-rebalance rule (PR #291: O-20, O-21).
+  (PR #290: O-19), and the delisting-at-rebalance rule (PR #291: O-20, O-21), and the signal-screen criteria
+  module on synthetic series (PR #292).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -53,7 +54,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `9dee2df2` (PR #275), `5b74d35a` (PR #276), `23b1c734` (PR #263), `edbd34c3` (PR #277), `cb77a4e8` (PR #278),
   `e6d04cdf` (PR #279), `c7d2d8da` (PR #280), `03e06b53` (PR #281), `e36a4a28` (PR #282), `4f7d7096` (PR #283),
   `f6cfc610` (PR #284), `988b4443` (PR #285), `2f93032d` (PR #286), `d48b8114` (PR #287), `a72f1562` (PR #288),
-  `356ea7fd` (PR #289), `ddfb0322` (PR #290), and `8420e286` (PR #291).
+  `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), and `28abd4ca` (PR #292).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -63,11 +64,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/o22-wrds-grant` records owner decision O-22 (the R11 grant for WRDS data). It is
-  stacked on `claude/m55-criteria`, which adds `research/m55_criteria.py`: the locked O-19 and O-21 screen,
-  shortlist, success, and stop decisions on monthly net return series, with a frozen-digest gate before any confirm
-  month, and the dated screen cost schedule. It also logs the coordinator defaults and the WRDS source facts. No
-  real data is read.
+- Candidate branch `claude/o22-wrds-grant` records owner decision O-22 (the R11 grant for WRDS data), the local
+  working copy with its iCloud backup archive, and the seal split for tables with a price or a return. It changes
+  no code and reads no real data.
 
 ## Current Research Gate Summary
 
@@ -90,12 +89,10 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- The owner runs the read-only WRDS subscription probe (names, dates, and counts only) and confirms Compustat,
-  IBES, the CRSP-Compustat link, and Compustat Snapshot (first-reported values from about December 1986). Then the
-  owner runs the reviewed pull script under O-22 into the local working copy, with the seal months in `sealed/`,
-  and writes the iCloud backup archive. Then build the loader, count
-  coverage, calibrate the low-risk budget on 1963-1992 risk data only (O-20), run the screen under O-21, and freeze
-  the trial file with two review seats. No tilt or cap-weight return exists before the trial file is frozen.
+- The owner ran the reviewed pull script under O-22 (vintage 2025-12-31) into the local working copy, with the
+  seal months in `sealed/`, and wrote the iCloud backup archive. Next: review the loader with two seats, freeze the
+  trial file with two review seats, count coverage, calibrate the low-risk budget on 1963-1992 risk data only
+  (O-20), and run the screen under O-21. No tilt or cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 
