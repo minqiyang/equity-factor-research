@@ -28,6 +28,10 @@ T = pd.Timestamp("2000-07-28")
 A = pd.Timestamp("2000-06-30")             # month-end row before t's month (S7, S8 shares)
 A12 = pd.Timestamp("1999-06-30")
 REBALANCES = rebalance_dates(CAL, pd.Timestamp("1997-12-31"), pd.Timestamp("2002-11-29"))
+# Base quarters whose only row lacks an item (gvkey, datadate, items); 1999Q1 is q - 4 at R.
+SPARSE = (("G101", "2001-03-31", ("epspxq",)), ("G102", "1999-03-31", ("epspxq",)),
+          ("G103", "1999-03-31", ("epspxq", "ajexq")), ("G104", "1999-03-31", ("rdq",)),
+          ("G105", "1999-03-31", ("ajexq",)))
 
 
 def gvkey(p: int) -> str:
@@ -78,6 +82,9 @@ def base_inputs(seed: int = 3) -> sig.SignalInputs:
             ibes.append({"ticker": ticker(p), "statpers": statpers, "fpedats": pd.Timestamp(f"{statpers.year}-12-31"),
                          "fpi": "1", "meanest": estimate})
     quarterly = pd.DataFrame(quarterly)
+    # One quarter per gvkey has a missing item in its only row; perturb_from adds the fill row at r (O2-M1).
+    for g, datadate, items in SPARSE:
+        quarterly.loc[quarter_mask(quarterly, int(g[1:]), datadate), list(items)] = np.nan
     announcements = quarterly[["gvkey", "datadate", "fyearq", "fqtr", "rdq"]].copy()
     return sig.SignalInputs(daily=daily, members=members, fund_annual=pd.DataFrame(annual), fund_quarterly=quarterly,
                             announcements=announcements, link=link, ibes_link=ibes_link, ibes=pd.DataFrame(ibes),
@@ -191,12 +198,13 @@ def perturb_from(inputs: sig.SignalInputs, r: pd.Timestamp) -> sig.SignalInputs:
     quarterly.loc[late, "epspxq"] = quarterly.loc[late, "epspxq"] + 4.0
     quarterly.loc[late, "ajexq"] = 3.0
     quarterly.loc[late, "rdq"] = quarterly.loc[late, "rdq"] + pd.Timedelta(days=20)
-    # A revision known at r of every quarter known before r, for every gvkey: new EPS, ajexq, and rdq.
+    # A revision known at r of every quarter known before r, for every gvkey: new EPS, ajexq, and rdq. For the
+    # SPARSE quarters it is the fill row of the missing items (an old rdq, so only the known date gates it).
     revision = quarterly[quarterly["known_date"] < r].copy()
     revision["known_date"] = r
-    revision["epspxq"] = revision["epspxq"] * 3.0 + 1.0
+    revision["epspxq"] = revision["epspxq"].fillna(1.0) * 3.0 + 1.0
     revision["ajexq"] = 2.0
-    revision["rdq"] = revision["rdq"] - pd.Timedelta(days=3)
+    revision["rdq"] = revision["rdq"].fillna(revision["datadate"] + pd.Timedelta(days=25)) - pd.Timedelta(days=3)
     quarterly = pd.concat([quarterly, revision], ignore_index=True)
     announcements = inputs.announcements.copy()
     late = announcements["rdq"] >= r
@@ -479,36 +487,134 @@ def test_s2_zero_spread_and_short_history(base: sig.SignalInputs) -> None:
     assert at_r(replace(base, fund_quarterly=quarterly))["S2"] == "short_history"
 
 
+def split_world(inputs: sig.SignalInputs, split: str = "1999-07-01") -> sig.SignalInputs:
+    """A 2-for-1 split of permno 101: both CRSP factors are 2 before it, and EPS first known after it is halved."""
+    day = pd.Timestamp(split)
+    daily = edit(inputs.daily, (inputs.daily["permno"] == 101) & (inputs.daily["date"] < day), cfacpr=2.0,
+                 cfacshr=2.0)
+    q = inputs.fund_quarterly
+    after = (q["gvkey"] == "G101") & (q["known_date"] >= day)
+    return replace(inputs, daily=daily, fund_quarterly=edit(q, after, epspxq=q.loc[after, "epspxq"] / 2.0))
+
+
 def test_s2_split_between_known_dates_matches_the_no_split_world(base: sig.SignalInputs) -> None:
     """A 2-for-1 split on 1999-07-01, between the known dates of q - 4 (1999-04-30) and q (2000-04-30).
 
     First-known rows carry the basis of their own date: quarters known before the split keep pre-split EPS and
-    ajexq 1; quarters known after it report post-split EPS (half) and ajexq 1. The CRSP factor ratio puts every
-    EPS on the basis of t, so S2 equals the no-split value.
+    ajexq 1; quarters known after it report post-split EPS (half) and ajexq 1. The share-factor ratio puts every
+    EPS on the basis of q's known date, so S2 equals the no-split value (halving is exact, so bit-identical).
     """
     inputs = hand_inputs(base)
-    split = pd.Timestamp("1999-07-01")
-    daily = edit(inputs.daily, (inputs.daily["permno"] == 101) & (inputs.daily["date"] < split), cfacpr=2.0)
-    q = inputs.fund_quarterly
-    after = (q["gvkey"] == "G101") & (q["known_date"] >= split)
-    quarterly = edit(q, after, epspxq=q.loc[after, "epspxq"] / 2.0)
-    assert at_r(replace(inputs, daily=daily, fund_quarterly=quarterly))["S2"] == pytest.approx(at_r(inputs)["S2"],
-                                                                                                 rel=1e-12)
+    expected = at_r(inputs)["S2"]
+    split = split_world(inputs)
+    assert at_r(split)["S2"] == expected
     # Without the factor ratio the bases mix and S2 changes (the defect of round 1).
-    assert at_r(replace(inputs, fund_quarterly=quarterly))["S2"] != pytest.approx(at_r(inputs)["S2"], rel=1e-3)
-    missing = edit(inputs.fund_quarterly, quarter_mask(q, 101, "2000-03-31"), ajexq=np.nan)
-    assert at_r(replace(inputs, fund_quarterly=missing))["S2"] == "missing_item"
-    zero = edit(inputs.fund_quarterly, quarter_mask(q, 101, "2000-03-31"), ajexq=0.0)
-    assert at_r(replace(inputs, fund_quarterly=zero))["S2"] == "invalid_value"
-    no_factor = edit(inputs.daily, daily_mask(base, 101, "1999-04-30"), cfacpr=np.nan)   # q - 4 known date
+    assert at_r(replace(inputs, fund_quarterly=split.fund_quarterly))["S2"] != pytest.approx(expected, rel=1e-3)
+    # O2-A1: a spin-off moves cfacpr only; S2 reads cfacshr, so it does not move.
+    spin = edit(inputs.daily, (inputs.daily["permno"] == 101) & (inputs.daily["date"] < pd.Timestamp("1999-07-01")),
+                cfacpr=1.25)
+    assert at_r(replace(inputs, daily=spin))["S2"] == expected
+    q = inputs.fund_quarterly
+    no_factor = edit(inputs.daily, daily_mask(base, 101, "1999-04-30"), cfacshr=np.nan)   # q - 4 known date
     assert at_r(replace(inputs, daily=no_factor))["S2"] == "missing_item"
+    assert at_r(replace(inputs, daily=edit(inputs.daily, daily_mask(base, 101, "1999-04-30"), cfacpr=np.nan)))[
+        "S2"] == expected
+    # A missing or non-positive ajexq in the EPS row makes the quarter missing: q and q - 4 give missing_item.
+    for datadate in ("2000-03-31", "1999-03-31"):
+        for ajexq in (np.nan, 0.0, -1.0):
+            bad = edit(q, quarter_mask(q, 101, datadate), ajexq=ajexq)
+            assert at_r(replace(inputs, fund_quarterly=bad))["S2"] == "missing_item"
+    # A denominator quarter (1998Q1) with ajexq 0 drops differences k = 4 and k = 8 (O2-A7).
+    dropped = at_r(replace(inputs, fund_quarterly=edit(q, quarter_mask(q, 101, "1998-03-31"), epspxq=np.nan)))["S2"]
+    assert dropped == pytest.approx(0.1 / statistics.stdev([0.08, 0.07, 0.06, 0.04, 0.03, 0.02]), rel=1e-12, abs=0)
+    zero = edit(q, quarter_mask(q, 101, "1998-03-31"), ajexq=0.0)
+    assert at_r(replace(inputs, fund_quarterly=zero))["S2"] == dropped
+
+
+def sparse_quarter(q: pd.DataFrame, datadate: str, first: dict, fill: dict, known: str) -> pd.DataFrame:
+    """Quarter ``datadate`` of G101 with ``first`` set in its only row, plus a copy known on ``known`` with ``fill``."""
+    mask = quarter_mask(q, 101, datadate)
+    row = q[mask].assign(known_date=pd.Timestamp(known), **fill)
+    return pd.concat([edit(q, mask, **first), row], ignore_index=True)
+
+
+def test_sparse_first_eps_after_split_must_keep_sue(base: sig.SignalInputs) -> None:
+    """GPT-R2-M2: epspxq and ajexq of a quarter come from one row, the first row with an EPS.
+
+    1999Q1: a row known 1999-04-30 with ajexq but no EPS, and the first EPS in a row known 1999-07-02. The pair
+    is the July row, on its own basis; a split on 1999-07-01 leaves S2 unchanged. EPS first with no ajexq in its
+    row is missing_item: no factor from another row.
+    """
+    inputs = hand_inputs(base)
+    expected = at_r(inputs)["S2"]
+    q = inputs.fund_quarterly
+    eps = q.loc[quarter_mask(q, 101, "1999-03-31"), "epspxq"].iloc[0]
+    factor_first = sparse_quarter(q, "1999-03-31", {"epspxq": np.nan}, {"epspxq": eps, "ajexq": 1.0}, "1999-07-02")
+    world = replace(inputs, fund_quarterly=factor_first)
+    assert at_r(world)["S2"] == expected
+    assert at_r(split_world(world))["S2"] == expected
+    eps_first = sparse_quarter(q, "1999-03-31", {"ajexq": np.nan}, {"epspxq": eps, "ajexq": 1.0}, "1999-07-02")
+    world = replace(inputs, fund_quarterly=eps_first)
+    assert at_r(world)["S2"] == "missing_item"
+    assert at_r(split_world(world))["S2"] == "missing_item"
+    # The same-row case on each side of the split.
+    for split in ("1999-04-15", "1999-07-01"):
+        assert at_r(split_world(inputs, split))["S2"] == expected
+
+
+def test_s2_item_fill_rows_are_used_from_their_own_row(base: sig.SignalInputs) -> None:
+    """O2-M1: an EPS, a pair, or an rdq missing in the first row and filled by a later row is usable from that
+    row + 1: a fill known at r - 2 is read at r, a fill known at r - 1 is not."""
+    inputs = hand_inputs(base)
+    expected = at_r(inputs)["S2"]
+    q = inputs.fund_quarterly
+    six = at_r(replace(inputs, fund_quarterly=edit(q, quarter_mask(q, 101, "1998-03-31"), epspxq=np.nan)))["S2"]
+    cases = [("2000-03-31", ("epspxq",), "missing_item"), ("2000-03-31", ("rdq",), "missing_item"),
+             ("1999-03-31", ("epspxq",), "missing_item"), ("1999-03-31", ("epspxq", "ajexq"), "missing_item"),
+             ("1999-03-31", ("rdq",), "missing_item"), ("1998-03-31", ("epspxq",), six),
+             ("1998-03-31", ("rdq",), six), ("1998-03-31", ("epspxq", "ajexq", "rdq"), six)]
+    for datadate, items, waiting in cases:
+        original = q[quarter_mask(q, 101, datadate)].iloc[0]
+        for known, want in (("2000-07-27", expected), ("2000-07-28", waiting)):
+            sparse = sparse_quarter(q, datadate, dict.fromkeys(items, np.nan),
+                                    {item: original[item] for item in items}, known)
+            assert at_r(replace(inputs, fund_quarterly=sparse))["S2"] == want, (datadate, items, known)
+
+
+def test_s2_factor_maximum_age_at_each_basis_date(base: sig.SignalInputs) -> None:
+    """The share factor at a basis date comes from a row at most one month old: q (2000-04-30, Sunday) and the
+    denominator quarter 1998Q1 (1998-04-30)."""
+    inputs = hand_inputs(base)
+    expected = at_r(inputs)["S2"]
+    q = inputs.fund_quarterly
+    six = at_r(replace(inputs, fund_quarterly=edit(q, quarter_mask(q, 101, "1998-03-31"), epspxq=np.nan)))["S2"]
+
+    def without(first: str, last: str) -> sig.SignalInputs:
+        d = inputs.daily
+        gone = (d["permno"] == 101) & (d["date"] >= pd.Timestamp(first)) & (d["date"] <= pd.Timestamp(last))
+        return replace(inputs, daily=d[~gone])
+
+    assert at_r(without("2000-03-31", "2000-04-30"))["S2"] == expected       # last row 2000-03-30: one month
+    assert at_r(without("2000-03-30", "2000-04-30"))["S2"] == "stale"
+    assert at_r(without("1998-03-31", "1998-04-30"))["S2"] == expected
+    assert at_r(without("1998-03-30", "1998-04-30"))["S2"] == six
+
+
+def test_s2_items_before_market_data(base: sig.SignalInputs) -> None:
+    """Producer default 14: q - 4 without EPS and no CRSP rows at all give missing_item, not no_market_data."""
+    inputs = hand_inputs(base)
+    q = inputs.fund_quarterly
+    gone = inputs.daily[inputs.daily["permno"] != 101]
+    assert at_r(replace(inputs, daily=gone))["S2"] == "no_market_data"
+    blank = edit(q, quarter_mask(q, 101, "1999-03-31"), epspxq=np.nan)
+    assert at_r(replace(inputs, daily=gone, fund_quarterly=blank))["S2"] == "missing_item"
 
 
 def test_split_after_the_decision_row_rescales_both_factors(base: sig.SignalInputs) -> None:
     """A 3-for-1 split on 2000-08-15, after t, multiplies every earlier CRSP factor by 3.
 
     This is the only perturbation test that is not bit-identical: S1, S2, and S7 read ratios of two factors,
-    and the factor scaling can move the last bit, so it checks equality within 1e-12 relative.
+    and the factor scaling can move the last bit, so it checks equality within 1e-12 relative (no absolute part).
     """
     inputs = hand_inputs(base)
     before = inputs.daily["date"] < pd.Timestamp("2000-08-15")
@@ -518,7 +624,7 @@ def test_split_after_the_decision_row_rescales_both_factors(base: sig.SignalInpu
     daily.loc[~before, "shrout"] = daily.loc[~before, "shrout"] * 3.0
     got, expected = at_r(replace(inputs, daily=daily)), at_r(inputs)
     for s in sig.SIGNAL_IDS:
-        assert got[s] == pytest.approx(expected[s], rel=1e-12), s
+        assert got[s] == pytest.approx(expected[s], rel=1e-12, abs=0), s
 
 
 def test_s2_reads_only_quarters_whose_report_date_is_usable(base: sig.SignalInputs) -> None:
@@ -531,12 +637,13 @@ def test_s2_reads_only_quarters_whose_report_date_is_usable(base: sig.SignalInpu
     no_rdq = edit(q, quarter_mask(q, 101, "1999-03-31"), rdq=pd.NaT)
     assert at_r(replace(inputs, fund_quarterly=no_rdq))["S2"] == "missing_item"
     # A denominator quarter (1998Q1) with a late or missing rdq drops differences k = 4 and k = 8; six stay valid.
-    six = 0.1 / statistics.stdev([0.08, 0.07, 0.06, 0.04, 0.03, 0.02])
+    six = at_r(replace(inputs, fund_quarterly=edit(q, quarter_mask(q, 101, "1998-03-31"), epspxq=np.nan)))["S2"]
+    assert six == pytest.approx(0.1 / statistics.stdev([0.08, 0.07, 0.06, 0.04, 0.03, 0.02]), rel=1e-12, abs=0)
     for rdq in (pd.Timestamp("2001-01-02"), pd.NaT):
         dropped = edit(q, quarter_mask(q, 101, "1998-03-31"), rdq=rdq)
-        assert at_r(replace(inputs, fund_quarterly=dropped))["S2"] == pytest.approx(six, rel=1e-12)
+        assert at_r(replace(inputs, fund_quarterly=dropped))["S2"] == six
         moved = edit(dropped, quarter_mask(q, 101, "1998-03-31"), epspxq=9.0)
-        assert at_r(replace(inputs, fund_quarterly=moved))["S2"] == pytest.approx(six, rel=1e-12)
+        assert at_r(replace(inputs, fund_quarterly=moved))["S2"] == six
     # The current quarter's rdq is read as known at t: one filled in by a revision after t is missing at t.
     blank = edit(q, quarter_mask(q, 101, "2000-03-31"), rdq=pd.NaT)
     fill = q[quarter_mask(q, 101, "2000-03-31")].assign(known_date=pd.Timestamp("2000-10-02"),
@@ -544,7 +651,9 @@ def test_s2_reads_only_quarters_whose_report_date_is_usable(base: sig.SignalInpu
     assert at_r(replace(inputs, fund_quarterly=pd.concat([blank, fill], ignore_index=True)))["S2"] == "missing_item"
     # The first row decides too: a quarter first known after t is not read even when its rdq is old.
     unknown = edit(q, quarter_mask(q, 101, "1998-03-31"), known_date=pd.Timestamp("2001-01-02"))
-    assert at_r(replace(inputs, fund_quarterly=unknown))["S2"] == pytest.approx(six, rel=1e-12)
+    assert at_r(replace(inputs, fund_quarterly=unknown))["S2"] == six
+    assert at_r(replace(inputs, fund_quarterly=edit(unknown, quarter_mask(q, 101, "1998-03-31"), epspxq=9.0)))[
+        "S2"] == six
 
 
 def test_fiscal_keys_match_years_and_quarters(base: sig.SignalInputs) -> None:
@@ -727,6 +836,41 @@ def test_ibes_ticker_reuse_never_crosses_permnos(base: sig.SignalInputs) -> None
     assert at_r(reused, permno=101)["S1"] == "stale"
 
 
+def test_future_weekend_estimate_must_not_change_s1(base: sig.SignalInputs) -> None:
+    """GPT-R2-M1: an estimate not yet usable at t never changes which monthly row S1 selects.
+
+    T101 moves to a new ticker NEW101 on the same PERMNO. An added NEW101 estimate dated on a Saturday after the
+    last April row (2000-04-29), or on the month-end decision row (2000-06-30), is usable only from the next month
+    end: S1 at 2000-05-01 and 2000-07-03 is bit-identical. Once it is usable, its month has two rows (ambiguous).
+    """
+    inputs = hand_inputs(base)
+    for end, start, source, added, r, later in (
+            ("2000-04-28", "2000-04-29", "2000-04-15", "2000-04-29", "2000-05-01", "2000-06-01"),
+            ("2000-06-29", "2000-06-30", "2000-06-15", "2000-06-30", "2000-07-03", "2000-08-01")):
+        link = edit(inputs.ibes_link, inputs.ibes_link["permno"] == 101, edate=pd.Timestamp(end))
+        world = replace(inputs, ibes_link=pd.concat([link, ibes_row("NEW101", 101, start)], ignore_index=True))
+        row = inputs.ibes[ibes_mask(base, 101, source)].assign(ticker="NEW101", statpers=pd.Timestamp(added))
+        future = replace(world, ibes=pd.concat([world.ibes, row], ignore_index=True))
+        days = pd.DatetimeIndex([r, later])
+        got, expected = sig.build_signals(future, days), sig.build_signals(world, days)
+        assert isinstance(expected["values"]["S1"].loc[r, 101], float)
+        assert got["values"]["S1"].loc[r, 101] == expected["values"]["S1"].loc[r, 101]
+        assert got["values"]["S1"].loc[later, 101] != expected["values"]["S1"].loc[later, 101]
+
+
+def test_s1_link_label_reads_only_links_started_by_t(base: sig.SignalInputs, base_result: dict) -> None:
+    """O2-A6: a link row of permno 104 that starts after R leaves the earlier no_link reasons unchanged."""
+    none = replace(base, ibes_link=base.ibes_link[base.ibes_link["permno"] != 104])
+    upto = REBALANCES[REBALANCES <= R]
+    before = sig.build_signals(none, REBALANCES)["reasons"]["S1"]
+    assert (before.loc[upto, 104] == "no_link").all()
+    late = replace(none, ibes_link=pd.concat([none.ibes_link, ibes_row("T104", 104, "2001-06-01")],
+                                             ignore_index=True))
+    after = sig.build_signals(late, REBALANCES)["reasons"]["S1"]
+    assert_frame_equal(after.loc[upto], before.loc[upto])
+    assert (after.loc[REBALANCES >= pd.Timestamp("2001-06-01"), 104] != "no_link").all()
+
+
 def test_link_dates_bound_the_join(base: sig.SignalInputs) -> None:
     """A link is used only when it is valid at t."""
     for start, linked in (("2000-07-28", True), ("2000-07-29", False)):
@@ -796,11 +940,15 @@ def test_boundary_annual_lag_must_be_known(base: sig.SignalInputs) -> None:
 
 
 def test_s8_market_data_before_book_equity(base: sig.SignalInputs) -> None:
-    """A-4: with both an absent anchor and a non-positive book equity, the market reason wins."""
+    """A-4: with both an absent anchor and a non-positive book equity, the market reason wins; a missing book-equity
+    item wins over the market reason (O2-A5)."""
     inputs = hand_inputs(base)
     annual = edit(inputs.fund_annual, annual_mask(base, 101, "1999-12-31"), seq=2.0, txditc=0.0)
     gone = inputs.daily[~daily_mask(base, 101, A)]
     assert at_r(replace(inputs, fund_annual=annual, daily=gone))["S8"] == "no_market_data"
+    # Producer default 14: a missing book-equity item comes before the market read.
+    blank = edit(inputs.fund_annual, annual_mask(base, 101, "1999-12-31"), pstkrv=np.nan, pstkl=np.nan, pstk=np.nan)
+    assert at_r(replace(inputs, fund_annual=blank, daily=gone))["S8"] == "missing_item"
 
 
 def test_annual_value_waits_six_months_after_fiscal_end(base: sig.SignalInputs) -> None:

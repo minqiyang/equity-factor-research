@@ -5,7 +5,9 @@ the signal-screen design note, section 3; card m55-signals-revision sets the
 coordinator definitions of S1, the fiscal keys, the S3 announcement date, and
 the S3 market return; card m55-signals-repair-r1 sets the first-reported rule,
 the S2 share basis, the IBES link at each statistics date, and the market
-anchors. This module reads no file; a later loader card maps the WRDS files
+anchors; card m55-signals-repair-r2 sets one EPS and factor pair per quarter,
+the S2 share basis at the current quarter, and IBES selection by usable date.
+This module reads no file; a later loader card maps the WRDS files
 into ``SCHEMA``. The tests drive it with synthetic fixtures only.
 
 Timing ``after_close_signal_next_observed_close_v1``: at rebalance row ``r``
@@ -16,7 +18,8 @@ of a record is its first-reported value: the first non-missing value over the
 record's point-in-time rows; a later revision never replaces it (R1).
 
 Each member cell holds a finite value or exactly one typed reason from
-``REASONS`` (R6). Nothing is filled, clipped, winsorized, or dropped. The
+``REASONS`` (R6). Each signal checks items before market data and market data
+before domain rules (producer default 14). Nothing is filled, clipped, winsorized, or dropped. The
 engine ranks the values with the sign in ``SIGNS``; this module does not rank.
 """
 
@@ -98,10 +101,12 @@ class SignalInputs:
 
     ``daily``: one row per (``permno``, ``date``) on the CRSP trading calendar; ``ret`` is the total return with
     the delisting return included; ``prc`` is a positive close; ``cfacpr`` is the CRSP cumulative price factor
-    (a price on day d over ``cfacpr(d)`` is on the latest basis, so the factor falls at a split).
+    (a price on day d over ``cfacpr(d)`` is on the latest basis, so the factor falls at a split; it also moves at
+    a spin-off); ``cfacshr`` is the CRSP cumulative share factor (splits and stock dividends only, as ``ajexq``).
     ``members``: S&P 500 spells, ``end`` inclusive.
     ``fund_annual`` and ``fund_quarterly``: point-in-time rows, one per (``gvkey``, ``datadate``, ``known_date``);
     a later ``known_date`` is a revision; ``fyear`` or (``fyearq``, ``fqtr``) is the fiscal key of the record.
+    S2 reads ``epspxq`` and ``ajexq`` of a quarter from one row: the first row where ``epspxq`` is not missing.
     ``announcements``: one ``rdq`` per fiscal quarter, which may come from the standard quarterly file; the
     announcement is public on ``rdq``. ``link``: primary CRSP-Compustat links, ``linkenddt`` NaT when open.
     ``ibes_link``: IBES ticker to PERMNO link rows with their dates (``edate`` NaT when open) and WRDS ``score``.
@@ -260,7 +265,7 @@ class _Signals:
         self.annual = self._annual(inputs.fund_annual)
         self.quarterly = self._quarterly(inputs.fund_quarterly)
         self.announcements = self._announcements(inputs.announcements)
-        self.ibes, self.ibes_linked = self._ibes(inputs.ibes, inputs.ibes_link)
+        self.ibes, self.ibes_link_start = self._ibes(inputs.ibes, inputs.ibes_link)
 
     def _annual(self, frame: pd.DataFrame) -> dict[Any, dict[str, Any]]:
         frame = frame.sort_values(["gvkey", "fyear", "known_date"])
@@ -276,22 +281,23 @@ class _Signals:
             "when": np.where(when.isna().to_numpy(), NEVER, when.to_numpy(dtype="datetime64[ns]"))})
 
     def _quarterly(self, frame: pd.DataFrame) -> dict[Any, dict[str, np.ndarray]]:
-        # S2 uses first-reported values: per item, the earliest non-missing row of each fiscal quarter.
+        # S2 reads one coherent pair per quarter: epspxq and ajexq from the first row where epspxq is not missing,
+        # usable from that row's known date + 1; that known date is the share basis of the pair. A missing or
+        # non-positive ajexq in that row makes the quarter missing (no factor from another row). rdq is its own
+        # first non-missing value.
         frame = frame.assign(quarter=_quarter_index(frame)).sort_values(["gvkey", "quarter", "known_date"])
-        known = _ns(frame["known_date"])
-        usable = _rows_after(self.calendar, known, 1)
-        values, when = _first_reported(frame, ["gvkey", "quarter"], QUARTER_ITEMS, usable)
-        # The share basis of EPS is the date of the row that gives ajexq.
-        basis = pd.Series(known, index=frame.index).where(frame["ajexq"].notna()).groupby(
-            [frame["gvkey"], frame["quarter"]], sort=True).first().reindex(values.index)
+        keys = ["gvkey", "quarter"]
+        usable = _rows_after(self.calendar, _ns(frame["known_date"]), 1)
+        values, when = _first_reported(frame, keys, ("rdq",), usable)
+        pair = frame.assign(usable=usable)[frame["epspxq"].notna()].drop_duplicates(keys).set_index(keys).reindex(
+            values.index)
         first = pd.Series(usable, index=frame.index).groupby([frame["gvkey"], frame["quarter"]], sort=True).min()
-        when = np.where(when.isna().to_numpy(), NEVER, when.to_numpy(dtype="datetime64[ns]"))
-        rdq = _ns(values["rdq"])
-        basis = _ns(basis)
+        eps_when, basis, rdq = _ns(pair["usable"]), _ns(pair["known_date"]), _ns(values["rdq"])
         return _split(values.index.get_level_values("gvkey").to_numpy(), {
             "quarter": values.index.get_level_values("quarter").to_numpy(), "first": _ns(first.reindex(values.index)),
-            "eps": values["epspxq"].to_numpy(dtype=float), "ajexq": values["ajexq"].to_numpy(dtype=float),
-            "eps_when": when[:, 0], "ajexq_when": when[:, 1], "rdq_when": when[:, 2], "rdq": rdq,
+            "eps": pair["epspxq"].to_numpy(dtype=float), "ajexq": pair["ajexq"].to_numpy(dtype=float),
+            "eps_when": np.where(np.isnat(eps_when), NEVER, eps_when),
+            "rdq_when": np.where(when["rdq"].isna().to_numpy(), NEVER, _ns(when["rdq"])), "rdq": rdq,
             "rdq1": _rows_after(self.calendar, rdq, 1), "old": _shift_months(rdq, MAX_AGE_MONTHS["S2"]),
             "basis": basis, "basis_floor": _shift_months(basis, -FACTOR_AGE_MONTHS)})
 
@@ -303,12 +309,14 @@ class _Signals:
             "quarter": frame["quarter"].to_numpy(), "rdq": rdq, "rdq1": _rows_after(self.calendar, rdq, 1),
             "rdq2": _rows_after(self.calendar, rdq, 2), "old": _shift_months(rdq, MAX_AGE_MONTHS["S3"])})
 
-    def _ibes(self, ibes: pd.DataFrame, link: pd.DataFrame) -> tuple[dict[Any, dict[str, np.ndarray]], set]:
-        """FY1 rows by PERMNO, each resolved at its own statistics date (R3).
+    def _ibes(self, ibes: pd.DataFrame, link: pd.DataFrame) -> tuple[dict[Any, dict[str, np.ndarray]], dict]:
+        """FY1 rows by PERMNO, each resolved at its own statistics date (R3), one row per estimate.
 
         A link row counts at a statistics date when ``sdate <= statpers <= edate`` and its score is at most
         ``IBES_LINK_MAX_SCORE``. A row whose ticker has two PERMNOs there, or whose PERMNO has two tickers there,
-        is ambiguous for each of those PERMNOs; so is a PERMNO month with two rows. Unlinked rows belong to no one.
+        is ambiguous for each of those PERMNOs. Unlinked rows belong to no one. The monthly selection happens at
+        each decision row over the rows usable there (``s1``), so a row not yet usable never changes it (R1).
+        Also returns the first accepted ``sdate`` of each PERMNO (for the ``no_link`` label).
         """
         link = link[link["score"] <= IBES_LINK_MAX_SCORE].assign(edate=lambda x: x["edate"].fillna(pd.Timestamp(NEVER)))
         fy1 = ibes[ibes["fpi"] == "1"]
@@ -324,27 +332,23 @@ class _Signals:
             pd.MultiIndex.from_frame(pairs[["est", "permno"]])).to_numpy()
         rows = pairs.assign(ambiguous=(permnos.to_numpy() > 1) | (tickers > 1),
                             fpedats=_ns(fy1["fpedats"])[pairs["est"]],
-                            meanest=fy1["meanest"].to_numpy(dtype=float)[pairs["est"]],
-                            month=_month(pairs["statpers"].to_numpy()))
-        rows = rows.sort_values(["permno", "statpers"]).groupby(["permno", "month"], sort=True).agg(
-            statpers=("statpers", "max"), fpedats=("fpedats", "first"), meanest=("meanest", "first"),
-            ambiguous=("ambiguous", "any"), n=("est", "size"))
-        rows["ambiguous"] |= rows["n"] > 1
+                            meanest=fy1["meanest"].to_numpy(dtype=float)[pairs["est"]])
+        rows = rows.sort_values(["permno", "statpers", "est"])
         statpers = _ns(rows["statpers"])
-        month = rows.index.get_level_values("month").to_numpy()
-        # Usable from the first month-end row after the statistics date.
+        month = _month(statpers)
+        # Usable from the first month-end row after the statistics date (non-decreasing in statpers).
         pos = np.searchsorted(self.month_ends, statpers, side="right")
         usable = np.where(pos < len(self.month_ends), self.month_ends[np.minimum(pos, len(self.month_ends) - 1)],
                           NEVER)
         # The month-end row of the statistics month (for the S1 price), NaT when the calendar lacks that month.
         k = np.minimum(np.searchsorted(self.month_end_month, month), len(self.month_ends) - 1)
         month_end = np.where(self.month_end_month[k] == month, self.month_ends[k], np.datetime64("NaT", "ns"))
-        series = _split(rows.index.get_level_values("permno").to_numpy(), {
+        series = _split(rows["permno"].to_numpy(), {
             "statpers": statpers, "month": month, "usable": usable, "old": _shift_months(statpers, MAX_AGE_MONTHS["S1"]),
             "floor": _shift_months(statpers, -FACTOR_AGE_MONTHS), "fpedats": _ns(rows["fpedats"]),
             "meanest": rows["meanest"].to_numpy(dtype=float), "ambiguous": rows["ambiguous"].to_numpy(dtype=bool),
             "month_end": month_end})
-        return series, set(link["permno"].tolist())
+        return series, link.groupby("permno")["sdate"].min().to_dict()
 
     # Rebalance state ------------------------------------------------------------------
 
@@ -388,9 +392,9 @@ class _Signals:
             return "no_market_data"
         return rows, k
 
-    def price_factor(self, p: Any, date: np.datetime64, floor: np.datetime64) -> float | str:
-        """CRSP ``cfacpr`` of ``p`` on its latest row at or before ``date``, at most one month old (an as-of
-        factor read, not a market observation)."""
+    def factor(self, p: Any, column: str, date: np.datetime64, floor: np.datetime64) -> float | str:
+        """CRSP factor ``column`` (``cfacpr`` or ``cfacshr``) of ``p`` on its latest row at or before ``date``, at
+        most one month old (an as-of factor read, not a market observation)."""
         rows = self.market.get(p)
         if rows is None:
             return "no_market_data"
@@ -399,7 +403,7 @@ class _Signals:
             return "no_market_data"
         if rows["date"][k] < floor:
             return "stale"
-        f = rows["cfacpr"][k]
+        f = rows[column][k]
         if np.isnan(f):
             return "missing_item"
         return float(f) if f > 0.0 else "invalid_value"
@@ -431,17 +435,21 @@ class _Signals:
     # Signals --------------------------------------------------------------------------
 
     def s1(self, p: Any, t: np.datetime64) -> float | str:
-        """3 x the mean of the valid one-month FY1 revisions of the last three statistics months (at least 2)."""
+        """3 x the mean of the valid one-month FY1 revisions of the last three statistics months (at least 2).
+
+        Only rows usable at t take part: they are a prefix of the PERMNO's rows, because the usable date does
+        not decrease with the statistics date. A month with two usable rows is ambiguous.
+        """
         rec = self.ibes.get(p)
-        if rec is None:
-            return "no_record" if p in self.ibes_linked else "no_link"
-        usable = rec["usable"] <= t
-        if not usable.any():
-            return "not_yet_known"
-        late = int(np.flatnonzero(usable)[-1])
+        cut = 0 if rec is None else int(np.searchsorted(rec["usable"], t, side="right"))
+        if cut == 0:
+            if not self.ibes_link_start.get(p, NEVER) <= t:      # labels read only link rows started by t
+                return "no_link"
+            return "no_record" if rec is None else "not_yet_known"
+        late = cut - 1
         if t > rec["old"][late]:
             return "stale"
-        revisions = [self._revision_s1(p, rec, rec["month"][late] - k) for k in range(S1_REVISIONS)]
+        revisions = [self._revision_s1(p, rec, cut, rec["month"][late] - k) for k in range(S1_REVISIONS)]
         valid = [r for r in revisions if not isinstance(r, str)]
         if len(valid) >= S1_MIN_VALID:
             return S1_REVISIONS * float(np.mean(valid))
@@ -449,22 +457,26 @@ class _Signals:
             return "fpe_changed"
         return next(r for r in revisions if isinstance(r, str))   # the most recent failed revision
 
-    def _revision_s1(self, p: Any, rec: dict[str, np.ndarray], month: int) -> float | str:
-        """(FY1 mean at month m - FY1 mean at m - 1) / price at the m - 1 month end, on one share basis."""
-        late = int(np.searchsorted(rec["month"], month))
-        early = late - 1
-        if late >= len(rec["month"]) or rec["month"][late] != month or early < 0 or rec["month"][early] != month - 1:
+    def _revision_s1(self, p: Any, rec: dict[str, np.ndarray], cut: int, month: int) -> float | str:
+        """(FY1 mean at month m - FY1 mean at m - 1) / price at the m - 1 month end, on one share basis.
+
+        Reads only the first ``cut`` rows (those usable at t).
+        """
+        months = rec["month"][:cut]
+        late, late_end = np.searchsorted(months, [month, month + 1])
+        early, early_end = np.searchsorted(months, [month - 1, month])
+        if late == late_end or early == early_end:
             return "short_history"
-        if rec["ambiguous"][late] or rec["ambiguous"][early]:
+        if late_end - late > 1 or early_end - early > 1 or rec["ambiguous"][late] or rec["ambiguous"][early]:
             return "ambiguous_link"
         if rec["fpedats"][early] != rec["fpedats"][late]:
             return "fpe_changed"
         if np.isnan(rec["meanest"][late]) or np.isnan(rec["meanest"][early]):
             return "missing_item"
-        f_late = self.price_factor(p, rec["statpers"][late], rec["floor"][late])
+        f_late = self.factor(p, "cfacpr", rec["statpers"][late], rec["floor"][late])
         if isinstance(f_late, str):
             return f_late
-        f_early = self.price_factor(p, rec["statpers"][early], rec["floor"][early])
+        f_early = self.factor(p, "cfacpr", rec["statpers"][early], rec["floor"][early])
         if isinstance(f_early, str):
             return f_early
         if np.isnat(rec["month_end"][early]):
@@ -481,8 +493,12 @@ class _Signals:
         # An estimate on day d times cfacpr(price row) / cfacpr(d) is on the share basis of the price row.
         return float(f_price * (rec["meanest"][late] / f_late - rec["meanest"][early] / f_early) / price)
 
-    def s2(self, p: Any, g: Any, t: np.datetime64, t_floor: np.datetime64) -> float | str:
-        """(EPS q - EPS q-4) / sd of the eight prior such differences (at least 6), on the share basis of t."""
+    def s2(self, p: Any, g: Any, t: np.datetime64) -> float | str:
+        """(EPS q - EPS q-4) / sd of the eight prior such differences (at least 6), on the share basis of q.
+
+        Items before market data: q and q - 4 pass their item checks before any factor is read. S2 is scale-free,
+        so no factor is read at t.
+        """
         if g in LINK_REASONS:
             return g
         rec = self.quarterly.get(g)
@@ -492,18 +508,15 @@ class _Signals:
         if not known.any():
             return "not_yet_known"
         j = int(np.flatnonzero(known)[-1])
-        if rec["rdq_when"][j] > t:          # the age needs rdq as known at t; eps() applies the rdq + 1 gate
+        if rec["rdq_when"][j] > t:          # the age needs rdq as known at t; item() applies the rdq + 1 gate
             return "missing_item"
         if t > rec["old"][j]:
             return "stale"
         if known[: j + 1].sum() < MIN_QUARTER_RECORDS:
             return "short_history"
-        f_t = self.price_factor(p, t, t_floor)
-        if isinstance(f_t, str):
-            return f_t
 
-        def eps(quarter: int) -> float | str:
-            # A quarter is read only when its first row and its rdq + 1 row are both at or before t.
+        def item(quarter: int) -> int | str:
+            # A quarter is read only when its first row, its rdq + 1 row, and its EPS row are at or before t.
             i = int(np.searchsorted(rec["quarter"], quarter))
             if i >= len(rec["quarter"]) or rec["quarter"][i] != quarter or not known[i]:
                 return "short_history"
@@ -511,24 +524,38 @@ class _Signals:
                 return "missing_item"
             if rec["rdq1"][i] > t:
                 return "not_yet_known"
-            if rec["eps_when"][i] > t or rec["ajexq_when"][i] > t:
+            if rec["eps_when"][i] > t or not rec["ajexq"][i] > 0.0:
                 return "missing_item"
-            if rec["ajexq"][i] <= 0.0:
-                return "invalid_value"
-            f_k = self.price_factor(p, rec["basis"][i], rec["basis_floor"][i])
-            if isinstance(f_k, str):
-                return f_k
-            # epspxq / ajexq is on the basis of its known date k; cfacpr(t) / cfacpr(k) carries the splits to t.
-            return rec["eps"][i] / rec["ajexq"][i] * (f_t / f_k)
+            return i
 
-        quarter = rec["quarter"][j]
-        now, before = eps(quarter), eps(quarter - 4)
-        for value in (now, before):
-            if isinstance(value, str):
-                return value
+        def factor(i: int) -> float | str:
+            return self.factor(p, "cfacshr", rec["basis"][i], rec["basis_floor"][i])
+
+        now, before = item(rec["quarter"][j]), item(rec["quarter"][j] - 4)
+        for i in (now, before):
+            if isinstance(i, str):
+                return i
+        f_ref = factor(now)
+        if isinstance(f_ref, str):
+            return f_ref
+
+        def eps(i: int) -> float | str:
+            # epspxq / ajexq is on the share basis of its known date k; cfacshr(ref) / cfacshr(k) moves it to the
+            # basis of q's known date (cfacshr, like ajexq, moves at splits and stock dividends, not spin-offs).
+            f = f_ref if i == now else factor(i)
+            if isinstance(f, str):
+                return f
+            return rec["eps"][i] / rec["ajexq"][i] * (f_ref / f)
+
+        e_now, e_before = eps(now), eps(before)
+        if isinstance(e_before, str):
+            return e_before
         diffs = []
         for q in range(1, SUE_QUARTERS + 1):
-            a, b = eps(quarter - q), eps(quarter - q - 4)
+            a, b = item(rec["quarter"][j] - q), item(rec["quarter"][j] - q - 4)
+            if isinstance(a, str) or isinstance(b, str):
+                continue
+            a, b = eps(a), eps(b)
             if not isinstance(a, str) and not isinstance(b, str):
                 diffs.append(a - b)
         if len(diffs) < SUE_MIN_VALID:
@@ -536,7 +563,7 @@ class _Signals:
         sd = float(np.std(diffs, ddof=1))
         if sd == 0.0:
             return "zero_denominator"
-        return (now - before) / sd
+        return (e_now - e_before) / sd
 
     def s3(self, p: Any, g: Any, t: np.datetime64) -> float | str:
         """Stock minus index compound return over rows -1 to +1 around the latest announcement usable at t."""
@@ -645,9 +672,12 @@ class _Signals:
         return float(shares) if shares > 0.0 else "invalid_value"
 
     def s8(self, p: Any, view: tuple | str, anchors: dict[str, Any]) -> float | str:
-        # Market data before domain checks (producer default 14): be_nonpositive comes after the market read.
+        # Producer default 14: book-equity items, then the market read, then be_nonpositive.
         if isinstance(view, str):
             return view
+        be = book_equity(view[0])
+        if isinstance(be, str):
+            return be
         if anchors["a"] is None:
             return "no_market_data"
         found = self.anchor_row(p, anchors["a"])
@@ -659,9 +689,6 @@ class _Signals:
             return "missing_item"
         if shares < 0.0:
             return "invalid_value"
-        be = book_equity(view[0])
-        if isinstance(be, str):
-            return be
         if be <= 0.0:
             return "be_nonpositive"
         return "zero_denominator" if shares == 0.0 else be / (price * shares)
@@ -708,7 +735,6 @@ def build_signals(inputs: SignalInputs, rebalances: pd.DatetimeIndex) -> dict[st
     values = {s: np.full((len(rows), len(permnos)), np.nan) for s in SIGNAL_IDS}
     reasons = {s: np.full((len(rows), len(permnos)), None, dtype=object) for s in SIGNAL_IDS}
     members = np.zeros((len(rows), len(permnos)), dtype=bool)
-    decision_floor = _shift_months(decision, -FACTOR_AGE_MONTHS)
     for i, (t, current) in enumerate(zip(decision, member_sets)):
         links = data.links_at(t)
         anchors = data.anchors(t)
@@ -717,7 +743,7 @@ def build_signals(inputs: SignalInputs, rebalances: pd.DatetimeIndex) -> dict[st
             members[i, c] = True
             g = links.get(p, "no_link")
             annual = g if g in LINK_REASONS else data.annual_view(g, t)
-            cells = {"S1": data.s1(p, t), "S2": data.s2(p, g, t, decision_floor[i]), "S3": data.s3(p, g, t),
+            cells = {"S1": data.s1(p, t), "S2": data.s2(p, g, t), "S3": data.s3(p, g, t),
                      "S4": data.s4(annual), "S5": data.s5(annual), "S6": data.s6(annual), "S7": data.s7(p, anchors),
                      "S8": data.s8(p, annual, anchors)}
             for s, cell in cells.items():
