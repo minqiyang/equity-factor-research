@@ -62,13 +62,19 @@ Decision:
 - P-6: a zero `dlyprc` is no price (1,108 rows), so it stays typed missing.
 - P-7: the 21 member PERMNOs whose path ends without a delisting record all end in 2019-07, the same count as the
   sealed delisting records. A pre-seal window ends before 2019-07, so they do not reach the engine.
-- P-8: 695 IBES FY1 rows have a currency other than USD. They are kept; the signal module divides them by a USD
-  price. Backlog item for the signal card.
-- P-9 (D8, blocking S2): `comp_urq.ajexq` equals the current `comp_fundq.ajexq` on all 135,119 matched rows, and 36
-  of 5,431 quarters reported up to a year before a CRSP split have `ajexq` 1. Under the signals loader note, the
-  first-reported check fails, so `signal_inputs` refuses (`ajexq_not_first_reported`, 95 percent rule). The
-  coordinator chooses the S2 share basis before any real S2 value.
-- No reading loosens R1, R2, R4, R6, or R8. The coordinator decides P-9.
+- P-8 (coordinator decision, card m55-loader-p9): IBES FY1 rows with a currency other than USD, or with no
+  currency, are dropped before `signal_inputs` returns and counted by year (695 rows, 1978 to 2026). S1 divides the
+  estimate by a USD price, so a row in another currency would give a wrong value. All IBES rows in the file are FY1.
+- P-9 (D8, coordinator decision, card m55-loader-p9: option (a)): `comp_urq.ajexq` equals the current
+  `comp_fundq.ajexq` on all 135,119 matched rows, and 36 of 5,431 quarters reported up to a year before a CRSP split
+  have `ajexq` 1, so URQ `ajexq` is not first-reported. The loader never reads it and supplies `ajexq` 1.0 on every
+  `fund_quarterly` row. S2 is unchanged: each quarter's first-reported EPS is on the share basis of its own first
+  known date, and the CRSP `cfacshr` ratio moves it to the basis of q's known date. Reason: by ASC 260, reported EPS
+  is restated for a split that takes effect before the statements are issued, so first-reported EPS has the share
+  basis of its report date, the basis of `cfacshr` at that date. The data agree: URQ `epspxq` is as reported
+  (136,579 of 136,751 equal the current value). The `ajexq_not_first_reported` refusal is removed; the 36 of 5,431
+  count stays in the intake report as an aggregate.
+- No reading loosens R1, R2, R4, R6, or R8.
 
 Consequences:
 

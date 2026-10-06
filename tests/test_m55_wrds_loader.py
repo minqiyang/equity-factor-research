@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -482,19 +483,65 @@ def test_future_rows_change_nothing_up_to_the_decision_row() -> None:
     assert later["eligible"].loc["2018-07-02", str(B)]
 
 
-def test_ajexq_must_be_first_reported_before_a_split(world: w.WrdsData) -> None:
-    check = w.ajexq_check(world)
-    assert check["quarters_before_split"] == check["ajexq_one"] == 4
-    quarters = world_frames()["comp_urq"]
-    a_before = int(((quarters["gvkey"] == f"G{A}") & (quarters["datadate"] < SPLIT)).sum())
-    assert check["urq_rows_matched"] == len(quarters) and check["urq_equal_current"] == len(quarters) - a_before
+def test_loader_supplies_ajexq_one_and_never_reads_urq_ajexq() -> None:
+    """P-9 option (a): a current-vintage URQ ajexq (2 on quarters reported before A's split) changes nothing."""
     frames = world_frames()
     urq = frames["comp_urq"].copy()
-    before = (urq["gvkey"] == f"G{A}") & urq["rdq"].between(SPLIT - pd.Timedelta(days=365), SPLIT)
-    urq.loc[before, "ajexq"] = 2.0                                  # a current-vintage factor after the split
+    urq.loc[(urq["gvkey"] == f"G{A}") & (urq["prelimqprd"] < SPLIT), "ajexq"] = 2.0
     data = make_data(edit(frames, "comp_urq", urq))
-    with pytest.raises(RunnerStop, match="ajexq_not_first_reported"):
-        w.signal_inputs(data)
+    inputs = w.signal_inputs(data)
+    assert len(inputs.fund_quarterly) and (inputs.fund_quarterly["ajexq"] == 1.0).all()
+    pd.testing.assert_frame_equal(inputs.fund_quarterly, w.signal_inputs(make_data(world_frames())).fund_quarterly)
     report = w.intake_report(data)
-    assert report["ajexq_check"]["passed"] is False and report["ajexq_check"]["ajexq_one"] == 0
-    assert "- FAIL: URQ `ajexq` is first-reported" in w.intake_markdown(report)
+    assert report["ajexq"]["urq"] == {"quarters_before_split": 4, "ajexq_one": 0}
+    assert report["ajexq"]["supplied_one"] == report["ajexq"]["supplied_rows"] == len(inputs.fund_quarterly)
+    assert "FAIL" not in w.intake_markdown(report)
+
+
+def test_s2_across_a_split_matches_the_no_split_world() -> None:
+    """A's quarters reported before its 2-for-1 split carry pre-split EPS (twice the post-split basis) and a
+    current-vintage URQ ajexq 2; the quarters after it carry post-split EPS. With the supplied ajexq 1.0 and the
+    cfacshr ratio, S2 equals S2 of the same firm with no split (halving is exact, so bit-identical)."""
+    frames = world_frames()
+    urq = frames["comp_urq"].copy()
+    a = urq["gvkey"] == f"G{A}"
+    k = np.arange(a.sum(), dtype=float)
+    eps = 0.25 + 0.002 * k + 0.0005 * k**2                         # post-split basis; differences vary
+    before = a & (urq["prelimqprd"] < SPLIT)
+    urq.loc[a, "epspxq"] = eps
+    urq.loc[before, "epspxq"] *= 2.0
+    urq.loc[before, "ajexq"] = 2.0
+    split = w.signal_inputs(make_data(edit(frames, "comp_urq", urq)))
+    q, d = split.fund_quarterly, split.daily
+    no_split = replace(split, daily=d.assign(cfacshr=d["cfacshr"].where(d["permno"] != A, 1.0)),
+                       fund_quarterly=q.assign(epspxq=q["epspxq"].where(q["gvkey"] != f"G{A}", q["epspxq"] / np.where(
+                           q["known_date"] < SPLIT, 2.0, 1.0))))
+    r = at("2018-06-29")                     # q = 2018Q1 known after the split; q - 4 and the prior quarters before
+
+    def s2(inputs: sig.SignalInputs) -> float:
+        return sig.build_signals(inputs, pd.DatetimeIndex([r]))["values"]["S2"].loc[r, A]
+
+    expected = s2(no_split)
+    assert np.isfinite(expected) and s2(split) == expected
+    # The URQ ajexq would count the split twice and move S2 (the defect P-9 avoids).
+    urq_ajexq = q.assign(ajexq=np.where((q["gvkey"] == f"G{A}") & (q["known_date"] < SPLIT), 2.0, 1.0))
+    assert s2(replace(split, fund_quarterly=urq_ajexq)) != pytest.approx(expected, rel=1e-3)
+
+
+def test_non_usd_fy1_rows_drop_and_count_by_year() -> None:
+    frames = world_frames()
+    ibes = frames["ibes_statsumu_epsus"].copy()
+    rows = ibes.index[(ibes["ticker"] == f"T{A}") & ibes["statpers"].dt.year.isin([2000, 2001])]
+    ibes.loc[rows[[0, 1]], "curcode"] = "CAD"
+    ibes.loc[rows[12], "curcode"] = None                           # a missing currency is not USD
+    fy2 = ibes.loc[[rows[2]]].assign(fpi="2", curcode="CAD")       # only FY1 rows drop
+    data = make_data(edit(frames, "ibes_statsumu_epsus", pd.concat([ibes, fy2], ignore_index=True)))
+    inputs, drops = w.signal_tables(data)
+    assert drops["ibes"] == {"no_key": 0, "non_usd_fy1": 3}
+    assert drops["ibes_non_usd_fy1_by_year"] == {"2000": 2, "2001": 1}
+    assert len(inputs.ibes) == len(ibes) + 1 - 3 and (inputs.ibes["fpi"] == "2").sum() == 1
+    assert not inputs.ibes.merge(ibes.loc[rows[[0, 1, 12]], ["ticker", "statpers", "fpi"]]).shape[0]
+    report = w.intake_report(data)
+    assert report["ibes_fy1_rows"]["inputs"] == report["ibes_fy1_rows"]["file_usd"] == len(ibes) - 3
+    text = w.intake_markdown(report)
+    assert "FAIL" not in text and "dropped before `signal_inputs` returns: 3 (by year: 2000 2, 2001 1)" in text

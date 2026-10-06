@@ -12,6 +12,20 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-05 - WRDS loader: coordinator decisions P-9 and IBES currency (Milestone 5.5)
+
+- Card m55-loader-p9 on candidate `4717a56`. P-9 option (a): `signal_tables` no longer reads URQ `ajexq` and
+  supplies 1.0 on every `fund_quarterly` row; `ajexq_check` and its refusal are replaced by
+  `urq_ajexq_aggregate`, which no longer reads the current-vintage `comp_fundq.ajexq`. S2 in
+  `research/m55_signals.py` is unchanged.
+- New test: A's quarters reported before its 2-for-1 split carry pre-split EPS and a current-vintage URQ `ajexq`
+  of 2; S2 at a rebalance after the split equals S2 of the same firm with no split (bit-identical), and the URQ
+  factor would move it. A second test shows that a URQ `ajexq` of 2 changes no supplied row.
+- IBES: FY1 rows with a currency other than USD (a missing currency counts as other) are dropped in
+  `signal_tables` and counted by year. The intake check compares the FY1 rows of the inputs with the keyed USD FY1
+  rows of the file.
+- Real rerun (about 14 s): every intake check passes, the 695 rows drop, and the tracked manifest is unchanged.
+
 ## 2026-10-05 - WRDS loader for the engine and signal inputs (Milestone 5.5)
 
 - New module `research/m55_wrds_loader.py` and `tests/test_m55_wrds_loader.py` (card m55-loader, branch

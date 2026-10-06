@@ -33,7 +33,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from research import m55_signals as sig
-from research.m4_7_sp500_pit_rerun import RunnerStop
 from research.m55_index_tilt import CAUSES, DISAPPEARANCE_FIELDS, ME_REASONS, refuse
 
 
@@ -54,8 +53,9 @@ FAILURE_ACTIONS = ("GLI",)
 SPLIT_FACTOR = 2.0                               # D7: rows with dlyfacprc = 2
 SPLIT_EXACT_SHARE = 0.99                         # D7: share of split rows where both factors halve exactly
 SPLIT_MEDIAN_BOUNDS = (1.8, 2.2)                 # D7: median price ratio and share ratio across the split
-AJEXQ_WINDOW_DAYS = 365                          # signal loader note: quarters reported up to a year before a split
-AJEXQ_FIRST_SHARE = 0.95                         # share of those quarters whose URQ ajexq must be 1
+AJEXQ_WINDOW_DAYS = 365                          # P-9 aggregate: quarters reported up to a year before a split
+SUPPLIED_AJEXQ = 1.0                             # P-9 option (a): S2 uses the cfacshr basis of the first known date
+FY1, IBES_CURRENCY = "1", "USD"                  # S1 divides by a USD price: FY1 rows in other currencies drop
 EXIT_CLASSES = ("current", "left_index", *CAUSES)
 UNITS = {"shrout": "thousands of shares", "market_equity": "thousands of USD", "compustat_items": "millions of USD"}
 
@@ -479,8 +479,10 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
             ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyear"]))])
         annual["fyear"] = annual["fyear"].astype(np.int64)
 
-        urq = frame(data, "comp_urq", ["gvkey", "datadate", "fqtr", "rdq", "prelimqprd", "finalqprd", "epspxq",
-                                       "ajexq"])
+        urq = frame(data, "comp_urq", ["gvkey", "datadate", "fqtr", "rdq", "prelimqprd", "finalqprd", "epspxq"])
+        # P-9 option (a): URQ ajexq is not first-reported, so it is never read. First-reported EPS is on the share
+        # basis of its report date (ASC 260), the basis of CRSP cfacshr at that date; S2 applies the cfacshr ratio.
+        urq["ajexq"] = SUPPLIED_AJEXQ
         keys = frame(data, "comp_fundq", ["gvkey", "datadate", "fyearq"]).dropna().drop_duplicates()
         keys = keys[~keys.duplicated(["gvkey", "datadate"], keep=False)]    # two fiscal years: no fiscal key
         urq = urq.merge(keys, on=["gvkey", "datadate"], how="left")
@@ -506,9 +508,14 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
         ibes_link = frame(data, "ibes_crsp_link", ["ticker", "permno", "sdate", "edate", "score"])
         ibes_link, drops["ibes_link"] = _drop(ibes_link, [
             ("no_key", lambda t: t[["ticker", "permno", "sdate", "score"]].isna().any(axis=1))])
-        ibes = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "meanest"])
+        ibes = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "meanest", "curcode"])
         ibes, drops["ibes"] = _drop(ibes, [
             ("no_key", lambda t: t[["ticker", "statpers", "fpi", "fpedats"]].isna().any(axis=1))])
+        other = (ibes["fpi"] == FY1) & (ibes["curcode"] != IBES_CURRENCY)     # a missing currency is not USD
+        drops["ibes_non_usd_fy1_by_year"] = {str(y): int(n) for y, n in
+                                             ibes.loc[other, "statpers"].dt.year.value_counts().sort_index().items()}
+        drops["ibes"]["non_usd_fy1"] = int(other.sum())
+        ibes = ibes[~other].reset_index(drop=True)[list(sig.SCHEMA["ibes"])]
         index = frame(data, "crsp_index_daily", ["indno", "dlycaldt", "dlytotret"])
         index = index[index["indno"] == MARKET_INDNO].rename(columns={"dlycaldt": "date", "dlytotret": "ret"})
         drops["index_daily"] = {}
@@ -522,13 +529,12 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
     return _cached(data, "signal_tables", build)
 
 
-def ajexq_check(data: WrdsData) -> dict[str, Any]:
-    """Signal loader note (Repair Round 2): URQ ``ajexq`` must be first-reported, never a current-vintage value.
+def urq_ajexq_aggregate(data: WrdsData) -> dict[str, Any]:
+    """P-9 aggregate (never an input): URQ ``ajexq`` of quarters reported before a CRSP 2-for-1 split.
 
-    Quarters whose ``rdq`` falls up to a year before a CRSP 2-for-1 split of the linked PERMNO (CCM link valid at
-    ``rdq``) were reported before the split, so their first-reported ``ajexq`` is 1. Refuses when fewer than 95
-    percent of them have ``ajexq`` 1, or when there is no such quarter. Also counts URQ values equal to the
-    current ``comp_fundq`` value.
+    Quarters whose ``rdq`` falls up to a year before a split of the linked PERMNO (CCM link valid at ``rdq``) were
+    reported before the split, so a first-reported ``ajexq`` would be 1. The count shows that URQ ``ajexq`` is a
+    current-vintage value; the loader supplies ``ajexq`` 1.0 instead.
     """
     rows = daily(data)
     splits = rows.loc[rows["dlyfacprc"] == SPLIT_FACTOR, ["permno", "date"]].rename(columns={"date": "split"})
@@ -540,21 +546,11 @@ def ajexq_check(data: WrdsData) -> dict[str, Any]:
     hit = hit.merge(splits, on="permno")
     hit = hit[(hit["split"] > hit["rdq"]) & (hit["split"] <= hit["rdq"] + pd.Timedelta(days=AJEXQ_WINDOW_DAYS))]
     hit = hit.drop_duplicates(["gvkey", "datadate"])
-    current = frame(data, "comp_fundq", ["gvkey", "datadate", "ajexq"]).drop_duplicates(["gvkey", "datadate"])
-    both = urq.merge(current, on=["gvkey", "datadate"], suffixes=("", "_current")).dropna(
-        subset=["ajexq", "ajexq_current"])
-    result = {"quarters_before_split": int(len(hit)), "ajexq_one": int((hit["ajexq"] == 1.0).sum()),
-              "urq_rows_matched": int(len(both)),
-              "urq_equal_current": int(np.isclose(both["ajexq"], both["ajexq_current"]).sum())}
-    data.cache["ajexq_check"] = result
-    if not len(hit) or result["ajexq_one"] < AJEXQ_FIRST_SHARE * len(hit):
-        raise refuse("ajexq_not_first_reported", "URQ ajexq of quarters reported before a split is not 1")
-    return result
+    return {"quarters_before_split": int(len(hit)), "ajexq_one": int((hit["ajexq"] == 1.0).sum())}
 
 
 def signal_inputs(data: WrdsData) -> sig.SignalInputs:
-    """The signal inputs after the first-reported ``ajexq`` check (it refuses on failure)."""
-    ajexq_check(data)
+    """The signal inputs (D8, P-9 option (a), FY1 rows in USD only)."""
     return signal_tables(data)[0]
 
 
@@ -675,11 +671,10 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
     if duplicate_fy1:
         raise refuse("duplicate_key", "ibes: two FY1 rows in one ticker-month")
     tables = {name: {"rows": int(len(getattr(inputs, name))), "dropped": drops[name]} for name in sig.SCHEMA}
-    ibes_currency = frame(data, "ibes_statsumu_epsus", ["curcode"])["curcode"]
-    try:
-        ajexq = {**ajexq_check(data), "passed": True}
-    except RunnerStop:
-        ajexq = {**data.cache["ajexq_check"], "passed": False}
+    supplied = inputs.fund_quarterly["ajexq"]
+    raw = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "curcode"])
+    raw = raw[raw[["ticker", "statpers", "fpi", "fpedats"]].notna().all(axis=1) & (raw["fpi"] == FY1)]
+    usd_fy1 = {"file_usd": int((raw["curcode"] == IBES_CURRENCY).sum()), "inputs": int((inputs.ibes["fpi"] == FY1).sum())}
     return {
         "vintage": data.manifest["vintage"],
         "calendar": {"rows": int(len(calendar(data))), "first": str(calendar(data)[0].date()),
@@ -699,8 +694,10 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
                        "path_ends_early_without_delisting_record": len(no_record),
                        "path_ends_early_by_month": {k: int(v) for k, v in end_months.items()}},
         "spy": spy_check(data), "split_check": data.cache["split_check"],
-        "signal_tables": tables, "duplicate_fy1_ticker_month": duplicate_fy1, "ajexq_check": ajexq,
-        "ibes_non_usd_rows": int((ibes_currency != "USD").sum()),
+        "signal_tables": tables, "duplicate_fy1_ticker_month": duplicate_fy1,
+        "ajexq": {"supplied_rows": int(len(supplied)), "supplied_one": int((supplied == SUPPLIED_AJEXQ).sum()),
+                  "urq": urq_ajexq_aggregate(data)},
+        "ibes_non_usd_fy1_by_year": drops["ibes_non_usd_fy1_by_year"], "ibes_fy1_rows": usd_fy1,
     }
 
 
@@ -721,8 +718,10 @@ def intake_markdown(report: dict[str, Any]) -> str:
          report["split_check"]["factor_rises"] == 0),
         ("Duplicate FY1 row per ticker-month is zero", report["duplicate_fy1_ticker_month"] == 0),
         ("Signal inputs pass `check_inputs`", True),
-        ("URQ `ajexq` is first-reported: 1 on quarters reported up to a year before a CRSP split (95 percent rule); "
-         "`signal_inputs` refuses otherwise", report["ajexq_check"]["passed"]),
+        ("P-9: `fund_quarterly` `ajexq` is 1.0 on every supplied row (URQ `ajexq` is not read)",
+         report["ajexq"]["supplied_one"] == report["ajexq"]["supplied_rows"]),
+        ("IBES: the FY1 rows of the signal inputs are exactly the keyed USD FY1 rows of the file",
+         report["ibes_fy1_rows"]["inputs"] == report["ibes_fy1_rows"]["file_usd"]),
     ]
     lines += [f"- {'PASS' if ok else 'FAIL'}: {text}" for text, ok in checks]
     spy, split, cal = report["spy"], report["split_check"], report["calendar"]
@@ -732,9 +731,10 @@ def intake_markdown(report: dict[str, Any]) -> str:
               f"Split rows {split['split_rows']}; both factors halve exactly on {split['both_factors_halve']}; "
               f"factor rises {split['factor_rises']}; median price ratio {split['median_price_ratio']:.4f}; "
               f"median share ratio {split['median_share_ratio']:.4f}.",
-              f"URQ `ajexq`: {report['ajexq_check']['ajexq_one']} of {report['ajexq_check']['quarters_before_split']} "
-              f"quarters reported before a split have `ajexq` 1; {report['ajexq_check']['urq_equal_current']} of "
-              f"{report['ajexq_check']['urq_rows_matched']} URQ values equal the current `comp_fundq` value.", "",
+              f"URQ `ajexq` (aggregate only, not read for S2): {report['ajexq']['urq']['ajexq_one']} of "
+              f"{report['ajexq']['urq']['quarters_before_split']} quarters reported up to a year before a split have "
+              f"`ajexq` 1; the loader supplies 1.0 on all {report['ajexq']['supplied_rows']} `fund_quarterly` rows "
+              "(P-9 option (a)).", "",
               "## Members Per Day By Year", "", "| Year | Days | Mean | Min | Max | Days with 500 |",
               "| --- | --- | --- | --- | --- | --- |"]
     lines += [f"| {y} | {v['days']} | {v['mean']:.1f} | {v['min']} | {v['max']} | {v['days_500']} |"
@@ -776,7 +776,9 @@ def intake_markdown(report: dict[str, Any]) -> str:
     for name, v in report["signal_tables"].items():
         dropped = ", ".join(f"{k} {n}" for k, n in v["dropped"].items()) or "none"
         lines.append(f"| {name} | {v['rows']} | {dropped} |")
-    lines += ["", f"IBES FY1 rows with a currency other than USD (kept): {report['ibes_non_usd_rows']}.", ""]
+    by_year = ", ".join(f"{y} {n}" for y, n in report["ibes_non_usd_fy1_by_year"].items()) or "none"
+    lines += ["", f"IBES FY1 rows with a currency other than USD, dropped before `signal_inputs` returns: "
+              f"{report['signal_tables']['ibes']['dropped']['non_usd_fy1']} (by year: {by_year}).", ""]
     return "\n".join(lines)
 
 
