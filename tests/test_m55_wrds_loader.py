@@ -21,7 +21,7 @@ from data.constituent_table import build_pit_membership_mask
 from research import m55_signals as sig
 from research.m4_7_family_a import FAMILY_A_IDS
 from research.m4_7_sp500_pit_rerun import RunnerStop
-from research.m55_index_tilt import TiltInputs, check_disappearances, check_inputs
+from research.m55_index_tilt import TiltInputs, check_disappearances, check_inputs, terminal_events
 
 
 DAYS = pd.bdate_range("1992-12-01", "2021-06-30")
@@ -52,7 +52,10 @@ def daily_rows(permno: int, rng: np.random.Generator) -> pd.DataFrame:
     prc = 20.0 * np.cumprod(1.0 + ret)
     table = pd.DataFrame({"permno": permno, "dlycaldt": dates, "dlyret": ret, "dlyprc": prc, "dlydelflg": "N",
                           "dlycumfacpr": 1.0, "dlycumfacshr": 1.0, "dlyfacprc": 1.0, "shrout": 1000,
-                          "dlyvol": 100.0})
+                          "dlyvol": 100.0, "primaryexch": "N", "dlyprcflg": "TR"})
+    table.loc[table.index[1::50], "dlyprcflg"] = "BA"   # a bid-ask average now and then
+    if permno == B:
+        table["primaryexch"] = "Q"
     table["dlyprevdt"] = table["dlycaldt"].shift(1)
     table.loc[0, "dlyret"] = np.nan                       # a new security has no first return (CIZ NS)
     if permno == A:
@@ -285,6 +288,7 @@ def test_share_reasons_stale_none_and_unmapped() -> None:
     cutoff = T - pd.Timedelta(days=136)
     stale = me_case([("1985-01-01", cutoff - pd.Timedelta(days=1), 1000)])
     assert np.isnan(stale["market_equity"]) and stale["me_reason"] == "stale_share_fact"
+    assert np.isnan(stale["share_count"])                              # item 7: no count under a D5 reason
     assert me_case([("1985-01-01", cutoff, 1000)])["market_equity"] == 50.0 * 1000
     none = me_case([(cutoff + pd.Timedelta(days=1), "2025-12-31", 1000)])
     assert none["me_reason"] == "no_share_fact"
@@ -406,7 +410,7 @@ def test_signal_inputs_pass_check_inputs_and_count_dropped_rows() -> None:
                                        "known_before_datadate": 1}
     assert drops["announcements"] == {"no_fiscal_key": 2, "fiscal_key_conflict": 0}
     assert drops["fund_annual"] == {"no_fiscal_key": 1, "no_known_date": 0, "known_before_datadate": 1,
-                                    "fiscal_key_conflict": 2}
+                                    "fiscal_key_conflict": 1}               # the later-known record loses
     q = inputs.fund_quarterly.iloc[5]
     assert q["known_date"] == q["datadate"] + pd.Timedelta(days=30) and q["fyearq"] == q["datadate"].year
     assert set(inputs.daily["permno"]) == set(MEMBERS)                     # SPY is not an input to the signals
@@ -545,3 +549,245 @@ def test_non_usd_fy1_rows_drop_and_count_by_year() -> None:
     assert report["ibes_fy1_rows"]["inputs"] == report["ibes_fy1_rows"]["file_usd"] == len(ibes) - 3
     text = w.intake_markdown(report)
     assert "FAIL" not in text and "dropped before `signal_inputs` returns: 3 (by year: 2000 2, 2001 1)" in text
+
+
+# Card m55-loader-fix-r1 -------------------------------------------------------------------
+
+def basis_rows(permno: int, spans: list[tuple[str, str, float, float]]) -> pd.DataFrame:
+    """Daily rows on CAL in each (first, last, price, factor) span."""
+    parts = [pd.DataFrame({"permno": permno, "date": CAL[(CAL >= first) & (CAL <= last)], "prc": price,
+                           "dlycumfacshr": factor, "level": 1.0}) for first, last, price, factor in spans]
+    return pd.concat(parts, ignore_index=True)
+
+
+def facts_of(permno: int, facts: list[tuple[str, str, int]]) -> pd.DataFrame:
+    table = pd.DataFrame(facts, columns=["shrstartdt", "shrenddt", "shrout"]).assign(permno=permno)
+    table[["shrstartdt", "shrenddt"]] = table[["shrstartdt", "shrenddt"]].apply(pd.to_datetime)
+    return table
+
+
+def me_at(rows: pd.DataFrame, facts: pd.DataFrame, permno: int, day: str) -> pd.Series:
+    out = w.market_equity(rows, facts, rows, CAL)
+    return out[((rows["permno"] == permno) & (rows["date"] == at(day))).to_numpy()].iloc[0]
+
+
+def test_me_basis_across_the_seal_or_missing_rows_is_unmapped_never_a_wrong_value() -> None:
+    """Item 1, Opus probe: a 3-for-1 split inside the seal; the facts dated in the seal have no known basis."""
+    rows = basis_rows(1, [("2019-01-02", "2019-07-30", 99.0, 3.0), ("2020-08-03", "2021-06-30", 33.0, 1.0)])
+    facts = facts_of(1, [("2015-01-01", "2020-03-30", 208), ("2020-03-31", "2020-05-28", 208),
+                         ("2020-05-29", "2020-08-02", 624), ("2020-08-03", "2025-12-31", 624)])
+    assert me_at(rows, facts, 1, "2019-07-30")["market_equity"] == 99.0 * 208       # pre-seal: basis 3 = factor 3
+    for day in ("2020-08-28", "2020-09-29", "2020-10-13", "2020-12-16"):             # a seal-dated fact is used
+        cell = me_at(rows, facts, 1, day)
+        assert np.isnan(cell["market_equity"]) and cell["me_reason"] == "unmapped"
+        assert np.isnan(cell["share_count"]) and cell["basis_changed_across_gap"]
+    assert me_at(rows, facts, 1, "2020-12-17")["market_equity"] == 33.0 * 624        # a post-seal fact: no gap
+    # A gap of missing rows (a halt) with a factor change is unmapped; without a factor change the value stands.
+    halt = [("2018-01-02", "2018-01-31", 20.0, 2.0), ("2018-03-01", "2018-08-31", 10.0, 1.0)]
+    rows = pd.concat([basis_rows(2, halt), basis_rows(3, [(a, b, p, 1.0) for a, b, p, _ in halt])])
+    facts = pd.concat([facts_of(p, [("2018-02-15", "2025-12-31", 1000)]) for p in (2, 3)])
+    assert me_at(rows, facts, 2, "2018-07-31")["me_reason"] == "unmapped"
+    assert me_at(rows, facts, 3, "2018-07-31")["market_equity"] == 10.0 * 1000
+
+
+def test_post_seal_window_me_equals_the_full_history_value() -> None:
+    """Item 1, GPT probe: a pre-seal fact used after a split in the seal keeps its pre-seal basis."""
+    frames = world_frames()
+    dsf = frames["crsp_dsf_v2"].copy()
+    dsf.loc[(dsf["permno"] == F) & (dsf["dlycaldt"] < w.SEAL_START), "dlycumfacshr"] = 2.0
+    shares = frames["crsp_stkshares"].copy()
+    shares.loc[shares["permno"] == F, "shrenddt"] = at("2020-06-30")
+    shares = pd.concat([shares, facts_of(F, [("2020-07-01", "2025-12-31", 2000)])], ignore_index=True)
+    data = make_data({**frames, "crsp_dsf_v2": dsf, "crsp_stkshares": shares})
+    frames_out = w.tilt_frames(data, "2020-08-31", "2020-12-31")
+    rows = w.daily(data)
+    full = w.market_equity(rows, w.frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]),
+                           rows, w.calendar(data))
+    price = rows.loc[(rows["permno"] == F) & (rows["date"] == at("2020-08-31")), "prc"].iloc[0]
+    expected = full[((rows["permno"] == F) & (rows["date"] == at("2020-08-31"))).to_numpy()]["market_equity"]
+    assert frames_out["market_equity"].loc["2020-08-31", str(F)] == expected.iloc[0] == price * 1000 * 2.0
+    assert frames_out["me_reason"].loc["2020-11-16", str(F)] == "unmapped"         # the seal-dated fact
+
+
+def s4_at(data: w.WrdsData, day: str) -> float | str:
+    result = sig.build_signals(w.signal_inputs(data), pd.DatetimeIndex([at(day)]))
+    value = result["values"]["S4"].loc[at(day), A]
+    return result["reasons"]["S4"].loc[at(day), A] if np.isnan(value) else float(value)
+
+
+def test_a_later_fiscal_key_conflict_never_removes_an_earlier_record() -> None:
+    """Item 2, GPT probe: a second FY2016 record first known later loses; the earlier S4 does not change."""
+    frames = world_frames()
+    snap = frames["comp_snapshot_csa_pit"].copy()
+    fy2016 = (snap["gvkey"] == f"G{A}") & (snap["datadate"] == at("2016-12-31"))
+    snap.loc[fy2016, "revt"] = 3.0                                    # S4 = (revt - cogs) / at = 2
+    later = snap[fy2016].assign(datadate=at("2017-01-31"), pitdate1=at("2017-09-15"), revt=9.0)
+    vintage = snap[fy2016].assign(pitdate1=at("2017-10-02"))           # a later vintage of the first record
+    snap = pd.concat([snap, vintage], ignore_index=True)
+    fy2016 = (snap["gvkey"] == f"G{A}") & (snap["datadate"] == at("2016-12-31"))
+    base = make_data(edit(frames, "comp_snapshot_csa_pit", snap))
+    moved = make_data(edit(frames, "comp_snapshot_csa_pit", pd.concat([snap, later], ignore_index=True)))
+    assert s4_at(base, "2017-08-31") == s4_at(moved, "2017-08-31") == 2.0
+    assert s4_at(moved, "2017-10-31") == s4_at(base, "2017-10-31") == 2.0           # the later record lost
+    assert w.signal_tables(moved)[1]["fund_annual"]["fiscal_key_conflict"] == 1
+    # Two records of one fiscal year first known on the same date: both lose.
+    tie = later.assign(pitdate1=snap.loc[fy2016, "pitdate1"].min())
+    tied = make_data(edit(frames, "comp_snapshot_csa_pit", pd.concat([snap, tie], ignore_index=True)))
+    assert w.signal_tables(tied)[1]["fund_annual"]["fiscal_key_conflict"] == 3     # both records, all their rows
+
+
+def halted_delisting(frames: dict[str, pd.DataFrame], y_return: float) -> w.WrdsData:
+    """E has no price and no return on 2018-11-08 to 2018-11-14; its Y row on 2018-11-15 spans from 11-07."""
+    dsf = frames["crsp_dsf_v2"].copy()
+    e = dsf["permno"] == E
+    dsf.loc[e & dsf["dlycaldt"].between("2018-11-08", "2018-11-14"), ["dlyret", "dlyprc"]] = np.nan
+    dsf.loc[e & (dsf["dlycaldt"] == LAST[E]), ["dlyret", "dlyprevdt"]] = [y_return, at("2018-11-07")]
+    return make_data(edit(frames, "crsp_dsf_v2", dsf))
+
+
+def test_no_settlement_before_the_delisting_row_and_a_later_y_row_changes_no_earlier_row() -> None:
+    """Item 3, GPT probe: the -100 percent return settles on the Y row's date, not after the last price."""
+    frames = world_frames()
+    full_loss = halted_delisting(frames, -1.0)
+    event = w.disappearances(full_loss).set_index("permanent_id").loc[str(E)]
+    assert event["effective_date"] == event["known_at"] == LAST[E] and event["delisting_return"] == -1.0
+    assert not event["reference_valued"]
+    with pytest.raises(RunnerStop, match="terminal_gap_unsupported"):              # the engine needs a close at r - 1
+        w.tilt_frames(full_loss, "2016-12-30", "2018-12-31")
+    # Future perturbation: only the Y row changes; no row before it changes, and no event moves before it.
+    for y_return in (-0.5, -0.3):
+        other = halted_delisting(frames, y_return)
+        event = w.disappearances(other).set_index("permanent_id").loc[str(E)]
+        assert event["effective_date"] == CAL[CAL.get_loc(LAST[E]) + 1] and event["delisting_return"] == 0.0
+        for left, right in ((w.daily(full_loss), w.daily(other)),):
+            early = (left["date"] < LAST[E]).to_numpy()
+            pd.testing.assert_frame_equal(left[early].drop(columns="dlyret"), right[early].drop(columns="dlyret"))
+    half, third = (w.tilt_frames(halted_delisting(frames, r), "2016-12-30", "2018-12-31") for r in (-0.5, -0.3))
+    for key in ("prices", "market_equity", "me_reason", "eligible", "path_break"):
+        pd.testing.assert_frame_equal(half[key].loc[:"2018-11-14"], third[key].loc[:"2018-11-14"])
+    assert (half["disappearances"]["effective_date"] > LAST[E]).loc[half["disappearances"]["permanent_id"] == str(E)].all()
+
+
+def test_last_close_run_removes_the_terminal_return_from_the_path() -> None:
+    """Item 4: a CIZ path with a -80 percent terminal return gives -80 percent by default and 0 in last_close."""
+    frames = world_frames()
+    dsf = frames["crsp_dsf_v2"].copy()
+    y_row = (dsf["permno"] == C) & (dsf["dlycaldt"] == LAST[C])
+    dsf.loc[y_row, ["dlyret", "dlycumfacpr", "dlycumfacshr", "shrout"]] = [-0.8, 1.0, 1.0, 1000]   # a priced Y row
+    data = make_data(edit(frames, "crsp_dsf_v2", dsf))
+    before, after = CAL[CAL.get_loc(LAST[C]) - 1], CAL[CAL.get_loc(LAST[C]) + 1]
+    settled = {}
+    for run in ("primary", "last_close"):
+        out = w.tilt_frames(data, "2016-12-30", "2018-12-31", run=run)
+        events = check_disappearances(out["disappearances"], out["calendar"], out["prices"].columns)
+        engine = terminal_events(events, out["calendar"], run).set_index("permanent_id").loc[str(C)]
+        reference = out["prices"].loc[engine["reference_date"], str(C)]
+        settled[run] = reference * (1.0 + engine["terminal_return"]) / out["prices"].loc[before, str(C)] - 1.0
+        if run == "primary":
+            assert engine["effective_date"] == after
+        else:
+            assert engine["effective_date"] == LAST[C] and np.isnan(out["prices"].loc[LAST[C], str(C)])
+            assert np.isnan(out["market_equity"].loc[LAST[C], str(C)])    # no ME without a close of this run
+            assert (out["disappearances"]["delisting_return"] == 0.0).all()
+    assert settled["primary"] == pytest.approx(-0.8, abs=1e-12) and settled["last_close"] == 0.0
+    with pytest.raises(RunnerStop, match="event_run_invalid"):
+        w.tilt_frames(data, "2016-12-30", "2018-12-31", run="other")
+
+
+def test_daily_signal_shares_are_the_d5_count_and_driver_columns_pass() -> None:
+    """Item 7 (and item 5): the daily signal table's shrout is the D5 count; primaryexch and dlyprcflg pass."""
+    facts = facts_of(1, [("1985-01-01", "1990-12-30", 1000), ("1990-12-31", "2025-12-31", 3000)])
+    days = pd.bdate_range("1990-11-01", "1991-06-28")
+    rows = pd.DataFrame({"permno": 1, "date": days, "prc": 10.0, "dlycumfacshr": 1.0, "level": 1.0})
+    out = w.market_equity(rows, facts, rows, days).set_index(rows["date"])["share_count"]
+    assert out[at("1991-02-28")] == 1000 and out[at("1991-05-15")] == 1000             # 1990-12-31 + 135 days
+    assert out[at("1991-05-16")] == 3000                                              # 1990-12-31 + 136 days
+    frames = world_frames()
+    shares = frames["crsp_stkshares"].copy()
+    shares.loc[shares["permno"] == B, "shrenddt"] = at("1999-12-30")
+    shares = pd.concat([shares, facts_of(B, [("1999-12-31", "2025-12-31", 3000)])], ignore_index=True)
+    shares.loc[shares["permno"] == D, "shrenddt"] = at("1990-12-31")   # D: every count is stale
+    data = make_data(edit(frames, "crsp_stkshares", shares))
+    table = w.signal_inputs(data).daily.set_index(["permno", "date"])
+    assert table.loc[D, "shrout"].isna().all()
+    assert table.loc[(B, at("2000-05-12")), "shrout"] == 1000 and table.loc[(B, at("2000-05-15")), "shrout"] == 3000
+    assert table.loc[(A, at("2018-03-01")), "shrout"] == 500 * 2.0                    # the 500 count on the 2018 basis
+    assert {"primaryexch", "dlyprcflg"} <= set(table.columns)
+    report = w.intake_report(data)
+    days = w.member_days(data)
+    assert report["bid_ask_member_days"] == {"member_days": len(days), "bid_ask": int((days["dlyprcflg"] == "BA").sum())}
+    assert report["bid_ask_member_days"]["bid_ask"] > 0 and report["terminal_gap_events"] == {"primary": 0,
+                                                                                              "last_close": 0}
+    assert "FAIL" not in w.intake_markdown(report)
+
+
+def test_quarterly_conflicts_use_each_table_clock_and_the_first_known_record_wins() -> None:
+    """Item 2 on URQ: fund_quarterly ranks records by known date, announcements by rdq (public on rdq)."""
+    frames = world_frames()
+    urq, fundq = frames["comp_urq"].copy(), frames["comp_fundq"].copy()
+    g = f"G{A}"
+    extra = pd.DataFrame([
+        # Q4 2016 again on an earlier datadate, known and announced after the 2016-12-31 record: it loses twice.
+        {"gvkey": g, "datadate": at("2016-11-30"), "fqtr": 4.0, "rdq": at("2017-09-10"),
+         "prelimqprd": at("2017-09-15"), "finalqprd": at("2017-10-15"), "epspxq": 9.0, "ajexq": 1.0},
+        # Q3 2016 again: announced before the 2016-09-30 record (rdq 10-20 < 10-25) but known after it (12-15).
+        {"gvkey": g, "datadate": at("2016-08-31"), "fqtr": 3.0, "rdq": at("2016-10-20"),
+         "prelimqprd": at("2016-12-15"), "finalqprd": at("2017-01-15"), "epspxq": 9.0, "ajexq": 1.0},
+        # Q2 2016 again with no rdq and no period date: never known, so it loses (never wins by a missing date).
+        {"gvkey": g, "datadate": at("2016-05-31"), "fqtr": 2.0, "rdq": pd.NaT, "prelimqprd": pd.NaT,
+         "finalqprd": pd.NaT, "epspxq": 9.0, "ajexq": 1.0}])
+    keys = pd.DataFrame({"gvkey": g, "datadate": extra["datadate"], "fyearq": 2016, "ajexq": 1.0})
+    data = make_data({**frames, "comp_urq": pd.concat([urq, extra], ignore_index=True),
+                      "comp_fundq": pd.concat([fundq, keys], ignore_index=True)})
+    inputs, drops = w.signal_tables(data)
+    sig.check_inputs(inputs)
+
+    def kept(table: pd.DataFrame, fqtr: int) -> pd.Timestamp:
+        rows = table[(table["gvkey"] == g) & (table["fyearq"] == 2016) & (table["fqtr"] == fqtr)]
+        assert rows["datadate"].nunique() == 1
+        return rows["datadate"].iloc[0]
+
+    assert kept(inputs.fund_quarterly, 4) == kept(inputs.announcements, 4) == at("2016-12-31")
+    assert kept(inputs.fund_quarterly, 3) == at("2016-09-30") and kept(inputs.announcements, 3) == at("2016-08-31")
+    assert kept(inputs.fund_quarterly, 2) == kept(inputs.announcements, 2) == at("2016-06-30")
+    assert drops["announcements"]["fiscal_key_conflict"] == 3
+    assert drops["fund_quarterly"]["fiscal_key_conflict"] == 2 and drops["fund_quarterly"]["no_known_date"] == 1
+
+
+def test_delisting_timing_holds_for_a_missing_y_return_and_in_the_last_close_run() -> None:
+    """Item 3 with a Y row without a return, and item 4: the last_close run keeps the item 3 timing."""
+    frames = world_frames()
+    missing = halted_delisting(frames, np.nan)
+    event = w.disappearances(missing).set_index("permanent_id").loc[str(E)]
+    assert event["effective_date"] == event["known_at"] == LAST[E] and np.isnan(event["delisting_return"])
+    assert not event["reference_valued"]
+    with pytest.raises(RunnerStop, match="terminal_gap_unsupported"):
+        w.tilt_frames(missing, "2016-12-30", "2018-12-31")
+    for y_return in (-1.0, -0.5, np.nan):
+        data = halted_delisting(frames, y_return)
+        event = w.disappearances(data, "last_close").set_index("permanent_id").loc[str(E)]
+        assert event["effective_date"] == event["known_at"] == LAST[E] and event["delisting_return"] == 0.0
+        assert not event["reference_valued"]
+        with pytest.raises(RunnerStop, match="terminal_gap_unsupported"):
+            w.tilt_frames(data, "2016-12-30", "2018-12-31", run="last_close")
+    report = w.intake_report(missing)
+    assert report["terminal_gap_events"] == {"primary": 1, "last_close": 1}
+    assert "- FAIL: D6: no event settles after rows without a value" in w.intake_markdown(report)
+
+
+def test_driver_columns_and_bid_ask_share_match_the_source_rows() -> None:
+    """Item 5: primaryexch and dlyprcflg carry the source values; the BA share counts member-days from the source."""
+    frames = world_frames()
+    data = make_data(frames)
+    table = w.signal_inputs(data).daily
+    source = frames["crsp_dsf_v2"].rename(columns={"dlycaldt": "date"})
+    joined = table.merge(source[["permno", "date", "primaryexch", "dlyprcflg"]], on=["permno", "date"],
+                         suffixes=("", "_source"), validate="one_to_one")
+    assert len(joined) == len(table) and set(joined["primaryexch"]) == {"N", "Q"}
+    assert (joined["primaryexch"] == joined["primaryexch_source"]).all()
+    assert (joined["dlyprcflg"] == joined["dlyprcflg_source"]).all()
+    spells = frames["crsp_dsp500list_v2"]
+    member = source.merge(spells, on="permno")
+    member = member[(member["date"] >= member["mbrstartdt"]) & (member["date"] <= member["mbrenddt"])]
+    expected = int((member["dlyprcflg"] == "BA").sum())
+    assert expected > 0 and w.intake_report(data)["bid_ask_member_days"]["bid_ask"] == expected

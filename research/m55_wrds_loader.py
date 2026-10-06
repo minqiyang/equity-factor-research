@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,9 @@ AJEXQ_WINDOW_DAYS = 365                          # P-9 aggregate: quarters repor
 SUPPLIED_AJEXQ = 1.0                             # P-9 option (a): S2 uses the cfacshr basis of the first known date
 FY1, IBES_CURRENCY = "1", "USD"                  # S1 divides by a USD price: FY1 rows in other currencies drop
 EXIT_CLASSES = ("current", "left_index", *CAUSES)
+EVENT_RUN_COLUMNS = {"primary": ("level", "chain_mismatch"),            # R4: the switch for the driver
+                     "last_close": ("level_last_close", "chain_mismatch_last_close")}
+BID_ASK_FLAG = "BA"                              # dlyprcflg: a bid-ask average, not a trade (trial OI-11)
 UNITS = {"shrout": "thousands of shares", "market_equity": "thousands of USD", "compustat_items": "millions of USD"}
 
 
@@ -241,7 +245,8 @@ def daily(data: WrdsData) -> pd.DataFrame:
     """The main daily rows on the calendar with ``prc`` = |``dlyprc``| (0 is no price) and the D3 path."""
     def build() -> pd.DataFrame:
         table = frame(data, "crsp_dsf_v2", ["permno", "dlycaldt", "dlyret", "dlyprc", "dlyprevdt", "dlydelflg",
-                                            "dlycumfacpr", "dlycumfacshr", "dlyfacprc", "shrout", "dlyvol"])
+                                            "dlycumfacpr", "dlycumfacshr", "dlyfacprc", "shrout", "dlyvol",
+                                            "primaryexch", "dlyprcflg"])
         table = table.rename(columns={"dlycaldt": "date"})
         if table["date"].isna().any() or table.duplicated(["permno", "date"]).any():
             raise refuse("daily_invalid", "a row without a date or a repeated PERMNO date")
@@ -256,6 +261,10 @@ def daily(data: WrdsData) -> pd.DataFrame:
         table["prc"] = price.where(price > 0.0)
         table["shrout"] = table["shrout"].astype(float)
         table = pd.concat([table, price_path(table)], axis=1)
+        # R4 last-close run: the Y row's return leaves the path, so the path ends at the last trade close.
+        last_close = price_path(table.assign(dlyret=table["dlyret"].where(table["dlydelflg"] != "Y")))
+        table["level_last_close"] = last_close["level"]
+        table["chain_mismatch_last_close"] = last_close["chain_mismatch"]
         data.cache["split_check"] = split_check(table)
         return table
     return _cached(data, "daily", build)
@@ -263,39 +272,72 @@ def daily(data: WrdsData) -> pd.DataFrame:
 
 # Market equity (D5) and disappearances (D6) -----------------------------------------------
 
-def market_equity(rows: pd.DataFrame, shares: pd.DataFrame) -> pd.DataFrame:
-    """D5: ME at each daily row t and its reason where it is missing.
+def market_equity(rows: pd.DataFrame, shares: pd.DataFrame, history: pd.DataFrame | None = None,
+                  cal: pd.DatetimeIndex | None = None) -> pd.DataFrame:
+    """D5: ME at each daily row t, its reason where it is missing, and the share count at t.
 
-    ME = |``dlyprc``| at t x the ``shrout`` of the share row with the latest ``shrstartdt`` on or before
-    t - 136 calendar days x ``cfacshr`` at that count's basis / ``cfacshr`` at t. The basis is the first daily
-    row on or after ``shrstartdt`` with a factor, and it must be on or before t. Reasons: no valid close or
-    factor at t, ``unmapped``; no share row, ``no_share_fact``; its ``shrenddt`` before the cutoff,
-    ``stale_share_fact``; no basis factor by t, ``unmapped``.
+    Share count = the ``shrout`` of the share row with the latest ``shrstartdt`` on or before t - 136 calendar
+    days x ``cfacshr`` at that count's basis / ``cfacshr`` at t; ME = |``dlyprc``| at t x the share count. The
+    basis is the first row of ``history`` (the PERMNO's full main daily rows; default ``rows``) on or after
+    ``shrstartdt`` with a factor, and it must be on or before t. When a gap lies between ``shrstartdt`` and the
+    basis row (a calendar row of ``cal`` without a factor row, or the seal) and the factor of the last row before
+    ``shrstartdt`` differs from the basis factor, the basis is unknown: ``unmapped`` (card m55-loader-fix-r1,
+    item 1). Reasons: no share row, ``no_share_fact``; its ``shrenddt`` before the cutoff, ``stale_share_fact``;
+    no basis factor by t, an unknown basis, or no factor at t, ``unmapped``. The share count is NaN under these
+    reasons; ME is also ``unmapped`` without a valid close at t or a positive value.
     """
+    history = rows if history is None else history
+    cal = pd.DatetimeIndex(np.unique(history["date"])) if cal is None else cal
     left = pd.DataFrame({"row": np.arange(len(rows)), "permno": rows["permno"].to_numpy(),
                          "date": rows["date"].to_numpy(),
                          "cutoff": rows["date"].to_numpy() - np.timedelta64(SHARE_LAG_DAYS, "D")})
     facts = shares[["permno", "shrstartdt", "shrenddt", "shrout"]].rename(columns={"shrout": "fact"})
     found = pd.merge_asof(left.sort_values("cutoff"), facts.sort_values("shrstartdt"), left_on="cutoff",
                           right_on="shrstartdt", by="permno", direction="backward")
-    basis = rows.loc[rows["dlycumfacshr"].gt(0.0), ["permno", "date", "dlycumfacshr"]]
-    basis = basis.rename(columns={"date": "basis_date", "dlycumfacshr": "basis_factor"})
+    factors = history.loc[history["dlycumfacshr"].gt(0.0), ["permno", "date", "dlycumfacshr"]].sort_values("date")
     has_fact = found["shrstartdt"].notna()
-    with_basis = pd.merge_asof(found[has_fact].sort_values("shrstartdt"), basis.sort_values("basis_date"),
+    with_basis = pd.merge_asof(found[has_fact].sort_values("shrstartdt"),
+                               factors.rename(columns={"date": "basis_date", "dlycumfacshr": "basis_factor"}),
                                left_on="shrstartdt", right_on="basis_date", by="permno", direction="forward")
+    with_basis = pd.merge_asof(with_basis.sort_values("shrstartdt"),
+                               factors.rename(columns={"date": "prior_date", "dlycumfacshr": "prior_factor"}),
+                               left_on="shrstartdt", right_on="prior_date", by="permno", direction="backward",
+                               allow_exact_matches=False)
     found = pd.concat([with_basis, found[~has_fact]]).set_index("row").sort_index()
+    start = found["shrstartdt"].to_numpy(dtype="datetime64[ns]")
+    position = cal.searchsorted(start)
+    first_row = np.where(position < len(cal), cal.to_numpy()[np.minimum(position, len(cal) - 1)],
+                         np.datetime64("NaT", "ns"))
+    basis_date = found["basis_date"].to_numpy(dtype="datetime64[ns]")
+    gap = (first_row != basis_date) | in_seal(pd.DatetimeIndex(start))
+    prior, basis_factor = found["prior_factor"].to_numpy(dtype=float), found["basis_factor"].to_numpy(dtype=float)
+    changed = gap & np.isfinite(prior) & ~np.isclose(prior, basis_factor, rtol=1e-9, atol=0.0)
     price, factor = rows["prc"].to_numpy(), rows["dlycumfacshr"].to_numpy(dtype=float)
-    value = price * found["fact"].to_numpy(dtype=float) * found["basis_factor"].to_numpy(dtype=float) / factor
-    reason = np.full(len(rows), None, dtype=object)
-    no_close = ~np.isfinite(rows["level"].to_numpy()) | ~np.isfinite(price) | ~(factor > 0.0)
+    count = found["fact"].to_numpy(dtype=float) * basis_factor / factor
     no_fact = found["shrstartdt"].isna().to_numpy()
     stale = (found["shrenddt"] < found["cutoff"]).to_numpy()
-    no_basis = ~(found["basis_date"] <= found["date"]).to_numpy() | ~(value > 0.0)
-    for mask, label in ((no_basis, "unmapped"), (stale, "stale_share_fact"), (no_fact, "no_share_fact"),
-                        (no_close, "unmapped")):
-        reason[mask] = label          # later assignments win: the order is the reason priority
+    no_basis = ~(found["basis_date"] <= found["date"]).to_numpy() | changed | ~(factor > 0.0)
+    share_reason = np.full(len(rows), None, dtype=object)
+    for mask, label in ((no_basis, "unmapped"), (stale, "stale_share_fact"), (no_fact, "no_share_fact")):
+        share_reason[mask] = label    # later assignments win: the order is the reason priority
+    count = np.where(pd.isna(share_reason), count, np.nan)
+    value = price * count
+    reason = share_reason.copy()
+    reason[pd.isna(reason) & ~(value > 0.0)] = "unmapped"
+    reason[~np.isfinite(rows["level"].to_numpy()) | ~np.isfinite(price) | ~(factor > 0.0)] = "unmapped"
     me = np.where(pd.isna(reason), value, np.nan)
-    return pd.DataFrame({"market_equity": me, "me_reason": reason}, index=rows.index)
+    return pd.DataFrame({"market_equity": me, "me_reason": reason, "share_count": count,
+                         "basis_changed_across_gap": changed & ~no_fact & ~stale}, index=rows.index)
+
+
+def member_market_equity(data: WrdsData) -> pd.DataFrame:
+    """D5 on every daily row of a member PERMNO, with the basis looked up in the full main rows (cached)."""
+    def build() -> pd.DataFrame:
+        rows = daily(data)
+        rows = rows[rows["permno"].isin(spells(data)["permno"])]
+        shares = frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"])
+        return market_equity(rows, shares, rows, calendar(data))
+    return _cached(data, "member_market_equity", build)
 
 
 def cause_of(action: Any, reason: Any, payment: Any) -> str:
@@ -307,48 +349,62 @@ def cause_of(action: Any, reason: Any, payment: Any) -> str:
     return "unknown"
 
 
-def disappearances(data: WrdsData) -> pd.DataFrame:
+def disappearances(data: WrdsData, run: str = "primary") -> pd.DataFrame:
     """D6: member PERMNOs with a delisting record whose price path ends before the last calendar row.
 
-    ``effective_date`` is the calendar row after the last row with a value in the price path, and
-    ``known_at = effective_date``. ``delisting_return`` is 0.0 when the delisting row is that last row (CIZ
-    already put the delisting return in the path), the delisting row's return when it is -100 percent or less
-    (not representable in a positive path), and NaN otherwise, so the engine default applies. ``last_valid``
-    (the last valued row) is kept for the window filter.
+    ``effective_date`` is the later of the calendar row after the last row with a value in the price path and
+    the date of the ``dlydelflg = 'Y'`` row: no settlement happens before its source row (card
+    m55-loader-fix-r1, item 3). ``known_at = effective_date``. In the ``primary`` run, ``delisting_return`` is
+    0.0 when the delisting row is the last valued row (CIZ already put the delisting return in the path), the
+    delisting row's return when it is -100 percent or less (not representable in a positive path), and NaN
+    otherwise, so the engine default applies. In the ``last_close`` run (R4 sensitivity), the path ends at the
+    last trade close and every event settles there (0.0). ``last_valid`` (the last valued row) is kept for the
+    window filter; ``reference_valued`` is False when rows without a value lie between it and the effective row.
     """
+    if run not in EVENT_RUN_COLUMNS:
+        raise refuse("event_run_invalid", run)
+
     def build() -> pd.DataFrame:
         cal = calendar(data)
         rows = daily(data)
-        valued = rows[rows["level"].notna()]
-        last = valued.groupby("permno").tail(1).set_index("permno")
+        level = EVENT_RUN_COLUMNS[run][0]
+        last = rows[rows[level].notna()].groupby("permno").tail(1).set_index("permno")
         record = frame(data, "crsp_stkdelists", ["permno", "delactiontype", "delreasontype", "delpaymenttype"])
         if record["permno"].duplicated().any():
             raise refuse("disappearances_invalid", "two delisting records for one PERMNO")
         record = record[record["permno"].isin(spells(data)["permno"]) & record["permno"].isin(last.index)]
-        terminal = rows[rows["terminal"]].set_index("permno")["dlyret"]
+        flagged = rows[(rows["dlydelflg"] == "Y") & rows["permno"].isin(record["permno"])]
+        if flagged["permno"].duplicated().any():
+            raise refuse("disappearances_invalid", "two delisting rows for one PERMNO")
+        flagged = flagged.set_index("permno")
         out = []
         for item in record.itertuples(index=False):
             end = last.loc[item.permno]
-            position = cal.get_loc(end["date"])
-            if position == len(cal) - 1:
+            position = cal.get_loc(end["date"]) + 1
+            effective = position
+            if item.permno in flagged.index:
+                effective = max(position, cal.get_loc(flagged.loc[item.permno, "date"]))
+            if effective >= len(cal):
                 continue
-            if end["dlydelflg"] == "Y":
+            if run == "last_close" or end["dlydelflg"] == "Y":
                 value = 0.0
-            elif item.permno in terminal.index:
-                value = float(terminal.loc[item.permno])
+            elif item.permno in flagged.index and flagged.loc[item.permno, "terminal"]:
+                value = float(flagged.loc[item.permno, "dlyret"])
             else:
                 value = np.nan
-            out.append({"permanent_id": str(item.permno), "effective_date": cal[position + 1],
-                        "known_at": cal[position + 1],
+            out.append({"permanent_id": str(item.permno), "effective_date": cal[effective],
+                        "known_at": cal[effective],
                         "cause": cause_of(item.delactiontype, item.delreasontype, item.delpaymenttype),
-                        "delisting_return": value, "last_valid": end["date"]})
-        columns = [*DISAPPEARANCE_FIELDS, "last_valid"]
+                        "delisting_return": value, "last_valid": end["date"],
+                        "reference_valued": effective == position})
+        columns = [*DISAPPEARANCE_FIELDS, "last_valid", "reference_valued"]
         table = pd.DataFrame(out, columns=columns)
         for name in ("effective_date", "known_at", "last_valid"):
             table[name] = pd.to_datetime(table[name])
         table["delisting_return"] = table["delisting_return"].astype(float)
+        table["reference_valued"] = table["reference_valued"].astype(bool)
         return table
-    return _cached(data, "disappearances", build)
+    return _cached(data, f"disappearances_{run}", build)
 
 
 # Engine frames ----------------------------------------------------------------------------
@@ -387,16 +443,24 @@ def panel(values: pd.Series, rows_frame: pd.DataFrame, rows: pd.DatetimeIndex, c
     return pd.DataFrame(out, index=rows, columns=columns)
 
 
-def tilt_frames(data: WrdsData, start: str | pd.Timestamp, end: str | pd.Timestamp) -> dict[str, Any]:
+def tilt_frames(data: WrdsData, start: str | pd.Timestamp, end: str | pd.Timestamp,
+                run: str = "primary") -> dict[str, Any]:
     """The engine inputs for a window inside one seal segment (the driver adds the six signals).
 
     Rows run from the segment's first calendar row to the first row of the month after ``end``. Columns are
     the PERMNOs (as strings, D1) with a spell that touches these rows. A cell without a daily row has no price
     and ME reason ``unmapped``. ``path_break`` is True on a row whose return starts after a return that is not
     in the path (decision log P-1): the driver blanks every level window (a price ratio or a maximum) that holds
-    a True row and its previous valid row (R6), and reports each held position across one. Disappearances keep events whose last valued row and effective row are inside
-    the rows. A window that crosses the seal refuses (D9: the driver runs separate segments).
+    a True row and its previous valid row (R6), and reports each held position across one. Disappearances keep
+    events whose last valued row and effective row are inside the rows. ``run`` is the R4 switch: ``primary``,
+    or ``last_close`` (the path ends at the last trade close and every event settles there; the engine run
+    must be ``last_close`` too). A window that crosses the seal refuses (D9: the driver runs separate
+    segments). An event whose effective row follows rows without a value refuses: the engine settles from a
+    close on the row before the effective row (item 3).
     """
+    if run not in EVENT_RUN_COLUMNS:
+        raise refuse("event_run_invalid", run)
+    level, chain = EVENT_RUN_COLUMNS[run]
     cal = calendar(data)
     start, end = pd.Timestamp(start), pd.Timestamp(end)
     if start not in cal or end not in cal or not start < end:
@@ -414,16 +478,20 @@ def tilt_frames(data: WrdsData, start: str | pd.Timestamp, end: str | pd.Timesta
     columns = pd.Index([str(p) for p in permnos], name="permanent_id")
     member_spells = table[table["permno"].isin(permnos)]
     source = daily(data)
-    window = source[source["permno"].isin(permnos) & source["date"].between(rows[0], rows[-1])]
-    me = market_equity(window, frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]))
-    prices = panel(window["level"].to_numpy(), window, rows, columns)
+    history = source[source["permno"].isin(permnos)]
+    window = history[history["date"].between(rows[0], rows[-1])]
+    me = market_equity(window.assign(level=window[level]),       # ME needs a close of the same run's path
+                       frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]), history, cal)
+    prices = panel(window[level].to_numpy(), window, rows, columns)
     market = panel(me["market_equity"].to_numpy(), window, rows, columns)
     reason = panel(me["me_reason"].to_numpy(), window, rows, columns, fill="unmapped", dtype=object)
     reason = reason.where(market.isna(), None)
-    events = disappearances(data)
+    events = disappearances(data, run)
     events = events[events["permanent_id"].isin(columns) & events["last_valid"].between(rows[0], rows[-1])
                     & events["effective_date"].between(rows[0], rows[-1])]
-    breaks = panel(window["chain_mismatch"].to_numpy(), window, rows, columns, fill=False, dtype=bool)
+    if not events["reference_valued"].all():
+        raise refuse("terminal_gap_unsupported", "rows without a value lie before a delisting row in the window")
+    breaks = panel(window[chain].to_numpy(), window, rows, columns, fill=False, dtype=bool)
     return {"calendar": rows, "prices": prices, "path_break": breaks,
             "eligible": eligibility(member_spells, rows, columns),
             "market_equity": market, "me_reason": reason, "intervals": intervals(member_spells),
@@ -432,14 +500,35 @@ def tilt_frames(data: WrdsData, start: str | pd.Timestamp, end: str | pd.Timesta
 
 # Signal inputs (D8) -----------------------------------------------------------------------
 
-def _fiscal_conflicts(table: pd.DataFrame, fiscal: list[str]) -> np.ndarray:
-    """Rows whose fiscal key maps to two datadates, or whose datadate maps to two fiscal keys, in one gvkey."""
-    pairs = table[["gvkey", "datadate", *fiscal]].drop_duplicates()
-    bad_key = pairs[pairs.duplicated(["gvkey", *fiscal], keep=False)][["gvkey", *fiscal]].drop_duplicates()
-    bad_date = pairs[pairs.duplicated(["gvkey", "datadate"], keep=False)][["gvkey", "datadate"]].drop_duplicates()
-    by_key = table[["gvkey", *fiscal]].merge(bad_key.assign(_x=True), how="left")["_x"].notna().to_numpy()
-    by_date = table[["gvkey", "datadate"]].merge(bad_date.assign(_x=True), how="left")["_x"].notna().to_numpy()
-    return by_key | by_date
+def _fiscal_conflicts(table: pd.DataFrame, fiscal: list[str], known: str) -> np.ndarray:
+    """P-5 after card m55-loader-fix-r1, item 2: the rows that lose a fiscal-key conflict, first known wins.
+
+    A record is a (``gvkey``, ``datadate``, fiscal key) pair, first known at the earliest ``known`` of its rows
+    (a missing date is never known). In each gvkey, records are taken in order of first known date. A record whose
+    fiscal key or ``datadate`` an earlier record holds loses. Records first known on the same date that share a
+    fiscal key or a ``datadate`` all lose and hold both. So a later row never removes an earlier known row.
+    """
+    keys = ["gvkey", "datadate", *fiscal]
+    never = pd.Timestamp.max.floor("D")
+    pairs = table[keys].assign(_first=table[known].fillna(never)).groupby(keys, sort=False)["_first"].min()
+    pairs = pairs.reset_index()
+    clash = pairs.duplicated(["gvkey", *fiscal], keep=False) | pairs.duplicated(["gvkey", "datadate"], keep=False)
+    losers = []
+    for gvkey, group in pairs[pairs["gvkey"].isin(pairs.loc[clash, "gvkey"])].groupby("gvkey", sort=False):
+        held_dates: set = set()
+        held_keys: set = set()
+        for _, same in group.groupby("_first", sort=True):
+            records = [(row[1], row[2:]) for row in same[keys].itertuples(index=False, name=None)]
+            fresh = [r for r in records if r[0] not in held_dates and r[1] not in held_keys]
+            dates, fiscal_keys = Counter(r[0] for r in fresh), Counter(r[1] for r in fresh)
+            losers += [(gvkey, d, *k) for d, k in records
+                       if (d, k) not in fresh or dates[d] > 1 or fiscal_keys[k] > 1]
+            held_dates.update(dates)
+            held_keys.update(fiscal_keys)
+    if not losers:
+        return np.zeros(len(table), dtype=bool)
+    lost = pd.DataFrame(losers, columns=keys).assign(_x=True)
+    return table[keys].merge(lost, how="left", on=keys)["_x"].notna().to_numpy()
 
 
 def _drop(table: pd.DataFrame, rules: list[tuple[str, Any]]) -> tuple[pd.DataFrame, dict[str, int]]:
@@ -463,10 +552,16 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
         members = spells(data)
         rows = daily(data)
         rows = rows[rows["permno"].isin(members["permno"])]
+        # D8 amendment (card m55-loader-fix-r1, item 7): shrout is the D5 share count on the row's basis, NaN
+        # under the D5 reasons; the raw daily shrout is not an input (R1). primaryexch and dlyprcflg serve the
+        # driver (trial OI-11, OI-12).
         daily_table = pd.DataFrame({"permno": rows["permno"].to_numpy(), "date": rows["date"].to_numpy(),
                                     "ret": rows["dlyret"].to_numpy(), "prc": rows["prc"].to_numpy(),
-                                    "shrout": rows["shrout"].to_numpy(), "cfacpr": rows["dlycumfacpr"].to_numpy(),
-                                    "cfacshr": rows["dlycumfacshr"].to_numpy()})
+                                    "shrout": member_market_equity(data).loc[rows.index, "share_count"].to_numpy(),
+                                    "cfacpr": rows["dlycumfacpr"].to_numpy(),
+                                    "cfacshr": rows["dlycumfacshr"].to_numpy(),
+                                    "primaryexch": rows["primaryexch"].to_numpy(),
+                                    "dlyprcflg": rows["dlyprcflg"].to_numpy()})
         drops: dict[str, dict[str, int]] = {"daily": {"off_calendar": data.cache["daily_off_calendar"]},
                                             "members": {}}
 
@@ -476,7 +571,7 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
             ("no_fiscal_key", lambda t: t["gvkey"].isna() | t["datadate"].isna() | ~_integral(t["fyear"])),
             ("no_known_date", lambda t: t["known_date"].isna()),
             ("known_before_datadate", lambda t: t["known_date"] < t["datadate"]),
-            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyear"]))])
+            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyear"], "known_date"))])
         annual["fyear"] = annual["fyear"].astype(np.int64)
 
         urq = frame(data, "comp_urq", ["gvkey", "datadate", "fqtr", "rdq", "prelimqprd", "finalqprd", "epspxq"])
@@ -489,16 +584,20 @@ def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str,
         period = urq["prelimqprd"].fillna(urq["finalqprd"])
         urq["known_date"] = period.where(urq["rdq"].isna() | (period >= urq["rdq"]), urq["rdq"])
         urq["known_date"] = urq["known_date"].where(period.notna())
-        keyed, drops["announcements"] = _drop(urq, [
+        keyed, key_drops = _drop(urq, [
             ("no_fiscal_key", lambda t: t["gvkey"].isna() | t["datadate"].isna() | ~_integral(t["fyearq"])
-             | ~t["fqtr"].isin([1, 2, 3, 4])),
-            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyearq", "fqtr"]))])
+             | ~t["fqtr"].isin([1, 2, 3, 4]))])
         keyed[["fyearq", "fqtr"]] = keyed[["fyearq", "fqtr"]].astype(np.int64)
-        announcements = keyed[["gvkey", "datadate", "fyearq", "fqtr", "rdq"]]
+        # Item 2: each table resolves fiscal-key conflicts on its own clock; an announcement is known on rdq.
+        announcements, conflicts = _drop(keyed, [
+            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyearq", "fqtr"], "rdq"))])
+        drops["announcements"] = {**key_drops, **conflicts}
+        announcements = announcements[["gvkey", "datadate", "fyearq", "fqtr", "rdq"]]
         quarterly, quarter_drops = _drop(keyed, [
             ("no_known_date", lambda t: t["known_date"].isna()),
-            ("known_before_datadate", lambda t: t["known_date"] < t["datadate"])])
-        drops["fund_quarterly"] = {**drops["announcements"], **quarter_drops}
+            ("known_before_datadate", lambda t: t["known_date"] < t["datadate"]),
+            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyearq", "fqtr"], "known_date"))])
+        drops["fund_quarterly"] = {**key_drops, **quarter_drops}
         quarterly = quarterly[["gvkey", "datadate", "fyearq", "fqtr", "known_date", *sig.QUARTER_ITEMS]]
 
         link = frame(data, "ccm_lnkhist", ["gvkey", "lpermno", "linkdt", "linkenddt"])
@@ -607,8 +706,8 @@ def member_days(data: WrdsData) -> pd.DataFrame:
     days = pd.concat(parts, ignore_index=True)
     rows = daily(data)
     rows = rows[rows["permno"].isin(spells(data)["permno"])]
-    me = market_equity(rows, frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]))
-    values = pd.concat([rows[["permno", "date", "dlyret", "prc", "dlyvol", "level"]], me], axis=1)
+    values = pd.concat([rows[["permno", "date", "dlyret", "prc", "dlyvol", "level", "shrout", "dlyprcflg"]],
+                        member_market_equity(data)], axis=1)
     days = days.merge(values, on=["permno", "date"], how="left", indicator="row")
     days["has_row"] = days.pop("row").eq("both")
     days["me_reason"] = days["me_reason"].where(days["has_row"], "unmapped")
@@ -671,6 +770,12 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
     if duplicate_fy1:
         raise refuse("duplicate_key", "ibes: two FY1 rows in one ticker-month")
     tables = {name: {"rows": int(len(getattr(inputs, name))), "dropped": drops[name]} for name in sig.SCHEMA}
+    with_row = days[days["has_row"]]
+    shares_by_year = {str(y): {"rows": int(len(g)), "raw": int((g["shrout"] > 0.0).sum()),
+                               "d5": int(g["share_count"].notna().sum()),
+                               "basis_changed_across_gap": int(g["basis_changed_across_gap"].eq(True).sum())}
+                      for y, g in with_row.groupby("year")}
+    terminal_gaps = {run: int((~disappearances(data, run)["reference_valued"]).sum()) for run in EVENT_RUN_COLUMNS}
     supplied = inputs.fund_quarterly["ajexq"]
     raw = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "curcode"])
     raw = raw[raw[["ticker", "statpers", "fpi", "fpedats"]].notna().all(axis=1) & (raw["fpi"] == FY1)]
@@ -698,6 +803,10 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
         "ajexq": {"supplied_rows": int(len(supplied)), "supplied_one": int((supplied == SUPPLIED_AJEXQ).sum()),
                   "urq": urq_ajexq_aggregate(data)},
         "ibes_non_usd_fy1_by_year": drops["ibes_non_usd_fy1_by_year"], "ibes_fy1_rows": usd_fy1,
+        "share_counts_by_year": shares_by_year, "terminal_gap_events": terminal_gaps,
+        "last_close_events": int(len(disappearances(data, "last_close"))),
+        "bid_ask_member_days": {"member_days": int(len(days)),
+                                "bid_ask": int((days["dlyprcflg"] == BID_ASK_FLAG).sum())},
     }
 
 
@@ -722,6 +831,8 @@ def intake_markdown(report: dict[str, Any]) -> str:
          report["ajexq"]["supplied_one"] == report["ajexq"]["supplied_rows"]),
         ("IBES: the FY1 rows of the signal inputs are exactly the keyed USD FY1 rows of the file",
          report["ibes_fy1_rows"]["inputs"] == report["ibes_fy1_rows"]["file_usd"]),
+        ("D6: no event settles after rows without a value (the engine needs a close on the row before), in both "
+         "R4 runs", not any(report["terminal_gap_events"].values())),
     ]
     lines += [f"- {'PASS' if ok else 'FAIL'}: {text}" for text, ok in checks]
     spy, split, cal = report["spy"], report["split_check"], report["calendar"]
@@ -779,6 +890,23 @@ def intake_markdown(report: dict[str, Any]) -> str:
     by_year = ", ".join(f"{y} {n}" for y, n in report["ibes_non_usd_fy1_by_year"].items()) or "none"
     lines += ["", f"IBES FY1 rows with a currency other than USD, dropped before `signal_inputs` returns: "
               f"{report['signal_tables']['ibes']['dropped']['non_usd_fy1']} (by year: {by_year}).", ""]
+    ba = report["bid_ask_member_days"]
+    gaps = report["terminal_gap_events"]
+    lines += ["## R4 Runs And Driver Columns", "",
+              f"- Events in the `last_close` run: {report['last_close_events']} (primary {d['total']}). Events whose "
+              f"effective row follows rows without a value: primary {gaps['primary']}, last_close "
+              f"{gaps['last_close']}.",
+              f"- Member-days with `dlyprcflg = '{BID_ASK_FLAG}'`: {ba['bid_ask']} of {ba['member_days']} "
+              f"({_fmt(ba['bid_ask'] / ba['member_days']) if ba['member_days'] else 'n/a'}).", "",
+              "## Share Counts For S7 And S8 (D5 On The Daily Signal Table)", "",
+              "Member-days with a daily row; a positive raw daily `shrout` (the old input); a D5 share count (the new "
+              "input); and the rows where ME and the share count are `unmapped` because the basis factor changed "
+              "across a gap.", "", "| Year | Rows | Raw | D5 | Basis changed across a gap |", "| --- | --- | --- | --- | --- |"]
+    lines += [f"| {y} | {v['rows']} | {v['raw']} | {v['d5']} | {v['basis_changed_across_gap']} |"
+              for y, v in report["share_counts_by_year"].items()]
+    total = {k: sum(v[k] for v in report["share_counts_by_year"].values())
+             for k in ("rows", "raw", "d5", "basis_changed_across_gap")}
+    lines += [f"| All | {total['rows']} | {total['raw']} | {total['d5']} | {total['basis_changed_across_gap']} |", ""]
     return "\n".join(lines)
 
 

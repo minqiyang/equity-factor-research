@@ -71,7 +71,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   frames, the signal inputs, and the benchmark returns from the main WRDS files (vintage 2025-12-31), and the
   tracked manifest `reports/wrds_manifest_2025.json` (names, rows, hashes). The sealed files are never opened.
   Rules D1 to D9 and readings P-1 to P-9 are in `docs/decision_log.md`. The coordinator set P-9 option (a): the
-  loader supplies `ajexq` 1.0 and S2 uses the `cfacshr` basis; IBES FY1 rows not in USD drop. No signal or return
+  loader supplies `ajexq` 1.0 and S2 uses the `cfacshr` basis; IBES FY1 rows not in USD drop. The round 1 fixes
+  (card m55-loader-fix-r1) add the full-history ME basis, the first-known fiscal-key rule, the delisting-row timing,
+  the R4 `last_close` run, the driver columns, and the D5 share count on the daily signal table. No signal or return
   is computed yet.
 
 ## Current Research Gate Summary
@@ -95,8 +97,8 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- The loader card needs two review seats (real-data path). Every intake check passes on the real files after the
-  P-9 and IBES currency decisions. The driver card owes the `path_break` blank of level windows (P-1) and the
+- The loader card needs its round 2 review (real-data path). Every intake check passes on the real files after the
+  round 1 fixes. The driver card owes the `path_break` blank of level windows (P-1) and the
   signal reason shares by later exit class (R6).
 - When WRDS access is approved, confirm that the subscription has Compustat, IBES, the CRSP-Compustat link, and a
   point-in-time Compustat source, and get the owner's R11 grant. Then build the CRSP loader, count coverage,

@@ -12,6 +12,26 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - WRDS loader: round 1 review fixes (Milestone 5.5)
+
+- Card m55-loader-fix-r1 on candidate `17e86ff` (GPT-M1 to M3, Opus M-1, trial GPT-R1-03, OI-11, OI-12, and the
+  addendum item 7). Decision log: the loader entry, items 1 to 7.
+- `market_equity` takes the PERMNO's full daily rows (`history`) and the calendar. A second `merge_asof`
+  (backward, exact match excluded) finds the factor before `shrstartdt`; a gap between `shrstartdt` and the basis
+  row with a factor change makes ME and the new `share_count` NaN (`unmapped`). `member_market_equity` caches the
+  member-row result for the intake and the signal table, whose `shrout` is now the D5 count.
+- `_fiscal_conflicts` keeps the first-known record per fiscal key and per `datadate` (a loop over the few gvkeys
+  with a clash). The GPT probe test shows that a later second FY record leaves S4 unchanged. URQ conflicts are
+  resolved per table: `fund_quarterly` on its known date, `announcements` on `rdq`.
+- A producer self-review (six lenses, two refuters per finding, synthetic probes only) found one defect, the
+  announcement clock, and six test gaps where a mutant of a fix survived. After the fixes, all ten named mutants
+  fail the loader tests (36 tests).
+- `disappearances(data, run)` sets the effective row to the later of the row after the last valued row and the
+  `Y` row, and flags `reference_valued`. `daily` adds a second path with the `Y` returns removed for the
+  `last_close` run. The engine's H-8 check needs a close on the row before the effective row, so `tilt_frames`
+  refuses an event after rows without a value; there are none in the real files.
+- Real rerun (about 22 s): every intake check passes; the tracked manifest is unchanged.
+
 ## 2026-10-05 - WRDS loader: coordinator decisions P-9 and IBES currency (Milestone 5.5)
 
 - Card m55-loader-p9 on candidate `4717a56`. P-9 option (a): `signal_tables` no longer reads URQ `ajexq` and

@@ -37,7 +37,8 @@ Decision:
   calendar days, moved to the t basis by the `dlycumfacshr` ratio. Reasons `no_share_fact`, `stale_share_fact`,
   `unmapped`. Units: `shrout` in thousands, so ME is in thousands of USD.
 - D6 Disappearances (R4): a member PERMNO with a delisting record whose price path ends before the last calendar
-  row. `effective_date` = the calendar row after the last valued row; `known_at = effective_date`. Delisting return
+  row. `effective_date` = the calendar row after the last valued row, or the `Y` row when it is later (item 3
+  below); `known_at = effective_date`. Delisting return
   0.0 when the `Y` row is in the path; NaN when it is missing (engine default). Causes as the card lists them.
 - D7 Split factors: at `dlyfacprc = 2` both cumulative factors halve (2,832 of 2,835 rows exactly; none rises),
   the median price ratio is 1.995, and the median share ratio is 2.0. The loader refuses otherwise.
@@ -74,12 +75,38 @@ Decision:
   basis of its report date, the basis of `cfacshr` at that date. The data agree: URQ `epspxq` is as reported
   (136,579 of 136,751 equal the current value). The `ajexq_not_first_reported` refusal is removed; the 36 of 5,431
   count stays in the intake report as an aggregate.
+- Round 1 review fixes (coordinator decisions, card m55-loader-fix-r1):
+  - Item 1 (D5, P-4; GPT-M1, Opus M-1): the basis factor of a share fact comes from the PERMNO's full main daily
+    rows, not the window. When a gap lies between `shrstartdt` and the basis row (a calendar row without a factor
+    row, or the seal) and `dlycumfacshr` on the last row before `shrstartdt` differs from the basis factor, ME is
+    `unmapped`. Real effect: 190 member-days in 2020, all after the seal (ME `unmapped` in 2020 rises from 9 to 199).
+  - Item 2 (P-5; GPT-M2): fiscal-key conflicts are resolved by first known date. In each gvkey, a record (a
+    `datadate` and its fiscal key) whose fiscal key or `datadate` an earlier-known record holds is dropped; records
+    first known on the same date that share either all drop. A later row never removes an earlier known row. Each
+    table uses its own clock: `fund_annual` and `fund_quarterly` their known date (after the known-date drops),
+    `announcements` its `rdq` (public on `rdq`). Drops: Snapshot 340 (was 605); `fund_quarterly` 45 and
+    `announcements` 48 (both were 94).
+  - Item 3 (D6; GPT-M3): no settlement before the `dlydelflg = 'Y'` row. `effective_date` = `known_at` = the later
+    of the row after the last valued row and the `Y` row. The engine settles from a close on the row before the
+    effective row (H-8), so it cannot hold a position across rows without a value up to the `Y` row; `tilt_frames`
+    refuses such a window (`terminal_gap_unsupported`). Real count: 0 events in both R4 runs.
+  - Item 4 (R4; trial GPT-R1-03): `tilt_frames(..., run="last_close")` removes the return of every `Y` row from the
+    price path (the path ends at the last trade close) and settles every event there (`delisting_return` 0.0),
+    with the item 3 timing. ME in that run needs a close of the same path. The engine run must be `last_close`
+    too, so the R4 sign comparison is between the two loader runs. The default `primary` run is unchanged.
+  - Item 5 (trial OI-11, OI-12): the `daily` signal-input table carries `primaryexch` and `dlyprcflg`. Member-days
+    with `dlyprcflg = 'BA'`: 38,741 of 8,062,444.
+  - Item 7, D8 amendment (R1; trial Opus M3): `daily.shrout` in the signal inputs is the D5 share count on the
+    row's basis (with item 1), NaN under the D5 reasons; the raw daily `shrout` is no longer an input to S7 or S8.
+    The D7 check still reads the raw `shrout`. Member-days with a share count: 8,045,516 (raw 8,059,824) of
+    8,060,169 with a daily row.
+  - Opus A-1 (S3 across the seal) is a driver item; no change here.
 - No reading loosens R1, R2, R4, R6, or R8.
 
 Consequences:
 
 - The first driver run uses `tilt_frames` once per seal segment, adds the six Family A signals, and applies the
-  `path_break` blank (P-1).
+  `path_break` blank (P-1). The R4 rerun uses `run="last_close"` in both `tilt_frames` and the engine.
 - Real intake aggregates are in `coord/reports/m55_loader/intake_report.md` (main checkout, not tracked). The tracked
   manifest is `reports/wrds_manifest_2025.json`: names, row counts, and hashes only.
 
