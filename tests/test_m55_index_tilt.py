@@ -1881,3 +1881,137 @@ def test_rows_of_a_g_refused_later_are_tagged(monkeypatch: pytest.MonkeyPatch, c
     assert_frame_equal(kept[kept["g"] != CAL_GRID[-1]].reset_index(drop=True),
                        calibration["rebalances"].drop(columns="g_status").pipe(
                            lambda t: t[t["g"] != CAL_GRID[-1]]).reset_index(drop=True), check_exact=True)
+
+
+# Declared signal sets (card m55-signal-sets, O-21 screen) -------------------------------------
+
+def _signed_rank_mean(inputs: tilt.TiltInputs, t: int, names: pd.Index) -> tuple[pd.Series, pd.Series]:
+    """An independent composite at row ``t``: the mean of 2u - 1 over the valid signals, and the valid count."""
+    total, count = pd.Series(0.0, index=names), pd.Series(0, index=names)
+    for s in inputs.signal_ids:
+        values = inputs.signals[s].iloc[t][names].dropna()
+        n = len(values)
+        u = (values.rank(method="average") - 1.0) / (n - 1) if n > 1 else values * 0.0 + 0.5
+        total[values.index] += 2.0 * u - 1.0
+        count[values.index] += 1
+    return total / count.where(count > 0), count
+
+
+def _sigset(inputs: tilt.TiltInputs, ids: dict[str, str], min_valid: int) -> tilt.TiltInputs:
+    """Rename Family A frames to declared IDs, for example {"S1": FAMILY_A_IDS[0]}."""
+    return replace(inputs, signals={new: inputs.signals[old] for new, old in ids.items()},
+                   signal_ids=tuple(ids), min_valid=min_valid)
+
+
+def test_default_signal_set_and_half_rule() -> None:
+    inputs = fixture()
+    assert inputs.signal_ids == tilt.SIGNAL_IDS == FAMILY_A_IDS and inputs.min_valid == tilt.MIN_VALID_SIGNALS == 4
+    assert [tilt.half_rule(n) for n in range(1, 9)] == [1, 1, 2, 2, 3, 3, 4, 4]
+
+
+def test_default_set_declared_in_another_order_gives_identical_outputs(full_run: dict) -> None:
+    # The composite is an exact sum of fractions, so the order of the declared set changes no bit.
+    declared = replace(fixture(stop=True), signal_ids=tuple(reversed(FAMILY_A_IDS)), min_valid=4)
+    result = tilt.run_index_tilt(declared)
+    for book in tilt.BOOKS:
+        assert_frame_equal(result["targets"][book], full_run["targets"][book], check_exact=True)
+    assert_frame_equal(result["rebalances"], full_run["rebalances"], check_exact=True)
+    assert result["counts"] == full_run["counts"]
+    for key, run in result["runs"].items():
+        for book, field in [(b, f) for b in tilt.BOOKS for f in ("daily_net", "monthly_net", "turnover", "cost")] + [
+                ("active", "daily"), ("active", "monthly")]:
+            assert_series_equal(run[book][field], full_run["runs"][key][book][field], check_exact=True)
+
+
+def test_one_signal_composite_is_its_signed_rank() -> None:
+    names = ["A", "B", "C", "D"]
+    row = pd.Series([3.0, 1.0, 2.0, np.nan], index=names)
+    c, counts = tilt.composite_scores({"S1": row}, pd.Series(True, index=names), signal_ids=("S1",), min_valid=1)
+    assert c.tolist() == [1.0, -1.0, 0.0, 0.0]                  # D has no value: c = 0, counted as few signals
+    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 0, "c_zero_window_gap": 0,
+                      "c_zero_natural": 1}
+
+
+def test_one_signal_end_to_end(monkeypatch: pytest.MonkeyPatch) -> None:
+    inputs = _sigset(fixture(), {"S1": FAMILY_A_IDS[0]}, tilt.half_rule(1))
+    calls = _tilt_calls(monkeypatch, inputs)
+    built = calls["built"]
+    assert (built["rebalances"]["c_zero_few_signals"] >= 1).all()      # FEW_ASSET has no S1 value
+    for date in built["targets"]["cw"].index:
+        b, c, _, pinned = calls[date]
+        t = CAL.get_loc(date) - 1
+        expected = tilt.signed_ranks(inputs.signals["S1"].iloc[t][b.index].dropna())
+        scored = ~pinned & b.index.isin(expected.index)
+        assert c[scored].tolist() == [float(v) for v in expected[c.index[scored]]]
+        assert (c[~scored] == 0.0).all()
+        assert c[FEW_ASSET] == 0.0
+
+
+def test_three_signals_with_min_valid_two() -> None:
+    names = ["A", "B", "C", "D"]
+    rows = {"X": pd.Series([4.0, 3.0, 2.0, 1.0], index=names),       # ranks 1, 1/3, -1/3, -1
+            "Y": pd.Series([np.nan, 1.0, 3.0, 2.0], index=names),    # among B, C, D: -1, 1, 0
+            "Z": pd.Series([np.nan, np.nan, 1.0, 2.0], index=names)} # among C, D: -1, 1
+    c, counts = tilt.composite_scores(rows, pd.Series(True, index=names), signal_ids=("X", "Y", "Z"), min_valid=2)
+    assert c["A"] == 0.0                                       # one valid value: below min_valid
+    assert c["B"] == pytest.approx((1.0 / 3.0 - 1.0) / 2.0, abs=1e-15)
+    assert c["C"] == pytest.approx((-1.0 / 3.0 + 1.0 - 1.0) / 3.0, abs=1e-15)
+    assert c["D"] == 0.0                                       # (-1 + 0 + 1) / 3: a natural zero
+    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 0, "c_zero_window_gap": 0,
+                      "c_zero_natural": 1}
+
+
+def test_s_style_signal_set_runs_end_to_end(monkeypatch: pytest.MonkeyPatch, low_built: dict) -> None:
+    ids = {"S1": FAMILY_A_IDS[3], "S4": FAMILY_A_IDS[4]}
+    inputs = _sigset(fixture(), ids, tilt.half_rule(2))
+    calls = _tilt_calls(monkeypatch, inputs)
+    targets = calls["built"]["targets"]
+    for date in targets["cw"].index:
+        b, c, _, pinned = calls[date]
+        expected, _ = _signed_rank_mean(inputs, CAL.get_loc(date) - 1, b.index)
+        expected = expected.where(~pinned, 0.0).fillna(0.0)
+        assert c.to_numpy() == pytest.approx(expected.to_numpy(), abs=1e-15)
+        w = targets["tilt"].loc[date, b.index]
+        assert math.fsum(w) == pytest.approx(1.0, abs=1e-12) and (w - b).abs().max() <= tilt.STOCK_CAP + 1e-12
+    assert (targets["tilt"] != targets["cw"]).any().any()
+    result = tilt.run_index_tilt(inputs, g=LOW_G)
+    for book in tilt.BOOKS:
+        assert_frame_equal(result["targets"][book], targets[book], check_exact=True)
+    # The low-risk book uses no signal: run_index_tilt and calibrate_lowrisk pass the set through unchanged.
+    assert_frame_equal(result["targets"]["lowrisk"], low_built["targets"]["lowrisk"], check_exact=True)
+    for key, run in result["runs"].items():
+        assert set(run) == {*tilt.BOOKS, "lowrisk", "active", "lowrisk_active"}
+    calibrated = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    base = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+    assert_frame_equal(calibrated["rebalances"], base["rebalances"], check_exact=True)
+    assert calibrated["chosen_g"] == base["chosen_g"]
+
+
+@pytest.mark.parametrize(("signal_ids", "keys", "min_valid"), [
+    (("S1", "S4"), ("S1",), 1),                    # a declared signal has no frame
+    (("S1",), ("S1", "S4"), 1),                    # a frame is not declared
+    (FAMILY_A_IDS, FAMILY_A_IDS, 0),               # min_valid of 0
+    (FAMILY_A_IDS, FAMILY_A_IDS, 7),               # min_valid above the set size
+    (("S1",), ("S1",), 2),
+    (FAMILY_A_IDS, FAMILY_A_IDS, 4.0),             # min_valid is not an integer
+    (FAMILY_A_IDS, FAMILY_A_IDS, True),
+    ((), (), 1),                                   # an empty set
+    (("S1", "S1"), ("S1",), 1),                    # duplicate IDs
+    (["S1"], ("S1",), 1),                          # not a tuple
+    ((1,), (1,), 1),                               # not a string
+])
+def test_signal_set_refusals(signal_ids, keys, min_valid) -> None:
+    base = fixture()
+    frame = base.signals[FAMILY_A_IDS[0]]
+    inputs = replace(base, signals={k: frame for k in keys}, signal_ids=signal_ids, min_valid=min_valid)
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.build_targets(inputs)
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+
+
+def test_default_set_with_missing_family_a_frame_refuses() -> None:
+    base = fixture()
+    signals = {s: f for s, f in base.signals.items() if s != FAMILY_A_IDS[-1]}
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.build_targets(replace(base, signals=signals))

@@ -9,6 +9,9 @@ rebalance row ``r``, the cap weights, the scores, the eligibility, and the
 tracking-error covariance use rows up to ``r - 1`` only. Both books trade at
 the close of row ``r`` and earn from row ``r + 1``.
 
+Card m55-signal-sets lets a caller declare the signal set and the valid-signal
+minimum (O-21 screen); the defaults keep the six Family A signals and 4.
+
 Card m55-lowrisk (owner decision O-20) adds the optional book ``lowrisk``, a
 power volatility tilt built from risk only, and ``calibrate_lowrisk``, which
 picks its one knob ``g`` from second moments only (low-risk design note,
@@ -78,7 +81,11 @@ class TiltInputs:
     """Aligned panels: rows are the source calendar, columns are permanent IDs.
 
     ``prices`` is the total-return close the engine accounts with. ``signals``
-    holds the six Family A frames (row ``t`` uses data through ``t``).
+    holds one frame per ID in ``signal_ids`` (row ``t`` uses data through
+    ``t``). Each value must already carry its declared sign, so higher is
+    better; the engine applies no sign. A member's composite is 0 when fewer
+    than ``min_valid`` of its signals are valid. The defaults are the six
+    Family A signals and ``MIN_VALID_SIGNALS``.
     ``eligible`` is the boolean M5 eligibility at row ``t``. ``market_equity`` is
     ME at row ``t`` (missing as NaN) and ``me_reason`` its sub-reason where it is
     missing. ``disappearances`` has one row per security with the fields
@@ -100,12 +107,26 @@ class TiltInputs:
     disappearances: pd.DataFrame
     start: pd.Timestamp
     end: pd.Timestamp
+    signal_ids: tuple[str, ...] = SIGNAL_IDS
+    min_valid: int = MIN_VALID_SIGNALS
+
+
+def half_rule(n: int) -> int:
+    """The O-21 screen rule: c = 0 when fewer than half of ``n`` signals are valid, so ``min_valid = ceil(n / 2)``."""
+    return math.ceil(n / 2)
 
 
 def check_inputs(inputs: TiltInputs) -> None:
     prices = inputs.prices
-    if set(inputs.signals) != set(SIGNAL_IDS):
-        raise refuse("signal_set_invalid", "the six Family A signals are required")
+    ids = inputs.signal_ids
+    if (not isinstance(ids, tuple) or not ids or not all(isinstance(s, str) for s in ids)
+            or len(set(ids)) != len(ids)):
+        raise refuse("signal_set_invalid", "signal_ids is a non-empty tuple of unique strings")
+    if set(inputs.signals) != set(ids):
+        raise refuse("signal_set_invalid", "the signal keys must equal signal_ids")
+    k = inputs.min_valid
+    if isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= len(ids):
+        raise refuse("signal_set_invalid", f"min_valid {k!r} is an integer from 1 to {len(ids)}")
     frames = {"eligible": inputs.eligible, "market_equity": inputs.market_equity, "me_reason": inputs.me_reason,
               **{f"signal {k}": v for k, v in inputs.signals.items()}}
     for name, frame in frames.items():
@@ -222,12 +243,14 @@ def signed_ranks(values: pd.Series) -> pd.Series:
 
 
 def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Series,
-                     short_history: pd.Series | None = None) -> tuple[pd.Series, dict[str, int]]:
+                     short_history: pd.Series | None = None, signal_ids: Sequence[str] = SIGNAL_IDS,
+                     min_valid: int = MIN_VALID_SIGNALS) -> tuple[pd.Series, dict[str, int]]:
     """c = mean of (2u - 1) over the valid signals; c = 0 under the two rules, which are counted.
 
     Each ``signal_rows`` series holds row ``r - 1`` values of the book members
-    only, so the rank pool is the eligible members with a valid value. A member
-    without a complete window is ``short_history`` when its first valid return
+    only, so the rank pool is the eligible members with a valid value. The
+    mean runs over ``signal_ids``; ``c_zero_few_signals`` counts members with
+    fewer than ``min_valid`` valid signals. A member without a complete window is ``short_history`` when its first valid return
     is inside the window and ``window_gap`` otherwise. ``c_zero_natural`` counts
     members whose composite is exactly zero without a rule. The counts can overlap;
     ``c_zero`` counts each member once.
@@ -236,12 +259,12 @@ def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Seri
     names = full_history.index
     total = {name: Fraction(0) for name in names}
     count = pd.Series(0, index=names)
-    for signal_id in SIGNAL_IDS:
+    for signal_id in signal_ids:
         ranks = signed_ranks(signal_rows[signal_id].dropna())
         for name, value in ranks.items():
             total[name] += value
         count[ranks.index] += 1
-    few = count < MIN_VALID_SIGNALS
+    few = count < min_valid
     incomplete = ~full_history
     # One rounding of the exact mean: raw is zero exactly when the true composite is zero.
     raw = pd.Series([float(total[name] / k) if k else 0.0 for name, k in count.items()], index=names)
@@ -485,8 +508,8 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
     t, names, traded, b = setup["t"], setup["names"], setup["traded"], setup["b"]
     window, full = setup["window"], setup["full"]
     # The ranks use every target member, the excluded names included; only the traded set gets weights.
-    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in SIGNAL_IDS}, full,
-                                      setup["short"])
+    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in inputs.signal_ids}, full,
+                                      setup["short"], inputs.signal_ids, inputs.min_valid)
     w, info = tilt_weights(b, c[traded], window[traded], ~full[traded])
     record = {**setup["record"], **zero_counts, **info}
     weights = {"cw": b, "tilt": w}
