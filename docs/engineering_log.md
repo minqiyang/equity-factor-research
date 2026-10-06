@@ -12,6 +12,29 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-05 - WRDS loader for the engine and signal inputs (Milestone 5.5)
+
+- New module `research/m55_wrds_loader.py` and `tests/test_m55_wrds_loader.py` (card m55-loader, branch
+  `claude/m55-wrds-loader` from `claude/m55-signals` at `5cf5c84`). The tests use synthetic tables only.
+- `load` checks each main file's SHA-256 and row count against `MANIFEST_local.json` and refuses a mismatch, a
+  missing file, an unexpected file, or a sealed path. A test patches `pyarrow.parquet.read_table` and `Path.open`
+  and shows that no sealed path is opened; `write_manifest` hashes only the bytes of the sealed files.
+- `price_path` is vectorized: a grouped cumulative product of (1 + `dlyret`) from each segment's first priced row.
+  The real run found 82 member rows where CIZ's `dlyprevdt` points at a row with a price and no return. That
+  return is not in the path; `tilt_frames` exposes the next row as `path_break` so the driver blanks level windows
+  that hold it (decision log P-1).
+- `market_equity` uses two `merge_asof` joins: the share row at t - 136 days, then the first factor row on or after
+  its start. The reason order is no close at t, no share row, stale share row, no basis factor.
+- Mutation check (before the `ajexq` check): 13 hand mutants (the 136-day boundary, the inclusive end, the stale comparison, the basis
+  direction, the delisting return, the cash-merger rule, the terminal row, the engine end date, the URQ known date,
+  the effective date, the seal window, the exact-split share, the chain flag). One survived (the exact-split share);
+  a new test case kills it.
+- `ajexq_check` joins URQ quarters to CRSP 2-for-1 splits through the CCM link valid at `rdq`. On the real files
+  it fails: URQ `ajexq` equals the current `comp_fundq` value on every matched row, so `signal_inputs` refuses
+  (decision log P-9). The loader note expected the check to catch exactly this case.
+- Real run on the main files: about 26 s for the intake and two windows. D2, SPY, D7, FY1, and `check_inputs`
+  pass; the URQ `ajexq` check fails. Aggregates are in the m55_loader intake report.
+
 ## 2026-10-05 - Point-in-time signals S1 to S8 on synthetic fixtures (Milestone 5.5)
 
 - New module `research/m55_signals.py` and `tests/test_m55_signals.py`. Card chain on base `8420e28`: `ac3530e`

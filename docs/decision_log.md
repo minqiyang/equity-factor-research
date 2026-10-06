@@ -15,6 +15,68 @@ investment performance.
 
 ---
 
+## 2026-10-05 - WRDS Loader Rules D1 to D9 (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- `research/m55_wrds_loader.py` (card m55-loader) builds the engine frames, the signal inputs, and the benchmark
+  returns from the main WRDS files, vintage 2025-12-31. It never opens a sealed file. The coordinator set D1 to D9;
+  the producer readings P-1 to P-9 below fill the gaps the card did not cover. Each is logged before any result.
+
+Decision:
+
+- D1 Identity (R3): `permanent_id = str(permno)`, and the symbol is the same string. No return crosses PERMNOs.
+- D2 Calendar: the trading days of INDNO 1000200 in the main file. Every member daily date must be one of them, or
+  the loader refuses. A non-member row off the calendar is dropped and counted (1 row). No main row is in the seal.
+- D3 Prices (R5, R6): one close index per PERMNO and seal segment from `dlyret` only (CIZ includes the delisting
+  return on the `Y` row; `delret` is never added). A missing `dlyret` is NaN. A later return is the last valid value
+  times (1 + `dlyret`). Each segment starts at its first priced row (index 1.0).
+- D4 Membership (R2): `crsp_dsp500list_v2`, end date inclusive (500 members on 6,082 of 7,267 days in 1990-2018,
+  confirmed). Engine `end_date` = `mbrenddt` + 1 day, `start_known_at = mbrstartdt`, `end_known_at = mbrenddt`.
+- D5 Market equity (R1): |`dlyprc`| at t times the `shrout` with the latest `shrstartdt` on or before t - 136
+  calendar days, moved to the t basis by the `dlycumfacshr` ratio. Reasons `no_share_fact`, `stale_share_fact`,
+  `unmapped`. Units: `shrout` in thousands, so ME is in thousands of USD.
+- D6 Disappearances (R4): a member PERMNO with a delisting record whose price path ends before the last calendar
+  row. `effective_date` = the calendar row after the last valued row; `known_at = effective_date`. Delisting return
+  0.0 when the `Y` row is in the path; NaN when it is missing (engine default). Causes as the card lists them.
+- D7 Split factors: at `dlyfacprc = 2` both cumulative factors halve (2,832 of 2,835 rows exactly; none rises),
+  the median price ratio is 1.995, and the median share ratio is 2.0. The loader refuses otherwise.
+- D8 Signal inputs: the sources of the card. `fund_quarterly` and `announcements` come from `comp_urq`; `comp_fundq`
+  gives only `fyearq`. `known_date` = the later of `rdq` and the first of `prelimqprd`, `finalqprd`.
+- D9 Seal: the loader refuses any sealed path; `tilt_frames` refuses a window across the seal.
+- P-1 (D3, R6): 82 member rows (67 PERMNOs, 6 inside a member spell, all in the 1960s and 1970s) have a
+  `dlyprevdt` that is a row with a price and no return (CIZ `RA` or `GP`). That return is not in the path and is
+  not filled. The row without a return stays NaN, so every return window that touches it is blank. `tilt_frames`
+  marks the next row in `path_break`; the driver blanks each level window (a price ratio or a maximum) that holds
+  one, and reports each held position across one with its weight. Rejected: no price after the break (a held name
+  would lock and could get a false -100 percent event), and a restart at a new base (a false return in the engine).
+- P-2 (D3, D6): a delisting-row return of -100 percent (9 rows) cannot be a positive close, so that row stays NaN
+  and the loader supplies the return as the delisting return.
+- P-3 (D4): eligibility at the decision row t is the engine's own interval mask at r: `mbrstartdt <= t < mbrenddt`.
+  A member on its last index day is not bought for the next row. This is the M5 rule
+  `resolved_universe_at_next_execution_row`; the literal "in force at r - 1" would give a target the engine refuses.
+- P-4 (D5): the count's basis is the first daily row on or after `shrstartdt` with a factor, on or before t. No
+  valid close or factor at t, or no basis factor by t, is `unmapped`.
+- P-5 (D8): rows dropped and counted, by table: no fiscal key (also a `datadate` with two `fyearq` in `comp_fundq`),
+  no known date, a known date before `datadate` (Snapshot 2,478; URQ 35), and a fiscal key on two `datadate` values.
+- P-6: a zero `dlyprc` is no price (1,108 rows), so it stays typed missing.
+- P-7: the 21 member PERMNOs whose path ends without a delisting record all end in 2019-07, the same count as the
+  sealed delisting records. A pre-seal window ends before 2019-07, so they do not reach the engine.
+- P-8: 695 IBES FY1 rows have a currency other than USD. They are kept; the signal module divides them by a USD
+  price. Backlog item for the signal card.
+- P-9 (D8, blocking S2): `comp_urq.ajexq` equals the current `comp_fundq.ajexq` on all 135,119 matched rows, and 36
+  of 5,431 quarters reported up to a year before a CRSP split have `ajexq` 1. Under the signals loader note, the
+  first-reported check fails, so `signal_inputs` refuses (`ajexq_not_first_reported`, 95 percent rule). The
+  coordinator chooses the S2 share basis before any real S2 value.
+- No reading loosens R1, R2, R4, R6, or R8. The coordinator decides P-9.
+
+Consequences:
+
+- The first driver run uses `tilt_frames` once per seal segment, adds the six Family A signals, and applies the
+  `path_break` blank (P-1).
+- Real intake aggregates are in `coord/reports/m55_loader/intake_report.md` (main checkout, not tracked). The tracked
+  manifest is `reports/wrds_manifest_2025.json`: names, row counts, and hashes only.
+
 ## 2026-10-05 - Signals S1 to S8 Rules (Milestone 5.5, coordinator decisions)
 
 Context:

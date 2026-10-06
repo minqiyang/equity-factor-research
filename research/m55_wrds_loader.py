@@ -1,0 +1,821 @@
+"""Milestone 5.5: build the engine and signal inputs from the WRDS files (card m55-loader).
+
+The loader reads only the main files of the WRDS folder that
+``coord/reports/m6_prep/wrds_pull.py`` writes (vintage 2025-12-31). It checks
+each file's SHA-256 against ``MANIFEST_local.json`` and refuses a mismatch, a
+missing file, or any path under ``sealed/``. It never opens a sealed file; only
+``write_manifest`` hashes the bytes of the sealed files (O-12, O-18, O-22).
+
+Outputs: the engine frames of ``research/m55_index_tilt.py`` (``tilt_frames``;
+the driver adds the signals), the ``SignalInputs`` of ``research/m55_signals.py``
+(``signal_inputs``), the three benchmark total returns (``benchmarks``), the
+intake aggregates (``intake_report``), and the tracked manifest
+(``write_manifest``). Coordinator defaults D1 to D9 of the card apply; the
+decision log records them. The module prints and writes aggregates only: never a
+row, a PERMNO, a ticker, a CUSIP, a GVKEY, a name, or a private path.
+
+Units: CRSP ``shrout`` is in thousands of shares, so market equity is in
+thousands of USD. Compustat items are in millions of USD.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from research import m55_signals as sig
+from research.m4_7_sp500_pit_rerun import RunnerStop
+from research.m55_index_tilt import CAUSES, DISAPPEARANCE_FIELDS, ME_REASONS, refuse
+
+
+MANIFEST = "MANIFEST_local.json"
+SEALED = "sealed"
+REQUIRED = ("crsp_dsf_v2", "crsp_stkshares", "crsp_stkdelists", "crsp_stksecurityinfohist", "crsp_dsp500list_v2",
+            "crsp_index_daily", "crsp_dsp500_legacy", "ccm_lnkhist", "comp_fundq", "comp_snapshot_csa_pit",
+            "comp_urq", "ibes_statsumu_epsus", "ibes_crsp_link")
+SEAL_START, SEAL_END = pd.Timestamp("2019-07-31"), pd.Timestamp("2020-07-31")
+MARKET_INDNO = sig.MARKET_INDNO                  # 1000200: CRSP value-weighted market, total return
+SHARE_LAG_DAYS = 136                             # D5: a share count is used from its date plus 136 calendar days
+SPY_TICKER, SPY_FIRST, SPY_LAST = "SPY", pd.Timestamp("1993-01-01"), pd.Timestamp("1993-02-28")
+SPY_RETURNS_FROM = pd.Timestamp("1993-02-01")
+SPY_MAX_GAP_ROWS = 5                             # calendar rows between two SPY returns
+LEGACY_END = pd.Timestamp("2024-12-31")
+FAILURE_REASONS = ("BKPY", "LP", "SHLD", "INSC", "DELQ", "FING", "INSF", "MVOT", "MTMK", "MVCHI", "MVMF")
+FAILURE_ACTIONS = ("GLI",)
+SPLIT_FACTOR = 2.0                               # D7: rows with dlyfacprc = 2
+SPLIT_EXACT_SHARE = 0.99                         # D7: share of split rows where both factors halve exactly
+SPLIT_MEDIAN_BOUNDS = (1.8, 2.2)                 # D7: median price ratio and share ratio across the split
+AJEXQ_WINDOW_DAYS = 365                          # signal loader note: quarters reported up to a year before a split
+AJEXQ_FIRST_SHARE = 0.95                         # share of those quarters whose URQ ajexq must be 1
+EXIT_CLASSES = ("current", "left_index", *CAUSES)
+UNITS = {"shrout": "thousands of shares", "market_equity": "thousands of USD", "compustat_items": "millions of USD"}
+
+
+@dataclass
+class WrdsData:
+    """The main files as Arrow tables by stem, the manifest, and a cache of derived frames."""
+
+    tables: dict[str, pa.Table]
+    manifest: dict[str, Any]
+    root: Path | None = None
+    cache: dict[str, Any] = field(default_factory=dict)
+
+
+# Loading ----------------------------------------------------------------------------------
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def stem_of(relative: str) -> str:
+    return relative.split("/")[0].removesuffix(".parquet")
+
+
+def load(root: str | Path) -> WrdsData:
+    """D9: read the main files listed in the manifest after a SHA-256 check; refuse any path under ``sealed/``."""
+    root = Path(root).expanduser().resolve()
+    if SEALED in root.parts:
+        raise refuse("sealed_path", "the data root is inside a sealed folder")
+    manifest = json.loads((root / MANIFEST).read_text())
+    sealed = root / SEALED
+    parts: dict[str, list[pa.Table]] = {}
+    for relative, record in sorted(manifest["files"].items()):
+        path = (root / relative).resolve()
+        if relative.split("/")[0] == SEALED or path == sealed or sealed in path.parents:
+            raise refuse("sealed_path", "the manifest lists a sealed path")
+        if root not in path.parents:
+            raise refuse("path_outside_root", relative)
+        if record["rows"] == 0:          # an empty part writes no data file
+            if path.exists():
+                raise refuse("file_unexpected", relative)
+            continue
+        if not path.is_file():
+            raise refuse("file_missing", relative)
+        if sha256(path) != record["sha256"]:
+            raise refuse("hash_mismatch", relative)
+        table = pq.read_table(path)
+        if table.num_rows != record["rows"]:
+            raise refuse("row_count_mismatch", relative)
+        parts.setdefault(stem_of(relative), []).append(table)
+    missing = [stem for stem in REQUIRED if stem not in parts]
+    if missing:
+        raise refuse("file_missing", ", ".join(missing))
+    return WrdsData({stem: pa.concat_tables(tables) for stem, tables in parts.items()}, manifest, root)
+
+
+def frame(data: WrdsData, stem: str, columns: list[str]) -> pd.DataFrame:
+    """Selected columns as pandas; Arrow dates become datetime64[ns] (a date past 2262 refuses)."""
+    table = data.tables[stem].select(columns)
+    out = table.to_pandas(date_as_object=False)
+    for name in columns:
+        if pa.types.is_date(table.schema.field(name).type):
+            out[name] = out[name].astype("datetime64[ns]")
+    return out
+
+
+def _cached(data: WrdsData, key: str, build) -> Any:
+    if key not in data.cache:
+        data.cache[key] = build()
+    return data.cache[key]
+
+
+# Calendar, membership, and the daily file (D1 to D4, D7) ----------------------------------
+
+def in_seal(dates: pd.Series | pd.DatetimeIndex) -> np.ndarray:
+    return np.asarray((dates >= SEAL_START) & (dates < SEAL_END))
+
+
+def calendar(data: WrdsData) -> pd.DatetimeIndex:
+    """D2: the trading days of INDNO 1000200 in the main file; no seal day."""
+    def build() -> pd.DatetimeIndex:
+        index = frame(data, "crsp_index_daily", ["indno", "dlycaldt"])
+        dates = index.loc[index["indno"] == MARKET_INDNO, "dlycaldt"]
+        if dates.isna().any() or dates.duplicated().any():
+            raise refuse("calendar_invalid", "the market index has a missing or repeated date")
+        if in_seal(dates).any():
+            raise refuse("seal_row_present", "index daily")
+        return pd.DatetimeIndex(sorted(dates), name="date")
+    return _cached(data, "calendar", build)
+
+
+def spells(data: WrdsData) -> pd.DataFrame:
+    """D4: S&P 500 spells (``permno``, ``start``, ``end``), ``end`` inclusive."""
+    def build() -> pd.DataFrame:
+        raw = frame(data, "crsp_dsp500list_v2", ["permno", "indno", "mbrstartdt", "mbrenddt"])
+        if raw["indno"].nunique() != 1:
+            raise refuse("membership_invalid", "more than one index number")
+        table = raw.rename(columns={"mbrstartdt": "start", "mbrenddt": "end"})[["permno", "start", "end"]]
+        if table.isna().any().any() or (table["start"] > table["end"]).any():
+            raise refuse("membership_invalid", "a spell without dates or with start after end")
+        table = table.sort_values(["permno", "start"], kind="mergesort").reset_index(drop=True)
+        same = table["permno"].to_numpy()[1:] == table["permno"].to_numpy()[:-1]
+        if (same & (table["start"].to_numpy()[1:] <= table["end"].to_numpy()[:-1])).any():
+            raise refuse("membership_invalid", "overlapping spells")
+        return table
+    return _cached(data, "spells", build)
+
+
+def member_mask(rows: pd.DataFrame, table: pd.DataFrame) -> np.ndarray:
+    """True for (``permno``, ``date``) rows inside an inclusive spell."""
+    out = np.zeros(len(rows), dtype=bool)
+    if not len(rows):
+        return out
+    joined = rows[["permno", "date"]].reset_index(drop=True).reset_index().merge(table, on="permno")
+    hit = joined.loc[(joined["start"] <= joined["date"]) & (joined["date"] <= joined["end"]), "index"]
+    out[hit.to_numpy()] = True
+    return out
+
+
+def price_path(daily: pd.DataFrame) -> pd.DataFrame:
+    """D3: a total-return close index per PERMNO and seal segment, built from ``dlyret`` only.
+
+    The anchor is the segment's first row with a positive price (index 1.0). Each later row with a finite
+    ``dlyret`` is the last valid value times (1 + ``dlyret``); a missing ``dlyret`` is NaN. CIZ includes the
+    delisting return on the ``dlydelflg = 'Y'`` row; ``delret`` is never added. A return of -100 percent or
+    less (only on a delisting row) leaves that row NaN; D6 carries it as the delisting return.
+    ``chain_mismatch`` flags a valid row whose ``dlyprevdt`` is not the date of the previous valid row: the
+    return of the rows between is not in the path (R6). ``tilt_frames`` exposes these rows as ``path_break``.
+    Input rows are sorted by permno and date.
+    """
+    dates = daily["date"].to_numpy()
+    group = daily["permno"].to_numpy(dtype=np.int64) * 2 + (dates >= SEAL_END.to_datetime64())
+    gid = np.cumsum(np.r_[True, group[1:] != group[:-1]]) - 1
+    priced = daily["prc"].notna().to_numpy()
+    ret = daily["dlyret"].to_numpy(dtype=float)
+    ok = np.isfinite(ret)
+    count = pd.Series(priced.astype(np.int64)).groupby(gid).cumsum().to_numpy()
+    anchor = priced & (count == 1)
+    after = (count > 0) & ~anchor
+    terminal = ok & (ret <= -1.0)
+    if (terminal & (daily["dlydelflg"].to_numpy() != "Y")).any():
+        raise refuse("return_invalid", "a return of -100 percent or less outside a delisting row")
+    step = after & ok & ~terminal
+    growth = pd.Series(np.where(step, 1.0 + ret, 1.0)).groupby(gid).cumprod().to_numpy()
+    valid = anchor | step
+    level = np.where(valid, growth, np.nan)
+    valid_dates = pd.Series(np.where(valid, dates, np.datetime64("NaT", "ns")), dtype="datetime64[ns]")
+    previous = valid_dates.groupby(gid).ffill().groupby(gid).shift(1).to_numpy()
+    prevdt = daily["dlyprevdt"].to_numpy(dtype="datetime64[ns]")
+    mismatch = step & (prevdt != previous)
+    return pd.DataFrame({"level": level, "terminal": terminal, "chain_mismatch": mismatch,
+                         "unanchored": ok & (count == 0)}, index=daily.index)
+
+
+def split_check(daily: pd.DataFrame) -> dict[str, Any]:
+    """D7: at ``dlyfacprc = 2`` both cumulative factors halve, the price halves, and shares double; else refuse."""
+    previous = daily.shift(1)
+    rows = (daily["dlyfacprc"] == SPLIT_FACTOR) & (daily["permno"] == previous["permno"])
+    rows &= daily[["dlycumfacpr", "dlycumfacshr"]].notna().all(axis=1)
+    rows &= previous[["dlycumfacpr", "dlycumfacshr"]].notna().all(axis=1)
+    if not rows.any():
+        raise refuse("split_factor_invalid", "no split row to check")
+    pr = previous.loc[rows, "dlycumfacpr"] / daily.loc[rows, "dlycumfacpr"]
+    shr = previous.loc[rows, "dlycumfacshr"] / daily.loc[rows, "dlycumfacshr"]
+    exact = np.isclose(pr, SPLIT_FACTOR, rtol=1e-9) & np.isclose(shr, SPLIT_FACTOR, rtol=1e-9)
+    price = float((previous.loc[rows, "prc"] / daily.loc[rows, "prc"]).median())
+    shares = float((daily.loc[rows, "shrout"] / previous.loc[rows, "shrout"]).median())
+    result = {"split_rows": int(rows.sum()), "both_factors_halve": int(exact.sum()),
+              "factor_rises": int(((pr < 1.0) | (shr < 1.0)).sum()), "median_price_ratio": price,
+              "median_share_ratio": shares}
+    low, high = SPLIT_MEDIAN_BOUNDS
+    if (result["factor_rises"] or exact.mean() < SPLIT_EXACT_SHARE
+            or not (low <= price <= high) or not (low <= shares <= high)):
+        raise refuse("split_factor_invalid", "the cumulative factors do not fall at a split (D7)")
+    return result
+
+
+def daily(data: WrdsData) -> pd.DataFrame:
+    """The main daily rows on the calendar with ``prc`` = |``dlyprc``| (0 is no price) and the D3 path."""
+    def build() -> pd.DataFrame:
+        table = frame(data, "crsp_dsf_v2", ["permno", "dlycaldt", "dlyret", "dlyprc", "dlyprevdt", "dlydelflg",
+                                            "dlycumfacpr", "dlycumfacshr", "dlyfacprc", "shrout", "dlyvol"])
+        table = table.rename(columns={"dlycaldt": "date"})
+        if table["date"].isna().any() or table.duplicated(["permno", "date"]).any():
+            raise refuse("daily_invalid", "a row without a date or a repeated PERMNO date")
+        if in_seal(table["date"]).any():
+            raise refuse("seal_row_present", "daily")
+        on_calendar = table["date"].isin(calendar(data)).to_numpy()
+        if member_mask(table[~on_calendar], spells(data)).any():
+            raise refuse("calendar_invalid", "a member's daily date is not a market index trading day (D2)")
+        data.cache["daily_off_calendar"] = int((~on_calendar).sum())
+        table = table[on_calendar].sort_values(["permno", "date"], kind="mergesort").reset_index(drop=True)
+        price = table["dlyprc"].abs()
+        table["prc"] = price.where(price > 0.0)
+        table["shrout"] = table["shrout"].astype(float)
+        table = pd.concat([table, price_path(table)], axis=1)
+        data.cache["split_check"] = split_check(table)
+        return table
+    return _cached(data, "daily", build)
+
+
+# Market equity (D5) and disappearances (D6) -----------------------------------------------
+
+def market_equity(rows: pd.DataFrame, shares: pd.DataFrame) -> pd.DataFrame:
+    """D5: ME at each daily row t and its reason where it is missing.
+
+    ME = |``dlyprc``| at t x the ``shrout`` of the share row with the latest ``shrstartdt`` on or before
+    t - 136 calendar days x ``cfacshr`` at that count's basis / ``cfacshr`` at t. The basis is the first daily
+    row on or after ``shrstartdt`` with a factor, and it must be on or before t. Reasons: no valid close or
+    factor at t, ``unmapped``; no share row, ``no_share_fact``; its ``shrenddt`` before the cutoff,
+    ``stale_share_fact``; no basis factor by t, ``unmapped``.
+    """
+    left = pd.DataFrame({"row": np.arange(len(rows)), "permno": rows["permno"].to_numpy(),
+                         "date": rows["date"].to_numpy(),
+                         "cutoff": rows["date"].to_numpy() - np.timedelta64(SHARE_LAG_DAYS, "D")})
+    facts = shares[["permno", "shrstartdt", "shrenddt", "shrout"]].rename(columns={"shrout": "fact"})
+    found = pd.merge_asof(left.sort_values("cutoff"), facts.sort_values("shrstartdt"), left_on="cutoff",
+                          right_on="shrstartdt", by="permno", direction="backward")
+    basis = rows.loc[rows["dlycumfacshr"].gt(0.0), ["permno", "date", "dlycumfacshr"]]
+    basis = basis.rename(columns={"date": "basis_date", "dlycumfacshr": "basis_factor"})
+    has_fact = found["shrstartdt"].notna()
+    with_basis = pd.merge_asof(found[has_fact].sort_values("shrstartdt"), basis.sort_values("basis_date"),
+                               left_on="shrstartdt", right_on="basis_date", by="permno", direction="forward")
+    found = pd.concat([with_basis, found[~has_fact]]).set_index("row").sort_index()
+    price, factor = rows["prc"].to_numpy(), rows["dlycumfacshr"].to_numpy(dtype=float)
+    value = price * found["fact"].to_numpy(dtype=float) * found["basis_factor"].to_numpy(dtype=float) / factor
+    reason = np.full(len(rows), None, dtype=object)
+    no_close = ~np.isfinite(rows["level"].to_numpy()) | ~np.isfinite(price) | ~(factor > 0.0)
+    no_fact = found["shrstartdt"].isna().to_numpy()
+    stale = (found["shrenddt"] < found["cutoff"]).to_numpy()
+    no_basis = ~(found["basis_date"] <= found["date"]).to_numpy() | ~(value > 0.0)
+    for mask, label in ((no_basis, "unmapped"), (stale, "stale_share_fact"), (no_fact, "no_share_fact"),
+                        (no_close, "unmapped")):
+        reason[mask] = label          # later assignments win: the order is the reason priority
+    me = np.where(pd.isna(reason), value, np.nan)
+    return pd.DataFrame({"market_equity": me, "me_reason": reason}, index=rows.index)
+
+
+def cause_of(action: Any, reason: Any, payment: Any) -> str:
+    """D6: ``cash_merger`` only for MER paid in CASH; ``failure`` for the listed reasons or GLI; else ``unknown``."""
+    if action == "MER" and payment == "CASH":
+        return "cash_merger"
+    if reason in FAILURE_REASONS or action in FAILURE_ACTIONS:
+        return "failure"
+    return "unknown"
+
+
+def disappearances(data: WrdsData) -> pd.DataFrame:
+    """D6: member PERMNOs with a delisting record whose price path ends before the last calendar row.
+
+    ``effective_date`` is the calendar row after the last row with a value in the price path, and
+    ``known_at = effective_date``. ``delisting_return`` is 0.0 when the delisting row is that last row (CIZ
+    already put the delisting return in the path), the delisting row's return when it is -100 percent or less
+    (not representable in a positive path), and NaN otherwise, so the engine default applies. ``last_valid``
+    (the last valued row) is kept for the window filter.
+    """
+    def build() -> pd.DataFrame:
+        cal = calendar(data)
+        rows = daily(data)
+        valued = rows[rows["level"].notna()]
+        last = valued.groupby("permno").tail(1).set_index("permno")
+        record = frame(data, "crsp_stkdelists", ["permno", "delactiontype", "delreasontype", "delpaymenttype"])
+        if record["permno"].duplicated().any():
+            raise refuse("disappearances_invalid", "two delisting records for one PERMNO")
+        record = record[record["permno"].isin(spells(data)["permno"]) & record["permno"].isin(last.index)]
+        terminal = rows[rows["terminal"]].set_index("permno")["dlyret"]
+        out = []
+        for item in record.itertuples(index=False):
+            end = last.loc[item.permno]
+            position = cal.get_loc(end["date"])
+            if position == len(cal) - 1:
+                continue
+            if end["dlydelflg"] == "Y":
+                value = 0.0
+            elif item.permno in terminal.index:
+                value = float(terminal.loc[item.permno])
+            else:
+                value = np.nan
+            out.append({"permanent_id": str(item.permno), "effective_date": cal[position + 1],
+                        "known_at": cal[position + 1],
+                        "cause": cause_of(item.delactiontype, item.delreasontype, item.delpaymenttype),
+                        "delisting_return": value, "last_valid": end["date"]})
+        columns = [*DISAPPEARANCE_FIELDS, "last_valid"]
+        table = pd.DataFrame(out, columns=columns)
+        for name in ("effective_date", "known_at", "last_valid"):
+            table[name] = pd.to_datetime(table[name])
+        table["delisting_return"] = table["delisting_return"].astype(float)
+        return table
+    return _cached(data, "disappearances", build)
+
+
+# Engine frames ----------------------------------------------------------------------------
+
+def segment_rows(cal: pd.DatetimeIndex, date: pd.Timestamp) -> pd.DatetimeIndex:
+    return cal[(cal >= SEAL_END) == (date >= SEAL_END)]
+
+
+def intervals(table: pd.DataFrame) -> pd.DataFrame:
+    """D4: engine intervals; ``end_date`` is the first calendar day after ``mbrenddt``."""
+    ids = table["permno"].astype(str)
+    return pd.DataFrame({"symbol": ids, "permanent_id": ids, "start_date": table["start"],
+                         "end_date": table["end"] + pd.Timedelta(days=1), "start_known_at": table["start"],
+                         "end_known_at": table["end"]}).reset_index(drop=True)
+
+
+def eligibility(table: pd.DataFrame, rows: pd.DatetimeIndex, columns: pd.Index) -> pd.DataFrame:
+    """D4: eligibility at the decision row t = r - 1 from intervals in force at t, as the engine resolves them.
+
+    The engine admits a member at row r when ``start <= t`` and drops it once ``t >= mbrenddt`` (its
+    ``end_known_at``), so a spell is eligible on rows ``start <= t < mbrenddt``: a member on its last index
+    day is not bought for the next row (the M5 rule resolved_universe_at_next_execution_row).
+    """
+    out = np.zeros((len(rows), len(columns)), dtype=bool)
+    position = columns.get_indexer(table["permno"].astype(str))
+    for column, start, end in zip(position, table["start"], table["end"]):
+        if column >= 0:
+            out[rows.searchsorted(start, "left"):rows.searchsorted(end, "left"), column] = True
+    return pd.DataFrame(out, index=rows, columns=columns)
+
+
+def panel(values: pd.Series, rows_frame: pd.DataFrame, rows: pd.DatetimeIndex, columns: pd.Index,
+          fill: Any = np.nan, dtype: Any = float) -> pd.DataFrame:
+    out = np.full((len(rows), len(columns)), fill, dtype=dtype)
+    out[rows.get_indexer(rows_frame["date"]), columns.get_indexer(rows_frame["permno"].astype(str))] = values
+    return pd.DataFrame(out, index=rows, columns=columns)
+
+
+def tilt_frames(data: WrdsData, start: str | pd.Timestamp, end: str | pd.Timestamp) -> dict[str, Any]:
+    """The engine inputs for a window inside one seal segment (the driver adds the six signals).
+
+    Rows run from the segment's first calendar row to the first row of the month after ``end``. Columns are
+    the PERMNOs (as strings, D1) with a spell that touches these rows. A cell without a daily row has no price
+    and ME reason ``unmapped``. ``path_break`` is True on a row whose return starts after a return that is not
+    in the path (decision log P-1): the driver blanks every level window (a price ratio or a maximum) that holds
+    a True row and its previous valid row (R6), and reports each held position across one. Disappearances keep events whose last valued row and effective row are inside
+    the rows. A window that crosses the seal refuses (D9: the driver runs separate segments).
+    """
+    cal = calendar(data)
+    start, end = pd.Timestamp(start), pd.Timestamp(end)
+    if start not in cal or end not in cal or not start < end:
+        raise refuse("window_invalid", "start and end must be calendar rows with start before end")
+    if (start >= SEAL_END) != (end >= SEAL_END):
+        raise refuse("window_crosses_seal", "run each seal segment separately (D9)")
+    segment = segment_rows(cal, start)
+    later = segment[segment.to_period("M") > end.to_period("M")]
+    if not len(later):
+        raise refuse("window_invalid", "the segment has no row in a month after end")
+    rows = segment[segment <= later[0]]
+    table = spells(data)
+    touching = table[(table["start"] <= rows[-1]) & (table["end"] >= rows[0])]
+    permnos = np.sort(touching["permno"].unique())
+    columns = pd.Index([str(p) for p in permnos], name="permanent_id")
+    member_spells = table[table["permno"].isin(permnos)]
+    source = daily(data)
+    window = source[source["permno"].isin(permnos) & source["date"].between(rows[0], rows[-1])]
+    me = market_equity(window, frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]))
+    prices = panel(window["level"].to_numpy(), window, rows, columns)
+    market = panel(me["market_equity"].to_numpy(), window, rows, columns)
+    reason = panel(me["me_reason"].to_numpy(), window, rows, columns, fill="unmapped", dtype=object)
+    reason = reason.where(market.isna(), None)
+    events = disappearances(data)
+    events = events[events["permanent_id"].isin(columns) & events["last_valid"].between(rows[0], rows[-1])
+                    & events["effective_date"].between(rows[0], rows[-1])]
+    breaks = panel(window["chain_mismatch"].to_numpy(), window, rows, columns, fill=False, dtype=bool)
+    return {"calendar": rows, "prices": prices, "path_break": breaks,
+            "eligible": eligibility(member_spells, rows, columns),
+            "market_equity": market, "me_reason": reason, "intervals": intervals(member_spells),
+            "disappearances": events[list(DISAPPEARANCE_FIELDS)].reset_index(drop=True)}
+
+
+# Signal inputs (D8) -----------------------------------------------------------------------
+
+def _fiscal_conflicts(table: pd.DataFrame, fiscal: list[str]) -> np.ndarray:
+    """Rows whose fiscal key maps to two datadates, or whose datadate maps to two fiscal keys, in one gvkey."""
+    pairs = table[["gvkey", "datadate", *fiscal]].drop_duplicates()
+    bad_key = pairs[pairs.duplicated(["gvkey", *fiscal], keep=False)][["gvkey", *fiscal]].drop_duplicates()
+    bad_date = pairs[pairs.duplicated(["gvkey", "datadate"], keep=False)][["gvkey", "datadate"]].drop_duplicates()
+    by_key = table[["gvkey", *fiscal]].merge(bad_key.assign(_x=True), how="left")["_x"].notna().to_numpy()
+    by_date = table[["gvkey", "datadate"]].merge(bad_date.assign(_x=True), how="left")["_x"].notna().to_numpy()
+    return by_key | by_date
+
+
+def _drop(table: pd.DataFrame, rules: list[tuple[str, Any]]) -> tuple[pd.DataFrame, dict[str, int]]:
+    """Apply the drop rules in order; each rule is a label and a function of the remaining rows."""
+    counts = {}
+    for label, rule in rules:
+        mask = np.asarray(rule(table), dtype=bool)
+        counts[label] = int(mask.sum())
+        table = table[~mask].reset_index(drop=True)
+    return table, counts
+
+
+def _integral(series: pd.Series) -> pd.Series:
+    values = series.to_numpy(dtype=float)
+    return pd.Series(np.isfinite(values) & (values == np.round(values)), index=series.index)
+
+
+def signal_tables(data: WrdsData) -> tuple[sig.SignalInputs, dict[str, dict[str, int]]]:
+    """D8: ``SignalInputs`` and the dropped rows by table and reason; ``check_inputs`` must pass."""
+    def build() -> tuple[sig.SignalInputs, dict[str, dict[str, int]]]:
+        members = spells(data)
+        rows = daily(data)
+        rows = rows[rows["permno"].isin(members["permno"])]
+        daily_table = pd.DataFrame({"permno": rows["permno"].to_numpy(), "date": rows["date"].to_numpy(),
+                                    "ret": rows["dlyret"].to_numpy(), "prc": rows["prc"].to_numpy(),
+                                    "shrout": rows["shrout"].to_numpy(), "cfacpr": rows["dlycumfacpr"].to_numpy(),
+                                    "cfacshr": rows["dlycumfacshr"].to_numpy()})
+        drops: dict[str, dict[str, int]] = {"daily": {"off_calendar": data.cache["daily_off_calendar"]},
+                                            "members": {}}
+
+        annual = frame(data, "comp_snapshot_csa_pit", ["gvkey", "datadate", "fyear", "pitdate1",
+                                                       *sig.ANNUAL_ITEMS]).rename(columns={"pitdate1": "known_date"})
+        annual, drops["fund_annual"] = _drop(annual, [
+            ("no_fiscal_key", lambda t: t["gvkey"].isna() | t["datadate"].isna() | ~_integral(t["fyear"])),
+            ("no_known_date", lambda t: t["known_date"].isna()),
+            ("known_before_datadate", lambda t: t["known_date"] < t["datadate"]),
+            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyear"]))])
+        annual["fyear"] = annual["fyear"].astype(np.int64)
+
+        urq = frame(data, "comp_urq", ["gvkey", "datadate", "fqtr", "rdq", "prelimqprd", "finalqprd", "epspxq",
+                                       "ajexq"])
+        keys = frame(data, "comp_fundq", ["gvkey", "datadate", "fyearq"]).dropna().drop_duplicates()
+        keys = keys[~keys.duplicated(["gvkey", "datadate"], keep=False)]    # two fiscal years: no fiscal key
+        urq = urq.merge(keys, on=["gvkey", "datadate"], how="left")
+        period = urq["prelimqprd"].fillna(urq["finalqprd"])
+        urq["known_date"] = period.where(urq["rdq"].isna() | (period >= urq["rdq"]), urq["rdq"])
+        urq["known_date"] = urq["known_date"].where(period.notna())
+        keyed, drops["announcements"] = _drop(urq, [
+            ("no_fiscal_key", lambda t: t["gvkey"].isna() | t["datadate"].isna() | ~_integral(t["fyearq"])
+             | ~t["fqtr"].isin([1, 2, 3, 4])),
+            ("fiscal_key_conflict", lambda t: _fiscal_conflicts(t, ["fyearq", "fqtr"]))])
+        keyed[["fyearq", "fqtr"]] = keyed[["fyearq", "fqtr"]].astype(np.int64)
+        announcements = keyed[["gvkey", "datadate", "fyearq", "fqtr", "rdq"]]
+        quarterly, quarter_drops = _drop(keyed, [
+            ("no_known_date", lambda t: t["known_date"].isna()),
+            ("known_before_datadate", lambda t: t["known_date"] < t["datadate"])])
+        drops["fund_quarterly"] = {**drops["announcements"], **quarter_drops}
+        quarterly = quarterly[["gvkey", "datadate", "fyearq", "fqtr", "known_date", *sig.QUARTER_ITEMS]]
+
+        link = frame(data, "ccm_lnkhist", ["gvkey", "lpermno", "linkdt", "linkenddt"])
+        link, drops["link"] = _drop(link, [("no_key", lambda t: t[["gvkey", "linkdt"]].isna().any(axis=1)
+                                            | ~_integral(t["lpermno"]))])
+        link = link.assign(permno=link["lpermno"].astype(np.int64))[list(sig.SCHEMA["link"])]
+        ibes_link = frame(data, "ibes_crsp_link", ["ticker", "permno", "sdate", "edate", "score"])
+        ibes_link, drops["ibes_link"] = _drop(ibes_link, [
+            ("no_key", lambda t: t[["ticker", "permno", "sdate", "score"]].isna().any(axis=1))])
+        ibes = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "meanest"])
+        ibes, drops["ibes"] = _drop(ibes, [
+            ("no_key", lambda t: t[["ticker", "statpers", "fpi", "fpedats"]].isna().any(axis=1))])
+        index = frame(data, "crsp_index_daily", ["indno", "dlycaldt", "dlytotret"])
+        index = index[index["indno"] == MARKET_INDNO].rename(columns={"dlycaldt": "date", "dlytotret": "ret"})
+        drops["index_daily"] = {}
+        inputs = sig.SignalInputs(
+            daily=daily_table, members=members.reset_index(drop=True), fund_annual=annual[
+                list(sig.SCHEMA["fund_annual"])], fund_quarterly=quarterly, announcements=announcements,
+            link=link, ibes_link=ibes_link, ibes=ibes, index_daily=index[["date", "indno", "ret"]].reset_index(
+                drop=True))
+        sig.check_inputs(inputs)
+        return inputs, drops
+    return _cached(data, "signal_tables", build)
+
+
+def ajexq_check(data: WrdsData) -> dict[str, Any]:
+    """Signal loader note (Repair Round 2): URQ ``ajexq`` must be first-reported, never a current-vintage value.
+
+    Quarters whose ``rdq`` falls up to a year before a CRSP 2-for-1 split of the linked PERMNO (CCM link valid at
+    ``rdq``) were reported before the split, so their first-reported ``ajexq`` is 1. Refuses when fewer than 95
+    percent of them have ``ajexq`` 1, or when there is no such quarter. Also counts URQ values equal to the
+    current ``comp_fundq`` value.
+    """
+    rows = daily(data)
+    splits = rows.loc[rows["dlyfacprc"] == SPLIT_FACTOR, ["permno", "date"]].rename(columns={"date": "split"})
+    link = frame(data, "ccm_lnkhist", ["gvkey", "lpermno", "linkdt", "linkenddt"]).dropna(subset=["lpermno"])
+    link["permno"] = link["lpermno"].astype(np.int64)
+    urq = frame(data, "comp_urq", ["gvkey", "datadate", "rdq", "ajexq"]).dropna(subset=["rdq"])
+    hit = urq.merge(link[["gvkey", "permno", "linkdt", "linkenddt"]], on="gvkey")
+    hit = hit[(hit["linkdt"] <= hit["rdq"]) & (hit["linkenddt"].isna() | (hit["rdq"] <= hit["linkenddt"]))]
+    hit = hit.merge(splits, on="permno")
+    hit = hit[(hit["split"] > hit["rdq"]) & (hit["split"] <= hit["rdq"] + pd.Timedelta(days=AJEXQ_WINDOW_DAYS))]
+    hit = hit.drop_duplicates(["gvkey", "datadate"])
+    current = frame(data, "comp_fundq", ["gvkey", "datadate", "ajexq"]).drop_duplicates(["gvkey", "datadate"])
+    both = urq.merge(current, on=["gvkey", "datadate"], suffixes=("", "_current")).dropna(
+        subset=["ajexq", "ajexq_current"])
+    result = {"quarters_before_split": int(len(hit)), "ajexq_one": int((hit["ajexq"] == 1.0).sum()),
+              "urq_rows_matched": int(len(both)),
+              "urq_equal_current": int(np.isclose(both["ajexq"], both["ajexq_current"]).sum())}
+    data.cache["ajexq_check"] = result
+    if not len(hit) or result["ajexq_one"] < AJEXQ_FIRST_SHARE * len(hit):
+        raise refuse("ajexq_not_first_reported", "URQ ajexq of quarters reported before a split is not 1")
+    return result
+
+
+def signal_inputs(data: WrdsData) -> sig.SignalInputs:
+    """The signal inputs after the first-reported ``ajexq`` check (it refuses on failure)."""
+    ajexq_check(data)
+    return signal_tables(data)[0]
+
+
+# Benchmarks -------------------------------------------------------------------------------
+
+def spy_permno(data: WrdsData) -> int:
+    """The one PERMNO with ticker SPY in early 1993 (the pull's preflight rule); never printed."""
+    info = frame(data, "crsp_stksecurityinfohist", ["permno", "ticker", "secinfostartdt", "secinfoenddt"])
+    hit = info[(info["ticker"] == SPY_TICKER) & (info["secinfostartdt"] <= pd.Timestamp("1993-03-31"))
+               & (info["secinfoenddt"] >= pd.Timestamp("1993-02-01"))]
+    if hit["permno"].nunique() != 1:
+        raise refuse("spy_invalid", "SPY does not resolve to one PERMNO")
+    return int(hit["permno"].iloc[0])
+
+
+def spy_check(data: WrdsData) -> dict[str, Any]:
+    """SPY: one PERMNO, first return in 1993-01 or 1993-02, at most five calendar rows between two returns."""
+    cal = calendar(data)
+    rows = daily(data)
+    returns = rows.loc[(rows["permno"] == spy_permno(data)) & rows["dlyret"].notna(), "date"]
+    if not len(returns) or not SPY_FIRST <= returns.iloc[0] <= SPY_LAST:
+        raise refuse("spy_invalid", "the first SPY return is not in 1993-01 or 1993-02")
+    gap = int(np.diff(cal.get_indexer(returns)).max(initial=1)) - 1
+    if gap > SPY_MAX_GAP_ROWS:
+        raise refuse("spy_invalid", f"{gap} calendar rows between two SPY returns")
+    return {"permnos": 1, "first_return_month": returns.iloc[0].strftime("%Y-%m"), "max_gap_rows": gap}
+
+
+def benchmarks(data: WrdsData) -> pd.DataFrame:
+    """Daily total returns on the calendar: SPY ``dlyret`` from 1993-02, INDNO 1000200 ``dlytotret``, and the
+    legacy S&P 500 value-weighted ``vwretd`` to 2024-12-31. Never ``sprtrn`` or the 1000502 price return."""
+    cal = calendar(data)
+    rows = daily(data)
+    spy = rows[(rows["permno"] == spy_permno(data)) & (rows["date"] >= SPY_RETURNS_FROM)].set_index("date")["dlyret"]
+    index = frame(data, "crsp_index_daily", ["indno", "dlycaldt", "dlytotret"])
+    market = index[index["indno"] == MARKET_INDNO].set_index("dlycaldt")["dlytotret"]
+    legacy = frame(data, "crsp_dsp500_legacy", ["caldt", "vwretd"])
+    legacy = legacy[legacy["caldt"] <= LEGACY_END].set_index("caldt")["vwretd"]
+    if not legacy.index.isin(cal).all() or legacy.index.duplicated().any():
+        raise refuse("calendar_invalid", "a legacy S&P 500 date is not a calendar row")
+    return pd.DataFrame({"spy": spy.reindex(cal), "crsp_vw_market": market.reindex(cal),
+                         "sp500_vw_legacy": legacy.reindex(cal)}, index=cal)
+
+
+# Intake report ----------------------------------------------------------------------------
+
+def member_days(data: WrdsData) -> pd.DataFrame:
+    """Every (PERMNO, calendar row) inside an inclusive spell, with its daily row values when it has one."""
+    cal = calendar(data)
+    parts = []
+    for item in spells(data).itertuples(index=False):
+        dates = cal[(cal >= item.start) & (cal <= item.end)]
+        parts.append(pd.DataFrame({"permno": item.permno, "date": dates}))
+    days = pd.concat(parts, ignore_index=True)
+    rows = daily(data)
+    rows = rows[rows["permno"].isin(spells(data)["permno"])]
+    me = market_equity(rows, frame(data, "crsp_stkshares", ["permno", "shrstartdt", "shrenddt", "shrout"]))
+    values = pd.concat([rows[["permno", "date", "dlyret", "prc", "dlyvol", "level"]], me], axis=1)
+    days = days.merge(values, on=["permno", "date"], how="left", indicator="row")
+    days["has_row"] = days.pop("row").eq("both")
+    days["me_reason"] = days["me_reason"].where(days["has_row"], "unmapped")
+    days["dollar_volume"] = (days["prc"] * days["dlyvol"]).fillna(0.0)
+    return days
+
+
+def exit_class(data: WrdsData) -> pd.Series:
+    """Later exit class per PERMNO: the D6 cause of a disappearance, else ``current`` at the vintage end, else
+    ``left_index``."""
+    table = spells(data)
+    vintage = pd.Timestamp(data.manifest["vintage"])
+    out = pd.Series("left_index", index=table["permno"].unique())
+    out[table.loc[table["end"] >= vintage, "permno"].unique()] = "current"
+    events = disappearances(data)
+    out[events["permanent_id"].astype(np.int64).to_numpy()] = events["cause"].to_numpy()
+    return out
+
+
+def _shares(days: pd.DataFrame, by: str) -> dict[str, dict[str, float]]:
+    out = {}
+    for key, group in days.groupby(by):
+        total = float(group["dollar_volume"].sum())
+        reasons = group["me_reason"].fillna("present")
+        out[str(key)] = {"member_days": int(len(group)),
+                         **{f"days_{r}": int((reasons == r).sum()) for r in ("present", *ME_REASONS)},
+                         **{f"dv_share_{r}": (float(group.loc[reasons == r, "dollar_volume"].sum()) / total
+                                              if total else float("nan")) for r in ("present", *ME_REASONS)}}
+    return out
+
+
+def intake_report(data: WrdsData) -> dict[str, Any]:
+    """The intake aggregates; a hard check that fails refuses (fail closed)."""
+    rows = daily(data)
+    days = member_days(data)
+    days["year"] = days["date"].dt.year
+    days["exit"] = days["permno"].map(exit_class(data))
+    per_day = days.groupby("date").size()
+    by_year = per_day.groupby(per_day.index.year)
+    members = {str(y): {"days": int(len(v)), "mean": float(v.mean()), "min": int(v.min()), "max": int(v.max()),
+                        "days_500": int((v == 500).sum())} for y, v in by_year}
+    coverage = {"member_days": int(len(days)), "with_daily_row": int(days["has_row"].sum()),
+                "with_price": int(days["prc"].notna().sum()), "with_return": int(days["dlyret"].notna().sum()),
+                "with_path_value": int(days["level"].notna().sum())}
+    events = disappearances(data)
+    causes = {c: int((events["cause"] == c).sum()) for c in CAUSES}
+    in_path = int((events["delisting_return"] == 0.0).sum())
+    terminal = int((events["delisting_return"].notna() & (events["delisting_return"] != 0.0)).sum())
+    member_rows = rows[rows["permno"].isin(spells(data)["permno"])]
+    breaks = member_rows[member_rows["chain_mismatch"]]
+    break_days = member_mask(breaks, spells(data))
+    break_decades = (breaks.loc[break_days, "date"].dt.year // 10 * 10).value_counts().sort_index()
+    last_rows = member_rows[member_rows["level"].notna()].groupby("permno")["date"].max()
+    early_end = last_rows[(last_rows < calendar(data)[-1])].index
+    no_record = last_rows[early_end.difference(events["permanent_id"].astype(np.int64))]
+    end_months = no_record.dt.to_period("M").astype(str).value_counts().sort_index()
+    inputs, drops = signal_tables(data)
+    fy1 = inputs.ibes[inputs.ibes["fpi"] == "1"]
+    duplicate_fy1 = int(pd.DataFrame({"t": fy1["ticker"], "m": fy1["statpers"].dt.to_period("M")}).duplicated().sum())
+    if duplicate_fy1:
+        raise refuse("duplicate_key", "ibes: two FY1 rows in one ticker-month")
+    tables = {name: {"rows": int(len(getattr(inputs, name))), "dropped": drops[name]} for name in sig.SCHEMA}
+    ibes_currency = frame(data, "ibes_statsumu_epsus", ["curcode"])["curcode"]
+    try:
+        ajexq = {**ajexq_check(data), "passed": True}
+    except RunnerStop:
+        ajexq = {**data.cache["ajexq_check"], "passed": False}
+    return {
+        "vintage": data.manifest["vintage"],
+        "calendar": {"rows": int(len(calendar(data))), "first": str(calendar(data)[0].date()),
+                     "last": str(calendar(data)[-1].date()), "seal_rows": 0,
+                     "daily_off_calendar_non_member_rows": data.cache["daily_off_calendar"]},
+        "members_per_day": members, "coverage": coverage,
+        "me_by_year": _shares(days, "year"), "me_by_exit": _shares(days, "exit"),
+        "disappearances": {"total": int(len(events)), **causes, "delisting_return_in_path": in_path,
+                           "delisting_return_supplied_minus_100": terminal,
+                           "delisting_return_missing": int(events["delisting_return"].isna().sum())},
+        "price_path": {"chain_mismatch_rows": int(member_rows["chain_mismatch"].sum()),
+                       "chain_mismatch_permnos": int(breaks["permno"].nunique()),
+                       "chain_mismatch_in_member_spell": int(break_days.sum()),
+                       "chain_mismatch_in_member_spell_by_decade": {str(k): int(v) for k, v in break_decades.items()},
+                       "unanchored_return_rows": int(member_rows["unanchored"].sum()),
+                       "zero_price_rows": int((member_rows["dlyprc"] == 0.0).sum()),
+                       "path_ends_early_without_delisting_record": len(no_record),
+                       "path_ends_early_by_month": {k: int(v) for k, v in end_months.items()}},
+        "spy": spy_check(data), "split_check": data.cache["split_check"],
+        "signal_tables": tables, "duplicate_fy1_ticker_month": duplicate_fy1, "ajexq_check": ajexq,
+        "ibes_non_usd_rows": int((ibes_currency != "USD").sum()),
+    }
+
+
+def _fmt(value: float) -> str:
+    return "n/a" if value != value else f"{value:.4f}"
+
+
+def intake_markdown(report: dict[str, Any]) -> str:
+    """The intake report as Markdown: aggregates only."""
+    lines = ["# M5.5 WRDS Loader Intake Report", "",
+             f"Vintage {report['vintage']}. Main files only; the sealed files were not opened. Aggregates only.",
+             "", "## Checks", ""]
+    checks = [
+        ("D2 calendar: every member daily date is a market index trading day; no seal row", True),
+        ("SPY: one PERMNO, first return in 1993-01 or 1993-02, at most 5 calendar rows between returns",
+         report["spy"]["max_gap_rows"] <= SPY_MAX_GAP_ROWS),
+        ("D7 split check: both cumulative factors fall at a split; price halves; shares double",
+         report["split_check"]["factor_rises"] == 0),
+        ("Duplicate FY1 row per ticker-month is zero", report["duplicate_fy1_ticker_month"] == 0),
+        ("Signal inputs pass `check_inputs`", True),
+        ("URQ `ajexq` is first-reported: 1 on quarters reported up to a year before a CRSP split (95 percent rule); "
+         "`signal_inputs` refuses otherwise", report["ajexq_check"]["passed"]),
+    ]
+    lines += [f"- {'PASS' if ok else 'FAIL'}: {text}" for text, ok in checks]
+    spy, split, cal = report["spy"], report["split_check"], report["calendar"]
+    lines += ["", f"Calendar: {cal['rows']} rows, {cal['first']} to {cal['last']}; seal rows {cal['seal_rows']}; "
+              f"non-member daily rows off the calendar dropped: {cal['daily_off_calendar_non_member_rows']}.",
+              f"SPY: first return {spy['first_return_month']}; largest gap {spy['max_gap_rows']} calendar rows.",
+              f"Split rows {split['split_rows']}; both factors halve exactly on {split['both_factors_halve']}; "
+              f"factor rises {split['factor_rises']}; median price ratio {split['median_price_ratio']:.4f}; "
+              f"median share ratio {split['median_share_ratio']:.4f}.",
+              f"URQ `ajexq`: {report['ajexq_check']['ajexq_one']} of {report['ajexq_check']['quarters_before_split']} "
+              f"quarters reported before a split have `ajexq` 1; {report['ajexq_check']['urq_equal_current']} of "
+              f"{report['ajexq_check']['urq_rows_matched']} URQ values equal the current `comp_fundq` value.", "",
+              "## Members Per Day By Year", "", "| Year | Days | Mean | Min | Max | Days with 500 |",
+              "| --- | --- | --- | --- | --- | --- |"]
+    lines += [f"| {y} | {v['days']} | {v['mean']:.1f} | {v['min']} | {v['max']} | {v['days_500']} |"
+              for y, v in report["members_per_day"].items()]
+    c = report["coverage"]
+    lines += ["", "## Member-Day Coverage", "", f"Member-days {c['member_days']}; with a daily row "
+              f"{c['with_daily_row']}; with a price {c['with_price']}; with a return {c['with_return']}; with a "
+              f"total-return path value {c['with_path_value']}.", ""]
+    for title, key in (("Market Equity By Year", "me_by_year"), ("Market Equity By Later Exit Class", "me_by_exit")):
+        reasons = ("present", *ME_REASONS)
+        lines += [f"## {title}", "", "Member-days by ME reason, then the share of member dollar volume "
+                  "(split-only close x split-adjusted volume) in each reason.", "",
+                  "| Key | Member-days | " + " | ".join(reasons) + " | " + " | ".join(f"DV {r}" for r in reasons)
+                  + " |", "| --- " * (2 + 2 * len(reasons)) + "|"]
+        for key, v in report[key].items():
+            lines.append(f"| {key} | {v['member_days']} | " + " | ".join(str(v[f'days_{r}']) for r in reasons)
+                         + " | " + " | ".join(_fmt(v[f'dv_share_{r}']) for r in reasons) + " |")
+        lines.append("")
+    d = report["disappearances"]
+    lines += ["## Disappearances (D6)", "", f"Total {d['total']}: cash_merger {d['cash_merger']}, failure "
+              f"{d['failure']}, unknown {d['unknown']}. Delisting return in the price path {d['delisting_return_in_path']}"
+              f" ({_fmt(d['delisting_return_in_path'] / d['total']) if d['total'] else 'n/a'} of all); supplied "
+              f"-100 percent {d['delisting_return_supplied_minus_100']}; missing (engine default) "
+              f"{d['delisting_return_missing']}.", ""]
+    p = report["price_path"]
+    decades = ", ".join(f"{k}s {v}" for k, v in p["chain_mismatch_in_member_spell_by_decade"].items())
+    lines += ["## Price Path (D3, R6)", "", f"- Rows whose `dlyprevdt` is not the previous valid row (a row with a "
+              f"price but no return lies between; that return is not in the path): {p['chain_mismatch_rows']} rows, "
+              f"{p['chain_mismatch_permnos']} PERMNOs, {p['chain_mismatch_in_member_spell']} inside a member spell (by "
+              f"decade: {decades or 'none'}). `tilt_frames` marks these rows in `path_break`; the driver blanks each level window that "
+              "holds one and reports each held position across one.",
+              f"- Returns before the first priced row (not used): {p['unanchored_return_rows']}.",
+              f"- Zero prices read as no price: {p['zero_price_rows']}.",
+              f"- Member PERMNOs whose path ends before the vintage end without a delisting record: "
+              f"{p['path_ends_early_without_delisting_record']} (last valued row by month: "
+              f"{', '.join(f'{k} {v}' for k, v in p['path_ends_early_by_month'].items()) or 'none'}).", "",
+              "## Signal Input Tables (D8)", "",
+              "| Table | Rows | Dropped by reason |", "| --- | --- | --- |"]
+    for name, v in report["signal_tables"].items():
+        dropped = ", ".join(f"{k} {n}" for k, n in v["dropped"].items()) or "none"
+        lines.append(f"| {name} | {v['rows']} | {dropped} |")
+    lines += ["", f"IBES FY1 rows with a currency other than USD (kept): {report['ibes_non_usd_rows']}.", ""]
+    return "\n".join(lines)
+
+
+# Tracked manifest -------------------------------------------------------------------------
+
+def sealed_digest(root: Path) -> dict[str, Any]:
+    """One SHA-256 over the bytes of every file under ``sealed/`` in path order; the files are not parsed."""
+    folder = root / SEALED
+    paths = sorted(p for p in folder.rglob("*") if p.is_file() and not p.name.startswith("."))
+    digest = hashlib.sha256()
+    for path in paths:
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+    return {"files": len(paths), "sha256": digest.hexdigest()}
+
+
+def write_manifest(data: WrdsData, path: str | Path) -> dict[str, Any]:
+    """``reports/wrds_manifest_2025.json``: names, rows, and hashes only (no identifier, query text, or path)."""
+    files = {name: {"rows": int(record["rows"]), "sha256": record["sha256"],
+                    "query_sha256": hashlib.sha256(record["query"].encode()).hexdigest()}
+             for name, record in sorted(data.manifest["files"].items())}
+    out = {"vintage": data.manifest["vintage"], "script_code_sha256": data.manifest["code"], "files": files,
+           "sealed": sealed_digest(data.root), "units": UNITS}
+    Path(path).write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
+    return out
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run the M5.5 WRDS intake checks and write the tracked manifest.")
+    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
+    args = parser.parse_args()
+    data = load(args.root)
+    args.report.write_text(intake_markdown(intake_report(data)))
+    write_manifest(data, args.manifest)
+    print("intake report and manifest written")
+
+
+if __name__ == "__main__":
+    main()
