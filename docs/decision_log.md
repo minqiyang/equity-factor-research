@@ -39,10 +39,12 @@ Decision:
   - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
     ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
     existing owner data terms.
-  - Seal months: rows dated in `[2019-07-31, 2020-07-31)` are downloaded into a separate folder
+  - Seal months: in each table with a price or a return, rows whose economic date interval touches
+    `[2019-07-31, 2020-07-31)`, or could touch it when a date is missing, are downloaded into a separate folder
     `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
-    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Rebalances whose windows touch the
-    seal months stay typed missing.
+    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Tables with no price or return
+    (membership, links, shares, fundamentals, estimates) keep these dates in their main files (coordinator
+    default). Rebalances whose windows touch the seal months stay typed missing.
 
 Consequences:
 
