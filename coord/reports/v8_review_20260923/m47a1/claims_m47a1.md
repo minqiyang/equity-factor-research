@@ -4,7 +4,7 @@
 - **Baseline**: `2c07ee4db70bc90cd449382c69b63765de2eab7d` (main after PR #262)
 - **Branch**: `claude/m4_7a1-retrieval-and-partition`
 - **Implementation Report**: `coord/reports/m4_7a1_retrieval_and_partition_impl.md`
-- **Review Root**: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/review-roots/m47a1-ed08d6c`
+- **Review Root**: `<home>/Documents/Codex/Artifact/EFR/review-roots/m47a1-ed08d6c`
 - **Operative Plan**: `coord/plans/m4_7_binding_plan.md` Revision 11 (SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`), §1.3, §1.4, §1.5, §7.2 (a-1), Appendices A, B, D, E
 
 ---

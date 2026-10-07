@@ -19,13 +19,13 @@ profitability, alpha, investment, robustness, or trading-readiness claims.
 Private bundle:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 ```
 
 Private summary:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md
+<private_data_root>/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md
 ```
 
 The summary remains outside the repository and is not git-tracked.

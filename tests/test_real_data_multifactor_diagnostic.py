@@ -26,7 +26,9 @@ from research.multifactor_diagnostic_mvp import (
 )
 from research.real_data_multifactor_diagnostic import (
     COMPOSITE_IDS,
+    DEFAULT_DATA_DIR_ENV,
     DEFAULT_END_DATE,
+    DEFAULT_INVENTORY_PATH_ENV,
     DEFAULT_INVENTORY_FILE_NAME,
     DEFAULT_SNAPSHOT_DIR_NAME,
     DEFAULT_START_DATE,
@@ -138,7 +140,24 @@ def _reduced_config(
     return RealDataMultifactorDiagnosticConfig(**payload)
 
 
-def test_real_data_config_defaults() -> None:
+def _set_private_path_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv(DEFAULT_DATA_DIR_ENV, str(tmp_path / "eodhd_eod_acquisition" / DEFAULT_SNAPSHOT_DIR_NAME))
+    monkeypatch.setenv(DEFAULT_INVENTORY_PATH_ENV, str(tmp_path / DEFAULT_INVENTORY_FILE_NAME))
+
+
+def test_private_paths_have_no_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(DEFAULT_DATA_DIR_ENV, raising=False)
+    monkeypatch.delenv(DEFAULT_INVENTORY_PATH_ENV, raising=False)
+    with pytest.raises(ValueError, match=DEFAULT_DATA_DIR_ENV):
+        default_data_dir()
+    with pytest.raises(ValueError, match=DEFAULT_INVENTORY_PATH_ENV):
+        default_inventory_path()
+    with pytest.raises(ValueError, match=DEFAULT_DATA_DIR_ENV):
+        RealDataMultifactorDiagnosticConfig()
+
+
+def test_real_data_config_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _set_private_path_env(monkeypatch, tmp_path)
     config = RealDataMultifactorDiagnosticConfig()
     assert config.symbols == tuple(BLUECHIP_50_COHORT)
     assert config.benchmark_symbol == BENCHMARK_SYMBOL
@@ -156,7 +175,7 @@ def test_real_data_config_defaults() -> None:
     assert config.end_date == DEFAULT_END_DATE
     assert config.alpha_ids == ALPHA_IDS
     assert config.composite_ids == COMPOSITE_IDS
-    assert config.data_dir == default_data_dir()
+    assert config.data_dir == default_data_dir() == (tmp_path / "eodhd_eod_acquisition" / DEFAULT_SNAPSHOT_DIR_NAME).resolve()
     assert len(ALPHA_IDS) == 52
     assert len(COMPOSITE_IDS) == 12
     assert len(FACTOR_IDS) == 62
@@ -190,7 +209,10 @@ def test_to_mvp_config_propagates_shared_backtest_fields() -> None:
     assert mvp.warmup_periods == 25
 
 
-def test_redact_local_path_hides_private_defaults_and_tmp_paths() -> None:
+def test_redact_local_path_hides_private_defaults_and_tmp_paths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _set_private_path_env(monkeypatch, tmp_path)
     assert redact_local_path(default_data_dir()) == REDACTED_DATA_DIR
     assert redact_local_path(default_inventory_path()) == REDACTED_INVENTORY_PATH
     assert redact_local_path(Path("/tmp/efr-pytest-m40-real")) == REDACTED_LOCAL_PATH
@@ -714,7 +736,9 @@ def test_evaluate_diagnostic_readiness_valid_and_invalid() -> None:
         "permanent_id": pd.Series({"A": "PERM_A"}),
     }
     benchmark = pd.Series([100.0, 101.0, 102.0, 103.0, 104.0], index=dates)
-    config = RealDataMultifactorDiagnosticConfig()
+    config = RealDataMultifactorDiagnosticConfig(
+        data_dir=Path("/tmp/unused-data"), inventory_path=Path("/tmp/unused-inventory.json")
+    )
 
     assert evaluate_diagnostic_readiness(panels, benchmark, config) == "diagnostic_ready_with_low_caveats"
 
@@ -896,7 +920,9 @@ def test_runner_propagates_invalid_cpcv_parameters(tmp_path: Path) -> None:
 
 
 def test_purged_cpcv_summary_refuses_nonfinite_returns_before_geometry() -> None:
-    config = RealDataMultifactorDiagnosticConfig(pbo_n_splits=8)
+    config = RealDataMultifactorDiagnosticConfig(
+        data_dir=Path("/tmp/unused-data"), inventory_path=Path("/tmp/unused-inventory.json"), pbo_n_splits=8
+    )
     returns = pd.DataFrame({"a": [0.01, np.nan, 0.02], "b": [0.0, 0.01, -0.01]})
     with pytest.raises(ValueError, match="must be finite without NaN or Inf"):
         real_data_module._purged_cpcv_summary(returns, config)

@@ -18,13 +18,13 @@ readiness.
 Private JSON limited review:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json
+<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json
 ```
 
 Private Markdown limited review:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md
+<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md
 ```
 
 Both files remain outside the repository and are not git-tracked.

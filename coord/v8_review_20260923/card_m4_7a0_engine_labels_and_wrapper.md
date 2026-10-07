@@ -9,7 +9,7 @@
 - **Ablation applicability**: Major implementation candidate; requires ABLATION pass before final merge.
 - **Candidate branch**: `claude/m4_7a0-engine-labels-and-wrapper` from `main` (`49eacdd4ce69fe1db9b779bfb7cc975d8b5950d3`).
 - **Operative Plan Reference**: `coord/plans/m4_7_binding_plan.md` (Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407`).
-- **Report destination**: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_7a0_engine_labels_and_wrapper_impl.md`.
+- **Report destination**: `<repo>/coord/reports/m4_7a0_engine_labels_and_wrapper_impl.md`.
 
 ---
 

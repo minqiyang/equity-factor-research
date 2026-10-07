@@ -18,13 +18,13 @@ robustness, or trading readiness.
 Private JSON readiness review:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json
+<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json
 ```
 
 Private Markdown readiness review:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md
+<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md
 ```
 
 Both files remain outside the repository and are not git-tracked.

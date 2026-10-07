@@ -4490,7 +4490,7 @@ Decision:
 - Add `research/eodhd_limited_factor_diagnostics_brief.py` as a
   private-output-only neutral diagnostics brief runner.
 - Read the private limited review JSON and write the real-data brief only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4535,7 +4535,7 @@ Decision:
 - Summarize only factor coverage, factor missingness, IC, Rank IC, quantile
   spread, and split labels.
 - Write the real-data limited review only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4577,7 +4577,7 @@ Decision:
   private-output-only readiness runner.
 - Name the readiness field `ready_for_limited_factor_diagnostics_review`.
 - Write the real-data readiness review only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4620,7 +4620,7 @@ Decision:
 - Add `research/eodhd_factor_diagnostics_experiment_log.py` as a
   private-output-only handoff runner.
 - Write the real-data experiment log and Markdown handoff only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4662,7 +4662,7 @@ Decision:
 - Add `research/eodhd_factor_diagnostics_dry_run.py` as a private-output-only
   research script.
 - Write the real-data factor diagnostics summary only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   data or private diagnostic values.
 
@@ -4695,7 +4695,7 @@ Context:
 - PR #121 documented the private-output-only diagnostics dry-run boundary.
 - The private EODHD no-performance data-quality diagnostics dry run passed and
   wrote
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`.
+  `<private_data_root>/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`.
 - The repository needs an aggregate-only checkpoint before any factor
   diagnostics are planned.
 
@@ -4736,7 +4736,7 @@ Context:
   smoke test.
 - The private smoke test then passed outside the repository using existing
   strict loaders and wrote
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`.
+  `<private_data_root>/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`.
 - The repository needs an aggregate-only checkpoint before any diagnostics
   dry-run work is scoped.
 
@@ -4776,7 +4776,7 @@ Context:
 
 - PR #119 recorded the completed private EODHD validation-only handoff.
 - The private bundle remains outside the repository at
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - The next safe boundary is a loader smoke test, but source, tests, research
   scripts, generated reports, strategy logic, and performance interpretation
   remain out of scope.
@@ -4820,7 +4820,7 @@ Follow-up:
 Context:
 
 - A private EODHD local CSV bundle exists outside the repository at
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Private readiness and validation-only summaries reported loader/schema
   validation success without copying raw CSV/JSON data into the repository.
 - The repository needs a reviewable handoff before any future loader-smoke-test
