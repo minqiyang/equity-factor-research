@@ -12,6 +12,32 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Gap members leave the low-risk ratio (Milestone 5.5, card m55-ratio-gap)
+
+- Base `e50e8d6`. `whole_book_ratio` takes an optional per-member `short` flag (no valid return before the window,
+  from `rebalance_members`); `lowrisk_weights` forwards it; `rebalance_targets` and `calibrate_lowrisk` pass it for
+  the traded set. A NaN after a member's first-ever return is a gap: the member is left out of both books in the
+  ratio and counted (`ratio_gap_members`, `ratio_gap_cw_share`, both added to `RATIO_FIELDS`). Leading NaNs still
+  remove rows. `short=None` means that no member has a return before the window (a direct call on a bare window).
+- The kept columns are selected with `window.loc[complete, kept]`. This keeps the column-major array of the old
+  `window[complete]` path. `np.ix_` gave a row-major array and changed the last bit of the volatilities; T9
+  (`test_no_pin_ratio_is_the_round_one_value_on_the_fixture`) caught it.
+- New tests (synthetic only): (a) `test_gap_member_with_history_is_left_out_and_counted`; (b)
+  `test_window_that_starts_inside_a_gap_is_a_gap_not_leading` on the build and calibration paths; (c)
+  `test_new_listing_stays_leading_and_a_later_gap_leaves_it_out`; (d)
+  `test_no_defined_partial_value_depends_on_a_gap_row` and `test_gap_rows_move_nothing_on_the_production_path`;
+  R1 `test_gaps_and_first_returns_at_or_after_r_change_nothing_at_r` (gaps and a first close at rows >= r).
+- Changed existing tests: the gap-case assertions of the GPT-R1-01 and GPT-R2-01 fixture tests, T3 (regime), and
+  T4 (missing price at r - 2), which encoded the old rule. Six spies got a forwarding `short=None` parameter; the T10
+  stub record also got the two new keys.
+- Mutation checks: eight mutants killed (flag ignored, no exclusion, build path without the flag, calibration path
+  without the flag, flag inverted, kept weights renormalized, gap rows counted as leading, flag set from whether the
+  member ever returns).
+- Internal review workflow (five lenses, two skeptics per finding): MATERIAL 0, ADVISORY 13. Open items for the
+  coordinator: no bound or grid aggregate on `ratio_gap_cw_share` (the grid's `max_pinned_cw_share_defined` is an
+  upper bound), and the R6 exit-class split needs the gap members' IDs.
+- Full suite: 3701 passed, 2 skipped, exit code 0; `ruff check` clean.
+
 ## 2026-10-06 - Check gap covers the post-seal warm-up (Milestone 5.5)
 
 - `research/m55_criteria.py`: `CHECK_GAP_MONTHS` (2019-07 to 2021-08) replaces `SEAL_MONTHS` (2019-07 to 2020-07)

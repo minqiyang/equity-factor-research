@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Gap Members Leave the Low-Risk Ratio (Milestone 5.5, card m55-ratio-gap)
+
+Context:
+
+- Sweep finding `review_gpt_r3:residual-complete-case`: `whole_book_ratio` measured the whole traded book on its
+  complete-case rows. A missing return of a traded member after its first return removed that row for the whole
+  book, so the ratio measured the member on the rows around its gap (R6 violation). The split into leading and gap
+  rows used the first return inside the window, so a window that starts inside a gap was called leading.
+- The loader intake counts 6 such rows inside S&P 500 member spells in 1963-1992; each touches about 12 monthly
+  windows.
+
+Decision (coordinator technical default, logged on the card):
+
+- **Blank the member, not the rebalance.** A traded member with a missing return in the ratio window after its
+  first-ever return is left out of the ratio at that rebalance, from both books, and counted (`ratio_gap_members`,
+  `ratio_gap_cw_share`). It has no full window, so it is pinned at w = b and the weights do not change. The other
+  members are measured at their book weights on their complete-case rows; only leading NaNs remove rows. Reason:
+  blanking the whole rebalance could make about 70 of 354 calibration rebalances undefined and trip the 10 percent
+  coverage stop for 6 data rows.
+- **The first-ever return decides leading versus gap.** `rebalance_members` gives the flag (`short`).
+
+Consequences:
+
+- No value is filled, clipped, or repaired. Weights, TILT, the cap loop, and TE scaling do not change. Without a gap,
+  every ratio field is bit-identical to `e50e8d6`.
+- Known cost: at a gap rebalance, the ratio is that of the book without the gap member, so it moves toward the free
+  sub-book ratio by an amount that grows with the member's cap weight and risk. On the synthetic GPT-R1-01 fixture
+  (98 percent member) and GPT-R2-01 fixture (2 percent high-volatility member), a gap now gives `chosen` g = 0.5,
+  where the old rule gave no choice. `ratio_gap_cw_share` records the share left out at each rebalance.
+- Field meanings: `ratio_rows_leading` counts the rows removed (all of them leading); `ratio_rows_gap` counts the
+  window rows that hold a gap, which stay unless a leading NaN also removes them; `ratio_limiting_*` count the
+  measured members that remove rows. At a gap rebalance, `ex_ante_vol` and `cw_ex_ante_vol` cover the kept weights,
+  which sum to 1 minus `ratio_gap_cw_share` in each book; the ratio does not depend on this scale.
+- Follow-up for the coordinator: whether the real-data run needs a bound or a diagnostic on `ratio_gap_cw_share`.
+  The R6 split by later exit class needs the gap members' IDs, which the record does not hold.
+
 ## 2026-10-06 - Check Gap Covers the Post-Seal Warm-Up (Milestone 5.5, coordinator default)
 
 Context:

@@ -352,34 +352,50 @@ def ex_ante_vol(returns: np.ndarray, weights: np.ndarray) -> float:
     return float(np.std(returns @ weights, ddof=1) * math.sqrt(ANNUAL_ROWS))
 
 
-def whole_book_ratio(window: pd.DataFrame, b: np.ndarray, w: np.ndarray) -> dict[str, Any]:
-    """The ex-ante volatility ratio of the whole traded book on its complete-case rows (expert decision, R-b to R-e).
+def whole_book_ratio(window: pd.DataFrame, b: np.ndarray, w: np.ndarray,
+                     short: np.ndarray | None = None) -> dict[str, Any]:
+    """The ex-ante volatility ratio of the traded book on its complete-case rows (expert decision, R-b to R-e).
 
-    ``window`` is the traded set's return window that ends at ``r - 1``. The
-    rows are the rows where every traded member has a return. A missing price
-    blanks two returns, so it removes two rows; no value is filled, clipped, or
-    repaired (R6). With at least ``LOWRISK_RATIO_MIN_ROWS`` rows, the status is
-    ``defined_full`` (``COV_ROWS`` rows) or ``defined_partial``; with fewer, the
-    volatilities and the ratio are NaN (``ratio_window_short``). The status and
-    the row counts depend on ``window`` only, never on ``g``. A row is
-    ``leading`` when only NaNs before a member's first return in the window
-    remove it, and ``gap`` when a NaN after a member's first return does.
+    ``window`` is the traded set's return window that ends at ``r - 1``.
+    ``short`` is True for a member with no valid return before the window
+    (``rebalance_members``); None means no member has one. A NaN before a
+    member's first-ever return is ``leading`` (no history yet); a NaN after it
+    is a gap, which is bad data (R6, card m55-ratio-gap). A member with a gap
+    is left out of both books in the ratio and counted
+    (``ratio_gap_members``, ``ratio_gap_cw_share``); it has no full window, so
+    it is pinned at ``w = b`` and its weight does not change. The other members
+    are measured at their book weights on the rows where each of them has a
+    return, so only leading NaNs remove rows. Each book's weights in the ratio
+    then sum to ``1 - ratio_gap_cw_share``; the two volatilities share this
+    scale, and the ratio does not depend on it. No value is filled, clipped, or
+    repaired. ``ratio_rows_gap`` counts the window rows that hold a gap. Such a
+    row stays unless a leading NaN of a kept member removes it, so it can also
+    be in ``ratio_rows_leading``. With at least ``LOWRISK_RATIO_MIN_ROWS``
+    rows, the status is ``defined_full`` (``COV_ROWS`` rows) or
+    ``defined_partial``; with fewer, the volatilities and the ratio are NaN
+    (``ratio_window_short``). The status and the counts depend on ``window``
+    and ``short`` only, never on ``g``.
     """
     values = window.to_numpy(dtype=float)
     missing = np.isnan(values)
     seen = np.logical_or.accumulate(~missing, axis=0)
-    gap = (missing & seen).any(axis=1)
-    complete = ~missing.any(axis=1)
-    limiting = missing.any(axis=0)
+    if short is not None:
+        seen |= ~np.asarray(short, dtype=bool)        # a return before the window: every NaN in it is a gap
+    gap_cells = missing & seen
+    gap = gap_cells.any(axis=0)
+    kept = ~gap
+    complete = ~missing[:, kept].any(axis=1)
+    limiting = kept & missing.any(axis=0)
     rows = int(complete.sum())
-    record = {"ratio_rows": rows, "ratio_rows_leading": int((~complete & ~gap).sum()),
-              "ratio_rows_gap": int(gap.sum()), "ratio_limiting_members": int(limiting.sum()),
-              "ratio_limiting_cw_share": math.fsum(b[limiting].tolist())}
+    record = {"ratio_rows": rows, "ratio_rows_leading": int((~complete).sum()),
+              "ratio_rows_gap": int(gap_cells.any(axis=1).sum()), "ratio_limiting_members": int(limiting.sum()),
+              "ratio_limiting_cw_share": math.fsum(b[limiting].tolist()), "ratio_gap_members": int(gap.sum()),
+              "ratio_gap_cw_share": math.fsum(b[gap].tolist())}
     if rows < LOWRISK_RATIO_MIN_ROWS:
         return {"ex_ante_vol": math.nan, "cw_ex_ante_vol": math.nan, "vol_ratio": math.nan,
                 "ratio_status": "ratio_window_short", **record}
-    rows_used = window[complete].to_numpy(dtype=float)
-    vol_w, vol_b = ex_ante_vol(rows_used, w), ex_ante_vol(rows_used, b)
+    rows_used = window.loc[complete, kept].to_numpy(dtype=float)
+    vol_w, vol_b = ex_ante_vol(rows_used, w[kept]), ex_ante_vol(rows_used, b[kept])
     ratio = vol_w / vol_b if vol_b > 0.0 else math.nan
     if not (math.isfinite(ratio) and ratio > 0.0):
         raise refuse("lowrisk_vol_ratio_invalid", f"ex-ante volatilities {vol_w} and {vol_b}")
@@ -387,7 +403,8 @@ def whole_book_ratio(window: pd.DataFrame, b: np.ndarray, w: np.ndarray) -> dict
             "ratio_status": "defined_full" if rows == COV_ROWS else "defined_partial", **record}
 
 
-def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float) -> tuple[pd.Series, dict]:
+def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float,
+                    short: pd.Series | None = None) -> tuple[pd.Series, dict]:
     """``lowrisk``: the shared engine step with ``m = (s / s_med)^(-g)``, cap ``LOWRISK_CAP``, TE ``LOWRISK_TE``.
 
     ``vol`` holds ``s_i`` of every target member with a full window, the B2
@@ -398,9 +415,10 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
     and positive refuses (``lowrisk_multiplier_invalid``).
 
     The TE uses the free columns, where the pinned active weights are 0. The
-    ex-ante volatilities and their ratio measure the whole traded book on its
-    complete-case rows (``whole_book_ratio``). The weights do not depend on
-    the ratio status.
+    ex-ante volatilities and their ratio measure the traded book on its
+    complete-case rows, without the members that hold a gap in the window
+    (``whole_book_ratio``; ``short`` comes from ``rebalance_members``). The
+    weights do not depend on the ratio status.
     """
     bv = b.to_numpy(dtype=float)
     free = b.index.isin(vol.index)
@@ -422,7 +440,7 @@ def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float
         raise invalid
     returns = window.to_numpy(dtype=float)[:, free]
     w, info, capped = budget_weights(bv, m, free, returns, LOWRISK_CAP, LOWRISK_TE, "lowrisk")
-    ratio = whole_book_ratio(window, bv, w)
+    ratio = whole_book_ratio(window, bv, w, None if short is None else short[b.index].to_numpy(dtype=bool))
     info = {"g": float(g), "vol_median": vol_median, **ratio, **info, "capped": capped,
             "pinned": int((~free).sum()), "pinned_cw_share": math.fsum(bv[~free].tolist())}
     return pd.Series(w, index=b.index), info
@@ -514,7 +532,8 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
     record = {**setup["record"], **zero_counts, **info}
     weights = {"cw": b, "tilt": w}
     if g is not None:
-        weights["lowrisk"], low = lowrisk_weights(b, member_vols(window, full), window[traded], g)
+        weights["lowrisk"], low = lowrisk_weights(b, member_vols(window, full), window[traded], g,
+                                                  setup["short"][traded])
         record.update({f"lowrisk_{key}": value for key, value in low.items()})
     return weights, record
 
@@ -561,8 +580,8 @@ def build_targets(inputs: TiltInputs, g: float | None = None) -> dict[str, Any]:
 
 RATIO_DEFINED = ("defined_full", "defined_partial")
 RATIO_FIELDS = ("vol_ratio", "ratio_status", "ratio_rows", "ratio_rows_leading", "ratio_rows_gap",
-                "ratio_limiting_members", "ratio_limiting_cw_share", "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te",
-                "te_scale", "capped", "pinned", "pinned_cw_share")
+                "ratio_limiting_members", "ratio_limiting_cw_share", "ratio_gap_members", "ratio_gap_cw_share",
+                "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te", "te_scale", "capped", "pinned", "pinned_cw_share")
 
 
 def lowrisk_bracket(ratios: Sequence[np.ndarray | None], rebalances: int, target: float,
@@ -656,7 +675,8 @@ def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio:
             if g in refused:
                 continue
             try:
-                _, low = lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], g)
+                _, low = lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], g,
+                                         setup["short"][setup["traded"]])
             except runner.RunnerStop as exc:
                 refused[g] = (date, exc)
                 continue
