@@ -20,11 +20,11 @@ same trial file, code, and data, and names the digests of the stages before it. 
 also refuse unless the saved calibration decision lets the sequence go on. The freeze parses no data table. Each
 criteria output is appended with its declaration to ``run_log.jsonl``, and so is each refusal.
 
-Period: the daily and index rows of the signal inputs and ``vwretd`` are cut at the last screen row (1992-12-31),
-and each criteria call refuses a month after 1992-12. The engine frames hold the first row of 1993, because
-``m55_index_tilt.check_inputs`` accepts an end row only when a later row in a later month follows it; the engine
-accounts to the last screen row only, so no output uses a return month after 1992-12. Outputs hold aggregates,
-dates, and weights only: no PERMNO, ticker, or name.
+Period: every signal-input table, the engine frames, and ``vwretd`` are cut at the last screen row (1992-12-31)
+right after the load. The engine frames keep the first row of 1993 as a date with no value, because
+``m55_index_tilt.check_inputs`` accepts an end row only when a later row in a later month follows it. Each signal
+build, engine call, and criteria call refuses a value after 1992-12-31. Outputs hold aggregates, dates, and weights
+only: no PERMNO, ticker, or name.
 
 R4: the rerun is a second engine call on ``tilt_frames(run="last_close")``. Fragility is a sign flip of an active
 annual mean between the two calls. The driver never reads the engine fields ``fragile_active_sign`` and
@@ -69,6 +69,14 @@ NO_SIGNAL = "NO_SIGNAL"                          # an all-missing set: every com
 BLANK = crit.BLANK_REASONS[0]                    # path_break_held
 EXIT_CLASSES = w.EXIT_CLASSES
 GO_ON = ("chosen", "ratio_coverage_low")         # calibration decisions after which the look, screen, and freeze run
+# The engine frames' row after the last screen row: a date with these blank values (the loader's fill for a cell
+# without a daily row).
+BLANK_ROW = {"prices": np.nan, "market_equity": np.nan, "path_break": False, "eligible": False,
+             "me_reason": tilt.ME_REASONS[0]}
+# The dates of a signal-input row: the row is after the last screen row when one of them is after it.
+SIGNAL_DATES = {"daily": ("date",), "index_daily": ("date",), "members": ("start",), "fund_annual": ("known_date",),
+                "fund_quarterly": ("known_date",), "announcements": ("datadate", "rdq"), "link": ("linkdt",),
+                "ibes_link": ("sdate",), "ibes": ("statpers",)}
 NUMBER = r"(-?\d+(?:\.\d+)?(?:e-?\d+)?)"
 
 
@@ -337,10 +345,49 @@ def window(cal: pd.DatetimeIndex, first: pd.Period) -> tuple[pd.Timestamp, pd.Ti
     return ends[first - 2], ends[crit.SCREEN_END]
 
 
+def cut_frames(frames: Mapping[str, Any], last: pd.Timestamp) -> dict[str, Any]:
+    """The loader frames with no value after ``last``, the last screen row.
+
+    The engine accepts an end row only when a row in a later month follows it (``m55_index_tilt.check_inputs``), so
+    the loader's row after ``last`` stays as a date with every value blank (``BLANK_ROW``). Events that settle after
+    ``last`` and spells that start after it are dropped, and so is a column left without a spell (the backtest
+    needs a spell for each column). An end date after ``last`` on an earlier spell stays: it reads as open on every
+    row up to ``last``.
+    """
+    spells = frames["intervals"][frames["intervals"]["start_date"] <= last]
+    columns = frames["prices"].columns[frames["prices"].columns.isin(spells["permanent_id"])]
+    after = frames["prices"].index > last
+    out = {**frames, "intervals": spells}
+    for key, fill in BLANK_ROW.items():
+        table = frames[key][columns].copy()
+        table.loc[after] = fill
+        out[key] = table
+    events = frames["disappearances"]
+    out["disappearances"] = events[(events["effective_date"] <= last) & events["permanent_id"].isin(columns)]
+    return out
+
+
+def check_engine_cut(inputs: tilt.TiltInputs) -> None:
+    """Refuse when a value after 1992-12 reaches the engine: a value on a row after it (one blank date row may
+    follow the end row), an event that settles after it, or a spell that starts after it."""
+    after = inputs.prices.index.to_period("M") > crit.SCREEN_END
+    tables = {"prices": inputs.prices, "market_equity": inputs.market_equity, "eligible": inputs.eligible,
+              "me_reason": inputs.me_reason, **{f"signal {s}": v for s, v in inputs.signals.items()}}
+    for key, table in tables.items():
+        fill = BLANK_ROW.get(key, np.nan)
+        part = table[after]
+        if after.sum() > 1 or not (part.isna() if pd.isna(fill) else part == fill).all().all():
+            raise refuse("row_after_screen_end", f"{key}: a value on a row after {crit.SCREEN_END} reaches the engine")
+    for key, column in (("disappearances", "effective_date"), ("intervals", "start_date")):
+        if (pd.to_datetime(getattr(inputs, key)[column]).dt.to_period("M") > crit.SCREEN_END).any():
+            raise refuse("row_after_screen_end", f"{key}: a row after {crit.SCREEN_END} reaches the engine")
+
+
 def frames_for(data: w.WrdsData, run: str) -> dict[str, Any]:
-    """The loader frames of the screen window. Their rows do not depend on the anchor, so every candidate uses them."""
+    """The loader frames of the screen window, cut at the last screen row right after the load (``cut_frames``).
+    Their rows do not depend on the anchor, so every candidate uses them."""
     start, end = window(w.calendar(data), crit.SCREEN_START)
-    return w.tilt_frames(data, start, end, run)
+    return cut_frames(w.tilt_frames(data, start, end, run), end)
 
 
 def inputs_for(frames: Mapping[str, Any], signals: Mapping[str, pd.DataFrame], start: pd.Timestamp,
@@ -377,12 +424,34 @@ def frames_digest(frames: Mapping[str, Any], last: pd.Timestamp) -> str:
 
 # Signals ----------------------------------------------------------------------------------
 
-def segment_inputs(inputs: sig.SignalInputs, post: bool, last: pd.Timestamp | None = None) -> sig.SignalInputs:
-    """The daily and index rows of one seal segment (before 2019-07-31, or from 2020-07-31), up to ``last``."""
+def after(table: pd.DataFrame, columns: tuple[str, ...], last: pd.Timestamp) -> np.ndarray:
+    """True for each row with a date in ``columns`` after ``last``; a missing date is not after it."""
+    return np.logical_or.reduce([(table[c] > last).to_numpy() for c in columns])
+
+
+def cut_inputs(inputs: sig.SignalInputs, last: pd.Timestamp) -> sig.SignalInputs:
+    """The signal inputs without a row dated after ``last`` (``SIGNAL_DATES``). An end date after ``last`` on an
+    earlier spell or link stays: it reads as open on every row up to ``last``."""
+    return replace(inputs, **{name: getattr(inputs, name)[~after(getattr(inputs, name), columns, last)]
+                              .reset_index(drop=True) for name, columns in SIGNAL_DATES.items()})
+
+
+def check_inputs_cut(inputs: sig.SignalInputs, last: pd.Timestamp) -> None:
+    """Refuse when a signal-input table holds a row dated after ``last`` (checked before each signal build)."""
+    for name, columns in SIGNAL_DATES.items():
+        if after(getattr(inputs, name), columns, last).any():
+            raise refuse("row_after_screen_end", f"{name} holds a row after {last.date()}")
+
+
+def screen_inputs(data: w.WrdsData) -> sig.SignalInputs:
+    """The loader's signal inputs, cut at the last screen row right after the load."""
+    return cut_inputs(w.signal_inputs(data), screen_end(data))
+
+
+def segment_inputs(inputs: sig.SignalInputs, post: bool) -> sig.SignalInputs:
+    """The daily and index rows of one seal segment (before 2019-07-31, or from 2020-07-31)."""
     def cut(table: pd.DataFrame) -> pd.DataFrame:
         keep = table["date"] >= sig.SEAL[1] if post else table["date"] < sig.SEAL[0]
-        if last is not None:
-            keep &= table["date"] <= last
         return table[keep].reset_index(drop=True)
     return replace(inputs, daily=cut(inputs.daily), index_daily=cut(inputs.index_daily))
 
@@ -392,7 +461,7 @@ def segment_signals(inputs: sig.SignalInputs, rebalances: pd.DatetimeIndex,
     """``build_signals`` on one seal segment only, so no window crosses the seal (V4, loader Opus A-1).
 
     The rebalances lie in one segment. A post-seal rebalance before 2021-08-31 (the first after the anchor
-    2021-07-30) refuses.
+    2021-07-30) refuses. With ``last``, inputs that hold a row after it refuse.
     """
     rows = pd.DatetimeIndex(rebalances)
     post = rows >= sig.SEAL[1]
@@ -400,20 +469,22 @@ def segment_signals(inputs: sig.SignalInputs, rebalances: pd.DatetimeIndex,
         raise refuse("rebalances_cross_seal", "build the signals once per seal segment")
     if post.any() and rows.min() < POST_SEAL_FIRST_REBALANCE:
         raise refuse("post_seal_rebalance_early", f"the post-seal segment starts at the anchor {POST_SEAL_ANCHOR.date()}")
-    return sig.build_signals(segment_inputs(inputs, bool(post.any()), last), rows)
+    if last is not None:
+        check_inputs_cut(inputs, last)
+    return sig.build_signals(segment_inputs(inputs, bool(post.any())), rows)
 
 
-def signal_panels(data: w.WrdsData) -> dict[str, Any]:
-    """S1 to S8 at the month-end rows dated 1962-12 to 1992-12, from pre-seal rows up to 1992-12-31."""
+def signal_panels(data: w.WrdsData, inputs: sig.SignalInputs) -> dict[str, Any]:
+    """S1 to S8 at the month-end rows dated 1962-12 to 1992-12, from ``screen_inputs`` (pre-seal rows only)."""
     ends = month_ends(w.calendar(data))
     rows = pd.DatetimeIndex(ends[COVERAGE_FIRST - 1:crit.SCREEN_END].to_numpy())
-    return segment_signals(w.signal_inputs(data), rows, screen_end(data))
+    return segment_signals(inputs, rows, screen_end(data))
 
 
-def check_decision_rows(panels: Mapping[str, Any], data: w.WrdsData) -> None:
+def check_decision_rows(panels: Mapping[str, Any], data: w.WrdsData, inputs: sig.SignalInputs) -> None:
     """The decision row of each signal rebalance is the engine's row r - 1 (one calendar for both)."""
     cal = w.calendar(data)
-    daily = pd.DatetimeIndex(np.unique(segment_inputs(w.signal_inputs(data), False, screen_end(data)).daily["date"]))
+    daily = pd.DatetimeIndex(np.unique(segment_inputs(inputs, False).daily["date"]))
     for date in panels["members"].index:
         if daily[daily.get_loc(date) - 1] != cal[cal.get_loc(date) - 1]:
             raise refuse("calendar_mismatch", str(date.date()))
@@ -722,6 +793,7 @@ def per_class(counter: Counter) -> dict[str, int]:
 
 def census(inputs: tilt.TiltInputs, dates: pd.DatetimeIndex) -> dict[pd.Timestamp, dict[str, Any]]:
     """Each rebalance's target members from the engine's own ``rebalance_members`` (row r - 1 only)."""
+    check_engine_cut(inputs)
     disappearances, returns, first_return = tilt.prepare(inputs)
     return {date: tilt.rebalance_members(inputs, date, returns, disappearances, first_return) for date in dates}
 
@@ -875,6 +947,7 @@ def s2_basis_quarters(inputs: sig.SignalInputs, last: pd.Timestamp) -> dict[str,
     links one to one to a PERMNO that is a member at that date. ``changed`` and ``same`` use the two as-of factor
     reads of ``m55_signals`` (at most one month old); ``unread`` counts quarters where either read fails.
     """
+    check_inputs_cut(inputs, last)
     data = sig._Signals(inputs)
     links, members, out = {}, {}, defaultdict(Counter)
     for gvkey, rec in data.quarterly.items():
@@ -904,8 +977,9 @@ def coverage_stage(data: w.WrdsData, trial: Mapping[str, Any]) -> dict[str, Any]
     ends = month_ends(cal)
     last = screen_end(data)
     exits = exit_map(data)
-    panels = signal_panels(data)
-    check_decision_rows(panels, data)
+    inputs = screen_inputs(data)
+    panels = signal_panels(data, inputs)
+    check_decision_rows(panels, data, inputs)
     starts = real_starts(panels)
     members = by_return_month(panels["members"])
     member_exit = np.array([exits[str(p)] for p in members.columns])
@@ -916,8 +990,7 @@ def coverage_stage(data: w.WrdsData, trial: Mapping[str, Any]) -> dict[str, Any]
         & (panels["members"].index.to_period("M") + 1 <= crit.SCREEN_END)]])
     me = member_me(data, decision, members.columns).set_axis(members.index, axis=0)
     signals["S2"]["short_history_size"] = s2_size(members, reasons["S2"], me)
-    signals["S2"]["basis_quarters_by_year"] = s2_basis_quarters(segment_inputs(w.signal_inputs(data), False, last),
-                                                                last)
+    signals["S2"]["basis_quarters_by_year"] = s2_basis_quarters(segment_inputs(inputs, False), last)
     # S7 by return month in 1963 and 1964, and the basis_unseen cells at its two anchor rows.
     unseen = unseen_cells(data)
     s7 = {}
@@ -968,6 +1041,7 @@ def calibration_stage(data: w.WrdsData, trial: Mapping[str, Any]) -> dict[str, A
     start, last = window(cal, crit.SCREEN_START)
     end = month_ends(cal)[crit.SCREEN_END - 1]          # the last rebalance that forms a screen month (1992-12)
     inputs = inputs_for(frames, no_signal(frames), start, last)
+    check_engine_cut(inputs)
     result = tilt.calibrate_lowrisk(inputs, tilt.LOWRISK_GRID, tilt.LOWRISK_TARGET_RATIO, start, end)
     per_date = result["rebalances"][result["rebalances"]["g_status"] == "ok"].drop_duplicates("date").set_index("date")
     exits = exit_map(data)
@@ -1011,7 +1085,9 @@ def engine_pair(frames: Mapping[str, Mapping[str, Any]], signals: Mapping[str, M
     """
     out = {}
     for run in RUNS:
-        output = tilt.run_index_tilt(inputs_for(frames[run], signals[run], start, end), crit.SCREEN_COST_SCHEDULE)
+        inputs = inputs_for(frames[run], signals[run], start, end)
+        check_engine_cut(inputs)
+        output = tilt.run_index_tilt(inputs, crit.SCREEN_COST_SCHEDULE)
         out[run] = {"cases": {case: output["runs"][(case, run)] for case in CASES}, "targets": output["targets"],
                     "rebalances": output["rebalances"]}
     return out
@@ -1092,8 +1168,9 @@ def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage
     """Each candidate alone over its screen months, both loader runs, both cost cases; the reports owed."""
     exits = exit_map(data)
     cal = w.calendar(data)
-    panels = signal_panels(data)
-    check_decision_rows(panels, data)
+    inputs = screen_inputs(data)
+    panels = signal_panels(data, inputs)
+    check_decision_rows(panels, data, inputs)
     starts = real_starts(panels)
     if starts != {s: coverage["signals"][s]["real_start"] for s in sig.SIGNAL_IDS}:
         raise refuse("coverage_mismatch", "the real starts differ from the coverage stage")

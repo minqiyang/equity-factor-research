@@ -717,7 +717,7 @@ def test_rows_after_t_change_no_signal_weight_decision_or_record_at_t(frames, mo
     end = month_end(CAL, last)
     found = []
     for data in (make_data(frames), make_data(perturb_after(frames, t))):
-        panels = d.signal_panels(data)
+        panels = d.signal_panels(data, d.screen_inputs(data))
         start = month_end(CAL, first)
         per_run = {run: w.tilt_frames(data, start, end, run) for run in d.RUNS}
         dates = tilt.rebalance_dates(per_run["primary"]["prices"].index, start, end)
@@ -776,6 +776,69 @@ def test_break_flags_after_the_last_row_are_not_read(frames) -> None:
     assert caught.value.reason == "path_gap_at_period_end"
     weights["900003"] = 0.0
     assert d.path_break_positions(gap, {"cw": weights}, exits, months, last) == before
+
+
+def test_the_signal_inputs_hold_no_row_after_1992(chain, frames) -> None:
+    """Every signal table loses its rows dated after 1992-12-31 at load, and each signal build refuses uncut
+    inputs. The annual records known in 1995 and 1996 no longer reach the coverage labels."""
+    data = make_data(frames)
+    last = month_end(CAL, "1992-12")
+    full, cut = w.signal_inputs(data), d.screen_inputs(data)
+    for name, columns in d.SIGNAL_DATES.items():
+        assert not d.after(getattr(cut, name), columns, last).any()
+    for name, columns in (("daily", ("date",)), ("fund_annual", ("known_date",)), ("ibes", ("statpers",))):
+        assert d.after(getattr(full, name), columns, last).any()
+    rows = pd.DatetimeIndex([month_end(CAL, "1992-11")])
+    for build in (lambda x: d.segment_signals(x, rows, last), lambda x: d.s2_basis_quarters(x, last)):
+        with pytest.raises(RunnerStop) as caught:
+            build(full)
+        assert caught.value.reason == "row_after_screen_end"
+    d.segment_signals(cut, rows, last)
+    coverage = stage(chain["w0"]["folder"], "coverage")["signals"]
+    for s in ("S4", "S5", "S6", "S8"):
+        assert coverage[s]["cells_by_exit_class"]["current"] == {"no_record": 3719}
+
+
+def test_the_engine_frames_hold_no_value_after_1992(frames, monkeypatch) -> None:
+    """The first 1993 row stays as a date with no value. A spell that starts after 1992 is dropped, and so is a
+    column left without a spell. Each engine call refuses a value after 1992-12."""
+    first_1993 = CAL[CAL > month_end(CAL, "1992-12")][0]
+    world = world_frames([*small_members(CAL), Member(900019, 0.02, spell=(first_1993, OPEN))], CAL)
+    rejoin = pd.DataFrame([{"permno": 900007, "indno": 1000502, "mbrstartdt": pd.Timestamp("1993-02-01"),
+                            "mbrenddt": OPEN}])
+    world["crsp_dsp500list_v2"] = pd.concat([world["crsp_dsp500list_v2"], rejoin], ignore_index=True)
+    data = make_data(world)
+    last = month_end(CAL, "1992-12")
+    start, end = d.window(w.calendar(data), crit.SCREEN_START)
+    raw = w.tilt_frames(data, start, end, "primary")
+    assert "900019" in raw["prices"].columns and (raw["intervals"]["start_date"] > last).sum() == 2
+    cut = d.frames_for(data, "primary")
+    rows = cut["prices"].index
+    assert list(rows[rows > last]) == [first_1993] and "900019" not in cut["prices"].columns
+    assert "900007" in cut["prices"].columns and not (cut["intervals"]["start_date"] > last).any()
+    assert set(cut["prices"].columns) <= set(cut["intervals"]["permanent_id"])     # the backtest needs a spell
+    for key, fill in d.BLANK_ROW.items():
+        row_ = cut[key].loc[first_1993]
+        assert (row_.isna() if pd.isna(fill) else row_ == fill).all()
+    pd.testing.assert_frame_equal(cut["prices"].loc[:last], raw["prices"].loc[:last, cut["prices"].columns])
+    inputs = d.inputs_for(cut, d.no_signal(cut), start, end)
+    d.check_engine_cut(inputs)
+    tilt.prepare(inputs)                                  # the engine accepts the end row
+    late = cut["disappearances"].iloc[:1].assign(effective_date=first_1993, known_at=first_1993)
+    for changed in (d.inputs_for(raw, d.no_signal(raw), start, end), replace(inputs, intervals=raw["intervals"]),
+                    replace(inputs, disappearances=pd.concat([inputs.disappearances, late], ignore_index=True))):
+        with pytest.raises(RunnerStop) as caught:
+            d.check_engine_cut(changed)
+        assert caught.value.reason == "row_after_screen_end"
+    # Each engine call checks its inputs first.
+    with pytest.raises(RunnerStop):
+        d.engine_pair({run: raw for run in d.RUNS}, {run: d.no_signal(raw) for run in d.RUNS}, start, end)
+    with pytest.raises(RunnerStop):
+        d.census(d.inputs_for(raw, d.no_signal(raw), start, end), tilt.rebalance_dates(rows, start, end))
+    monkeypatch.setattr(d, "frames_for", lambda data_, run: w.tilt_frames(data_, start, end, run))
+    with pytest.raises(RunnerStop) as caught:
+        d.calibration_stage(data, d.load_trial()[0])
+    assert caught.value.reason == "row_after_screen_end"
 
 
 # R4: the two-call rerun -----------------------------------------------------------------------
@@ -859,7 +922,7 @@ def test_s3_is_built_once_per_seal_segment() -> None:
     assert caught.value.reason == "rebalances_cross_seal"
     late = d.segment_signals(inputs, pd.DatetimeIndex([d.POST_SEAL_FIRST_REBALANCE]))
     assert late["reasons"]["S3"].loc[d.POST_SEAL_FIRST_REBALANCE, 1] == "stale"
-    early = d.segment_inputs(inputs, False, pd.Timestamp("2018-12-31"))
+    early = d.cut_inputs(inputs, pd.Timestamp("2018-12-31"))
     assert early.daily["date"].max() <= pd.Timestamp("2018-12-31") and early.index_daily["date"].max() <= \
         pd.Timestamp("2018-12-31")
 
@@ -868,7 +931,7 @@ def test_s3_is_built_once_per_seal_segment() -> None:
 
 def test_signal_frame_refuses_a_rebalance_without_a_signal_row(frames) -> None:
     data = make_data(frames)
-    panels = d.signal_panels(data)
+    panels = d.signal_panels(data, d.screen_inputs(data))
     primary = d.frames_for(data, "primary")
     dates = pd.DatetimeIndex([month_end(CAL, "1970-01"), month_end(CAL, "1970-02")])
     framed = d.signal_frame(panels, "S7", primary, dates)
