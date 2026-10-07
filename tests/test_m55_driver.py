@@ -36,6 +36,8 @@ VINTAGE = "2025-12-31"
 OPEN = pd.Timestamp(VINTAGE)                  # a spell open at the vintage end: exit class current
 TRACKED = {"vintage": VINTAGE, "files": {}}
 MU, K, VOL = 0.0005, 0.03, 0.008              # daily drift MU - K x share growth: S7 (sign -1) predicts returns
+MARKET_VOL = 0.012                            # a daily market factor from its own generator (Member.beta)
+BETA_HIGH, BETA_LOW = 1.8, 0.3                # small world: the low-risk book reaches its ratio target (chosen)
 DATA_START_FACT = pd.Timestamp("1960-12-01")  # before the first calendar row: basis_unseen data_start
 IBES_FROM = pd.Timestamp("1990-06-15")        # S1 real start 1991: 24 screen months, a typed undefined record
 PERMNO = re.compile(r"(?<![\d.])9000[0-9]{2}(?![\d])")
@@ -78,11 +80,13 @@ class Member:
     facts_from: pd.Timestamp | None = None     # first share fact (default: the data_start fact)
     drift: float | None = None                 # daily drift (default MU - K g)
     vol: float = VOL
+    beta: float = 0.0                          # loading on the market factor
 
 
 def small_members(cal: pd.DatetimeIndex) -> list[Member]:
+    """The small world. Betas alternate (BETA_HIGH for an even PERMNO), so the calibration chooses a g."""
     r = lambda date: row(cal, date)            # noqa: E731
-    return [
+    members = [
         Member(900001, 0.02, split=r("1980-03-01")),
         Member(900002, -0.03), Member(900003, 0.10), Member(900004, 0.00),
         Member(900005, 0.05, gp=month_end(cal, "1975-06")),                      # break spans 1975-06 and 07
@@ -93,13 +97,15 @@ def small_members(cal: pd.DatetimeIndex) -> list[Member]:
         Member(900010, 0.03, last=r("1986-04-15"), delist=("GLI", "UNAV", "PRCF"), y_return=-1.0),
         Member(900011, 0.07, last=r("1988-09-15"), delist=("MER", "UNAV", "STK")),              # unknown
         Member(900012, 0.01, facts_from=r("1966-03-01")),                         # no_share_fact before
-        Member(900013, -0.02, listed=r("1970-02-01"), facts_from=r("1970-02-01")),               # new listing
+        Member(900013, -0.02, listed=r("1968-02-01"), facts_from=r("1968-02-01"),
+               spell=(r("1970-02-01"), OPEN)),                           # listed in 1968, joins in 1970
         Member(900014, 0.09),
         Member(900015, 0.11, spell=(r("1975-03-15"), OPEN)),
         Member(900016, -0.04, spell=(r("1979-09-01"), OPEN)),
         Member(900017, 0.12, spell=(r("1983-06-01"), OPEN)),
         Member(900018, 0.015, spell=(r("1986-05-01"), OPEN)),
     ]
+    return [replace(m, beta=BETA_HIGH if m.permno % 2 == 0 else BETA_LOW) for m in members]
 
 
 def share_facts(m: Member, cal: pd.DatetimeIndex, factor: pd.Series) -> pd.DataFrame:
@@ -116,11 +122,13 @@ def share_facts(m: Member, cal: pd.DatetimeIndex, factor: pd.Series) -> pd.DataF
     return pd.DataFrame(out)
 
 
-def member_rows(m: Member, cal: pd.DatetimeIndex, rng: np.random.Generator) -> pd.DataFrame:
+def member_rows(m: Member, cal: pd.DatetimeIndex, rng: np.random.Generator, market: pd.Series) -> pd.DataFrame:
     listed = m.listed if m.listed is not None else cal[0]
     dates = cal[(cal >= listed) & (cal <= (m.last if m.last is not None else cal[-1]))]
     drift = MU - K * m.g if m.drift is None else m.drift
     ret = rng.normal(drift, m.vol, len(dates))
+    if m.beta:
+        ret = ret + m.beta * market.loc[dates].to_numpy()
     factor = np.where(dates < m.split, 2.0, 1.0) if m.split is not None else np.ones(len(dates))
     adjusted = 1000.0 * (1.0 + m.g) ** (dates.year - 1960)
     table = pd.DataFrame({"permno": m.permno, "dlycaldt": dates, "dlyret": ret,
@@ -145,7 +153,8 @@ def member_rows(m: Member, cal: pd.DatetimeIndex, rng: np.random.Generator) -> p
 def world_frames(members: list[Member], cal: pd.DatetimeIndex, seed: int = 7,
                  comp: tuple[int, ...] = (900001, 900002)) -> dict[str, pd.DataFrame]:
     rng = np.random.default_rng(seed)
-    dsf = [member_rows(m, cal, rng) for m in members]
+    market = pd.Series(np.random.default_rng(seed + 1).normal(0.0, MARKET_VOL, len(cal)), index=cal)
+    dsf = [member_rows(m, cal, rng, market) for m in members]
     facts = [share_facts(m, cal, t.set_index("dlycaldt")["dlycumfacshr"].ffill()) for m, t in zip(members, dsf)]
     permnos = [m.permno for m in members]
     spells = pd.DataFrame([{"permno": m.permno, "indno": 1000502,
@@ -410,7 +419,7 @@ def test_a_stage_output_is_never_overwritten_and_needs_a_folder_outside_git(chai
 
 
 @pytest.mark.parametrize("decision, goes_on", [
-    ("chosen", True), ("ratio_coverage_low", True), ("refused", False), ("ratio_coverage_ambiguous", False),
+    ("chosen", True), ("ratio_coverage_low", False), ("refused", False), ("ratio_coverage_ambiguous", False),
     ("no_g_reaches_target", False)])
 def test_each_calibration_decision_goes_on_or_stops(decision, goes_on) -> None:
     if goes_on:
@@ -424,7 +433,7 @@ def test_each_calibration_decision_goes_on_or_stops(decision, goes_on) -> None:
 @pytest.mark.parametrize("name", ["look", "screen", "freeze"])
 def test_look_screen_and_freeze_refuse_after_a_calibration_stop(chain, frames, tmp_path, name) -> None:
     data = make_data(frames)
-    for decision in ("refused", "ratio_coverage_ambiguous", "no_g_reaches_target"):
+    for decision in ("refused", "ratio_coverage_low", "ratio_coverage_ambiguous", "no_g_reaches_target"):
         out = copy_until(chain, tmp_path / decision, name)
         rechain(out, set_calibration(decision))
         with pytest.raises(RunnerStop) as caught:
@@ -434,13 +443,32 @@ def test_look_screen_and_freeze_refuse_after_a_calibration_stop(chain, frames, t
         assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == "calibration_stop"
 
 
-def test_the_sequence_goes_on_after_chosen_and_ratio_coverage_low(chain, frames, tmp_path) -> None:
-    """The small world's own decision is ratio_coverage_low (its chain ran on); a saved chosen also goes on."""
-    assert stage(chain["w0"]["folder"], "calibration")["decision"] == "ratio_coverage_low"
-    out = copy_until(chain, tmp_path, "freeze")
-    rechain(out, set_calibration("chosen"))
-    d.run_stage("freeze", make_data(frames), out, TRACKED)
-    assert stage(out, "freeze")["record"] == stage(chain["w0"]["folder"], "freeze")["record"]
+def test_the_small_world_calibration_chooses_g_and_the_chain_reaches_the_freeze(chain) -> None:
+    """The chain ran the real calibration (no saved or patched decision): g = 0.5 fails, g = 1.0 meets."""
+    out = chain["w0"]["folder"]
+    result = stage(out, "calibration")
+    assert (result["decision"], result["chosen_g"]) == ("chosen", 1.0)
+    assert [g["bracket"] for g in result["grid"][:2]] == ["fails", "meets"]
+    assert (result["ratio_status_counts"]["ratio_window_short"], result["rebalances"]) == (18, 354)   # 900013
+    assert stage(out, "freeze")["decision"] == "shortlist_frozen"
+
+
+def test_a_ratio_coverage_low_world_stops_before_the_look(tmp_path) -> None:
+    """With 900013 as a new listing in 1970, 37 of 354 rebalances have no ratio: the coverage stop."""
+    members = [replace(m, listed=row(CAL, "1970-02-01"), facts_from=row(CAL, "1970-02-01"), spell=None)
+               if m.permno == 900013 else m for m in small_members(CAL)]
+    data = make_data(world_frames(members, CAL))
+    out = tmp_path / "out"
+    for name in ("coverage", "calibration"):
+        d.run_stage(name, data, out, TRACKED)
+    result = stage(out, "calibration")
+    assert (result["ratio_status_counts"]["ratio_window_short"], result["rebalances"]) == (37, 354)
+    assert result["decision"] == "ratio_coverage_low" and result["undefined_share"] > tilt.LOWRISK_UNDEFINED_MAX
+    with pytest.raises(RunnerStop) as caught:
+        d.run_stage("look", data, out, TRACKED)
+    assert (caught.value.reason, caught.value.detail) == ("calibration_stop", "calibration decision ratio_coverage_low")
+    assert not (out / "look.json").exists()
+    assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == "calibration_stop"
 
 
 def test_a_refusal_inside_the_calibration_writes_no_file(chain, frames, tmp_path, monkeypatch) -> None:
@@ -1015,7 +1043,7 @@ def real_size_members(cal: pd.DatetimeIndex, size: int = 500, per_year: int = 8)
             members.append(Member(900000 + k, g, spell=(spell_start, OPEN)))
     members[0] = replace(members[0], split=row(cal, "1980-03-03"))
     members[1] = replace(members[1], gp=month_end(cal, "1975-06"))
-    return members
+    return [replace(m, beta=BETA_HIGH if m.permno % 2 == 0 else BETA_LOW) for m in members]
 
 
 @pytest.mark.skipif(os.environ.get("M55_DRIVER_REAL_SIZE") != "1", reason="real-size run: M55_DRIVER_REAL_SIZE=1")

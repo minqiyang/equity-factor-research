@@ -17,7 +17,7 @@ returns, and the secondary family belong to a later card.
 Gates (R9): each stage writes ``<stage>.json`` and ``<stage>.sha256`` to a folder outside every Git checkout and
 never overwrites them. A stage refuses unless every earlier stage file exists, matches its digest, was made from the
 same trial file, code, and data, and names the digests of the stages before it. The look, the screen, and the freeze
-also refuse unless the saved calibration decision lets the sequence go on. The freeze parses no data table. Each
+also refuse unless the saved calibration decision is ``chosen``. The freeze parses no data table. Each
 criteria output is appended with its declaration to ``run_log.jsonl``, and so is each refusal.
 
 Period: every signal-input table, the engine frames, and ``vwretd`` are cut at the last screen row (1992-12-31)
@@ -68,7 +68,7 @@ POST_SEAL_FIRST_REBALANCE = pd.Timestamp("2021-08-31")
 NO_SIGNAL = "NO_SIGNAL"                          # an all-missing set: every composite is 0, so TILT equals CW-PIT
 BLANK = crit.BLANK_REASONS[0]                    # path_break_held
 EXIT_CLASSES = w.EXIT_CLASSES
-GO_ON = ("chosen", "ratio_coverage_low")         # calibration decisions after which the look, screen, and freeze run
+GO_ON = ("chosen",)                              # the one calibration decision after which the later stages run
 # The engine frames' row after the last screen row: a date with these blank values (the loader's fill for a cell
 # without a daily row).
 BLANK_ROW = {"prices": np.nan, "market_equity": np.nan, "path_break": False, "eligible": False,
@@ -292,9 +292,10 @@ def earlier(out: Path, stage: str, ctx: Mapping[str, Any]) -> tuple[dict[str, di
 
 def check_calibration(calibration: Mapping[str, Any]) -> None:
     """``books.low_risk.calibration.choice``: the look, the screen, and the freeze run only after the decision
-    ``chosen`` or ``ratio_coverage_low``. Each frozen stop refuses with its ``calibrate_lowrisk`` name: ``refused``
-    (a refusal below the first g that meets; the calibration stage itself stops on it and writes no file),
-    ``ratio_coverage_ambiguous`` (the owner decides), and ``no_g_reaches_target`` (stop and ask the owner)."""
+    ``chosen``. Every other outcome is a stop or an owner decision in the frozen file, and refuses with its
+    ``calibrate_lowrisk`` name: ``refused`` (a refusal below the first g that meets "stops"; the calibration stage
+    itself stops on it and writes no file), ``ratio_coverage_low`` ("the coverage stop", ``window_diagnostic``),
+    ``ratio_coverage_ambiguous`` ("the owner decides"), and ``no_g_reaches_target`` ("stop and ask the owner")."""
     if calibration["decision"] not in GO_ON:
         raise refuse("calibration_stop", f"calibration decision {calibration['decision']}")
 
