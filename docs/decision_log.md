@@ -26,17 +26,17 @@ Context:
 
 Decision:
 
-- Calibration gate (coordinator ruling at PR time, before any real data run). The look, the screen, and the freeze
-  go on only after the calibration decision `chosen`. Every other decision stops the sequence before the look
+- Calibration gate (coordinator ruling at PR time, before any real data run). The look, the screen, and the freeze go
+  on only after the calibration decision `chosen`. Every other decision stops the sequence before the look
   (`calibration_stop`, with the decision named), and the coordinator takes it to the owner. In
   `books.low_risk.calibration.choice`, a refusal below the first g that meets "stops"; `ratio_coverage_ambiguous`
   means "the owner decides"; `no_g_reaches_target` means "stop and ask the owner". `window_diagnostic` calls
   `ratio_coverage_low` "the coverage stop". On `refused`, the calibration stage itself raises and writes no file, so
-  the later stages refuse with `stage_missing`. Reason: the frozen choice rule names each outcome other than
-  `chosen` a stop or an owner decision, the frozen order puts the calibration before the screen, and a halt never
-  loosens R9. The owner then decides the low-risk book before any return is seen. This replaces the earlier default
-  that let `ratio_coverage_low` go on; that default rested on the false statement that the frozen file gives no
-  stop for it.
+  the later stages refuse with `stage_missing`. Reason: the frozen calibration rules (`choice` and
+  `window_diagnostic`) name each outcome other than `chosen` a stop or an owner decision, the frozen order puts the
+  calibration before the screen, and a halt never loosens R9. The owner then decides the low-risk book before any
+  return is seen. This replaces the earlier default that let `ratio_coverage_low` go on; that default rested on the
+  false statement that the frozen file gives no stop for it.
 - Reading of "opened" (R9). `stop_rule.after_screen` says "confirm months are not opened for a tilt", and
   `screen_and_shortlist.freeze` says "the digest is saved before any confirm month is opened". The accepted loader
   builds full-history paths at load. This is its reviewed design, and it ran on this data vintage at intake. No row,

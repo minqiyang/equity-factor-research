@@ -28,8 +28,9 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   trial file, code, and data, and names the digests of the stages before it. The trial file must have the frozen
   SHA-256 (`ab3b4ab0...16f4fe`), and the data manifest must match `reports/wrds_manifest_2025.json`. The look, the
   screen, and the freeze refuse unless the calibration decision is `chosen`. The freeze parses no data table.
-  `run_log.jsonl` gets every criteria output with its declaration, each written stage digest, and each refusal or
-  error raised after the output-folder, trial, code, and data checks. Refusal and error text masks each 5- or
+  `run_log.jsonl` gets each `screen_record`, `check_paired`, `undefined_record`, and `freeze_shortlist` output with
+  its declaration (the `tilt_stats` values stay in the screen stage file), each written stage digest, and each refusal
+  or error raised after the output-folder, trial, code, and data checks. Refusal and error text masks each 5- or
   6-digit integer.
 - Period: the driver cuts the signal tables, the engine frames, and `vwretd` at 1992-12-31 right after the load. No
   row, event, or spell start dated after 1992-12-31 reaches the engine, the criteria, or the signal builder, and
@@ -41,18 +42,18 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   ADVISORY 7. Repairs `b525e55` and `e7e5986`. Round 2: AUDIT PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 PASS, MATERIAL
   0, ADVISORY 2. Both seats ran the five stages on one synthetic world with each of the three commits. The frozen
   record digest `b7412549...`, the decision `shortlist_frozen`, and the shortlist `["S7"]` stayed the same.
-- Gate change (card m55-drivergate, `693d49b`). At PR time the coordinator found that the frozen choice rule names
-  every calibration outcome other than `chosen` a stop or an owner decision (`ratio_coverage_low` is "the coverage
-  stop"). `GO_ON` is now `("chosen",)`, so the look, the screen, and the freeze also refuse after
-  `ratio_coverage_low`. The small test world gave `ratio_coverage_low` (37 of 354 rebalances without a ratio,
-  because of the 1970 listing), and with that fixed it gave `no_g_reaches_target`, because its names had no common
-  risk. It now has a market factor (daily volatility 0.012; betas 1.8 and 0.3 by PERMNO parity), and 900013 lists
-  in 1968 and joins the index in 1970 (18 of 354 without a ratio). Its real calibration chooses g = 1.0 (g = 0.5
-  fails), and the chain reaches the freeze with the shortlist `["S7"]`; the freeze record digest is now
-  `20ed48ee...`. A world with the old 1970 listing gives `ratio_coverage_low` and stops before the look. The
-  opt-in real-size world gets the same betas: without them its calibration gives `no_g_reaches_target`, so it
-  already stopped at the look under the round 1 gate. Review: QA, then one round with both seats; the result is
-  not in this entry.
+- Gate change (card m55-drivergate, `693d49b`). At PR time the coordinator found that the frozen calibration rules
+  (`choice` and `window_diagnostic`) name every calibration outcome other than `chosen` a stop or an owner decision
+  (`window_diagnostic` calls `ratio_coverage_low` "the coverage stop"). `GO_ON` is now `("chosen",)`, so the look, the
+  screen, and the freeze also refuse after `ratio_coverage_low`. The small test world gave `ratio_coverage_low` (37 of
+  354 rebalances without a ratio, because of the 1970 listing), and with that fixed it gave `no_g_reaches_target`,
+  because its names had no common risk. It now has a market factor (daily volatility 0.012; betas 1.8 and 0.3 by
+  PERMNO parity), and 900013 lists in 1968 and joins the index in 1970 (18 of 354 without a ratio). Its real
+  calibration chooses g = 1.0 (g = 0.5 fails), and the chain reaches the freeze with the shortlist `["S7"]`; the
+  freeze record digest is now `20ed48ee...`. A world with the old 1970 listing gives `ratio_coverage_low` and stops
+  before the look. The opt-in real-size world gets the same betas: without them its calibration gives
+  `no_g_reaches_target`, so it already stopped at the look under the round 1 gate. Review: QA, then one round with
+  both seats; the result is not in this entry.
 - Tests: at `693d49b`, `tests/test_m55_driver.py` has 48 passed and 1 skipped (the opt-in real-size world), and
   the opt-in run (`M55_DRIVER_REAL_SIZE=1`) gives `1 passed in 1277.70s`. Full suite at `e7e5986`:
   `3923 passed, 3 skipped, 69 warnings`; `ruff check .` passed. The merge with main (`0be2be3`) changes docs only.

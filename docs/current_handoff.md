@@ -99,12 +99,12 @@ unaccessed and reserved (O-12).
 
 - The owner ran the reviewed pull script under O-22 (vintage 2025-12-31; seal months in `sealed/`; iCloud backup
   written). After the driver merges: check the free memory (the real-size synthetic world peaked at 11.4 to 12.7 GB
-  with 740 columns; the real panel has about 1,100), then run `python -m research.m55_driver` one stage at a time
-  on the working copy, with an output folder outside every checkout: coverage, calibration, look, screen (O-21),
-  freeze (about 2.5 hours in total, almost all in the look and the screen). A calibration decision other than
-  `chosen`, `path_break_adjacent`, or `path_gap_at_period_end` goes to the owner. The confirm run waits for the
-  owner's second WRDS pull of CRSP closing bid and ask (OI-03). If a pinned file changes before a run, an amendment
-  comes first.
+  with 740 columns; the real panel has about 1,100), then run `python -m research.m55_driver` one stage at a time on
+  the working copy, with an output folder outside every checkout: coverage, calibration, look, screen (O-21), freeze
+  (about 2.5 hours in total, almost all in the look and the screen). A calibration decision other than `chosen`, or a
+  `path_break_adjacent` or `path_gap_at_period_end` refusal, goes to the owner. The confirm run waits for the owner's
+  second WRDS pull of CRSP closing bid and ask (OI-03). If a pinned file changes before a run, an amendment comes
+  first.
 
 ## Source Routing
 
