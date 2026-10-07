@@ -12,6 +12,56 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - WRDS loader and S2: unknown share bases are typed missing (Milestone 5.5)
+
+- Card m55-loader-r6 on `0c60805` (sweep findings audit A-2 and O2-A2). Decision log: the entry of the same date.
+- `market_equity` adds the column `basis_unseen` (`data_start`, `seal`, or none). With no factor row before
+  `shrstartdt`, a fact dated before the first calendar row, or dated before the seal end with its basis row after
+  the seal, makes the share count and ME `unmapped`. `intake_report` adds `share_basis_unseen`: the rows of the
+  daily signal table that only this rule blanks, by case and year, with the last date, for all rows and for
+  member-days; the Markdown report has a new section for it.
+- `s2` reads `cfacshr` at each used quarter's `rdq` as well as at its basis date. A difference gives the new reason
+  `split_in_basis_window`; a failed read at `rdq` gives that read's own reason. `_Signals.factor` returns
+  `no_market_data` for a read on or after the seal start from a row before it.
+- New tests: case A (a listing in the seal with a split after its fact, and a fact dated before the seal), case B
+  (a fact dated before the first calendar row, until an observed fact is in use), the round 1 control (a prior
+  factor row), the intake counter by case and year, and S2 split ex-dates inside and outside (rdq, known date] for
+  q, q - 4, and a prior quarter, with a stale and an absent factor at `rdq` and a small stock dividend; a factor
+  read across the seal (real dates, then S2 end to end with the seal moved into the fixture by `monkeypatch`).
+- Producer self-review (five lenses, two refuters per finding, synthetic probes only): one material defect, the
+  first month of the seal under the one-month as-of read, now fixed. Advisory fixes: the counter now holds only the
+  rows this rule blanks and splits out member-days; an empty calendar no longer fails; a Case A test on a calendar
+  that keeps 2020-07-31 (the real pull seals that row, so it is a test of the rule only). Of the 17 review mutants,
+  14 failed the two test files; the added tests catch two of the other three, and the last (no prior-factor guard
+  on the data-start line) is equivalent on the production path. Five mutants of the fixes all fail. A differential
+  run against `0c60805` (400 seeds, before the fixes) changed ME and share counts only on `basis_unseen` rows and
+  S2 only where a quarter's factor at `rdq` differs or cannot be read; S1 and S3 to S8 were identical.
+- Changed old tests (each asserted the old behavior on input that is now a typed case): the loader world's share
+  facts start at the first calendar row (were 1985-01-01, before it); `me_case` puts its first row on the fact
+  date 1985-01-01 (was 1985-01-02); the D5 share-count test's rows start on 1985-01-01 (were 1990-11-01); in
+  `test_sparse_first_eps_after_split_must_keep_sue`, a split on 1999-07-01 between the quarter's `rdq` and its July
+  EPS row now gives `split_in_basis_window` (was the no-split value).
+
+## 2026-10-06 - WRDS loader: round 1 review fixes (Milestone 5.5)
+
+- Card m55-loader-fix-r1 on candidate `17e86ff` (GPT-M1 to M3, Opus M-1, trial GPT-R1-03, OI-11, OI-12, and the
+  addendum item 7). Decision log: the loader entry, items 1 to 7.
+- `market_equity` takes the PERMNO's full daily rows (`history`) and the calendar. A second `merge_asof`
+  (backward, exact match excluded) finds the factor before `shrstartdt`; a gap between `shrstartdt` and the basis
+  row with a factor change makes ME and the new `share_count` NaN (`unmapped`). `member_market_equity` caches the
+  member-row result for the intake and the signal table, whose `shrout` is now the D5 count.
+- `_fiscal_conflicts` keeps the first-known record per fiscal key and per `datadate` (a loop over the few gvkeys
+  with a clash). The GPT probe test shows that a later second FY record leaves S4 unchanged. URQ conflicts are
+  resolved per table: `fund_quarterly` on its known date, `announcements` on `rdq`.
+- A producer self-review (six lenses, two refuters per finding, synthetic probes only) found one defect, the
+  announcement clock, and six test gaps where a mutant of a fix survived. After the fixes, all ten named mutants
+  fail the loader tests (36 tests).
+- `disappearances(data, run)` sets the effective row to the later of the row after the last valued row and the
+  `Y` row, and flags `reference_valued`. `daily` adds a second path with the `Y` returns removed for the
+  `last_close` run. The engine's H-8 check needs a close on the row before the effective row, so `tilt_frames`
+  refuses an event after rows without a value; there are none in the real files.
+- Real rerun (about 22 s): every intake check passes; the tracked manifest is unchanged.
+
 ## 2026-10-06 - Gap members leave the low-risk ratio (Milestone 5.5, card m55-ratio-gap)
 
 - Base `e50e8d6`. `whole_book_ratio` takes an optional per-member `short` flag (no valid return before the window,
@@ -91,6 +141,64 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   attempt reports whose SHA-256 values `reports/dividend_comparison_release_manifest.json` pins; those six still
   hold home paths.
 - Git history keeps the old paths (owner decision: no history rewrite).
+
+## 2026-10-05 - WRDS loader: coordinator decisions P-9 and IBES currency (Milestone 5.5)
+
+- Card m55-loader-p9 on candidate `4717a56`. P-9 option (a): `signal_tables` no longer reads URQ `ajexq` and
+  supplies 1.0 on every `fund_quarterly` row; `ajexq_check` and its refusal are replaced by
+  `urq_ajexq_aggregate`, which no longer reads the current-vintage `comp_fundq.ajexq`. S2 in
+  `research/m55_signals.py` is unchanged.
+- New test: A's quarters reported before its 2-for-1 split carry pre-split EPS and a current-vintage URQ `ajexq`
+  of 2; S2 at a rebalance after the split equals S2 of the same firm with no split (bit-identical), and the URQ
+  factor would move it. A second test shows that a URQ `ajexq` of 2 changes no supplied row.
+- IBES: FY1 rows with a currency other than USD (a missing currency counts as other) are dropped in
+  `signal_tables` and counted by year. The intake check compares the FY1 rows of the inputs with the keyed USD FY1
+  rows of the file.
+- Real rerun (about 14 s): every intake check passes, the 695 rows drop, and the tracked manifest is unchanged.
+
+## 2026-10-05 - WRDS loader for the engine and signal inputs (Milestone 5.5)
+
+- New module `research/m55_wrds_loader.py` and `tests/test_m55_wrds_loader.py` (card m55-loader, branch
+  `claude/m55-wrds-loader` from `claude/m55-signals` at `5cf5c84`). The tests use synthetic tables only.
+- `load` checks each main file's SHA-256 and row count against `MANIFEST_local.json` and refuses a mismatch, a
+  missing file, an unexpected file, or a sealed path. A test patches `pyarrow.parquet.read_table` and `Path.open`
+  and shows that no sealed path is opened; `write_manifest` hashes only the bytes of the sealed files.
+- `price_path` is vectorized: a grouped cumulative product of (1 + `dlyret`) from each segment's first priced row.
+  The real run found 82 member rows where CIZ's `dlyprevdt` points at a row with a price and no return. That
+  return is not in the path; `tilt_frames` exposes the next row as `path_break` so the driver blanks level windows
+  that hold it (decision log P-1).
+- `market_equity` uses two `merge_asof` joins: the share row at t - 136 days, then the first factor row on or after
+  its start. The reason order is no close at t, no share row, stale share row, no basis factor.
+- Mutation check (before the `ajexq` check): 13 hand mutants (the 136-day boundary, the inclusive end, the stale comparison, the basis
+  direction, the delisting return, the cash-merger rule, the terminal row, the engine end date, the URQ known date,
+  the effective date, the seal window, the exact-split share, the chain flag). One survived (the exact-split share);
+  a new test case kills it.
+- `ajexq_check` joins URQ quarters to CRSP 2-for-1 splits through the CCM link valid at `rdq`. On the real files
+  it fails: URQ `ajexq` equals the current `comp_fundq` value on every matched row, so `signal_inputs` refuses
+  (decision log P-9). The loader note expected the check to catch exactly this case.
+- Real run on the main files: about 26 s for the intake and two windows. D2, SPY, D7, FY1, and `check_inputs`
+  pass; the URQ `ajexq` check fails. Aggregates are in the m55_loader intake report.
+
+## 2026-10-05 - Point-in-time signals S1 to S8 on synthetic fixtures (Milestone 5.5)
+
+- New module `research/m55_signals.py` and `tests/test_m55_signals.py`. Card chain on base `8420e28`: `ac3530e`
+  (first build), `dd8a15b` (coordinator revision), `051d071` (repair round 1), `3a93573` (round 2 coordinator
+  decisions), then a records commit with one test. No real data was read.
+- Review round 1 on `dd8a15b`: GPT FAIL, MATERIAL 5; Opus FAIL, MATERIAL 2, ADVISORY 7. Main findings: later
+  revisions replaced first-reported values, the IBES link resolved at t and not at each `statpers`, a quarter was
+  read before its report date, and absent price anchors were filled.
+- Review round 2 on `051d071`: GPT FAIL, MATERIAL 2, ADVISORY 2; Opus FAIL, MATERIAL 1, ADVISORY 8. Main findings:
+  an IBES row not usable at t could change the selected month, and `epspxq` and `ajexq` could come from different
+  rows.
+- Coordinator decisions C-5 to C-9 (one S2 pair row, `cfacshr` basis with no read at t, the usable cut before the
+  monthly grouping, the declared CRSP-history sample rule, the reason order) are in `docs/decision_log.md`. Round 2
+  mutation run: 13 of 13 mutants killed.
+- Narrow verification of `3a93573`: GPT PASS, MATERIAL 0, ADVISORY 0; Opus PASS, MATERIAL 0, ADVISORY 3.
+  O3-A1: `test_max_age_ibes` now keeps the 2000-08-15 row (after t); the mutant that takes the stale age from the
+  last row of all dates survives the old test and fails the new one. O3-A3 is fixed in the card report. O3-A2
+  goes to the backlog.
+- Full suite on the records commit: exit code 0; 3679 passed, 2 skipped (platform `longdouble`), 0 failed,
+  69 warnings, in 361 s.
 
 ## 2026-10-05 - Declared signal set for the index tilt (Milestone 5.5, card m55-signal-sets)
 

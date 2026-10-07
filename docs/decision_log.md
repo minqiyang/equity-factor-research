@@ -15,6 +15,58 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Unknown Share Bases Are Typed Missing (Milestone 5.5, card m55-loader-r6)
+
+Context:
+
+- The R1 to R12 sweep confirmed two R6 defects before the trial freeze: a share count and ME on a share basis that
+  the data cannot show (audit A-2, both forms), and an S2 quarter whose EPS and share factor can have different
+  bases (review O2-A2). Each gave a value with no reason. Synthetic fixtures only; no real data was read.
+
+Decision:
+
+- Item 1 (D5, P-4, R6): when a PERMNO has no `dlycumfacshr` row before the share fact's `shrstartdt`, and an
+  interval the data never saw lies between `shrstartdt` and the basis row, the share count and ME are `unmapped`.
+  The new `market_equity` column `basis_unseen` names the case: `data_start` (`shrstartdt` before the first
+  calendar row, 1961-01-03 in the 2025 vintage) or `seal` (`shrstartdt` before 2020-07-31 and the basis row on or
+  after it). A PERMNO with a factor row before `shrstartdt` keeps the round 1 rule (item 1 of the loader entry).
+  The new rule adds no CRSP convention, for example that CRSP adds a share row at each split. Not changed, as it is
+  outside the card: a fact dated before the first row of a new listing, inside the calendar, keeps its value (the
+  PERMNO has no row there, so this keeps the round 1 reading that the fact is on the first row's basis).
+- Reach of item 1: a row at t is blank only while a fact dated before the unseen interval's end is in use. That
+  stops when the PERMNO's first fact dated on or after 1961-01-03 (or on or after 2020-07-31) is in use, at its
+  date plus 136 days, or when the old fact goes stale. There is no fixed end date.
+  - Data start: blanks start on 1961-01-03 and end no earlier than 1961-05-19. ME at the rebalance rows from
+    1963-06-28 is reached when that next fact is dated after 1963-02-12. The S7 share anchors from 1962-06-29 are
+    reached when it is dated after 1962-02-13.
+  - Seal: for each such PERMNO, every post-seal row from 2020-08-03 to at least 2020-12-11 is blank, because a fact
+    dated 2020-07-31 or later is in use only from 2020-12-14. S7 reads the share count 12 months before its anchor,
+    so a post-seal check month whose earlier anchor falls in that window loses S7 for these PERMNOs (members that
+    list inside the seal). ME at the rebalance rows from the post-seal anchor 2021-07-30 is reached only when the
+    next fact is dated after 2021-03-16.
+  - So the rule can reach rows that the trial uses. The intake report gives the rows by case and year and the last
+    date, for all rows and for member-days; the coordinator records the real counts.
+- Item 2 (S2, R1, R6): first-reported EPS has the share basis of its own document, dated on some day from `rdq` to
+  the known date. For each quarter that S2 reads (q, q - 4, and the prior quarters), S2 also reads `cfacshr` at
+  `rdq` with the same as-of rule (at most one month old). When the two factors differ, the quarter gets the new
+  reason `split_in_basis_window`: q or q - 4 gives that reason, and a prior quarter drops its two differences, as a
+  missing prior quarter does. When the factor at `rdq` cannot be read, the quarter gets that read's own reason
+  (`stale`, `no_market_data`, `missing_item`, or `invalid_value`), so each reason names what the data show. A split
+  on `rdq` itself, before it, or after the known date keeps the value.
+- Seal and item 2: every as-of factor read (`_Signals.factor`) now returns `no_market_data` when its row is before
+  the seal start and the read date is on or after it. The one-month as-of age would otherwise carry the 2019-07-30
+  factor to a date from 2019-07-31 to 2019-08-30 and hide a split in the seal. The seal dates move to
+  `m55_signals.SEAL`, and the loader takes them from there. S1 reads `cfacpr` through the same function, but no
+  calendar decision row can reach such a read: S1 reads statistics dates at most about five months before t.
+- No rule here loosens R1, R2, R4, R6, R8, or R9.
+
+Consequences:
+
+- More `unmapped` ME and share-count rows from 1961 and after the seal; fewer valid S2 cells. The intake section
+  "Share Basis Not Observed" and `reason_counts` give the sizes after the real rerun.
+- Test fixtures whose share facts were dated before their first calendar row now start on it (they hit the
+  data-start case); the S2 test with a split between a quarter's `rdq` and its EPS row now expects the new reason.
+
 ## 2026-10-06 - Gap Members Leave the Low-Risk Ratio (Milestone 5.5, card m55-ratio-gap)
 
 Context:
@@ -110,6 +162,136 @@ Consequences:
 
 - The trial file states the 26-month gap and the check start after the gap; the check months are 2014-04 to
   2019-06 and 2021-09 to the last complete month.
+
+## 2026-10-05 - WRDS Loader Rules D1 to D9 (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- `research/m55_wrds_loader.py` (card m55-loader) builds the engine frames, the signal inputs, and the benchmark
+  returns from the main WRDS files, vintage 2025-12-31. It never opens a sealed file. The coordinator set D1 to D9;
+  the producer readings P-1 to P-9 below fill the gaps the card did not cover. Each is logged before any result.
+
+Decision:
+
+- D1 Identity (R3): `permanent_id = str(permno)`, and the symbol is the same string. No return crosses PERMNOs.
+- D2 Calendar: the trading days of INDNO 1000200 in the main file. Every member daily date must be one of them, or
+  the loader refuses. A non-member row off the calendar is dropped and counted (1 row). No main row is in the seal.
+- D3 Prices (R5, R6): one close index per PERMNO and seal segment from `dlyret` only (CIZ includes the delisting
+  return on the `Y` row; `delret` is never added). A missing `dlyret` is NaN. A later return is the last valid value
+  times (1 + `dlyret`). Each segment starts at its first priced row (index 1.0).
+- D4 Membership (R2): `crsp_dsp500list_v2`, end date inclusive (500 members on 6,082 of 7,267 days in 1990-2018,
+  confirmed). Engine `end_date` = `mbrenddt` + 1 day, `start_known_at = mbrstartdt`, `end_known_at = mbrenddt`.
+- D5 Market equity (R1): |`dlyprc`| at t times the `shrout` with the latest `shrstartdt` on or before t - 136
+  calendar days, moved to the t basis by the `dlycumfacshr` ratio. Reasons `no_share_fact`, `stale_share_fact`,
+  `unmapped`. Units: `shrout` in thousands, so ME is in thousands of USD.
+- D6 Disappearances (R4): a member PERMNO with a delisting record whose price path ends before the last calendar
+  row. `effective_date` = the calendar row after the last valued row, or the `Y` row when it is later (item 3
+  below); `known_at = effective_date`. Delisting return
+  0.0 when the `Y` row is in the path; NaN when it is missing (engine default). Causes as the card lists them.
+- D7 Split factors: at `dlyfacprc = 2` both cumulative factors halve (2,832 of 2,835 rows exactly; none rises),
+  the median price ratio is 1.995, and the median share ratio is 2.0. The loader refuses otherwise.
+- D8 Signal inputs: the sources of the card. `fund_quarterly` and `announcements` come from `comp_urq`; `comp_fundq`
+  gives only `fyearq`. `known_date` = the later of `rdq` and the first of `prelimqprd`, `finalqprd`.
+- D9 Seal: the loader refuses any sealed path; `tilt_frames` refuses a window across the seal.
+- P-1 (D3, R6): 82 member rows (67 PERMNOs, 6 inside a member spell, all in the 1960s and 1970s) have a
+  `dlyprevdt` that is a row with a price and no return (CIZ `RA` or `GP`). That return is not in the path and is
+  not filled. The row without a return stays NaN, so every return window that touches it is blank. `tilt_frames`
+  marks the next row in `path_break`; the driver blanks each level window (a price ratio or a maximum) that holds
+  one, and reports each held position across one with its weight. Rejected: no price after the break (a held name
+  would lock and could get a false -100 percent event), and a restart at a new base (a false return in the engine).
+- P-2 (D3, D6): a delisting-row return of -100 percent (9 rows) cannot be a positive close, so that row stays NaN
+  and the loader supplies the return as the delisting return.
+- P-3 (D4): eligibility at the decision row t is the engine's own interval mask at r: `mbrstartdt <= t < mbrenddt`.
+  A member on its last index day is not bought for the next row. This is the M5 rule
+  `resolved_universe_at_next_execution_row`; the literal "in force at r - 1" would give a target the engine refuses.
+- P-4 (D5): the count's basis is the first daily row on or after `shrstartdt` with a factor, on or before t. No
+  valid close or factor at t, or no basis factor by t, is `unmapped`.
+- P-5 (D8): rows dropped and counted, by table: no fiscal key (also a `datadate` with two `fyearq` in `comp_fundq`),
+  no known date, a known date before `datadate` (Snapshot 2,478; URQ 35), and a fiscal key on two `datadate` values.
+- P-6: a zero `dlyprc` is no price (1,108 rows), so it stays typed missing.
+- P-7: the 21 member PERMNOs whose path ends without a delisting record all end in 2019-07, the same count as the
+  sealed delisting records. A pre-seal window ends before 2019-07, so they do not reach the engine.
+- P-8 (coordinator decision, card m55-loader-p9): IBES FY1 rows with a currency other than USD, or with no
+  currency, are dropped before `signal_inputs` returns and counted by year (695 rows, 1978 to 2026). S1 divides the
+  estimate by a USD price, so a row in another currency would give a wrong value. All IBES rows in the file are FY1.
+- P-9 (D8, coordinator decision, card m55-loader-p9: option (a)): `comp_urq.ajexq` equals the current
+  `comp_fundq.ajexq` on all 135,119 matched rows, and 36 of 5,431 quarters reported up to a year before a CRSP split
+  have `ajexq` 1, so URQ `ajexq` is not first-reported. The loader never reads it and supplies `ajexq` 1.0 on every
+  `fund_quarterly` row. S2 is unchanged: each quarter's first-reported EPS is on the share basis of its own first
+  known date, and the CRSP `cfacshr` ratio moves it to the basis of q's known date. Reason: by ASC 260, reported EPS
+  is restated for a split that takes effect before the statements are issued, so first-reported EPS has the share
+  basis of its report date, the basis of `cfacshr` at that date. The data agree: URQ `epspxq` is as reported
+  (136,579 of 136,751 equal the current value). The `ajexq_not_first_reported` refusal is removed; the 36 of 5,431
+  count stays in the intake report as an aggregate.
+- Round 1 review fixes (coordinator decisions, card m55-loader-fix-r1):
+  - Item 1 (D5, P-4; GPT-M1, Opus M-1): the basis factor of a share fact comes from the PERMNO's full main daily
+    rows, not the window. When a gap lies between `shrstartdt` and the basis row (a calendar row without a factor
+    row, or the seal) and `dlycumfacshr` on the last row before `shrstartdt` differs from the basis factor, ME is
+    `unmapped`. Real effect: 190 member-days in 2020, all after the seal (ME `unmapped` in 2020 rises from 9 to 199).
+  - Item 2 (P-5; GPT-M2): fiscal-key conflicts are resolved by first known date. In each gvkey, a record (a
+    `datadate` and its fiscal key) whose fiscal key or `datadate` an earlier-known record holds is dropped; records
+    first known on the same date that share either all drop. A later row never removes an earlier known row. Each
+    table uses its own clock: `fund_annual` and `fund_quarterly` their known date (after the known-date drops),
+    `announcements` its `rdq` (public on `rdq`). Drops: Snapshot 340 (was 605); `fund_quarterly` 45 and
+    `announcements` 48 (both were 94).
+  - Item 3 (D6; GPT-M3): no settlement before the `dlydelflg = 'Y'` row. `effective_date` = `known_at` = the later
+    of the row after the last valued row and the `Y` row. The engine settles from a close on the row before the
+    effective row (H-8), so it cannot hold a position across rows without a value up to the `Y` row; `tilt_frames`
+    refuses such a window (`terminal_gap_unsupported`). Real count: 0 events in both R4 runs.
+  - Item 4 (R4; trial GPT-R1-03): `tilt_frames(..., run="last_close")` removes the return of every `Y` row from the
+    price path (the path ends at the last trade close) and settles every event there (`delisting_return` 0.0),
+    with the item 3 timing. ME in that run needs a close of the same path. The engine run must be `last_close`
+    too, so the R4 sign comparison is between the two loader runs. The default `primary` run is unchanged.
+  - Item 5 (trial OI-11, OI-12): the `daily` signal-input table carries `primaryexch` and `dlyprcflg`. Member-days
+    with `dlyprcflg = 'BA'`: 38,741 of 8,062,444.
+  - Item 7, D8 amendment (R1; trial Opus M3): `daily.shrout` in the signal inputs is the D5 share count on the
+    row's basis (with item 1), NaN under the D5 reasons; the raw daily `shrout` is no longer an input to S7 or S8.
+    The D7 check still reads the raw `shrout`. Member-days with a share count: 8,045,516 (raw 8,059,824) of
+    8,060,169 with a daily row.
+  - Opus A-1 (S3 across the seal) is a driver item; no change here.
+- No reading loosens R1, R2, R4, R6, or R8.
+
+Consequences:
+
+- The first driver run uses `tilt_frames` once per seal segment, adds the six Family A signals, and applies the
+  `path_break` blank (P-1). The R4 rerun uses `run="last_close"` in both `tilt_frames` and the engine.
+- Real intake aggregates are in `coord/reports/m55_loader/intake_report.md` (main checkout, not tracked). The tracked
+  manifest is `reports/wrds_manifest_2025.json`: names, row counts, and hashes only.
+
+## 2026-10-05 - Signals S1 to S8 Rules (Milestone 5.5, coordinator decisions)
+
+Context:
+
+- `research/m55_signals.py` computes the candidate signals S1 to S8 for the O-21 screen on a normalized input
+  schema. Two review rounds found timing and share-basis defects; the coordinator decided each finding. Synthetic
+  fixtures only; no real data was read.
+
+Decision:
+
+- First-reported values: each Compustat item of a record is its first non-missing value, usable from its own
+  known date plus one trading row. A later revision is a look-ahead source, so it never replaces that value.
+- S2 takes `epspxq` and `ajexq` from one row (the first row with EPS) and puts each quarter on the CRSP share
+  factor (`cfacshr`) basis of the latest quarter's basis date, with no factor read at t. Two rows could mix share
+  bases, and `cfacpr` also moves at a spin-off; S2 is scale-free, so a read at t adds only a failure path.
+- The IBES link resolves at each `statpers` with `score <= 1`, and the usable date (the first month-end row after
+  `statpers`) is applied before the monthly grouping. A reused ticker then never crosses PERMNOs, and a row not
+  usable at t cannot change the selected month.
+- S3 uses the CRSP value-weighted market, INDNO 1000200, because INDNO 1000500 is not in the subscription.
+- Price anchors (S7, S8, the S1 price) are exact rows with no as-of fill: a filled price would hide a missing row
+  (R6). Only the CRSP factor reads are as-of reads, at most one month old.
+- Reason order is items, then market data, then domain, so one input gap gives the same reason in every signal.
+- Declared sample rule: an S2 quarter is read only when the PERMNO has a `cfacshr` row at the basis date. A
+  history from before the first CRSP row is not read, so a new listing has no S2 value for about 2.5 to 3 years.
+  The cells stay typed. This favors seasoned firms in the S2 ranks, and the first real run reports its size.
+- None of these rules loosens R1, R2, R3, or R6.
+
+Consequences:
+
+- The first real run owes three loader checks: a known-split check (direction of `cfacpr` and `cfacshr`), the
+  first-reported URQ `ajexq` from the same row as `epspxq` (never a current-vintage value), and the signal reason
+  shares by later exit class.
+- Backlog (O3-A2): the `no_record` versus `not_yet_known` label can depend on rows dated after t. Values and valid
+  counts do not change; the label is a diagnostic.
 
 ## 2026-10-05 - Declared Signal Set for the Index Tilt (Milestone 5.5, card m55-signal-sets, coordinator default)
 
