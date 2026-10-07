@@ -147,39 +147,6 @@ Consequences:
 - Test fixtures whose share facts were dated before their first calendar row now start on it (they hit the
   data-start case); the S2 test with a split between a quarter's `rdq` and its EPS row now expects the new reason.
 
-## 2026-10-06 - Declared Blank Months in the Criteria (Milestone 5.5, path_break, coordinator default)
-
-Context:
-
-- Sweep finding `tasks:driver-path_break-P-1`: CRSP has rows with a price and no return inside S&P 500 member spells
-  (6 rows; 3 in the screen months). The loader types them `path_break`. A position held from the last valid row
-  across the break gets only the return after the break; the return before it counts as 0. The fix types each
-  holding-month return of every book that holds such a position as missing. `research/m55_criteria.py` refused any
-  missing month, so a blank month needed a declared treatment before any result.
-
-Decision:
-
-- The criteria take `blank_months`: a mapping of each blank month to a reason in `BLANK_REASONS` (now only
-  `path_break_held`). One declaration covers every series of a call (the books of a pair and SPY). A declared month
-  has no row in any series. A declared month with a row (a value or a NaN) refuses with `blank_month_has_row`; a
-  month left out with no declaration still refuses with `month_missing`.
-- Every statistic uses the months with values, in time order: means, volatility and TE, the HAC t (n counts the
-  months with values; the months on each side of a blank month become adjacent), the bootstrap (n and the 12-month
-  minimum count the months with values; a block can span a blank month), the drawdowns (the path joins the months on
-  each side), and the 36-month screen minimum. The period rules apply to the rows and the blank months together; a
-  blank month cannot be in the check gap.
-- Each record carries `blank_months` and `blank_reason_counts` when a month is declared, and the shortlist digest
-  covers them. With no declared month, every output is the same as at `e8135bc`.
-- Reason: R6 permits no fill. A month left out with a typed reason, listed in the hashed record, is not a silent
-  drop. None of this loosens R1, R6, or R9: a declared month adds no value, and every period rule still applies.
-
-Consequences:
-
-- The screen driver finds the blank months at run time from the loader `path_break` panel and the engine holdings
-  (no future data), leaves those months out of every book of the run, and reports the count, the months, the
-  weights, and the later exit class. The trial rule `P1_path_break`, `reports_owed.path_break`, and P-1 in this log
-  must state this before the freeze.
-
 ## 2026-10-06 - Gap Members Leave the Low-Risk Ratio (Milestone 5.5, card m55-ratio-gap)
 
 Context:
@@ -216,6 +183,39 @@ Consequences:
 - Follow-up for the coordinator: whether the real-data run needs a bound or a diagnostic on `ratio_gap_cw_share`.
   The R6 split by later exit class needs the gap members' IDs, which the record does not hold.
 
+## 2026-10-06 - Declared Blank Months in the Criteria (Milestone 5.5, path_break, coordinator default)
+
+Context:
+
+- Sweep finding `tasks:driver-path_break-P-1`: CRSP has rows with a price and no return inside S&P 500 member spells
+  (6 rows; 3 in the screen months). The loader types them `path_break`. A position held from the last valid row
+  across the break gets only the return after the break; the return before it counts as 0. The fix types each
+  holding-month return of every book that holds such a position as missing. `research/m55_criteria.py` refused any
+  missing month, so a blank month needed a declared treatment before any result.
+
+Decision:
+
+- The criteria take `blank_months`: a mapping of each blank month to a reason in `BLANK_REASONS` (now only
+  `path_break_held`). One declaration covers every series of a call (the books of a pair and SPY). A declared month
+  has no row in any series. A declared month with a row (a value or a NaN) refuses with `blank_month_has_row`; a
+  month left out with no declaration still refuses with `month_missing`.
+- Every statistic uses the months with values, in time order: means, volatility and TE, the HAC t (n counts the
+  months with values; the months on each side of a blank month become adjacent), the bootstrap (n and the 12-month
+  minimum count the months with values; a block can span a blank month), the drawdowns (the path joins the months on
+  each side), and the 36-month screen minimum. The period rules apply to the rows and the blank months together; a
+  blank month cannot be in the check gap.
+- Each record carries `blank_months` and `blank_reason_counts` when a month is declared, and the shortlist digest
+  covers them. With no declared month, every output is the same as at `e8135bc`.
+- Reason: R6 permits no fill. A month left out with a typed reason, listed in the hashed record, is not a silent
+  drop. None of this loosens R1, R6, or R9: a declared month adds no value, and every period rule still applies.
+
+Consequences:
+
+- The screen driver finds the blank months at run time from the loader `path_break` panel and the engine holdings
+  (no future data), leaves those months out of every book of the run, and reports the count, the months, the
+  weights, and the later exit class. The trial rule `P1_path_break`, `reports_owed.path_break`, and P-1 in this log
+  must state this before the freeze.
+
 ## 2026-10-06 - Check Gap Covers the Post-Seal Warm-Up (Milestone 5.5, coordinator default)
 
 Context:
@@ -242,86 +242,6 @@ Consequences:
 
 - The trial file states the 26-month gap and the check start after the gap; the check months are 2014-04 to
   2019-06 and 2021-09 to the last complete month.
-
-## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
-
-Context:
-
-- The owner's WRDS account is approved (2026-10-05). The intake note asks for an R11 grant that names the tables,
-  purpose, storage, and publication terms, and for answers to its risks 1 (purpose) and 2 (publication). It also
-  leaves open whether the seal months are dropped at the pull.
-
-Decision:
-
-- **O-22 (owner, 2026-10-05):**
-  - Scope: WRDS CRSP (CIZ stock, index, and S&P 500 constituent tables), Compustat North America and Compustat
-    Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
-  - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
-    read the local files. No real money uses a rule derived from these data.
-  - Storage: two copies, outside every Git checkout. The working copy is `<local_data_root>/wrds_<vintage>/` on
-    the local disk, in a folder that iCloud does not sync; all scripts read only this copy. The backup is one
-    archive per vintage, `<private_data_root>/wrds_backup/wrds_<vintage>.tar`, next to the EODHD folders, synced
-    by iCloud. No script reads the backup. It is written once after the manifest, and its SHA-256 is checked after
-    the copy. To restore, the owner extracts the archive and checks the manifest hashes. This keeps iCloud
-    conflict copies and cloud-only files away from the files that scripts read (A2-D-ADV-6).
-  - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
-    ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
-    existing owner data terms.
-  - Seal months: in each table with a price or a return, rows whose economic date interval touches
-    `[2019-07-31, 2020-07-31)`, or could touch it when a date is missing, are downloaded into a separate folder
-    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
-    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Tables with no price or return
-    (membership, links, shares, fundamentals, estimates) keep these dates in their main files (coordinator
-    default). Rebalances whose windows touch the seal months stay typed missing.
-
-Consequences:
-
-- The coordinator may build the WRDS loader and read the local files outside `sealed/`. Every card that lets an
-  agent read these files lists the never-opened paths, `wrds_<vintage>/sealed/**` included.
-- Next: the owner runs the read-only subscription probe, then the reviewed pull script.
-
-## 2026-10-05 - Low-Risk Book Calibration Rules (Milestone 5.5, coordinator defaults)
-
-Context:
-
-- The O-20 low-risk book (`research/m55_index_tilt.py`, `lowrisk_weights` and `calibrate_lowrisk`) picks the
-  volatility power `g` from ex-ante second moments only. Review round 2 left one MATERIAL finding open (GPT-R2-01:
-  the ratio did not bound missing risk). After two rounds, the expert step settled the rules. The ruling is in
-  `coord/reports/m55_lowrisk/expert_decision.md` (untracked).
-
-Decision (coordinator defaults, each with one line of reason):
-
-- **Complete-case whole-book ratio.** The ratio uses the whole traded book on the rows of the 252-row window that
-  ends at r - 1 where every traded member has a return. Reason: a suffix or free-only rule drops clean rows and
-  biases the estimate toward calm regimes; complete-case rows blank only the rows that touch a missing return (R6)
-  and keep crash rows.
-- **126-row floor.** At least `LOWRISK_RATIO_MIN_ROWS = 126` complete-case rows, else the ratio is undefined with
-  status `ratio_window_short`. Reason: 126 rows give a per-rebalance standard error of about 0.02 on the ratio,
-  which the median over about 350 rebalances absorbs; a shorter window is declared, not filled.
-- **Two-sided median bracket and decision order.** Undefined rebalances enter the median once at +inf and once at
-  -inf; each `g` meets, fails, or is ambiguous. Order: a refusal below the first `g` that meets stops; then
-  `ratio_coverage_low`; then `ratio_coverage_ambiguous` (an ambiguous `g` below the first `g` that meets; the owner
-  decides); then `chosen` (the first `g` that meets); else `no_g_reaches_target`. Reason: the choice holds for any
-  value of the missing ratios, so missing data cannot select `g`.
-- **10 percent undefined stop.** Above `LOWRISK_UNDEFINED_MAX = 0.10` undefined rebalances, nothing is chosen
-  (`ratio_coverage_low`). Reason: a calibration that rests on few defined months is not a calibration.
-- **`LOWRISK_PINNED_MAX` retired.** The pinned-share limit, its `pinned_share_high` status, and its test are deleted.
-  Reason: the whole-book ratio counts pinned weight directly, so the limit has no job.
-- **Window diagnostic (addendum).** The diagnostic treats every `defined_partial` rebalance as undefined and repeats
-  the bracket classes and the choice, with no coverage stop inside it. `window_sensitive` is set only when its
-  choice differs from the main decision; `window_diag_coverage_high` (diagnostic undefined share above 0.10) is
-  recorded apart. Reason: with the coverage stop inside, partial windows alone set the flag almost always.
-
-Consequences:
-
-- None of these defaults loosens R1, R2, R4, R6, R8, or R9. Weights, the cap loop, TE scaling, and every TILT
-  output are bit-identical to the round 1 code; only the ratio and the decision changed.
-- The real-data driver card must copy these defaults into the trial file before any real calibration output (R9).
-  The driver card also carries the 1963-1992 missingness census, the daily data span and first full 252-row
-  anchor, the R6 exit-class split of undefined and partial counts, the bid/ask-midpoint day rule, and Opus ADV-05
-  (cut and hash the calibration panel).
-- Residual limitation: a `defined_partial` ratio cannot measure risk on rows before a member existed. Such windows
-  are declared, counted (`ratio_rows_leading`, `ratio_rows_gap`), and checked by `window_sensitive`.
 
 ## 2026-10-05 - WRDS Loader Rules D1 to D9 (Milestone 5.5, coordinator defaults)
 
@@ -357,7 +277,9 @@ Decision:
   `dlyprevdt` that is a row with a price and no return (CIZ `RA` or `GP`). That return is not in the path and is
   not filled. The row without a return stays NaN, so every return window that touches it is blank. `tilt_frames`
   marks the next row in `path_break`; the driver blanks each level window (a price ratio or a maximum) that holds
-  one, and reports each held position across one with its weight. Rejected: no price after the break (a held name
+  one, and reports each held position across one with its weight. The holding months across a `path_break` are
+  declared blank months (`path_break_held`); the binding rule is `data.loader_rules.P1_path_break` in
+  `docs/preregistrations/m55_trial_family_v1.json` (amendment 1, V6). Rejected: no price after the break (a held name
   would lock and could get a false -100 percent event), and a restart at a new base (a false return in the engine).
 - P-2 (D3, D6): a delisting-row return of -100 percent (9 rows) cannot be a positive close, so that row stays NaN
   and the loader supplies the return as the delisting return.
@@ -452,6 +374,109 @@ Consequences:
   shares by later exit class.
 - Backlog (O3-A2): the `no_record` versus `not_yet_known` label can depend on rows dated after t. Values and valid
   counts do not change; the label is a diagnostic.
+
+## 2026-10-05 - Declared Signal Set for the Index Tilt (Milestone 5.5, card m55-signal-sets, coordinator default)
+
+Context:
+
+- The O-21 screen runs each candidate S1 to S8 alone as a 2 percent TE tilt, then one composite of the shortlisted
+  candidates, and the six Family A price signals once as a counted baseline. `research/m55_index_tilt.py` accepted
+  only the six Family A signals and a fixed minimum of 4 valid signals.
+
+Decision (coordinator technical default):
+
+- The caller declares the signal set (`signal_ids`) and the valid-signal minimum (`min_valid`) in `TiltInputs`.
+  The defaults are the six Family A signals and 4, so every default output is bit-identical to `6395511`.
+- The screen rule "c = 0 when fewer than half of the n signals are valid" is `min_valid = half_rule(n)`, with
+  `half_rule(n) = ceil(n / 2)`. The driver passes it; the engine does not choose it.
+- The engine applies no sign. Each signal value must already carry its declared sign (higher is better).
+
+Consequences:
+
+- The rank pool, the exact-fraction ranks, the full-history rule, the c = 0 counts, the weights, the cap loop, TE
+  scaling, costs, B2, and the low-risk rules do not change. The engine still reads signals at row r - 1.
+- The engine does not fix `min_valid` for the Family A baseline (4 of 6 by default; `half_rule(6)` is 3). The
+  screen trial file must state it before results (R9; Opus advisory A-3).
+
+## 2026-10-05 - Low-Risk Book Calibration Rules (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- The O-20 low-risk book (`research/m55_index_tilt.py`, `lowrisk_weights` and `calibrate_lowrisk`) picks the
+  volatility power `g` from ex-ante second moments only. Review round 2 left one MATERIAL finding open (GPT-R2-01:
+  the ratio did not bound missing risk). After two rounds, the expert step settled the rules. The ruling is in
+  `coord/reports/m55_lowrisk/expert_decision.md` (untracked).
+
+Decision (coordinator defaults, each with one line of reason):
+
+- **Complete-case whole-book ratio.** The ratio uses the whole traded book on the rows of the 252-row window that
+  ends at r - 1 where every traded member has a return. Reason: a suffix or free-only rule drops clean rows and
+  biases the estimate toward calm regimes; complete-case rows blank only the rows that touch a missing return (R6)
+  and keep crash rows.
+- **126-row floor.** At least `LOWRISK_RATIO_MIN_ROWS = 126` complete-case rows, else the ratio is undefined with
+  status `ratio_window_short`. Reason: 126 rows give a per-rebalance standard error of about 0.02 on the ratio,
+  which the median over about 350 rebalances absorbs; a shorter window is declared, not filled.
+- **Two-sided median bracket and decision order.** Undefined rebalances enter the median once at +inf and once at
+  -inf; each `g` meets, fails, or is ambiguous. Order: a refusal below the first `g` that meets stops; then
+  `ratio_coverage_low`; then `ratio_coverage_ambiguous` (an ambiguous `g` below the first `g` that meets; the owner
+  decides); then `chosen` (the first `g` that meets); else `no_g_reaches_target`. Reason: the choice holds for any
+  value of the missing ratios, so missing data cannot select `g`.
+- **10 percent undefined stop.** Above `LOWRISK_UNDEFINED_MAX = 0.10` undefined rebalances, nothing is chosen
+  (`ratio_coverage_low`). Reason: a calibration that rests on few defined months is not a calibration.
+- **`LOWRISK_PINNED_MAX` retired.** The pinned-share limit, its `pinned_share_high` status, and its test are deleted.
+  Reason: the whole-book ratio counts pinned weight directly, so the limit has no job.
+- **Window diagnostic (addendum).** The diagnostic treats every `defined_partial` rebalance as undefined and repeats
+  the bracket classes and the choice, with no coverage stop inside it. `window_sensitive` is set only when its
+  choice differs from the main decision; `window_diag_coverage_high` (diagnostic undefined share above 0.10) is
+  recorded apart. Reason: with the coverage stop inside, partial windows alone set the flag almost always.
+
+Consequences:
+
+- None of these defaults loosens R1, R2, R4, R6, R8, or R9. Weights, the cap loop, TE scaling, and every TILT
+  output are bit-identical to the round 1 code; only the ratio and the decision changed.
+- The real-data driver card must copy these defaults into the trial file before any real calibration output (R9).
+  The driver card also carries the 1963-1992 missingness census, the daily data span and first full 252-row
+  anchor, the R6 exit-class split of undefined and partial counts, the bid/ask-midpoint day rule, and Opus ADV-05
+  (cut and hash the calibration panel).
+- Residual limitation: a `defined_partial` ratio cannot measure risk on rows before a member existed. Such windows
+  are declared, counted (`ratio_rows_leading`, `ratio_rows_gap`), and checked by `window_sensitive`.
+
+## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
+
+Context:
+
+- The owner's WRDS account is approved (2026-10-05). The intake note asks for an R11 grant that names the tables,
+  purpose, storage, and publication terms, and for answers to its risks 1 (purpose) and 2 (publication). It also
+  leaves open whether the seal months are dropped at the pull.
+
+Decision:
+
+- **O-22 (owner, 2026-10-05):**
+  - Scope: WRDS CRSP (CIZ stock, index, and S&P 500 constituent tables), Compustat North America and Compustat
+    Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
+  - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
+    read the local files. No real money uses a rule derived from these data.
+  - Storage: two copies, outside every Git checkout. The working copy is `<local_data_root>/wrds_<vintage>/` on
+    the local disk, in a folder that iCloud does not sync; all scripts read only this copy. The backup is one
+    archive per vintage, `<private_data_root>/wrds_backup/wrds_<vintage>.tar`, next to the EODHD folders, synced
+    by iCloud. No script reads the backup. It is written once after the manifest, and its SHA-256 is checked after
+    the copy. To restore, the owner extracts the archive and checks the manifest hashes. This keeps iCloud
+    conflict copies and cloud-only files away from the files that scripts read (A2-D-ADV-6).
+  - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
+    ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
+    existing owner data terms.
+  - Seal months: in each table with a price or a return, rows whose economic date interval touches
+    `[2019-07-31, 2020-07-31)`, or could touch it when a date is missing, are downloaded into a separate folder
+    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
+    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Tables with no price or return
+    (membership, links, shares, fundamentals, estimates) keep these dates in their main files (coordinator
+    default). Rebalances whose windows touch the seal months stay typed missing.
+
+Consequences:
+
+- The coordinator may build the WRDS loader and read the local files outside `sealed/`. Every card that lets an
+  agent read these files lists the never-opened paths, `wrds_<vintage>/sealed/**` included.
+- Next: the owner runs the read-only subscription probe, then the reviewed pull script.
 
 ## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
 
