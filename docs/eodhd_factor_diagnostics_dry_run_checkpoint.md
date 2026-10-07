@@ -23,7 +23,7 @@ readiness.
 Private summary:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md
+<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md
 ```
 
 The summary remains outside the repository and is not git-tracked.

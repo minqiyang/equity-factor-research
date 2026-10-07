@@ -75,6 +75,43 @@ Consequences:
 - The trial file states the 26-month gap and the check start after the gap; the check months are 2014-04 to
   2019-06 and 2021-09 to the last complete month.
 
+## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
+
+Context:
+
+- The owner's WRDS account is approved (2026-10-05). The intake note asks for an R11 grant that names the tables,
+  purpose, storage, and publication terms, and for answers to its risks 1 (purpose) and 2 (publication). It also
+  leaves open whether the seal months are dropped at the pull.
+
+Decision:
+
+- **O-22 (owner, 2026-10-05):**
+  - Scope: WRDS CRSP (CIZ stock, index, and S&P 500 constituent tables), Compustat North America and Compustat
+    Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
+  - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
+    read the local files. No real money uses a rule derived from these data.
+  - Storage: two copies, outside every Git checkout. The working copy is `<local_data_root>/wrds_<vintage>/` on
+    the local disk, in a folder that iCloud does not sync; all scripts read only this copy. The backup is one
+    archive per vintage, `<private_data_root>/wrds_backup/wrds_<vintage>.tar`, next to the EODHD folders, synced
+    by iCloud. No script reads the backup. It is written once after the manifest, and its SHA-256 is checked after
+    the copy. To restore, the owner extracts the archive and checks the manifest hashes. This keeps iCloud
+    conflict copies and cloud-only files away from the files that scripts read (A2-D-ADV-6).
+  - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
+    ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
+    existing owner data terms.
+  - Seal months: in each table with a price or a return, rows whose economic date interval touches
+    `[2019-07-31, 2020-07-31)`, or could touch it when a date is missing, are downloaded into a separate folder
+    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
+    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Tables with no price or return
+    (membership, links, shares, fundamentals, estimates) keep these dates in their main files (coordinator
+    default). Rebalances whose windows touch the seal months stay typed missing.
+
+Consequences:
+
+- The coordinator may build the WRDS loader and read the local files outside `sealed/`. Every card that lets an
+  agent read these files lists the never-opened paths, `wrds_<vintage>/sealed/**` included.
+- Next: the owner runs the read-only subscription probe, then the reviewed pull script.
+
 ## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
 
 Context:
@@ -4550,7 +4587,7 @@ Decision:
 - Add `research/eodhd_limited_factor_diagnostics_brief.py` as a
   private-output-only neutral diagnostics brief runner.
 - Read the private limited review JSON and write the real-data brief only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4595,7 +4632,7 @@ Decision:
 - Summarize only factor coverage, factor missingness, IC, Rank IC, quantile
   spread, and split labels.
 - Write the real-data limited review only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4637,7 +4674,7 @@ Decision:
   private-output-only readiness runner.
 - Name the readiness field `ready_for_limited_factor_diagnostics_review`.
 - Write the real-data readiness review only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4680,7 +4717,7 @@ Decision:
 - Add `research/eodhd_factor_diagnostics_experiment_log.py` as a
   private-output-only handoff runner.
 - Write the real-data experiment log and Markdown handoff only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   logs, private market data, or private diagnostic values.
 
@@ -4722,7 +4759,7 @@ Decision:
 - Add `research/eodhd_factor_diagnostics_dry_run.py` as a private-output-only
   research script.
 - Write the real-data factor diagnostics summary only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Commit synthetic tests and aggregate-count docs only; do not commit private
   data or private diagnostic values.
 
@@ -4755,7 +4792,7 @@ Context:
 - PR #121 documented the private-output-only diagnostics dry-run boundary.
 - The private EODHD no-performance data-quality diagnostics dry run passed and
   wrote
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`.
+  `<private_data_root>/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`.
 - The repository needs an aggregate-only checkpoint before any factor
   diagnostics are planned.
 
@@ -4796,7 +4833,7 @@ Context:
   smoke test.
 - The private smoke test then passed outside the repository using existing
   strict loaders and wrote
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`.
+  `<private_data_root>/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`.
 - The repository needs an aggregate-only checkpoint before any diagnostics
   dry-run work is scoped.
 
@@ -4836,7 +4873,7 @@ Context:
 
 - PR #119 recorded the completed private EODHD validation-only handoff.
 - The private bundle remains outside the repository at
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - The next safe boundary is a loader smoke test, but source, tests, research
   scripts, generated reports, strategy logic, and performance interpretation
   remain out of scope.
@@ -4880,7 +4917,7 @@ Follow-up:
 Context:
 
 - A private EODHD local CSV bundle exists outside the repository at
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 - Private readiness and validation-only summaries reported loader/schema
   validation success without copying raw CSV/JSON data into the repository.
 - The repository needs a reviewable handoff before any future loader-smoke-test

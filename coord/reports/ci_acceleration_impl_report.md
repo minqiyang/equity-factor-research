@@ -126,7 +126,7 @@ in-process; the job still reads no private panel.
 
 ## Verification
 
-Producer interpreter: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python`
+Producer interpreter: `<repo>/.venv/bin/python`
 (CPython 3.12.13). Packages: pytest 9.1.1, pytest-xdist 3.8.0, NumPy 2.5.3,
 pandas 3.0.6, SciPy 1.18.1, scikit-learn 1.9.1, PyArrow 25.0.1. Native
 thread variables were set to 1 for pytest. Full pytest used
