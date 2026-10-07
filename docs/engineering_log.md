@@ -27,6 +27,10 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   `cebb487`, criteria `1a70eb7`, signals and loader `312d284`; manifest bytes unchanged); a leaf-by-leaf script check
   against `e2d4ca2` found no other changed field. Three read-only review workflows found two material text defects
   (a missing low-risk fragility flag, blank months outside a comparison's span), both fixed. No real data was read.
+- Round 1 corrections to amendment 1 changed five fields, `calibration.order`, and `status`, listed in the decision
+  log; a leaf-by-leaf script check against `8959d74` found no other changed field. The S2 tolerance and the S7
+  anchor months were checked against `research/m55_signals.py` at `312d284` (`np.isclose`, `anchors`, `s7`). No
+  review workflow ran for this change. No real data was read.
 
 ## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
 

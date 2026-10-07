@@ -74,6 +74,21 @@ Decision:
     `pre_freeze_requirements[0]`) and its intake rerun with the unseen-basis counts (`known_at_drafting[2]`).
   - Pins: engine `cebb487`, criteria `1a70eb7`, signals and loader `312d284`; the manifest bytes, Family A, and the
     pull script are unchanged.
+- Round 1 corrections to amendment 1 (2026-10-06, from the AUDIT and AUDIT_2 seats; `status` names them; no pin or
+  code change, and none loosens R1, R2, R4, R6, R8, or R9):
+  - `limitations[1]` (R10): the CRSP counts are those of the intake at the pinned loader `312d284`: unmapped
+    member-days are 18,519 of 423,341 for later failures and 18,776 of 2,967,375 for current members. Nearly all of
+    the rise from `0c60805` (159,791 of 159,957) is the `data_start` case in 1961 to 1963, before the first screen
+    rebalance; the other 166 are the `seal` case in 2020.
+  - S2 `history_rule` (R1): the two factors are equal when `np.isclose(at_rdq, f, rtol=1e-9, atol=0.0)` holds, as
+    the S2 code at `312d284` compares them.
+  - `last_close_rerun` and `calibration.order` (R4, R9): the low-risk book is calibrated once, on
+    `tilt_frames(run="primary")`; both engine calls use its chosen `g`, and the last_close call never recalibrates.
+  - `limitations[0]` (R6): S7 is not affected by the late Compustat start, but it still loses coverage from the
+    unseen share basis and the seal (pointers to `D5_market_equity` and `limitations[9]`).
+  - `D5_market_equity` (R6): the `data_start` case can blank S7 in the return months 1962-03 to 1964-06 (was
+    1963-01 to 1964-06); the 12-month anchor (the month end of R - 14) first reaches a calendar row in return month
+    1962-03. No return run uses a month before 1963-07.
 
 Follow-up:
 
