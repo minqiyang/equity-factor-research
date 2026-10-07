@@ -10,7 +10,7 @@
 - Producer worktree was not used as the review root
 - Findings under re-evaluation: MAT-M40H-1, MAT-M40H-2, ADV-M40H-1, ADV-M40H-2, ADV-M40H-5 (plus residual ADV-M40H-4)
 - Review card: `coord/card_m4_0_audit_hardening_remediation_review.md`
-- Coordination standard read from `/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`)
+- Coordination standard read from `<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`)
 - Date: 2026-09-20
 - Review posture: read-only on this clean root; this report overwrites the prior `97db0dd` review body
 
@@ -39,7 +39,7 @@ Commit `c7f9d94` remediates Grok MATERIAL findings on `97db0dd`. Delta versus `9
 | ADV-M40H-1 identity retention | **Closed.** Cohort alignment emits a `permanent_id` Series keyed by symbol. Independent two-file probe: `{'AAA.US': 'SEC_A', 'BBB.US': 'SEC_B'}`. |
 | ADV-M40H-2 typed missingness | **Closed.** Leading `returns` NA is excluded. Complete OHLCV plus `pct_change` returns yield `diagnostic_ready_with_low_caveats`. Union-NaN close still yields typed missingness. Official report/JSON use `diagnostic_ready_with_low_caveats`. |
 | ADV-M40H-5 duplicate failed JSONL | **Closed.** `_record_failure` returns when inventory already has `status=failed` for that `factor_id`. Unit test records one ALPHA_001 failure. |
-| ADV-M40H-4 inverse-ratio strings | Remains closed in runner and official reports. Parent-walk `private_data/...` layout tokens remain (residual advisory). |
+| ADV-M40H-4 inverse-ratio strings | Remains closed in runner and official reports. Parent-walk `<private_data_root>/...` layout tokens remain (residual advisory). |
 | Deterministic QA | 69 passed in 4.17s. Ruff, `compileall`, `git diff --check` passed. |
 
 ## Evaluation
@@ -132,7 +132,7 @@ MATERIAL: none.
 - Status: `OPEN`
 - Reviewer: `GROK_REVIEW`
 - Candidate: `c7f9d94c4a311b4c2400e5d05c33d4347f691169`
-- Claim: Inverse-ratio documentation is gone from the runner and official reports. `default_data_dir` still walks `private_data/eodhd_eod_acquisition/snapshot_20260808T005805Z`.
+- Claim: Inverse-ratio documentation is gone from the runner and official reports. `default_data_dir` still walks `<private_data_root>/eodhd_eod_acquisition/snapshot_20260808T005805Z`.
 - Evidence: `research/real_data_multifactor_diagnostic.py:121–139`. Official `reports/real_data_multifactor_diagnostic.md` contains no `/Users/` and no `inverse ratio`.
 - Impact: Owner home directories stay out of source. Tracked code still names the private snapshot directory token.
 - Resolution: Require `EFR_EODHD_DATA_DIR` / `EFR_EODHD_INVENTORY_PATH` with no `private_data` parent walk.

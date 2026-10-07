@@ -11,7 +11,7 @@
 - Producer worktree was not used as the review root
 - Design card: `coord/card_ci_acceleration_and_optimization.md`
 - Producer report: `coord/reports/ci_acceleration_stage_bc_impl.md`
-- Coordination standard read from `/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`)
+- Coordination standard read from `<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`)
 - Date: 2026-09-21
 - Review posture: read-only on this clean root; this report is the only authored deliverable
 

@@ -26,14 +26,14 @@ the experiments. Candidate source, tests, and committed evidence remain unchange
 This report is the sole added deliverable in the supplied root.
 
 The previous review report was absent from the supplied root. Its existing copy
-at `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_6_risk_attribution_review.md`
+at `<repo>/coord/reports/m4_6_risk_attribution_review.md`
 was read to verify the original M46-R1 claim and fixture. That review identifies
 candidate `a79d4bd69ff82c354fc5f993bf8758ab6e826c83` and one open P2 material finding.
 The implementation report's remediation section and changes since that candidate
 were inspected alongside the current source and tests.
 
 The live coordinator and routing files under
-`/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/`
+`<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/`
 were read. The user's explicit single-reviewer assignment governs this task.
 The directive requests GPT-6 Astra High Fast; actual model, effort, and service-tier
 dispatch attestation remains coordinator-owned metadata outside these local
@@ -127,7 +127,7 @@ has fewer fields. Passing suite coverage also verifies unexpected-failure loggin
 ## Reproduction and retained evidence
 
 Environment: CPython 3.12.13, NumPy 2.5.3, pandas 3.0.6, SciPy 1.18.1, using
-`/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python`.
+`<repo>/.venv/bin/python`.
 `PYTHONPATH=src:.` resolves candidate/base imports. Native numeric thread limits
 are one for OMP, OpenBLAS, MKL, BLIS, VECLIB, and NumExpr. Both QA lanes use two
 worksteal workers with `--max-worker-restart=0`.

@@ -8,7 +8,7 @@
 - Review root: `/private/tmp/efr-m4-0-real-review-330dc11` (detached HEAD at the exact candidate)
 - Producer worktree was not used as the review root
 - Producer report: `coord/reports/m4_0_real_diag_impl.md`
-- Coordination standard read from `/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`; STANDARD lane seat `GROK_REVIEW`)
+- Coordination standard read from `<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`; STANDARD lane seat `GROK_REVIEW`)
 - Date: 2026-09-20
 - Review posture: read-only on this clean root; this report is the only authored deliverable
 

@@ -7,6 +7,7 @@ interpret performance.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -16,12 +17,11 @@ from research.eodhd_factor_diagnostics_experiment_log import _parse_markdown_tab
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUNDLE = Path("/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run")
-DEFAULT_DRY_RUN_SUMMARY = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
-DEFAULT_EXPERIMENT_LOG = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
-DEFAULT_READINESS_REVIEW = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_READINESS_REVIEW.json"
-DEFAULT_OUTPUT_JSON = DEFAULT_BUNDLE / "LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json"
-DEFAULT_OUTPUT_MARKDOWN = DEFAULT_BUNDLE / "LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md"
+DRY_RUN_SUMMARY_NAME = "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
+EXPERIMENT_LOG_NAME = "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
+READINESS_REVIEW_NAME = "FACTOR_DIAGNOSTICS_READINESS_REVIEW.json"
+OUTPUT_JSON_NAME = "LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json"
+OUTPUT_MARKDOWN_NAME = "LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md"
 
 ALLOWED_DIAGNOSTICS = [
     "factor coverage",
@@ -52,18 +52,16 @@ REQUIRED_INPUT_FORBIDDEN_INTERPRETATIONS = [
 
 @dataclass(frozen=True)
 class EODHDLimitedFactorDiagnosticsReviewConfig:
-    bundle_path: Path = DEFAULT_BUNDLE
-    dry_run_summary_path: Path = DEFAULT_DRY_RUN_SUMMARY
-    readiness_review_path: Path = DEFAULT_READINESS_REVIEW
-    experiment_log_path: Path = DEFAULT_EXPERIMENT_LOG
-    output_json_path: Path = DEFAULT_OUTPUT_JSON
-    output_markdown_path: Path = DEFAULT_OUTPUT_MARKDOWN
+    bundle_path: Path
+    dry_run_summary_path: Path
+    readiness_review_path: Path
+    experiment_log_path: Path
+    output_json_path: Path
+    output_markdown_path: Path
 
 
 def run_eodhd_limited_factor_diagnostics_review(
-    config: EODHDLimitedFactorDiagnosticsReviewConfig = (
-        EODHDLimitedFactorDiagnosticsReviewConfig()
-    ),
+    config: EODHDLimitedFactorDiagnosticsReviewConfig,
 ) -> dict[str, Any]:
     """Write a private limited review of already-computed diagnostics."""
 
@@ -272,8 +270,20 @@ def _is_under(path: Path, parent: Path) -> bool:
     return path == parent or parent in path.parents
 
 
-def main() -> None:
-    payload = run_eodhd_limited_factor_diagnostics_review()
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("bundle_path", type=Path, help="Private EODHD bundle directory.")
+    bundle = parser.parse_args(argv).bundle_path
+    payload = run_eodhd_limited_factor_diagnostics_review(
+        EODHDLimitedFactorDiagnosticsReviewConfig(
+            bundle_path=bundle,
+            dry_run_summary_path=bundle / DRY_RUN_SUMMARY_NAME,
+            readiness_review_path=bundle / READINESS_REVIEW_NAME,
+            experiment_log_path=bundle / EXPERIMENT_LOG_NAME,
+            output_json_path=bundle / OUTPUT_JSON_NAME,
+            output_markdown_path=bundle / OUTPUT_MARKDOWN_NAME,
+        )
+    )
     counts = payload["summary_counts"]
     date_range = payload["date_range"]
     print(f"REVIEW_JSON_PATH={payload['output_file_paths']['limited_review_json']}")
