@@ -1315,34 +1315,37 @@ def _oracle_ratio(window: pd.DataFrame, full_returns: pd.DataFrame, b: np.ndarra
 
 @pytest.mark.parametrize("mask", ["short_history", "window_gap"])
 def test_calibration_with_a_dominant_pinned_member_measures_the_whole_book(mask: str) -> None:
-    # GPT-R1-01: the ratio covers the 98 percent member on its complete-case rows, or it is undefined.
+    # GPT-R1-01: with a short history, the ratio covers the 98 percent member on its complete-case rows, so it is
+    # undefined. With a window gap, card m55-ratio-gap leaves the member out (see below).
     inputs = _dominant_pinned_inputs(mask)
     result = tilt.calibrate_lowrisk(inputs, tilt.LOWRISK_GRID, tilt.LOWRISK_TARGET_RATIO, inputs.start, inputs.end)
     table, grid = result["rebalances"], result["grid"]
     assert ((table["pinned_cw_share"] - 0.98).abs() <= 1e-15).all()
     assert grid["g"].tolist() == list(tilt.LOWRISK_GRID) and (grid["status"] == "ok").all()
-    assert result["chosen_g"] is None
     built = tilt.build_targets(inputs, g=0.5)
     assert (built["targets"]["lowrisk"]["C.US#E1"] == built["targets"]["cw"]["C.US#E1"]).all()
     if mask == "short_history":
+        assert result["chosen_g"] is None
         assert result["decision"] == "ratio_coverage_low" and result["undefined_share"] == 1.0
         assert (table["ratio_status"] == "ratio_window_short").all() and table["vol_ratio"].isna().all()
         assert (table["ratio_rows"] < tilt.LOWRISK_RATIO_MIN_ROWS).all() and (table["ratio_rows_gap"] == 0).all()
         assert (grid["undefined"] == 3).all() and (grid["defined"] == 0).all() and grid["median_vol_ratio"].isna().all()
         assert built["rebalances"]["lowrisk_vol_ratio"].isna().all()
         return
-    # Four returns touch the three missing prices; every other row of the window stays.
-    assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_rows"] == 248).all()
-    assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_limiting_members"] == 1).all()
-    assert result["decision"] == "no_g_reaches_target" and (grid["bracket"] == "fails").all()
-    full_returns = tilt.simple_returns(_dominant_pinned_inputs(None).prices)
+    # Card m55-ratio-gap: four returns touch the three missing prices, which are gaps after C's first return, so C
+    # is left out of both books and counted; A and B keep all 252 rows. The choice then comes from the 2 percent
+    # sub-book (the known cost of the coordinator default); ratio_gap_cw_share shows the 98 percent left out.
+    assert (table["ratio_status"] == "defined_full").all() and (table["ratio_rows"] == 252).all()
+    assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_limiting_members"] == 0).all()
+    assert (table["ratio_gap_members"] == 1).all() and (table["ratio_gap_cw_share"] == 0.98).all()
+    assert result["decision"] == "chosen" and result["chosen_g"] == 0.5 and (grid["bracket"] == "meets").all()
     _, returns, _ = tilt.prepare(inputs)
     for date in built["targets"]["lowrisk"].index:
         t = inputs.prices.index.get_loc(date) - 1
-        window = returns.iloc[t - 251:t + 1]
+        x = returns.iloc[t - 251:t + 1, :2].to_numpy()
         w, b = built["targets"]["lowrisk"].loc[date].to_numpy(), built["targets"]["cw"].loc[date].to_numpy()
-        oracle, rows = _oracle_ratio(window, full_returns, b, w)
-        assert rows == 248 and built["rebalances"].loc[date, "lowrisk_vol_ratio"] == pytest.approx(oracle, rel=1e-12)
+        oracle = np.std(x @ w[:2], ddof=1) / np.std(x @ b[:2], ddof=1)
+        assert built["rebalances"].loc[date, "lowrisk_vol_ratio"] == pytest.approx(oracle, rel=1e-12)
 
 
 def test_calibration_complete_history_control_gives_the_whole_book_ratio() -> None:
@@ -1384,10 +1387,10 @@ def _refuse_at(monkeypatch: pytest.MonkeyPatch, refused_g: float) -> None:
     """Make the low-risk step refuse at every rebalance for one grid value only."""
     original = tilt.lowrisk_weights
 
-    def spy(b, vol, window, g):
+    def spy(b, vol, window, g, short=None):
         if g == refused_g:
             raise RunnerStop("lowrisk_loop_not_converged", "test")
-        return original(b, vol, window, g)
+        return original(b, vol, window, g, short)
 
     monkeypatch.setattr(tilt, "lowrisk_weights", spy)
 
@@ -1510,8 +1513,8 @@ def _calibrate_with_calls(monkeypatch: pytest.MonkeyPatch, inputs: tilt.TiltInpu
     calls = []
     original = tilt.lowrisk_weights
 
-    def spy(b, vol, window, g):
-        w, info = original(b, vol, window, g)
+    def spy(b, vol, window, g, short=None):
+        w, info = original(b, vol, window, g, short)
         calls.append((window, b.to_numpy(), w.to_numpy()))
         return w, info
 
@@ -1541,32 +1544,40 @@ def _oracle_choice(table: pd.DataFrame, oracle: np.ndarray, target: float) -> fl
 
 @pytest.mark.parametrize("mask", ["leading", "gap"])
 def test_gpt_fixture_measures_the_whole_book(monkeypatch: pytest.MonkeyPatch, mask: str) -> None:
-    # T1, GPT-R2-01: the 2 percent member is in the ratio; the choice is not g = 0.5 from the free sub-book.
+    # T1, GPT-R2-01: with leading NaNs, the 2 percent member is in the ratio; the choice is not g = 0.5 from the
+    # free sub-book. With a gap, card m55-ratio-gap leaves the member out of both books (see below).
     inputs, full_returns = _gpt_inputs(mask)
     result, calls = _calibrate_with_calls(monkeypatch, inputs)
     table = result["rebalances"]
     oracle, rows = [], []
     for window, b, w in calls:
+        if mask == "gap":
+            window, b, w = window.drop(columns=GPT_NAMES[-1]), b[:-1], w[:-1]
         ratio, n = _oracle_ratio(window, full_returns, b, w)
         rows.append(n)
         oracle.append(ratio if n >= tilt.LOWRISK_RATIO_MIN_ROWS else np.nan)
     oracle = np.array(oracle)
     assert (table["ratio_rows"].to_numpy() == rows).all() and (table["pinned_cw_share"] == 0.02).all()
-    assert (table["ratio_limiting_members"] == 1).all() and (table["ratio_limiting_cw_share"] == 0.02).all()
     if mask == "leading":
+        assert (table["ratio_limiting_members"] == 1).all() and (table["ratio_limiting_cw_share"] == 0.02).all()
         assert (table["ratio_status"] == "ratio_window_short").all() and table["vol_ratio"].isna().all()
         assert (table["ratio_rows_leading"] == 252 - table["ratio_rows"]).all() and (table["ratio_rows_gap"] == 0).all()
         assert result["decision"] == "ratio_coverage_low" and result["chosen_g"] is None
         # ADV-R3-03 (b), addendum: neither the main bracket nor the diagnostic chooses a g, so no flag.
         assert result["window_decision"] == "ratio_coverage_ambiguous" and result["window_chosen_g"] is None
         assert not result["window_sensitive"]
+        assert result["chosen_g"] != 0.5
     else:
-        assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_rows"] == 248).all()
+        # The gap member N100 is counted, and the 100 other members keep all 252 rows. The choice then comes from
+        # the free sub-book, g = 0.5: the known cost of the coordinator default.
+        assert (table["ratio_status"] == "defined_full").all() and (table["ratio_rows"] == 252).all()
         assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_rows_leading"] == 0).all()
+        assert (table["ratio_limiting_members"] == 0).all() and (table["ratio_gap_members"] == 1).all()
+        assert (table["ratio_gap_cw_share"] == 0.02).all()
         assert np.allclose(table["vol_ratio"], oracle, rtol=1e-12, atol=0.0)
-        assert result["decision"] == "chosen" and result["window_chosen_g"] is None and result["window_sensitive"]
+        assert result["decision"] == "chosen" and result["window_chosen_g"] == 0.5 and not result["window_sensitive"]
+        assert result["chosen_g"] == 0.5
     assert result["chosen_g"] == _oracle_choice(table, oracle, tilt.LOWRISK_TARGET_RATIO)
-    assert result["chosen_g"] != 0.5
 
 
 def test_gpt_fixture_defined_leading_history(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1604,20 +1615,21 @@ def _regime_window() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
 
 
 def test_regime_fixture_keeps_the_crash_rows() -> None:
-    # T3: complete-case rows keep the free members' crash rows; the suffix after the gap would drop them.
+    # T3: the free members' crash rows stay; the suffix after the gap would drop them. Card m55-ratio-gap: the
+    # pinned member's gap leaves it out of both books, so the other members keep all 252 rows.
     window, full, b = _regime_window()
     vol = tilt.member_vols(window, window.notna().all())
     gaps = []
     for g in tilt.LOWRISK_GRID:
         w, info = tilt.lowrisk_weights(b, vol, window, g)
-        assert info["ratio_rows"] == 250 and info["ratio_rows_gap"] == 2 and info["ratio_status"] == "defined_partial"
+        assert info["ratio_rows"] == 252 and info["ratio_rows_gap"] == 2 and info["ratio_status"] == "defined_full"
+        assert info["ratio_gap_members"] == 1 and info["ratio_gap_cw_share"] == 0.001
         bv, wv = b.to_numpy(), w.to_numpy()
-        ok = window.notna().all(axis=1).to_numpy()
         x = full.to_numpy()
-        rows250 = np.std(x[ok] @ wv, ddof=1) / np.std(x[ok] @ bv, ddof=1)
+        kept = np.std(x[:, :100] @ wv[:100], ddof=1) / np.std(x[:, :100] @ bv[:100], ddof=1)
         rows252 = np.std(x @ wv, ddof=1) / np.std(x @ bv, ddof=1)
         suffix = np.std(x[122:] @ wv, ddof=1) / np.std(x[122:] @ bv, ddof=1)
-        assert info["vol_ratio"] == pytest.approx(rows250, rel=1e-12)
+        assert info["vol_ratio"] == pytest.approx(kept, rel=1e-12)
         assert abs(info["vol_ratio"] - rows252) <= 1e-3
         gaps.append(abs(suffix - rows252))
     assert max(gaps) > 0.05                            # the fixture bites: the suffix rule would read far lower
@@ -1636,7 +1648,8 @@ def test_ratio_floor_boundary() -> None:
 
 
 def test_missing_price_at_r_minus_2_removes_two_rows(low_built: dict) -> None:
-    # T4 positive control: a missing price at r - 2 blanks the returns at r - 2 and r - 1.
+    # T4 positive control: a missing price at r - 2 blanks the returns at r - 2 and r - 1. Card m55-ratio-gap: they
+    # are gaps, so the member is left out of the ratio and counted, and no row is removed.
     r = CAL.get_loc(PERTURB_AT)
     inputs = fixture()
     prices = inputs.prices.copy()
@@ -1644,8 +1657,9 @@ def test_missing_price_at_r_minus_2_removes_two_rows(low_built: dict) -> None:
     after = tilt.build_targets(replace(inputs, prices=prices), g=LOW_G)["rebalances"].loc[PERTURB_AT]
     base = low_built["rebalances"].loc[PERTURB_AT]
     assert base["lowrisk_ratio_rows"] == 252 and base["lowrisk_ratio_status"] == "defined_full"
-    assert after["lowrisk_ratio_rows"] == 250 and after["lowrisk_ratio_rows_gap"] == 2
-    assert after["lowrisk_ratio_status"] == "defined_partial" and after["lowrisk_ratio_limiting_members"] == 1
+    assert after["lowrisk_ratio_rows"] == 252 and after["lowrisk_ratio_rows_gap"] == 2
+    assert after["lowrisk_ratio_status"] == "defined_full" and after["lowrisk_ratio_limiting_members"] == 0
+    assert after["lowrisk_ratio_gap_members"] == 1 and after["lowrisk_ratio_gap_cw_share"] > 0.0
 
 
 PINNED_AT = pd.Timestamp("2000-09-29")      # LATE_ASSET is pinned here (164 complete rows)
@@ -1710,14 +1724,14 @@ def test_b2_ratio_rows_on_the_production_path(monkeypatch: pytest.MonkeyPatch) -
     calls, masks = [], []
     weights, ratio_rows = tilt.lowrisk_weights, tilt.whole_book_ratio
 
-    def weights_spy(b, vol, window, g):
-        w, info = weights(b, vol, window, g)
+    def weights_spy(b, vol, window, g, short=None):
+        w, info = weights(b, vol, window, g, short)
         calls.append((window.index[-1], list(window.columns), list(b.index), b.to_numpy(), w.to_numpy()))
         return w, info
 
-    def mask_spy(window, b, w):
+    def mask_spy(window, b, w, short=None):
         masks.append((window.index[-1], list(window.columns)))
-        return ratio_rows(window, b, w)
+        return ratio_rows(window, b, w, short)
 
     monkeypatch.setattr(tilt, "lowrisk_weights", weights_spy)
     monkeypatch.setattr(tilt, "whole_book_ratio", mask_spy)
@@ -1827,8 +1841,8 @@ def test_lowrisk_weights_do_not_depend_on_the_ratio_step(monkeypatch: pytest.Mon
     # T10: the weights, TE, TE scale, and cap counts are computed before the ratio and do not read it.
     record = {"ex_ante_vol": 1.0, "cw_ex_ante_vol": 1.0, "vol_ratio": 1.0, "ratio_status": "defined_full",
               "ratio_rows": 0, "ratio_rows_leading": 0, "ratio_rows_gap": 0, "ratio_limiting_members": 0,
-              "ratio_limiting_cw_share": 0.0}
-    monkeypatch.setattr(tilt, "whole_book_ratio", lambda window, b, w: dict(record))
+              "ratio_limiting_cw_share": 0.0, "ratio_gap_members": 0, "ratio_gap_cw_share": 0.0}
+    monkeypatch.setattr(tilt, "whole_book_ratio", lambda window, b, w, short=None: dict(record))
     after = tilt.build_targets(fixture(), g=LOW_G)
     for book in ("cw", "tilt", "lowrisk"):
         assert_frame_equal(after["targets"][book], low_built["targets"][book], check_exact=True)
@@ -1862,10 +1876,10 @@ def test_rows_of_a_g_refused_later_are_tagged(monkeypatch: pytest.MonkeyPatch, c
     dates = tilt.rebalance_dates(CAL, CAL_START, END)
     original = tilt.lowrisk_weights
 
-    def spy(b, vol, window, g):
+    def spy(b, vol, window, g, short=None):
         if g == CAL_GRID[-1] and window.index[-1] >= CAL[CAL.get_loc(dates[5]) - 1]:
             raise RunnerStop("lowrisk_loop_not_converged", "test")
-        return original(b, vol, window, g)
+        return original(b, vol, window, g, short)
 
     monkeypatch.setattr(tilt, "lowrisk_weights", spy)
     result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
@@ -1881,6 +1895,197 @@ def test_rows_of_a_g_refused_later_are_tagged(monkeypatch: pytest.MonkeyPatch, c
     assert_frame_equal(kept[kept["g"] != CAL_GRID[-1]].reset_index(drop=True),
                        calibration["rebalances"].drop(columns="g_status").pipe(
                            lambda t: t[t["g"] != CAL_GRID[-1]]).reset_index(drop=True), check_exact=True)
+
+
+# Gap members in the ratio (card m55-ratio-gap, R6) -------------------------------------------
+
+GAP_ASSET = ASSETS[5]           # a close on every calendar row: history before every window
+RATIO_KEYS = ("vol_ratio", "ex_ante_vol", "cw_ex_ante_vol", "ratio_status", "ratio_rows", "ratio_rows_leading",
+              "ratio_limiting_members", "ratio_limiting_cw_share")
+
+
+def _nan_prices(inputs: tilt.TiltInputs, column: int, rows: slice) -> tilt.TiltInputs:
+    prices = inputs.prices.copy()
+    prices.iloc[rows, column] = np.nan
+    return replace(inputs, prices=prices)
+
+
+def test_gap_member_with_history_is_left_out_and_counted() -> None:
+    # (a) One missing price inside the window of a member with earlier history: the member keeps w = b, is left out
+    # of both books in the ratio, and is counted. The ratio is the ratio of the book without it, on all 252 rows.
+    r = CAL.get_loc(PERTURB_AT)
+    inputs = _nan_prices(fixture(), ASSETS.index(GAP_ASSET), slice(r - 50, r - 49))
+    built = tilt.build_targets(inputs, g=LOW_G)
+    row = built["rebalances"].loc[PERTURB_AT]
+    b = built["targets"]["cw"].loc[PERTURB_AT].dropna()
+    w = built["targets"]["lowrisk"].loc[PERTURB_AT].dropna()
+    assert w[GAP_ASSET] == b[GAP_ASSET] and row["lowrisk_pinned"] == 1
+    assert row["lowrisk_ratio_gap_members"] == 1 and row["lowrisk_ratio_gap_cw_share"] == b[GAP_ASSET]
+    assert row["lowrisk_ratio_rows"] == 252 and row["lowrisk_ratio_rows_gap"] == 2
+    assert row["lowrisk_ratio_status"] == "defined_full" and row["lowrisk_ratio_limiting_members"] == 0
+    _, returns, _ = tilt.prepare(inputs)
+    window = returns.iloc[r - 252:r][b.index]
+    kept = b.index.drop(GAP_ASSET)
+    x = window[kept].to_numpy()
+    assert window[GAP_ASSET].isna().sum() == 2 and not np.isnan(x).any()
+    vol_w = np.std(x @ w[kept].to_numpy(), ddof=1) * math.sqrt(tilt.ANNUAL_ROWS)
+    vol_b = np.std(x @ b[kept].to_numpy(), ddof=1) * math.sqrt(tilt.ANNUAL_ROWS)
+    assert row["lowrisk_ex_ante_vol"] == pytest.approx(vol_w, rel=1e-12)
+    assert row["lowrisk_cw_ex_ante_vol"] == pytest.approx(vol_b, rel=1e-12)
+    assert row["lowrisk_vol_ratio"] == pytest.approx(vol_w / vol_b, rel=1e-12)
+    without = tilt.whole_book_ratio(window[kept], b[kept].to_numpy(), w[kept].to_numpy())
+    assert {k: without[k] for k in RATIO_KEYS} == {k: row[f"lowrisk_{k}"] for k in RATIO_KEYS}
+    assert without["ratio_gap_members"] == 0
+
+
+@pytest.mark.parametrize("path", ["build_targets", "calibrate_lowrisk"])
+def test_window_that_starts_inside_a_gap_is_a_gap_not_leading(path: str) -> None:
+    # (b) GAP_ASSET has history, then misses the closes of rows t - 255 to t - 240, so its window at PERTURB_AT
+    # starts with 13 NaNs. Its first-ever return decides: the NaNs are a gap, not leading rows.
+    t = CAL.get_loc(PERTURB_AT) - 1
+    inputs = _nan_prices(fixture(), ASSETS.index(GAP_ASSET), slice(t - 255, t - 239))
+    disappearances, returns, first_return = tilt.prepare(inputs)
+    setup = tilt.rebalance_members(inputs, PERTURB_AT, returns, disappearances, first_return)
+    window = setup["window"][setup["traded"]]
+    assert not setup["short"][GAP_ASSET]
+    assert window[GAP_ASSET].iloc[:13].isna().all() and window[GAP_ASSET].iloc[13:].notna().all()
+    if path == "build_targets":
+        built = tilt.build_targets(inputs, g=LOW_G)["rebalances"].loc[PERTURB_AT]
+        assert built["c_zero_window_gap"] == 1 and built["c_zero_short_history"] == 0     # the TILT rule agrees
+        rows = [{k[len("lowrisk_"):]: v for k, v in built.items() if k.startswith("lowrisk_")}]
+    else:
+        table = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)["rebalances"]
+        rows = table[table["date"] == PERTURB_AT].to_dict("records")
+        assert len(rows) == len(CAL_GRID)
+    for row in rows:
+        assert row["ratio_gap_members"] == 1 and row["ratio_rows_gap"] == 13 and row["ratio_rows_leading"] == 0
+        assert row["ratio_rows"] == 252 and row["ratio_status"] == "defined_full" and row["ratio_limiting_members"] == 0
+    # Contrast: the first return inside the window (no short flags) would call the 13 NaNs leading rows.
+    _, inside = tilt.lowrisk_weights(setup["b"], tilt.member_vols(setup["window"], setup["full"]), window, LOW_G)
+    assert inside["ratio_gap_members"] == 0 and inside["ratio_rows_leading"] == 13 and inside["ratio_rows"] == 239
+
+
+def test_new_listing_stays_leading_and_a_later_gap_leaves_it_out() -> None:
+    # (c) LATE_ASSET has no return before the window at the first rebalances from START. Its NaNs before its first
+    # return are leading rows, as before: it stays in the ratio and limits the rows. A gap after its first return
+    # makes it a gap member instead.
+    inputs = fixture()
+    disappearances, returns, first_return = tilt.prepare(inputs)
+    built = tilt.build_targets(inputs, g=LOW_G)
+    late = ASSETS.index(LATE_ASSET)
+    gapped = tilt.build_targets(_nan_prices(inputs, late, slice(int(first_return[LATE_ASSET]) + 10,
+                                                                 int(first_return[LATE_ASSET]) + 11)), g=LOW_G)
+    checked = 0
+    for date in built["rebalances"].index:
+        setup = tilt.rebalance_members(inputs, date, returns, disappearances, first_return)
+        if not setup["short"][LATE_ASSET]:
+            continue
+        t = CAL.get_loc(date) - 1
+        lead = int(first_return[LATE_ASSET]) - (t - tilt.COV_ROWS + 1)
+        row = built["rebalances"].loc[date]
+        assert lead > 0 and row["lowrisk_ratio_rows_leading"] == lead and row["lowrisk_ratio_rows"] == 252 - lead
+        assert row["lowrisk_ratio_gap_members"] == 0 and row["lowrisk_ratio_rows_gap"] == 0
+        assert row["lowrisk_ratio_limiting_members"] == 1
+        assert row["lowrisk_ratio_limiting_cw_share"] == built["targets"]["cw"].loc[date, LATE_ASSET]
+        defined = 252 - lead >= tilt.LOWRISK_RATIO_MIN_ROWS
+        assert row["lowrisk_ratio_status"] == ("defined_partial" if defined else "ratio_window_short")
+        if defined:
+            x = setup["window"][setup["traded"]].to_numpy()[lead:]
+            w = built["targets"]["lowrisk"].loc[date, setup["traded"]].to_numpy()
+            b = built["targets"]["cw"].loc[date, setup["traded"]].to_numpy()
+            oracle = np.std(x @ w, ddof=1) / np.std(x @ b, ddof=1)
+            assert row["lowrisk_vol_ratio"] == pytest.approx(oracle, rel=1e-12)
+        other = gapped["rebalances"].loc[date]
+        assert other["lowrisk_ratio_gap_members"] == 1 and other["lowrisk_ratio_rows_leading"] == 0
+        assert other["lowrisk_ratio_rows"] == 252 and other["lowrisk_ratio_status"] == "defined_full"
+        assert other["lowrisk_ratio_gap_cw_share"] == gapped["targets"]["cw"].loc[date, LATE_ASSET]
+        checked += 1
+    assert checked >= 3
+
+
+def test_no_defined_partial_value_depends_on_a_gap_row() -> None:
+    # (d) A new listing L makes the ratio defined_partial; G has history and a gap, so it is left out. G's present
+    # values and the place of its gap move no weight and no ratio value: only leading rows remove rows.
+    names = ["A", "B", "C", "L", "G"]
+    base = pd.DataFrame(_window([0.010, 0.015, 0.020, 0.012, 0.030], seed=11), columns=names)
+    base.iloc[:100, 3] = np.nan
+    b = pd.Series([0.30, 0.25, 0.20, 0.10, 0.15], index=names)
+    short = pd.Series([False, False, False, True, False], index=names)
+
+    def run(window: pd.DataFrame) -> tuple[pd.Series, dict]:
+        return tilt.lowrisk_weights(b, tilt.member_vols(window, window.notna().all()), window, 2.0, short)
+
+    gap = base.copy()
+    gap.iloc[150:152, 4] = np.nan
+    w, info = run(gap)
+    assert info["ratio_status"] == "defined_partial" and info["ratio_rows"] == 152 and info["ratio_rows_leading"] == 100
+    assert info["ratio_gap_members"] == 1 and info["ratio_gap_cw_share"] == 0.15 and info["ratio_rows_gap"] == 2
+    assert info["ratio_limiting_members"] == 1 and info["ratio_limiting_cw_share"] == 0.10 and info["pinned"] == 2
+    x, wv, bv = gap.to_numpy()[100:, :4], w.to_numpy()[:4], b.to_numpy()[:4]
+    assert info["vol_ratio"] == pytest.approx(np.std(x @ wv, ddof=1) / np.std(x @ bv, ddof=1), rel=1e-12)
+    scaled = gap.copy()
+    scaled["G"] = scaled["G"] * np.random.default_rng(3).uniform(0.5, 2.0, len(scaled))
+    inside_leading, later = base.copy(), base.copy()
+    inside_leading.iloc[20:60, 4] = np.nan
+    later.iloc[200:240, 4] = np.nan
+    for other in (scaled, inside_leading, later):
+        w2, info2 = run(other)
+        assert_series_equal(w2, w, check_exact=True)
+        assert {k: v for k, v in info2.items() if k != "ratio_rows_gap"} == {
+            k: v for k, v in info.items() if k != "ratio_rows_gap"}
+
+
+def test_gap_rows_move_nothing_on_the_production_path() -> None:
+    # (d) through calibrate_lowrisk: the GPT fixture with 100 leading closes (defined_partial everywhere) and a gap
+    # in N000. The ratio rows equal those of the run without the gap, and N000's present closes move nothing.
+    lead, _ = _gpt_inputs("leading", first=100)
+    gap = _nan_prices(lead, 0, slice(200, 203))
+    prices = gap.prices.copy()
+    prices.iloc[:, 0] = prices.iloc[:, 0] * np.random.default_rng(4).uniform(0.5, 2.0, len(prices))
+    scaled = replace(gap, prices=prices)
+    runs = [tilt.calibrate_lowrisk(case, tilt.LOWRISK_GRID, tilt.LOWRISK_TARGET_RATIO, case.start, case.end)
+            for case in (lead, gap, scaled)]
+    base, table = runs[0]["rebalances"], runs[1]["rebalances"]
+    assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_gap_members"] == 1).all()
+    assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_gap_cw_share"] == 0.0098).all()
+    assert table["ratio_rows"].equals(base["ratio_rows"]) and table["ratio_rows_leading"].equals(
+        base["ratio_rows_leading"])
+    assert_frame_equal(runs[2]["rebalances"], table, check_exact=True)
+    assert_frame_equal(runs[2]["grid"], runs[1]["grid"], check_exact=True)
+
+
+def test_gaps_and_first_returns_at_or_after_r_change_nothing_at_r() -> None:
+    # R1 for the short flag and the gap rule. GAP_ASSET has a gap at r - 50. S10 is a member from r - 30 without a
+    # close before r, so its first-ever return comes after r. Gaps at rows >= r, or a later or missing first close of
+    # S10, move no weight, no ratio field, and no calibration value at rebalances up to r.
+    r = CAL.get_loc(PERTURB_AT)
+
+    def case(listed: int, gap: tuple[int, slice] | None = None) -> tilt.TiltInputs:
+        inputs = _nan_prices(fixture(), ASSETS.index(GAP_ASSET), slice(r - 50, r - 49))
+        prices, eligible, me = inputs.prices.copy(), inputs.eligible.copy(), inputs.market_equity.copy()
+        prices.iloc[:listed, 10] = np.nan
+        eligible.iloc[:r - 30, 10] = False
+        me.iloc[:r - 30, 10] = np.nan
+        if gap is not None:
+            prices.iloc[gap[1], gap[0]] = np.nan
+        return replace(inputs, prices=prices, eligible=eligible, market_equity=me)
+
+    cases = [case(r + 10), case(r + 40), case(len(CAL)), case(r + 10, (5, slice(r, r + 3))),
+             case(r + 10, (2, slice(r, r + 2)))]
+    built = [tilt.build_targets(c, g=LOW_G) for c in cases]
+    calibrated = [tilt.calibrate_lowrisk(c, CAL_GRID, 0.99, CAL_START, PERTURB_AT) for c in cases]
+    row = built[0]["rebalances"].loc[PERTURB_AT]
+    assert row["lowrisk_ratio_gap_members"] == 1 and row["c_zero_short_history"] >= 1
+    keys = ("decision", "chosen_g", "window_decision", "window_sensitive", "undefined_share")
+    for other, result in zip(built[1:], calibrated[1:]):
+        for book in ("cw", "tilt", "lowrisk"):
+            assert_frame_equal(other["targets"][book].loc[:PERTURB_AT], built[0]["targets"][book].loc[:PERTURB_AT],
+                               check_exact=True)
+        assert_frame_equal(other["rebalances"].loc[:PERTURB_AT], built[0]["rebalances"].loc[:PERTURB_AT],
+                           check_exact=True)
+        assert_frame_equal(result["rebalances"], calibrated[0]["rebalances"], check_exact=True)
+        assert_frame_equal(result["grid"], calibrated[0]["grid"], check_exact=True)
+        assert {k: result[k] for k in keys} == {k: calibrated[0][k] for k in keys}
 
 
 # Declared signal sets (card m55-signal-sets, O-21 screen) -------------------------------------
