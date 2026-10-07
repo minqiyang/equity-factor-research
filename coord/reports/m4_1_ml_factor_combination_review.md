@@ -9,7 +9,7 @@
 - Producer worktree was not used as the review root
 - Review card: `coord/card_m4_1_ml_factor_combination_review.md`
 - Producer report: `coord/reports/m4_1_ml_factor_combination_report.md`
-- Coordination standard read from `/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`; STANDARD lane seat `GROK_REVIEW`)
+- Coordination standard read from `<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/` (`coordinator.md`, `routing_table.json`; table status `TEMPLATE_NOT_ACTIVE`; STANDARD lane seat `GROK_REVIEW`)
 - Date: 2026-09-20
 - Review posture: read-only on this clean root; this report is the only authored deliverable
 
@@ -93,7 +93,7 @@ PBO remains the alpha-only family and equals the parent value `0.5286`. Alpha lo
 
 ## Deterministic QA
 
-Commands run on exact `d38220d1aea23b254a42e5c749ffb6a27b05b956` with `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python` and `PYTHONPATH=src:.`. Review interpreter: CPython 3.12.13, sklearn 1.9.1, pandas 3.0.6, numpy 2.5.3.
+Commands run on exact `d38220d1aea23b254a42e5c749ffb6a27b05b956` with `<repo>/.venv/bin/python` and `PYTHONPATH=src:.`. Review interpreter: CPython 3.12.13, sklearn 1.9.1, pandas 3.0.6, numpy 2.5.3.
 
 ```
 PYTHONPATH=src:. .venv/bin/pytest tests/test_ml_combination.py tests/test_real_data_multifactor_diagnostic.py tests/test_project_structure.py -q

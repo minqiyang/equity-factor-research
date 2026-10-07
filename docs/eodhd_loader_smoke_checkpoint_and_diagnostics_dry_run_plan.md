@@ -14,13 +14,13 @@ investment, robustness, or trading-readiness claims.
 Private bundle:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 ```
 
 Private summary:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md
+<private_data_root>/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md
 ```
 
 The summary remains outside the repository and is not git-tracked.
@@ -78,7 +78,7 @@ properties from already-local private files. It may summarize:
 The dry run must write any private output only under:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 ```
 
 ## Stop Conditions

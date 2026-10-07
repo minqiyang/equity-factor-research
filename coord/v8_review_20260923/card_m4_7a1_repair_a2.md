@@ -13,7 +13,7 @@
 - **Base commit**: `2c07ee4db70bc90cd449382c69b63765de2eab7d` (`main`).
 - **Prior candidate**: `ed08d6c0cd9425e9d13995596de6820bc12f1006` on branch `claude/m4_7a1-retrieval-and-partition`.
 - **Working tree**: `/private/tmp/efr-m47a1-retrieval-20260925`.
-- **Report destination**: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_7a1_repair_a2_impl.md`.
+- **Report destination**: `<repo>/coord/reports/m4_7a1_repair_a2_impl.md`.
 
 ---
 

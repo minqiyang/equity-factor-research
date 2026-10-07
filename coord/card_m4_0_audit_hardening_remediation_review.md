@@ -6,7 +6,7 @@
 - Prior Candidates: `97db0ddc2990364e34ffe0a6f51c381e585e1019` (FAIL: MATERIAL: 2), `93f5fdb3ebced3f6457c9093c39dbd1035f6efbc`
 - Baseline: `cf55af944efd3112e581823a4fd9ee0d726ed2d3` (`main`)
 - Worktree: `/private/tmp/efr-m4-hardening-review-93f5fdb` (detached HEAD at `c7f9d94`)
-- Deliverable: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_0_audit_hardening_review.md`
+- Deliverable: `<repo>/coord/reports/m4_0_audit_hardening_review.md`
 
 ## Round 2 Remediation Scope (Addressing Grok Findings)
 1. **MAT-M40H-1 (Residual) — Fail Closed on Missing Split Evidence**:
@@ -41,4 +41,4 @@
 2. Inspect diff `git diff 97db0dd..c7f9d94` (and `git diff cf55af9..c7f9d94`).
 3. Run pytest: `PYTHONPATH=src:. .venv/bin/pytest tests/test_parquet_loader.py tests/test_real_data_multifactor_diagnostic.py` (69 tests).
 4. Re-evaluate MAT-M40H-1, MAT-M40H-2, and ADV-M40H-1..5.
-5. Overwrite `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_0_audit_hardening_review.md` with your updated formal review report and verdict.
+5. Overwrite `<repo>/coord/reports/m4_0_audit_hardening_review.md` with your updated formal review report and verdict.

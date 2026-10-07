@@ -30,7 +30,7 @@ This change set resolves all 5 material findings identified in the Milestone 4.0
 
 4. **M4-04 (Purge Private Path Literals & Sensitive Directory Strings)**:
    - Removed `FALLBACK_DATA_DIR` and `FALLBACK_INVENTORY_PATH` constants from `research/real_data_multifactor_diagnostic.py`.
-   - Replaced with dynamic resolution via environment variables (`EFR_EODHD_DATA_DIR`, `EFR_EODHD_INVENTORY_PATH`) or repo-external search without hardcoding user home paths (`/Users/rhapsoul/...`).
+   - Replaced with dynamic resolution via environment variables (`EFR_EODHD_DATA_DIR`, `EFR_EODHD_INVENTORY_PATH`) or repo-external search without hardcoding user home paths (`<home>/...`).
    - Updated `redact_local_path` to match on snapshot/inventory directory tokens.
    - Redacted machine-specific path strings in `coord/reports/m4_0_real_diag_review.md`.
 

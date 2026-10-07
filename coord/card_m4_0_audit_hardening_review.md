@@ -6,7 +6,7 @@ Independent formal code review of commit `93f5fdb` resolving Milestone 4.0 audit
 ## Scope & Target
 - Candidate commit: `93f5fdb`
 - Working root: `/private/tmp/efr-m4-hardening-review-93f5fdb` (detached worktree, clean)
-- Output report: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_0_audit_hardening_review.md`
+- Output report: `<repo>/coord/reports/m4_0_audit_hardening_review.md`
 - Lane: CRITICAL (Hardening / Remediation)
 - Reviewer route: `GROK_REVIEW` (`GROK_LATEST`, `XHIGH`)
 
@@ -22,7 +22,7 @@ Independent formal code review of commit `93f5fdb` resolving Milestone 4.0 audit
    - Verify `_parse_dates` rejects numeric date payloads.
    - Verify `evaluate_diagnostic_readiness` in `research/real_data_multifactor_diagnostic.py` dynamically evaluates panel/benchmark validity.
 4. **M4-04 Privacy & Path Literals**:
-   - Verify no machine-local path constants (`/Users/rhapsoul/...`) remain in `research/real_data_multifactor_diagnostic.py`.
+   - Verify no machine-local path constants (`<home>/...`) remain in `research/real_data_multifactor_diagnostic.py`.
    - Verify `redact_local_path` properly redacts snapshot/inventory directory tokens.
 5. **M09-R Trial Identity & Failure Retention**:
    - Verify `alpha_ids` and `composite_ids` are included in `trial_context`.
