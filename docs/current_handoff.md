@@ -65,33 +65,18 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Recorded Delivery Scope
 
 - Local branch `claude/m55-integration` is a development base only (not pushed, no PR). It starts at
-  `28abd4ca` and merges the accepted candidates `claude/o22-wrds-grant` (`a7305915`), `claude/m55-check-gap`
-  (`e8135bc3`), `claude/m55-signal-sets` (`e50e8d6f`, on `claude/m55-lowrisk` `6395511b`), and
-  `claude/m55-wrds-loader` (`0c608058`, on `claude/m55-signals` `5cf5c84d`). Each code file is byte-identical to
-  the accepted commit that last changed it. The screen driver is built on this branch.
-- Candidate branch `claude/o22-wrds-grant` records owner decision O-22 (the R11 grant for WRDS data), the local
-  working copy with its iCloud backup archive, and the seal split for tables with a price or a return. It changes
-  no code and reads no real data.
-- Candidate branch `claude/m55-check-gap` changes `research/m55_criteria.py`: a check series now skips
-  `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (the seal holding months plus the post-seal warm-up to the first month end
-  with a full 252-row window) in place of the seal months only. No other logic change. No real data is read.
-- Candidate branch `claude/m55-lowrisk` adds the O-20 low-risk book and its calibration to the index-tilt engine,
-  on synthetic fixtures only. The calibration picks `g` from a complete-case whole-book ex-ante volatility ratio
-  with a two-sided median bracket; TILT and CW-PIT outputs are unchanged. The calibration rules are coordinator
-  defaults (`docs/decision_log.md`, 2026-10-05). Both review seats passed the expert-step verification. No real
-  data is read.
-- Candidate branch `claude/m55-signals` adds `research/m55_signals.py`: point-in-time candidate signals S1 to S8
-  on a normalized input schema, tested on synthetic fixtures only. Each cell is a value or a typed reason. After two
-  review rounds, the narrow verification passed (GPT PASS 0/0, Opus PASS 0/3). The signal rules are in
-  `docs/decision_log.md`. No real data is read, and no signal is computed on real data.
-- Candidate branch `claude/m55-wrds-loader` (on `claude/m55-signals`) adds `research/m55_wrds_loader.py`: the engine
-  frames, the signal inputs, and the benchmark returns from the main WRDS files (vintage 2025-12-31), and the
-  tracked manifest `reports/wrds_manifest_2025.json` (names, rows, hashes). The sealed files are never opened.
-  Rules D1 to D9 and readings P-1 to P-9 are in `docs/decision_log.md`. The coordinator set P-9 option (a): the
-  loader supplies `ajexq` 1.0 and S2 uses the `cfacshr` basis; IBES FY1 rows not in USD drop. The round 1 fixes
-  (card m55-loader-fix-r1) add the full-history ME basis, the first-known fiscal-key rule, the delisting-row timing,
-  the R4 `last_close` run, the driver columns, and the D5 share count on the daily signal table. No signal or return
-  is computed yet.
+  `28abd4ca` and merges the accepted candidates below. Each code file is byte-identical to the accepted commit
+  that last changed it. The screen driver is built on this branch. All candidates are tested on synthetic
+  fixtures; no signal or return is computed on real data yet.
+- `claude/o22-wrds-grant` (`a7305915`): owner decision O-22, the R11 grant for WRDS data; no code.
+- `claude/m55-check-gap` (`e8135bc3`): a check series skips 2019-07 to 2021-08 (`CHECK_GAP_MONTHS`).
+- `claude/m55-lowrisk` (`6395511b`): the O-20 low-risk book and its calibration; TILT and CW-PIT unchanged.
+- `claude/m55-signal-sets` (`e50e8d6f`, on `claude/m55-lowrisk`): the index tilt runs on a declared signal set.
+- `claude/m55-signals` (`5cf5c84d`): point-in-time candidate signals S1 to S8; each cell is a value or a typed reason.
+- `claude/m55-wrds-loader` (`0c608058`, on `claude/m55-signals`): engine frames, signal inputs, and benchmark
+  returns from the main WRDS files (vintage 2025-12-31), and the manifest `reports/wrds_manifest_2025.json`. The
+  sealed files are never opened. Rules D1 to D9, readings P-1 to P-9, and the round 1 fixes are in
+  `docs/decision_log.md`.
 
 ## Current Research Gate Summary
 
@@ -114,12 +99,12 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- Build the screen driver on `claude/m55-integration`. The driver card owes the `path_break` blank of level
-  windows (P-1) and the signal reason shares by later exit class (R6).
 - The owner ran the reviewed pull script under O-22 (vintage 2025-12-31) into the local working copy, with the
-  seal months in `sealed/`, and wrote the iCloud backup archive. Next: review the loader with two seats, freeze the
-  trial file with two review seats, count coverage, calibrate the low-risk budget on 1963-1992 risk data only
-  (O-20), and run the screen under O-21. No tilt or cap-weight return exists before the trial file is frozen.
+  seal months in `sealed/`, and wrote the iCloud backup archive. Next: build the screen driver on
+  `claude/m55-integration` (it owes the `path_break` blank of level windows, P-1, and the signal reason shares by
+  later exit class, R6), freeze the trial file with two review seats, count coverage, calibrate the low-risk
+  budget on 1963-1992 risk data only (O-20), and run the screen under O-21. No tilt or cap-weight return exists
+  before the trial file is frozen.
 
 ## Source Routing
 
