@@ -23,6 +23,10 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - `m55_signals.py`, `m55_wrds_loader.py`, and the manifest are pinned at `0c60805`, which is not yet on main. If a
   pinned file changes before a run, an amendment comes first.
 - No real data was read. No return, signal, coverage, or calibration output exists.
+- Amendment 1 (sweep repairs V1 to V6) changed 21 fields and five pin entries, listed in the decision log (engine
+  `cebb487`, criteria `1a70eb7`, signals and loader `312d284`; manifest bytes unchanged); a leaf-by-leaf script check
+  against `e2d4ca2` found no other changed field. Three read-only review workflows found two material text defects
+  (a missing low-risk fragility flag, blank months outside a comparison's span), both fixed. No real data was read.
 
 ## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
 

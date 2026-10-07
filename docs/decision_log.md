@@ -54,6 +54,26 @@ Decision:
     amendment before any result of that run picks the fix.
   - OI-15 `real_v2` tilt diagnostic and unpriced report: left out; a later file declares them if Q5 is answered.
 - None of these loosens R1, R2, R4, R6, R8, or R9.
+- Amendment 1 (2026-10-06, before any real return, signal coverage, or calibration output) states the R1-R12 sweep
+  repairs V1 to V6 in the fields that own them; no other rule changed, and none loosens R1, R2, R4, R6, R8, or R9:
+  - V1 (R4): the last-close rerun is a second engine call on `tilt_frames(run="last_close")`; the engine flags
+    `fragile_active_sign` and `fragile_lowrisk_active_sign` are never reported (`last_close_rerun`, `fragility`,
+    `sensitivity_runs`).
+  - V2 (R6): a traded member with a gap after its first-ever return leaves the low-risk ratio in both books and is
+    counted; gap rebalances are reported (`calibration.ratio`, `window_diagnostic`, `limitations[6]`, `low_risk_r6`).
+  - V3 (R1, R6): S2 also reads `cfacshr` at `rdq`; a different factor gives `split_in_basis_window`, a failed read
+    its own reason, `rdq` in the seal included (`candidates.reasons`, S2 `history_rule`, `s2_history_rule`).
+  - V4 (R6): the post-seal engine segment starts at the anchor 2021-07-30; signals are built once per seal segment;
+    the words "first post-seal rebalance is 2020-08-31" are corrected (`check.left_out`, `limitations[9]`, OI-04).
+  - V5 (R6): a share fact with no prior factor row and an unseen interval (`data_start`, `seal`) gives `unmapped` ME
+    and share count; its reach and the 1963-1964 S7 coverage report are stated (`D5_market_equity`, `me_coverage`).
+  - V6 (R6): each holding month that a position held across a `path_break` row touches is a declared blank month
+    (`path_break_held`); one set per run and period, and each comparison declares the months inside its own span
+    for every book and the benchmark (`P1_path_break`, `path_break`).
+  - Records: `status` names the amendment; `declaration_timing` cites loader `312d284` (`known_at_drafting[1]`,
+    `pre_freeze_requirements[0]`) and its intake rerun with the unseen-basis counts (`known_at_drafting[2]`).
+  - Pins: engine `cebb487`, criteria `1a70eb7`, signals and loader `312d284`; the manifest bytes, Family A, and the
+    pull script are unchanged.
 
 Follow-up:
 

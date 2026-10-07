@@ -1,6 +1,6 @@
 {
   "schema_version": "m55_trial_family_v1",
-  "status": "FROZEN on 2026-10-06. The coordinator froze it after two CRITICAL review rounds and the m55-checkgap review seats (OI-04). The rules are those of the reviewed draft (SHA-256 bbc21fde91920a5eb6ecf7bb1032ba915a8ad3b6075a0c4b66b7eabc9b0281dc); only status, declared_on, code_pins, and the loader commit in declaration_timing changed at commit. Open items OI-01 to OI-15 are coordinator defaults, logged in docs/decision_log.md.",
+  "status": "FROZEN on 2026-10-06. The coordinator froze it after two CRITICAL review rounds and the m55-checkgap review seats (OI-04). The rules are those of the reviewed draft (SHA-256 bbc21fde91920a5eb6ecf7bb1032ba915a8ad3b6075a0c4b66b7eabc9b0281dc); at the first commit only status, declared_on, code_pins, and the loader commit in declaration_timing changed. Amendment 1 (2026-10-06, before any real return, signal coverage, or calibration output) states the R1-R12 sweep repairs V1 to V6 in the fields that own them and repins the engine, the criteria, the signals, and the loader; docs/decision_log.md lists each changed field. Open items OI-01 to OI-15 are coordinator defaults, logged in docs/decision_log.md.",
   "drafted_on": "2026-10-05",
   "declared_on": "2026-10-06",
   "evidence_ceiling": {
@@ -15,8 +15,8 @@
     "before_any_real_return": true,
     "known_at_drafting": [
       "WRDS data vintage 2025-12-31 (pulled 2026-10-05 by the owner with coord/reports/m6_prep/wrds_pull.py)",
-      "the tracked manifest reports/wrds_manifest_2025.json (branch claude/m55-wrds-loader at 0c6080587e6d0db4a753775bc46157c1224c805e; unchanged from 4717a56 and 17e86ff), SHA-256 6dc96e69fdd6410fd5bcd41a00bddd0a2d91e54a2421e30efa06adacdf354e8f; it holds file names, row counts, and hashes only; its script_code_sha256 field is 5c8020e07718d09ef73b3c220aa7973da98718173450880325a9bd75a6e7bdca",
-      "the loader intake aggregates in coord/reports/m55_loader/intake_report.md: members per day by year, member-day coverage, ME reason counts by year and by later exit class, disappearance counts by cause, the D7 split check, signal-input row and drop counts; no return statistic of any book, signal, or index"
+      "the tracked manifest reports/wrds_manifest_2025.json (branch claude/m55-loader-r6 at 312d28486e6edc4a3a865e14bab20167553cc60c; unchanged from 4717a56, 17e86ff, and 0c60805), SHA-256 6dc96e69fdd6410fd5bcd41a00bddd0a2d91e54a2421e30efa06adacdf354e8f; it holds file names, row counts, and hashes only; its script_code_sha256 field is 5c8020e07718d09ef73b3c220aa7973da98718173450880325a9bd75a6e7bdca",
+      "the loader intake aggregates in coord/reports/m55_loader/intake_report.md: members per day by year, member-day coverage, ME reason counts by year and by later exit class, disappearance counts by cause, the D7 split check, signal-input row and drop counts; no return statistic of any book, signal, or index; the rerun at 312d284 (coordinator intake) adds the rows and member-days whose share basis was not observed (basis_unseen), by case and year, with no return statistic"
     ],
     "not_computed_at_drafting": [
       "any strategy, book, CW-PIT, SPY, or index return or return statistic on WRDS data",
@@ -25,7 +25,7 @@
       "the CW-PIT against SPY look of index_tilt_design_note.md section 3 step 5"
     ],
     "pre_freeze_requirements": [
-      "the loader passes two review seats; its P-8 and P-9 follow-up (card coord/reports/m55_loader/card_loader_p9.md) is committed (17e86ff); the accepted loader commit is 0c6080587e6d0db4a753775bc46157c1224c805e; source: card_loader.md, card_loader_p9.md",
+      "the loader passes two review seats; its P-8 and P-9 follow-up (card coord/reports/m55_loader/card_loader_p9.md) is committed (17e86ff); the accepted loader commit is 312d28486e6edc4a3a865e14bab20167553cc60c (the R6 repair of card m55-loader-r6 on 0c60805, accepted after QA and two review seats); source: card_loader.md, card_loader_p9.md, docs/decision_log.md 'Unknown Share Bases Are Typed Missing'",
       "a missingness-only census on 1963-1992 from missing-return flags, no return values; source: coord/reports/m55_lowrisk/expert_decision.md, 'Carried to the Real-Data Driver Card'",
       "the daily data start (1961-01-03 in the calendar) and the first full 252-row anchor are stated; source: expert_decision.md",
       "the calibration panel is cut and hashed (Opus ADV-05); source: expert_decision.md",
@@ -36,24 +36,24 @@
   "code_pins": {
     "statement": "Each file is pinned by its accepted commit and the SHA-256 of the file bytes at that commit. The runs of this trial file use these bytes. If a pinned file changes before a run, an amendment that pins the new bytes is committed before that run.",
     "research/m55_index_tilt.py": {
-      "commit": "e50e8d6f552635152727f7f6bf746ec5b9e3bdc4",
-      "file_sha256": "e4cebd2472733bbbbc303a8a0d2b9e3aa4095738a01ced94cee1b0bc207d9892",
-      "scope": "engine, low-risk book, declared signal set, half_rule"
+      "commit": "cebb487a64b3bfcd304dbebc903f6235990db251",
+      "file_sha256": "1b57c09710c6c27b2b2cdebd6e8c716cd6bafb700b1d4dd5f16240f3dc15e186",
+      "scope": "engine, low-risk book with the ratio gap rule (V2), declared signal set, half_rule"
     },
     "research/m55_criteria.py": {
-      "commit": "e8135bc343269874f34b5c853343c55867bcac26",
-      "file_sha256": "b82e468e63da0e9afc4a21c0965fc3a71c23474dd8632d07393dec77d77f89de",
-      "scope": "screen, shortlist, tests A and B, stop rules, CHECK_GAP_MONTHS"
+      "commit": "1a70eb79b764820b0c7c284f428bcbe4ea4c615b",
+      "file_sha256": "5580b86f2037b50a864da01d6227cd9f08ddded4508577c4d7c1bd7570559623",
+      "scope": "screen, shortlist, tests A and B, stop rules, CHECK_GAP_MONTHS, declared blank months (V6)"
     },
     "research/m55_signals.py": {
-      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
-      "file_sha256": "ba6089c9abf638f9277aea68c9a7b78a55e37d02ef18611b1823d87b67ccdd1c",
-      "scope": "signals S1 to S8 and real_start"
+      "commit": "312d28486e6edc4a3a865e14bab20167553cc60c",
+      "file_sha256": "60721018e16ed09acc13087efb9cec7b72369ba3a086f8e01506df0b638693b1",
+      "scope": "signals S1 to S8 and real_start; S2 split_in_basis_window and the seal factor read (V3)"
     },
     "research/m55_wrds_loader.py": {
-      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
-      "file_sha256": "2bf58ac589ce506bff50136edc196f4b09372393baff091f551054d20006e04e",
-      "scope": "WRDS loader rules D1 to D9 and P-1 to P-9"
+      "commit": "312d28486e6edc4a3a865e14bab20167553cc60c",
+      "file_sha256": "8756125b237f64cfb69b09a499bea28ad24637580357b919734bae61a72f6eff",
+      "scope": "WRDS loader rules D1 to D9 and P-1 to P-9; basis_unseen (V5)"
     },
     "research/m4_7_family_a.py": {
       "commit": "28abd4ca506580941f413780ac5428818a4c3263",
@@ -61,9 +61,9 @@
       "scope": "the six Family A price signals"
     },
     "reports/wrds_manifest_2025.json": {
-      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
+      "commit": "312d28486e6edc4a3a865e14bab20167553cc60c",
       "file_sha256": "6dc96e69fdd6410fd5bcd41a00bddd0a2d91e54a2421e30efa06adacdf354e8f",
-      "scope": "WRDS data manifest; same bytes at 4717a56, 17e86ff, and 0c60805"
+      "scope": "WRDS data manifest; same bytes at 4717a56, 17e86ff, 0c60805, and 312d284"
     },
     "coord/reports/m6_prep/wrds_pull.py": {
       "commit": null,
@@ -115,12 +115,12 @@
       "D2_calendar": "the trading days of INDNO 1000200 in the main file; every member daily date is one of them, else refuse; a non-member row off the calendar is dropped and counted; no main row is in the seal",
       "D3_prices": "one close index per PERMNO and seal segment from dlyret only (CIZ includes the delisting return on the dlydelflg = 'Y' row; delret is never added); a missing dlyret is NaN; a later return is the last valid value times (1 + dlyret); a gap is handled by halt_gap_return_v1 (R5, R6)",
       "D4_membership": "crsp_dsp500list_v2, end date inclusive; engine end_date = mbrenddt + 1 day; start_known_at = mbrstartdt; end_known_at = mbrenddt (R2)",
-      "D5_market_equity": "|dlyprc| at r - 1 times the shrout with the latest shrstartdt on or before (r - 1) - 136 calendar days, moved to the r - 1 basis by the dlycumfacshr ratio; reasons no_share_fact, stale_share_fact (that row's shrenddt before the cutoff), unmapped (no daily row at r - 1) (R1)",
+      "D5_market_equity": "|dlyprc| at r - 1 times the shrout with the latest shrstartdt on or before (r - 1) - 136 calendar days, moved to the r - 1 basis by the dlycumfacshr ratio; reasons no_share_fact, stale_share_fact (that row's shrenddt before the cutoff), unmapped (no daily row at r - 1) (R1). Unseen basis (amendment 1, V5; the P4 basis): when the PERMNO has no dlycumfacshr row before the share fact's shrstartdt and the data never saw the interval up to the basis row, the share count and ME are unmapped; the loader column basis_unseen names the case: data_start (shrstartdt before the first calendar row, 1961-01-03) or seal (shrstartdt before 2020-07-31 and the basis row on or after it). A PERMNO with a factor row before shrstartdt is not affected by this rule. Reach in the coordinator intake at 312d284 (member-days): data_start 159993 (1961 119988, 1962 39911, 1963 94; last 1963-05-15); seal 166 (2020; last 2020-12-11). ME at the screen rebalance rows (decision rows from 1963-06) and at the post-seal rebalance rows (decision rows from 2021-08-30) is not reached. S7 reads the D5 count at its anchor and 12 months earlier, so S7 can be blank in the return months 1963-01 to 1964-06 (most in 1963; the S7 real start is likely 1964) and, for PERMNOs whose first daily row comes after the seal, in the check months 2021-10 to 2022-01. Source: docs/decision_log.md 'Unknown Share Bases Are Typed Missing' (312d284)",
       "D6_disappearances": "a member PERMNO with a crsp_stkdelists row whose price path ends before the last calendar row; effective_date = the calendar row after the last valued row, but never before the dlydelflg = 'Y' row date: when rows without a value lie between the last valued row and the 'Y' row, the event is effective on the first calendar row on or after the 'Y' row date and the position is held at its last value across the gap (amended by card_loader_fix_r1.md item 3, loader review GPT-M3); known_at = effective_date; delisting_return 0.0 when the CIZ delisting return is in the path, NaN when missing (engine default applies); cause cash_merger only for delactiontype MER and delpaymenttype CASH; failure for reasons BKPY, LP, SHLD, INSC, DELQ, FING, INSF, MVOT, MTMK, MVCHI, MVMF or action GLI; else unknown (R4)",
       "D7_split_factors": "CIZ cumulative factors fall at a split; the loader checks this on the data and refuses otherwise; only ratios between dates at or before t are used",
       "D8_signal_inputs": "daily from crsp_dsf_v2 (prc = |dlyprc|, cfacpr = dlycumfacpr, cfacshr = dlycumfacshr; shrout = the D5 count: the crsp_stkshares count with the latest shrstartdt on or before the row date - 136 calendar days, on the row's basis by the dlycumfacshr ratio, typed missing under the D5 reasons); members from D4; fund_annual from comp_snapshot_csa_pit (known_date = pitdate1); fund_quarterly and announcements from comp_urq; link from ccm_lnkhist; ibes_link from ibes_crsp_link; ibes from ibes_statsumu_epsus; index_daily from INDNO 1000200; a row with no known date or no fiscal key is dropped and counted by table",
       "D9_seal": "the loader refuses any sealed path; tilt_frames refuses a window across the seal",
-      "P1_path_break": "a return whose dlyprevdt is a row with a price and no return is not in the path and is not filled; tilt_frames marks the next row in path_break; the driver blanks each level window (a price ratio or a maximum) that holds one and reports each held position across one with its weight",
+      "P1_path_break": "a return whose dlyprevdt is a row with a price and no return is not in the path and is not filled; tilt_frames marks the next row in path_break; the driver blanks each level window (a price ratio or a maximum) that holds one. Holding months (amendment 1, V6). A book holds a position across a path_break row when its weight held at the previous valid row (the last row with a return before the break), after any trade on that row, is not zero. halt_gap_return_v1 then keeps the position to the path_break row, and there the engine books only the return after the break. Each holding month with a row after the previous valid row and on or before the path_break row is a blank month with the reason path_break_held (m55_criteria.BLANK_REASONS). A break that spans a month end blanks every month it touches. Each run has one blank set per period. The driver finds it from that run's loader path_break panel and its engine holdings at each row, never from a book return. Every book holds only names that CW-PIT holds, so the set is that of the CW-PIT book, and the pre-tilt look can use it. Each comparison declares the months of the set that lie inside its own span (from the first to the last month that its period gives it); a check-gap month is never declared. The check declaration joins the sets of the pre-seal and post-seal runs. The declaration covers every book and the benchmark of the comparison (SPY; vwretd in the screen report and the pre-tilt look), so no series of a comparison has a row for a blank month; primary_decision takes one confirm and one check declaration. No value is filled, and an undeclared missing month still refuses. Criteria statistics use the months with values in time order. The HAC t treats the months on each side of a blank month as adjacent; bootstrap blocks run over the months with values; the drawdown path joins the months on each side; the 36-month screen minimum counts the months with values. Every criteria output is appended with its declaration (blank_months and blank_reason_counts in the record; the shortlist digest covers them). Source: docs/decision_log.md 'Declared Blank Months in the Criteria' (1a70eb7)",
       "P2": "a delisting-row return of -100 percent stays NaN in the path and is supplied as the delisting return",
       "P3_eligibility": "eligibility at the decision row t is mbrstartdt <= t < mbrenddt (the engine's interval mask; M5 rule resolved_universe_at_next_execution_row)",
       "P4": "the share count's basis is the first daily row on or after shrstartdt with a factor, on or before t; no valid close or factor at t, or no basis factor by t, is unmapped",
@@ -191,9 +191,9 @@
           6.0
         ],
         "target": "LOWRISK_TARGET_RATIO = 0.87: median over screen rebalances (1963-07 to 1992-12) of the ex-ante whole-book volatility ratio to CW-PIT",
-        "ratio": "whole traded book on complete-case rows: the rows of the 252-row window ending at r - 1 where every traded member has a return; at least LOWRISK_RATIO_MIN_ROWS = 126 rows, else ratio_window_short; status defined_full (252 rows) or defined_partial; no fill, clip, or repair",
+        "ratio": "the traded book on its complete-case rows, without its gap members (amendment 1, V2). A gap is a missing return in the 252-row window ending at r - 1 after the member's first-ever return (the short flag of rebalance_members decides, not the first return inside the window). A traded member with a gap is left out of both books in the ratio at that rebalance, typed as a gap member and counted (ratio_gap_members, ratio_gap_cw_share); it has no full window, so it is pinned at w = b and no weight changes. The other members are measured at their book weights on the rows where each of them has a return, so only leading rows (before a member's first-ever return) remove rows (ratio_rows_leading). At least LOWRISK_RATIO_MIN_ROWS = 126 rows, else ratio_window_short; status defined_full (252 rows) or defined_partial; no fill, clip, or repair. Source: docs/decision_log.md 'Gap Members Leave the Low-Risk Ratio' (cebb487)",
         "choice": "two-sided median bracket: undefined rebalances enter the median once at +inf and once at -inf; each g meets, fails, or is ambiguous. Order: a refusal below the first g that meets stops; then ratio_coverage_low (undefined share above LOWRISK_UNDEFINED_MAX = 0.10); then ratio_coverage_ambiguous (an ambiguous g below the first g that meets; the owner decides); then chosen (the first g that meets); else no_g_reaches_target (stop and ask the owner; the budget is not loosened)",
-        "window_diagnostic": "treat every defined_partial rebalance as undefined and repeat the bracket classes and the choice without the coverage stop; window_sensitive only when that choice differs from the main decision; window_diag_coverage_high (diagnostic undefined share above 0.10) recorded apart",
+        "window_diagnostic": "treat every defined_partial rebalance as undefined and repeat the bracket classes and the choice without the coverage stop; window_sensitive only when that choice differs from the main decision; window_diag_coverage_high (diagnostic undefined share above 0.10) recorded apart. A gap member left out of the ratio does not make a rebalance defined_partial, so this diagnostic does not cover gap rebalances; they are reported apart (reports_owed.low_risk_r6; amendment 1, V2)",
         "inputs": "second moments only, ex-ante only; no realized portfolio volatility, mean return, Sharpe ratio, return gap, or realized portfolio return is computed",
         "logged_per_g": "every grid value with the share of rebalances where the cap binds, the TE scale is below 1, and members are pinned (R9)",
         "retired": "LOWRISK_PINNED_MAX and pinned_share_high",
@@ -262,7 +262,7 @@
     "disappearance_r4": {
       "rule": "one event set for both books; CRSP delisting return in the path when present; without it, last close for a cash merger and -100 percent otherwise (long only); timing in both modes: no settlement happens before the dlydelflg = 'Y' row date; when rows without a value lie between the last valued row and the 'Y' row, the event is effective and known on the first calendar row on or after the 'Y' row date",
       "source": "index_tilt_design_note.md section 1 (Disappearance); card_loader.md D6; research/m55_index_tilt.py EVENT_RUNS; coord/reports/m55_loader/card_loader_fix_r1.md items 3 and 4; coord/reports/m55_trial/card_trial_fix_r1.md item 3 (GPT-R1-03); coord/reports/m55_loader/card_loader_fix_r1.md item 3 (loader review GPT-M3)",
-      "last_close_rerun": "the all-events R4 rerun uses the loader last_close mode: the return of every dlydelflg = 'Y' row is removed from the price path, so the path ends at the last trade close, and every event settles at that close (delisting_return = 0.0); no settlement happens before the 'Y' row date. The engine event-mode switch (EVENT_RUNS last_close) alone is not this rerun"
+      "last_close_rerun": "the all-events R4 rerun uses the loader last_close mode: the return of every dlydelflg = 'Y' row is removed from the price path, so the path ends at the last trade close, and every event settles at that close (delisting_return = 0.0); no settlement happens before the 'Y' row date. The engine event-mode switch (EVENT_RUNS last_close) alone is not this rerun. Two engine calls (amendment 1, V1): the primary run is an engine call on tilt_frames(run=\"primary\") with its primary event run; the rerun is a second engine call on tilt_frames(run=\"last_close\") with its last_close event run. The engine's single-call fragility flags (fragile_active_sign and fragile_lowrisk_active_sign) are never reported: in one call both event runs use one price path, and they compare against CW-PIT only"
     }
   },
   "candidates": {
@@ -277,6 +277,7 @@
       "missing_item",
       "no_market_data",
       "fpe_changed",
+      "split_in_basis_window",
       "be_nonpositive",
       "zero_denominator",
       "invalid_value"
@@ -303,7 +304,7 @@
         "source_data": "comp_urq first-reported quarterly EPS",
         "usable_from": "RDQ + 1 trading day",
         "max_age_months": 6,
-        "history_rule": "an S2 quarter is read only when the PERMNO has a cfacshr row at the basis date; a new listing has no S2 value for about 2.5 to 3 years"
+        "history_rule": "an S2 quarter is read only when the PERMNO has a cfacshr row at the basis date (the known date) and at rdq, each an as-of read at most one month old, and the two factors are equal (amendment 1, V3). When they differ (a cfacshr change, such as a split or a stock dividend, after rdq and on or before the known date), the quarter is split_in_basis_window: q or q - 4 gives that reason, and a prior quarter drops each difference it enters, as a missing prior quarter does. When the read at rdq fails, the quarter gets that read's own reason (stale, no_market_data, missing_item, or invalid_value). A factor read on or after the seal start from a row before it gives no_market_data (stale when that row is more than one month old). So a quarter with rdq from 2019-07-31 to 2020-08-02 (no main daily row on those dates) has no value whatever its known date, because its rdq read gives no_market_data or stale. When signals are built per seal segment, the post-seal segment has no daily row before 2020-08-03, so any quarter with rdq before that date gives no_market_data there. Amendment 1 adds the case with a known date on or after 2020-08-03, where the basis read alone succeeds. A new listing has no S2 value for about 2.5 to 3 years. Source: docs/decision_log.md 'Unknown Share Bases Are Typed Missing' item 2 (312d284)"
       },
       {
         "id": "S3",
@@ -410,7 +411,7 @@
     "check": {
       "first": "2014-04",
       "last": "the last return month that the loader and engine can complete inside the vintage (the loader needs a calendar row in the month after the last rebalance row); the driver records that month",
-      "left_out": "CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31)",
+      "left_out": "CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row that would form it is sealed; the first month-end row after the seal is 2020-08-31, but the post-seal segment is anchored at 2021-07-30), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31). Amendment 1 (V4): the post-seal engine segment starts at the anchor 2021-07-30 (first rebalance 2021-08-31, first labelled month 2021-09), and signals are built once per seal segment (build_signals runs once per segment, on that segment's daily and index rows only), so the S3 announcement window cannot cross the seal; no rebalance runs on the month-end rows from 2020-08-31 to 2021-07-30",
       "label": "partly out-of-sample",
       "benchmarks": "SPY; CW-PIT",
       "post_seal_start": "post-seal check months start at 2021-09, the first complete post-seal holding month of every book"
@@ -493,7 +494,7 @@
       "1 Family A baseline composite (secondary; screen, confirm, and check periods)",
       "8 single-signal confirm and check runs in the secondary family (BY family size 9 with the baseline)"
     ],
-    "sensitivity_runs": "every case at 2x costs; every case with the all-events R4 rerun in the loader last_close mode",
+    "sensitivity_runs": "every case at 2x costs; every case with the all-events R4 rerun in the loader last_close mode, as a second engine call on tilt_frames(run=\"last_close\") (books.disappearance_r4.last_close_rerun); the engine fragility flags (fragile_active_sign, fragile_lowrisk_active_sign) are never reported (amendment 1, V1)",
     "prior_m5_slots": "the M5 family of 481 slots stays visible; this file adds to it",
     "source": "signal_screen_design_note.md sections 3 and 4; index_tilt_design_note.md section 2; AGENTS.md R9; coord/reports/m55_trial/card_trial_defaults.md item 7"
   },
@@ -504,12 +505,12 @@
   },
   "reports_owed": {
     "r4": "count and weight share of held disappearances by cause, the share with a CIZ delisting return, the supplied -100 percent count, the missing count (engine default), and the all-events rerun at the last trade close (loader last_close mode)",
-    "fragility": "a sign flip of an active annual mean (against SPY or CW-PIT) between the primary run and the loader last_close-mode rerun labels the result fragile (R4)",
+    "fragility": "a sign flip of an active annual mean (against SPY or CW-PIT) between the primary run and the loader last_close-mode rerun labels the result fragile (R4); the driver compares the two engine calls of books.disappearance_r4.last_close_rerun, and the engine fields fragile_active_sign and fragile_lowrisk_active_sign are never reported (amendment 1, V1)",
     "r6": "typed-missing shares by later exit class (cash_merger, failure, unknown, left_index, current): signal reason shares per signal, me_missing and c_zero counts, unpriced and blanked shares",
-    "me_coverage": "ME status by reason (unmapped, ambiguous, multi_class, no_share_fact, stale_share_fact), by year and by later exit class, in member-days and dollar volume (split-only close x split-adjusted volume)",
+    "me_coverage": "ME status by reason (unmapped, ambiguous, multi_class, no_share_fact, stale_share_fact), by year and by later exit class, in member-days and dollar volume (split-only close x split-adjusted volume); the unmapped member-days that the unseen-basis rule alone gives (basis_unseen data_start and seal), by year with the last date (amendment 1, V5); and S7 coverage (valid count and reason counts) by return month for 1963 and 1964, where the data_start case reaches the S7 anchors",
     "s2_short_history": "the share of S2 cells typed short_history under the declared S2 history rule, and its size effect on the S2 ranks",
-    "s2_history_rule": "an S2 quarter is read only when the PERMNO has a cfacshr row at the basis date; histories from before the first CRSP row are not read",
-    "path_break": "each held position across a path_break row with its weight; each blanked level window",
+    "s2_history_rule": "S2 quarters are read under the S2 history_rule of candidates.list (factor reads at the basis date and at rdq); histories from before the first CRSP row are not read. Reported by year (amendment 1, V3): the S2 cells typed split_in_basis_window; the member quarters whose cfacshr differs between rdq and the known date; and the member quarters with rdq before 2020-08-03 and a known date on or after 2020-08-03, which have no value when signals are built per seal segment. Reported by month: the S2 valid share in the post-seal check months",
+    "path_break": "the blank months of each period (amendment 1, V6): their count, the months, each held position across a path_break row with its weight in each book, and its later exit class; each blanked level window",
     "b2": "unknown_event_excluded and unknown_event_cw_share at each rebalance",
     "counts": "c_zero by reason (few signals, short history), members, traded count, pinned members, cap and TE-scale binding shares",
     "tilt_stats": "IR, realized TE, worst relative drawdown, size exposure, active turnover and cost drag per year",
@@ -518,7 +519,7 @@
     "source": "card_trial_draft.md item 7; AGENTS.md R4, R6; index_tilt_design_note.md sections 1 and 2; signal_screen_design_note.md sections 1 and 3; decision log 'Signals S1 to S8 Rules' and 'WRDS Loader Rules D1 to D9' (P-1); RESUME.md section 4; coord/reports/m55_trial/card_trial_defaults.md items 4, 8, 11, 14; coord/reports/m55_trial/card_trial_fix_r1.md items 2, 3, 9; coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1)",
     "bid_ask_midpoint_share": "the share of member-days with dlyprcflg = 'BA'",
     "check_period_end": "the last check return month, as the driver records it",
-    "low_risk_r6": "the R6 split of the low-risk calibration by later exit class: undefined (ratio_window_short) and defined_partial ratio counts. Source: coord/reports/m55_lowrisk/expert_decision.md, 'Carried to the Real-Data Driver Card'; low-risk decision log on claude/m55-lowrisk",
+    "low_risk_r6": "the R6 split of the low-risk calibration by later exit class: undefined (ratio_window_short) and defined_partial ratio counts; the gap rebalances (amendment 1, V2): their count, the ratio_gap_members count, and the maximum ratio_gap_cw_share, with the gap members split by later exit class (the driver finds them from the same run's rebalance_members window and short flag; the engine record holds counts only). Source: coord/reports/m55_lowrisk/expert_decision.md, 'Carried to the Real-Data Driver Card'; low-risk decision log on claude/m55-lowrisk; docs/decision_log.md 'Gap Members Leave the Low-Risk Ratio' (cebb487)",
     "check_gap_months": "the 26 check-gap months (2019-07 to 2021-08) left out of every check series, with the reason for each part (seal, sealed 2020-07-31 row, warm-up)"
   },
   "prior_exposures": {
@@ -538,10 +539,10 @@
     "Low power: rule A detects about 0.72 percent a year at 50 percent power and 1.08 at 80 percent over 254 months at 2 percent realized TE; an IR of 0.3 (0.6 percent a year) is found about 39 percent of the time, about 30 percent under Holm with two tests; the two-sided BY family of 2 detects about 1.0 to 1.4 percent a year. 'A not met' often means 'not shown'. Source: signal_screen_design_note.md section 7; index_tilt_design_note.md appendix; O-20.",
     "The half-spread override needs CRSP closing bid and ask, which the first pull did not include; the screen runs without it, and the confirm run waits for the owner's second WRDS pull. Source: RESUME.md section 0h backlog; coord/reports/m55_trial/card_trial_defaults.md item 3.",
     "Test B: an ex-ante ratio near 0.87 gives a beta near 0.88, which under a 5 to 6 percent equity premium predicts a return gap of about 0.6 to 0.7 point a year, past the 0.5 margin; B passes only if the low-risk effect pays about one point a year in 1993-2014. Source: low_risk_design_note.md section 3.",
-    "A defined_partial low-risk ratio cannot measure risk on rows before a member existed; such windows are declared, counted (ratio_rows_leading, ratio_rows_gap), and checked by window_sensitive. Source: expert_decision.md, residual limitation.",
+    "A defined_partial low-risk ratio cannot measure risk on rows before a member existed; such windows are declared, counted (ratio_rows_leading counts the rows removed), and checked by window_sensitive. At a rebalance with a gap member, the ratio is that of the book without that member (a sub-book), so it moves toward the ratio of the free members by an amount that grows with the member's cap weight and risk; window_sensitive does not check it; the count of gap rebalances and the maximum ratio_gap_cw_share are reported. Source: expert_decision.md, residual limitation; amendment 1, V2 (docs/decision_log.md 'Gap Members Leave the Low-Risk Ratio', cebb487).",
     "Factor-level reuse: the signals come from papers on these months and M5 step 2 screened factor returns built from the same stocks; results are 'stock-level out-of-sample, factor-level in-sample'. Source: O-17 Q3.",
     "CW-PIT uses full market cap, while S&P used float cap from 2005; with the me_missing drops and SPY's fee, CW-PIT - SPY is replication error. Source: index_tilt_design_note.md section 2.",
-    "Seal: the check period leaves out CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); windows that touch the seal stay typed missing. Source: O-12, O-18, O-22; coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1).",
+    "Seal: the check period leaves out CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row that would form it is sealed; the first month-end row after the seal is 2020-08-31, but the post-seal segment is anchored at 2021-07-30), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); windows that touch the seal stay typed missing; the post-seal engine segment starts at the anchor 2021-07-30 (first rebalance 2021-08-31, first labelled month 2021-09), and signals are built once per seal segment. S7 has no 12-month-earlier anchor for the check month 2021-09 (no calendar row in 2020-07), so no member has an S7 value in that month (short_history, unless the read at the 2021-07-30 anchor gives its own reason). S2 is typed missing for all or nearly all members in the post-seal check months to about the first half of 2023, because q - 4 or too many of the prior quarters have rdq before 2020-08-03; in those months a book on S2 alone equals CW-PIT (c = 0), and the by-month report gives the share. Source: O-12, O-18, O-22; coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1); amendment 1, V4 (loader review Opus A-1; check-gap review advisory A2).",
     "The seal does not stop price levels on both sides from implying the net change across it; no script computes it. Source: wrds_pull.py docstring, residual limits.",
     "WRDS tables without a price or a return keep seal-dated rows in their main files. Source: O-22.",
     "Low-risk bootstrap percentile bound is slightly liberal (about 6 to 7 percent size at a true ratio of 1.0). Source: decision log 'Signal-Screen Criteria Module' default 3.",
@@ -600,7 +601,7 @@
         "start post-seal check months at the first rebalance whose 252-row window lies after the seal and leave the months between out, counted",
         "end the check period at 2019-06"
       ],
-      "coordinator_default": "final (round 2): option 2 with a fixed gap: CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); post-seal check months start at 2021-09; the gap months are reported",
+      "coordinator_default": "final (round 2): option 2 with a fixed gap: CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row that would form it is sealed; the first month-end row after the seal is 2020-08-31, but the post-seal segment is anchored at 2021-07-30), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); post-seal check months start at 2021-09; the gap months are reported. Amendment 1 (V4): the post-seal engine segment starts at the anchor 2021-07-30 (first rebalance 2021-08-31, first labelled month 2021-09), and signals are built once per seal segment",
       "source": "O-22; research/m55_criteria.py CHECK_GAP_MONTHS (claude/m55-check-gap); card_loader.md D9; RESUME.md (OPUS-R2-A1)",
       "status": "decided (coordinator)",
       "reason": "every book can complete a check month only from 2021-09 (the low-risk book refuses until a member has a full 252-row window), so a fixed gap keeps the check months the same for all books and leaves no book near CW-PIT only because of the seal",
