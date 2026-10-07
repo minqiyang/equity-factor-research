@@ -15,6 +15,51 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Milestone 5.5 Trial Family v1 Frozen
+
+Context:
+
+- R9 needs the trial family committed before any result. No real return, signal value or coverage, or low-risk
+  calibration output exists on WRDS data (coordinator record). The draft passed two CRITICAL review rounds and the
+  m55-checkgap review seats (OI-04).
+
+Decision:
+
+- `docs/preregistrations/m55_trial_family_v1.json` is frozen on 2026-10-06 by the coordinator. Its rules are those
+  of the reviewed draft. Only `status`, `declared_on`, `code_pins`, and the loader commit in `declaration_timing`
+  changed at commit.
+- `code_pins` pins each module by its accepted commit and file SHA-256, and the untracked WRDS pull script by its
+  SHA-256. If a pinned file changes before a run, an amendment that pins the new bytes comes first.
+- Coordinator defaults for the open items, logged:
+  - OI-01 evidence ceiling: `DIAGNOSTIC_ONLY`, with the O-17 Q3 run label in every report header.
+  - OI-02 benchmark before 1993-02: `vwretd` as is, labelled gross of fund fees.
+  - OI-03 half-spread override: the screen uses the dated screen cost schedule; the confirm run waits for the
+    owner's second WRDS pull of CRSP closing bid and ask, and the override applies from the confirm period.
+  - OI-04 post-seal check: a fixed gap `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (26 months); check months restart at
+    2021-09; the gap months are reported.
+  - OI-05 real start: the code rule on a screen-only panel 1963-07 to 1992-12; fewer than 36 screen months gives a
+    typed undefined record that fails the shortlist, stays hashed, and counts as a trial.
+  - OI-06 Family A baseline: at least 4 of 6 valid signals (the M5 rule).
+  - OI-07 secondary family: all eight candidates plus the Family A baseline, size 9; the baseline runs over the
+    screen, confirm, and check periods, all visible.
+  - OI-08 post-publication split: months whose calendar year is after the publication year (the M5 convention).
+  - OI-09 look before any tilt return: CW-PIT against `vwretd` over the screen months only; CW-PIT against SPY is
+    reported with the confirm run.
+  - OI-10 low-risk calibration: ex-ante inputs only.
+  - OI-11 bid/ask-midpoint days (`dlyprcflg = 'BA'`): valid; their share of member-days is reported.
+  - OI-12 Family A on CRSP: the Gao and Ritter (2010) Nasdaq volume divisors; INDNO 1000200 as the market series in
+    every month.
+  - OI-13 share count for ME: loader rule D5.
+  - OI-14 held member with no close on the window end row: the run refuses and the refusal is recorded; an
+    amendment before any result of that run picks the fix.
+  - OI-15 `real_v2` tilt diagnostic and unpriced report: left out; a later file declares them if Q5 is answered.
+- None of these loosens R1, R2, R4, R6, R8, or R9.
+
+Follow-up:
+
+- Next: coverage counts and real starts (before any return), then the low-risk calibration on risk data only, then
+  the screen, in the order the file states.
+
 ## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
 
 Context:

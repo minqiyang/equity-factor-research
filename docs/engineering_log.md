@@ -12,6 +12,18 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Milestone 5.5 trial family v1 committed
+
+- `docs/preregistrations/m55_trial_family_v1.json` is the reviewed draft (SHA-256 `bbc21fde...0281dc`) with four
+  fields changed: `status`, `declared_on`, `code_pins`, and the loader commit in `declaration_timing` (`17e86ff` to
+  `0c60805`). A script check confirmed that every other field equals the draft.
+- File hashes were computed from `git show <commit>:<path>`. The manifest `reports/wrds_manifest_2025.json` has the
+  same bytes at `4717a56`, `17e86ff`, and `0c60805` (SHA-256 `6dc96e69...`). The pull script hash differs from the
+  manifest field `script_code_sha256` because that field also hashes the library version string.
+- `m55_signals.py`, `m55_wrds_loader.py`, and the manifest are pinned at `0c60805`, which is not yet on main. If a
+  pinned file changes before a run, an amendment comes first.
+- No real data was read. No return, signal, coverage, or calibration output exists.
+
 ## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
 
 - `research/m55_criteria.py` adds the period guards, the screen record and shortlist with a frozen digest, test A

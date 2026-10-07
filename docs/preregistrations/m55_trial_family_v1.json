@@ -1,0 +1,794 @@
+{
+  "schema_version": "m55_trial_family_v1",
+  "status": "FROZEN on 2026-10-06. The coordinator froze it after two CRITICAL review rounds and the m55-checkgap review seats (OI-04). The rules are those of the reviewed draft (SHA-256 bbc21fde91920a5eb6ecf7bb1032ba915a8ad3b6075a0c4b66b7eabc9b0281dc); only status, declared_on, code_pins, and the loader commit in declaration_timing changed at commit. Open items OI-01 to OI-15 are coordinator defaults, logged in docs/decision_log.md.",
+  "drafted_on": "2026-10-05",
+  "declared_on": "2026-10-06",
+  "evidence_ceiling": {
+    "value": "DIAGNOSTIC_ONLY",
+    "run_label": "stock-level out-of-sample, factor-level in-sample; never called confirmation",
+    "low_risk_label": "factor-level in-sample (the low-volatility effect was published in the 1970s)",
+    "source": "O-17 (Q3) in docs/decision_log.md; O-20 in docs/decision_log.md; index_tilt_design_note.md section 5 Q3; signal_screen_design_note.md sections 1 and 5; coord/reports/m55_trial/card_trial_defaults.md item 1 (OI-01)",
+    "header_rule": "every report header states DIAGNOSTIC_ONLY and the Q3 run label"
+  },
+  "purpose": "Milestone 5.5 trial-family declaration for the index tilt on point-in-time S&P 500 members (O-17, O-19, O-20, O-21). It fixes the data, universe, timing, books, costs, candidate signals, periods, screen, shortlist, primary and secondary test families, stop rule, bootstrap, reports owed, and limitations before any strategy return exists. It copies rules from the sources named in each field; it adds no new rule. Values that the sources leave open or state differently are listed under open_items with their options and are not chosen here.",
+  "declaration_timing": {
+    "before_any_real_return": true,
+    "known_at_drafting": [
+      "WRDS data vintage 2025-12-31 (pulled 2026-10-05 by the owner with coord/reports/m6_prep/wrds_pull.py)",
+      "the tracked manifest reports/wrds_manifest_2025.json (branch claude/m55-wrds-loader at 0c6080587e6d0db4a753775bc46157c1224c805e; unchanged from 4717a56 and 17e86ff), SHA-256 6dc96e69fdd6410fd5bcd41a00bddd0a2d91e54a2421e30efa06adacdf354e8f; it holds file names, row counts, and hashes only; its script_code_sha256 field is 5c8020e07718d09ef73b3c220aa7973da98718173450880325a9bd75a6e7bdca",
+      "the loader intake aggregates in coord/reports/m55_loader/intake_report.md: members per day by year, member-day coverage, ME reason counts by year and by later exit class, disappearance counts by cause, the D7 split check, signal-input row and drop counts; no return statistic of any book, signal, or index"
+    ],
+    "not_computed_at_drafting": [
+      "any strategy, book, CW-PIT, SPY, or index return or return statistic on WRDS data",
+      "any signal value, signal coverage count, or real-start year for S1 to S8 or Family A",
+      "any low-risk calibration output (ex-ante ratio, chosen g, census of undefined rebalances)",
+      "the CW-PIT against SPY look of index_tilt_design_note.md section 3 step 5"
+    ],
+    "pre_freeze_requirements": [
+      "the loader passes two review seats; its P-8 and P-9 follow-up (card coord/reports/m55_loader/card_loader_p9.md) is committed (17e86ff); the accepted loader commit is 0c6080587e6d0db4a753775bc46157c1224c805e; source: card_loader.md, card_loader_p9.md",
+      "a missingness-only census on 1963-1992 from missing-return flags, no return values; source: coord/reports/m55_lowrisk/expert_decision.md, 'Carried to the Real-Data Driver Card'",
+      "the daily data start (1961-01-03 in the calendar) and the first full 252-row anchor are stated; source: expert_decision.md",
+      "the calibration panel is cut and hashed (Opus ADV-05); source: expert_decision.md",
+      "the code hashes of every module named under code_pins are added at commit; source: card_trial_draft.md"
+    ],
+    "order_after_freeze": "coverage counts and real starts (before any return) -> low-risk calibration (risk data only) -> screen -> shortlist freeze and hash -> owner's second WRDS pull of CRSP closing bid and ask (OI-03) -> confirm -> check. Source: coord/reports/m55_engine/RESUME.md section 0h; signal_screen_design_note.md sections 2 and 4; O-20; coord/reports/m55_trial/card_trial_defaults.md item 3."
+  },
+  "code_pins": {
+    "statement": "Each file is pinned by its accepted commit and the SHA-256 of the file bytes at that commit. The runs of this trial file use these bytes. If a pinned file changes before a run, an amendment that pins the new bytes is committed before that run.",
+    "research/m55_index_tilt.py": {
+      "commit": "e50e8d6f552635152727f7f6bf746ec5b9e3bdc4",
+      "file_sha256": "e4cebd2472733bbbbc303a8a0d2b9e3aa4095738a01ced94cee1b0bc207d9892",
+      "scope": "engine, low-risk book, declared signal set, half_rule"
+    },
+    "research/m55_criteria.py": {
+      "commit": "e8135bc343269874f34b5c853343c55867bcac26",
+      "file_sha256": "b82e468e63da0e9afc4a21c0965fc3a71c23474dd8632d07393dec77d77f89de",
+      "scope": "screen, shortlist, tests A and B, stop rules, CHECK_GAP_MONTHS"
+    },
+    "research/m55_signals.py": {
+      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
+      "file_sha256": "ba6089c9abf638f9277aea68c9a7b78a55e37d02ef18611b1823d87b67ccdd1c",
+      "scope": "signals S1 to S8 and real_start"
+    },
+    "research/m55_wrds_loader.py": {
+      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
+      "file_sha256": "2bf58ac589ce506bff50136edc196f4b09372393baff091f551054d20006e04e",
+      "scope": "WRDS loader rules D1 to D9 and P-1 to P-9"
+    },
+    "research/m4_7_family_a.py": {
+      "commit": "28abd4ca506580941f413780ac5428818a4c3263",
+      "file_sha256": "41df632629ee6f6344ba4a6b2f0158d8e031bd9a4f5c6ad499df24316d88d488",
+      "scope": "the six Family A price signals"
+    },
+    "reports/wrds_manifest_2025.json": {
+      "commit": "0c6080587e6d0db4a753775bc46157c1224c805e",
+      "file_sha256": "6dc96e69fdd6410fd5bcd41a00bddd0a2d91e54a2421e30efa06adacdf354e8f",
+      "scope": "WRDS data manifest; same bytes at 4717a56, 17e86ff, and 0c60805"
+    },
+    "coord/reports/m6_prep/wrds_pull.py": {
+      "commit": null,
+      "file_sha256": "3e6bb22bbc35cde4d28574dec43db1c2802f63a60ffcb2fcb3ba2949731bab05",
+      "scope": "WRDS pull script, untracked. The manifest field script_code_sha256 is a different digest: the SHA-256 of the file bytes followed by the pandas, pyarrow, and SQLAlchemy version string."
+    }
+  },
+  "data": {
+    "provider": "WRDS, owner's personal academic, non-commercial account; only the owner logs in and downloads; agents read the local working copy only",
+    "vintage": "2025-12-31",
+    "scope": "CRSP CIZ stock, index, and S&P 500 constituent tables; Compustat North America and Compustat Snapshot; IBES; the CRSP-Compustat and IBES-CRSP link tables. Rows limited to ever-members of the S&P 500 list plus SPY; Compustat and IBES keys are those linked to them.",
+    "tables_used": {
+      "daily": "crsp_dsf_v2 (dlyret, dlyprc, dlycumfacpr, dlycumfacshr, dlyprevdt, dlydelflg, dlyprcflg)",
+      "members": "crsp_dsp500list_v2 (mbrstartdt, mbrenddt)",
+      "shares": "crsp_stkshares (shrout in thousands, shrstartdt, shrenddt)",
+      "delistings": "crsp_stkdelists (delactiontype, delpaymenttype, delreasontype)",
+      "index_daily": "CRSP INDNO 1000200 (value-weighted market, total return)",
+      "sp500_index_legacy": "legacy S&P 500 value-weighted total return vwretd, to 2024-12-31",
+      "fund_annual": "comp_snapshot_csa_pit, known_date = pitdate1",
+      "fund_quarterly_and_announcements": "comp_urq; comp_fundq gives only the fiscal key fyearq; known_date = the later of rdq and the first of prelimqprd, finalqprd",
+      "link": "ccm_lnkhist",
+      "ibes_link": "ibes_crsp_link (score <= 1 accepted)",
+      "ibes": "ibes_statsumu_epsus (unadjusted summary, FY1)"
+    },
+    "units": {
+      "compustat_items": "millions of USD",
+      "market_equity": "thousands of USD",
+      "shrout": "thousands of shares"
+    },
+    "storage_and_publication": "Working copy <local_data_root>/wrds_2025/ outside every Git checkout and outside iCloud sync; one tar backup under <private_data_root>/wrds_backup/. Git holds only a manifest and hashes. No raw provider row, membership list, security code, ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the owner data terms (R11).",
+    "seal": {
+      "window": "[2019-07-31, 2020-07-31)",
+      "rule": "In each table with a price or a return, rows whose economic date interval touches the window, or could touch it when a date is missing, are in wrds_2025/sealed/ and are never opened; their bytes are hashed only. Tables without a price or a return keep seal-dated rows in their main files. Rebalances whose windows touch the seal months stay typed missing. The first return after the seal, which starts at a seal-day close, is sealed too. No data after August 2026 (O-12).",
+      "never_opened_paths": [
+        "wrds_2025/sealed/**",
+        "the WRDS backup archive",
+        "<private_data_root>",
+        "raw/**",
+        "raw/eod/*.json",
+        "quarantine/**",
+        "eod/holdout/"
+      ],
+      "months_left_out_of_check": "2019-07 to 2021-08 (m55_criteria.CHECK_GAP_MONTHS)",
+      "run_segments": "the loader refuses a window across the seal (D9); a run crosses the seal only as separate segments; each segment's price path starts at its first priced row with index 1.0 (D3)",
+      "source": "O-12, O-18, O-22 in docs/decision_log.md (O-22 on branch claude/o22-wrds-grant); wrds_pull.py docstring; card_loader.md D9; research/m55_criteria.py CHECK_GAP_MONTHS (claude/m55-check-gap)"
+    },
+    "loader_rules": {
+      "D1_identity": "permanent_id = str(permno); the symbol is the same string; no return crosses PERMNOs (R3)",
+      "D2_calendar": "the trading days of INDNO 1000200 in the main file; every member daily date is one of them, else refuse; a non-member row off the calendar is dropped and counted; no main row is in the seal",
+      "D3_prices": "one close index per PERMNO and seal segment from dlyret only (CIZ includes the delisting return on the dlydelflg = 'Y' row; delret is never added); a missing dlyret is NaN; a later return is the last valid value times (1 + dlyret); a gap is handled by halt_gap_return_v1 (R5, R6)",
+      "D4_membership": "crsp_dsp500list_v2, end date inclusive; engine end_date = mbrenddt + 1 day; start_known_at = mbrstartdt; end_known_at = mbrenddt (R2)",
+      "D5_market_equity": "|dlyprc| at r - 1 times the shrout with the latest shrstartdt on or before (r - 1) - 136 calendar days, moved to the r - 1 basis by the dlycumfacshr ratio; reasons no_share_fact, stale_share_fact (that row's shrenddt before the cutoff), unmapped (no daily row at r - 1) (R1)",
+      "D6_disappearances": "a member PERMNO with a crsp_stkdelists row whose price path ends before the last calendar row; effective_date = the calendar row after the last valued row, but never before the dlydelflg = 'Y' row date: when rows without a value lie between the last valued row and the 'Y' row, the event is effective on the first calendar row on or after the 'Y' row date and the position is held at its last value across the gap (amended by card_loader_fix_r1.md item 3, loader review GPT-M3); known_at = effective_date; delisting_return 0.0 when the CIZ delisting return is in the path, NaN when missing (engine default applies); cause cash_merger only for delactiontype MER and delpaymenttype CASH; failure for reasons BKPY, LP, SHLD, INSC, DELQ, FING, INSF, MVOT, MTMK, MVCHI, MVMF or action GLI; else unknown (R4)",
+      "D7_split_factors": "CIZ cumulative factors fall at a split; the loader checks this on the data and refuses otherwise; only ratios between dates at or before t are used",
+      "D8_signal_inputs": "daily from crsp_dsf_v2 (prc = |dlyprc|, cfacpr = dlycumfacpr, cfacshr = dlycumfacshr; shrout = the D5 count: the crsp_stkshares count with the latest shrstartdt on or before the row date - 136 calendar days, on the row's basis by the dlycumfacshr ratio, typed missing under the D5 reasons); members from D4; fund_annual from comp_snapshot_csa_pit (known_date = pitdate1); fund_quarterly and announcements from comp_urq; link from ccm_lnkhist; ibes_link from ibes_crsp_link; ibes from ibes_statsumu_epsus; index_daily from INDNO 1000200; a row with no known date or no fiscal key is dropped and counted by table",
+      "D9_seal": "the loader refuses any sealed path; tilt_frames refuses a window across the seal",
+      "P1_path_break": "a return whose dlyprevdt is a row with a price and no return is not in the path and is not filled; tilt_frames marks the next row in path_break; the driver blanks each level window (a price ratio or a maximum) that holds one and reports each held position across one with its weight",
+      "P2": "a delisting-row return of -100 percent stays NaN in the path and is supplied as the delisting return",
+      "P3_eligibility": "eligibility at the decision row t is mbrstartdt <= t < mbrenddt (the engine's interval mask; M5 rule resolved_universe_at_next_execution_row)",
+      "P4": "the share count's basis is the first daily row on or after shrstartdt with a factor, on or before t; no valid close or factor at t, or no basis factor by t, is unmapped",
+      "P5": "rows dropped and counted by table: no fiscal key, no known date, a known date before datadate, a fiscal key on two datadate values",
+      "P6": "a zero dlyprc is no price and stays typed missing",
+      "P7": "the 21 member PERMNOs whose path ends in 2019-07 without a delisting record do not reach a pre-seal window",
+      "P8_ibes_currency": "IBES FY1 rows with a currency other than USD, or with no currency, are dropped before signal_inputs returns and counted by year (coordinator decision, card m55-loader-p9; committed at 17e86ff)",
+      "P9_s2_share_basis": "option (a): the loader never reads URQ ajexq and supplies ajexq = 1.0 on every fund_quarterly row; each quarter's first-reported EPS is on the CRSP cfacshr basis of its own first known date (ASC 260) (coordinator decision, card m55-loader-p9; committed at 17e86ff)",
+      "source": "coord/reports/m55_loader/card_loader.md (D1 to D9); decision log entry 'WRDS Loader Rules D1 to D9' on branch claude/m55-wrds-loader (P-1 to P-7); coord/reports/m55_loader/card_loader_p9.md and the loader decision log at 17e86ff (P-8, P-9); coord/reports/m55_trial/card_trial_defaults.md item 11 (OI-11); coord/reports/m55_trial/card_trial_fix_r1.md item 5 (Opus M3); coord/reports/m55_loader/card_loader_fix_r1.md item 3 (D6 timing, loader review GPT-M3)",
+      "bid_ask_midpoint_days": "daily rows with dlyprcflg = 'BA' count as valid prices and returns; the share of member-days with 'BA' is counted in the report"
+    },
+    "benchmarks": {
+      "confirm_and_check": "SPY total return from its PERMNO's dlyret, from 1993-02",
+      "before_1993_02": "CRSP S&P 500 value-weighted total return vwretd as is (legacy, to 2024-12-31), labelled 'gross of fund fees'; no fee is deducted",
+      "never": "sprtrn, or INDNO 1000502 price returns, as a total return",
+      "cw_pit": "CW-PIT: the cap-weight book on the same members, eligibility, events, and costs as the tilt",
+      "decomposition": "tilt - SPY = (tilt - CW-PIT) + (CW-PIT - SPY); the second term is replication error (dropped members, full against float cap, SPY's fee); both terms are reported",
+      "source": "card_trial_draft.md item 2; card_loader.md item 4; crsp_intake_design_note.md section 1; index_tilt_design_note.md section 2; signal_screen_design_note.md sections 2 and 5; coord/reports/m55_trial/card_trial_defaults.md item 2 (OI-02)"
+    }
+  },
+  "universe_and_timing": {
+    "universe": "point-in-time S&P 500 members from crsp_dsp500list_v2, identity by PERMNO, priced at r - 1; a member with me_missing (unmapped, ambiguous, multi_class, no_share_fact, stale_share_fact) or unpriced leaves both books at that rebalance; SPY keeps it, so it is replication error (R2, R6)",
+    "timing_contract": "after_close_signal_next_observed_close_v1: at each month-end rebalance row r, cap weights, scores, eligibility, and the TE covariance use rows up to r - 1 only; both books trade at the close of row r and earn from row r + 1",
+    "rebalance": "monthly; the last calendar row of each month in [start, end], without the anchor start; the first rebalance earns from the next month; monthly returns compound measured daily returns by calendar month",
+    "halt_policy": "halt_gap_return_v1",
+    "event_known_at_rule": "a disappearance changes the target at r only when its known_at is at or before r - 1",
+    "b2_rule": "The traded set at r is the target members minus the names that settle at r on an event first known at r; their held positions settle under R4 in both books. Scores, ranks, and the covariance stay at r - 1, and these names still count in the ranks of the others. CW-PIT renormalizes pro rata over the traded set; TILT (and the low-risk book) runs the same tilt, cap, and TE step on the traded set. Reported per rebalance: unknown_event_excluded and unknown_event_cw_share (over the r - 1 ME of all target members). A rebalance with no traded member refuses (traded_set_empty). An earlier known_at only with real evidence; no loader invents one.",
+    "source": "index_tilt_design_note.md section 1; research/m55_index_tilt.py module docstring and rebalance_dates; decision log 'Index-Tilt Engine: Coordinator Defaults and the Delisting-at-Rebalance Rule' (O-20, O-21 context, PR #291); card_loader.md D4 and P-3; coord/reports/m55_trial/card_trial_defaults.md item 14 (OI-14); coord/reports/m55_trial/card_trial_fix_r1.md item 7 (Opus A4; OI-14 revised)",
+    "halt_at_window_end": "if a held member has no close on a period's end row, the run refuses (halt_gap_return_v1) and the refusal is recorded; an amendment before any result of that run picks the fix"
+  },
+  "books": {
+    "cw_pit": {
+      "definition": "b = cap weight from D5 market equity at r - 1 over the traded set",
+      "source": "index_tilt_design_note.md section 1; research/m55_index_tilt.py"
+    },
+    "tilt": {
+      "score": "each signal is a percentile rank at row r - 1 with its declared sign (higher is better; the engine applies no sign); c = mean of (2u - 1) over the declared signal set; ties take the average rank; ranks are exact fractions; the rank pool is the book members with a valid value",
+      "weight": "w = b x (1 + TILT_STRENGTH x c), TILT_STRENGTH = 0.5",
+      "stock_cap": "|w - b| <= 0.01 (STOCK_CAP)",
+      "te_target": "ex-ante TE against CW-PIT <= 0.02 a year (TE_TARGET)",
+      "te_estimate": "sqrt(252) x the ddof-1 standard deviation of the daily active return over the 252 rows ending at r - 1 (COV_ROWS = 252)",
+      "loop": "tilt; cap; renormalize multiplicatively on the members free to tilt; repeat to max |w - b| <= cap + 1e-12 (CAP_TOLERANCE) in at most 100 passes (RENORMALIZE_LOOPS), else refuse; then scale w = b + s (w - b), s = min(1, 0.02 / TE); members pinned at b stay at b; TE_TOLERANCE 1e-9; BUDGET_TOLERANCE 1e-12",
+      "short_history": "a member without a complete 252-row return window ending at r - 1 gets c = 0 and stays at b",
+      "min_valid": "c = 0 when fewer than min_valid declared signals are valid; c = 0 is counted (c_zero_few_signals)",
+      "invalid_values": "an infinite signal value refuses; a NaN is invalid for that signal only",
+      "source": "index_tilt_design_note.md section 1; O-17 (Q1); research/m55_index_tilt.py constants and decision log 'Index-Tilt Engine: Coordinator Defaults' items 1 to 9; branch claude/m55-signal-sets e50e8d6 (signal_ids, min_valid, half_rule)"
+    },
+    "low_risk": {
+      "role": "judged only on test B; uses no screened return signal, so no screen or confirm month selects it (O-20)",
+      "construction": "power volatility tilt (a'): m_i = (s_i / s_med)^(-g); renormalize the free weights b m to the free cap weight; cap |w - b| at LOWRISK_CAP = 0.02 and renormalize until the cap holds (refuse after the loop limit); scale active weights down until ex-ante TE <= LOWRISK_TE = 0.05",
+      "s_i": "ddof-1 standard deviation of the 252 daily simple returns ending at r - 1; a member without a full window is pinned at w = b and counted",
+      "s_med": "median over the target members with a full window, the B2 excluded names included",
+      "costs_events_halts": "same as the tilt: R8 at 1x and 2x, R4 events, halt policy; runs through run_book",
+      "calibration": {
+        "knob": "g only; cap 0.02 and TE 0.05 are fixed hard limits",
+        "grid": [
+          0.5,
+          1.0,
+          1.5,
+          2.0,
+          2.5,
+          3.0,
+          3.5,
+          4.0,
+          4.5,
+          5.0,
+          5.5,
+          6.0
+        ],
+        "target": "LOWRISK_TARGET_RATIO = 0.87: median over screen rebalances (1963-07 to 1992-12) of the ex-ante whole-book volatility ratio to CW-PIT",
+        "ratio": "whole traded book on complete-case rows: the rows of the 252-row window ending at r - 1 where every traded member has a return; at least LOWRISK_RATIO_MIN_ROWS = 126 rows, else ratio_window_short; status defined_full (252 rows) or defined_partial; no fill, clip, or repair",
+        "choice": "two-sided median bracket: undefined rebalances enter the median once at +inf and once at -inf; each g meets, fails, or is ambiguous. Order: a refusal below the first g that meets stops; then ratio_coverage_low (undefined share above LOWRISK_UNDEFINED_MAX = 0.10); then ratio_coverage_ambiguous (an ambiguous g below the first g that meets; the owner decides); then chosen (the first g that meets); else no_g_reaches_target (stop and ask the owner; the budget is not loosened)",
+        "window_diagnostic": "treat every defined_partial rebalance as undefined and repeat the bracket classes and the choice without the coverage stop; window_sensitive only when that choice differs from the main decision; window_diag_coverage_high (diagnostic undefined share above 0.10) recorded apart",
+        "inputs": "second moments only, ex-ante only; no realized portfolio volatility, mean return, Sharpe ratio, return gap, or realized portfolio return is computed",
+        "logged_per_g": "every grid value with the share of rebalances where the cap binds, the TE scale is below 1, and members are pinned (R9)",
+        "retired": "LOWRISK_PINNED_MAX and pinned_share_high",
+        "order": "coordinator default (logged): the calibration rule is frozen in this file first and the calibration runs after the freeze; this is stricter than the O-20 order (calibrate before the freeze)"
+      },
+      "source": "O-20; coord/reports/m6_prep/low_risk_design_note.md sections 3 and 4; coord/reports/m55_lowrisk/expert_decision.md (rules R-a to R-j and the addendum); decision log 'Low-Risk Book Calibration Rules' on branch claude/m55-lowrisk; research/m55_index_tilt.py LOWRISK_* constants at 6395511; coord/reports/m55_trial/card_trial_defaults.md item 10 (OI-10); coord/reports/m55_trial/card_trial_fix_r1.md item 10 (Opus A7)"
+    },
+    "costs": {
+      "basis": "one way, per traded notional, commission + spread bp, dated",
+      "COST_SCHEDULE": [
+        [
+          null,
+          5.0,
+          20.0
+        ],
+        [
+          "2001-04-01",
+          2.0,
+          8.0
+        ],
+        [
+          "2007-01-01",
+          1.0,
+          4.0
+        ]
+      ],
+      "SCREEN_COST_SCHEDULE": [
+        [
+          null,
+          30.0,
+          30.0
+        ],
+        [
+          "1975-05-01",
+          10.0,
+          30.0
+        ],
+        [
+          "1993-01-01",
+          5.0,
+          20.0
+        ],
+        [
+          "2001-04-01",
+          2.0,
+          8.0
+        ],
+        [
+          "2007-01-01",
+          1.0,
+          4.0
+        ]
+      ],
+      "which_schedule": "screen runs use SCREEN_COST_SCHEDULE only (no half-spread override); confirm and check runs use COST_SCHEDULE, which equals it from 1993-01-01, with the half-spread override",
+      "scales": {
+        "primary": 1.0,
+        "sensitivity_2x": 2.0
+      },
+      "every_case_at_2x": true,
+      "half_spread_override": "from the confirm period on, per stock and rebalance row: the half-spread is the higher of the spread of the dated schedule and the CRSP closing half-spread at r - 1; the 2x case doubles the result. It uses CRSP closing bid and ask from the owner's second WRDS pull, which follows the O-22 seal rule; the confirm run does not start before that pull",
+      "split": "the dated rate is split between the engine's transaction and slippage columns; annual turnover and cost drag include the first purchase from cash",
+      "no_switch_cost": "long only with fixed signal weights; no switch cost; no borrow cost (no shorts)",
+      "reported": "active turnover and cost drag per year",
+      "source": "index_tilt_design_note.md section 1 (Costs); signal_screen_design_note.md section 4 item 4; research/m55_index_tilt.py COST_SCHEDULE, COST_SCALES; research/m55_criteria.py SCREEN_COST_SCHEDULE; engine coordinator default 7; coord/reports/m55_trial/card_trial_defaults.md item 3 (OI-03); coord/reports/m55_trial/card_trial_fix_r1.md item 8 (Opus A5)"
+    },
+    "disappearance_r4": {
+      "rule": "one event set for both books; CRSP delisting return in the path when present; without it, last close for a cash merger and -100 percent otherwise (long only); timing in both modes: no settlement happens before the dlydelflg = 'Y' row date; when rows without a value lie between the last valued row and the 'Y' row, the event is effective and known on the first calendar row on or after the 'Y' row date",
+      "source": "index_tilt_design_note.md section 1 (Disappearance); card_loader.md D6; research/m55_index_tilt.py EVENT_RUNS; coord/reports/m55_loader/card_loader_fix_r1.md items 3 and 4; coord/reports/m55_trial/card_trial_fix_r1.md item 3 (GPT-R1-03); coord/reports/m55_loader/card_loader_fix_r1.md item 3 (loader review GPT-M3)",
+      "last_close_rerun": "the all-events R4 rerun uses the loader last_close mode: the return of every dlydelflg = 'Y' row is removed from the price path, so the path ends at the last trade close, and every event settles at that close (delisting_return = 0.0); no settlement happens before the 'Y' row date. The engine event-mode switch (EVENT_RUNS last_close) alone is not this rerun"
+    }
+  },
+  "candidates": {
+    "universe_note": "Each signal is computed at decision row t = r - 1 on point-in-time members; a value known on day k is usable from the first calendar row after k; first-reported Compustat values only (the first non-missing value of each item per record, usable from its known date plus one trading row); each cell holds a finite value or one typed reason; nothing is filled, clipped, winsorized, or dropped.",
+    "reasons": [
+      "no_link",
+      "ambiguous_link",
+      "no_record",
+      "not_yet_known",
+      "stale",
+      "short_history",
+      "missing_item",
+      "no_market_data",
+      "fpe_changed",
+      "be_nonpositive",
+      "zero_denominator",
+      "invalid_value"
+    ],
+    "backfill": "annual signals need two fiscal years known at t (MIN_ANNUAL_RECORDS = 2); S2 and S3 need eight quarters known at t (MIN_QUARTER_RECORDS = 8)",
+    "links": "CRSP-Compustat primary date-valid links (one-to-one at t, else ambiguous_link); IBES ticker to PERMNO resolved at each statpers with score <= 1 (R3)",
+    "list": [
+      {
+        "id": "S1",
+        "name": "3-month FY1 EPS revision / price",
+        "reference": "Chan, Jegadeesh, Lakonishok (1996)",
+        "definition": "3 x the mean of the valid one-month FY1 revisions of the last three statistics months (at least 2); each revision = (FY1 mean at month m - FY1 mean at m - 1) / price at the m - 1 month end, one share basis",
+        "sign": 1,
+        "source_data": "IBES unadjusted summary, CRSP split factors, same FPEDATS",
+        "usable_from": "the first month-end row after the statistics date",
+        "max_age_months": 2
+      },
+      {
+        "id": "S2",
+        "name": "earnings surprise, seasonal random walk",
+        "reference": "Bernard and Thomas (1989)",
+        "definition": "(EPS q - EPS q-4) / sd of the eight prior such differences (at least 6), first-reported EPS, on the cfacshr share basis of q (P-9 option (a))",
+        "sign": 1,
+        "source_data": "comp_urq first-reported quarterly EPS",
+        "usable_from": "RDQ + 1 trading day",
+        "max_age_months": 6,
+        "history_rule": "an S2 quarter is read only when the PERMNO has a cfacshr row at the basis date; a new listing has no S2 value for about 2.5 to 3 years"
+      },
+      {
+        "id": "S3",
+        "name": "announcement return, days -1 to +1",
+        "reference": "Chan, Jegadeesh, Lakonishok (1996)",
+        "definition": "stock minus INDNO 1000200 compound return over rows -1 to +1 around the latest announcement usable at t",
+        "sign": 1,
+        "source_data": "CRSP, RDQ",
+        "usable_from": "RDQ + 2 trading days",
+        "max_age_months": 6
+      },
+      {
+        "id": "S4",
+        "name": "gross profit / assets",
+        "reference": "Novy-Marx (2013)",
+        "definition": "(revt - cogs) / at",
+        "sign": 1,
+        "source_data": "first-reported annual (Compustat Snapshot)",
+        "usable_from": "fiscal year end + 6 months",
+        "max_age_months": 18
+      },
+      {
+        "id": "S5",
+        "name": "accruals",
+        "reference": "Sloan (1996)",
+        "definition": "((d act - d che) - (d lct - d dlc - d txp) - dp) / mean(at, at lag)",
+        "sign": -1,
+        "source_data": "first-reported annual (Compustat Snapshot)",
+        "usable_from": "fiscal year end + 6 months",
+        "max_age_months": 18
+      },
+      {
+        "id": "S6",
+        "name": "asset growth",
+        "reference": "Cooper, Gulen, Schill (2008)",
+        "definition": "at / at lag - 1",
+        "sign": -1,
+        "source_data": "first-reported annual (Compustat Snapshot)",
+        "usable_from": "fiscal year end + 6 months",
+        "max_age_months": 18
+      },
+      {
+        "id": "S7",
+        "name": "net share issuance, 12 months",
+        "reference": "Pontiff and Woodgate (2008)",
+        "definition": "log(shrout x cfacshr at the month-end anchor before t's month) - log(the same 12 months earlier); shrout is the D5 count (D8): the latest shrstartdt on or before the anchor date - 136 calendar days, on the anchor row's basis",
+        "sign": -1,
+        "source_data": "CRSP shares, the D5 count on the daily signal-input table, read at the month-end anchor",
+        "usable_from": "r - 1",
+        "max_age_months": 1
+      },
+      {
+        "id": "S8",
+        "name": "book-to-market",
+        "reference": "Fama and French (1992)",
+        "definition": "Fama-French book equity / (price x shares at the month-end anchor); shares is the D5 count (D8): the latest shrstartdt on or before the anchor date - 136 calendar days, on the anchor row's basis; be <= 0 is be_nonpositive",
+        "sign": 1,
+        "source_data": "first-reported annual (Compustat Snapshot); ME with the D5 share count at the month-end anchor",
+        "usable_from": "fiscal year end + 6 months",
+        "max_age_months": 18
+      }
+    ],
+    "drop_rule": "a signal with no first-reported WRDS source is dropped before the screen and the drop is recorded, not replaced",
+    "real_start": "each month-end rebalance row is labelled by the return month it forms (the row dated in month m - 1 forms month m). The real-start panel is the return months 1963-01 to 1992-12 (30 full years; rows dated 1962-12 to 1992-11). The driver indexes the coverage panel by return month before it calls research/m55_signals.real_start on that panel: the first year from which every year to 1992 is complete and has at least 80 percent of members valid in every month (COVERAGE_NUMERATOR / COVERAGE_DENOMINATOR = 4 / 5). Real-start year Y means the screen series starts at the later of Y-01 and 1963-07 and ends at 1992-12. Fewer than 36 months gives the typed undefined record (OI-05). Coverage is a validity count, not a return; coverage counts per year come before any return",
+    "family_a_baseline": {
+      "signals": [
+        "MOM_12_1",
+        "HIGH_52W",
+        "REV_1M",
+        "LOW_VOL_252",
+        "LOW_BETA_252",
+        "AMIHUD_ILLIQ_63"
+      ],
+      "signs": "Family A orients each so higher is better (the M5 signs)",
+      "role": "runs once as a counted baseline composite (Q2) over the screen, confirm, and check periods, all visible (after screen_empty, the screen period only); a member of the secondary family; decides nothing; not a candidate",
+      "min_valid": 4,
+      "source": "signal_screen_design_note.md section 3; research/m4_7_family_a.py FAMILY_A; research/m55_index_tilt.py MIN_VALID_SIGNALS; RESUME.md 0h (signal sets review A-3); coord/reports/m55_trial/card_trial_defaults.md items 6, 7, 12 (OI-06, OI-07, OI-12)",
+      "crsp_inputs": {
+        "amihud_nasdaq_divisor": "Gao and Ritter (2010) on primaryexch = 'Q' rows: volume divided by 2.0 before 2001-02, 1.8 from 2001-02 to 2001-12, 1.6 in 2002 and 2003, 1.0 from 2004",
+        "low_beta_market_series": "INDNO 1000200 total return in every month (one series, no break)"
+      }
+    },
+    "composite": {
+      "definition": "one tilt on the shortlisted signals: c = mean of the shortlisted signed ranks, c = 0 when fewer than half are valid: min_valid = half_rule(n) = ceil(n / 2), n the shortlist size",
+      "single_candidate_runs": "each candidate runs alone with min_valid = half_rule(1) = 1",
+      "source": "signal_screen_design_note.md section 4 item 3; branch claude/m55-signal-sets half_rule"
+    },
+    "source": "signal_screen_design_note.md section 3; research/m55_signals.py on claude/m55-signals (SIGNS, MAX_AGE_MONTHS, REASONS, constants, s1 to s8, real_start); decision log 'Signals S1 to S8 Rules' on claude/m55-signals; card_loader_p9.md; coord/reports/m55_trial/card_trial_defaults.md item 5 (OI-05); coord/reports/m55_trial/card_trial_fix_r1.md items 4 and 5 (Opus M2, M3); coord/reports/m55_trial/card_trial_fix_r1.md item 14 (R2-A1)"
+  },
+  "periods": {
+    "screen": {
+      "first": "1963-07, or the later of Y-01 and 1963-07 for a signal with real-start year Y",
+      "last": "1992-12",
+      "min_months": 36,
+      "benchmarks": "CW-PIT (decision); CRSP S&P 500 value-weighted total return (reported)",
+      "month_label": "a return month m is formed by the month-end rebalance row dated in month m - 1"
+    },
+    "confirm": {
+      "first": "1993-02",
+      "last": "2014-03",
+      "months": 254,
+      "benchmarks": "SPY total return; CW-PIT"
+    },
+    "check": {
+      "first": "2014-04",
+      "last": "the last return month that the loader and engine can complete inside the vintage (the loader needs a calendar row in the month after the last rebalance row); the driver records that month",
+      "left_out": "CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31)",
+      "label": "partly out-of-sample",
+      "benchmarks": "SPY; CW-PIT",
+      "post_seal_start": "post-seal check months start at 2021-09, the first complete post-seal holding month of every book"
+    },
+    "unused_month": "1993-01 is in no period",
+    "membership_start": "the constituent file has 500 members per day from 1961, so the screen starts at 1963-07 with no proxy universe",
+    "source": "O-21; signal_screen_design_note.md section 2; research/m55_criteria.py SCREEN_START, SCREEN_END, CONFIRM_START, CONFIRM_END, CHECK_START, CONFIRM_MONTHS, SCREEN_MIN_MONTHS, CHECK_GAP_MONTHS (claude/m55-check-gap); intake_report.md (members per day by year); coord/reports/m55_trial/card_trial_defaults.md item 4 (OI-04); coord/reports/m55_trial/card_trial_fix_r1.md item 2 (GPT-R1-02, Opus M1; OI-04 revised); coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1)"
+  },
+  "screen_and_shortlist": {
+    "screen_run": "each candidate alone as a 2 percent TE tilt over its screen months; record the net active return against CW-PIT of the same run, annual mean, annual TE, IR, HAC t, one-sided p, and annual turnover; all records visible",
+    "record": "annual mean = 12 x the monthly mean; TE = ddof-1 monthly sd x sqrt(12); HAC t = newey_west_mean_tstat with lag floor(4 (n / 100)^(2/9)); one-sided p = norm.sf(t); a zero or undefined TE or t gives a typed record status undefined that fails and stays hashed",
+    "shortlist_rule": {
+      "ir_min": 0.2,
+      "t_min": 1.0,
+      "shortlist_cap": 10
+    },
+    "freeze": "SHA-256 of the canonical JSON (sorted keys, no spaces, floats as .17g strings) of rule, candidates, shortlist, decision; the digest is saved before any confirm month is opened; every confirm or check call takes the saved digest as a separate input and refuses on any mismatch or changed rule value",
+    "empty_shortlist": "decision screen_empty: no tilt, baseline, or secondary-family run uses a confirm or check month; test A and the composite stop rule are not run; test B (the low-risk version, no screened signal) may still run",
+    "source": "O-21; signal_screen_design_note.md section 4; research/m55_criteria.py screen_record, freeze_shortlist, shortlist_digest, verify_frozen_screen, IR_MIN, T_MIN, SHORTLIST_CAP, FLOAT_FORMAT; decision log 'Signal-Screen Criteria Module' defaults 1, 4, 6; coord/reports/m55_trial/card_trial_defaults.md item 5 (OI-05); coord/reports/m55_trial/card_trial_fix_r1.md item 6 (Opus A3)",
+    "short_screen": "a candidate with fewer than 36 screen months gets a typed undefined record (status undefined) that fails the shortlist, stays hashed, and counts as a trial"
+  },
+  "primary_family": {
+    "members": [
+      "A: composite tilt beats SPY",
+      "B: low-risk version, same return with lower risk"
+    ],
+    "correction": "Holm at ALPHA = 0.05 over 2 tests; read as an adjusted one-sided p of at most 0.05",
+    "test_A": {
+      "statistic": "confirm period, net of dated costs: composite minus SPY and composite minus CW-PIT, each a one-sided HAC t; intersection-union: p_A = the larger one-sided p",
+      "met_when": "Holm-adjusted p_A <= 0.05; both confirm annual means > 0; both means > 0 at 2x costs; neither check-period annual mean < 0",
+      "labels": "met; positive_not_shown (both confirm means > 0 but Holm fails); not_met_robustness (Holm passes, 2x or check fails); not_met",
+      "after_screen_empty": "p_A = 1.0; the Holm family keeps size 2"
+    },
+    "test_B": {
+      "statistic": "confirm period: HAC non-inferiority t of (low-risk - SPY) + NI_MARGIN / 12 with NI_MARGIN = 0.005 a year, p_NI = norm.sf(t); volatility ratio vol(low-risk) / vol(SPY); paired moving-block bootstrap p_vol = share of draws with ratio >= 1.0; p_B = max(p_NI, p_vol)",
+      "met_when": "Holm-adjusted p_B <= 0.05; ratio <= VOL_RATIO_MAX = 0.90; bootstrap 95th percentile < BOOTSTRAP_UPPER_MAX = 1.0; check-period annual gap > -0.005; check-period ratio < CHECK_VOL_RATIO_MAX = 1.0",
+      "reported_not_tested": "the drawdown ratio (deepest low-risk / deepest SPY) and the DRAWDOWN_EPISODES = 3 largest drawdowns of each series",
+      "bootstrap_note": "the percentile bound is slightly liberal in a reviewer simulation (about 6 to 7 percent at a true ratio of 1.0, against 5 percent); the 0.90 point rule, the non-inferiority test, and Holm make B stricter overall"
+    },
+    "bootstrap": {
+      "method": "paired moving-block, 12-month blocks, no wrap, starts uniform on 0 to n - 12, ceil(n / 12) blocks cut to n",
+      "block_months": 12,
+      "draws": 10000,
+      "seed": 20261003,
+      "quantile": 95.0
+    },
+    "drawdown_episodes": "non-overlapping episodes of the compounded path, wealth 1 at the month before the first return; depth = trough / peak - 1; deepest first; 3 reported",
+    "source": "O-20, O-21; signal_screen_design_note.md section 5; research/m55_criteria.py ALPHA, NI_MARGIN, VOL_RATIO_MAX, BOOTSTRAP_UPPER_MAX, CHECK_VOL_RATIO_MAX, BLOCK_MONTHS, BOOTSTRAP_DRAWS, BOOTSTRAP_SEED, BOOTSTRAP_QUANTILE, DRAWDOWN_EPISODES, composite_test, low_risk_test, decide_a, decide_b, holm_primary; decision log 'Signal-Screen Criteria Module' defaults 1 to 3, 6"
+  },
+  "secondary_family": {
+    "members": [
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+      "S8",
+      "Family A baseline composite"
+    ],
+    "statistic": "test A statistics per member (vs SPY and vs CW-PIT, p_A the larger one-sided p) in the confirm period; each single signal runs alone with min_valid = 1",
+    "correction": "Benjamini-Yekutieli q-values with a family size fixed in this file; fewer members keep the size",
+    "role": "decides nothing; runs only after the frozen-screen gate; refuses after screen_empty",
+    "source": "signal_screen_design_note.md section 4 item 3; research/m55_criteria.py secondary_family, SECONDARY_NOTE; decision log 'Signal-Screen Criteria Module' default 7; coord/reports/m55_trial/card_trial_defaults.md item 7 (OI-07)",
+    "family_size": 9,
+    "size_rule": "fixed now; no path from the shortlist to the family; a dropped or undefined member keeps the size"
+  },
+  "stop_rule": {
+    "after_screen": "no shortlisted candidate: stop; confirm months are not opened for a tilt",
+    "after_confirm": "a composite annual mean against SPY below CONFIRM_FLOOR = 0.003 stops the line as a declared negative result, whatever A's outcome",
+    "forking_paths": "any later change to TE, weights, signs, signals, or construction is a new counted trial with no clean confirm data left; only new forward months could test it",
+    "source": "O-21; signal_screen_design_note.md section 6; research/m55_criteria.py stop_after_confirm, CONFIRM_FLOOR"
+  },
+  "trial_count": {
+    "counted_runs": [
+      "8 screen candidates S1 to S8 (a dropped candidate stays counted with its drop reason)",
+      "1 composite (primary test A)",
+      "1 low-risk version (primary test B) and its 12 calibration grid values (risk only, no return)",
+      "1 Family A baseline composite (secondary; screen, confirm, and check periods)",
+      "8 single-signal confirm and check runs in the secondary family (BY family size 9 with the baseline)"
+    ],
+    "sensitivity_runs": "every case at 2x costs; every case with the all-events R4 rerun in the loader last_close mode",
+    "prior_m5_slots": "the M5 family of 481 slots stays visible; this file adds to it",
+    "source": "signal_screen_design_note.md sections 3 and 4; index_tilt_design_note.md section 2; AGENTS.md R9; coord/reports/m55_trial/card_trial_defaults.md item 7"
+  },
+  "pre_tilt_look": {
+    "rule": "the only look before any tilt return: CW-PIT against vwretd over the screen months only (coverage, TE, correlation, mean gap); a data fix after it needs a reviewed amendment before any tilt return. CW-PIT against SPY over the confirm and check months is reported with the confirm run, not before, because composite - SPY = (composite - CW-PIT) + (CW-PIT - SPY), so an earlier SPY look shows part of test A",
+    "period": "screen months 1963-07 to 1992-12",
+    "source": "index_tilt_design_note.md section 3 step 5; RESUME.md section 3 item 7; coord/reports/m55_trial/card_trial_defaults.md item 9 (OI-09)"
+  },
+  "reports_owed": {
+    "r4": "count and weight share of held disappearances by cause, the share with a CIZ delisting return, the supplied -100 percent count, the missing count (engine default), and the all-events rerun at the last trade close (loader last_close mode)",
+    "fragility": "a sign flip of an active annual mean (against SPY or CW-PIT) between the primary run and the loader last_close-mode rerun labels the result fragile (R4)",
+    "r6": "typed-missing shares by later exit class (cash_merger, failure, unknown, left_index, current): signal reason shares per signal, me_missing and c_zero counts, unpriced and blanked shares",
+    "me_coverage": "ME status by reason (unmapped, ambiguous, multi_class, no_share_fact, stale_share_fact), by year and by later exit class, in member-days and dollar volume (split-only close x split-adjusted volume)",
+    "s2_short_history": "the share of S2 cells typed short_history under the declared S2 history rule, and its size effect on the S2 ranks",
+    "s2_history_rule": "an S2 quarter is read only when the PERMNO has a cfacshr row at the basis date; histories from before the first CRSP row are not read",
+    "path_break": "each held position across a path_break row with its weight; each blanked level window",
+    "b2": "unknown_event_excluded and unknown_event_cw_share at each rebalance",
+    "counts": "c_zero by reason (few signals, short history), members, traded count, pinned members, cap and TE-scale binding shares",
+    "tilt_stats": "IR, realized TE, worst relative drawdown, size exposure, active turnover and cost drag per year",
+    "post_publication_split": "months whose calendar year is after the signal's publication year (the M5 convention); publication years S1 1996, S2 1989, S3 1996, S4 2013, S5 1996, S6 2008, S7 2008, S8 1992",
+    "labels": "every header states the run label of evidence_ceiling and the factor-level reuse of M5 step 2 (JKP and French factors, 1926-2025)",
+    "source": "card_trial_draft.md item 7; AGENTS.md R4, R6; index_tilt_design_note.md sections 1 and 2; signal_screen_design_note.md sections 1 and 3; decision log 'Signals S1 to S8 Rules' and 'WRDS Loader Rules D1 to D9' (P-1); RESUME.md section 4; coord/reports/m55_trial/card_trial_defaults.md items 4, 8, 11, 14; coord/reports/m55_trial/card_trial_fix_r1.md items 2, 3, 9; coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1)",
+    "bid_ask_midpoint_share": "the share of member-days with dlyprcflg = 'BA'",
+    "check_period_end": "the last check return month, as the driver records it",
+    "low_risk_r6": "the R6 split of the low-risk calibration by later exit class: undefined (ratio_window_short) and defined_partial ratio counts. Source: coord/reports/m55_lowrisk/expert_decision.md, 'Carried to the Real-Data Driver Card'; low-risk decision log on claude/m55-lowrisk",
+    "check_gap_months": "the 26 check-gap months (2019-07 to 2021-08) left out of every check series, with the reason for each part (seal, sealed 2020-07-31 row, warm-up)"
+  },
+  "prior_exposures": {
+    "statement": "Seen before this declaration; counted under R9 and kept visible.",
+    "items": [
+      "M5 step 2: JKP and French factor returns 1926-2025, built from the same CRSP stocks (factor level)",
+      "M5 step 4: on real_v2 point-in-time books, R0 trailed the equal-weight book by 1.55 and 2.86 percent a year and 9 of 12 sleeve results trailed it (reports/m5_step4.md)",
+      "the WRDS loader intake aggregates listed under declaration_timing (no return statistic)",
+      "the 1963-1992 synthetic-only low-risk construction experiment (no real data)"
+    ],
+    "source": "index_tilt_design_note.md Conclusion and section 5 Q3; signal_screen_design_note.md section 1; intake_report.md; low_risk_design_note.md section 2"
+  },
+  "limitations": [
+    "Point-in-time Compustat (Snapshot) starts about 1986-12, so S2, S4, S5, S6, and S8 have about five screen years (1987 to 1992) before the backfill and 6-month lags. S3 needs eight known quarters with RDQ from comp_urq, so its screen may be short too; the real-start rule handles it. S1 (IBES from 1976) and S7 are not affected; the confirm period is fully covered. Source: decision log 'Signal-Screen Criteria Module', WRDS source facts; card_loader.md D8; coord/reports/m55_trial/card_trial_fix_r1.md item 11.",
+    "Survivor and drop bias: a member with me_missing or no price leaves both books; on real_v2 step 4b, 6.37 percent of pre member-days were unmapped but 9.49 percent for later delisting candidates, so the drop removes more later failures and biases both books up. CRSP intake: unmapped member-days are 1,166 of 423,341 for later failures against 271 of 2,967,375 for current members. Source: index_tilt_design_note.md section 1; intake_report.md.",
+    "Backfill bias: Compustat signals need two fiscal years known at t (S2 and S3 eight quarters); S2 needs CRSP history at the basis date, so new listings have no S2 value for about 2.5 to 3 years, which favors seasoned firms. Source: signal_screen_design_note.md section 3; decision log 'Signals S1 to S8 Rules'.",
+    "Low power: rule A detects about 0.72 percent a year at 50 percent power and 1.08 at 80 percent over 254 months at 2 percent realized TE; an IR of 0.3 (0.6 percent a year) is found about 39 percent of the time, about 30 percent under Holm with two tests; the two-sided BY family of 2 detects about 1.0 to 1.4 percent a year. 'A not met' often means 'not shown'. Source: signal_screen_design_note.md section 7; index_tilt_design_note.md appendix; O-20.",
+    "The half-spread override needs CRSP closing bid and ask, which the first pull did not include; the screen runs without it, and the confirm run waits for the owner's second WRDS pull. Source: RESUME.md section 0h backlog; coord/reports/m55_trial/card_trial_defaults.md item 3.",
+    "Test B: an ex-ante ratio near 0.87 gives a beta near 0.88, which under a 5 to 6 percent equity premium predicts a return gap of about 0.6 to 0.7 point a year, past the 0.5 margin; B passes only if the low-risk effect pays about one point a year in 1993-2014. Source: low_risk_design_note.md section 3.",
+    "A defined_partial low-risk ratio cannot measure risk on rows before a member existed; such windows are declared, counted (ratio_rows_leading, ratio_rows_gap), and checked by window_sensitive. Source: expert_decision.md, residual limitation.",
+    "Factor-level reuse: the signals come from papers on these months and M5 step 2 screened factor returns built from the same stocks; results are 'stock-level out-of-sample, factor-level in-sample'. Source: O-17 Q3.",
+    "CW-PIT uses full market cap, while S&P used float cap from 2005; with the me_missing drops and SPY's fee, CW-PIT - SPY is replication error. Source: index_tilt_design_note.md section 2.",
+    "Seal: the check period leaves out CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); windows that touch the seal stay typed missing. Source: O-12, O-18, O-22; coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1).",
+    "The seal does not stop price levels on both sides from implying the net change across it; no script computes it. Source: wrds_pull.py docstring, residual limits.",
+    "WRDS tables without a price or a return keep seal-dated rows in their main files. Source: O-22.",
+    "Low-risk bootstrap percentile bound is slightly liberal (about 6 to 7 percent size at a true ratio of 1.0). Source: decision log 'Signal-Screen Criteria Module' default 3.",
+    "The pre-1993 benchmark vwretd is gross of fund fees, so it sits above an investable fund. Source: coord/reports/m55_trial/card_trial_defaults.md item 2."
+  ],
+  "open_items": [
+    {
+      "id": "OI-01",
+      "field": "evidence_ceiling",
+      "issue": "O-17 Q3 fixes the run label and 'not confirmation' but no ceiling string; earlier trial files use DIAGNOSTIC_ONLY.",
+      "options": [
+        "DIAGNOSTIC_ONLY, with the Q3 run label in every header",
+        "a new named ceiling below confirmation (owner)"
+      ],
+      "coordinator_default": "DIAGNOSTIC_ONLY, with the Q3 run label in every report header",
+      "source": "O-17; index_tilt_design_note.md status line and Q3",
+      "status": "decided (coordinator)",
+      "reason": "lowest ceiling; O-17 Q3 forbids 'confirmation'; a higher ceiling is an owner choice and can only narrow claims, never tests",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-02",
+      "field": "data.benchmarks.before_1993_02",
+      "issue": "The CRSP intake note says vwretd minus SPY's fee before 1993-02; the tilt note says the S&P 500 total-return index minus SPY's fee; the trial card and the loader card say vwretd with no fee. The screen decision uses CW-PIT only, so this changes reported values, not the shortlist.",
+      "options": [
+        "vwretd as is",
+        "vwretd minus SPY's expense ratio (a declared value)"
+      ],
+      "coordinator_default": "vwretd as is, labelled 'gross of fund fees'",
+      "source": "crsp_intake_design_note.md section 1; index_tilt_design_note.md section 2; card_loader.md item 4; card_trial_draft.md item 2",
+      "status": "decided (coordinator)",
+      "reason": "a higher benchmark is the conservative side; it does not enter the shortlist",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-03",
+      "field": "books.costs.half_spread_override",
+      "issue": "The override needs CRSP bid and ask; they were not pulled.",
+      "options": [
+        "owner pulls CIZ bid and ask (or closing spread) before the confirm run",
+        "drop the override for this trial file and state it as a limitation",
+        "keep the dated schedule only for the screen and apply the override from the confirm period after a pull"
+      ],
+      "coordinator_default": "option 3: the screen uses SCREEN_COST_SCHEDULE only; from the confirm period the half-spread override applies with CRSP closing bid and ask; the confirm run does not start until the owner pulls them (second WRDS pull)",
+      "source": "index_tilt_design_note.md section 1; RESUME.md 0h backlog",
+      "status": "decided (coordinator)",
+      "reason": "keeps R8 as designed and does not block the screen",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-04",
+      "field": "periods.check post-seal restart",
+      "issue": "Check series leave out 2019-07 to 2020-07, and windows that touch the seal stay typed missing, so 252-row windows after the seal are short until about 2021-08 (Opus run-script item R2-A1).",
+      "options": [
+        "restart the post-seal segment at the first month end after 2020-07-31; members without a full window get c = 0 and stay at b (engine rule), so the tilt is near CW-PIT for about a year",
+        "start post-seal check months at the first rebalance whose 252-row window lies after the seal and leave the months between out, counted",
+        "end the check period at 2019-06"
+      ],
+      "coordinator_default": "final (round 2): option 2 with a fixed gap: CHECK_GAP_MONTHS 2019-07 to 2021-08 (26 months): the seal holding months, 2020-08 (the 2020-07-31 row is sealed, so the first post-seal rebalance is 2020-08-31), and the warm-up to the first month end with a full 252-row window (2021-08-31; 251 post-seal rows on 2021-07-30, 273 on 2021-08-31); post-seal check months start at 2021-09; the gap months are reported",
+      "source": "O-22; research/m55_criteria.py CHECK_GAP_MONTHS (claude/m55-check-gap); card_loader.md D9; RESUME.md (OPUS-R2-A1)",
+      "status": "decided (coordinator)",
+      "reason": "every book can complete a check month only from 2021-09 (the low-risk book refuses until a member has a full 252-row window), so a fixed gap keeps the check months the same for all books and leaves no book near CW-PIT only because of the seal",
+      "decision_source": "coord/reports/m55_trial/card_trial_fix_r1.md item 13 (Round 2 Decision, R2-M1); card_check_gap.md; replaces item 2 of this card and card_trial_defaults.md item 4"
+    },
+    {
+      "id": "OI-05",
+      "field": "candidates.real_start",
+      "issue": "The design note defines the real start as the first year with at least 80 percent valid in every month; research/m55_signals.real_start also needs every later year to the panel end to pass, and the panel span is not declared. A real start after 1990-01 gives fewer than 36 screen months, where m55_criteria.check_series refuses.",
+      "options": [
+        "code rule on a screen-only panel 1963-07 to 1992-12",
+        "code rule on a panel to 2014-03",
+        "literal first qualifying year"
+      ],
+      "sub_issue_options": [
+        "a candidate with fewer than 36 screen months gets a typed undefined record that fails the shortlist and stays hashed",
+        "it is dropped before the screen and the drop is recorded"
+      ],
+      "coordinator_default": "the code rule on a screen-only panel 1963-07 to 1992-12; a candidate with fewer than 36 screen months gets a typed undefined record that fails the shortlist, stays hashed, and counts as a trial; panel and first screen month as in candidates.real_start (round 1, Opus M2)",
+      "source": "signal_screen_design_note.md section 2; research/m55_signals.py real_start; research/m55_criteria.py SCREEN_MIN_MONTHS",
+      "status": "decided (coordinator)",
+      "reason": "no confirm-period fact sets a screen rule; R9 keeps it visible",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md; coord/reports/m55_trial/card_trial_fix_r1.md item 4"
+    },
+    {
+      "id": "OI-06",
+      "field": "candidates.family_a_baseline.min_valid",
+      "issue": "The M5 rule is at least 4 of 6; the screen rule for the composite is half_rule(n) = 3 for 6.",
+      "options": [
+        "4 (M5 rule, MIN_VALID_SIGNALS)",
+        "3 (half_rule(6))"
+      ],
+      "coordinator_default": "4 (the M5 rule)",
+      "source": "research/m55_index_tilt.py MIN_VALID_SIGNALS; branch claude/m55-signal-sets half_rule; RESUME.md 0h",
+      "status": "decided (coordinator)",
+      "reason": "the baseline is the M5 Family A as tested",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-07",
+      "field": "secondary_family members and size",
+      "issue": "The design note says single signals and the Q2 baseline are secondary with BY q-values; it does not say which single signals or when they run; m55_criteria.secondary_family needs a declared family size.",
+      "options": [
+        "shortlisted single signals plus the Family A baseline (size = shortlist size + 1, fixed by rule at the shortlist freeze)",
+        "all eight candidates plus the Family A baseline (size 9, fixed now)"
+      ],
+      "sub_issue_options": [
+        "the Family A baseline also runs over the screen period (visible, counted)",
+        "it runs over the confirm and check periods only"
+      ],
+      "coordinator_default": "all eight candidates plus the Family A baseline, size 9, fixed now; the baseline runs over the screen, confirm, and check periods, all visible",
+      "source": "signal_screen_design_note.md sections 3 and 4; research/m55_criteria.py secondary_family",
+      "status": "decided (coordinator)",
+      "reason": "fixed size, no path from the shortlist to the family",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-08",
+      "field": "reports_owed.post_publication_split",
+      "issue": "The split is required but not defined.",
+      "options": [
+        "months whose calendar year is after the publication year (the M5 convention)",
+        "months after the journal publication month"
+      ],
+      "publication_years": {
+        "S1": 1996,
+        "S2": 1989,
+        "S3": 1996,
+        "S4": 2013,
+        "S5": 1996,
+        "S6": 2008,
+        "S7": 2008,
+        "S8": 1992
+      },
+      "coordinator_default": "the M5 convention: months whose calendar year is after the publication year",
+      "source": "signal_screen_design_note.md sections 1 and 3; docs/preregistrations/m5_trial_family_v1.json post_publication_months",
+      "status": "decided (coordinator)",
+      "reason": "the M5 convention",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-09",
+      "field": "pre_tilt_look.period",
+      "issue": "The CW-PIT against SPY look is declared but its months are not; SPY exists from 1993-02, so a look over the confirm months shows CW-PIT - SPY there before test A.",
+      "options": [
+        "confirm and check months",
+        "check months only",
+        "the vwretd benchmark over the screen months only"
+      ],
+      "coordinator_default": "the look before any tilt return is CW-PIT against vwretd over the screen months only; CW-PIT against SPY over the confirm and check months is reported with the confirm run, not before",
+      "source": "index_tilt_design_note.md section 3 step 5",
+      "status": "decided (coordinator)",
+      "reason": "composite - SPY = (composite - CW-PIT) + (CW-PIT - SPY), so an earlier SPY look shows part of test A",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-10",
+      "field": "books.low_risk.calibration.inputs",
+      "issue": "Owner question: may the calibration also use the realized 1963-1992 portfolio volatility (second moments, no means)?",
+      "options": [
+        "no, ex-ante only",
+        "yes"
+      ],
+      "coordinator_default": "no; ex-ante only",
+      "source": "low_risk_design_note.md section 4",
+      "status": "decided (coordinator)",
+      "reason": "logged default; the owner may change it before the freeze",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-11",
+      "field": "data.loader_rules bid/ask-midpoint days",
+      "issue": "Whether daily rows with dlyprcflg = 'BA' count as valid returns and prices.",
+      "options": [
+        "valid",
+        "typed missing and counted"
+      ],
+      "coordinator_default": "valid; the share of member-days with dlyprcflg = 'BA' is counted in the report",
+      "source": "expert_decision.md, carried to the driver card; wrds_download_checklist.md",
+      "status": "decided (coordinator)",
+      "reason": "coordinator decision",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-12",
+      "field": "Family A AMIHUD_ILLIQ_63 and LOW_BETA_252 inputs on CRSP",
+      "issue": "The tilt note asks for a declared divisor for Nasdaq volume before 2004 but gives no value. The intake note fixes vwretd as the LOW_BETA_252 market series in every CRSP month, but vwretd ends 2024-12 and the check period runs to 2025-12.",
+      "options_divisor": [
+        "the Gao and Ritter (2010) divisors (2.0 before 2001-02, 1.8 to 2001-12, 1.6 for 2002 and 2003, 1.0 from 2004)",
+        "no divisor, stated as a limitation"
+      ],
+      "options_market": [
+        "vwretd to 2024-12 and the check period for Family A ends there",
+        "INDNO 1000200 in every month",
+        "vwretd, then INDNO 1000200 from 2025-01 (a declared switch)"
+      ],
+      "coordinator_default": "divisor: Gao and Ritter (2010) on primaryexch = 'Q' rows (2.0 before 2001-02, 1.8 to 2001-12, 1.6 in 2002 and 2003, 1.0 from 2004); market series: INDNO 1000200 in every month",
+      "source": "index_tilt_design_note.md section 4; crsp_intake_design_note.md section 1; card_loader.md item 4",
+      "status": "decided (coordinator)",
+      "reason": "one series with no break; Family A is secondary only",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-13",
+      "field": "data.loader_rules.D5 versus the tilt note",
+      "issue": "The tilt note says ME = price times the prior month-end share count; loader D5 uses the share count with shrstartdt at least 136 calendar days before r - 1.",
+      "options": [
+        "D5 (logged coordinator default, later)",
+        "prior month-end share count"
+      ],
+      "coordinator_default": "D5",
+      "source": "index_tilt_design_note.md section 1; card_loader.md D5",
+      "status": "decided (coordinator)",
+      "reason": "stricter for R1",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    },
+    {
+      "id": "OI-14",
+      "field": "universe_and_timing.halt_policy at the window end",
+      "issue": "A held member with no close on the end row stops the run under halt_gap_return_v1; the freeze card must check or record it.",
+      "options": [
+        "record the stop as a declared refusal and end the window at the prior month",
+        "settle the position under R4 at the last close"
+      ],
+      "coordinator_default": "revised in round 1: the run refuses and the refusal is recorded; an amendment before any result of that run picks the fix",
+      "source": "RESUME.md section 4",
+      "status": "decided (coordinator)",
+      "reason": "no stale price, no engine change, and no fix chosen before its effect is known",
+      "decision_source": "coord/reports/m55_trial/card_trial_fix_r1.md item 7 (Opus A4); replaces card_trial_defaults.md item 14"
+    },
+    {
+      "id": "OI-15",
+      "field": "scope: real_v2 part 1 diagnostic and part 2 unpriced report",
+      "issue": "The tilt note runs the tilt once on real_v2 (diagnostic, family of 485 with the 481 M5 slots) and reports the unpriced members (part 2); Q5 (extend O-5 and O-9 to that diagnostic) is still open with the owner.",
+      "options": [
+        "leave both out of this file; a later file declares them",
+        "include them here as DIAGNOSTIC_ONLY runs after Q5"
+      ],
+      "coordinator_default": "leave both out; a later file declares them if Q5 is answered",
+      "source": "index_tilt_design_note.md sections 2, 3, 5 Q5; O-17; RESUME.md section 4",
+      "status": "decided (coordinator)",
+      "reason": "coordinator decision",
+      "decision_source": "coord/reports/m55_trial/card_trial_defaults.md"
+    }
+  ],
+  "scope": {
+    "in": "the WRDS CRSP index-tilt test: screen, composite (test A), low-risk version (test B), secondary family, check period",
+    "out": "the real_v2 part 1 tilt diagnostic and the part 2 unpriced-member report; a later file declares them if owner question Q5 is answered",
+    "source": "index_tilt_design_note.md sections 3 and 5 Q5; coord/reports/m55_trial/card_trial_defaults.md item 15 (OI-15)"
+  }
+}
