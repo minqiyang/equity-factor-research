@@ -12,6 +12,36 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - WRDS loader and S2: unknown share bases are typed missing (Milestone 5.5)
+
+- Card m55-loader-r6 on `0c60805` (sweep findings audit A-2 and O2-A2). Decision log: the entry of the same date.
+- `market_equity` adds the column `basis_unseen` (`data_start`, `seal`, or none). With no factor row before
+  `shrstartdt`, a fact dated before the first calendar row, or dated before the seal end with its basis row after
+  the seal, makes the share count and ME `unmapped`. `intake_report` adds `share_basis_unseen`: the rows of the
+  daily signal table that only this rule blanks, by case and year, with the last date, for all rows and for
+  member-days; the Markdown report has a new section for it.
+- `s2` reads `cfacshr` at each used quarter's `rdq` as well as at its basis date. A difference gives the new reason
+  `split_in_basis_window`; a failed read at `rdq` gives that read's own reason. `_Signals.factor` returns
+  `no_market_data` for a read on or after the seal start from a row before it.
+- New tests: case A (a listing in the seal with a split after its fact, and a fact dated before the seal), case B
+  (a fact dated before the first calendar row, until an observed fact is in use), the round 1 control (a prior
+  factor row), the intake counter by case and year, and S2 split ex-dates inside and outside (rdq, known date] for
+  q, q - 4, and a prior quarter, with a stale and an absent factor at `rdq` and a small stock dividend; a factor
+  read across the seal (real dates, then S2 end to end with the seal moved into the fixture by `monkeypatch`).
+- Producer self-review (five lenses, two refuters per finding, synthetic probes only): one material defect, the
+  first month of the seal under the one-month as-of read, now fixed. Advisory fixes: the counter now holds only the
+  rows this rule blanks and splits out member-days; an empty calendar no longer fails; a Case A test on a calendar
+  that keeps 2020-07-31 (the real pull seals that row, so it is a test of the rule only). Of the 17 review mutants,
+  14 failed the two test files; the added tests catch two of the other three, and the last (no prior-factor guard
+  on the data-start line) is equivalent on the production path. Five mutants of the fixes all fail. A differential
+  run against `0c60805` (400 seeds, before the fixes) changed ME and share counts only on `basis_unseen` rows and
+  S2 only where a quarter's factor at `rdq` differs or cannot be read; S1 and S3 to S8 were identical.
+- Changed old tests (each asserted the old behavior on input that is now a typed case): the loader world's share
+  facts start at the first calendar row (were 1985-01-01, before it); `me_case` puts its first row on the fact
+  date 1985-01-01 (was 1985-01-02); the D5 share-count test's rows start on 1985-01-01 (were 1990-11-01); in
+  `test_sparse_first_eps_after_split_must_keep_sue`, a split on 1999-07-01 between the quarter's `rdq` and its July
+  EPS row now gives `split_in_basis_window` (was the no-split value).
+
 ## 2026-10-06 - Declared blank months in the criteria (Milestone 5.5, card m55-critmask)
 
 - `research/m55_criteria.py`: `BLANK_REASONS`, `check_blank`, and `blank_record` are new. `check_series` and

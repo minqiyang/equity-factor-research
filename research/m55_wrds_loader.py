@@ -42,7 +42,7 @@ SEALED = "sealed"
 REQUIRED = ("crsp_dsf_v2", "crsp_stkshares", "crsp_stkdelists", "crsp_stksecurityinfohist", "crsp_dsp500list_v2",
             "crsp_index_daily", "crsp_dsp500_legacy", "ccm_lnkhist", "comp_fundq", "comp_snapshot_csa_pit",
             "comp_urq", "ibes_statsumu_epsus", "ibes_crsp_link")
-SEAL_START, SEAL_END = pd.Timestamp("2019-07-31"), pd.Timestamp("2020-07-31")
+SEAL_START, SEAL_END = sig.SEAL                  # [2019-07-31, 2020-07-31)
 MARKET_INDNO = sig.MARKET_INDNO                  # 1000200: CRSP value-weighted market, total return
 SHARE_LAG_DAYS = 136                             # D5: a share count is used from its date plus 136 calendar days
 SPY_TICKER, SPY_FIRST, SPY_LAST = "SPY", pd.Timestamp("1993-01-01"), pd.Timestamp("1993-02-28")
@@ -282,9 +282,12 @@ def market_equity(rows: pd.DataFrame, shares: pd.DataFrame, history: pd.DataFram
     ``shrstartdt`` with a factor, and it must be on or before t. When a gap lies between ``shrstartdt`` and the
     basis row (a calendar row of ``cal`` without a factor row, or the seal) and the factor of the last row before
     ``shrstartdt`` differs from the basis factor, the basis is unknown: ``unmapped`` (card m55-loader-fix-r1,
-    item 1). Reasons: no share row, ``no_share_fact``; its ``shrenddt`` before the cutoff, ``stale_share_fact``;
-    no basis factor by t, an unknown basis, or no factor at t, ``unmapped``. The share count is NaN under these
-    reasons; ME is also ``unmapped`` without a valid close at t or a positive value.
+    item 1). With no factor row before ``shrstartdt``, nothing shows a factor change across an interval the data
+    never saw, so the basis is also unknown (card m55-loader-r6, item 1): ``shrstartdt`` before ``cal[0]``
+    (``basis_unseen`` = ``data_start``), or before ``SEAL_END`` with the basis row on or after it (``seal``).
+    Reasons: no share row, ``no_share_fact``; its ``shrenddt`` before the cutoff, ``stale_share_fact``; no basis
+    factor by t, an unknown basis, or no factor at t, ``unmapped``. The share count is NaN under these reasons; ME
+    is also ``unmapped`` without a valid close at t or a positive value.
     """
     history = rows if history is None else history
     cal = pd.DatetimeIndex(np.unique(history["date"])) if cal is None else cal
@@ -312,13 +315,19 @@ def market_equity(rows: pd.DataFrame, shares: pd.DataFrame, history: pd.DataFram
     gap = (first_row != basis_date) | in_seal(pd.DatetimeIndex(start))
     prior, basis_factor = found["prior_factor"].to_numpy(dtype=float), found["basis_factor"].to_numpy(dtype=float)
     changed = gap & np.isfinite(prior) & ~np.isclose(prior, basis_factor, rtol=1e-9, atol=0.0)
+    seal_end = SEAL_END.to_datetime64()
+    unseen = np.full(len(rows), None, dtype=object)
+    unseen[~np.isfinite(prior) & (start < seal_end) & (basis_date >= seal_end)] = "seal"
+    unseen[~np.isfinite(prior) & (start < cal.to_numpy()[:1])] = "data_start"     # [:1]: no rows, no calendar
     price, factor = rows["prc"].to_numpy(), rows["dlycumfacshr"].to_numpy(dtype=float)
     count = found["fact"].to_numpy(dtype=float) * basis_factor / factor
     no_fact = found["shrstartdt"].isna().to_numpy()
     stale = (found["shrenddt"] < found["cutoff"]).to_numpy()
     no_basis = ~(found["basis_date"] <= found["date"]).to_numpy() | changed | ~(factor > 0.0)
+    unseen[no_basis | no_fact | stale] = None       # basis_unseen: only the rows that this rule alone blanks
     share_reason = np.full(len(rows), None, dtype=object)
-    for mask, label in ((no_basis, "unmapped"), (stale, "stale_share_fact"), (no_fact, "no_share_fact")):
+    for mask, label in ((no_basis | pd.notna(unseen), "unmapped"), (stale, "stale_share_fact"),
+                        (no_fact, "no_share_fact")):
         share_reason[mask] = label    # later assignments win: the order is the reason priority
     count = np.where(pd.isna(share_reason), count, np.nan)
     value = price * count
@@ -327,7 +336,8 @@ def market_equity(rows: pd.DataFrame, shares: pd.DataFrame, history: pd.DataFram
     reason[~np.isfinite(rows["level"].to_numpy()) | ~np.isfinite(price) | ~(factor > 0.0)] = "unmapped"
     me = np.where(pd.isna(reason), value, np.nan)
     return pd.DataFrame({"market_equity": me, "me_reason": reason, "share_count": count,
-                         "basis_changed_across_gap": changed & ~no_fact & ~stale}, index=rows.index)
+                         "basis_changed_across_gap": changed & ~no_fact & ~stale,
+                         "basis_unseen": unseen}, index=rows.index)
 
 
 def member_market_equity(data: WrdsData) -> pd.DataFrame:
@@ -775,6 +785,20 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
                                "d5": int(g["share_count"].notna().sum()),
                                "basis_changed_across_gap": int(g["basis_changed_across_gap"].eq(True).sum())}
                       for y, g in with_row.groupby("year")}
+    # Card m55-loader-r6, item 1: rows of the daily signal table (every row of a member PERMNO) that the rule blanks,
+    # by case and year, with the last such date (the reach of the rule); and the member-days among them.
+    unseen = member_market_equity(data)["basis_unseen"]
+    unseen_rows = rows.loc[unseen.index, ["permno", "date"]]
+    member = member_mask(unseen_rows, spells(data))
+    basis_unseen = {}
+    for case in ("data_start", "seal"):
+        hit = (unseen == case).to_numpy()
+        out = {}
+        for key, mask in (("rows", hit), ("member_days", hit & member)):
+            dates = unseen_rows.loc[mask, "date"]
+            out[key] = {"by_year": {str(y): int(n) for y, n in dates.dt.year.value_counts().sort_index().items()},
+                        "last": str(dates.max().date()) if len(dates) else None}
+        basis_unseen[case] = out
     terminal_gaps = {run: int((~disappearances(data, run)["reference_valued"]).sum()) for run in EVENT_RUN_COLUMNS}
     supplied = inputs.fund_quarterly["ajexq"]
     raw = frame(data, "ibes_statsumu_epsus", ["ticker", "statpers", "fpedats", "fpi", "curcode"])
@@ -803,7 +827,8 @@ def intake_report(data: WrdsData) -> dict[str, Any]:
         "ajexq": {"supplied_rows": int(len(supplied)), "supplied_one": int((supplied == SUPPLIED_AJEXQ).sum()),
                   "urq": urq_ajexq_aggregate(data)},
         "ibes_non_usd_fy1_by_year": drops["ibes_non_usd_fy1_by_year"], "ibes_fy1_rows": usd_fy1,
-        "share_counts_by_year": shares_by_year, "terminal_gap_events": terminal_gaps,
+        "share_counts_by_year": shares_by_year, "share_basis_unseen": basis_unseen,
+        "terminal_gap_events": terminal_gaps,
         "last_close_events": int(len(disappearances(data, "last_close"))),
         "bid_ask_member_days": {"member_days": int(len(days)),
                                 "bid_ask": int((days["dlyprcflg"] == BID_ASK_FLAG).sum())},
@@ -907,6 +932,17 @@ def intake_markdown(report: dict[str, Any]) -> str:
     total = {k: sum(v[k] for v in report["share_counts_by_year"].values())
              for k in ("rows", "raw", "d5", "basis_changed_across_gap")}
     lines += [f"| All | {total['rows']} | {total['raw']} | {total['d5']} | {total['basis_changed_across_gap']} |", ""]
+    lines += ["## Share Basis Not Observed (D5, R6)", "",
+              "Rows of the daily signal table (every daily row of a member PERMNO) where ME and the share count are "
+              "`unmapped` only because the PERMNO has no factor row before the share fact and the data did not see "
+              "the interval up to the basis row: the time before the first calendar row (`data_start`), or the seal "
+              "(`seal`). By year, and the last such date; then the member-days among them.", ""]
+    for case, v in report["share_basis_unseen"].items():
+        for key, label in (("rows", "rows"), ("member_days", "member-days")):
+            years = ", ".join(f"{y} {n}" for y, n in v[key]["by_year"].items()) or "none"
+            lines.append(f"- `{case}`: {sum(v[key]['by_year'].values())} {label} (by year: {years}); last date "
+                         f"{v[key]['last'] or 'n/a'}.")
+    lines.append("")
     return "\n".join(lines)
 
 

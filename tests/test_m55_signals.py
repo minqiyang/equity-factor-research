@@ -542,8 +542,8 @@ def test_sparse_first_eps_after_split_must_keep_sue(base: sig.SignalInputs) -> N
     """GPT-R2-M2: epspxq and ajexq of a quarter come from one row, the first row with an EPS.
 
     1999Q1: a row known 1999-04-30 with ajexq but no EPS, and the first EPS in a row known 1999-07-02. The pair
-    is the July row, on its own basis; a split on 1999-07-01 leaves S2 unchanged. EPS first with no ajexq in its
-    row is missing_item: no factor from another row.
+    is the July row; a split on 1999-07-01, between its rdq and that row, leaves its basis unknown (card
+    m55-loader-r6, item 2). EPS first with no ajexq in its row is missing_item: no factor from another row.
     """
     inputs = hand_inputs(base)
     expected = at_r(inputs)["S2"]
@@ -552,7 +552,7 @@ def test_sparse_first_eps_after_split_must_keep_sue(base: sig.SignalInputs) -> N
     factor_first = sparse_quarter(q, "1999-03-31", {"epspxq": np.nan}, {"epspxq": eps, "ajexq": 1.0}, "1999-07-02")
     world = replace(inputs, fund_quarterly=factor_first)
     assert at_r(world)["S2"] == expected
-    assert at_r(split_world(world))["S2"] == expected
+    assert at_r(split_world(world))["S2"] == "split_in_basis_window"
     eps_first = sparse_quarter(q, "1999-03-31", {"ajexq": np.nan}, {"epspxq": eps, "ajexq": 1.0}, "1999-07-02")
     world = replace(inputs, fund_quarterly=eps_first)
     assert at_r(world)["S2"] == "missing_item"
@@ -560,6 +560,62 @@ def test_sparse_first_eps_after_split_must_keep_sue(base: sig.SignalInputs) -> N
     # The same-row case on each side of the split.
     for split in ("1999-04-15", "1999-07-01"):
         assert at_r(split_world(inputs, split))["S2"] == expected
+
+
+def test_s2_split_between_rdq_and_known_date_leaves_the_basis_unknown(base: sig.SignalInputs) -> None:
+    """Card m55-loader-r6, item 2: the EPS document is dated from rdq to the known date, so a split ex-date in
+    (rdq, known date] leaves its share basis unknown. q (2000Q1): rdq 2000-04-25, known 2000-04-30 (Sunday, factor
+    row 2000-04-28). q - 4 (1999Q1): rdq 1999-04-25 (Sunday, factor row 1999-04-23), known 1999-04-30. Prior
+    quarter 1998Q1: rdq 1998-04-25 (Saturday), known 1998-04-30; it drops its two differences. A split before rdq,
+    on rdq, or after the known date keeps today's value."""
+    inputs = hand_inputs(base)
+    expected = at_r(inputs)["S2"]
+    q = inputs.fund_quarterly
+    six = at_r(replace(inputs, fund_quarterly=edit(q, quarter_mask(q, 101, "1998-03-31"), epspxq=np.nan)))["S2"]
+    for split in ("2000-04-26", "2000-04-28", "1999-04-26", "1999-04-30"):
+        assert at_r(split_world(inputs, split))["S2"] == "split_in_basis_window", split
+    for split in ("1998-04-27", "1998-04-30"):
+        assert at_r(split_world(inputs, split))["S2"] == six, split
+    for split in ("2000-04-24", "2000-04-25", "2000-05-01", "1999-04-23", "1999-05-03", "1998-04-24", "1998-05-01"):
+        assert at_r(split_world(inputs, split))["S2"] == expected, split
+    # Not known at rdq: no factor row in the month before q's rdq (a hole like the seal) gives the read's reason;
+    # with no row at or before rdq (the post-seal segment of an rdq in the seal) it is no_market_data.
+    d = inputs.daily
+    hole = (d["permno"] == 101) & d["date"].between(pd.Timestamp("2000-02-01"), pd.Timestamp("2000-04-25"))
+    assert at_r(replace(inputs, daily=d[~hole]))["S2"] == "stale"
+    later = (d["permno"] != 101) | (d["date"] > pd.Timestamp("2000-04-25"))
+    assert at_r(replace(inputs, daily=d[later]))["S2"] == "no_market_data"
+    # A small stock dividend in q's window is a factor change too.
+    small = edit(d, (d["permno"] == 101) & (d["date"] < pd.Timestamp("2000-04-27")), cfacshr=1.0001)
+    assert at_r(replace(inputs, daily=small))["S2"] == "split_in_basis_window"
+    assert "split_in_basis_window" in sig.REASONS
+
+
+def test_s2_factor_read_across_the_seal_is_not_known(base: sig.SignalInputs, monkeypatch) -> None:
+    """Card m55-loader-r6, item 2: a factor read at a date on or after the seal start never uses a row from
+    before the seal, even inside the one-month as-of age. Real seal dates on a direct read; then S2 end to end with
+    a seal moved to 2000-04-26 and no rows of any PERMNO in it: q's known date 2000-04-30 falls in it."""
+    extra = pd.DataFrame({"permno": 999, "date": pd.to_datetime(["2019-07-29", "2019-07-30", "2020-08-03"]),
+                          "ret": 0.0, "prc": 10.0, "shrout": 1.0, "cfacpr": 1.0, "cfacshr": 1.0})
+    data = sig._Signals(replace(base, daily=pd.concat([base.daily, extra], ignore_index=True)))
+
+    def read(date: str) -> float | str:
+        day = np.datetime64(pd.Timestamp(date), "ns")
+        return data.factor(999, "cfacshr", day, (pd.Timestamp(date) - pd.DateOffset(months=1)).to_datetime64())
+
+    assert read("2019-07-30") == 1.0 and read("2020-08-03") == 1.0
+    assert read("2019-07-31") == read("2019-08-05") == "no_market_data"
+    inputs = hand_inputs(base)
+    gap = (pd.Timestamp("2000-04-26"), pd.Timestamp("2000-06-01"))
+
+    def sealed(world: sig.SignalInputs) -> sig.SignalInputs:
+        return replace(world, daily=world.daily[~world.daily["date"].between(gap[0], gap[1], inclusive="left")],
+                       index_daily=world.index_daily[~world.index_daily["date"].between(*gap, inclusive="left")])
+
+    split = sealed(split_world(inputs, "2000-04-27"))
+    assert isinstance(at_r(split)["S2"], float)                  # the real seal is elsewhere: the defect shows
+    monkeypatch.setattr(sig, "SEAL", gap)
+    assert at_r(split)["S2"] == at_r(sealed(inputs))["S2"] == "no_market_data"
 
 
 def test_s2_item_fill_rows_are_used_from_their_own_row(base: sig.SignalInputs) -> None:

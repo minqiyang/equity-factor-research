@@ -15,6 +15,58 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Unknown Share Bases Are Typed Missing (Milestone 5.5, card m55-loader-r6)
+
+Context:
+
+- The R1 to R12 sweep confirmed two R6 defects before the trial freeze: a share count and ME on a share basis that
+  the data cannot show (audit A-2, both forms), and an S2 quarter whose EPS and share factor can have different
+  bases (review O2-A2). Each gave a value with no reason. Synthetic fixtures only; no real data was read.
+
+Decision:
+
+- Item 1 (D5, P-4, R6): when a PERMNO has no `dlycumfacshr` row before the share fact's `shrstartdt`, and an
+  interval the data never saw lies between `shrstartdt` and the basis row, the share count and ME are `unmapped`.
+  The new `market_equity` column `basis_unseen` names the case: `data_start` (`shrstartdt` before the first
+  calendar row, 1961-01-03 in the 2025 vintage) or `seal` (`shrstartdt` before 2020-07-31 and the basis row on or
+  after it). A PERMNO with a factor row before `shrstartdt` keeps the round 1 rule (item 1 of the loader entry).
+  The new rule adds no CRSP convention, for example that CRSP adds a share row at each split. Not changed, as it is
+  outside the card: a fact dated before the first row of a new listing, inside the calendar, keeps its value (the
+  PERMNO has no row there, so this keeps the round 1 reading that the fact is on the first row's basis).
+- Reach of item 1: a row at t is blank only while a fact dated before the unseen interval's end is in use. That
+  stops when the PERMNO's first fact dated on or after 1961-01-03 (or on or after 2020-07-31) is in use, at its
+  date plus 136 days, or when the old fact goes stale. There is no fixed end date.
+  - Data start: blanks start on 1961-01-03 and end no earlier than 1961-05-19. ME at the rebalance rows from
+    1963-06-28 is reached when that next fact is dated after 1963-02-12. The S7 share anchors from 1962-06-29 are
+    reached when it is dated after 1962-02-13.
+  - Seal: for each such PERMNO, every post-seal row from 2020-08-03 to at least 2020-12-11 is blank, because a fact
+    dated 2020-07-31 or later is in use only from 2020-12-14. S7 reads the share count 12 months before its anchor,
+    so a post-seal check month whose earlier anchor falls in that window loses S7 for these PERMNOs (members that
+    list inside the seal). ME at the rebalance rows from the post-seal anchor 2021-07-30 is reached only when the
+    next fact is dated after 2021-03-16.
+  - So the rule can reach rows that the trial uses. The intake report gives the rows by case and year and the last
+    date, for all rows and for member-days; the coordinator records the real counts.
+- Item 2 (S2, R1, R6): first-reported EPS has the share basis of its own document, dated on some day from `rdq` to
+  the known date. For each quarter that S2 reads (q, q - 4, and the prior quarters), S2 also reads `cfacshr` at
+  `rdq` with the same as-of rule (at most one month old). When the two factors differ, the quarter gets the new
+  reason `split_in_basis_window`: q or q - 4 gives that reason, and a prior quarter drops its two differences, as a
+  missing prior quarter does. When the factor at `rdq` cannot be read, the quarter gets that read's own reason
+  (`stale`, `no_market_data`, `missing_item`, or `invalid_value`), so each reason names what the data show. A split
+  on `rdq` itself, before it, or after the known date keeps the value.
+- Seal and item 2: every as-of factor read (`_Signals.factor`) now returns `no_market_data` when its row is before
+  the seal start and the read date is on or after it. The one-month as-of age would otherwise carry the 2019-07-30
+  factor to a date from 2019-07-31 to 2019-08-30 and hide a split in the seal. The seal dates move to
+  `m55_signals.SEAL`, and the loader takes them from there. S1 reads `cfacpr` through the same function, but no
+  calendar decision row can reach such a read: S1 reads statistics dates at most about five months before t.
+- No rule here loosens R1, R2, R4, R6, R8, or R9.
+
+Consequences:
+
+- More `unmapped` ME and share-count rows from 1961 and after the seal; fewer valid S2 cells. The intake section
+  "Share Basis Not Observed" and `reason_counts` give the sizes after the real rerun.
+- Test fixtures whose share facts were dated before their first calendar row now start on it (they hit the
+  data-start case); the S2 test with a split between a quarter's `rdq` and its EPS row now expects the new reason.
+
 ## 2026-10-06 - Declared Blank Months in the Criteria (Milestone 5.5, path_break, coordinator default)
 
 Context:
