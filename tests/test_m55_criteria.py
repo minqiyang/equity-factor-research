@@ -613,3 +613,244 @@ def test_screen_cost_schedule_switches():
         frame = dated_cost_frame(dates, crit.SCREEN_COST_SCHEDULE, scale)
         expected = np.array([[30, 30], [30, 30], [10, 30], [10, 30], [5, 20], [5, 20], [2, 8], [2, 8], [1, 4]])
         assert frame.to_numpy() == pytest.approx(expected * scale), case
+
+
+# Declared blank months (R6, card m55-critmask) ------------------------------------------
+
+def blank(*months: str) -> dict:
+    return {pd.Period(m, "M"): "path_break_held" for m in months}
+
+
+def without(series: pd.Series, months: dict) -> pd.Series:
+    return series.drop(list(months))
+
+
+def screen_pair(seed: int = 60, months: pd.PeriodIndex = SCREEN) -> tuple[pd.Series, pd.Series]:
+    cw = noise(months, seed)
+    return cw + noise(months, seed + 1, mean=0.002, scale=0.004), cw
+
+
+def test_blank_reasons_and_declaration_checks():
+    assert crit.BLANK_REASONS == ("path_break_held",)
+    net, cw = screen_pair()
+    for bad in ({pd.Period("1975-03", "M"): "halt"}, {pd.Period("1975-03", "M"): None}, {"1975-03": "path_break_held"},
+                {pd.Period("1975-03-02", "D"): "path_break_held"}, [pd.Period("1975-03", "M")]):
+        with stops("blank_invalid"):
+            crit.check_series(net, "x", "screen", bad)
+        with stops("blank_invalid"):
+            crit.screen_record(net, cw, blank_months=bad)
+    assert crit.check_blank(None) == {} and list(crit.check_blank(blank("1980-01", "1975-03"))) == [
+        pd.Period("1975-03", "M"), pd.Period("1980-01", "M")]
+
+
+def test_no_blank_month_gives_the_same_outputs():
+    """Card criterion 4: with no declared month the records have the e8135bc keys and values.
+
+    The keys and values below were computed with the e8135bc module. The HAC t uses ``np.dot``, whose last bit can
+    differ between BLAS builds, so values are pinned at 1e-12; an omitted, ``None``, or empty declaration agree exactly.
+    """
+    net, cw = screen_pair()
+    base = crit.screen_record(net, cw, 0.4)
+    assert sorted(base) == ["annual_active_mean", "annual_te", "annual_turnover", "first_month", "hac_t",
+                            "information_ratio", "last_month", "months", "p_one_sided", "status"]
+    assert (base["status"], base["months"], base["first_month"], base["last_month"]) == (
+        "ok", 354, "1963-07", "1992-12")
+    assert [base[k] for k in ("annual_active_mean", "annual_te", "information_ratio", "hac_t")] == pytest.approx(
+        [0.02303763161890473, 0.014154880397759695, 1.6275398287753047, 10.001342216649235], rel=1e-12)
+    for empty in (None, {}):
+        assert crit.screen_record(net, cw, 0.4, empty) == base
+        assert_series_equal(crit.check_series(net, "x", "screen", empty), crit.check_series(net, "x", "screen"))
+    candidates = {"S1": {"net": net, "cw_net": cw}, "S2": {"net": cw + noise(SCREEN, 62, scale=0.004), "cw_net": cw}}
+    digest = crit.screen(candidates)["digest_sha256"]
+    assert crit.screen({c: {**v, "blank_months": {}} for c, v in candidates.items()})["digest_sha256"] == digest
+    confirm, confirm_2x, check = wired_inputs()
+    out = crit.primary_decision(FROZEN, EXPECTED, confirm, confirm_2x, check)
+    assert crit.primary_decision(FROZEN, EXPECTED, confirm, confirm_2x, check, {}, {}) == out
+    assert [sorted(out), sorted(out["test_a"]["check"]), sorted(out["test_b"]["check"])] == [
+        ["stop", "test_a", "test_b"], ["vs_cw", "vs_spy"], ["annual_gap", "vol_ratio"]]
+    assert sorted(out["test_a"]) == ["check", "conditions", "cost_2x", "holm_p", "label", "p_a", "passed", "run",
+                                     "vs_cw", "vs_spy"]
+    assert sorted(out["test_b"]) == ["annual_gap", "bootstrap", "check", "conditions", "drawdown_ratio", "holm_p",
+                                     "label", "largest_drawdowns", "p_b", "p_ni", "passed", "t_ni", "vol_ratio"]
+    assert (out["test_a"]["p_a"], out["test_b"]["vol_ratio"]) == pytest.approx((3.167124183311986e-05,
+                                                                                0.8007754135286231), rel=1e-12)
+    assert "blank_months" not in crit.canonical_json(out)
+    entries = secondary_entries()
+    family = crit.secondary_family(FROZEN, EXPECTED, entries, 3)
+    assert crit.secondary_family(FROZEN, EXPECTED, entries, 3, {}) == family
+
+
+def test_blank_month_is_left_out_of_the_screen_statistics():
+    net, cw = screen_pair()
+    months = blank("1975-03", "1992-12")              # an inner month and the last screen month
+    out = crit.screen_record(without(net, months), without(cw, months), 0.4, months)
+    active = without(net - cw, months)
+    joined = SCREEN[-len(active):]                    # the same values on months with no gap
+    reference = crit.screen_record(net.drop(list(months)).set_axis(joined), cw.drop(list(months)).set_axis(joined), 0.4)
+    moved = ("first_month", "last_month", "blank_months", "blank_reason_counts")
+    assert {k: v for k, v in out.items() if k not in moved} == {k: v for k, v in reference.items() if k not in moved}
+    assert (out["months"], out["first_month"], out["last_month"]) == (len(SCREEN) - 2, "1963-07", "1992-11")
+    assert out["blank_months"] == {"1975-03": "path_break_held", "1992-12": "path_break_held"}
+    assert out["blank_reason_counts"] == {"path_break_held": 2}
+    assert out["annual_active_mean"] == pytest.approx(12 * float(active.mean()), rel=1e-12)
+    assert out["hac_t"] == newey_west_mean_tstat(active)          # the months on each side are adjacent
+    zero_filled = (net - cw).where(~(net - cw).index.isin(list(months)), 0.0)
+    assert out["hac_t"] != newey_west_mean_tstat(zero_filled)    # not a zero fill
+
+
+def test_minimum_month_rules_count_months_with_values():
+    net, cw = screen_pair(months=SCREEN[-37:])
+    inner = blank(str(SCREEN[-20]))
+    assert crit.screen_record(without(net, inner), without(cw, inner), blank_months=inner)["months"] == 36
+    for months in (blank(str(SCREEN[-20])), blank(str(SCREEN[-36]))):     # an inner and a first month
+        short_net, short_cw = net.iloc[1:], cw.iloc[1:]
+        with stops("screen_too_short"):
+            crit.screen_record(without(short_net, months), without(short_cw, months), blank_months=months)
+    spy = noise(CONFIRM, 70, scale=0.04)
+    low = 0.8 * spy + noise(CONFIRM, 71, scale=0.01)
+    for kept, reason in ((11, "bootstrap_too_short"), (12, None)):
+        months = {m: "path_break_held" for m in CONFIRM[kept:]}
+        if reason:
+            with stops(reason):
+                crit.low_risk_test(low.iloc[:kept], spy.iloc[:kept], months)
+        else:
+            assert crit.low_risk_test(low.iloc[:kept], spy.iloc[:kept], months)["bootstrap"]["draws"] == 10_000
+
+
+def test_blank_month_is_left_out_of_the_confirm_statistics():
+    spy = noise(CONFIRM, 72, scale=0.04)
+    low = 0.8 * spy + noise(CONFIRM, 73, mean=0.0005, scale=0.01)
+    months = blank("1993-02", "2001-06")              # the first confirm month and an inner month
+    out = crit.low_risk_test(without(low, months), without(spy, months), months)
+    lo, sp = without(low, months), without(spy, months)
+    assert out["annual_gap"] == crit.annual_mean(lo - sp)
+    assert out["t_ni"] == newey_west_mean_tstat(lo - sp + crit.NI_MARGIN / 12)
+    assert out["vol_ratio"] == crit.annual_vol(lo) / crit.annual_vol(sp)
+    assert out["bootstrap"] == crit.bootstrap_vol_ratio(lo.to_numpy(), sp.to_numpy())    # 252 months, joined blocks
+    assert out["bootstrap"] != crit.bootstrap_vol_ratio(low.to_numpy(), spy.to_numpy())
+    assert out["largest_drawdowns"] == {"low_risk": crit.drawdown_episodes(lo)[:3],
+                                        "spy": crit.drawdown_episodes(sp)[:3]}
+    assert out["blank_months"] == {"1993-02": "path_break_held", "2001-06": "path_break_held"}
+    composite, cw = spy + noise(CONFIRM, 74, mean=0.001, scale=0.004), spy + noise(CONFIRM, 75, scale=0.003)
+    a = crit.composite_test(without(composite, months), sp, without(cw, months), months)
+    assert a["vs_cw"]["months"] == 252
+    assert a["vs_spy"]["hac_t"] == newey_west_mean_tstat(without(composite, months) - sp)
+    assert a["blank_reason_counts"] == {"path_break_held": 2}
+
+
+def test_drawdown_path_joins_a_blank_month():
+    months = pd.period_range("2000-01", "2000-04", freq="M")
+    returns = pd.Series([0.1, np.nan, -0.1, 0.2], index=months)         # 2000-02 is blank
+    episodes = crit.drawdown_episodes(returns.drop(months[1]))
+    assert [(e["peak_month"], e["trough_month"], e["recovery_month"]) for e in episodes] == [
+        ("2000-01", "2000-03", "2000-04")]                              # no point falls on 2000-02
+    assert episodes[0]["depth"] == pytest.approx(-0.1)
+    zero_filled = crit.drawdown_episodes(returns.fillna(0.0))
+    assert zero_filled[0]["peak_month"] == "2000-02"                    # a zero fill would put a peak on it
+
+
+def test_undeclared_gap_refuses():
+    net, cw = screen_pair()
+    months = blank("1975-03")
+    for declared in (None, {}):
+        with stops("month_missing"):
+            crit.screen_record(without(net, months), without(cw, months), blank_months=declared)
+    two = blank("1975-03", "1975-04")
+    for declared in (months, blank("1975-04")):                         # only one of the two left-out months declared
+        with stops("month_missing"):
+            crit.screen_record(without(net, two), without(cw, two), blank_months=declared)
+    with stops("month_missing"):                                        # a declared month away from the rows
+        crit.check_series(net.iloc[-100:], "x", "screen", blank("1970-01"))
+
+
+def test_declared_month_with_a_row_refuses():
+    net, cw = screen_pair()
+    months = blank("1975-03")
+    for value in (0.01, np.nan, np.inf):                                # a value, or a NaN row: no fill, no drop
+        with_row = net.copy()
+        with_row[pd.Period("1975-03", "M")] = value
+        saved = with_row.copy()
+        with stops("blank_month_has_row"):
+            crit.screen_record(with_row, without(cw, months), blank_months=months)
+        assert_series_equal(with_row, saved)
+    spy = noise(CONFIRM, 76)
+    with stops("blank_month_has_row"):
+        crit.low_risk_test(without(spy, blank("2000-01")), spy, blank("2000-01"))
+    for month in ("2014-04", "2015-06", "2025-12"):                     # check period, a row at each declared month
+        with stops("blank_month_has_row"):
+            crit.low_risk_check(noise(CHECK, 79), noise(CHECK, 80), blank(month))
+
+
+def test_pair_must_blank_the_same_months():
+    net, cw = screen_pair()
+    a, b = blank("1975-03"), blank("1975-04")
+    with stops("blank_month_has_row"):                                  # the CW book keeps a row the candidate blanks
+        crit.screen_record(without(net, a), cw, blank_months=a)
+    with stops("month_missing"):
+        crit.screen_record(without(net, a), cw)
+    with stops("blank_month_has_row"):                                  # each book blanks a different month
+        crit.screen_record(without(net, a), without(cw, b), blank_months={**a, **b})
+    with stops("blank_month_has_row"):
+        crit.screen({"S1": {"net": without(net, a), "cw_net": cw, "blank_months": a}})
+    confirm, confirm_2x, check = wired_inputs()
+    m = blank("2000-01")
+    with stops("blank_month_has_row"):                                  # SPY keeps the row
+        crit.composite_test(without(confirm["composite"], m), confirm["spy"], without(confirm["cw"], m), m)
+
+
+def test_period_rules_with_blank_months():
+    net, cw = screen_pair()
+    with stops("period_violation"):                                     # a declared month after the screen
+        crit.check_series(net, "x", "screen", blank("1993-01"))
+    with stops("period_violation"):
+        crit.check_series(net, "x", "screen", blank("1963-06"))
+    confirm = noise(CONFIRM, 77)
+    with stops("period_violation"):
+        crit.check_series(confirm, "x", "confirm", blank("1993-01"))
+    assert len(crit.check_series(without(confirm, blank("2014-03")), "x", "confirm", blank("2014-03"))) == 253
+    check = noise(CHECK, 78)
+    for month in ("2019-07", "2021-08"):                                # the check gap stays the only gap
+        with stops("seal_month"):
+            crit.check_series(check, "x", "check", blank(month))
+    for month in ("2014-04", "2019-06", "2021-09", "2025-12"):
+        assert len(crit.check_series(without(check, blank(month)), "x", "check", blank(month))) == len(CHECK) - 1
+
+
+def test_digest_covers_the_blank_months():
+    net, cw = screen_pair()
+    def frozen(months: dict) -> dict:
+        return crit.screen({"S1": {"net": without(net, months), "cw_net": without(cw, months), "blank_months": months}})
+    first, moved, more = frozen(blank("1975-03")), frozen(blank("1975-04")), frozen(blank("1975-03", "1980-01"))
+    assert len({first["digest_sha256"], moved["digest_sha256"], more["digest_sha256"],
+                crit.screen({"S1": {"net": net, "cw_net": cw}})["digest_sha256"]}) == 4
+    s1 = first["candidates"]["S1"]
+    tampered = {**first, "candidates": {"S1": {**s1, "blank_months": {"1975-04": "path_break_held"}}}}
+    assert crit.shortlist_digest(tampered) != first["digest_sha256"]   # only the listed blank month changed
+    recount = {**first, "candidates": {"S1": {**s1, "blank_reason_counts": {"path_break_held": 2}}}}
+    assert crit.shortlist_digest(recount) != first["digest_sha256"]
+    assert crit.verify_frozen_screen(first, first["digest_sha256"]) == bool(first["shortlist"])
+    with stops("shortlist_digest_mismatch"):
+        crit.verify_frozen_screen({**tampered, "digest_sha256": crit.shortlist_digest(tampered)},
+                                  first["digest_sha256"])
+
+
+def test_primary_decision_with_blank_months():
+    confirm, confirm_2x, check = wired_inputs()
+    cm, km = blank("2000-01"), blank("2015-06")
+    c, c2, k = ({name: without(s, months) for name, s in group.items()}
+                for group, months in ((confirm, cm), (confirm_2x, cm), (check, km)))
+    out = crit.primary_decision(FROZEN, EXPECTED, c, c2, k, cm, km)
+    a, b = out["test_a"], out["test_b"]
+    direct = crit.composite_test(c["composite"], c["spy"], c["cw"], cm)
+    assert a["p_a"] == direct["p_a"] and a["vs_spy"] == direct["vs_spy"] and a["vs_spy"]["months"] == 253
+    assert a["blank_months"] == b["blank_months"] == a["cost_2x"]["blank_months"] == {"2000-01": "path_break_held"}
+    assert a["check"]["blank_months"] == b["check"]["blank_months"] == {"2015-06": "path_break_held"}
+    assert b["bootstrap"] == crit.low_risk_test(c["low_risk"], c["spy"], cm)["bootstrap"]
+    assert b["check"]["vol_ratio"] == crit.low_risk_check(k["low_risk"], k["spy"], km)["vol_ratio"]
+    with stops("month_missing"):                                        # the confirm months are declared, not the check
+        crit.primary_decision(FROZEN, EXPECTED, c, c2, k, cm)
+    with stops("blank_month_has_row"):                                  # the 2x books share SPY and the declaration
+        crit.primary_decision(FROZEN, EXPECTED, c, confirm_2x, k, cm, km)
+    entries = {name: {key: without(s, cm) for key, s in e.items()} for name, e in secondary_entries(2).items()}
+    family = crit.secondary_family(FROZEN, EXPECTED, entries, 2, cm)
+    assert all(member["blank_months"] == {"2000-01": "path_break_held"} for member in family["members"].values())

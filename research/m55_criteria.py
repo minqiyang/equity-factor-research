@@ -9,6 +9,12 @@ net returns that ``m55_index_tilt.book_summary(...)["monthly_net"]`` gives: a
 Each period function refuses a series that holds a month outside its period,
 so a screen call cannot read a confirm month (R9). A NaN or infinite value
 refuses; nothing is filled or dropped (R6).
+
+A holding month that the driver cannot value is a declared blank month (R6):
+``blank_months`` maps the month to a reason in ``BLANK_REASONS``. Every series
+of the call has no row for it, the statistics use the other months in time
+order, and the record lists each blank month with its reason. A missing row
+that is not declared still refuses.
 """
 
 from __future__ import annotations
@@ -16,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections import Counter
 from typing import Any, Mapping
 
 import numpy as np
@@ -38,6 +45,9 @@ SCREEN_MIN_MONTHS = 36
 # (O-11, O-12, O-18, O-22) plus the post-seal warm-up to 2021-08-31, the first month end with a full 252-row window.
 CHECK_GAP_MONTHS = pd.period_range("2019-07", "2021-08", freq="M")
 PERIODS = ("screen", "confirm", "check")
+# A declared blank month needs one of these reasons. path_break_held: a book holds a position across a loader
+# path_break row, so the holding-month return is not known (sweep finding P-1; the driver blanks every book).
+BLANK_REASONS = ("path_break_held",)
 IR_MIN = 0.2                         # screen net information ratio against CW-PIT
 T_MIN = 1.0                          # screen HAC t against CW-PIT
 SHORTLIST_CAP = 10                   # R9
@@ -63,7 +73,24 @@ SECONDARY_NOTE = "secondary family: reported with BY q-values; it decides nothin
 
 # Input checks ---------------------------------------------------------------------------
 
-def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
+def check_blank(blank_months: Mapping[pd.Period, str] | None) -> dict[pd.Period, str]:
+    """Refuse unless ``blank_months`` maps each monthly ``Period`` to a reason in ``BLANK_REASONS``.
+
+    ``None`` means no blank month. The result is sorted by month.
+    """
+    if blank_months is None:
+        return {}
+    if not isinstance(blank_months, Mapping):
+        raise refuse("blank_invalid", f"a mapping of month to reason is required, not {type(blank_months).__name__}")
+    for month, reason in blank_months.items():
+        if not isinstance(month, pd.Period) or month.freqstr != "M" or not isinstance(reason, str) \
+                or reason not in BLANK_REASONS:
+            raise refuse("blank_invalid", f"{month!r}: {reason!r}; a monthly Period and a reason in {BLANK_REASONS}")
+    return dict(sorted(blank_months.items()))
+
+
+def check_series(series: pd.Series, name: str, period: str,
+                 blank_months: Mapping[pd.Period, str] | None = None) -> pd.Series:
     """Refuse unless ``series`` is a complete monthly series of finite real values inside ``period``.
 
     Screen: every month is in 1963-07 to 1992-12, the last month is 1992-12 (a
@@ -72,9 +99,16 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     no month is in ``CHECK_GAP_MONTHS``, and those months are the only gap; the
     statistics join the months on both sides with no fill. Complex and boolean
     dtypes refuse before any cast. The input is not changed.
+
+    A declared blank month (``check_blank``) has no row; a declared month with
+    a row (a value or a NaN) refuses. The period rules apply to the rows and
+    the blank months together: a blank month can be the first or the last
+    month, but not a check-gap month. The 36-month minimum counts only the
+    months with values. The result holds the months with values in time order.
     """
     if period not in PERIODS:
         raise refuse("period_invalid", period)
+    blank = check_blank(blank_months)
     if not isinstance(series, pd.Series) or not isinstance(series.index, pd.PeriodIndex) \
             or series.index.freqstr != "M" or not len(series):
         raise refuse("series_invalid", f"{name}: a non-empty Series with a monthly PeriodIndex is required")
@@ -84,18 +118,22 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     index = series.index
     if not index.is_unique or not index.is_monotonic_increasing:
         raise refuse("series_invalid", f"{name}: months must be sorted and unique")
-    if period == "check" and index.isin(CHECK_GAP_MONTHS).any():
+    declared = pd.PeriodIndex(list(blank), freq="M")
+    if index.isin(declared).any():
+        raise refuse("blank_month_has_row", f"{name}: a declared blank month has a row")
+    months = index.append(declared).sort_values()
+    if period == "check" and months.isin(CHECK_GAP_MONTHS).any():
         raise refuse("seal_month", f"{name}: a month from {CHECK_GAP_MONTHS[0]} to {CHECK_GAP_MONTHS[-1]} is in the "
                      "check gap (seal months and post-seal warm-up)")
-    expected = pd.period_range(index[0], index[-1], freq="M")
+    expected = pd.period_range(months[0], months[-1], freq="M")
     if period == "check":
         expected = expected[~expected.isin(CHECK_GAP_MONTHS)]
-    if not index.equals(expected):
-        raise refuse("month_missing", f"{name}: a month between {index[0]} and {index[-1]} has no row")
+    if not months.equals(expected):
+        raise refuse("month_missing", f"{name}: a month between {months[0]} and {months[-1]} has no row")
     values = series.to_numpy(dtype=float, na_value=np.nan)
     if not np.isfinite(values).all():
         raise refuse("missing_return", f"{name}: a value is NaN or infinite")
-    first, last = index[0], index[-1]
+    first, last = months[0], months[-1]
     if period == "screen" and (first < SCREEN_START or last != SCREEN_END):
         raise refuse("period_violation", f"{name}: {first} to {last} must lie in the screen {SCREEN_START} to "
                                          f"{SCREEN_END} and end at {SCREEN_END}")
@@ -109,23 +147,42 @@ def check_series(series: pd.Series, name: str, period: str) -> pd.Series:
     return pd.Series(values, index=index, name=series.name)
 
 
-def check_paired(series: Mapping[str, pd.Series], period: str) -> dict[str, pd.Series]:
-    """Check each series, then refuse unless all hold the same months."""
-    clean = {name: check_series(values, name, period) for name, values in series.items()}
+def check_paired(series: Mapping[str, pd.Series], period: str,
+                 blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, pd.Series]:
+    """Check each series with the same blank months, then refuse unless all hold the same months.
+
+    One declaration covers every series of the call, so the books cannot blank
+    different months: a book with a row at a declared month refuses, and a book
+    that leaves out a month that is not declared refuses.
+    """
+    clean = {name: check_series(values, name, period, blank_months) for name, values in series.items()}
     months = [values.index for values in clean.values()]
     if any(not m.equals(months[0]) for m in months[1:]):
         raise refuse("months_misaligned", ", ".join(clean))
     return clean
 
 
+def blank_record(blank_months: Mapping[pd.Period, str] | None) -> dict[str, Any]:
+    """The record keys of the declared blank months: each month with its reason, and the count per reason.
+
+    With no blank month there is no key, so the record is the same as a record made before blank months.
+    """
+    blank = check_blank(blank_months)
+    if not blank:
+        return {}
+    return {"blank_months": {str(month): str(reason) for month, reason in blank.items()},
+            "blank_reason_counts": dict(sorted(Counter(str(reason) for reason in blank.values()).items()))}
+
+
 # Annual figures -------------------------------------------------------------------------
 
 def annual_mean(monthly: pd.Series) -> float:
+    """12 x the monthly mean; a blank month has no row, so the mean is over the months with values."""
     return MONTHS_PER_YEAR * float(monthly.mean())
 
 
 def annual_vol(monthly: pd.Series) -> float:
-    """The ddof-1 monthly standard deviation times sqrt(12); zero or undefined refuses."""
+    """The ddof-1 monthly standard deviation times sqrt(12) over the months with values; zero or undefined refuses."""
     vol = float(monthly.std(ddof=1)) * math.sqrt(MONTHS_PER_YEAR)
     if not math.isfinite(vol) or vol <= 0.0:
         raise refuse("statistic_undefined", "volatility is zero or undefined")
@@ -133,7 +190,11 @@ def annual_vol(monthly: pd.Series) -> float:
 
 
 def hac_t(monthly: pd.Series) -> float:
-    """Newey-West t of the mean with the automatic lag ``floor(4 (n / 100)^(2/9))``; undefined refuses."""
+    """Newey-West t of the mean with the automatic lag ``floor(4 (n / 100)^(2/9))``; undefined refuses.
+
+    ``n`` counts the months with values. The months on each side of a blank
+    month are adjacent in the autocovariances (one lag apart).
+    """
     t = newey_west_mean_tstat(monthly)
     if not math.isfinite(t):
         raise refuse("statistic_undefined", "HAC t is undefined")
@@ -149,14 +210,20 @@ def mean_test(monthly: pd.Series) -> dict[str, Any]:
 
 # Screen and shortlist -------------------------------------------------------------------
 
-def screen_record(net: pd.Series, cw_net: pd.Series, annual_turnover: float | None = None) -> dict[str, Any]:
+def screen_record(net: pd.Series, cw_net: pd.Series, annual_turnover: float | None = None,
+                  blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
     """One candidate: its net minus the CW-PIT net of the same run, screen months only.
 
     A zero or undefined TE or an undefined HAC t gives a typed failed record
     (``status = "undefined"``, the undefined values as ``None``); the screen
     goes on and the record stays visible and hashed.
+
+    ``blank_months`` is the run's declaration for both books. ``months``,
+    ``first_month``, ``last_month``, and every statistic use the months with
+    values; ``blank_months`` and ``blank_reason_counts`` (``blank_record``) go
+    into the record and the shortlist digest.
     """
-    clean = check_paired({"candidate": net, "cw": cw_net}, "screen")
+    clean = check_paired({"candidate": net, "cw": cw_net}, "screen", blank_months)
     active = clean["candidate"] - clean["cw"]
     if annual_turnover is not None and not (math.isfinite(annual_turnover) and annual_turnover >= 0.0):
         raise refuse("turnover_invalid", f"{annual_turnover}")
@@ -169,7 +236,8 @@ def screen_record(net: pd.Series, cw_net: pd.Series, annual_turnover: float | No
             "annual_te": te if math.isfinite(te) else None,
             "information_ratio": mean / te if defined else None, "hac_t": t if defined else None,
             "p_one_sided": float(norm.sf(t)) if defined else None,
-            "annual_turnover": None if annual_turnover is None else float(annual_turnover)}
+            "annual_turnover": None if annual_turnover is None else float(annual_turnover),
+            **blank_record(blank_months)}
 
 
 def canonical_json(value: Any) -> str:
@@ -222,7 +290,8 @@ def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]
 
     Every candidate stays in the record with its values and pass flag; a
     record with ``status = "undefined"`` fails. The digest covers every
-    candidate record, the shortlist, the rule values, and the decision.
+    candidate record (its blank months included), the shortlist, the rule
+    values, and the decision.
     More than ``SHORTLIST_CAP`` shortlisted candidates refuses; an empty
     shortlist gives the stop decision ``screen_empty`` (no confirm month is
     opened).
@@ -251,26 +320,32 @@ def freeze_shortlist(records: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]
 
 
 def screen(candidates: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
-    """``candidates`` maps an ID to ``{"net", "cw_net", "annual_turnover" (optional)}``."""
-    return freeze_shortlist({c: screen_record(v["net"], v["cw_net"], v.get("annual_turnover"))
+    """``candidates`` maps an ID to ``{"net", "cw_net", "annual_turnover" (optional), "blank_months" (optional)}``."""
+    return freeze_shortlist({c: screen_record(v["net"], v["cw_net"], v.get("annual_turnover"), v.get("blank_months"))
                              for c, v in candidates.items()})
 
 
 # Test A: the composite ------------------------------------------------------------------
 
-def composite_test(composite: pd.Series, spy: pd.Series, cw: pd.Series) -> dict[str, Any]:
-    """Confirm period: composite minus SPY and composite minus CW-PIT; p_A is the larger one-sided p."""
-    clean = check_paired({"composite": composite, "spy": spy, "cw": cw}, "confirm")
+def composite_test(composite: pd.Series, spy: pd.Series, cw: pd.Series,
+                   blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
+    """Confirm period: composite minus SPY and composite minus CW-PIT; p_A is the larger one-sided p.
+
+    ``blank_months`` covers all three series (SPY included); the record lists them.
+    """
+    clean = check_paired({"composite": composite, "spy": spy, "cw": cw}, "confirm", blank_months)
     vs_spy = mean_test(clean["composite"] - clean["spy"])
     vs_cw = mean_test(clean["composite"] - clean["cw"])
-    return {"vs_spy": vs_spy, "vs_cw": vs_cw, "p_a": max(vs_spy["p_one_sided"], vs_cw["p_one_sided"])}
+    return {"vs_spy": vs_spy, "vs_cw": vs_cw, "p_a": max(vs_spy["p_one_sided"], vs_cw["p_one_sided"]),
+            **blank_record(blank_months)}
 
 
-def composite_means(composite: pd.Series, spy: pd.Series, cw: pd.Series, period: str) -> dict[str, float]:
+def composite_means(composite: pd.Series, spy: pd.Series, cw: pd.Series, period: str,
+                    blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
     """Annual active means against SPY and CW-PIT (the 2x-cost or check-period sign rules)."""
-    clean = check_paired({"composite": composite, "spy": spy, "cw": cw}, period)
+    clean = check_paired({"composite": composite, "spy": spy, "cw": cw}, period, blank_months)
     return {"vs_spy": annual_mean(clean["composite"] - clean["spy"]),
-            "vs_cw": annual_mean(clean["composite"] - clean["cw"])}
+            "vs_cw": annual_mean(clean["composite"] - clean["cw"]), **blank_record(blank_months)}
 
 
 # Test B: the low-risk version -----------------------------------------------------------
@@ -280,7 +355,9 @@ def bootstrap_rows(n: int) -> np.ndarray:
 
     Each draw takes ``ceil(n / 12)`` blocks of 12 consecutive months with
     starts drawn uniformly from ``0`` to ``n - 12`` (no wrap) and cuts the
-    joined path to ``n`` months. The seed is fixed.
+    joined path to ``n`` months. The seed is fixed. ``n`` and the 12-month
+    minimum count the months with values; a block is 12 consecutive months
+    with values, so a block can span a blank month.
     """
     if n < BLOCK_MONTHS:
         raise refuse("bootstrap_too_short", f"{n} < {BLOCK_MONTHS}")
@@ -307,6 +384,9 @@ def drawdown_episodes(monthly: pd.Series) -> list[dict[str, Any]]:
     after a peak, has its trough at the lowest wealth before recovery, and ends
     at the first month whose wealth is at least the peak again (``None`` when
     the path does not recover). Depth is trough wealth / peak wealth - 1.
+    A blank month has no row: the path joins the months on each side, so the
+    wealth does not move across a blank month. When the first month is blank,
+    the start point (wealth 1) has that month's label.
     """
     months = [monthly.index[0] - 1, *monthly.index]
     wealth = np.concatenate([[1.0], np.cumprod(1.0 + monthly.to_numpy(dtype=float))])
@@ -329,12 +409,15 @@ def drawdown_episodes(monthly: pd.Series) -> list[dict[str, Any]]:
     return sorted(out, key=lambda e: (e["depth"], e["peak_month"]))
 
 
-def low_risk_test(low: pd.Series, spy: pd.Series) -> dict[str, Any]:
+def low_risk_test(low: pd.Series, spy: pd.Series,
+                  blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
     """Confirm period: non-inferiority with the 0.5-point margin, the volatility ratio, and the bootstrap.
 
     p_B is the larger of p_NI and p_vol. Drawdowns are reported, not tested.
+    ``blank_months`` covers both series; every statistic uses the paired
+    months with values, and the record lists the blank months.
     """
-    clean = check_paired({"low_risk": low, "spy": spy}, "confirm")
+    clean = check_paired({"low_risk": low, "spy": spy}, "confirm", blank_months)
     gap = clean["low_risk"] - clean["spy"]
     t_ni = hac_t(gap + NI_MARGIN / MONTHS_PER_YEAR)
     p_ni = float(norm.sf(t_ni))
@@ -345,13 +428,15 @@ def low_risk_test(low: pd.Series, spy: pd.Series) -> dict[str, Any]:
     return {"annual_gap": annual_mean(gap), "t_ni": t_ni, "p_ni": p_ni, "vol_ratio": ratio, "bootstrap": boot,
             "p_b": max(p_ni, boot["p_vol"]),
             "drawdown_ratio": deepest["low_risk"] / deepest["spy"] if deepest["spy"] < 0.0 else None,
-            "largest_drawdowns": {name: found[:DRAWDOWN_EPISODES] for name, found in episodes.items()}}
+            "largest_drawdowns": {name: found[:DRAWDOWN_EPISODES] for name, found in episodes.items()},
+            **blank_record(blank_months)}
 
 
-def low_risk_check(low: pd.Series, spy: pd.Series) -> dict[str, float]:
-    clean = check_paired({"low_risk": low, "spy": spy}, "check")
+def low_risk_check(low: pd.Series, spy: pd.Series,
+                   blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
+    clean = check_paired({"low_risk": low, "spy": spy}, "check", blank_months)
     return {"annual_gap": annual_mean(clean["low_risk"] - clean["spy"]),
-            "vol_ratio": annual_vol(clean["low_risk"]) / annual_vol(clean["spy"])}
+            "vol_ratio": annual_vol(clean["low_risk"]) / annual_vol(clean["spy"]), **blank_record(blank_months)}
 
 
 # Primary family, stop rule, and secondary family ----------------------------------------
@@ -399,7 +484,9 @@ def stop_after_confirm(annual_mean_vs_spy: float) -> str | None:
 
 
 def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, confirm: Mapping[str, pd.Series],
-                     confirm_2x: Mapping[str, pd.Series], check: Mapping[str, pd.Series]) -> dict[str, Any]:
+                     confirm_2x: Mapping[str, pd.Series], check: Mapping[str, pd.Series],
+                     confirm_blank_months: Mapping[pd.Period, str] | None = None,
+                     check_blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
     """The O-21 primary family from net series, after the frozen screen record is checked.
 
     ``screen_record`` is the ``freeze_shortlist`` output and ``expected_digest``
@@ -410,6 +497,8 @@ def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, con
     months, dated costs). ``confirm_2x`` holds ``composite`` and ``cw`` at 2x
     costs (SPY is the same series). ``check`` holds ``composite``, ``cw``,
     ``spy``, and ``low_risk`` from 2014-04, ``CHECK_GAP_MONTHS`` left out.
+    ``confirm_blank_months`` covers every confirm and 2x series (they share
+    SPY); ``check_blank_months`` covers every check series.
 
     After ``screen_empty``, test A and the composite stop rule are refused and
     their inputs are not read. Test B still runs (it uses no screened signal,
@@ -417,11 +506,12 @@ def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, con
     """
     opened = verify_frozen_screen(screen_record, expected_digest)
     if opened:
-        a = composite_test(confirm["composite"], confirm["spy"], confirm["cw"])
-        a_2x = composite_means(confirm_2x["composite"], confirm["spy"], confirm_2x["cw"], "confirm")
-        a_check = composite_means(check["composite"], check["spy"], check["cw"], "check")
-    b = low_risk_test(confirm["low_risk"], confirm["spy"])
-    b_check = low_risk_check(check["low_risk"], check["spy"])
+        a = composite_test(confirm["composite"], confirm["spy"], confirm["cw"], confirm_blank_months)
+        a_2x = composite_means(confirm_2x["composite"], confirm["spy"], confirm_2x["cw"], "confirm",
+                               confirm_blank_months)
+        a_check = composite_means(check["composite"], check["spy"], check["cw"], "check", check_blank_months)
+    b = low_risk_test(confirm["low_risk"], confirm["spy"], confirm_blank_months)
+    b_check = low_risk_check(check["low_risk"], check["spy"], check_blank_months)
     adjusted = holm_primary(a["p_a"] if opened else 1.0, b["p_b"])
     test_b = {**b, "check": b_check, "holm_p": adjusted["B"],
               **decide_b(adjusted["B"], b["vol_ratio"], b["bootstrap"]["upper_95"], b_check)}
@@ -435,19 +525,22 @@ def primary_decision(screen_record: Mapping[str, Any], expected_digest: str, con
 
 
 def secondary_family(screen_record: Mapping[str, Any], expected_digest: str,
-                     entries: Mapping[str, Mapping[str, pd.Series]], family_size: int) -> dict[str, Any]:
+                     entries: Mapping[str, Mapping[str, pd.Series]], family_size: int,
+                     blank_months: Mapping[pd.Period, str] | None = None) -> dict[str, Any]:
     """Test A statistics for each single signal and the baseline composite, with BY q-values of p_A.
 
     The same frozen-screen gate as ``primary_decision`` runs before any series
     is read; after ``screen_empty`` it refuses. Each entry holds ``composite``,
     ``spy``, and ``cw`` confirm series. ``family_size`` is the declared size of
     the secondary family; fewer members keep it. The family decides nothing.
+    ``blank_months`` is the confirm declaration; it covers every entry.
     """
     if not verify_frozen_screen(screen_record, expected_digest):
         raise refuse("screen_empty_confirm", "screen_empty: no confirm month is opened for a tilt")
     if isinstance(family_size, bool) or not isinstance(family_size, int) or family_size < max(len(entries), 1):
         raise refuse("family_size_invalid", f"{family_size} for {len(entries)} members")
-    stats = {name: composite_test(e["composite"], e["spy"], e["cw"]) for name, e in sorted(entries.items())}
+    stats = {name: composite_test(e["composite"], e["spy"], e["cw"], blank_months)
+             for name, e in sorted(entries.items())}
     q = adjust_pvalues(pd.Series({name: s["p_a"] for name, s in stats.items()}, dtype=float), method="by",
                        family_size=family_size)
     return {"members": {name: {**s, "q_by": float(q[name])} for name, s in stats.items()},
