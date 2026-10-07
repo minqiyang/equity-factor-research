@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-06 for the local development base `claude/m55-integration` after PR #292.
+Updated: 2026-10-06 for the local development base `claude/m55-integration` with the M5.5 trial file after PR #292.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -66,6 +66,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 - Local branch `claude/m55-integration` is a development base only (no push, no PR): `28abd4ca` plus the accepted
   candidates below, code byte-identical. The screen driver is built on it; no real-data signal or return yet.
+- `claude/m55-trial-file` (`97090971`): the accepted trial family with code pins and defaults OI-01 to OI-15 (R9).
 - `claude/o22-wrds-grant` (`a7305915`): owner decision O-22, the R11 grant for WRDS data; no code.
 - `claude/m55-check-gap` (`e8135bc3`): check series skip 2019-07 to 2021-08; `claude/m55-criteria-mask`
   (`1a70eb79`, on it): the criteria accept declared blank months.
@@ -99,12 +100,11 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- The owner ran the reviewed pull script under O-22 (vintage 2025-12-31) into the local working copy, with the
-  seal months in `sealed/`, and wrote the iCloud backup archive. Next: build the screen driver on
-  `claude/m55-integration` (it owes the `path_break` blank of level windows, P-1, and the signal reason shares by
-  later exit class, R6), freeze the trial file with two review seats, count coverage, calibrate the low-risk
-  budget on 1963-1992 risk data only (O-20), and run the screen under O-21. No tilt or cap-weight return exists
-  before the trial file is frozen.
+- The owner ran the pull script under O-22 (vintage 2025-12-31). The trial file is accepted and on this base. Next:
+  build the screen driver here (it owes the `path_break` blank of level windows, P-1, and the signal reason shares by
+  later exit class, R6), count signal coverage and real starts before any return, calibrate the low-risk budget on
+  1963-1992 risk data only (O-20), then run the screen under O-21 and freeze the shortlist. The confirm run waits for
+  the second WRDS pull of CRSP closing bid and ask (OI-03). A pinned file change needs an amendment first.
 
 ## Source Routing
 
