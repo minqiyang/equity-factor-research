@@ -38,12 +38,14 @@ from research.m55_index_tilt import TIMING_CONTRACT, refuse
 SIGNAL_IDS = ("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8")
 SIGNS = {"S1": 1, "S2": 1, "S3": 1, "S4": 1, "S5": -1, "S6": -1, "S7": -1, "S8": 1}  # +1: higher is better
 REASONS = ("no_link", "ambiguous_link", "no_record", "not_yet_known", "stale", "short_history", "missing_item",
-           "no_market_data", "fpe_changed", "be_nonpositive", "zero_denominator", "invalid_value")
+           "no_market_data", "fpe_changed", "split_in_basis_window", "be_nonpositive", "zero_denominator",
+           "invalid_value")
 # A value is stale when t is later than its event date plus this many months (design note, section 3).
 # Events: S1 the statistics date, S2 and S3 the report date, S4 to S6 and S8 the fiscal period end.
 # S7 and S8 read the month-end anchor row itself (age 0), so the S7 entry is never binding.
 MAX_AGE_MONTHS = {"S1": 2, "S2": 6, "S3": 6, "S4": 18, "S5": 18, "S6": 18, "S7": 1, "S8": 18}
 FACTOR_AGE_MONTHS = 1                # a split factor read as of a date comes from a row at most this old
+SEAL = (pd.Timestamp("2019-07-31"), pd.Timestamp("2020-07-31"))   # sealed daily rows, [start, end) (O-12, O-18, O-22)
 ANNUAL_READY_MONTHS = 6              # fiscal period end + 6 months before an annual value is used
 MIN_ANNUAL_RECORDS = 2               # backfill: two fiscal years known at t, the current one included
 MIN_QUARTER_RECORDS = 8              # backfill for S2 and S3: two fiscal years of quarters known at t
@@ -299,7 +301,8 @@ class _Signals:
             "eps_when": np.where(np.isnat(eps_when), NEVER, eps_when),
             "rdq_when": np.where(when["rdq"].isna().to_numpy(), NEVER, _ns(when["rdq"])), "rdq": rdq,
             "rdq1": _rows_after(self.calendar, rdq, 1), "old": _shift_months(rdq, MAX_AGE_MONTHS["S2"]),
-            "basis": basis, "basis_floor": _shift_months(basis, -FACTOR_AGE_MONTHS)})
+            "rdq_floor": _shift_months(rdq, -FACTOR_AGE_MONTHS), "basis": basis,
+            "basis_floor": _shift_months(basis, -FACTOR_AGE_MONTHS)})
 
     def _announcements(self, frame: pd.DataFrame) -> dict[Any, dict[str, np.ndarray]]:
         # S3: an announcement is public on rdq, so rdq is its known date; it is usable from rdq + 2 rows.
@@ -394,7 +397,8 @@ class _Signals:
 
     def factor(self, p: Any, column: str, date: np.datetime64, floor: np.datetime64) -> float | str:
         """CRSP factor ``column`` (``cfacpr`` or ``cfacshr``) of ``p`` on its latest row at or before ``date``, at
-        most one month old (an as-of factor read, not a market observation)."""
+        most one month old (an as-of factor read, not a market observation). A row before the seal does not give the
+        factor at a date on or after the seal start: the sealed rows are not seen (card m55-loader-r6, item 2)."""
         rows = self.market.get(p)
         if rows is None:
             return "no_market_data"
@@ -403,6 +407,8 @@ class _Signals:
             return "no_market_data"
         if rows["date"][k] < floor:
             return "stale"
+        if rows["date"][k] < SEAL[0].to_datetime64() <= date:
+            return "no_market_data"
         f = rows[column][k]
         if np.isnan(f):
             return "missing_item"
@@ -497,7 +503,8 @@ class _Signals:
         """(EPS q - EPS q-4) / sd of the eight prior such differences (at least 6), on the share basis of q.
 
         Items before market data: q and q - 4 pass their item checks before any factor is read. S2 is scale-free,
-        so no factor is read at t.
+        so no factor is read at t. A quarter whose ``cfacshr`` at ``rdq`` differs from the one at its basis date is
+        ``split_in_basis_window``: q or q - 4 gives that reason, and a prior quarter drops its differences.
         """
         if g in LINK_REASONS:
             return g
@@ -529,7 +536,16 @@ class _Signals:
             return i
 
         def factor(i: int) -> float | str:
-            return self.factor(p, "cfacshr", rec["basis"][i], rec["basis_floor"][i])
+            # Card m55-loader-r6, item 2: first-reported EPS has the share basis of its own document, dated from rdq
+            # to the known date. A factor not known at rdq, or one that changes between rdq and the basis date,
+            # leaves that basis unknown: the quarter has no value.
+            f = self.factor(p, "cfacshr", rec["basis"][i], rec["basis_floor"][i])
+            if isinstance(f, str):
+                return f
+            at_rdq = self.factor(p, "cfacshr", rec["rdq"][i], rec["rdq_floor"][i])
+            if isinstance(at_rdq, str):
+                return at_rdq
+            return f if np.isclose(at_rdq, f, rtol=1e-9, atol=0.0) else "split_in_basis_window"
 
         now, before = item(rec["quarter"][j]), item(rec["quarter"][j] - 4)
         for i in (now, before):

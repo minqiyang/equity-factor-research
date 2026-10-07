@@ -78,7 +78,7 @@ def daily_rows(permno: int, rng: np.random.Generator) -> pd.DataFrame:
 def world_frames(seed: int = 5) -> dict[str, pd.DataFrame]:
     rng = np.random.default_rng(seed)
     dsf = pd.concat([daily_rows(p, rng) for p in (*MEMBERS, SPY)], ignore_index=True)
-    shares = pd.DataFrame({"permno": [*MEMBERS, SPY], "shrstartdt": at("1985-01-01"),
+    shares = pd.DataFrame({"permno": [*MEMBERS, SPY], "shrstartdt": CAL[0],
                            "shrenddt": at("2025-12-31"), "shrout": 1000})
     shares.loc[shares["permno"] == A, "shrenddt"] = SPLIT - pd.Timedelta(days=1)
     shares.loc[shares["permno"] == A, "shrout"] = 500
@@ -268,7 +268,7 @@ T = pd.Timestamp("2018-06-29")
 
 def me_case(shares: list[tuple], price: float = 50.0, factor_t: float = 1.0, basis_factor: float = 1.0,
             level: float = 1.0) -> pd.Series:
-    rows = pd.DataFrame({"permno": 1, "date": pd.to_datetime(["1985-01-02", "2018-06-29"]),
+    rows = pd.DataFrame({"permno": 1, "date": pd.to_datetime(["1985-01-01", "2018-06-29"]),
                          "prc": [10.0, price], "dlycumfacshr": [basis_factor, factor_t], "level": [1.0, level]})
     facts = pd.DataFrame(shares, columns=["shrstartdt", "shrenddt", "shrout"]).assign(permno=1)
     facts[["shrstartdt", "shrenddt"]] = facts[["shrstartdt", "shrenddt"]].apply(pd.to_datetime)
@@ -697,7 +697,7 @@ def test_last_close_run_removes_the_terminal_return_from_the_path() -> None:
 def test_daily_signal_shares_are_the_d5_count_and_driver_columns_pass() -> None:
     """Item 7 (and item 5): the daily signal table's shrout is the D5 count; primaryexch and dlyprcflg pass."""
     facts = facts_of(1, [("1985-01-01", "1990-12-30", 1000), ("1990-12-31", "2025-12-31", 3000)])
-    days = pd.bdate_range("1990-11-01", "1991-06-28")
+    days = pd.bdate_range("1985-01-01", "1991-06-28")
     rows = pd.DataFrame({"permno": 1, "date": days, "prc": 10.0, "dlycumfacshr": 1.0, "level": 1.0})
     out = w.market_equity(rows, facts, rows, days).set_index(rows["date"])["share_count"]
     assert out[at("1991-02-28")] == 1000 and out[at("1991-05-15")] == 1000             # 1990-12-31 + 135 days
@@ -791,3 +791,98 @@ def test_driver_columns_and_bid_ask_share_match_the_source_rows() -> None:
     member = member[(member["date"] >= member["mbrstartdt"]) & (member["date"] <= member["mbrenddt"])]
     expected = int((member["dlyprcflg"] == "BA").sum())
     assert expected > 0 and w.intake_report(data)["bid_ask_member_days"]["bid_ask"] == expected
+
+
+# Card m55-loader-r6 -----------------------------------------------------------------------
+
+def test_seal_listing_without_a_prior_factor_row_is_unmapped_never_half_the_shares() -> None:
+    """Item 1, case A: the first row is after the seal and the fact is dated in the seal; a 2-for-1 split in the
+    seal after it makes the post-seal factor 1 and the true count 200. The basis is not observed: unmapped."""
+    rows = pd.concat([basis_rows(4, [("2020-08-03", "2021-06-30", 30.0, 1.0)]),
+                      basis_rows(5, [("2020-08-03", "2021-06-30", 30.0, 1.0)])])
+    facts = pd.concat([facts_of(4, [("2020-04-03", "2020-08-02", 100), ("2020-08-03", "2025-12-31", 200)]),
+                       facts_of(5, [("2019-06-03", "2020-08-02", 100), ("2020-08-03", "2025-12-31", 200)])])
+    for permno in (4, 5):                                       # a fact dated in the seal, or before it
+        for day in ("2020-08-17", "2020-10-15", "2020-12-16"):  # the old fact is in use (date + 136 days)
+            cell = me_at(rows, facts, permno, day)
+            assert np.isnan(cell["market_equity"]) and cell["me_reason"] == "unmapped"
+            assert np.isnan(cell["share_count"]) and cell["basis_unseen"] == "seal"
+            assert not cell["basis_changed_across_gap"]
+        cell = me_at(rows, facts, permno, "2020-12-17")         # a fact dated after the seal: observed basis
+        assert cell["share_count"] == 200 and cell["market_equity"] == 30.0 * 200 and pd.isna(cell["basis_unseen"])
+    days = DAYS[~w.in_seal(DAYS)]                               # a calendar whose first post-seal row is SEAL_END
+    rows = pd.DataFrame({"permno": 12, "date": days[days >= w.SEAL_END], "prc": 30.0, "dlycumfacshr": 1.0,
+                         "level": 1.0})
+    out = w.market_equity(rows, facts_of(12, [("2020-04-03", "2025-12-31", 100)]), rows, days)
+    used = (rows["date"] >= at("2020-08-17")).to_numpy()
+    assert rows["date"].iloc[0] == w.SEAL_END and (out.loc[used, "basis_unseen"] == "seal").all()
+    assert out.loc[used, "share_count"].isna().all() and (out.loc[used, "me_reason"] == "unmapped").all()
+
+
+def test_data_start_fact_without_a_prior_factor_row_is_unmapped_until_an_observed_fact_is_used() -> None:
+    """Item 1, case B: the PERMNO trades on the first calendar row and the fact is dated before it, so a split
+    between the two is not seen; the first row is the basis row, so no gap shows."""
+    rows = pd.concat([basis_rows(6, [(str(CAL[0].date()), "1994-06-30", 40.0, 1.0)]),
+                      basis_rows(7, [(str(CAL[0].date()), "1994-06-30", 40.0, 1.0)])])
+    facts = pd.concat([facts_of(6, [("1992-06-01", "1993-01-14", 100), ("1993-01-15", "2025-12-31", 200)]),
+                       facts_of(7, [("1992-06-01", "1992-07-01", 100)])])
+    for day in (str(CAL[0].date()), "1993-05-28"):              # the 1992-06-01 fact is in use
+        cell = me_at(rows, facts, 6, day)
+        assert np.isnan(cell["market_equity"]) and cell["me_reason"] == "unmapped"
+        assert np.isnan(cell["share_count"]) and cell["basis_unseen"] == "data_start"
+    cell = me_at(rows, facts, 6, "1993-05-31")                  # 1993-01-15 + 136 days: observed basis
+    assert cell["share_count"] == 200 and cell["market_equity"] == 40.0 * 200 and pd.isna(cell["basis_unseen"])
+    stale = me_at(rows, facts, 7, "1993-01-04")                 # a stale fact keeps its reason and is not counted
+    assert stale["me_reason"] == "stale_share_fact" and pd.isna(stale["basis_unseen"])
+
+
+def test_prior_factor_row_and_observed_gaps_keep_the_fix_r1_rule() -> None:
+    """Item 1 control: with a factor row before the fact, the fix-r1 rule decides (a factor change across the seal
+    is unmapped, no change keeps the value); a fact before the first row inside the calendar keeps its value."""
+    pre, post = ("2019-01-02", "2019-07-30"), ("2020-08-03", "2021-06-30")
+    rows = pd.concat([basis_rows(8, [(*pre, 60.0, 2.0), (*post, 30.0, 1.0)]),
+                      basis_rows(9, [(*pre, 30.0, 1.0), (*post, 30.0, 1.0)]),
+                      basis_rows(10, [(*post, 30.0, 1.0)])])
+    facts = pd.concat([facts_of(p, [("2020-04-03", "2025-12-31", 100)]) for p in (8, 9)]
+                      + [facts_of(10, [("2020-08-03", "2025-12-31", 100)])])
+    changed = me_at(rows, facts, 8, "2020-10-15")
+    assert changed["me_reason"] == "unmapped" and changed["basis_changed_across_gap"]
+    assert pd.isna(changed["basis_unseen"])
+    for permno, day in ((9, "2020-10-15"), (10, "2020-12-17")):
+        cell = me_at(rows, facts, permno, day)
+        assert cell["market_equity"] == 30.0 * 100 and pd.isna(cell["basis_unseen"])
+    early = basis_rows(11, [("2019-01-02", "2019-07-30", 99.0, 3.0)])     # fact 2015, first row 2019 (pre-seal)
+    cell = me_at(early, facts_of(11, [("2015-01-01", "2025-12-31", 208)]), 11, "2019-07-30")
+    assert cell["market_equity"] == 99.0 * 208 and pd.isna(cell["basis_unseen"])
+
+
+def test_intake_counts_unseen_share_bases_by_case_and_year() -> None:
+    """Item 1 counter: C's only fact is dated before the first calendar row (data_start on each C row but the
+    delisting row, which has no factor and is unmapped anyway); B has no row before the seal (seal on every B row,
+    none a member-day). Counts by year and the last date, for all rows and for member-days; ME is unmapped."""
+    frames = world_frames()
+    shares = frames["crsp_stkshares"].copy()
+    shares.loc[shares["permno"] == C, "shrstartdt"] = at("1985-01-01")
+    dsf = frames["crsp_dsf_v2"]
+    dsf = dsf[(dsf["permno"] != B) | (dsf["dlycaldt"] >= w.SEAL_END)]
+    data = make_data({**frames, "crsp_stkshares": shares, "crsp_dsf_v2": dsf})
+    def counted(days: pd.DatetimeIndex) -> dict:
+        years = pd.Series(days).dt.year.value_counts().sort_index()
+        return {"by_year": {str(y): int(n) for y, n in years.items()},
+                "last": str(days[-1].date()) if len(days) else None}
+
+    c_days, b_days = CAL[CAL < LAST[C]], CAL[CAL >= w.SEAL_END]
+    report = w.intake_report(data)
+    assert report["share_basis_unseen"] == {
+        "data_start": {"rows": counted(c_days), "member_days": counted(c_days[c_days >= FIRST])},
+        "seal": {"rows": counted(b_days), "member_days": counted(b_days[:0])}}
+    me = w.member_market_equity(data)
+    rows = w.daily(data).loc[me.index]
+    assert (me.loc[rows["permno"].isin([B, C]).to_numpy(), "me_reason"] == "unmapped").all()
+    assert me.loc[~rows["permno"].isin([B, C]).to_numpy(), "basis_unseen"].isna().all()
+    frames_out = w.tilt_frames(data, "2016-12-30", "2018-12-31")
+    assert frames_out["market_equity"][str(C)].isna().all()
+    text = w.intake_markdown(report)
+    assert f"- `data_start`: {len(c_days)} rows" in text and f"- `seal`: {len(b_days)} rows" in text
+    assert "- `seal`: 0 member-days (by year: none); last date n/a." in text
+    assert "FAIL" not in text and all(str(p) not in text for p in (*MEMBERS, SPY))
