@@ -15,6 +15,39 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Declared Blank Months in the Criteria (Milestone 5.5, path_break, coordinator default)
+
+Context:
+
+- Sweep finding `tasks:driver-path_break-P-1`: CRSP has rows with a price and no return inside S&P 500 member spells
+  (6 rows; 3 in the screen months). The loader types them `path_break`. A position held from the last valid row
+  across the break gets only the return after the break; the return before it counts as 0. The fix types each
+  holding-month return of every book that holds such a position as missing. `research/m55_criteria.py` refused any
+  missing month, so a blank month needed a declared treatment before any result.
+
+Decision:
+
+- The criteria take `blank_months`: a mapping of each blank month to a reason in `BLANK_REASONS` (now only
+  `path_break_held`). One declaration covers every series of a call (the books of a pair and SPY). A declared month
+  has no row in any series. A declared month with a row (a value or a NaN) refuses with `blank_month_has_row`; a
+  month left out with no declaration still refuses with `month_missing`.
+- Every statistic uses the months with values, in time order: means, volatility and TE, the HAC t (n counts the
+  months with values; the months on each side of a blank month become adjacent), the bootstrap (n and the 12-month
+  minimum count the months with values; a block can span a blank month), the drawdowns (the path joins the months on
+  each side), and the 36-month screen minimum. The period rules apply to the rows and the blank months together; a
+  blank month cannot be in the check gap.
+- Each record carries `blank_months` and `blank_reason_counts` when a month is declared, and the shortlist digest
+  covers them. With no declared month, every output is the same as at `e8135bc`.
+- Reason: R6 permits no fill. A month left out with a typed reason, listed in the hashed record, is not a silent
+  drop. None of this loosens R1, R6, or R9: a declared month adds no value, and every period rule still applies.
+
+Consequences:
+
+- The screen driver finds the blank months at run time from the loader `path_break` panel and the engine holdings
+  (no future data), leaves those months out of every book of the run, and reports the count, the months, the
+  weights, and the later exit class. The trial rule `P1_path_break`, `reports_owed.path_break`, and P-1 in this log
+  must state this before the freeze.
+
 ## 2026-10-06 - Gap Members Leave the Low-Risk Ratio (Milestone 5.5, card m55-ratio-gap)
 
 Context:

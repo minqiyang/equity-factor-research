@@ -12,6 +12,30 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Declared blank months in the criteria (Milestone 5.5, card m55-critmask)
+
+- `research/m55_criteria.py`: `BLANK_REASONS`, `check_blank`, and `blank_record` are new. `check_series` and
+  `check_paired` take `blank_months`: a declared month has no row, the period rules use the rows and the declared
+  months together, and the result holds the months with values. `screen_record`, `screen` (a candidate key),
+  `composite_test`, `composite_means`, `low_risk_test`, `low_risk_check`, `primary_decision` (one confirm and one
+  check declaration), and `secondary_family` pass the declaration on and add the blank keys to their records. The
+  statistic functions did not change; their docstrings state how a blank month is treated.
+- Tests: 12 new tests (53 in the file). A declared month is left out and each statistic equals the one on the
+  joined series (screen record against the same values on months with no gap; HAC t, bootstrap, drawdowns, and the
+  confirm means against direct calls); the minimum-month rules count the months with values; an undeclared gap, a
+  declared month with a row (value, NaN, or infinite), and books that blank different months refuse; the period
+  rules and the check gap still hold; the digest changes when the blank set or its counts change. The 41 earlier
+  tests pass unchanged.
+- Identity: a scratch script ran the `e8135bc` module and this module on 528 calls with no declared month (46 of
+  them refusals). The canonical JSON of every output and the text of every refusal were the same. In the suite, the
+  equality test pins the `e8135bc` record keys and values at 1e-12, not a digest: the HAC t uses `np.dot`, and its
+  last bit can differ between BLAS builds.
+- Self-check before review (Opus subagents): 48 mutation probes on the new paths. 44 were killed at first; of the 4
+  survivors, 3 are equivalent, and the fourth (no `blank_month_has_row` case in the check period) now has a test.
+- Backlog (ADVISORY): no floor on the months with values in the confirm and check periods after blank months (only
+  the bootstrap 12-month minimum); no ceiling on declared months, so a declaration can stand for the tail of a
+  short confirm series or extend the check end. The record lists every declared month.
+
 ## 2026-10-06 - Gap members leave the low-risk ratio (Milestone 5.5, card m55-ratio-gap)
 
 - Base `e50e8d6`. `whole_book_ratio` takes an optional per-member `short` flag (no valid return before the window,
