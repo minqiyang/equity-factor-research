@@ -70,6 +70,11 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Candidate branch `claude/m55-check-gap` changes `research/m55_criteria.py`: a check series now skips
   `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (the seal holding months plus the post-seal warm-up to the first month end
   with a full 252-row window) in place of the seal months only. No other logic change. No real data is read.
+- Candidate branch `claude/m55-lowrisk` adds the O-20 low-risk book and its calibration to the index-tilt engine,
+  on synthetic fixtures only. The calibration picks `g` from a complete-case whole-book ex-ante volatility ratio
+  with a two-sided median bracket; TILT and CW-PIT outputs are unchanged. The calibration rules are coordinator
+  defaults (`docs/decision_log.md`, 2026-10-05). Both review seats passed the expert-step verification. No real
+  data is read.
 
 ## Current Research Gate Summary
 

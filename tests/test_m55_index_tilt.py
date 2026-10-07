@@ -966,3 +966,1052 @@ def test_b2_rebalance_with_every_target_member_excluded_refuses() -> None:
     with pytest.raises(RunnerStop, match="traded_set_empty"):
         tilt.build_targets(replace(inputs, eligible=alone,
                                    disappearances=_event("A.US#E1", "2000-02-29", "2000-02-29")))
+
+
+# Low-risk book (card m55-lowrisk, owner decision O-20) -----------------------------------------
+
+LOW_G = 0.5                     # the 12-name fixture holds one member near 38 percent; the cap loop converges here
+
+
+@pytest.fixture(scope="module")
+def low_built() -> dict:
+    return tilt.build_targets(fixture(), g=LOW_G)
+
+
+@pytest.fixture(scope="module")
+def low_run() -> dict:
+    return tilt.run_index_tilt(fixture(stop=True), g=LOW_G)
+
+
+def _window(vols: list[float], seed: int = 1, rows: int = 252) -> np.ndarray:
+    return np.random.default_rng(seed).standard_normal((rows, len(vols))) * np.array(vols)
+
+
+def _lowrisk(b: list[float], returns: np.ndarray, g: float) -> tuple[pd.Series, pd.Series, dict]:
+    names = [chr(ord("A") + k) for k in range(len(b))]
+    window = pd.DataFrame(returns, columns=names)
+    vol = tilt.member_vols(window, pd.Series(True, index=names))
+    bs = pd.Series(b, index=names)
+    w, info = tilt.lowrisk_weights(bs, vol, window, g)
+    return bs, w, info
+
+
+def _shifted_prices(prices: pd.DataFrame, shift: np.ndarray) -> pd.DataFrame:
+    """Prices whose daily simple return is the old one plus a per-stock constant; missing cells stay missing."""
+    ratio = (prices / prices.shift(1)).add(shift, axis=1).fillna(1.0)
+    first = prices.bfill().iloc[0]
+    return (ratio.cumprod() * first).where(prices.notna())
+
+
+def test_lowrisk_constants() -> None:
+    assert (tilt.LOWRISK_CAP, tilt.LOWRISK_TE, tilt.LOWRISK_TARGET_RATIO) == (0.02, 0.05, 0.87)
+    assert tilt.LOWRISK_GRID == (0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0)
+    assert tilt.BOOKS == ("cw", "tilt")
+
+
+@pytest.mark.parametrize("field", ["score", "market_equity", "returns", "eligibility"])
+def test_lowrisk_inputs_on_or_after_row_r_change_no_weight_at_row_r(low_built: dict, field: str) -> None:
+    r = CAL.get_loc(PERTURB_AT)
+    after = tilt.build_targets(_perturbed(fixture(), field, r), g=LOW_G)
+    assert_frame_equal(after["targets"]["lowrisk"].loc[:PERTURB_AT], low_built["targets"]["lowrisk"].loc[:PERTURB_AT],
+                       check_exact=True)
+    assert_frame_equal(after["rebalances"].loc[:PERTURB_AT], low_built["rebalances"].loc[:PERTURB_AT],
+                       check_exact=True)
+
+
+@pytest.mark.parametrize("field", ["market_equity", "returns"])
+def test_lowrisk_inputs_at_row_r_minus_1_do_change_the_weight_at_row_r(low_built: dict, field: str) -> None:
+    r = CAL.get_loc(PERTURB_AT)
+    after = tilt.build_targets(_perturbed(fixture(), field, r - 1), g=LOW_G)
+    assert not after["targets"]["lowrisk"].loc[PERTURB_AT].equals(low_built["targets"]["lowrisk"].loc[PERTURB_AT])
+    if field == "returns":
+        assert (after["rebalances"].loc[PERTURB_AT, "lowrisk_vol_median"]
+                != low_built["rebalances"].loc[PERTURB_AT, "lowrisk_vol_median"])
+    assert_frame_equal(after["targets"]["lowrisk"].loc[:"2000-12-29"], low_built["targets"]["lowrisk"].loc[:"2000-12-29"],
+                       check_exact=True)
+
+
+def test_lowrisk_ignores_a_constant_shift_in_daily_returns(low_built: dict) -> None:
+    # Volatility and TE ignore the mean: a per-stock constant added to every daily return moves no target.
+    inputs = fixture()
+    shifted = replace(inputs, prices=_shifted_prices(inputs.prices, np.linspace(-0.004, 0.006, len(ASSETS))))
+    returns = tilt.simple_returns(shifted.prices) - tilt.simple_returns(inputs.prices)
+    assert returns.std().max() < 1e-12 and returns.mean().abs().min() > 1e-4
+    after = tilt.build_targets(shifted, g=LOW_G)
+    gap = (after["targets"]["lowrisk"] - low_built["targets"]["lowrisk"]).abs().max().max()
+    assert gap <= 1e-12
+    assert_frame_equal(after["targets"]["lowrisk"].isna(), low_built["targets"]["lowrisk"].isna())
+    grid = (0.1, 0.2, 0.3, 0.4, 0.5)
+    base = tilt.calibrate_lowrisk(inputs, grid, 0.995, START, END)
+    moved = tilt.calibrate_lowrisk(shifted, grid, 0.995, START, END)
+    assert base["chosen_g"] == moved["chosen_g"] is not None
+    assert np.allclose(base["grid"]["median_vol_ratio"], moved["grid"]["median_vol_ratio"], rtol=0.0, atol=1e-12)
+
+
+def test_lowrisk_cap_holds_and_a_large_low_volatility_member_reaches_it() -> None:
+    b, w, info = _lowrisk([0.5, 0.1, 0.1, 0.1, 0.1, 0.1], _window([0.002, 0.004, 0.005, 0.006, 0.007, 0.008]), 2.0)
+    assert info["te_scale"] == 1.0 and info["capped"] >= 1
+    assert abs((w["A"] - b["A"]) - tilt.LOWRISK_CAP) <= 1e-12
+    assert (w - b).abs().max() <= tilt.LOWRISK_CAP + 1e-12
+    assert math.fsum(w) == pytest.approx(1.0, abs=1e-12) and (w >= 0.0).all()
+
+
+def test_lowrisk_loop_refuses_when_it_does_not_converge(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tilt, "RENORMALIZE_LOOPS", 1)
+    with pytest.raises(RunnerStop, match="lowrisk_loop_not_converged"):
+        _lowrisk([0.5, 0.1, 0.1, 0.1, 0.1, 0.1], _window([0.002, 0.004, 0.005, 0.006, 0.007, 0.008]), 2.0)
+
+
+def test_lowrisk_loop_converges_on_a_large_concentrated_book() -> None:
+    # 500 lognormal cap weights (top weight near 5 percent); volatility falls with size; g at the top of the grid.
+    n = 500
+    rng = np.random.default_rng(4)
+    raw = np.exp(rng.normal(0.0, 1.25, n))
+    size = pd.Series(raw).rank(pct=True).to_numpy()
+    returns = np.outer(rng.standard_normal(252) * 0.009, rng.uniform(0.5, 1.5, n))
+    returns += rng.standard_normal((252, n)) * 0.014 * (1.25 - 0.5 * size)
+    b, w, info = _lowrisk(list(raw / raw.sum()), returns, tilt.LOWRISK_GRID[-1])
+    assert info["loops"] < tilt.RENORMALIZE_LOOPS and info["capped"] > 0
+    assert (w >= 0.0).all() and math.fsum(w) == pytest.approx(1.0, abs=1e-12)
+    assert (w - b).abs().max() <= tilt.LOWRISK_CAP + tilt.CAP_TOLERANCE
+
+
+def test_lowrisk_te_scaling() -> None:
+    returns = _window([0.12, 0.16, 0.24, 0.32])
+    b, w, info = _lowrisk([0.25, 0.25, 0.25, 0.25], returns, 6.0)
+    assert info["te_scale"] < 1.0 and info["ex_ante_te_before_scale"] > tilt.LOWRISK_TE
+    cov = np.cov(returns, rowvar=False, ddof=1)
+    active = (w - b).to_numpy()
+    te = math.sqrt(252.0 * active @ cov @ active)
+    assert te == pytest.approx(tilt.LOWRISK_TE, rel=1e-9)
+    assert info["ex_ante_te"] == pytest.approx(tilt.LOWRISK_TE, rel=1e-9)
+    _, _, small = _lowrisk([0.25, 0.25, 0.25, 0.25], returns, 0.01)
+    assert small["te_scale"] == 1.0 and small["ex_ante_te"] < tilt.LOWRISK_TE
+
+
+def test_lowrisk_record_values() -> None:
+    returns = _window([0.06, 0.08, 0.12, 0.16])
+    b, w, info = _lowrisk([0.4, 0.3, 0.2, 0.1], returns, 1.0)
+    vol_w = np.std(returns @ w.to_numpy(), ddof=1) * math.sqrt(252)
+    vol_b = np.std(returns @ b.to_numpy(), ddof=1) * math.sqrt(252)
+    assert info["ex_ante_vol"] == pytest.approx(vol_w, rel=1e-12)
+    assert info["cw_ex_ante_vol"] == pytest.approx(vol_b, rel=1e-12)
+    assert info["vol_ratio"] == pytest.approx(vol_w / vol_b, rel=1e-12)
+    assert info["g"] == 1.0 and info["pinned"] == 0 and info["pinned_cw_share"] == 0.0
+    assert info["ratio_status"] == "defined_full" and info["ratio_rows"] == 252
+    assert info["vol_median"] == pytest.approx(np.median(returns.std(axis=0, ddof=1)), rel=1e-15)
+
+
+def test_lowrisk_budget_and_pinned_members(low_built: dict) -> None:
+    table = low_built["rebalances"]
+    for date in low_built["targets"]["lowrisk"].index:
+        w = low_built["targets"]["lowrisk"].loc[date].dropna()
+        b = low_built["targets"]["cw"].loc[date].dropna()
+        assert w.index.equals(b.index)
+        assert np.isfinite(w).all() and (w >= 0.0).all()
+        assert abs(math.fsum(w) - 1.0) <= 1e-12
+        assert (w - b).abs().max() <= tilt.LOWRISK_CAP + tilt.CAP_TOLERANCE
+        assert table.loc[date, "lowrisk_ex_ante_te"] <= tilt.LOWRISK_TE * (1.0 + tilt.TE_TOLERANCE)
+    first = low_built["targets"]["lowrisk"].index[0]
+    assert table.loc[first, "lowrisk_pinned"] == 1                      # LATE_ASSET has no full window yet
+    assert low_built["targets"]["lowrisk"].loc[first, LATE_ASSET] == low_built["targets"]["cw"].loc[first, LATE_ASSET]
+    assert table.loc[first, "lowrisk_pinned_cw_share"] == low_built["targets"]["cw"].loc[first, LATE_ASSET]
+    assert table["lowrisk_pinned"].iloc[-1] == 0
+    assert low_built["counts"]["lowrisk_pinned"] == int(table["lowrisk_pinned"].sum())
+    assert (table["lowrisk_g"] == LOW_G).all()
+    assert (table["lowrisk_te_scale"] < 1.0).any() and (table["lowrisk_capped"] > 0).any()
+
+
+def test_lowrisk_g_zero_gives_cap_weight_exactly() -> None:
+    built = tilt.build_targets(fixture(), g=0.0)
+    assert_frame_equal(built["targets"]["lowrisk"], built["targets"]["cw"], check_exact=True)
+    table = built["rebalances"]
+    short = table["lowrisk_ratio_status"] == "ratio_window_short"
+    assert short.sum() == 1 and (table.loc[short, "lowrisk_ratio_rows"] < tilt.LOWRISK_RATIO_MIN_ROWS).all()
+    assert table.loc[short, "lowrisk_vol_ratio"].isna().all() and (table.loc[~short, "lowrisk_vol_ratio"] == 1.0).all()
+
+
+def test_lowrisk_equal_volatilities_give_cap_weight_exactly() -> None:
+    x = _window([0.01])[:, 0]
+    b, w, info = _lowrisk([0.4, 0.3, 0.2, 0.1], np.column_stack([x, -x, x, -x]), 3.0)
+    assert (w == b).all()
+    assert info["te_scale"] == 1.0 and info["capped"] == 0
+
+
+def test_lowrisk_lower_volatility_gets_the_higher_weight() -> None:
+    b, w, info = _lowrisk([0.3, 0.3, 0.2, 0.2], _window([0.010, 0.012, 0.011, 0.0105]), 0.3)
+    assert info["capped"] == 0 and info["te_scale"] == 1.0
+    assert w["A"] > b["A"] > w["B"]
+
+
+def test_lowrisk_zero_volatility_refuses() -> None:
+    returns = _window([0.01, 0.01, 0.01])
+    returns[:, 1] = 0.0
+    with pytest.raises(RunnerStop, match="lowrisk_vol_invalid"):
+        _lowrisk([0.5, 0.3, 0.2], returns, 1.0)
+
+
+@pytest.mark.parametrize("g", [-0.5, np.nan, np.inf])
+def test_lowrisk_invalid_g_refuses(g: float) -> None:
+    with pytest.raises(RunnerStop, match="lowrisk_g_invalid"):
+        tilt.build_targets(fixture(), g=g)
+
+
+def test_lowrisk_leaves_the_other_books_unchanged(built: dict, low_built: dict) -> None:
+    for book in tilt.BOOKS:
+        assert_frame_equal(low_built["targets"][book], built["targets"][book], check_exact=True)
+    assert_frame_equal(low_built["rebalances"][built["rebalances"].columns], built["rebalances"], check_exact=True)
+    extra = [c for c in low_built["rebalances"].columns if c not in built["rebalances"].columns]
+    assert extra and all(c.startswith("lowrisk_") for c in extra)
+    assert set(built["targets"]) == set(tilt.BOOKS) and not any(c.startswith("lowrisk") for c in built["counts"])
+
+
+def test_lowrisk_full_run_reports_the_book_like_the_others(full_run: dict, low_run: dict) -> None:
+    assert set(low_run["targets"]) == {"cw", "tilt", "lowrisk"}
+    assert set(low_run["fragile_lowrisk_active_sign"]) == set(tilt.COST_SCALES)
+    assert "fragile_lowrisk_active_sign" not in full_run and "lowrisk_active" not in full_run["runs"][("primary",
+                                                                                                         "primary")]
+    for key, run in low_run["runs"].items():
+        for book in tilt.BOOKS:
+            assert_series_equal(run[book]["daily_net"], full_run["runs"][key][book]["daily_net"], check_exact=True)
+        out = run["lowrisk"]
+        assert out["held_events"]["count"] == 1 and out["held_events"]["weight_sum"] > 0.0
+        assert out["monthly_net"].index.equals(pd.period_range("2000-08", "2001-08", freq="M"))
+        assert np.prod(1.0 + out["monthly_net"]) == pytest.approx(np.prod(1.0 + out["daily_net"]), rel=1e-12)
+        assert_series_equal(run["lowrisk_active"]["daily"], out["daily_net"] - run["cw"]["daily_net"])
+        assert run["lowrisk_active"]["realized_te_daily"] > 0.0
+    primary, stressed = low_run["runs"][("primary", "primary")], low_run["runs"][("sensitivity_2x", "primary")]
+    assert stressed["lowrisk"]["annual_cost_drag"] == pytest.approx(2.0 * primary["lowrisk"]["annual_cost_drag"],
+                                                                    rel=0.05)
+
+
+@pytest.mark.parametrize(
+    ("cause", "supplied", "run", "expected"),
+    [("failure", np.nan, "primary", -1.0), ("cash_merger", np.nan, "primary", 0.0), ("failure", -0.3, "last_close", 0.0)],
+)
+@pytest.mark.parametrize("b2", [False, True])
+def test_lowrisk_disappearance_settles_as_in_the_other_books(b2: bool, cause: str, supplied: float, run: str,
+                                                             expected: float) -> None:
+    if b2:
+        inputs, asset, date = _b2_inputs(cause, supplied), B2_ASSET, PERTURB_AT
+    else:
+        inputs, asset, date = fixture(stop=True), STOP_ASSET, STOP_DATE
+        inputs = replace(inputs, disappearances=pd.DataFrame(
+            [{"permanent_id": asset, "effective_date": date, "known_at": date, "cause": cause,
+              "delisting_return": supplied}], columns=FIELDS))
+    built = tilt.build_targets(inputs, g=LOW_G)
+    events = tilt.terminal_events(built["disappearances"], CAL, run)
+    records = {}
+    for book in ("cw", "lowrisk"):
+        result = tilt.run_book(inputs, built["targets"][book], events, tilt.dated_cost_frame(CAL))
+        (records[book],) = [r for r in result.terminal_event_log if r["permanent_id"] == asset]
+        assert records[book]["incoming_weight"] > 0.0 and records[book]["terminal_return"] == expected
+        assert result.holdings.loc[date:, asset].eq(0.0).all()
+    assert records["cw"]["effective_date"] == records["lowrisk"]["effective_date"]
+    if b2:
+        assert np.isnan(built["targets"]["lowrisk"].loc[PERTURB_AT, B2_ASSET])
+        assert built["targets"]["lowrisk"].loc[PERTURB_AT].dropna().index.equals(
+            built["targets"]["cw"].loc[PERTURB_AT].dropna().index)
+
+
+def test_lowrisk_b2_keeps_the_excluded_name_in_the_volatility_median(low_built: dict) -> None:
+    unknown = tilt.build_targets(_b2_inputs(), g=LOW_G)["rebalances"].loc[PERTURB_AT]
+    known = tilt.build_targets(_b2_inputs(known=CAL[CAL.get_loc(PERTURB_AT) - 1]), g=LOW_G)["rebalances"].loc[PERTURB_AT]
+    base = low_built["rebalances"].loc[PERTURB_AT]
+    assert unknown["unknown_event_excluded"] == 1
+    assert unknown["lowrisk_vol_median"] == base["lowrisk_vol_median"]
+    assert known["lowrisk_vol_median"] != base["lowrisk_vol_median"]
+
+
+# Low-risk calibration (design note section 4) ---------------------------------------------------
+
+CAL_GRID = (0.1, 0.2, 0.3, 0.4, 0.5)
+CAL_START = pd.Timestamp("2000-08-31")      # from here LATE_ASSET has at least 126 complete rows: no undefined ratio
+
+
+@pytest.fixture(scope="module")
+def calibration() -> dict:
+    return tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+
+
+def test_calibration_records_every_grid_value_and_matches_the_book(calibration: dict) -> None:
+    grid, table = calibration["grid"], calibration["rebalances"]
+    assert grid["g"].tolist() == list(CAL_GRID)
+    dates = tilt.rebalance_dates(CAL, CAL_START, END)
+    assert (grid["rebalances"] == len(dates)).all()
+    for g in (CAL_GRID[0], CAL_GRID[-1]):
+        book = tilt.build_targets(replace(fixture(), start=CAL_START), g=g)["rebalances"]
+        part = table[table["g"] == g].set_index("date")
+        assert part.index.equals(book.index)
+        assert_series_equal(part["vol_ratio"], book["lowrisk_vol_ratio"], check_names=False, check_exact=True)
+        row = grid[grid["g"] == g].iloc[0]
+        assert row["median_vol_ratio"] == np.median(book["lowrisk_vol_ratio"])
+        assert row["share_cap_binds"] == (book["lowrisk_capped"] > 0).mean()
+        assert row["share_te_scaled"] == (book["lowrisk_te_scale"] < 1.0).mean()
+        assert row["share_pinned"] == (book["lowrisk_pinned"] > 0).mean()
+
+
+def test_calibration_picks_the_smallest_g_at_or_below_the_target(calibration: dict) -> None:
+    medians = calibration["grid"].set_index("g")["median_vol_ratio"]
+    for target in sorted(set(medians)):
+        result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, target, CAL_START, END)
+        expected = min(g for g in CAL_GRID if medians[g] <= target)
+        assert result["chosen_g"] == expected and result["decision"] == "chosen"
+    assert calibration["chosen_g"] == min(g for g in CAL_GRID if medians[g] <= 0.99)
+    none = tilt.calibrate_lowrisk(fixture(), CAL_GRID, float(medians.min()) * 0.999, CAL_START, END)
+    assert none["chosen_g"] is None and none["decision"] == "no_g_reaches_target"
+    assert none["grid"]["g"].tolist() == list(CAL_GRID)
+
+
+def test_calibration_runs_no_book(monkeypatch: pytest.MonkeyPatch, calibration: dict) -> None:
+    def forbidden(*args, **kwargs):
+        raise AssertionError("the calibration must not run a book")
+
+    monkeypatch.setattr(tilt, "run_book", forbidden)
+    monkeypatch.setattr(tilt, "run_long_only_backtest", forbidden)
+    result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+    assert_frame_equal(result["grid"], calibration["grid"], check_exact=True)
+
+
+@pytest.mark.parametrize("grid", [(), (0.5, 0.5), (1.0, 0.5), (-0.5, 0.5), (0.5, np.nan)])
+def test_calibration_grid_is_validated(grid: tuple) -> None:
+    with pytest.raises(RunnerStop, match="calibration_grid_invalid|lowrisk_g_invalid"):
+        tilt.calibrate_lowrisk(fixture(), grid, 0.87, START, END)
+
+
+def test_calibration_future_rows_change_nothing(calibration: dict) -> None:
+    inputs = _perturbed(fixture(), "returns", CAL.get_loc(END))
+    result = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    assert_frame_equal(result["rebalances"], calibration["rebalances"], check_exact=True)
+
+
+# Repair round 1 (card m55-lowrisk-repair-r1) -----------------------------------------------------
+
+def _dominant_pinned_inputs(mask: str | None) -> tilt.TiltInputs:
+    """GPT-R1-01: three stocks, ME weights (0.01, 0.01, 0.98); the large one has no full window when masked."""
+    calendar = pd.bdate_range("1999-01-01", "2000-04-03", name="date")
+    names = ["A.US#E1", "B.US#E1", "C.US#E1"]
+    returns = np.random.default_rng(217).normal(size=(len(calendar), 3)) * np.array([0.002, 0.020, 0.10])
+    prices = pd.DataFrame(100.0 * np.cumprod(1.0 + returns, axis=0), index=calendar, columns=names)
+    if mask == "short_history":
+        prices.iloc[:240, 2] = np.nan
+    elif mask == "window_gap":
+        prices.iloc[200:203, 2] = np.nan
+    eligible = pd.DataFrame(True, index=calendar, columns=names)
+    me = pd.DataFrame(np.tile([1.0, 1.0, 98.0], (len(calendar), 1)), index=calendar, columns=names)
+    zero = pd.DataFrame(0.0, index=calendar, columns=names)
+    return tilt.TiltInputs(prices=prices, signals={s: zero.copy() for s in FAMILY_A_IDS}, eligible=eligible,
+                           market_equity=me, me_reason=pd.DataFrame(None, index=calendar, columns=names, dtype=object),
+                           intervals=intervals(names, calendar), disappearances=pd.DataFrame(columns=FIELDS),
+                           start=pd.Timestamp("1999-12-31"), end=pd.Timestamp("2000-03-31"))
+
+
+def _oracle_ratio(window: pd.DataFrame, full_returns: pd.DataFrame, b: np.ndarray, w: np.ndarray) -> tuple:
+    """The whole-book ratio from the unmasked history on the rows where ``window`` is complete, and those rows."""
+    ok = window.notna().all(axis=1).to_numpy()
+    x = full_returns.loc[window.index, window.columns].to_numpy()[ok]
+    return np.std(x @ w, ddof=1) / np.std(x @ b, ddof=1), int(ok.sum())
+
+
+@pytest.mark.parametrize("mask", ["short_history", "window_gap"])
+def test_calibration_with_a_dominant_pinned_member_measures_the_whole_book(mask: str) -> None:
+    # GPT-R1-01: the ratio covers the 98 percent member on its complete-case rows, or it is undefined.
+    inputs = _dominant_pinned_inputs(mask)
+    result = tilt.calibrate_lowrisk(inputs, tilt.LOWRISK_GRID, tilt.LOWRISK_TARGET_RATIO, inputs.start, inputs.end)
+    table, grid = result["rebalances"], result["grid"]
+    assert ((table["pinned_cw_share"] - 0.98).abs() <= 1e-15).all()
+    assert grid["g"].tolist() == list(tilt.LOWRISK_GRID) and (grid["status"] == "ok").all()
+    assert result["chosen_g"] is None
+    built = tilt.build_targets(inputs, g=0.5)
+    assert (built["targets"]["lowrisk"]["C.US#E1"] == built["targets"]["cw"]["C.US#E1"]).all()
+    if mask == "short_history":
+        assert result["decision"] == "ratio_coverage_low" and result["undefined_share"] == 1.0
+        assert (table["ratio_status"] == "ratio_window_short").all() and table["vol_ratio"].isna().all()
+        assert (table["ratio_rows"] < tilt.LOWRISK_RATIO_MIN_ROWS).all() and (table["ratio_rows_gap"] == 0).all()
+        assert (grid["undefined"] == 3).all() and (grid["defined"] == 0).all() and grid["median_vol_ratio"].isna().all()
+        assert built["rebalances"]["lowrisk_vol_ratio"].isna().all()
+        return
+    # Four returns touch the three missing prices; every other row of the window stays.
+    assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_rows"] == 248).all()
+    assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_limiting_members"] == 1).all()
+    assert result["decision"] == "no_g_reaches_target" and (grid["bracket"] == "fails").all()
+    full_returns = tilt.simple_returns(_dominant_pinned_inputs(None).prices)
+    _, returns, _ = tilt.prepare(inputs)
+    for date in built["targets"]["lowrisk"].index:
+        t = inputs.prices.index.get_loc(date) - 1
+        window = returns.iloc[t - 251:t + 1]
+        w, b = built["targets"]["lowrisk"].loc[date].to_numpy(), built["targets"]["cw"].loc[date].to_numpy()
+        oracle, rows = _oracle_ratio(window, full_returns, b, w)
+        assert rows == 248 and built["rebalances"].loc[date, "lowrisk_vol_ratio"] == pytest.approx(oracle, rel=1e-12)
+
+
+def test_calibration_complete_history_control_gives_the_whole_book_ratio() -> None:
+    inputs = _dominant_pinned_inputs(None)
+    # One free member holds 98 percent, so the cap loop converges only for a small g here (g = 0.1 and 0.2).
+    result = tilt.calibrate_lowrisk(inputs, (0.1, 0.2), 0.99, inputs.start, inputs.end)
+    assert (result["rebalances"]["ratio_status"] == "defined_full").all() and result["undefined_share"] == 0.0
+    assert (result["rebalances"]["ratio_rows"] == 252).all() and (result["rebalances"]["pinned"] == 0).all()
+    assert result["decision"] == "chosen" and result["chosen_g"] == 0.2
+    assert result["window_decision"] == "chosen" and not result["window_sensitive"]
+    built = tilt.build_targets(inputs, g=0.2)
+    returns = inputs.prices.pct_change(fill_method=None)
+    part = result["rebalances"][result["rebalances"]["g"] == 0.2].set_index("date")
+    for date in built["targets"]["lowrisk"].index:
+        t = inputs.prices.index.get_loc(date) - 1
+        window = returns.iloc[t - 251:t + 1].to_numpy()
+        w, b = built["targets"]["lowrisk"].loc[date].to_numpy(), built["targets"]["cw"].loc[date].to_numpy()
+        whole = np.std(window @ w, ddof=1) / np.std(window @ b, ddof=1)
+        assert part.loc[date, "vol_ratio"] == pytest.approx(whole, rel=1e-12)
+
+
+def test_calibration_coverage_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    # From START, LATE_ASSET has fewer than 126 complete rows at the first of the fourteen rebalances only.
+    monkeypatch.setattr(tilt, "LOWRISK_UNDEFINED_MAX", 1 / 14)
+    at = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, START, END)
+    assert at["undefined_share"] == 1 / 14 and at["decision"] == "ratio_coverage_ambiguous"
+    table = at["rebalances"]
+    for row in at["grid"].itertuples():
+        defined = table[(table["g"] == row.g) & table["ratio_status"].isin(["defined_full", "defined_partial"])]
+        assert (row.defined, row.undefined) == (13, 1)
+        assert row.median_vol_ratio == np.median(defined["vol_ratio"])
+    monkeypatch.setattr(tilt, "LOWRISK_UNDEFINED_MAX", 1 / 14 - 1e-12)
+    above = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, START, END)
+    assert above["decision"] == "ratio_coverage_low" and above["chosen_g"] is None
+    assert above["grid"]["g"].tolist() == list(CAL_GRID)
+
+
+def _refuse_at(monkeypatch: pytest.MonkeyPatch, refused_g: float) -> None:
+    """Make the low-risk step refuse at every rebalance for one grid value only."""
+    original = tilt.lowrisk_weights
+
+    def spy(b, vol, window, g):
+        if g == refused_g:
+            raise RunnerStop("lowrisk_loop_not_converged", "test")
+        return original(b, vol, window, g)
+
+    monkeypatch.setattr(tilt, "lowrisk_weights", spy)
+
+
+def test_calibration_records_a_refusal_above_the_chosen_g(monkeypatch: pytest.MonkeyPatch, calibration: dict) -> None:
+    # Opus ADV-01: a grid value above the choice that refuses is recorded and does not stop the calibration.
+    chosen = calibration["chosen_g"]
+    assert chosen is not None and chosen < CAL_GRID[-1]
+    _refuse_at(monkeypatch, CAL_GRID[-1])
+    result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+    assert result["decision"] == "chosen" and result["chosen_g"] == chosen
+    grid = result["grid"].set_index("g")
+    assert grid["status"].tolist() == ["ok"] * (len(CAL_GRID) - 1) + ["refused"]
+    assert grid.loc[CAL_GRID[-1], "refusal"].startswith("lowrisk_loop_not_converged")
+    assert grid.loc[CAL_GRID[-1], "refusal_date"] == tilt.rebalance_dates(CAL, CAL_START, END)[0]
+    assert np.isnan(grid.loc[CAL_GRID[-1], "median_vol_ratio"])
+    assert not (result["rebalances"]["g"] == CAL_GRID[-1]).any()
+    ok = grid.drop(CAL_GRID[-1])
+    assert_frame_equal(ok[["median_vol_ratio"]], calibration["grid"].set_index("g").drop(CAL_GRID[-1])[
+        ["median_vol_ratio"]], check_exact=True)
+
+
+@pytest.mark.parametrize("where", ["first", "chosen"])
+def test_calibration_stops_on_a_refusal_at_or_below_the_choice(monkeypatch: pytest.MonkeyPatch, calibration: dict,
+                                                              where: str) -> None:
+    _refuse_at(monkeypatch, CAL_GRID[0] if where == "first" else calibration["chosen_g"])
+    with pytest.raises(RunnerStop, match="lowrisk_loop_not_converged"):
+        tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+
+
+def test_calibration_stops_when_the_cap_loop_does_not_converge(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tilt, "RENORMALIZE_LOOPS", 1)
+    with pytest.raises(RunnerStop, match="lowrisk_loop_not_converged"):
+        tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, START, END)
+
+
+def test_lowrisk_uses_each_event_run_end_to_end(low_run: dict) -> None:
+    # Opus ADV-02: the lowrisk book in each run case equals a direct run with that case's events and costs.
+    inputs = fixture(stop=True)
+    built = tilt.build_targets(inputs, g=LOW_G)
+    for (case, event_run), run in low_run["runs"].items():
+        events = tilt.terminal_events(built["disappearances"], CAL, event_run)
+        direct = tilt.run_book(inputs, built["targets"]["lowrisk"], events,
+                               tilt.dated_cost_frame(CAL, scale=tilt.COST_SCALES[case]))
+        (record,) = [r for r in direct.terminal_event_log if r["permanent_id"] == STOP_ASSET]
+        assert record["terminal_return"] == (-1.0 if event_run == "primary" else 0.0)
+        summary = tilt.book_summary(direct, built["targets"]["lowrisk"])
+        assert_series_equal(run["lowrisk"]["daily_net"], summary["daily_net"], check_exact=True)
+    for case in tilt.COST_SCALES:
+        primary = low_run["runs"][(case, "primary")]["lowrisk"]["monthly_net"]
+        rerun = low_run["runs"][(case, "last_close")]["lowrisk"]["monthly_net"]
+        assert primary.loc["2001-02"] < rerun.loc["2001-02"]
+
+
+def test_lowrisk_very_large_g_refuses_with_a_typed_reason() -> None:
+    # Opus ADV-04: the power overflows; it refuses before the cap loop.
+    with pytest.raises(RunnerStop, match="lowrisk_multiplier_invalid"):
+        _lowrisk([0.25, 0.25, 0.25, 0.25], _window([0.01, 0.02, 0.05, 0.10]), 1000.0)
+
+
+def test_lowrisk_zero_book_volatility_refuses() -> None:
+    # Two members that hedge each other exactly: sd(window @ b) = 0, so the ratio is not finite.
+    x = _window([0.01])[:, 0]
+    with pytest.raises(RunnerStop, match="lowrisk_vol_ratio_invalid"):
+        _lowrisk([0.5, 0.5], np.column_stack([x, -x]), 1.0)
+
+
+def test_signals_do_not_move_the_lowrisk_book(low_built: dict) -> None:
+    # Opus ADV-06: new random values in every signal frame at every row.
+    inputs = fixture()
+    rng = np.random.default_rng(31)
+    signals = {s: pd.DataFrame(rng.standard_normal(f.shape), index=f.index, columns=f.columns).where(f.notna())
+               for s, f in inputs.signals.items()}
+    after = tilt.build_targets(replace(inputs, signals=signals), g=LOW_G)
+    assert not after["targets"]["tilt"].equals(low_built["targets"]["tilt"])
+    assert_frame_equal(after["targets"]["lowrisk"], low_built["targets"]["lowrisk"], check_exact=True)
+    columns = [c for c in low_built["rebalances"].columns if c.startswith("lowrisk_")]
+    assert_frame_equal(after["rebalances"][columns], low_built["rebalances"][columns], check_exact=True)
+
+
+@pytest.mark.parametrize("target", [0.0, -1.0, np.nan, np.inf])
+def test_calibration_target_ratio_is_validated(target: float) -> None:
+    with pytest.raises(RunnerStop, match="calibration_target_invalid"):
+        tilt.calibrate_lowrisk(fixture(), CAL_GRID, target, START, END)
+
+
+# Repair round 2: the whole-book ratio on complete-case rows (expert decision of 2026-10-05) ----------
+
+GPT_NAMES = [f"N{k:03d}.US#E1" for k in range(101)]
+
+
+def _gpt_inputs(mask: str | None, first: int = 240) -> tuple[tilt.TiltInputs, pd.DataFrame]:
+    """GPT-R2-01: 101 stocks, ME weights 0.0098 x 100 and 0.02; the 0.02 member has the highest volatility.
+
+    Returns the masked inputs and the unmasked daily returns (the audit oracle only).
+    """
+    calendar = pd.bdate_range("1999-01-01", "2000-04-03", name="date")
+    scale = np.array([0.01] * 50 + [0.03] * 50 + [0.10])
+    returns = np.random.default_rng(217).normal(size=(len(calendar), 101)) * scale
+    full = pd.DataFrame(100.0 * np.cumprod(1.0 + returns, axis=0), index=calendar, columns=GPT_NAMES)
+    prices = full.copy()
+    if mask == "leading":
+        prices.iloc[:first, -1] = np.nan
+    elif mask == "gap":
+        prices.iloc[200:203, -1] = np.nan
+    eligible = prices.notna()
+    me = pd.DataFrame(np.tile([0.0098] * 100 + [0.02], (len(calendar), 1)), index=calendar, columns=GPT_NAMES)
+    zero = pd.DataFrame(0.0, index=calendar, columns=GPT_NAMES)
+    inputs = tilt.TiltInputs(prices=prices, signals={s: zero.copy() for s in FAMILY_A_IDS}, eligible=eligible,
+                             market_equity=me,
+                             me_reason=pd.DataFrame(None, index=calendar, columns=GPT_NAMES, dtype=object),
+                             intervals=intervals(GPT_NAMES, calendar), disappearances=pd.DataFrame(columns=FIELDS),
+                             start=pd.Timestamp("1999-12-31"), end=pd.Timestamp("2000-03-31"))
+    return inputs, tilt.simple_returns(full)
+
+
+def _calibrate_with_calls(monkeypatch: pytest.MonkeyPatch, inputs: tilt.TiltInputs,
+                          grid: tuple = tilt.LOWRISK_GRID) -> tuple[dict, list]:
+    """Calibrate and keep the (window, b, w) of each low-risk step, in the order of the rebalance table rows."""
+    calls = []
+    original = tilt.lowrisk_weights
+
+    def spy(b, vol, window, g):
+        w, info = original(b, vol, window, g)
+        calls.append((window, b.to_numpy(), w.to_numpy()))
+        return w, info
+
+    monkeypatch.setattr(tilt, "lowrisk_weights", spy)
+    result = tilt.calibrate_lowrisk(inputs, grid, tilt.LOWRISK_TARGET_RATIO, inputs.start, inputs.end)
+    monkeypatch.setattr(tilt, "lowrisk_weights", original)
+    assert len(calls) == len(result["rebalances"])
+    return result, calls
+
+
+def _oracle_choice(table: pd.DataFrame, oracle: np.ndarray, target: float) -> float | None:
+    """The bracket decision written out on its own: u undefined rows at +inf and -inf, the median, the first g."""
+    for g in table["g"].unique():
+        part = table["g"] == g
+        defined = oracle[part.to_numpy() & ~np.isnan(oracle)]
+        u = int(part.sum()) - len(defined)
+        if u / int(part.sum()) > tilt.LOWRISK_UNDEFINED_MAX:
+            return None
+        hi = np.median(np.r_[defined, [np.inf] * u])
+        lo = np.median(np.r_[defined, [-np.inf] * u])
+        if hi <= target:
+            return float(g)
+        if lo <= target:
+            return None
+    return None
+
+
+@pytest.mark.parametrize("mask", ["leading", "gap"])
+def test_gpt_fixture_measures_the_whole_book(monkeypatch: pytest.MonkeyPatch, mask: str) -> None:
+    # T1, GPT-R2-01: the 2 percent member is in the ratio; the choice is not g = 0.5 from the free sub-book.
+    inputs, full_returns = _gpt_inputs(mask)
+    result, calls = _calibrate_with_calls(monkeypatch, inputs)
+    table = result["rebalances"]
+    oracle, rows = [], []
+    for window, b, w in calls:
+        ratio, n = _oracle_ratio(window, full_returns, b, w)
+        rows.append(n)
+        oracle.append(ratio if n >= tilt.LOWRISK_RATIO_MIN_ROWS else np.nan)
+    oracle = np.array(oracle)
+    assert (table["ratio_rows"].to_numpy() == rows).all() and (table["pinned_cw_share"] == 0.02).all()
+    assert (table["ratio_limiting_members"] == 1).all() and (table["ratio_limiting_cw_share"] == 0.02).all()
+    if mask == "leading":
+        assert (table["ratio_status"] == "ratio_window_short").all() and table["vol_ratio"].isna().all()
+        assert (table["ratio_rows_leading"] == 252 - table["ratio_rows"]).all() and (table["ratio_rows_gap"] == 0).all()
+        assert result["decision"] == "ratio_coverage_low" and result["chosen_g"] is None
+        # ADV-R3-03 (b), addendum: neither the main bracket nor the diagnostic chooses a g, so no flag.
+        assert result["window_decision"] == "ratio_coverage_ambiguous" and result["window_chosen_g"] is None
+        assert not result["window_sensitive"]
+    else:
+        assert (table["ratio_status"] == "defined_partial").all() and (table["ratio_rows"] == 248).all()
+        assert (table["ratio_rows_gap"] == 4).all() and (table["ratio_rows_leading"] == 0).all()
+        assert np.allclose(table["vol_ratio"], oracle, rtol=1e-12, atol=0.0)
+        assert result["decision"] == "chosen" and result["window_chosen_g"] is None and result["window_sensitive"]
+    assert result["chosen_g"] == _oracle_choice(table, oracle, tilt.LOWRISK_TARGET_RATIO)
+    assert result["chosen_g"] != 0.5
+
+
+def test_gpt_fixture_defined_leading_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    # T2: with the first 100 prices masked, every rebalance keeps at least 126 rows; the ratio is the whole book.
+    inputs, full_returns = _gpt_inputs("leading", first=100)
+    result, calls = _calibrate_with_calls(monkeypatch, inputs)
+    table = result["rebalances"]
+    assert (table["ratio_rows"] >= tilt.LOWRISK_RATIO_MIN_ROWS).all() and (table["ratio_rows"] < 252).all()
+    assert (table["ratio_status"] == "defined_partial").all()
+    oracle, free_only = [], []
+    for window, b, w in calls:
+        oracle.append(_oracle_ratio(window, full_returns, b, w)[0])
+        free = window.notna().all().to_numpy()
+        x = window.to_numpy()[:, free]
+        free_only.append(np.std(x @ w[free], ddof=1) / np.std(x @ b[free], ddof=1))
+    assert np.allclose(table["vol_ratio"], oracle, rtol=1e-12, atol=0.0)
+    assert (np.abs(table["vol_ratio"].to_numpy() - np.array(free_only)) > 1e-3).all()
+    assert result["chosen_g"] == _oracle_choice(table, np.array(oracle), tilt.LOWRISK_TARGET_RATIO)
+    assert result["decision"] == "chosen" and result["chosen_g"] != 0.5
+
+
+def _regime_window() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
+    """Critique 1, probe2: a crash regime in rows 0-119, a calm one after; one 0.001 member misses one price."""
+    rng = np.random.default_rng(5)
+    low = np.arange(100) < 50
+    factor = np.r_[rng.normal(0.0, 0.03, 120), rng.normal(0.0, 0.01, 132)]
+    beta = np.where(np.arange(252)[:, None] < 120, 1.0, np.where(low, 0.5, 1.3)[None, :])
+    free = factor[:, None] * beta + rng.standard_normal((252, 100)) * np.where(low, 0.005, 0.02)
+    pinned = factor + rng.normal(0.0, 0.02, 252)
+    names = [f"R{k:03d}" for k in range(101)]
+    full = pd.DataFrame(np.column_stack([free, pinned]), columns=names)
+    window = full.copy()
+    window.iloc[120:122, -1] = np.nan                  # one missing price at row 120 blanks returns 120 and 121
+    return window, full, pd.Series([0.999 / 100] * 100 + [0.001], index=names)
+
+
+def test_regime_fixture_keeps_the_crash_rows() -> None:
+    # T3: complete-case rows keep the free members' crash rows; the suffix after the gap would drop them.
+    window, full, b = _regime_window()
+    vol = tilt.member_vols(window, window.notna().all())
+    gaps = []
+    for g in tilt.LOWRISK_GRID:
+        w, info = tilt.lowrisk_weights(b, vol, window, g)
+        assert info["ratio_rows"] == 250 and info["ratio_rows_gap"] == 2 and info["ratio_status"] == "defined_partial"
+        bv, wv = b.to_numpy(), w.to_numpy()
+        ok = window.notna().all(axis=1).to_numpy()
+        x = full.to_numpy()
+        rows250 = np.std(x[ok] @ wv, ddof=1) / np.std(x[ok] @ bv, ddof=1)
+        rows252 = np.std(x @ wv, ddof=1) / np.std(x @ bv, ddof=1)
+        suffix = np.std(x[122:] @ wv, ddof=1) / np.std(x[122:] @ bv, ddof=1)
+        assert info["vol_ratio"] == pytest.approx(rows250, rel=1e-12)
+        assert abs(info["vol_ratio"] - rows252) <= 1e-3
+        gaps.append(abs(suffix - rows252))
+    assert max(gaps) > 0.05                            # the fixture bites: the suffix rule would read far lower
+
+
+def test_ratio_floor_boundary() -> None:
+    # T4: 125 complete rows are short; 126 are defined.
+    for lead, status in ((127, "ratio_window_short"), (126, "defined_partial")):
+        window = pd.DataFrame(_window([0.010, 0.020, 0.015]), columns=["A", "B", "C"])
+        window.iloc[:lead, 2] = np.nan
+        vol = tilt.member_vols(window, window.notna().all())
+        _, info = tilt.lowrisk_weights(pd.Series([0.4, 0.4, 0.2], index=window.columns), vol, window, 1.0)
+        assert info["ratio_rows"] == 252 - lead and info["ratio_status"] == status
+        assert info["ratio_rows_leading"] == lead and info["ratio_rows_gap"] == 0
+        assert math.isnan(info["vol_ratio"]) == (status == "ratio_window_short")
+
+
+def test_missing_price_at_r_minus_2_removes_two_rows(low_built: dict) -> None:
+    # T4 positive control: a missing price at r - 2 blanks the returns at r - 2 and r - 1.
+    r = CAL.get_loc(PERTURB_AT)
+    inputs = fixture()
+    prices = inputs.prices.copy()
+    prices.iloc[r - 2, 5] = np.nan
+    after = tilt.build_targets(replace(inputs, prices=prices), g=LOW_G)["rebalances"].loc[PERTURB_AT]
+    base = low_built["rebalances"].loc[PERTURB_AT]
+    assert base["lowrisk_ratio_rows"] == 252 and base["lowrisk_ratio_status"] == "defined_full"
+    assert after["lowrisk_ratio_rows"] == 250 and after["lowrisk_ratio_rows_gap"] == 2
+    assert after["lowrisk_ratio_status"] == "defined_partial" and after["lowrisk_ratio_limiting_members"] == 1
+
+
+PINNED_AT = pd.Timestamp("2000-09-29")      # LATE_ASSET is pinned here (164 complete rows)
+
+
+@pytest.mark.parametrize("change", ["nan", "price"])
+def test_pinned_member_future_rows_change_no_ratio(low_built: dict, change: str) -> None:
+    # T5, R1: a pinned member's price at row r or later moves no ratio field and no weight at r.
+    r = CAL.get_loc(PINNED_AT)
+    inputs = fixture()
+    prices = inputs.prices.copy()
+    prices.iloc[r:, ASSETS.index(LATE_ASSET)] = np.nan if change == "nan" else prices.iloc[r:, 9] * 1.7
+    after = tilt.build_targets(replace(inputs, prices=prices), g=LOW_G)
+    base = low_built["rebalances"].loc[PINNED_AT]
+    assert base["lowrisk_pinned"] == 1 and base["lowrisk_ratio_status"] == "defined_partial"
+    assert_frame_equal(after["targets"]["lowrisk"].loc[:PINNED_AT], low_built["targets"]["lowrisk"].loc[:PINNED_AT],
+                       check_exact=True)
+    assert_frame_equal(after["rebalances"].loc[:PINNED_AT], low_built["rebalances"].loc[:PINNED_AT], check_exact=True)
+
+
+def test_b2_excluded_name_is_not_in_the_ratio_rows() -> None:
+    # T6: a NaN only in the B2-excluded name leaves the ratio rows and the ratio unchanged. The name still enters
+    # s_med when it has a full window (Opus round 1), so both calls use the base s_i; the step is the one that
+    # calibrate_lowrisk runs.
+    inputs = _b2_inputs()
+    prices = inputs.prices.copy()
+    prices.iloc[CAL.get_loc(PERTURB_AT) - 100, ASSETS.index(B2_ASSET)] = np.nan
+    infos, vol = [], None
+    for case in (inputs, replace(inputs, prices=prices)):
+        disappearances, returns, first_return = tilt.prepare(case)
+        setup = tilt.rebalance_members(case, PERTURB_AT, returns, disappearances, first_return)
+        assert B2_ASSET in setup["names"] and B2_ASSET not in setup["traded"]
+        vol = tilt.member_vols(setup["window"], setup["full"]) if vol is None else vol
+        w, info = tilt.lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], LOW_G)
+        infos.append((w, info))
+    assert infos[1][1]["ratio_rows"] == 252 and infos[1][1]["ratio_status"] == "defined_full"
+    assert infos[1][1] == infos[0][1]
+    assert_series_equal(infos[1][0], infos[0][0], check_exact=True)
+
+
+def _b2_oracle(inputs: tilt.TiltInputs, columns: list, b: np.ndarray, w: np.ndarray) -> tuple:
+    """Rows and ratio at PERTURB_AT from the prices: returns r - 252 to r - 1 of ``columns``, complete rows only."""
+    r = CAL.get_loc(PERTURB_AT)
+    x = inputs.prices[columns].to_numpy(dtype=float)[r - 253:r]
+    returns = x[1:] / x[:-1] - 1.0
+    ok = np.isfinite(returns).all(axis=1)
+    ratio = np.std(returns[ok] @ w, ddof=1) / np.std(returns[ok] @ b, ddof=1) if ok.any() else np.nan
+    return int(ok.sum()), ratio
+
+
+def test_b2_ratio_rows_on_the_production_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    # T6 end to end (GPT-R3-A01, Opus ADV-R3-01): calibrate_lowrisk and build_targets (rebalance_targets) pass only
+    # the traded columns to lowrisk_weights and to the row mask. The B2-excluded name has one NaN in the window.
+    inputs = _b2_inputs()
+    prices = inputs.prices.copy()
+    prices.iloc[CAL.get_loc(PERTURB_AT) - 100, ASSETS.index(B2_ASSET)] = np.nan
+    inputs = replace(inputs, prices=prices)
+    traded = [a for a in ASSETS if a != B2_ASSET]
+    assert _b2_oracle(inputs, ASSETS, np.ones(12), np.ones(12))[0] == 250     # the NaN would cost two rows
+    cw = inputs.market_equity.iloc[CAL.get_loc(PERTURB_AT) - 1][traded]
+    cw = (cw / cw.sum()).to_numpy()
+    calls, masks = [], []
+    weights, ratio_rows = tilt.lowrisk_weights, tilt.whole_book_ratio
+
+    def weights_spy(b, vol, window, g):
+        w, info = weights(b, vol, window, g)
+        calls.append((window.index[-1], list(window.columns), list(b.index), b.to_numpy(), w.to_numpy()))
+        return w, info
+
+    def mask_spy(window, b, w):
+        masks.append((window.index[-1], list(window.columns)))
+        return ratio_rows(window, b, w)
+
+    monkeypatch.setattr(tilt, "lowrisk_weights", weights_spy)
+    monkeypatch.setattr(tilt, "whole_book_ratio", mask_spy)
+    result = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    built = tilt.build_targets(inputs, g=LOW_G)
+    monkeypatch.setattr(tilt, "lowrisk_weights", weights)
+    monkeypatch.setattr(tilt, "whole_book_ratio", ratio_rows)
+    cutoff = CAL[CAL.get_loc(PERTURB_AT) - 1]
+    at_r = [c for c in calls if c[0] == cutoff]
+    assert len(calls) == len(masks) == len(result["rebalances"]) + len(built["rebalances"])
+    assert len(at_r) == len(CAL_GRID) + 1 and [m[1] for m in masks if m[0] == cutoff] == [traded] * len(at_r)
+    assert all(columns == names for _, columns, names, _, _ in calls)
+    table = result["rebalances"].set_index("date").loc[PERTURB_AT]
+    rows = [*table.to_dict("records"), {k[len("lowrisk_"):]: v for k, v in built["rebalances"].loc[PERTURB_AT].items()
+                                        if k.startswith("lowrisk_")}]
+    for (_, columns, _, b, w), row in zip(at_r, rows):
+        assert columns == traded and np.allclose(b, cw, rtol=1e-12, atol=0.0)
+        n, ratio = _b2_oracle(inputs, traded, b, w)
+        assert n == 252 and row["ratio_rows"] == n and row["ratio_status"] == "defined_full"
+        assert row["ratio_limiting_members"] == 0 and row["vol_ratio"] == pytest.approx(ratio, rel=1e-12)
+    assert_series_equal(built["targets"]["lowrisk"].loc[PERTURB_AT, traded], pd.Series(at_r[-1][4], index=traded),
+                        check_exact=True, check_names=False)
+
+
+def _bracket(ratios: list, rebalances: int, target: float = 0.87, stops: bool = True) -> dict:
+    return tilt.lowrisk_bracket([None if r is None else np.array(r) for r in ratios], rebalances, target, stops)
+
+
+def test_bracket_decisions() -> None:
+    # T7: the two-sided median bracket through the helper that calibrate_lowrisk uses.
+    one = _bracket([[0.865] * 5 + [0.89] * 4], 10)                 # one undefined in ten
+    assert one["decision"] == "ratio_coverage_ambiguous" and one["classes"] == ["ambiguous"]
+    assert one["median_hi"][0] == pytest.approx(0.8775) and one["median_lo"] == [0.865]
+    critique = _bracket([[0.86] * 5 + [0.88] * 5], 11)             # the defined-only median is 0.87
+    assert critique["decision"] == "ratio_coverage_ambiguous" and critique["index"] is None
+    robust = _bracket([[0.95] * 9, [0.80, 0.85] * 4 + [0.85]], 10)
+    assert robust["decision"] == "chosen" and robust["index"] == 1 and robust["classes"] == ["fails", "meets"]
+    fail = _bracket([[0.95] * 10, [0.90] * 10], 10)
+    assert fail["decision"] == "no_g_reaches_target" and fail["classes"] == ["fails", "fails"]
+    before = _bracket([[0.95] * 10, [0.865] * 5 + [0.89] * 4, [0.80] * 9], 10)
+    assert before["classes"] == ["fails", "ambiguous", "meets"] and before["decision"] == "ratio_coverage_ambiguous"
+    after = _bracket([[0.80] * 9, [0.865] * 5 + [0.89] * 4], 10)   # an ambiguous value above the choice
+    assert after["decision"] == "chosen" and after["index"] == 0
+    tie = _bracket([[0.87] * 5 + [0.90] * 4, [0.80] * 9], 10)      # ADV-R3-03 (a): median_lo equal to the target
+    assert tie["median_lo"][0] == 0.87 and tie["classes"] == ["ambiguous", "meets"]
+    assert tie["decision"] == "ratio_coverage_ambiguous" and tie["index"] is None
+
+
+def test_bracket_refusals_and_coverage() -> None:
+    # T11: one undefined in ten passes the coverage stop, two do not; the refusal rule comes first.
+    assert tilt.LOWRISK_UNDEFINED_MAX == 0.10 and tilt.LOWRISK_RATIO_MIN_ROWS == 126
+    assert _bracket([[0.80] * 9], 10)["decision"] == "chosen"
+    two = _bracket([[0.80] * 8], 10)
+    assert two["decision"] == "ratio_coverage_low" and two["undefined_share"] == 0.2
+    assert _bracket([[0.80] * 8], 10, stops=False)["decision"] == "chosen"
+    refused = _bracket([[0.95] * 10, None, [0.80] * 10], 10)
+    assert (refused["decision"], refused["index"]) == ("refused", 1)
+    assert _bracket([[0.95] * 10, None], 10)["decision"] == "refused"
+    assert _bracket([[0.80] * 10, None], 10)["decision"] == "chosen"
+    assert _bracket([[0.95] * 10, None, [0.80] * 10], 10, stops=False)["index"] == 2
+
+
+def test_ratio_status_does_not_depend_on_g() -> None:
+    # T8: from START the fixture has short, partial, and full rebalances; each holds the same status for every g.
+    result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, START, END)
+    table = result["rebalances"]
+    assert set(table["ratio_status"]) == {"ratio_window_short", "defined_partial", "defined_full"}
+    fields = ["ratio_status", "ratio_rows", "ratio_rows_leading", "ratio_rows_gap", "ratio_limiting_members",
+              "ratio_limiting_cw_share"]
+    assert (table.groupby("date")[fields].nunique() == 1).all().all()
+    assert (table.groupby("date")["g"].count() == len(CAL_GRID)).all()
+
+
+def test_complete_history_ratio_is_the_round_one_value() -> None:
+    # T9: with no pinned member, the whole book is the free book; the ratio is the ba71a67 expression, bit for bit.
+    returns = _window([0.06, 0.08, 0.12, 0.16])
+    b, w, info = _lowrisk([0.4, 0.3, 0.2, 0.1], returns, 1.0)
+    window = pd.DataFrame(returns).to_numpy(dtype=float)[:, np.ones(4, dtype=bool)]
+    expected = tilt.ex_ante_vol(window, w.to_numpy()) / tilt.ex_ante_vol(window, b.to_numpy())
+    assert info["vol_ratio"] == expected and info["ratio_rows"] == 252 and info["ratio_limiting_members"] == 0
+
+
+def test_no_pin_ratio_is_the_round_one_value_on_the_fixture(low_built: dict) -> None:
+    # T9 on the 12-name fixture (Opus ADV-R3-02): at each rebalance with no pinned member, the volatilities and the
+    # ratio equal the ba71a67 expression bit for bit (written out here: free columns of the window, no row mask).
+    inputs = fixture()
+    disappearances, returns, first_return = tilt.prepare(inputs)
+    table = low_built["rebalances"]
+    dates = table.index[table["lowrisk_pinned"] == 0]
+    assert len(dates) >= 8
+    for date in dates:
+        setup = tilt.rebalance_members(inputs, date, returns, disappearances, first_return)
+        traded = setup["traded"]
+        free = traded.isin(setup["full"].index[setup["full"].to_numpy()])
+        assert free.all()
+        window = setup["window"][traded].to_numpy(dtype=float)[:, free]
+        b = setup["b"].to_numpy(dtype=float)
+        w = low_built["targets"]["lowrisk"].loc[date, traded].to_numpy(dtype=float)
+        vol_w = float(np.std(window @ w[free], ddof=1) * math.sqrt(tilt.ANNUAL_ROWS))
+        vol_b = float(np.std(window @ b[free], ddof=1) * math.sqrt(tilt.ANNUAL_ROWS))
+        row = table.loc[date]
+        assert row["lowrisk_ex_ante_vol"] == vol_w and row["lowrisk_cw_ex_ante_vol"] == vol_b
+        assert row["lowrisk_vol_ratio"] == vol_w / vol_b and row["lowrisk_ratio_status"] == "defined_full"
+
+
+def test_lowrisk_weights_do_not_depend_on_the_ratio_step(monkeypatch: pytest.MonkeyPatch, low_built: dict) -> None:
+    # T10: the weights, TE, TE scale, and cap counts are computed before the ratio and do not read it.
+    record = {"ex_ante_vol": 1.0, "cw_ex_ante_vol": 1.0, "vol_ratio": 1.0, "ratio_status": "defined_full",
+              "ratio_rows": 0, "ratio_rows_leading": 0, "ratio_rows_gap": 0, "ratio_limiting_members": 0,
+              "ratio_limiting_cw_share": 0.0}
+    monkeypatch.setattr(tilt, "whole_book_ratio", lambda window, b, w: dict(record))
+    after = tilt.build_targets(fixture(), g=LOW_G)
+    for book in ("cw", "tilt", "lowrisk"):
+        assert_frame_equal(after["targets"][book], low_built["targets"][book], check_exact=True)
+    columns = [c for c in low_built["rebalances"].columns if c[len("lowrisk_"):] not in record]
+    assert_frame_equal(after["rebalances"][columns], low_built["rebalances"][columns], check_exact=True)
+
+
+def test_window_diagnostic_flags_a_different_choice(monkeypatch: pytest.MonkeyPatch) -> None:
+    # T12: treating the partial rebalances as undefined changes the choice; the flag is set and nothing stops.
+    inputs = replace(fixture(), start=CAL_START)
+    result = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    grid = result["grid"].set_index("g")
+    assert result["decision"] == "chosen" and result["chosen_g"] == 0.2
+    assert grid.loc[0.2, "bracket"] == "meets" and grid.loc[0.2, "bracket_full_windows"] == "ambiguous"
+    assert result["window_decision"] == "ratio_coverage_ambiguous" and result["window_chosen_g"] is None
+    assert result["window_sensitive"] and result["window_diag_coverage_high"]
+    assert result["window_diag_undefined_share"] == pytest.approx(4 / 12)
+
+
+def test_window_diagnostic_coverage_alone_does_not_flag() -> None:
+    # Coordinator ruling (2026-10-05): over 10 percent partial rebalances with the same choice is not sensitive.
+    result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.999, CAL_START, END)
+    assert result["decision"] == "chosen" and result["window_decision"] == "chosen"
+    assert result["chosen_g"] == result["window_chosen_g"]
+    assert result["window_diag_undefined_share"] > tilt.LOWRISK_UNDEFINED_MAX
+    assert result["window_diag_coverage_high"] and not result["window_sensitive"]
+
+
+def test_rows_of_a_g_refused_later_are_tagged(monkeypatch: pytest.MonkeyPatch, calibration: dict) -> None:
+    # Opus ADV-R2-01: a g above the choice that refuses at the sixth rebalance keeps its five earlier rows, tagged.
+    dates = tilt.rebalance_dates(CAL, CAL_START, END)
+    original = tilt.lowrisk_weights
+
+    def spy(b, vol, window, g):
+        if g == CAL_GRID[-1] and window.index[-1] >= CAL[CAL.get_loc(dates[5]) - 1]:
+            raise RunnerStop("lowrisk_loop_not_converged", "test")
+        return original(b, vol, window, g)
+
+    monkeypatch.setattr(tilt, "lowrisk_weights", spy)
+    result = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+    assert result["decision"] == "chosen" and result["chosen_g"] == calibration["chosen_g"]
+    table = result["rebalances"]
+    refused = table[table["g"] == CAL_GRID[-1]]
+    assert len(refused) == 5 and (refused["g_status"] == "refused").all()
+    assert refused["date"].tolist() == list(dates[:5])
+    assert (table.loc[table["g"] != CAL_GRID[-1], "g_status"] == "ok").all()
+    row = result["grid"].set_index("g").loc[CAL_GRID[-1]]
+    assert row["status"] == "refused" and row["refusal_date"] == dates[5] and np.isnan(row["median_vol_ratio"])
+    kept = table.drop(columns="g_status")
+    assert_frame_equal(kept[kept["g"] != CAL_GRID[-1]].reset_index(drop=True),
+                       calibration["rebalances"].drop(columns="g_status").pipe(
+                           lambda t: t[t["g"] != CAL_GRID[-1]]).reset_index(drop=True), check_exact=True)
+
+
+# Declared signal sets (card m55-signal-sets, O-21 screen) -------------------------------------
+
+def _signed_rank_mean(inputs: tilt.TiltInputs, t: int, names: pd.Index) -> tuple[pd.Series, pd.Series]:
+    """An independent composite at row ``t``: the mean of 2u - 1 over the valid signals, and the valid count."""
+    total, count = pd.Series(0.0, index=names), pd.Series(0, index=names)
+    for s in inputs.signal_ids:
+        values = inputs.signals[s].iloc[t][names].dropna()
+        n = len(values)
+        u = (values.rank(method="average") - 1.0) / (n - 1) if n > 1 else values * 0.0 + 0.5
+        total[values.index] += 2.0 * u - 1.0
+        count[values.index] += 1
+    return total / count.where(count > 0), count
+
+
+def _sigset(inputs: tilt.TiltInputs, ids: dict[str, str], min_valid: int) -> tilt.TiltInputs:
+    """Rename Family A frames to declared IDs, for example {"S1": FAMILY_A_IDS[0]}."""
+    return replace(inputs, signals={new: inputs.signals[old] for new, old in ids.items()},
+                   signal_ids=tuple(ids), min_valid=min_valid)
+
+
+def test_default_signal_set_and_half_rule() -> None:
+    inputs = fixture()
+    assert inputs.signal_ids == tilt.SIGNAL_IDS == FAMILY_A_IDS and inputs.min_valid == tilt.MIN_VALID_SIGNALS == 4
+    assert [tilt.half_rule(n) for n in range(1, 9)] == [1, 1, 2, 2, 3, 3, 4, 4]
+
+
+def test_default_set_declared_in_another_order_gives_identical_outputs(full_run: dict) -> None:
+    # The composite is an exact sum of fractions, so the order of the declared set changes no bit.
+    declared = replace(fixture(stop=True), signal_ids=tuple(reversed(FAMILY_A_IDS)), min_valid=4)
+    result = tilt.run_index_tilt(declared)
+    for book in tilt.BOOKS:
+        assert_frame_equal(result["targets"][book], full_run["targets"][book], check_exact=True)
+    assert_frame_equal(result["rebalances"], full_run["rebalances"], check_exact=True)
+    assert result["counts"] == full_run["counts"]
+    for key, run in result["runs"].items():
+        for book, field in [(b, f) for b in tilt.BOOKS for f in ("daily_net", "monthly_net", "turnover", "cost")] + [
+                ("active", "daily"), ("active", "monthly")]:
+            assert_series_equal(run[book][field], full_run["runs"][key][book][field], check_exact=True)
+
+
+def test_one_signal_composite_is_its_signed_rank() -> None:
+    names = ["A", "B", "C", "D"]
+    row = pd.Series([3.0, 1.0, 2.0, np.nan], index=names)
+    c, counts = tilt.composite_scores({"S1": row}, pd.Series(True, index=names), signal_ids=("S1",), min_valid=1)
+    assert c.tolist() == [1.0, -1.0, 0.0, 0.0]                  # D has no value: c = 0, counted as few signals
+    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 0, "c_zero_window_gap": 0,
+                      "c_zero_natural": 1}
+
+
+def test_one_signal_end_to_end(monkeypatch: pytest.MonkeyPatch) -> None:
+    inputs = _sigset(fixture(), {"S1": FAMILY_A_IDS[0]}, tilt.half_rule(1))
+    calls = _tilt_calls(monkeypatch, inputs)
+    built = calls["built"]
+    assert (built["rebalances"]["c_zero_few_signals"] >= 1).all()      # FEW_ASSET has no S1 value
+    for date in built["targets"]["cw"].index:
+        b, c, _, pinned = calls[date]
+        t = CAL.get_loc(date) - 1
+        expected = tilt.signed_ranks(inputs.signals["S1"].iloc[t][b.index].dropna())
+        scored = ~pinned & b.index.isin(expected.index)
+        assert c[scored].tolist() == [float(v) for v in expected[c.index[scored]]]
+        assert (c[~scored] == 0.0).all()
+        assert c[FEW_ASSET] == 0.0
+
+
+def test_three_signals_with_min_valid_two() -> None:
+    names = ["A", "B", "C", "D"]
+    rows = {"X": pd.Series([4.0, 3.0, 2.0, 1.0], index=names),       # ranks 1, 1/3, -1/3, -1
+            "Y": pd.Series([np.nan, 1.0, 3.0, 2.0], index=names),    # among B, C, D: -1, 1, 0
+            "Z": pd.Series([np.nan, np.nan, 1.0, 2.0], index=names)} # among C, D: -1, 1
+    c, counts = tilt.composite_scores(rows, pd.Series(True, index=names), signal_ids=("X", "Y", "Z"), min_valid=2)
+    assert c["A"] == 0.0                                       # one valid value: below min_valid
+    assert c["B"] == pytest.approx((1.0 / 3.0 - 1.0) / 2.0, abs=1e-15)
+    assert c["C"] == pytest.approx((-1.0 / 3.0 + 1.0 - 1.0) / 3.0, abs=1e-15)
+    assert c["D"] == 0.0                                       # (-1 + 0 + 1) / 3: a natural zero
+    assert counts == {"c_zero": 2, "c_zero_few_signals": 1, "c_zero_short_history": 0, "c_zero_window_gap": 0,
+                      "c_zero_natural": 1}
+
+
+def test_s_style_signal_set_runs_end_to_end(monkeypatch: pytest.MonkeyPatch, low_built: dict) -> None:
+    ids = {"S1": FAMILY_A_IDS[3], "S4": FAMILY_A_IDS[4]}
+    inputs = _sigset(fixture(), ids, tilt.half_rule(2))
+    calls = _tilt_calls(monkeypatch, inputs)
+    targets = calls["built"]["targets"]
+    for date in targets["cw"].index:
+        b, c, _, pinned = calls[date]
+        expected, _ = _signed_rank_mean(inputs, CAL.get_loc(date) - 1, b.index)
+        expected = expected.where(~pinned, 0.0).fillna(0.0)
+        assert c.to_numpy() == pytest.approx(expected.to_numpy(), abs=1e-15)
+        w = targets["tilt"].loc[date, b.index]
+        assert math.fsum(w) == pytest.approx(1.0, abs=1e-12) and (w - b).abs().max() <= tilt.STOCK_CAP + 1e-12
+    assert (targets["tilt"] != targets["cw"]).any().any()
+    result = tilt.run_index_tilt(inputs, g=LOW_G)
+    for book in tilt.BOOKS:
+        assert_frame_equal(result["targets"][book], targets[book], check_exact=True)
+    # The low-risk book uses no signal: run_index_tilt and calibrate_lowrisk pass the set through unchanged.
+    assert_frame_equal(result["targets"]["lowrisk"], low_built["targets"]["lowrisk"], check_exact=True)
+    for key, run in result["runs"].items():
+        assert set(run) == {*tilt.BOOKS, "lowrisk", "active", "lowrisk_active"}
+    calibrated = tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+    base = tilt.calibrate_lowrisk(fixture(), CAL_GRID, 0.99, CAL_START, END)
+    assert_frame_equal(calibrated["rebalances"], base["rebalances"], check_exact=True)
+    assert calibrated["chosen_g"] == base["chosen_g"]
+
+
+@pytest.mark.parametrize(("signal_ids", "keys", "min_valid"), [
+    (("S1", "S4"), ("S1",), 1),                    # a declared signal has no frame
+    (("S1",), ("S1", "S4"), 1),                    # a frame is not declared
+    (FAMILY_A_IDS, FAMILY_A_IDS, 0),               # min_valid of 0
+    (FAMILY_A_IDS, FAMILY_A_IDS, 7),               # min_valid above the set size
+    (("S1",), ("S1",), 2),
+    (FAMILY_A_IDS, FAMILY_A_IDS, 4.0),             # min_valid is not an integer
+    (FAMILY_A_IDS, FAMILY_A_IDS, True),
+    ((), (), 1),                                   # an empty set
+    (("S1", "S1"), ("S1",), 1),                    # duplicate IDs
+    (["S1"], ("S1",), 1),                          # not a tuple
+    ((1,), (1,), 1),                               # not a string
+])
+def test_signal_set_refusals(signal_ids, keys, min_valid) -> None:
+    base = fixture()
+    frame = base.signals[FAMILY_A_IDS[0]]
+    inputs = replace(base, signals={k: frame for k in keys}, signal_ids=signal_ids, min_valid=min_valid)
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.build_targets(inputs)
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.calibrate_lowrisk(inputs, CAL_GRID, 0.99, CAL_START, END)
+
+
+def test_default_set_with_missing_family_a_frame_refuses() -> None:
+    base = fixture()
+    signals = {s: f for s, f in base.signals.items() if s != FAMILY_A_IDS[-1]}
+    with pytest.raises(RunnerStop, match="signal_set_invalid"):
+        tilt.build_targets(replace(base, signals=signals))
