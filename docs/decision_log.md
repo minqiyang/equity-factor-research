@@ -15,6 +15,64 @@ investment performance.
 
 ---
 
+## 2026-10-07 - Driver Defaults From Coverage to the Shortlist Freeze (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- `research/m55_driver.py` runs the frozen trial family v1 (PR #298) from the coverage counts to the shortlist
+  freeze. The round 1 review (AUDIT Codex: MATERIAL 2; AUDIT_2 Opus: MATERIAL 0) and the producer's open questions
+  found cases that the frozen file does not settle. The coordinator ruled on them in the repair card; round 2 passed
+  with MATERIAL 0 from both seats. No real data was read.
+
+Decision:
+
+- Calibration gate. The saved calibration decision gates the sequence. The look, the screen, and the freeze refuse
+  (`calibration_stop`, with the decision named) after `refused` (a refusal below the first g that meets),
+  `no_g_reaches_target`, or `ratio_coverage_ambiguous`. They go on after `chosen` and `ratio_coverage_low`. Reason:
+  `books.low_risk.calibration.choice` says to stop and ask the owner for the first two, the owner decides
+  `ratio_coverage_ambiguous`, and the frozen order puts the calibration before the screen. The frozen file states no
+  stop for `ratio_coverage_low`. What the low-risk book does under it is an owner item for the confirm card.
+- Reading of "opened" (R9). The frozen file ties "opened" to a confirm month used for a tilt
+  (`screen_and_shortlist.freeze`, `stop_rule.after_screen`). The accepted loader builds full-history paths at load.
+  This is its reviewed design, and it ran on this data vintage at intake. The driver passes no value after
+  1992-12-31 to the engine, the criteria, or the signal builder. It cuts the signal tables at load. The engine frames
+  keep only the date of the first 1993 row, with every value blank, because the engine input check needs a row after
+  the window end. The driver drops events that settle after 1992-12-31, spells that start after it, and columns left
+  with no spell. The freeze stage parses no data table. The later exit class (the frozen R6 split) is an event
+  class, not a return. Reason: a value that reaches no call cannot be used for a tilt, and each call refuses a value
+  after 1992-12-31.
+- Labels after the cut. The `not_yet_known` and `no_record` reasons in the screen-period stage files reflect what is
+  known by 1992-12-31. On real data the cut can also change the calibration panel digest and column count and the
+  S2 basis-quarter counts (round 2 AUDIT_2 ADV-1). Reason: each change removes information not known by
+  1992-12-31, and no signal value, weight, screen month, record, or decision changes.
+- Two refusals with no frozen rule stop the run. `path_break_adjacent`: the row before a break row has a close, so
+  the engine return at the break row is a stitched value that the driver cannot blank. `path_gap_at_period_end`: a
+  held position has no close on 1992-12-31 and has not settled. If one fires on real data, the owner decides.
+  Reason: the frozen file has no rule for either case, and R6 permits no silent fill or drop.
+- Size exposure (`reports_owed.tilt_stats`): the mean over rebalances of sum((w - b) x ln ME) at r - 1. Report only.
+  Reason: the frozen file names the field but does not define it, and no decision reads it.
+- S2 report readings, report only. `s2_short_history`: by year, the share of S2 member cells typed `short_history`,
+  and the mean ME percentile (among members with ME at r - 1) of the `short_history` members and of the valid
+  members. `s2_history_rule`: member quarters by the year of the known date, comparing the as-of `cfacshr` reads at
+  `rdq` and at the known date; `unread` when either read fails. Reason: the frozen file names these reports but not
+  their form, and no decision reads them.
+- Short candidates. A candidate with fewer than 36 months with values in the primary run gets no engine call. Each
+  run and cost case gets a typed undefined record, and its fragility is `not_evaluated`. A run with 36 months or more
+  of a candidate whose primary run is short has the reason `primary_screen_too_short`. Reason: the 36-month screen
+  minimum leaves the record undefined, an engine call would compute returns that no decision uses, and the typed
+  records keep the candidate visible (R9).
+- Reruns. After a refusal partway through a stage, a rerun must give the same logged outputs for the earlier
+  comparisons, byte for byte. Any difference is a stop. Reason: `run_log.jsonl` is append-only, so the earlier lines
+  stay, and a rerun with other values would be a second, different trial of the same comparison.
+
+Consequences:
+
+- Backlog, each report only or before publication: the `m55_signals` label `not_yet_known` uses records known after
+  t (no signal value, weight, or decision changes); an error record can hold the output path in the private run log
+  (round 1 AUDIT-A3); the single-security rows in the stage files get a data-terms check before any publication
+  (round 1 AUDIT_2 ADV-3); the R6 blanked-window numerator can count a settled name that is still eligible at r - 1
+  (round 2 AUDIT_2 ADV-2, rare).
+
 ## 2026-10-06 - Milestone 5.5 Trial Family v1 Frozen
 
 Context:

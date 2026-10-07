@@ -12,6 +12,39 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-07 - Milestone 5.5 driver from coverage counts to the shortlist freeze
+
+- Card m55-driver: `research/m55_driver.py` and `tests/test_m55_driver.py` (commits `0807473`, `b525e55`,
+  `e7e5986`). No accepted module changed. Decision log: the entry of the same date.
+- The driver runs the frozen trial family `docs/preregistrations/m55_trial_family_v1.json` on the WRDS working copy
+  in five stages, one process each: `coverage` (signal validity counts and real starts, ME coverage, the
+  missingness census, and R6 reason shares by later exit class; no return), `calibration` (the low-risk `g`, once,
+  on the primary panel; no book return), `look` (CW-PIT against `vwretd`, the only look before a tilt return, and
+  the `path_break_held` blank set of each loader run), `screen` (each candidate alone as a 2 percent TE tilt against
+  the CW-PIT of the same run, both cost cases, and the R4 rerun as a second engine call on the `last_close` run),
+  and `freeze` (`freeze_shortlist` and `shortlist_digest.txt`).
+- Gates (R9): each stage writes `<stage>.json` and `<stage>.sha256` to a folder outside every Git checkout and never
+  overwrites them. A stage refuses unless each earlier stage file exists, matches its digest, was made from the same
+  trial file, code, and data, and names the digests of the stages before it. The trial file must have the frozen
+  SHA-256 (`ab3b4ab0...16f4fe`), and the data manifest must match `reports/wrds_manifest_2025.json`. The look, the
+  screen, and the freeze refuse after a calibration stop. The freeze parses no data table. Every criteria output and
+  every refusal goes to `run_log.jsonl`, with 5- and 6-digit integers masked.
+- Period: the driver cuts the signal tables, the engine frames, and `vwretd` at 1992-12-31 right after the load.
+  Each signal build, engine call, and criteria call refuses a value after that date.
+- Review, round 1: AUDIT (Codex) FAIL, MATERIAL 2 (rows after 1992-12-31 reached the engine and the freeze loaded
+  raw data; the look and the screen ran after a calibration stop), ADVISORY 4. AUDIT_2 (Opus) PASS, MATERIAL 0,
+  ADVISORY 7. Repairs `b525e55` and `e7e5986`. Round 2: AUDIT PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 PASS, MATERIAL
+  0, ADVISORY 2. Both seats ran the five stages on one synthetic world with each of the three commits. The frozen
+  record digest `b7412549...`, the decision `shortlist_frozen`, and the shortlist `["S7"]` stayed the same.
+- Tests: `tests/test_m55_driver.py` has 47 passed and 1 skipped (the opt-in real-size world,
+  `M55_DRIVER_REAL_SIZE=1`). Full suite at `e7e5986`: `3923 passed, 3 skipped, 69 warnings`; `ruff check .` passed.
+  The merge with main (`0be2be3`) changes docs only.
+- Run time (macOS, 18 cores, one process): the real-size synthetic world (8,089 rows, 740 PERMNO columns) took
+  21.6 minutes for the five stages, with a peak resident memory of 12.7 GB. Estimate for the real run (about 1,100
+  columns): 450 to 500 s per engine call and up to 18 calls (the look and 8 candidates), about 2.5 hours. Memory at
+  1,100 columns is not measured.
+- No real data was read. No real return, signal, coverage, or calibration output exists.
+
 ## 2026-10-06 - Milestone 5.5 trial family v1 committed
 
 - `docs/preregistrations/m55_trial_family_v1.json` is the reviewed draft (SHA-256 `bbc21fde...0281dc`) with four
