@@ -111,7 +111,7 @@ remains `historical_evaluation`.
 ## Verification
 
 Commands run from the producer worktree with
-`/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python`.
+`<repo>/.venv/bin/python`.
 Pytest uses `pythonpath = ["src"]` from `pyproject.toml`. Full pytest used an
 outside-repo `--basetemp`.
 
