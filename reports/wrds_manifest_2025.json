@@ -1,0 +1,770 @@
+{
+ "files": {
+  "ccm_lnkhist.parquet": {
+   "query_sha256": "6bce84da460eb5493bb1f8e20e45fac99d0e0e853196878b4186328c95994050",
+   "rows": 2616,
+   "sha256": "f8646d82bce4e6c0238ce45a372d0e651c68b41e871565bd27afe0825d27fd37"
+  },
+  "comp_funda.parquet": {
+   "query_sha256": "7a5b163f6ee6b5b747641379ce34139ad2b324db6cb6323a3c4bebd0c47b0901",
+   "rows": 65645,
+   "sha256": "305822bb23799a7d1617a684b0515686e094331bd2c2a2d2c65b568013c36c07"
+  },
+  "comp_fundq.parquet": {
+   "query_sha256": "a78facaac8eb8fe239ba979bdc47be0dbbf7aed2b7721590aa5c7dea9d4c6707",
+   "rows": 227827,
+   "sha256": "8807068f5faa64d699a3bc3e7b4cbc835adb164cb25ffeb5821ea8200ca1d7a4"
+  },
+  "comp_snapshot_csa_pit.parquet": {
+   "query_sha256": "71bae38e9e0eaeeec0ac91b0335e3d1b4d52472c544f85c5951f145249c01e66",
+   "rows": 386030,
+   "sha256": "6b560637bf6779b1da95badc9e58384bf7e947df42c4b9cdeebb7488d46d622a"
+  },
+  "comp_urq.parquet": {
+   "query_sha256": "154c41c518f4542e232a61b33eb691061b6301a7edac73bc4421b85dc66d4602",
+   "rows": 144333,
+   "sha256": "e6331f19c5266591f266828899f806db14b9a17ae324ad28a20fa7bb0ce59fcb"
+  },
+  "crsp_dsf_v2/1961.parquet": {
+   "query_sha256": "f689feaf1088fcd0fcba50edc7a8631bb89bd3be684dfdf7086f510b20909b41",
+   "rows": 170027,
+   "sha256": "5da94e5d44c26963941ad43ad64d52d9bbb687215ce3ed43f930e9e45154da48"
+  },
+  "crsp_dsf_v2/1962.parquet": {
+   "query_sha256": "5b88dd9cd59440fd51bda656e9f34892b54a27766cece34ae7ce2f5b1d580b48",
+   "rows": 179848,
+   "sha256": "32b45cfab0a4df9beaf98b959c585a13639f75a3f778f568c83640272834dc67"
+  },
+  "crsp_dsf_v2/1963.parquet": {
+   "query_sha256": "adb507126a536650b2a264bae906ec63a8d8114d63ca1d30d246c6e3abde46bd",
+   "rows": 188165,
+   "sha256": "678333bf9ea280435580f7deec6bd2ed60ce6af1865210ee93f4453be026b765"
+  },
+  "crsp_dsf_v2/1964.parquet": {
+   "query_sha256": "a478d52a64b7f489ed82e51121c03ebd78ca27a4ba7e160ca26787d7264811a2",
+   "rows": 193450,
+   "sha256": "dc271533519cdbfaecf64f841a173d23fe962efa8af57075a233cb8cb236cd76"
+  },
+  "crsp_dsf_v2/1965.parquet": {
+   "query_sha256": "3cdd4dd46da82e9042c0cca68eb89f5d71cdd48bcbc6f9d963b0d57695c226af",
+   "rows": 195926,
+   "sha256": "3f55d684f7e27f4666e08bca0946b5e69ba6ac7ef2a0729153802205d2cb315a"
+  },
+  "crsp_dsf_v2/1966.parquet": {
+   "query_sha256": "7d3033ca0101b1fdbefb3c0a1267c608e27da4f9b40e267350c2dd92133ea81f",
+   "rows": 198938,
+   "sha256": "81fb73c05e64b165ae580b5e594ec1c78ec192dc5383dbc1c75327264841c96b"
+  },
+  "crsp_dsf_v2/1967.parquet": {
+   "query_sha256": "7a9c33b87b46b084ff2cd379ef2e7141411f0f5b1d58ddf3d631ea5426cebf28",
+   "rows": 197763,
+   "sha256": "5bafadc758ec828384eca1d9f8e36c5db6df6665a1a4ad53e8794679d4e4c5fc"
+  },
+  "crsp_dsf_v2/1968.parquet": {
+   "query_sha256": "c982b120ef3bba5043a4602e1c556c94d6fbc58c4055322d758541ac5dc58a61",
+   "rows": 176242,
+   "sha256": "71b3de65f8cba9822d8aa213a123ff4f8e7d2d6dc6c536e272ba00649ed34a01"
+  },
+  "crsp_dsf_v2/1969.parquet": {
+   "query_sha256": "6e2cc109e39a5ce62f3e6628837d47fd18afaf40125061eda36c1b39564edf4f",
+   "rows": 197873,
+   "sha256": "aa3ee8be56a6126c9c7aff4d86d2b673c3d7582cd8b588913b7aedff33d0af18"
+  },
+  "crsp_dsf_v2/1970.parquet": {
+   "query_sha256": "f896a3e497074a29893427b37461a085bb23544a076059fe9ca359ddc0321f75",
+   "rows": 205681,
+   "sha256": "d119fb7b1054847b0ae8f94e57815a1ac4e427709a18c670325790beb152b37e"
+  },
+  "crsp_dsf_v2/1971.parquet": {
+   "query_sha256": "21b61d24352bf3921b19ddb11876a1d12b92bd44b00c0915080dde31368ad020",
+   "rows": 208306,
+   "sha256": "911192fa7eadf24d3461b80bd2bc1e598628d4a39b6d7c80b1fb9c376782669a"
+  },
+  "crsp_dsf_v2/1972.parquet": {
+   "query_sha256": "e512b0e87194ff6d5e962262c66c9a5ce02e6b4b1d3cbed9b0f7886f04e1cb23",
+   "rows": 212009,
+   "sha256": "b7cc0bb06b21648ea2401ec217b0b0db834378e9725197735bbcf7e4b863962f"
+  },
+  "crsp_dsf_v2/1973.parquet": {
+   "query_sha256": "93a1dd51f36c68b33974207ed3e0bb5acb8fd6180ef62aea407ff5e83d83334a",
+   "rows": 246459,
+   "sha256": "79d33ccd80169f33c1048b5aa93e8d2a28b47f8232df65ab7a9f6f1ba76e41ed"
+  },
+  "crsp_dsf_v2/1974.parquet": {
+   "query_sha256": "4c242faa0d3212a16a154445788093e94b4dfe174f30767a9b141580f932da93",
+   "rows": 246979,
+   "sha256": "dd3ff2431f906a958c6d5816173fbaddd8d11fa907966ab479a2a1b95b5535cf"
+  },
+  "crsp_dsf_v2/1975.parquet": {
+   "query_sha256": "016590ca380bdd500eed982f61e443101ab9f3862d2b00dd2338aa7df0acdc23",
+   "rows": 245695,
+   "sha256": "6b12c4dbb7c1c40921a65232d3ab488539a852822fccf8e6290fb5d699c4281d"
+  },
+  "crsp_dsf_v2/1976.parquet": {
+   "query_sha256": "dd064dbd7a43e2fcf83b0288a19a19b8a8b29594d8ab01b9cc99833c6ba3a53c",
+   "rows": 244716,
+   "sha256": "f9648ebbe2b4029ab5890cb3bbcc11acc1762fd93def00638c4e1082b7c15303"
+  },
+  "crsp_dsf_v2/1977.parquet": {
+   "query_sha256": "1fb13425f506b14f651d14f9c589bc155d27566947b0ac4dd19797ab4e180a1c",
+   "rows": 242653,
+   "sha256": "2c13a364428d1204af6f77ae97f87136b5ea8997179616606ae123c737181ad2"
+  },
+  "crsp_dsf_v2/1978.parquet": {
+   "query_sha256": "40b98bf7de37100293f06774c8692da86fd06d1136b35462f811c74ec0646375",
+   "rows": 240635,
+   "sha256": "4065582be8a4caac6460b62376047915129d135b3eb6458a4b3fe9d996d6af5b"
+  },
+  "crsp_dsf_v2/1979.parquet": {
+   "query_sha256": "1fb9e88405282ac72a0ce3ca5f6f8a61e63e95250e2f1338f5953bbd98d0f909",
+   "rows": 237125,
+   "sha256": "c050e79e65cee974618bcf9c4b6599df51fdd9ad1547a9cdd721c5eab848f012"
+  },
+  "crsp_dsf_v2/1980.parquet": {
+   "query_sha256": "d687d7aa0cbea857358f90db2315819c486b39cc56ab0be9e92320a3014d067e",
+   "rows": 235725,
+   "sha256": "662734ffe2e8ff02d727fc562b8e0c340a2c5788e6bdeeca30322a1f630a843e"
+  },
+  "crsp_dsf_v2/1981.parquet": {
+   "query_sha256": "95da1b07d429ba73c5eadd3ac6922e8ba54ecd0220874f9a182014d184d0f4d6",
+   "rows": 233709,
+   "sha256": "f21d82349f79123d3769a0d4df37f6298795dffb3a67b28b030566a400afdf66"
+  },
+  "crsp_dsf_v2/1982.parquet": {
+   "query_sha256": "3ad1db1067c4f791816a166a071c57fe1c5a5973fa0da443cbc8856ae45ae20c",
+   "rows": 229118,
+   "sha256": "a4ee2537310ef567cb9a34b67fe079f60f8c44b903cf814425080a32a8123a54"
+  },
+  "crsp_dsf_v2/1983.parquet": {
+   "query_sha256": "82e3a70b1fe7d1a6a7696baa3837a14053470caa5802541ad2a0b74f359f2651",
+   "rows": 227799,
+   "sha256": "0b32666023831ba705f50879f0a50984f0229de46a7cabb73f70da49b9707688"
+  },
+  "crsp_dsf_v2/1984.parquet": {
+   "query_sha256": "87fc006558e9ab6f491d32bf24d0e7b032ed94b0d34305098a6936fb0aca20e6",
+   "rows": 229639,
+   "sha256": "b28fa6ab96031144d7c1999479f7e0e8b685467b50afec3db86fcdd9b39e3b1c"
+  },
+  "crsp_dsf_v2/1985.parquet": {
+   "query_sha256": "481262871879bfda6593e27c4df2554741847e5f7cf4d0e755e1b0f0a8ef9a1a",
+   "rows": 224392,
+   "sha256": "ce16147e76905dbd84fc7276b2825a799b13ba84c410f5d73a99586ee734c967"
+  },
+  "crsp_dsf_v2/1986.parquet": {
+   "query_sha256": "82d01186b800bf01cd63737d6493281aeea0afebcc9e028b3c7ef38b178c2474",
+   "rows": 223104,
+   "sha256": "2bb0f70d849d5dadd809164398e2f301f79b486bfb0b54c7769349615a7fe7b9"
+  },
+  "crsp_dsf_v2/1987.parquet": {
+   "query_sha256": "e7f9f561b63b07e1005a68519998dc74bfca3c4b45e93650faaa54eadd401260",
+   "rows": 221579,
+   "sha256": "6459a2e69fc648a2db282c9588a43e5409016832af1e591dd2a3ffd0751e6f3a"
+  },
+  "crsp_dsf_v2/1988.parquet": {
+   "query_sha256": "c9ee54305ad5e12ce4509e2951363c7c2773b0940996d88b79885e8173a43bc9",
+   "rows": 218741,
+   "sha256": "250cbe4000b6d52d7adeb14611bf47486af8b9ac71260986fe2b52377da9a97e"
+  },
+  "crsp_dsf_v2/1989.parquet": {
+   "query_sha256": "e5c5c8df212dce3753d1483c019397135a8303ec0b86051f30a301312000e676",
+   "rows": 213582,
+   "sha256": "7f1c2e802b14e7124d5b786a30559273f33b2072561a73e18e88894471588abc"
+  },
+  "crsp_dsf_v2/1990.parquet": {
+   "query_sha256": "e1424bb59e4fd3de32e6a1f96a39387c96b600b36570d33198216fb324472eb8",
+   "rows": 213230,
+   "sha256": "f09060238b3009ea2f0067e7a6eb81268ac231237b86e5c24e0902ef2807f277"
+  },
+  "crsp_dsf_v2/1991.parquet": {
+   "query_sha256": "4909865f70ca1999395517d1137c5ede5cbe82a9952dee103d3d36d1ccc40ce6",
+   "rows": 215252,
+   "sha256": "39073178a228e6e40ba1d2004d80ade18256fd99187392a6ec73be22e52d3a5b"
+  },
+  "crsp_dsf_v2/1992.parquet": {
+   "query_sha256": "27db22062e5c935661a29438a23d0b39f1358142a2db7aec37c9fffb480d28ee",
+   "rows": 221533,
+   "sha256": "c4a923217bbaedd5bc8e5de9f02194340faed4f0cda1c9c4c20d777402a7344c"
+  },
+  "crsp_dsf_v2/1993.parquet": {
+   "query_sha256": "cb7721968de4d111601189d60c53e44d3eeab02540678961bc6f18cd4828bd0f",
+   "rows": 225547,
+   "sha256": "51895186cb2f879b541c67672cef0aa5b57e6cdc94347bdef4ab681664f1392d"
+  },
+  "crsp_dsf_v2/1994.parquet": {
+   "query_sha256": "1fa4e3ac637a59cf4238855081f6a42eb9ff0408c330c3506726364cb5640005",
+   "rows": 230092,
+   "sha256": "670073b77410440bd94a9d58ff7295023bc5a5ffde2970cc288452601d8b91e4"
+  },
+  "crsp_dsf_v2/1995.parquet": {
+   "query_sha256": "9544aae20edd80d6c0e4b5b6dcccc4bcbcde605c3e061092d36a7e4f4ac8fdf5",
+   "rows": 231166,
+   "sha256": "72479659c4d553dde460182b3c9a73c167c62fac4000960d0ce3e33f523b9ec0"
+  },
+  "crsp_dsf_v2/1996.parquet": {
+   "query_sha256": "eab1c8793e751838d33e8779ad049eea4ac2c3df63e9f5d8de40215406bfff29",
+   "rows": 236320,
+   "sha256": "eb464466a508f82fef33317dc9bbe66ca4f807c50019d3862a7e186ff35463f3"
+  },
+  "crsp_dsf_v2/1997.parquet": {
+   "query_sha256": "138b8494d6ce9faaa365248d80ce716bcbe5562a41830cd55782dd7c43e6f901",
+   "rows": 236627,
+   "sha256": "213be670f9eeab0638aaacbbfeebf6e95e069d6389a5b03158f6330d868996f9"
+  },
+  "crsp_dsf_v2/1998.parquet": {
+   "query_sha256": "1509e760e7d4af70ca55c38cb4bb33e1a9f0b112e532c3642a90309501fe8cfd",
+   "rows": 234622,
+   "sha256": "b25e7d1e934c235853aaad3253d9039df7e0e6c526cb13e0d3e15d961e72409a"
+  },
+  "crsp_dsf_v2/1999.parquet": {
+   "query_sha256": "69d5b7eda06837be1399f428c327b0b546ec53df42f5b28dab3e2fd0103077e4",
+   "rows": 230223,
+   "sha256": "1dde5685ae3cf2b910170bb0395da170674a35be62ba11ec62887613e6263604"
+  },
+  "crsp_dsf_v2/2000.parquet": {
+   "query_sha256": "a770a72a3ebdcf8105dc885d1273815af1662bc58e596e8e4f3e3cedfb5b9a8b",
+   "rows": 224722,
+   "sha256": "c8b4b903b51b0acf7dab3f65a951cc48dcc690d2ef2f6ee9efbb151ce0be8028"
+  },
+  "crsp_dsf_v2/2001.parquet": {
+   "query_sha256": "433082922e47b7f742b3deaff76dd43e5f70978c7316f7469e8c1bc5c6c2b279",
+   "rows": 216562,
+   "sha256": "83c78e9e3ffdce2578f64615787c05ba4db13d52ff91afeb87c79587efe82faa"
+  },
+  "crsp_dsf_v2/2002.parquet": {
+   "query_sha256": "c40c33306e4ac8e07039e0b30c75222fc081abb8b8c6923230aeea7bfea22f44",
+   "rows": 217649,
+   "sha256": "bf8cb162cab65afa482a4df13a10ac94e50f9d8e8f3c27cbec4f8890f8b2e7b7"
+  },
+  "crsp_dsf_v2/2003.parquet": {
+   "query_sha256": "d4f593bb7d4fd676872e740db9fd63d6d07e21a5e19071cdc5a64edc0fe3c956",
+   "rows": 215854,
+   "sha256": "774dc7102c3af0e2aa52797436322c3fb8f6d6c0f07be711ba500bbf98aee39c"
+  },
+  "crsp_dsf_v2/2004.parquet": {
+   "query_sha256": "443526f9d6a8afebc02b224f62a463fe49d38971af86f4c972df0c60543ee14a",
+   "rows": 216041,
+   "sha256": "557d3770c88b59ffcf75219f989e96f810abd6a312791cc823ce215a3cabacd6"
+  },
+  "crsp_dsf_v2/2005.parquet": {
+   "query_sha256": "a8e2e73a2940f785f66ff753a0ee4473c088559e65291cc0e56f2e28618308da",
+   "rows": 216980,
+   "sha256": "fc9097cd562e4a715ae5218c8c44d773523f713994550ede7d586a3b6b07eda3"
+  },
+  "crsp_dsf_v2/2006.parquet": {
+   "query_sha256": "644ad8e23646aef64f778d3e5937526f44edb9c6006c0a8d5b364f37f616e5e5",
+   "rows": 212507,
+   "sha256": "17754229f3b33c9435b6d6eea2b193ac1e0d036c5ed5565a1979919f0fe29fab"
+  },
+  "crsp_dsf_v2/2007.parquet": {
+   "query_sha256": "5b81eda01237bd7370b06944d664496f9a675fa038dc0ba5bb402a7b6cdec516",
+   "rows": 208924,
+   "sha256": "ec810fcf92cf728bef4532d4b955bdde67be0f6586d818b6aa62e554419df16d"
+  },
+  "crsp_dsf_v2/2008.parquet": {
+   "query_sha256": "5dd2f117859a0c5f896cdd8557971a80b3759d9b9212c6ff2fa3bfdab734864f",
+   "rows": 206233,
+   "sha256": "959668373511875c8c713c17755ee7ed5ca06e83f00500e732f892468392fc7b"
+  },
+  "crsp_dsf_v2/2009.parquet": {
+   "query_sha256": "d891f8cedafb90c9f09880678195e975bbe1b5aa060ece483f5a971a1da12c86",
+   "rows": 200724,
+   "sha256": "a994353dcd6520cea74668e3144c6cc83b7b6d3e6d7ccc3d6972c5637461738d"
+  },
+  "crsp_dsf_v2/2010.parquet": {
+   "query_sha256": "1932fd74e46bc7e3b7c4abb2315110a8c3fe1fab4549277202dbeadb511fcc93",
+   "rows": 198709,
+   "sha256": "6e190d8baa81c4b4d0d36cbef9ce9c68837d8114c3c99be077ba7abb2bc229a5"
+  },
+  "crsp_dsf_v2/2011.parquet": {
+   "query_sha256": "14f40ef7517bb0dcd9394530653f08723c87cc1480377171e8bb78943b2eb79d",
+   "rows": 197766,
+   "sha256": "43084f27bc9c573c8998ff8cfcad8aedf0288cfd9a12722674ddd7a6f324a090"
+  },
+  "crsp_dsf_v2/2012.parquet": {
+   "query_sha256": "aa32d04d25b4dc47cb2802264587d13a9ca2077329ec4664afc8529ea8f41ea0",
+   "rows": 195304,
+   "sha256": "d2f99d397292c008f4179a8c2288727bc7d2fc6eb3132804d80c678835c4551e"
+  },
+  "crsp_dsf_v2/2013.parquet": {
+   "query_sha256": "7cdeecac97a08b2b34ee37c036cf92f543f0a0ba8e210c54289cd82974fb338f",
+   "rows": 197345,
+   "sha256": "97d2e1ddb851fe1a354ced1172a6a44d2efb6cb5d6755b03f22ea9defa8047a6"
+  },
+  "crsp_dsf_v2/2014.parquet": {
+   "query_sha256": "2208e9b084816143ddad35a061ecd67304a8b24faaa8314bbbde1181aa04c639",
+   "rows": 196975,
+   "sha256": "d9b0870390adb775c61f45e73fa669764d9aa0504b39db5578c89bca06b2cadb"
+  },
+  "crsp_dsf_v2/2015.parquet": {
+   "query_sha256": "4dd449b57d41012a590290e183408550b46eeec4514f44b16face812e5452440",
+   "rows": 195612,
+   "sha256": "fcb498353ee524e4c208a1962630916a4f84488824c09dcf0f9ccd45872e14ec"
+  },
+  "crsp_dsf_v2/2016.parquet": {
+   "query_sha256": "4be121135fcb252755f715c1046e402c3dfe24faff67c484f8d4413bfc45540a",
+   "rows": 191309,
+   "sha256": "ac9be8598429d28c3f234bffac0186108b26fb480780594e513f6c290de33abc"
+  },
+  "crsp_dsf_v2/2017.parquet": {
+   "query_sha256": "b3c3a4a2860f1a0b831a87680d6e8376f7c2390ff92623d42676344288c829b7",
+   "rows": 188120,
+   "sha256": "92cd9f8d9fe3e86651be0f96ee714a906c69b90d6898f0d4550cf915bddfd931"
+  },
+  "crsp_dsf_v2/2018.parquet": {
+   "query_sha256": "8f6a76bbaa47cc2cf39d3e118786d1d9d7853603d7e074e1705557763ec18f5e",
+   "rows": 185638,
+   "sha256": "ca829521327cb3350461c759b6a4f3c73c830207871bf864b53dd285fb794f76"
+  },
+  "crsp_dsf_v2/2019.parquet": {
+   "query_sha256": "6b8f808b52fab8e3706187d9dbfcbc46b2d9cf2434b6ca83a7ae4ca9bcb790a1",
+   "rows": 105793,
+   "sha256": "1f0a5551aa8d5579626e74bc16cde27864cb067913e0270bd1e016e32c9c94a0"
+  },
+  "crsp_dsf_v2/2020.parquet": {
+   "query_sha256": "649d01fbec342a575bf737892533f95ac03bc10c138c1016a9287741abb096d0",
+   "rows": 75240,
+   "sha256": "ae763c0403ac138fef57c99cfda762c50f00664d30188ba41e4eadb74dde75b6"
+  },
+  "crsp_dsf_v2/2021.parquet": {
+   "query_sha256": "089ae161eda3276e4edf409c07df02eed58bebfc8469d310df063037830c2ad1",
+   "rows": 178239,
+   "sha256": "2b68c1b1cc9af6d8539c1e608f83654c9cd77a29465dad02bb06af8d6117aa62"
+  },
+  "crsp_dsf_v2/2022.parquet": {
+   "query_sha256": "378201ff79e314c0ca22ae78ef080a8857f358b8b88b9d3d2495e40ea98d6c67",
+   "rows": 174742,
+   "sha256": "1ccab87e8351d08811c0e113e976357ce584244ee374da76eeadaa4e307c59cb"
+  },
+  "crsp_dsf_v2/2023.parquet": {
+   "query_sha256": "8509b998c51d329ce9eea1d26b11f36f4d514d2fbb91384a41b985f6d119b97f",
+   "rows": 172173,
+   "sha256": "246e7e363f293e2fdb0a19dd6445bf124555067f1ae87ebab516feca9af2fb61"
+  },
+  "crsp_dsf_v2/2024.parquet": {
+   "query_sha256": "5ecd627b31732dc5cb02c6d47528235b52995a8361481b6046f9888bed0a0e63",
+   "rows": 173243,
+   "sha256": "ce563ddfa3aa0b6c6d7dc6bf9b991dfd44fef2b6d13d5abb6491e05d98abdc04"
+  },
+  "crsp_dsf_v2/2025.parquet": {
+   "query_sha256": "3007bbeab46afad466d5d8d676114949e6726ba4720e77822251f2de95586775",
+   "rows": 169590,
+   "sha256": "dc0fa0945df581c1de69c5f7ddafd49a215dc4d5374e15f2a59cd8cd3cba7a56"
+  },
+  "crsp_dsf_v2/2026.parquet": {
+   "query_sha256": "8ac01c34d90a23f34bb93630039067e3735e9f568d22a85c196a55be7e029aa6",
+   "rows": 0,
+   "sha256": null
+  },
+  "crsp_dsf_v2/late.parquet": {
+   "query_sha256": "9ac618f38002fcde34c532ccec3a2f31ad9087a1bc2c2bef31ca830ebfc0ec97",
+   "rows": 0,
+   "sha256": null
+  },
+  "crsp_dsf_v2/nulldate.parquet": {
+   "query_sha256": "70bc0d96c7d97340f2a64e507d68851618d2530c03df32c328f4a9f7bf2790a2",
+   "rows": 0,
+   "sha256": null
+  },
+  "crsp_dsp500_legacy.parquet": {
+   "query_sha256": "e102802ad6b2713fc6350713ce61be2fed8fb98eb5336d1b32aa99cd3801fc09",
+   "rows": 15854,
+   "sha256": "ddfc5613c847a8fddba24af581abf51af482019b109d302e3dc0f18e5c2b0186"
+  },
+  "crsp_dsp500list_v2.parquet": {
+   "query_sha256": "4ffef6bfa316501d21c03a39d3c84519e56993d047b8792ef8e281b778533ad3",
+   "rows": 2084,
+   "sha256": "69cf0cda801ce0c3b1dbd17000f7deb71713e13c19807b33f4dcd5763efd08cf"
+  },
+  "crsp_index_daily.parquet": {
+   "query_sha256": "914ce276f9b12cf5f564f1b25bde58d81e6dfaf8be2f54f41b9832adec680ff1",
+   "rows": 31832,
+   "sha256": "0c7cbac0848f116dda0aa187a0cd0cbdadc2b19304bb1703b628f1b693875c05"
+  },
+  "crsp_indseriesinfohdr.parquet": {
+   "query_sha256": "215dfded0c384bb547e7cce8b281de8a438cf268d218bdaf3dcb35042b44ab55",
+   "rows": 4,
+   "sha256": "a1c970b534d036ba59a02ccd58dc2c17231613e6ba05349eaf93b6869e4d9e4f"
+  },
+  "crsp_stkdelists.parquet": {
+   "query_sha256": "faecc7dcbd65f3486edfdfcb06017ba668bc552724dcda12697ef8bd515d5a91",
+   "rows": 1266,
+   "sha256": "0985df504ccef1ffad2dea5a3cdb39e1114312f381ac5bb949df0e91947adc73"
+  },
+  "crsp_stksecurityinfohist.parquet": {
+   "query_sha256": "0f7377aefe7879a3c89e7f41cff6b4802f2d5f4ed16bfb592b84938b442a8d59",
+   "rows": 14374,
+   "sha256": "e6ca4090b8888383a03d3c0abe45bdede599f3cdff8106389b64639cd951f660"
+  },
+  "crsp_stkshares.parquet": {
+   "query_sha256": "1d2b5149c58754af13d4b5e3619db5815d5cb87de29b138538cccc1f4b84c231",
+   "rows": 384945,
+   "sha256": "4e94fa4b47755286ea7566c755b4cf1f4b9e2b35a1b6e5897afb7f0cac3dfb01"
+  },
+  "ibes_crsp_link.parquet": {
+   "query_sha256": "3c017465b15b4507ac526e125ec6199798915cf386232a9dfa60376c1e409e28",
+   "rows": 2745,
+   "sha256": "97528d481b503bd92ed7473c6c2706153b512cddeee24b1622dd14a722da2111"
+  },
+  "ibes_idsum.parquet": {
+   "query_sha256": "58845f606a8e8ef5c5c3f183e51b4608048c68e89a2b3be516929c108f45781a",
+   "rows": 11413,
+   "sha256": "e0a58279e2db7c8ac47c1e0192650a34d375da751d27f06611bac352953fbc89"
+  },
+  "ibes_statsumu_epsus/1961.parquet": {
+   "query_sha256": "06a0debcb277846ca3d2c2eb9c4e6880ce7cf5441d3c703a17ab5ed7df476800",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1962.parquet": {
+   "query_sha256": "d04156cb1d1d379df5644d35479d65ae807810a3960629a7ad9d80cc0ad0d956",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1963.parquet": {
+   "query_sha256": "655ebba7d4fd29c8acdfddf43ad48b063fa692889fc2b080ae530c0331715cc0",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1964.parquet": {
+   "query_sha256": "68eeb4d2393ae0883767307610d35bcc7b30a1595ad66c5d6996733ebf104169",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1965.parquet": {
+   "query_sha256": "12bc575c9943edd54cdedbaee688622250cafd399895697e45542ab2999af358",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1966.parquet": {
+   "query_sha256": "7ea99bfc6579ddb3b7c08f9b07c8a35b037aad0f84f3c4af84462fc357ebf20d",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1967.parquet": {
+   "query_sha256": "5049be44eda4b9ce74b370bba3896bfc1fad35441db9f268b30b6665f5d1adb5",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1968.parquet": {
+   "query_sha256": "5020b363e22f15fd3f387a8ab46167fcd2706e8a86adc113d9686852facc08f7",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1969.parquet": {
+   "query_sha256": "9d170d14aae3e9828db4871a282960b51e572f00148960f4792cb5774c77cadb",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1970.parquet": {
+   "query_sha256": "10f17b781ecbcc2f4be3528d0f8d3d49662fd1e1ee7d5b044307176280523099",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1971.parquet": {
+   "query_sha256": "2386e18f18c115196761afdd03e0f2301f2c35baf543875a63022df4ce13fa10",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1972.parquet": {
+   "query_sha256": "d54a77fd7e3b1dc70f7f2153d43aafed032b4ff4ca9c885f2cd9c7c37948d206",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1973.parquet": {
+   "query_sha256": "ce0c20c482b5e8763d651a254fd60d5d317c9d34896fae00a88fbd12f14d928c",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1974.parquet": {
+   "query_sha256": "e51d0da86dffd857fadb185fe7d54d65a05cc8f39e04e8dd9bd6472a21a00c45",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1975.parquet": {
+   "query_sha256": "870b4a5f0f53c41f4ed3df01137a50ef188166683ea94a47e0ac15a4400ad653",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/1976.parquet": {
+   "query_sha256": "70eb2f58f766ba0addfa41fbe8a9122bf2b6dd5c27efea01cda1d2bf3e7f7784",
+   "rows": 7795,
+   "sha256": "a0030d80dd72f5dabb7d5a879fd0596755aa63c4c933c2eebb0e5e330c369060"
+  },
+  "ibes_statsumu_epsus/1977.parquet": {
+   "query_sha256": "5d6a657e316c18e952953936dcb25a756a9d115d86948c2b76891f6a61cd04fc",
+   "rows": 8314,
+   "sha256": "7af09483a7c074bf220ded8895b96055319c19b7cb7bce2409d62fa0ff0a46f4"
+  },
+  "ibes_statsumu_epsus/1978.parquet": {
+   "query_sha256": "6994c6240aeb44306b5b21a8b30d61a4dcd3da1a680b7aef96335d74d71b3564",
+   "rows": 9486,
+   "sha256": "f412f335a2f988f3797e253efb5de0893dce7cdb093aafb578692950b1810590"
+  },
+  "ibes_statsumu_epsus/1979.parquet": {
+   "query_sha256": "24ae8f473fe091e01e84e1f93e40b914c7e3a43f4ea071125d9789f3984981c9",
+   "rows": 10180,
+   "sha256": "26e964dd983eb7b4b4abe4ee05569c19555b1608d6fb7d6fe79ee4dc2ce26afe"
+  },
+  "ibes_statsumu_epsus/1980.parquet": {
+   "query_sha256": "7203fb7287c2e261f3318d14bf25b53458d5a21c726cacc1c85d7904f72ac6ef",
+   "rows": 10085,
+   "sha256": "33cd8712cad1796c7fd4e1e87b9e82c6b23b729c8ceb3c98b52c0c593540ca27"
+  },
+  "ibes_statsumu_epsus/1981.parquet": {
+   "query_sha256": "aea6226c3f7ca6df9094e33f6c14c085c2acef59b41c08f57a08ec19f4a08586",
+   "rows": 10158,
+   "sha256": "3ded3eb79115b25035f15e2e3990b22dd0b4f0acef96bdc16ffd0abfb19a946c"
+  },
+  "ibes_statsumu_epsus/1982.parquet": {
+   "query_sha256": "68714f603934e23f5c32979e7c0a354b4bd2f03c3bead1d9899621ca614c1dc4",
+   "rows": 10170,
+   "sha256": "28e59315c8473ff274c14f127670e487f8801d9ab4f4c773e7c0083648b6416d"
+  },
+  "ibes_statsumu_epsus/1983.parquet": {
+   "query_sha256": "6be729de8bc29029d5a18012d3c7ed371d5e259c2dff0292bd6db8a7e1cd823e",
+   "rows": 10231,
+   "sha256": "1acacf38d8c649e563f3cad7b01fdeb01d2e4e85dd2af04a55753bea3c87f7f1"
+  },
+  "ibes_statsumu_epsus/1984.parquet": {
+   "query_sha256": "f5f74d08cba2ebc493fef9f563aed263d57c86f6d7d3c0b14e0dd78c36537e0d",
+   "rows": 10602,
+   "sha256": "22d64d0e22fe4330f68916bcc964011261024bba81e39290ff846ba47ea34f08"
+  },
+  "ibes_statsumu_epsus/1985.parquet": {
+   "query_sha256": "ec9c3bae14cfaa70ee6dcc82f81a45b5f8c5d03af9f59c87a1bb6b1addacfd87",
+   "rows": 10346,
+   "sha256": "fb98ac31e9fd76aa62d7f3c45cefaf35287ceecff8c34d6897a72f5d16416f9b"
+  },
+  "ibes_statsumu_epsus/1986.parquet": {
+   "query_sha256": "479cab6de05a3956029ab86dfa72ff84ef8fb9a95ec73827f8888d67680b309d",
+   "rows": 10287,
+   "sha256": "c16682ae41dc7e9a3bd468867164738b0b31d524fb80c0de49f36d4752673ecf"
+  },
+  "ibes_statsumu_epsus/1987.parquet": {
+   "query_sha256": "eb141c2d4a682e8ec3797ede743f9180d3411cf4a32709bde99ba2c6d4a40ffe",
+   "rows": 10242,
+   "sha256": "7b61aae16542a36db2ff4380dd30ddef1f461e07a4321ede11b11819e79e0529"
+  },
+  "ibes_statsumu_epsus/1988.parquet": {
+   "query_sha256": "c424e2bfb49b87940f471d2bc83963d33616fddc6e0990a11da5b5221d71abb4",
+   "rows": 10141,
+   "sha256": "27e9093bb4354f7d5a8d3b0c7d2bb3952b1612284556b37462b4e55d2ff93d3e"
+  },
+  "ibes_statsumu_epsus/1989.parquet": {
+   "query_sha256": "616bb4fcba6adfa2bd4eb84874ddac4326df4eb8df485bc1a447700ada7a5592",
+   "rows": 9981,
+   "sha256": "560e3711c59040f87ef0af3369323ce2601125d4d0ea2fff6c2d271b5c8f0490"
+  },
+  "ibes_statsumu_epsus/1990.parquet": {
+   "query_sha256": "de2562beb03a22477a954bf5a44279e58cf9d8ea75052873db93103b5766b99a",
+   "rows": 9825,
+   "sha256": "060847e9a6cd889eda6e92670df2ed97177b13df270b96229e5b9a5adde96999"
+  },
+  "ibes_statsumu_epsus/1991.parquet": {
+   "query_sha256": "535122e513ce230d24abea89b7be86f4714495311ae171e2e8df98a309e85d16",
+   "rows": 9871,
+   "sha256": "1b3d33187c6c920c08be26558da9661fe78bb268474912416bba1c6a2641cb0d"
+  },
+  "ibes_statsumu_epsus/1992.parquet": {
+   "query_sha256": "e8f3c06ae21e3c25624fc650232e4ded2e42ba055d792ed7e3d8eb8911e86289",
+   "rows": 10133,
+   "sha256": "2ed25e7d7023ac19d6b6e1766c5f0fd0841f1084851f3c7befa58f45fc810315"
+  },
+  "ibes_statsumu_epsus/1993.parquet": {
+   "query_sha256": "c46c32a674a63208e9377e46dc1998031641c7f4005df2e28747f37686b43211",
+   "rows": 10455,
+   "sha256": "561bbe5227b946e31792fd024bc2eafc7fea3123ac6e25394fd91c23cdf2f257"
+  },
+  "ibes_statsumu_epsus/1994.parquet": {
+   "query_sha256": "3cc22347ab016a4cce173c50d765f9bb9ab5cd785ce10bb358439ba6720fc0b7",
+   "rows": 10781,
+   "sha256": "26c79ffcd8f9cccef417e8b8ffa771e0156ed8054cd5a27399fb8e934c812e5a"
+  },
+  "ibes_statsumu_epsus/1995.parquet": {
+   "query_sha256": "a0ef1f83a125336b55df37542f25d587d4a2dc455ade1294ad6ccc887d920e61",
+   "rows": 10821,
+   "sha256": "a969bf1c4307150708fe7b7c4ec54fde84d19cf936f367b93a679d63bc053256"
+  },
+  "ibes_statsumu_epsus/1996.parquet": {
+   "query_sha256": "93dbfb60f9bc9c8407710089a2935f37bd1133e4050a756bb3f61a17b0394521",
+   "rows": 10936,
+   "sha256": "01aed994c73885c354ecfa92198cffeb719b38fab7d3fb45709d7e1ac862a8f9"
+  },
+  "ibes_statsumu_epsus/1997.parquet": {
+   "query_sha256": "cedc05a9ee530ded2f5be8723c7ca9893ed2121911d9628c3df241bf21a7bd3e",
+   "rows": 10995,
+   "sha256": "9dfdce0339efa14c5afb5aded332b6bd1a21bf336741a1d1f2e741b5a9e360d4"
+  },
+  "ibes_statsumu_epsus/1998.parquet": {
+   "query_sha256": "d5e84ff3e40f7e308f85210df14bc7f270b8d01bff223349bfd6235fabfc38de",
+   "rows": 10912,
+   "sha256": "62cf1d3ebec03a231e3df83814d5bc42db1457f9ae7d101bf29376021b8caa0e"
+  },
+  "ibes_statsumu_epsus/1999.parquet": {
+   "query_sha256": "2d617e9aa108707a0f4da44b199bc9ea7dcd14406ea5f63a926db927f95e674e",
+   "rows": 10718,
+   "sha256": "3752fd63998b13526ac5fc57b71abcc9fdd2571c233df8dd56583ede15ef4a82"
+  },
+  "ibes_statsumu_epsus/2000.parquet": {
+   "query_sha256": "f52233e7696f72941cb342b6bcf1f59631003eba69a26d543b2893c8ea8d0c05",
+   "rows": 10441,
+   "sha256": "1a69685720338f3b7d91ce51cd4e004d2cceec00ef67a368a1323afc966294be"
+  },
+  "ibes_statsumu_epsus/2001.parquet": {
+   "query_sha256": "f269adbb91c5c38376e0c8b32552718c1f9cf71bd3b5bd75a8589a82570e78ef",
+   "rows": 10257,
+   "sha256": "65d5d1020044292ac4982b999f493b8d303eb9014a54dd705cf0f26b7cc2a328"
+  },
+  "ibes_statsumu_epsus/2002.parquet": {
+   "query_sha256": "35896dc57635611f01f3b4d8666292cffbda60a65782a0bbe93740c4601b8897",
+   "rows": 10245,
+   "sha256": "7272c99b9ebda2a3e5ca6c0f256dbbce8c11484ee05a2b461f60ba0b5fe9bdf8"
+  },
+  "ibes_statsumu_epsus/2003.parquet": {
+   "query_sha256": "c4757da1cf06e59585cc64fd49f443634cfa6bce6200bc4b36bbdafb33e8eb8f",
+   "rows": 10174,
+   "sha256": "8e00e1332f81357c4f8c4134909ae1611807dd7e538334dc0cf56346380b8ffb"
+  },
+  "ibes_statsumu_epsus/2004.parquet": {
+   "query_sha256": "2e567846e67d053522c946d771b5dffcd04e6dac6cf313e2ed6a9302b03f0d86",
+   "rows": 10235,
+   "sha256": "52e6cdc060257c396480f85498f3bb1a1dfc54f9efda836152682d4b18f4b235"
+  },
+  "ibes_statsumu_epsus/2005.parquet": {
+   "query_sha256": "854bd090f66288c987899b1d157c2b480a977f55befc18a4afc8f4c5800ea28a",
+   "rows": 10321,
+   "sha256": "27eb4533c5a2debf5e479522bbbbfa70b3d4fb2e1f078c8eedb031b2aa86624d"
+  },
+  "ibes_statsumu_epsus/2006.parquet": {
+   "query_sha256": "ba0e93542855bd69769a24875e68d3509bd503c8161372a4bce455270b2ace35",
+   "rows": 10183,
+   "sha256": "83cc6a179f33dc6160b117a2114972ca973c1b3b8d452c021418fab475275dc8"
+  },
+  "ibes_statsumu_epsus/2007.parquet": {
+   "query_sha256": "6d754be4cced89c4dd510e1dcc5aaae73036f794c0bcaf6c17f176cf3c5cd13e",
+   "rows": 9976,
+   "sha256": "8e9165b490025a10f7abb949479e188e85a6b403e3fff2d1397440b2c3f47de6"
+  },
+  "ibes_statsumu_epsus/2008.parquet": {
+   "query_sha256": "5b771827c577e74ec3a6879681e7c9085d9c7ed8d62542ae74b31f578a00a7f9",
+   "rows": 9763,
+   "sha256": "23c918c8008d54e69427045776561c0e8b8b105e4a57f6fc62308ed9c095a402"
+  },
+  "ibes_statsumu_epsus/2009.parquet": {
+   "query_sha256": "c14674b3dff209ea2befeb0eb592e98a87c82b24e7e5f2f5d7b23f4383720315",
+   "rows": 9530,
+   "sha256": "bfc94c0cf74ccea5ff4db80982ddeb0d1049efc5ea5e332305ff4b3e496e1e3f"
+  },
+  "ibes_statsumu_epsus/2010.parquet": {
+   "query_sha256": "cba6442e814a45922f4729e96c023dd7d6ba337cdb69d1f722fbcc8f9be5c233",
+   "rows": 9494,
+   "sha256": "b2c46bf46bfd6419843a990988cb695862e682699963b365838310a4c06fd4d3"
+  },
+  "ibes_statsumu_epsus/2011.parquet": {
+   "query_sha256": "bcda3754118d63416c8595431957245488d283668aaf9dbed1d92c310d93ab0e",
+   "rows": 9454,
+   "sha256": "dda6211eeb846bb30bf9046cf3859be2acf5d90d927b0b6deb9abe6c25817754"
+  },
+  "ibes_statsumu_epsus/2012.parquet": {
+   "query_sha256": "04275bbdaec4a13882f394e6167fb2f560019baa114a3287a766972b3474d6c4",
+   "rows": 9414,
+   "sha256": "b4aba6980e941a3f7504d3b49804db3d1fb93bc882f9ecb2a0666eaf2af9ddf0"
+  },
+  "ibes_statsumu_epsus/2013.parquet": {
+   "query_sha256": "59f9bbaf7d29eae108ae67e6bffebefcbf4e3edd540eb2596258f8467316b1f7",
+   "rows": 9402,
+   "sha256": "5f640ec12e833b480f3bc0938938e44b0e243b56acb42742644d7c6a94b5bced"
+  },
+  "ibes_statsumu_epsus/2014.parquet": {
+   "query_sha256": "54dc82d26a521e6f2de2bfae67c867d6082b0fd5e2b3667e3370038a3b99657b",
+   "rows": 9410,
+   "sha256": "d121a57b64f7a0219de91982bcb50180fbdd3b897b43f73365ef6d84b0ce70ad"
+  },
+  "ibes_statsumu_epsus/2015.parquet": {
+   "query_sha256": "b54229aea0c3fbaf01f3749a1bf08b7544f55e12a4f445d0ddd9e337d984cdc2",
+   "rows": 9324,
+   "sha256": "7792a94d10e8af75cdc579f34e220e14c86e44fe7ac67d991a89120656797623"
+  },
+  "ibes_statsumu_epsus/2016.parquet": {
+   "query_sha256": "001dcf7cb30db2e4cf31a17c33239eaa1b16614a23873693391056524c05dab5",
+   "rows": 9147,
+   "sha256": "c0ec4b6b92fee5fd84a74606bbc14ccdc2a1c402d58f774a2ce78affc1286ac9"
+  },
+  "ibes_statsumu_epsus/2017.parquet": {
+   "query_sha256": "0c20ce4e80d0997f22e76d56e2859dad922cf890a50e8405f96f975a2e3ef2c6",
+   "rows": 9014,
+   "sha256": "d58eb990a19859616bd41c06c7327b3d34d44748f0e56e5056eb9ba8fb9ba0df"
+  },
+  "ibes_statsumu_epsus/2018.parquet": {
+   "query_sha256": "fb348ac9f5a3fdf82167fee4087177512f39371157c4f8870a422ebf265de922",
+   "rows": 8903,
+   "sha256": "c25c212188c68478c471d02b179469376a3a1e1d19b4dfae417730ee3a4e310e"
+  },
+  "ibes_statsumu_epsus/2019.parquet": {
+   "query_sha256": "2ac5b776f4226e946a61e6edad72b126e50bcfcd3efb205527a36153c54131b5",
+   "rows": 8787,
+   "sha256": "7b04f041e12c7513717f51b7f30e7eb626b177af812abeb9674e3fa8b96e5ae1"
+  },
+  "ibes_statsumu_epsus/2020.parquet": {
+   "query_sha256": "9f71a4cf329300d02dada10621381a9252e32561ad0930f7ecc44248a05f7543",
+   "rows": 8648,
+   "sha256": "e2c9fc0cbbbb41c0054296f80f4d77daa4cbbcb94032880cbe93631d05215e5d"
+  },
+  "ibes_statsumu_epsus/2021.parquet": {
+   "query_sha256": "19b6db7ec6d0a19aacd297c1e6a91ab9d164c5b55e6a9065d22abfc433216006",
+   "rows": 8527,
+   "sha256": "3c2c9922b0724cb4799df901163177d528ca8a777c66bd6cffc8459dea8407ad"
+  },
+  "ibes_statsumu_epsus/2022.parquet": {
+   "query_sha256": "f2dfc7dce1362a31b6ad7d6a87509b4a1a186f2e874ac80a3cec3c1cbfd45d28",
+   "rows": 8371,
+   "sha256": "ee7236e9c3b3140d63c52a0489a05db4e726e5c44546212398dd21194b2bff41"
+  },
+  "ibes_statsumu_epsus/2023.parquet": {
+   "query_sha256": "88ec33c3c2632bbe6d2b8f7b9244bd7decbf3aa51ce63afb3f67c4f0670b2c57",
+   "rows": 8281,
+   "sha256": "8c4012f2974587cb2a8502dcde5e20d0ced46f7ff69a58ee51eb4f92a1413fa6"
+  },
+  "ibes_statsumu_epsus/2024.parquet": {
+   "query_sha256": "1e70bb44e5b7b53269af7dae3aa80f3fc0c7a964b71bcec04bdc23f7325e4a5c",
+   "rows": 8242,
+   "sha256": "a4e7de94925c30eadcf4ee985d7ed07742036e849ed8ae7043009413c59f6e46"
+  },
+  "ibes_statsumu_epsus/2025.parquet": {
+   "query_sha256": "98bf6be6e4f89140eae9a6564265e389ff9b482fd5da05f7d5e03d764817f368",
+   "rows": 8124,
+   "sha256": "ed662bfa6a06cbbc95a879d9a6f31a226486fa66787c9bf44bd1764486fa13fc"
+  },
+  "ibes_statsumu_epsus/2026.parquet": {
+   "query_sha256": "c431241efb700af4e98bc101bb2c009500563931561ac245a1483743b9a33224",
+   "rows": 5288,
+   "sha256": "93ae75037cfb1d67a23cc87fe5308b8f4795a5c4e6cb3d39be17589104d02261"
+  },
+  "ibes_statsumu_epsus/early.parquet": {
+   "query_sha256": "1a9c40e2f70baabd8e0510293fa1b0b3fdf92aa10601f4535571f1efef9f4997",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/late.parquet": {
+   "query_sha256": "02f628c4875cf15d6e06e2faad1dd11bd265f7c0f575e6a8403f2293ad23d26f",
+   "rows": 0,
+   "sha256": null
+  },
+  "ibes_statsumu_epsus/nulldate.parquet": {
+   "query_sha256": "fe0bfd7af0498df078d9e60c2f08e9af7e88e9df02da4d1e63e6fc6317d19ae6",
+   "rows": 0,
+   "sha256": null
+  }
+ },
+ "script_code_sha256": "5c8020e07718d09ef73b3c220aa7973da98718173450880325a9bd75a6e7bdca",
+ "sealed": {
+  "files": 77,
+  "sha256": "a824b7ca618b9ef9361e89c6bea0af004522ca20a712f5e72c7d9bc1c8a62d81"
+ },
+ "units": {
+  "compustat_items": "millions of USD",
+  "market_equity": "thousands of USD",
+  "shrout": "thousands of shares"
+ },
+ "vintage": "2025-12-31"
+}
