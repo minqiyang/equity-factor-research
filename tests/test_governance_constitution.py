@@ -327,6 +327,57 @@ def test_tracked_text_is_english_only() -> None:
     assert not offenders, f"Chinese characters in tracked files: {offenders[:20]}"
 
 
+PRIVATE_PATH_TEXT = re.compile(r"(?:/Users|/home)/[A-Za-z0-9._-]+|private_data/")
+# Guard patterns that forbid private path text.
+PRIVATE_PATH_ALLOWED = {
+    ("tests/test_governance_constitution.py", "private_data/"),
+    ("tests/test_ledger_track_b_v7_design.py", "private_data/"),
+}
+# Frozen attempt reports: reports/dividend_comparison_release_manifest.json pins their SHA-256.
+PRIVATE_PATH_PINNED_FILES = {
+    "reports/dividend_design_attempt.md",
+    "reports/m3_07_attempt.md",
+    "reports/m3_08_attempt.md",
+    "reports/pr221_precision_fix_attempt.md",
+    "reports/pr221_runner_decision_attempt.md",
+    "reports/split_proof_attempt.md",
+}
+
+
+def _private_path_hits(relative_path: str, text: str) -> list[str]:
+    return [
+        f"{relative_path}:{number}:{match.group(0)}"
+        for number, line in enumerate(text.splitlines(), 1)
+        for match in PRIVATE_PATH_TEXT.finditer(line)
+        if (relative_path, match.group(0)) not in PRIVATE_PATH_ALLOWED
+    ]
+
+
+def test_private_path_guard_detects_home_and_private_data_paths() -> None:
+    users, home = "/Users", "/home"  # split so this file holds no literal home path
+    text = f"a {users}/alice/x\nb {home}/bob\nc <private_data_root>/x\nd private_data/x\ne no `{users}/` path\n"
+    assert _private_path_hits("docs/x.md", text) == [
+        f"docs/x.md:1:{users}/alice",
+        f"docs/x.md:2:{home}/bob",
+        "docs/x.md:4:private_data/",
+    ]
+
+
+def test_tracked_text_names_no_private_path() -> None:
+    """R11: the repository is public; tracked text names no home path and no private data path."""
+    offenders = []
+    for relative_path in _tracked_files():
+        path = PROJECT_ROOT / relative_path
+        if relative_path in PRIVATE_PATH_PINNED_FILES or not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        offenders.extend(_private_path_hits(relative_path, text))
+    assert not offenders, f"private or home paths in tracked files: {offenders[:20]}"
+
+
 def test_handoff_trails_its_base_by_at_most_one_merged_pr() -> None:
     """HEAD~1 is the base tip in a pull-request merge ref and after a squash merge."""
     checkpoint = _handoff_checkpoint(_read("docs/current_handoff.md"))

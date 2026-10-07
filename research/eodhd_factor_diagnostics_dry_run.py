@@ -7,6 +7,7 @@ backtest, build a portfolio, or make performance claims.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,8 +32,7 @@ from features.worldquant_alphas import alpha_009, alpha_012
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUNDLE = Path("/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run")
-DEFAULT_OUTPUT = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
+OUTPUT_NAME = "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
 SPLIT_NAMES = ("train", "validation", "test")
 
 
@@ -40,9 +40,9 @@ SPLIT_NAMES = ("train", "validation", "test")
 class EODHDFactorDiagnosticsConfig:
     """Configuration for the private EODHD factor diagnostics dry run."""
 
-    ohlcv_path: Path = DEFAULT_BUNDLE / "normalized" / "eodhd_ohlcv_long.csv"
-    benchmark_path: Path = DEFAULT_BUNDLE / "normalized" / "eodhd_benchmark_spy.csv"
-    output_path: Path = DEFAULT_OUTPUT
+    ohlcv_path: Path
+    benchmark_path: Path
+    output_path: Path
     alpha_window: int = 5
     forward_return_horizon_rows: int = 1
     ic_min_periods: int = 2
@@ -78,7 +78,7 @@ class EODHDFactorDiagnosticsResult:
 
 
 def run_eodhd_factor_diagnostics_dry_run(
-    config: EODHDFactorDiagnosticsConfig = EODHDFactorDiagnosticsConfig(),
+    config: EODHDFactorDiagnosticsConfig,
 ) -> EODHDFactorDiagnosticsResult:
     """Run the no-strategy private EODHD factor diagnostics dry run."""
 
@@ -441,8 +441,17 @@ def _markdown_table(frame: pd.DataFrame) -> str:
     return "\n".join(rows)
 
 
-def main() -> None:
-    result = run_eodhd_factor_diagnostics_dry_run()
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("bundle_path", type=Path, help="Private EODHD bundle directory.")
+    bundle = parser.parse_args(argv).bundle_path
+    result = run_eodhd_factor_diagnostics_dry_run(
+        EODHDFactorDiagnosticsConfig(
+            ohlcv_path=bundle / "normalized" / "eodhd_ohlcv_long.csv",
+            benchmark_path=bundle / "normalized" / "eodhd_benchmark_spy.csv",
+            output_path=bundle / OUTPUT_NAME,
+        )
+    )
     print(f"SUMMARY_PATH={result.output_path}")
     print(f"ASSET_ROWS={result.asset_row_count}")
     print(f"BENCHMARK_ROWS={result.benchmark_row_count}")

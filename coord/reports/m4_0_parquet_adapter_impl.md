@@ -74,7 +74,7 @@ Formal point-in-time universe construction remains a later Milestone 4 gate.
 ## Verification
 
 Commands run from the producer worktree with
-`/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python`
+`<repo>/.venv/bin/python`
 and `PYTHONPATH=src`.
 
 | Command | Result |

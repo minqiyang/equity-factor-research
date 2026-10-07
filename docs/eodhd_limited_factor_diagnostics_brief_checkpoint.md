@@ -18,13 +18,13 @@ readiness.
 Private JSON brief:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json
+<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json
 ```
 
 Private Markdown brief:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md
+<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md
 ```
 
 Both files remain outside the repository and are not git-tracked.

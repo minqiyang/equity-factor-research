@@ -608,7 +608,7 @@ Correction:
 - Retried only the exact linked-worktree branch rename with permission to
   update Git metadata; it succeeded as `codex/ledger-attempt-start-schema`.
 - Re-ran the digest check with the existing project interpreter at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv/bin/python`.
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv/bin/python`.
 - Re-scoped the Unicode/control scan to added lines relative to `HEAD`, while
   scanning every line of new files.
 - Retried only the exact 18-file stage with permission to update the linked
@@ -1457,7 +1457,7 @@ Investigation:
 
 - Checked for a repo-local virtual environment; none was present.
 - Checked Codex bundled Python; it has `pandas` but not `pytest`.
-- Checked `/Users/rhapsoul/.local/bin/pytest`; it runs under Python 3.9 without
+- Checked `<home>/.local/bin/pytest`; it runs under Python 3.9 without
   `pandas`.
 - Created an ignored `.venv` from the Codex bundled Python so the environment
   could reuse bundled `pandas` and `numpy`.
