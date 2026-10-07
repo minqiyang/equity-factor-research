@@ -12,6 +12,17 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Check gap covers the post-seal warm-up (Milestone 5.5)
+
+- `research/m55_criteria.py`: `CHECK_GAP_MONTHS` (2019-07 to 2021-08) replaces `SEAL_MONTHS` (2019-07 to 2020-07)
+  in `check_series`; the docstrings and the `seal_month` refusal text name the check gap. No other logic change.
+- Tests: the constant (26 months); a check series with a 2019-07, 2020-07, 2020-08, or 2021-08 row refuses; the
+  series that skips exactly 2019-07 to 2021-08 passes; the old seal-only gap (rows for 2020-08 to 2021-08) refuses;
+  a missing 2021-09 refuses with `month_missing`. The shared synthetic `CHECK` index now resumes at 2021-09.
+- Observed: the old seal-only series refuses with `seal_month`, not `month_missing`, because the gap-month check
+  runs before the contiguity check; the card expected `month_missing`. The order is unchanged (no logic change).
+- Mutation: with the old range restored, 13 of 41 criteria tests fail.
+
 ## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
 
 - `research/m55_criteria.py` adds the period guards, the screen record and shortlist with a frozen digest, test A

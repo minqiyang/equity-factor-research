@@ -67,6 +67,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Candidate branch `claude/o22-wrds-grant` records owner decision O-22 (the R11 grant for WRDS data), the local
   working copy with its iCloud backup archive, and the seal split for tables with a price or a return. It changes
   no code and reads no real data.
+- Candidate branch `claude/m55-check-gap` changes `research/m55_criteria.py`: a check series now skips
+  `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (the seal holding months plus the post-seal warm-up to the first month end
+  with a full 252-row window) in place of the seal months only. No other logic change. No real data is read.
 
 ## Current Research Gate Summary
 

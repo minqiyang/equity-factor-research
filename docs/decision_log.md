@@ -15,6 +15,33 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Check Gap Covers the Post-Seal Warm-Up (Milestone 5.5, coordinator default)
+
+Context:
+
+- `research/m55_criteria.py` let a check series skip only the seal months 2019-07 to 2020-07. Trial review GPT round
+  2 found that the real check series cannot have those months only as its gap. The pull also seals the 2020-07-31
+  row (its return starts inside the seal), so the first post-seal row is 2020-08-03 and the first post-seal
+  month-end rebalance is 2020-08-31; no book has a 2020-08 return. The low-risk book refuses
+  (`lowrisk_window_empty`) until a member has a full 252-row window. On the main INDNO 1000200 calendar the
+  post-seal row count is 251 on 2021-07-30 and 273 on 2021-08-31 (coordinator count, aggregates only), so the first
+  month end with a full window is 2021-08-31 and the first complete post-seal holding month of every book is 2021-09.
+
+Decision:
+
+- Coordinator default (trial open item OI-04, option 2 with a fixed gap): `CHECK_GAP_MONTHS =
+  pd.period_range("2019-07", "2021-08", freq="M")` replaces `SEAL_MONTHS`. A check series has no month in the gap,
+  and the gap is its only missing span. The refusal code `seal_month` is unchanged; its text names the check gap.
+- Reason: every book can complete a check month only from 2021-09, so a fixed gap keeps the check months the same
+  for all books and leaves no book near CW-PIT only because of the seal.
+- None of this loosens R1, R6, or R9: the gap months are left out, not filled, and they are fixed before any
+  check-period result.
+
+Consequences:
+
+- The trial file states the 26-month gap and the check start after the gap; the check months are 2014-04 to
+  2019-06 and 2021-09 to the last complete month.
+
 ## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
 
 Context:
