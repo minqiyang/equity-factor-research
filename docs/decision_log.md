@@ -15,6 +15,86 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Milestone 5.5 Trial Family v1 Frozen
+
+Context:
+
+- R9 needs the trial family committed before any result. No real return, signal value or coverage, or low-risk
+  calibration output exists on WRDS data (coordinator record). The draft passed two CRITICAL review rounds and the
+  m55-checkgap review seats (OI-04).
+
+Decision:
+
+- `docs/preregistrations/m55_trial_family_v1.json` is frozen on 2026-10-06 by the coordinator. Its rules are those
+  of the reviewed draft. Only `status`, `declared_on`, `code_pins`, and the loader commit in `declaration_timing`
+  changed at commit.
+- `code_pins` pins each module by its accepted commit and file SHA-256, and the untracked WRDS pull script by its
+  SHA-256. If a pinned file changes before a run, an amendment that pins the new bytes comes first.
+- Coordinator defaults for the open items, logged:
+  - OI-01 evidence ceiling: `DIAGNOSTIC_ONLY`, with the O-17 Q3 run label in every report header.
+  - OI-02 benchmark before 1993-02: `vwretd` as is, labelled gross of fund fees.
+  - OI-03 half-spread override: the screen uses the dated screen cost schedule; the confirm run waits for the
+    owner's second WRDS pull of CRSP closing bid and ask, and the override applies from the confirm period.
+  - OI-04 post-seal check: a fixed gap `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (26 months); check months restart at
+    2021-09; the gap months are reported.
+  - OI-05 real start: the code rule on a screen-only panel 1963-07 to 1992-12; fewer than 36 screen months gives a
+    typed undefined record that fails the shortlist, stays hashed, and counts as a trial.
+  - OI-06 Family A baseline: at least 4 of 6 valid signals (the M5 rule).
+  - OI-07 secondary family: all eight candidates plus the Family A baseline, size 9; the baseline runs over the
+    screen, confirm, and check periods, all visible.
+  - OI-08 post-publication split: months whose calendar year is after the publication year (the M5 convention).
+  - OI-09 look before any tilt return: CW-PIT against `vwretd` over the screen months only; CW-PIT against SPY is
+    reported with the confirm run.
+  - OI-10 low-risk calibration: ex-ante inputs only.
+  - OI-11 bid/ask-midpoint days (`dlyprcflg = 'BA'`): valid; their share of member-days is reported.
+  - OI-12 Family A on CRSP: the Gao and Ritter (2010) Nasdaq volume divisors; INDNO 1000200 as the market series in
+    every month.
+  - OI-13 share count for ME: loader rule D5.
+  - OI-14 held member with no close on the window end row: the run refuses and the refusal is recorded; an
+    amendment before any result of that run picks the fix.
+  - OI-15 `real_v2` tilt diagnostic and unpriced report: left out; a later file declares them if Q5 is answered.
+- None of these loosens R1, R2, R4, R6, R8, or R9.
+- Amendment 1 (2026-10-06, before any real return, signal coverage, or calibration output) states the R1-R12 sweep
+  repairs V1 to V6 in the fields that own them; no other rule changed, and none loosens R1, R2, R4, R6, R8, or R9:
+  - V1 (R4): the last-close rerun is a second engine call on `tilt_frames(run="last_close")`; the engine flags
+    `fragile_active_sign` and `fragile_lowrisk_active_sign` are never reported (`last_close_rerun`, `fragility`,
+    `sensitivity_runs`).
+  - V2 (R6): a traded member with a gap after its first-ever return leaves the low-risk ratio in both books and is
+    counted; gap rebalances are reported (`calibration.ratio`, `window_diagnostic`, `limitations[6]`, `low_risk_r6`).
+  - V3 (R1, R6): S2 also reads `cfacshr` at `rdq`; a different factor gives `split_in_basis_window`, a failed read
+    its own reason, `rdq` in the seal included (`candidates.reasons`, S2 `history_rule`, `s2_history_rule`).
+  - V4 (R6): the post-seal engine segment starts at the anchor 2021-07-30; signals are built once per seal segment;
+    the words "first post-seal rebalance is 2020-08-31" are corrected (`check.left_out`, `limitations[9]`, OI-04).
+  - V5 (R6): a share fact with no prior factor row and an unseen interval (`data_start`, `seal`) gives `unmapped` ME
+    and share count; its reach and the 1963-1964 S7 coverage report are stated (`D5_market_equity`, `me_coverage`).
+  - V6 (R6): each holding month that a position held across a `path_break` row touches is a declared blank month
+    (`path_break_held`); one set per run and period, and each comparison declares the months inside its own span
+    for every book and the benchmark (`P1_path_break`, `path_break`).
+  - Records: `status` names the amendment; `declaration_timing` cites loader `312d284` (`known_at_drafting[1]`,
+    `pre_freeze_requirements[0]`) and its intake rerun with the unseen-basis counts (`known_at_drafting[2]`).
+  - Pins: engine `cebb487`, criteria `1a70eb7`, signals and loader `312d284`; the manifest bytes, Family A, and the
+    pull script are unchanged.
+- Round 1 corrections to amendment 1 (2026-10-06, from the AUDIT and AUDIT_2 seats; `status` names them; no pin or
+  code change, and none loosens R1, R2, R4, R6, R8, or R9):
+  - `limitations[1]` (R10): the CRSP counts are those of the intake at the pinned loader `312d284`: unmapped
+    member-days are 18,519 of 423,341 for later failures and 18,776 of 2,967,375 for current members. Nearly all of
+    the rise from `0c60805` (159,791 of 159,957) is the `data_start` case in 1961 to 1963, before the first screen
+    rebalance; the other 166 are the `seal` case in 2020.
+  - S2 `history_rule` (R1): the two factors are equal when `np.isclose(at_rdq, f, rtol=1e-9, atol=0.0)` holds, as
+    the S2 code at `312d284` compares them.
+  - `last_close_rerun` and `calibration.order` (R4, R9): the low-risk book is calibrated once, on
+    `tilt_frames(run="primary")`; both engine calls use its chosen `g`, and the last_close call never recalibrates.
+  - `limitations[0]` (R6): S7 is not affected by the late Compustat start, but it still loses coverage from the
+    unseen share basis and the seal (pointers to `D5_market_equity` and `limitations[9]`).
+  - `D5_market_equity` (R6): the `data_start` case can blank S7 in the return months 1962-03 to 1964-06 (was
+    1963-01 to 1964-06); the 12-month anchor (the month end of R - 14) first reaches a calendar row in return month
+    1962-03. No return run uses a month before 1963-07.
+
+Follow-up:
+
+- Next: coverage counts and real starts (before any return), then the low-risk calibration on risk data only, then
+  the screen, in the order the file states.
+
 ## 2026-10-06 - Unknown Share Bases Are Typed Missing (Milestone 5.5, card m55-loader-r6)
 
 Context:
@@ -197,7 +277,9 @@ Decision:
   `dlyprevdt` that is a row with a price and no return (CIZ `RA` or `GP`). That return is not in the path and is
   not filled. The row without a return stays NaN, so every return window that touches it is blank. `tilt_frames`
   marks the next row in `path_break`; the driver blanks each level window (a price ratio or a maximum) that holds
-  one, and reports each held position across one with its weight. Rejected: no price after the break (a held name
+  one, and reports each held position across one with its weight. The holding months across a `path_break` are
+  declared blank months (`path_break_held`); the binding rule is `data.loader_rules.P1_path_break` in
+  `docs/preregistrations/m55_trial_family_v1.json` (amendment 1, V6). Rejected: no price after the break (a held name
   would lock and could get a false -100 percent event), and a restart at a new base (a false return in the engine).
 - P-2 (D3, D6): a delisting-row return of -100 percent (9 rows) cannot be a positive close, so that row stays NaN
   and the loader supplies the return as the delisting return.
