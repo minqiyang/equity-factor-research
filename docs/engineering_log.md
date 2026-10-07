@@ -12,6 +12,32 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Gap members leave the low-risk ratio (Milestone 5.5, card m55-ratio-gap)
+
+- Base `e50e8d6`. `whole_book_ratio` takes an optional per-member `short` flag (no valid return before the window,
+  from `rebalance_members`); `lowrisk_weights` forwards it; `rebalance_targets` and `calibrate_lowrisk` pass it for
+  the traded set. A NaN after a member's first-ever return is a gap: the member is left out of both books in the
+  ratio and counted (`ratio_gap_members`, `ratio_gap_cw_share`, both added to `RATIO_FIELDS`). Leading NaNs still
+  remove rows. `short=None` means that no member has a return before the window (a direct call on a bare window).
+- The kept columns are selected with `window.loc[complete, kept]`. This keeps the column-major array of the old
+  `window[complete]` path. `np.ix_` gave a row-major array and changed the last bit of the volatilities; T9
+  (`test_no_pin_ratio_is_the_round_one_value_on_the_fixture`) caught it.
+- New tests (synthetic only): (a) `test_gap_member_with_history_is_left_out_and_counted`; (b)
+  `test_window_that_starts_inside_a_gap_is_a_gap_not_leading` on the build and calibration paths; (c)
+  `test_new_listing_stays_leading_and_a_later_gap_leaves_it_out`; (d)
+  `test_no_defined_partial_value_depends_on_a_gap_row` and `test_gap_rows_move_nothing_on_the_production_path`;
+  R1 `test_gaps_and_first_returns_at_or_after_r_change_nothing_at_r` (gaps and a first close at rows >= r).
+- Changed existing tests: the gap-case assertions of the GPT-R1-01 and GPT-R2-01 fixture tests, T3 (regime), and
+  T4 (missing price at r - 2), which encoded the old rule. Six spies got a forwarding `short=None` parameter; the T10
+  stub record also got the two new keys.
+- Mutation checks: eight mutants killed (flag ignored, no exclusion, build path without the flag, calibration path
+  without the flag, flag inverted, kept weights renormalized, gap rows counted as leading, flag set from whether the
+  member ever returns).
+- Internal review workflow (five lenses, two skeptics per finding): MATERIAL 0, ADVISORY 13. Open items for the
+  coordinator: no bound or grid aggregate on `ratio_gap_cw_share` (the grid's `max_pinned_cw_share_defined` is an
+  upper bound), and the R6 exit-class split needs the gap members' IDs.
+- Full suite: 3701 passed, 2 skipped, exit code 0; `ruff check` clean.
+
 ## 2026-10-06 - Declared blank months in the criteria (Milestone 5.5, card m55-critmask)
 
 - `research/m55_criteria.py`: `BLANK_REASONS`, `check_blank`, and `blank_record` are new. `check_series` and
@@ -65,6 +91,56 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   attempt reports whose SHA-256 values `reports/dividend_comparison_release_manifest.json` pins; those six still
   hold home paths.
 - Git history keeps the old paths (owner decision: no history rewrite).
+
+## 2026-10-05 - Declared signal set for the index tilt (Milestone 5.5, card m55-signal-sets)
+
+- Base `6395511`, commit `e50e8d6`. `TiltInputs` gets `signal_ids` and `min_valid` (defaults `SIGNAL_IDS` and
+  `MIN_VALID_SIGNALS`, which is 4). `check_inputs` refuses with `signal_set_invalid` when `signal_ids` is not a
+  non-empty tuple of unique strings, when the signal keys do not equal `signal_ids`, or when `min_valid` is not an
+  integer (bool refused) from 1 to `len(signal_ids)`. `composite_scores` and `rebalance_targets` use the declared
+  set. `half_rule(n) = ceil(n / 2)` gives the O-21 screen rule; the driver passes it, and the engine does not call
+  it. Each signal value must already carry its declared sign. Synthetic fixtures only; no real data was read.
+- Bit identity with defaults: a scratch script ran the `6395511` module next to the new module and compared every
+  output of `build_targets`, `run_index_tilt`, and `calibrate_lowrisk` exactly (1,348 objects, all identical). All
+  167 existing tests in `tests/test_m55_index_tilt.py` pass unchanged.
+- New tests (18 cases): the defaults and `half_rule` for n = 1 to 8; the default set in another order; one signal
+  (hand values and end to end); three signals with `min_valid` 2; the S-style set `("S1", "S4")` end to end; 11
+  refusals; and the default set with a missing Family A frame.
+- Mutation checks: three mutants killed (`min_valid` ignored, 4 failed; composite loop over `SIGNAL_IDS`, 4
+  failed; rebalance loop over `SIGNAL_IDS`, 2 failed).
+- Review round 1: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 3. Each seat
+  compared the default outputs with the base on its own (GPT 1,129 objects; Opus 3,005 objects in 16 cases) and ran
+  a future-perturbation probe on a declared set. The Opus seat killed ten more mutants (M3 to M12). Advisories: A-1,
+  a 127-character docstring line at `research/m55_index_tilt.py:253` (style only, still open); A-2, the cap loop
+  refuses with `tilt_loop_not_converged` for a one-signal set on the 12-name fixture (fails closed; a note for
+  driver fixtures); A-3, the trial file must state `min_valid` for the Family A baseline.
+- Full suite on `e50e8d6`: 3694 passed, 2 skipped, exit code 0; `ruff check` clean on the changed files.
+
+## 2026-10-05 - Low-risk book and its calibration on synthetic fixtures (Milestone 5.5, O-20)
+
+- Card chain on base `8420e28`: `667ff00` adds the `lowrisk` book (`budget_weights`, `lowrisk_weights`,
+  `calibrate_lowrisk`) with TILT bit-identical to the base; `ba71a67` (repair round 1) makes the ratio undefined
+  above a pinned-share limit, adds the 10 percent coverage stop, and records late-grid refusals; `a7eb43b` (repair
+  round 2, expert decision) measures the ratio on the whole book on complete-case rows with a two-sided median
+  bracket and retires `LOWRISK_PINNED_MAX`; `f64e816` (follow-up, tests only) tests the ratio rows on the
+  production path and the bracket and window-diagnostic boundaries. Synthetic fixtures only; no real data was read.
+- Review round 1: AUDIT (GPT) FAIL, MATERIAL 1 (GPT-R1-01: the free sub-book ratio drops pinned holdings);
+  AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 6. Review round 2: AUDIT FAIL, MATERIAL 1 (GPT-R2-01: the 2 percent
+  pinned-share limit does not bound missing risk); AUDIT_2 PASS, MATERIAL 0, ADVISORY 1 (ADV-R2-01, untagged rows of
+  a `g` refused later; fixed with `g_status`).
+- Expert step (two rounds used): a workflow with three critiques and one judge. The coordinator adopted the judge
+  rules R-a to R-j and tests T1 to T12 without change, plus one addendum on the window diagnostic. The rules are in
+  `docs/decision_log.md` (low-risk calibration entry). Mutation checks on `a7eb43b` killed all eight mutants
+  (suffix rows, defined-only median, floor 125, coverage stop in the diagnostic, constant `g_status`, free-only
+  ratio, `names` window in the row mask, no ambiguous stop).
+- Verification of the expert step: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 1 (GPT-R3-A01, T6 did not run the
+  calibration caller); AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 4. The follow-up `f64e816` closes GPT-R3-A01 and
+  Opus ADV-R3-01 to ADV-R3-04 with tests and report text only; the coordinator checked that its diff touches tests
+  only.
+- Carried to the real-data driver card: the 1963-1992 missingness census before the freeze, the daily data span and
+  first full 252-row anchor, the R6 exit-class split, the bid/ask-midpoint day rule, and Opus ADV-05. Open question
+  for the real run: cap-loop convergence at high `g` (`lowrisk_loop_not_converged` fails closed).
+- Full suite on `f64e816`: 3676 passed, 2 skipped, exit code 0.
 
 ## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
 

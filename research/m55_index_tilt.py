@@ -1,4 +1,4 @@
-"""Milestone 5.5: the cap-weight book (CW-PIT) and the index-tilt book (TILT) on point-in-time members.
+"""Milestone 5.5: the cap-weight book (CW-PIT), the index-tilt book (TILT), and the low-risk book on PIT members.
 
 Card m55-engine (owner decision O-17) builds the engine of the index-tilt design
 note, sections 1 and 2. This module reads no data and writes no report; the
@@ -9,19 +9,27 @@ rebalance row ``r``, the cap weights, the scores, the eligibility, and the
 tracking-error covariance use rows up to ``r - 1`` only. Both books trade at
 the close of row ``r`` and earn from row ``r + 1``.
 
-Both books run on the long-only engine of ``backtest.portfolio`` with
+Card m55-signal-sets lets a caller declare the signal set and the valid-signal
+minimum (O-21 screen); the defaults keep the six Family A signals and 4.
+
+Card m55-lowrisk (owner decision O-20) adds the optional book ``lowrisk``, a
+power volatility tilt built from risk only, and ``calibrate_lowrisk``, which
+picks its one knob ``g`` from second moments only (low-risk design note,
+sections 3 and 4).
+
+The books run on the long-only engine of ``backtest.portfolio`` with
 ``weighting_scheme="proportional"`` and ``top_pct=1.0``, so the target weights
 pass through unchanged. Costs (R8), terminal events (R4), point-in-time
 membership (R2), and halts (``halt_gap_return_v1``) use the Milestone 5
-accounting. One event set serves both books.
+accounting. One event set serves every book.
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -56,6 +64,12 @@ COST_SCALES = {"primary": 1.0, "sensitivity_2x": 2.0}
 # One-way bp per traded notional: (first date or None, commission, spread). Design note section 1.
 COST_SCHEDULE = ((None, 5.0, 20.0), ("2001-04-01", 2.0, 8.0), ("2007-01-01", 1.0, 4.0))
 BOOKS = ("cw", "tilt")
+LOWRISK_CAP = 0.02                   # low-risk book: |w - b| at most 2 percentage points per stock
+LOWRISK_TE = 0.05                    # low-risk book: ex-ante tracking error against CW-PIT, per year
+LOWRISK_GRID = tuple(0.5 * k for k in range(1, 13))     # g = 0.5, 1.0, ..., 6.0 (O-20 calibration)
+LOWRISK_TARGET_RATIO = 0.87          # median ex-ante volatility ratio to CW-PIT that the calibration aims at
+LOWRISK_RATIO_MIN_ROWS = 126         # complete-case rows the whole-book ratio needs (expert decision, R-d)
+LOWRISK_UNDEFINED_MAX = 0.10         # above this share of undefined rebalances, the calibration does not choose
 
 
 def refuse(reason: str, detail: str = "") -> runner.RunnerStop:
@@ -67,7 +81,11 @@ class TiltInputs:
     """Aligned panels: rows are the source calendar, columns are permanent IDs.
 
     ``prices`` is the total-return close the engine accounts with. ``signals``
-    holds the six Family A frames (row ``t`` uses data through ``t``).
+    holds one frame per ID in ``signal_ids`` (row ``t`` uses data through
+    ``t``). Each value must already carry its declared sign, so higher is
+    better; the engine applies no sign. A member's composite is 0 when fewer
+    than ``min_valid`` of its signals are valid. The defaults are the six
+    Family A signals and ``MIN_VALID_SIGNALS``.
     ``eligible`` is the boolean M5 eligibility at row ``t``. ``market_equity`` is
     ME at row ``t`` (missing as NaN) and ``me_reason`` its sub-reason where it is
     missing. ``disappearances`` has one row per security with the fields
@@ -89,12 +107,26 @@ class TiltInputs:
     disappearances: pd.DataFrame
     start: pd.Timestamp
     end: pd.Timestamp
+    signal_ids: tuple[str, ...] = SIGNAL_IDS
+    min_valid: int = MIN_VALID_SIGNALS
+
+
+def half_rule(n: int) -> int:
+    """The O-21 screen rule: c = 0 when fewer than half of ``n`` signals are valid, so ``min_valid = ceil(n / 2)``."""
+    return math.ceil(n / 2)
 
 
 def check_inputs(inputs: TiltInputs) -> None:
     prices = inputs.prices
-    if set(inputs.signals) != set(SIGNAL_IDS):
-        raise refuse("signal_set_invalid", "the six Family A signals are required")
+    ids = inputs.signal_ids
+    if (not isinstance(ids, tuple) or not ids or not all(isinstance(s, str) for s in ids)
+            or len(set(ids)) != len(ids)):
+        raise refuse("signal_set_invalid", "signal_ids is a non-empty tuple of unique strings")
+    if set(inputs.signals) != set(ids):
+        raise refuse("signal_set_invalid", "the signal keys must equal signal_ids")
+    k = inputs.min_valid
+    if isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= len(ids):
+        raise refuse("signal_set_invalid", f"min_valid {k!r} is an integer from 1 to {len(ids)}")
     frames = {"eligible": inputs.eligible, "market_equity": inputs.market_equity, "me_reason": inputs.me_reason,
               **{f"signal {k}": v for k, v in inputs.signals.items()}}
     for name, frame in frames.items():
@@ -211,12 +243,14 @@ def signed_ranks(values: pd.Series) -> pd.Series:
 
 
 def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Series,
-                     short_history: pd.Series | None = None) -> tuple[pd.Series, dict[str, int]]:
+                     short_history: pd.Series | None = None, signal_ids: Sequence[str] = SIGNAL_IDS,
+                     min_valid: int = MIN_VALID_SIGNALS) -> tuple[pd.Series, dict[str, int]]:
     """c = mean of (2u - 1) over the valid signals; c = 0 under the two rules, which are counted.
 
     Each ``signal_rows`` series holds row ``r - 1`` values of the book members
-    only, so the rank pool is the eligible members with a valid value. A member
-    without a complete window is ``short_history`` when its first valid return
+    only, so the rank pool is the eligible members with a valid value. The
+    mean runs over ``signal_ids``; ``c_zero_few_signals`` counts members with
+    fewer than ``min_valid`` valid signals. A member without a complete window is ``short_history`` when its first valid return
     is inside the window and ``window_gap`` otherwise. ``c_zero_natural`` counts
     members whose composite is exactly zero without a rule. The counts can overlap;
     ``c_zero`` counts each member once.
@@ -225,12 +259,12 @@ def composite_scores(signal_rows: Mapping[str, pd.Series], full_history: pd.Seri
     names = full_history.index
     total = {name: Fraction(0) for name in names}
     count = pd.Series(0, index=names)
-    for signal_id in SIGNAL_IDS:
+    for signal_id in signal_ids:
         ranks = signed_ranks(signal_rows[signal_id].dropna())
         for name, value in ranks.items():
             total[name] += value
         count[ranks.index] += 1
-    few = count < MIN_VALID_SIGNALS
+    few = count < min_valid
     incomplete = ~full_history
     # One rounding of the exact mean: raw is zero exactly when the true composite is zero.
     raw = pd.Series([float(total[name] / k) if k else 0.0 for name, k in count.items()], index=names)
@@ -249,71 +283,198 @@ def tracking_error(window: np.ndarray, active: np.ndarray) -> float:
     return float(np.std(window @ active, ddof=1) * math.sqrt(ANNUAL_ROWS))
 
 
-def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Series) -> tuple[pd.Series, dict]:
-    """Tilt, cap, renormalize, and scale, in that order.
+def budget_weights(b: np.ndarray, m: np.ndarray, free: np.ndarray, returns: np.ndarray, cap: float,
+                   te_limit: float, book: str) -> tuple[np.ndarray, dict, int]:
+    """Multiply, cap, renormalize, and scale, in that order; the engine step that TILT and ``lowrisk`` share.
 
-    Pinned members (c = 0 for any cause, or no complete covariance window) keep
-    ``w = b`` exactly; only the other members absorb the active budget. Each pass
-    caps ``|w - b|`` at ``STOCK_CAP`` and rescales the free weights so their sum
+    ``w = b m``. Members outside ``free`` must have ``m = 1``; they keep
+    ``w = b`` exactly, and only the free members absorb the active budget. Each
+    pass caps ``|w - b|`` at ``cap`` and rescales the free weights so their sum
     equals the free cap weight, so active weights sum to zero and ``w >= 0``.
     The loop ends when the cap holds within ``CAP_TOLERANCE`` and refuses after
     ``RENORMALIZE_LOOPS`` passes. The last step scales the active weights
-    ``w - b`` until their ex-ante TE is at most ``TE_TARGET``; a pinned member
-    has an active weight of exactly zero, so it stays at ``b`` exactly.
+    ``w - b`` until their ex-ante TE on ``returns`` (the free columns of the
+    window) is at most ``te_limit``. The third value is the number of free
+    members at the cap (within ``CAP_TOLERANCE``) at the start of the last pass.
+    """
+    w = b * m
+    for loops in range(1, RENORMALIZE_LOOPS + 1):
+        binding = np.abs(w - b) >= cap - CAP_TOLERANCE
+        w = b + np.clip(w - b, -cap, cap)
+        if free.any():
+            w[free] = w[free] * (math.fsum(b[free]) / math.fsum(w[free]))
+        if np.max(np.abs(w - b)) <= cap + CAP_TOLERANCE:
+            break
+    else:
+        raise refuse(f"{book}_loop_not_converged", f"{RENORMALIZE_LOOPS} passes")
+    te_before = tracking_error(returns, (w - b)[free])
+    scale = 1.0 if te_before <= te_limit else te_limit / te_before
+    final = b + scale * (w - b)
+    te_after = tracking_error(returns, (final - b)[free])
+    if te_after > te_limit * (1.0 + TE_TOLERANCE):
+        raise refuse("tracking_error_above_target", f"{te_after}")
+    info = {"loops": loops, "ex_ante_te_before_scale": te_before, "te_scale": scale, "ex_ante_te": te_after,
+            "max_abs_active": float(np.max(np.abs(final - b)))}
+    check_target(b, final, info, cap, te_limit, book)
+    return final, info, int(binding[free].sum())
+
+
+def tilt_weights(b: pd.Series, c: pd.Series, window: pd.DataFrame, pinned: pd.Series) -> tuple[pd.Series, dict]:
+    """TILT: the shared engine step with ``m = 1 + 0.5 c``, cap ``STOCK_CAP``, and TE limit ``TE_TARGET``.
+
+    Pinned members (c = 0 for any cause, or no complete covariance window) keep
+    ``w = b`` exactly; a member with c = 0 has ``m = 1`` and is not free.
     """
     bv, cv = b.to_numpy(dtype=float), c.to_numpy(dtype=float)
     if np.any(cv[pinned.to_numpy(dtype=bool)] != 0.0):
         raise refuse("pinned_member_scored")
     free = cv != 0.0          # c = 0 for any cause, natural zeros included, keeps w = b
-    w = bv * (1.0 + TILT_STRENGTH * cv)
-    for loops in range(1, RENORMALIZE_LOOPS + 1):
-        w = bv + np.clip(w - bv, -STOCK_CAP, STOCK_CAP)
-        if free.any():
-            w[free] = w[free] * (math.fsum(bv[free]) / math.fsum(w[free]))
-        if np.max(np.abs(w - bv)) <= STOCK_CAP + CAP_TOLERANCE:
-            break
-    else:
-        raise refuse("tilt_loop_not_converged", f"{RENORMALIZE_LOOPS} passes")
+    w, info, _ = budget_weights(bv, 1.0 + TILT_STRENGTH * cv, free, window.to_numpy(dtype=float)[:, free],
+                                STOCK_CAP, TE_TARGET, "tilt")
+    return pd.Series(w, index=b.index), info
+
+
+def member_vols(window: pd.DataFrame, full: pd.Series) -> pd.Series:
+    """``s_i``: the ddof-1 deviation of the 252 daily returns ending at ``r - 1``, for members with a full window.
+
+    A zero or non-finite ``s_i`` refuses (``lowrisk_vol_invalid``); it is never repaired.
+    """
+    names = full.index[full.to_numpy(dtype=bool)]
+    vol = pd.Series(window[names].to_numpy(dtype=float).std(axis=0, ddof=1), index=names)
+    bad = ~(np.isfinite(vol) & (vol > 0.0))
+    if bad.any():
+        raise refuse("lowrisk_vol_invalid", ", ".join(map(str, vol.index[bad.to_numpy()])))
+    return vol
+
+
+def ex_ante_vol(returns: np.ndarray, weights: np.ndarray) -> float:
+    """Annualized ex-ante volatility: the ddof-1 deviation of the window's daily return of ``weights``."""
+    return float(np.std(returns @ weights, ddof=1) * math.sqrt(ANNUAL_ROWS))
+
+
+def whole_book_ratio(window: pd.DataFrame, b: np.ndarray, w: np.ndarray,
+                     short: np.ndarray | None = None) -> dict[str, Any]:
+    """The ex-ante volatility ratio of the traded book on its complete-case rows (expert decision, R-b to R-e).
+
+    ``window`` is the traded set's return window that ends at ``r - 1``.
+    ``short`` is True for a member with no valid return before the window
+    (``rebalance_members``); None means no member has one. A NaN before a
+    member's first-ever return is ``leading`` (no history yet); a NaN after it
+    is a gap, which is bad data (R6, card m55-ratio-gap). A member with a gap
+    is left out of both books in the ratio and counted
+    (``ratio_gap_members``, ``ratio_gap_cw_share``); it has no full window, so
+    it is pinned at ``w = b`` and its weight does not change. The other members
+    are measured at their book weights on the rows where each of them has a
+    return, so only leading NaNs remove rows. Each book's weights in the ratio
+    then sum to ``1 - ratio_gap_cw_share``; the two volatilities share this
+    scale, and the ratio does not depend on it. No value is filled, clipped, or
+    repaired. ``ratio_rows_gap`` counts the window rows that hold a gap. Such a
+    row stays unless a leading NaN of a kept member removes it, so it can also
+    be in ``ratio_rows_leading``. With at least ``LOWRISK_RATIO_MIN_ROWS``
+    rows, the status is ``defined_full`` (``COV_ROWS`` rows) or
+    ``defined_partial``; with fewer, the volatilities and the ratio are NaN
+    (``ratio_window_short``). The status and the counts depend on ``window``
+    and ``short`` only, never on ``g``.
+    """
+    values = window.to_numpy(dtype=float)
+    missing = np.isnan(values)
+    seen = np.logical_or.accumulate(~missing, axis=0)
+    if short is not None:
+        seen |= ~np.asarray(short, dtype=bool)        # a return before the window: every NaN in it is a gap
+    gap_cells = missing & seen
+    gap = gap_cells.any(axis=0)
+    kept = ~gap
+    complete = ~missing[:, kept].any(axis=1)
+    limiting = kept & missing.any(axis=0)
+    rows = int(complete.sum())
+    record = {"ratio_rows": rows, "ratio_rows_leading": int((~complete).sum()),
+              "ratio_rows_gap": int(gap_cells.any(axis=1).sum()), "ratio_limiting_members": int(limiting.sum()),
+              "ratio_limiting_cw_share": math.fsum(b[limiting].tolist()), "ratio_gap_members": int(gap.sum()),
+              "ratio_gap_cw_share": math.fsum(b[gap].tolist())}
+    if rows < LOWRISK_RATIO_MIN_ROWS:
+        return {"ex_ante_vol": math.nan, "cw_ex_ante_vol": math.nan, "vol_ratio": math.nan,
+                "ratio_status": "ratio_window_short", **record}
+    rows_used = window.loc[complete, kept].to_numpy(dtype=float)
+    vol_w, vol_b = ex_ante_vol(rows_used, w[kept]), ex_ante_vol(rows_used, b[kept])
+    ratio = vol_w / vol_b if vol_b > 0.0 else math.nan
+    if not (math.isfinite(ratio) and ratio > 0.0):
+        raise refuse("lowrisk_vol_ratio_invalid", f"ex-ante volatilities {vol_w} and {vol_b}")
+    return {"ex_ante_vol": vol_w, "cw_ex_ante_vol": vol_b, "vol_ratio": ratio,
+            "ratio_status": "defined_full" if rows == COV_ROWS else "defined_partial", **record}
+
+
+def lowrisk_weights(b: pd.Series, vol: pd.Series, window: pd.DataFrame, g: float,
+                    short: pd.Series | None = None) -> tuple[pd.Series, dict]:
+    """``lowrisk``: the shared engine step with ``m = (s / s_med)^(-g)``, cap ``LOWRISK_CAP``, TE ``LOWRISK_TE``.
+
+    ``vol`` holds ``s_i`` of every target member with a full window, the B2
+    excluded names included; ``s_med`` is its median. ``b`` and ``window`` cover
+    the traded set. A traded member without a full window is pinned at
+    ``w = b``. The free multipliers are renormalized so that ``b m`` sums to
+    the free cap weight before the cap loop; a multiplier that is not finite
+    and positive refuses (``lowrisk_multiplier_invalid``).
+
+    The TE uses the free columns, where the pinned active weights are 0. The
+    ex-ante volatilities and their ratio measure the traded book on its
+    complete-case rows, without the members that hold a gap in the window
+    (``whole_book_ratio``; ``short`` comes from ``rebalance_members``). The
+    weights do not depend on the ratio status.
+    """
+    bv = b.to_numpy(dtype=float)
+    free = b.index.isin(vol.index)
+    if not free.any():
+        raise refuse("lowrisk_window_empty", "no traded member has a full window")
+    vol_median = float(np.median(vol.to_numpy(dtype=float)))
+    m = np.ones(len(bv))
+    invalid = refuse("lowrisk_multiplier_invalid", f"g = {g}: a multiplier is not finite and positive")
+    with np.errstate(over="ignore", under="ignore"):
+        m[free] = (vol[b.index[free]].to_numpy(dtype=float) / vol_median) ** -g
+        product = bv[free] * m[free]
+    if not (np.isfinite(product) & (product > 0.0)).all():
+        raise invalid
+    try:
+        m[free] = m[free] * (math.fsum(bv[free]) / math.fsum(product.tolist()))
+    except OverflowError:
+        raise invalid from None
+    if not (np.isfinite(m) & (m > 0.0)).all():
+        raise invalid
     returns = window.to_numpy(dtype=float)[:, free]
-    te_before = tracking_error(returns, (w - bv)[free])
-    scale = 1.0 if te_before <= TE_TARGET else TE_TARGET / te_before
-    final = bv + scale * (w - bv)
-    te_after = tracking_error(returns, (final - bv)[free])
-    if te_after > TE_TARGET * (1.0 + TE_TOLERANCE):
-        raise refuse("tracking_error_above_target", f"{te_after}")
-    info = {"loops": loops, "ex_ante_te_before_scale": te_before, "te_scale": scale, "ex_ante_te": te_after,
-            "max_abs_active": float(np.max(np.abs(final - bv)))}
-    check_target(bv, final, info)
-    return pd.Series(final, index=b.index), info
+    w, info, capped = budget_weights(bv, m, free, returns, LOWRISK_CAP, LOWRISK_TE, "lowrisk")
+    ratio = whole_book_ratio(window, bv, w, None if short is None else short[b.index].to_numpy(dtype=bool))
+    info = {"g": float(g), "vol_median": vol_median, **ratio, **info, "capped": capped,
+            "pinned": int((~free).sum()), "pinned_cw_share": math.fsum(bv[~free].tolist())}
+    return pd.Series(w, index=b.index), info
 
 
-def check_target(b: np.ndarray, w: np.ndarray, info: Mapping[str, float]) -> None:
+def check_target(b: np.ndarray, w: np.ndarray, info: Mapping[str, float], cap: float = STOCK_CAP,
+                 te_limit: float = TE_TARGET, book: str = "tilt") -> None:
     """Refuse unless both books are finite, sum to 1, are non-negative, meet the cap, and meet the TE limit."""
-    for name, weights in (("cw", b), ("tilt", w)):
+    for name, weights in (("cw", b), (book, w)):
         if not np.isfinite(weights).all() or (weights < 0.0).any():
             raise refuse("target_invalid", f"{name} weights not finite and non-negative")
         if abs(math.fsum(weights.tolist()) - 1.0) > BUDGET_TOLERANCE:
             raise refuse("target_invalid", f"{name} weights do not sum to 1")
     if not all(math.isfinite(float(v)) for v in info.values()):
         raise refuse("target_invalid", "non-finite tracking-error record")
-    if np.max(np.abs(w - b)) > STOCK_CAP + CAP_TOLERANCE or info["ex_ante_te"] > TE_TARGET * (1.0 + TE_TOLERANCE):
+    if np.max(np.abs(w - b)) > cap + CAP_TOLERANCE or info["ex_ante_te"] > te_limit * (1.0 + TE_TOLERANCE):
         raise refuse("target_invalid", "cap or tracking-error limit")
 
 
-def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFrame, disappearances: pd.DataFrame,
-                      first_return: pd.Series) -> tuple[pd.Series, pd.Series, dict[str, Any]]:
-    """CW-PIT and TILT targets for the rebalance at ``date``, from row ``r - 1`` and earlier only.
+def rebalance_members(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFrame, disappearances: pd.DataFrame,
+                      first_return: pd.Series) -> dict[str, Any]:
+    """The target members, the traded set, CW-PIT, and the return window at ``date``, from row ``r - 1`` only.
 
     ``first_return`` is each member's first row with a valid return (the row
     count when it has none). It is compared only with rows up to ``r - 1``.
 
     Declared execution rule (B2): a target member that settles at ``r`` on an
     event first known at ``r`` has no close at ``r``, so it cannot trade. Its
-    held position settles under R4 in both books. The traded set is the target
-    members without these names. Scores, ranks, and the covariance stay at
-    ``r - 1``, and the ranks keep the excluded names. CW-PIT renormalizes the
-    cap weights pro rata over the traded set; TILT runs the same tilt, cap, and
-    TE step on the traded set.
+    held position settles under R4 in every book. The traded set is the target
+    members without these names. Scores, ranks, volatilities, and the
+    covariance stay at ``r - 1``, and the ranks and the volatility median keep
+    the excluded names. CW-PIT renormalizes the cap weights pro rata over the
+    traded set; TILT and ``lowrisk`` run their tilt, cap, and TE step on the
+    traded set.
     """
     calendar = inputs.prices.index
     t = calendar.get_loc(date) - 1
@@ -349,40 +510,221 @@ def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFr
     window = returns.iloc[max(first, 0):t + 1][names]
     full = window.notna().sum() == COV_ROWS
     short = first_return[names] > first      # no valid return before the window: a short history, not a gap
-    # The ranks use every target member, the excluded names included; only the traded set gets weights.
-    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in SIGNAL_IDS}, full, short)
-    w, info = tilt_weights(b, c[traded], window[traded], ~full[traded])
     record = {"date": date, "members": len(names), "settled_excluded": int((inputs.eligible.iloc[t] & ~pool).sum()),
               "unknown_event_excluded": int(unknown.sum()),
               "unknown_event_cw_share": math.fsum(me_members[unknown].to_list()) / me_total,
               "me_missing": int(len(reasons)),
-              **{f"me_missing_{r}": int((reasons == r).sum()) for r in ME_REASONS}, **zero_counts, **info}
-    return b, w, record
+              **{f"me_missing_{r}": int((reasons == r).sum()) for r in ME_REASONS}}
+    return {"t": t, "names": names, "traded": traded, "b": b, "window": window, "full": full, "short": short,
+            "record": record}
 
 
-def build_targets(inputs: TiltInputs) -> dict[str, Any]:
+def rebalance_targets(inputs: TiltInputs, date: pd.Timestamp, returns: pd.DataFrame, disappearances: pd.DataFrame,
+                      first_return: pd.Series, g: float | None = None) -> tuple[dict[str, pd.Series], dict[str, Any]]:
+    """CW-PIT, TILT, and (when ``g`` is given) ``lowrisk`` targets at ``date``, from row ``r - 1`` and earlier only."""
+    setup = rebalance_members(inputs, date, returns, disappearances, first_return)
+    t, names, traded, b = setup["t"], setup["names"], setup["traded"], setup["b"]
+    window, full = setup["window"], setup["full"]
+    # The ranks use every target member, the excluded names included; only the traded set gets weights.
+    c, zero_counts = composite_scores({s: inputs.signals[s].iloc[t][names] for s in inputs.signal_ids}, full,
+                                      setup["short"], inputs.signal_ids, inputs.min_valid)
+    w, info = tilt_weights(b, c[traded], window[traded], ~full[traded])
+    record = {**setup["record"], **zero_counts, **info}
+    weights = {"cw": b, "tilt": w}
+    if g is not None:
+        weights["lowrisk"], low = lowrisk_weights(b, member_vols(window, full), window[traded], g,
+                                                  setup["short"][traded])
+        record.update({f"lowrisk_{key}": value for key, value in low.items()})
+    return weights, record
+
+
+def prepare(inputs: TiltInputs) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
+    """Check the inputs; return the checked events, the daily returns, and each member's first valid return row."""
     check_inputs(inputs)
     disappearances = check_disappearances(inputs.disappearances, inputs.prices.index, inputs.prices.columns)
     returns = simple_returns(inputs.prices)
     valid = returns.notna().to_numpy()
     first_return = pd.Series(np.where(valid.any(axis=0), valid.argmax(axis=0), len(returns)), index=returns.columns)
+    return disappearances, returns, first_return
+
+
+def check_g(g: float) -> None:
+    if not math.isfinite(g) or g < 0.0:
+        raise refuse("lowrisk_g_invalid", f"{g}: g is a finite number at or above 0")
+
+
+def build_targets(inputs: TiltInputs, g: float | None = None) -> dict[str, Any]:
+    """Every rebalance target; ``g`` adds the ``lowrisk`` book (no default: the trial file fixes ``g``)."""
+    if g is not None:
+        check_g(g)
+    disappearances, returns, first_return = prepare(inputs)
     dates = rebalance_dates(inputs.prices.index, inputs.start, inputs.end)
     if len(dates) < 2:
         # The first rebalance earns from the next month. With one rebalance (at ``end``), the only monthly row
         # would fall after ``end``, so the window refuses (GPT-R2-01).
         raise refuse("window_too_short", "no complete holding month after the first rebalance")
-    targets = {book: pd.DataFrame(np.nan, index=dates, columns=inputs.prices.columns) for book in BOOKS}
+    books = BOOKS if g is None else BOOKS + ("lowrisk",)
+    targets = {book: pd.DataFrame(np.nan, index=dates, columns=inputs.prices.columns) for book in books}
     records = []
     for date in dates:
-        b, w, record = rebalance_targets(inputs, date, returns, disappearances, first_return)
-        targets["cw"].loc[date, b.index] = b.to_numpy()
-        targets["tilt"].loc[date, w.index] = w.to_numpy()
+        weights, record = rebalance_targets(inputs, date, returns, disappearances, first_return, g)
+        for book, w in weights.items():
+            targets[book].loc[date, w.index] = w.to_numpy()
         records.append(record)
     table = pd.DataFrame(records).set_index("date")
     counts = {key: int(table[key].sum()) for key in table.columns
               if key.startswith("me_missing") or key.startswith("c_zero")
-              or key in ("settled_excluded", "unknown_event_excluded")}
+              or key in ("settled_excluded", "unknown_event_excluded", "lowrisk_pinned")}
     return {"targets": targets, "rebalances": table, "counts": counts, "disappearances": disappearances}
+
+
+RATIO_DEFINED = ("defined_full", "defined_partial")
+RATIO_FIELDS = ("vol_ratio", "ratio_status", "ratio_rows", "ratio_rows_leading", "ratio_rows_gap",
+                "ratio_limiting_members", "ratio_limiting_cw_share", "ratio_gap_members", "ratio_gap_cw_share",
+                "ex_ante_vol", "cw_ex_ante_vol", "ex_ante_te", "te_scale", "capped", "pinned", "pinned_cw_share")
+
+
+def lowrisk_bracket(ratios: Sequence[np.ndarray | None], rebalances: int, target: float,
+                    stops: bool = True) -> dict[str, Any]:
+    """Classify each grid value with a two-sided median bracket, then decide (expert decision, R-g and R-h).
+
+    ``ratios[k]`` holds the defined ratios of grid value ``k`` over
+    ``rebalances`` rebalances, or None when that value refused. Its ``u``
+    undefined rebalances enter the median once at +inf (``median_hi``) and once
+    at -inf (``median_lo``). A value *meets* when ``median_hi <= target``,
+    *fails* when ``median_lo > target``, and is *ambiguous* otherwise: the
+    missing ratios could move it to either side. Decisions, in this order:
+
+    - ``refused``: a refused value below the first value that meets, or any
+      refused value when none meets; ``index`` names the first one, and the
+      caller stops with its refusal.
+    - ``ratio_coverage_low``: ``u / rebalances > LOWRISK_UNDEFINED_MAX``.
+    - ``ratio_coverage_ambiguous``: an ambiguous value below the first value
+      that meets, or any ambiguous value when none meets. The owner decides.
+    - ``chosen``: the first value that meets; every smaller value fails.
+    - ``no_g_reaches_target``.
+
+    With ``stops=False`` (the window diagnostic, R-i), the first two steps are
+    skipped: a refused value is passed over, and the coverage stop does not
+    apply; ``undefined_share`` is still returned.
+    """
+    classes, hi, lo, undefined = [], [], [], []
+    for values in ratios:
+        if values is None:
+            classes.append(None)
+            hi.append(math.nan)
+            lo.append(math.nan)
+            continue
+        values = np.asarray(values, dtype=float)
+        u = rebalances - len(values)
+        undefined.append(u)
+        hi.append(float(np.median(np.concatenate([values, np.full(u, np.inf)]))))
+        lo.append(float(np.median(np.concatenate([values, np.full(u, -np.inf)]))))
+        classes.append("meets" if hi[-1] <= target else "fails" if lo[-1] > target else "ambiguous")
+    first = classes.index("meets") if "meets" in classes else len(classes)
+    record = {"classes": classes, "median_hi": hi, "median_lo": lo,
+              "undefined_share": max(undefined) / rebalances if undefined else math.nan}
+    if stops and None in classes[:first]:
+        return {**record, "decision": "refused", "index": classes.index(None)}
+    if stops and record["undefined_share"] > LOWRISK_UNDEFINED_MAX:
+        return {**record, "decision": "ratio_coverage_low", "index": None}
+    if "ambiguous" in classes[:first]:
+        return {**record, "decision": "ratio_coverage_ambiguous", "index": None}
+    if first < len(classes):
+        return {**record, "decision": "chosen", "index": first}
+    return {**record, "decision": "no_g_reaches_target", "index": None}
+
+
+def calibrate_lowrisk(inputs: TiltInputs, grid: tuple[float, ...], target_ratio: float, start: pd.Timestamp,
+                      end: pd.Timestamp) -> dict[str, Any]:
+    """Pick ``g`` from second moments only (low-risk design note, section 4; expert decision of 2026-10-05).
+
+    For each ``g`` in ``grid``, the whole-book ex-ante ratio at each rebalance
+    of a run anchored at ``start`` and ending at ``end`` (the engine schedule;
+    ``whole_book_ratio``), then the decision of ``lowrisk_bracket``. A refused
+    ``g`` keeps its rows from earlier rebalances in the rebalance table with
+    ``g_status = "refused"``; it gets no bracket class. The window diagnostic
+    (R-i; coordinator ruling of 2026-10-05) repeats the bracket classes and the
+    choice with every ``defined_partial`` rebalance treated as undefined, but
+    without the refusal and coverage stops. ``window_sensitive`` flags a
+    different choice (another ``g``, or a choice against an ambiguous or empty
+    result) for the owner and does not stop. The diagnostic undefined share and
+    ``window_diag_coverage_high`` (that share above ``LOWRISK_UNDEFINED_MAX``)
+    are recorded apart and never set ``window_sensitive``.
+
+    Every grid value is recorded (R9). The function computes no mean return,
+    Sharpe ratio, return gap, or realized portfolio return, and it runs no book.
+    """
+    grid = tuple(float(g) for g in grid)
+    if not grid or list(grid) != sorted(set(grid)):
+        raise refuse("calibration_grid_invalid", "the grid is not empty and strictly ascends")
+    for g in grid:
+        check_g(g)
+    if not math.isfinite(target_ratio) or target_ratio <= 0.0:
+        raise refuse("calibration_target_invalid", f"{target_ratio}")
+    window_inputs = replace(inputs, start=pd.Timestamp(start), end=pd.Timestamp(end))
+    disappearances, returns, first_return = prepare(window_inputs)
+    dates = rebalance_dates(inputs.prices.index, window_inputs.start, window_inputs.end)
+    if not len(dates):
+        raise refuse("calibration_window_empty")
+    rows, refused = [], {}
+    for date in dates:
+        setup = rebalance_members(window_inputs, date, returns, disappearances, first_return)
+        vol = member_vols(setup["window"], setup["full"])
+        for g in grid:
+            if g in refused:
+                continue
+            try:
+                _, low = lowrisk_weights(setup["b"], vol, setup["window"][setup["traded"]], g,
+                                         setup["short"][setup["traded"]])
+            except runner.RunnerStop as exc:
+                refused[g] = (date, exc)
+                continue
+            rows.append({"date": date, "g": g, **{key: low[key] for key in RATIO_FIELDS}})
+    table = pd.DataFrame(rows, columns=["date", "g", *RATIO_FIELDS])
+    table.insert(2, "g_status", np.where(table["g"].isin(list(refused)), "refused", "ok"))
+
+    def defined_ratios(statuses: tuple[str, ...]) -> list[np.ndarray | None]:
+        return [None if g in refused else table.loc[(table["g"] == g) & table["ratio_status"].isin(statuses),
+                                                    "vol_ratio"].to_numpy(dtype=float) for g in grid]
+
+    bracket = lowrisk_bracket(defined_ratios(RATIO_DEFINED), len(dates), target_ratio)
+    if bracket["decision"] == "refused":
+        raise refused[grid[bracket["index"]]][1]
+    full_only = lowrisk_bracket(defined_ratios(("defined_full",)), len(dates), target_ratio, stops=False)
+    summary = []
+    for k, g in enumerate(grid):
+        if g in refused:
+            date, exc = refused[g]
+            summary.append({"g": g, "status": "refused", "refusal": str(exc), "refusal_date": date,
+                            "rebalances": len(dates)})
+            continue
+        part = table[table["g"] == g]
+        defined = part["ratio_status"].isin(RATIO_DEFINED)
+        summary.append({
+            "g": g, "status": "ok", "refusal": None, "refusal_date": pd.NaT, "rebalances": len(dates),
+            "defined": int(defined.sum()), "undefined": int((~defined).sum()),
+            "undefined_share": float((~defined).mean()),
+            "defined_partial_share": float((part["ratio_status"] == "defined_partial").mean()),
+            "median_vol_ratio": float(np.median(part.loc[defined, "vol_ratio"])) if defined.any() else math.nan,
+            "median_hi": bracket["median_hi"][k], "median_lo": bracket["median_lo"][k],
+            "bracket": bracket["classes"][k], "bracket_full_windows": full_only["classes"][k],
+            "max_pinned_cw_share_defined": float(part.loc[defined, "pinned_cw_share"].max()),
+            "share_cap_binds": float((part["capped"] > 0).mean()),
+            "share_te_scaled": float((part["te_scale"] < 1.0).mean()),
+            "share_pinned": float((part["pinned"] > 0).mean()),
+            "mean_pinned_cw_share": float(part["pinned_cw_share"].mean())})
+
+    def chosen(result: dict[str, Any]) -> float | None:
+        return grid[result["index"]] if result["decision"] == "chosen" else None
+
+    return {"grid": pd.DataFrame(summary), "rebalances": table, "target_ratio": float(target_ratio),
+            "start": window_inputs.start, "end": window_inputs.end, "undefined_share": bracket["undefined_share"],
+            "chosen_g": chosen(bracket), "decision": bracket["decision"],
+            "window_decision": full_only["decision"], "window_chosen_g": chosen(full_only),
+            "window_sensitive": chosen(bracket) != chosen(full_only),      # chosen() is None unless "chosen"
+            "window_diag_undefined_share": full_only["undefined_share"],
+            "window_diag_coverage_high": full_only["undefined_share"] > LOWRISK_UNDEFINED_MAX}
 
 
 # Engine runs ----------------------------------------------------------------------------
@@ -485,19 +827,26 @@ def sign(value: float) -> int:
     return 0 if value == 0.0 else (1 if value > 0.0 else -1)
 
 
-def run_index_tilt(inputs: TiltInputs, schedule: tuple = COST_SCHEDULE) -> dict[str, Any]:
-    """Both books at both cost scales and both event runs, from one set of targets."""
-    built = build_targets(inputs)
+def run_index_tilt(inputs: TiltInputs, schedule: tuple = COST_SCHEDULE, g: float | None = None) -> dict[str, Any]:
+    """Every book at both cost scales and both event runs, from one set of targets; ``g`` adds ``lowrisk``."""
+    built = build_targets(inputs, g)
     calendar = inputs.prices.index
     runs = {}
     for case, scale in COST_SCALES.items():
         costs = dated_cost_frame(calendar, schedule, scale)
         for event_run in EVENT_RUNS:
             events = terminal_events(built["disappearances"], calendar, event_run)
-            books = {book: book_summary(run_book(inputs, built["targets"][book], events, costs), built["targets"][book])
-                     for book in BOOKS}
+            books = {book: book_summary(run_book(inputs, target, events, costs), target)
+                     for book, target in built["targets"].items()}
             runs[(case, event_run)] = {**books, "active": active_summary(books["cw"], books["tilt"])}
-    fragility = {case: sign(runs[(case, "primary")]["active"]["mean_monthly"])
-                 != sign(runs[(case, "last_close")]["active"]["mean_monthly"]) for case in COST_SCALES}
-    return {"timing": TIMING_CONTRACT, "targets": built["targets"], "rebalances": built["rebalances"],
-            "counts": built["counts"], "runs": runs, "fragile_active_sign": fragility}
+            if g is not None:
+                runs[(case, event_run)]["lowrisk_active"] = active_summary(books["cw"], books["lowrisk"])
+    actives = ("active",) if g is None else ("active", "lowrisk_active")
+    fragility = {active: {case: sign(runs[(case, "primary")][active]["mean_monthly"])
+                          != sign(runs[(case, "last_close")][active]["mean_monthly"]) for case in COST_SCALES}
+                 for active in actives}
+    out = {"timing": TIMING_CONTRACT, "targets": built["targets"], "rebalances": built["rebalances"],
+           "counts": built["counts"], "runs": runs, "fragile_active_sign": fragility["active"]}
+    if g is not None:
+        out["fragile_lowrisk_active_sign"] = fragility["lowrisk_active"]
+    return out

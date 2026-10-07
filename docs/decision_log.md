@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-10-06 - Gap Members Leave the Low-Risk Ratio (Milestone 5.5, card m55-ratio-gap)
+
+Context:
+
+- Sweep finding `review_gpt_r3:residual-complete-case`: `whole_book_ratio` measured the whole traded book on its
+  complete-case rows. A missing return of a traded member after its first return removed that row for the whole
+  book, so the ratio measured the member on the rows around its gap (R6 violation). The split into leading and gap
+  rows used the first return inside the window, so a window that starts inside a gap was called leading.
+- The loader intake counts 6 such rows inside S&P 500 member spells in 1963-1992; each touches about 12 monthly
+  windows.
+
+Decision (coordinator technical default, logged on the card):
+
+- **Blank the member, not the rebalance.** A traded member with a missing return in the ratio window after its
+  first-ever return is left out of the ratio at that rebalance, from both books, and counted (`ratio_gap_members`,
+  `ratio_gap_cw_share`). It has no full window, so it is pinned at w = b and the weights do not change. The other
+  members are measured at their book weights on their complete-case rows; only leading NaNs remove rows. Reason:
+  blanking the whole rebalance could make about 70 of 354 calibration rebalances undefined and trip the 10 percent
+  coverage stop for 6 data rows.
+- **The first-ever return decides leading versus gap.** `rebalance_members` gives the flag (`short`).
+
+Consequences:
+
+- No value is filled, clipped, or repaired. Weights, TILT, the cap loop, and TE scaling do not change. Without a gap,
+  every ratio field is bit-identical to `e50e8d6`.
+- Known cost: at a gap rebalance, the ratio is that of the book without the gap member, so it moves toward the free
+  sub-book ratio by an amount that grows with the member's cap weight and risk. On the synthetic GPT-R1-01 fixture
+  (98 percent member) and GPT-R2-01 fixture (2 percent high-volatility member), a gap now gives `chosen` g = 0.5,
+  where the old rule gave no choice. `ratio_gap_cw_share` records the share left out at each rebalance.
+- Field meanings: `ratio_rows_leading` counts the rows removed (all of them leading); `ratio_rows_gap` counts the
+  window rows that hold a gap, which stay unless a leading NaN also removes them; `ratio_limiting_*` count the
+  measured members that remove rows. At a gap rebalance, `ex_ante_vol` and `cw_ex_ante_vol` cover the kept weights,
+  which sum to 1 minus `ratio_gap_cw_share` in each book; the ratio does not depend on this scale.
+- Follow-up for the coordinator: whether the real-data run needs a bound or a diagnostic on `ratio_gap_cw_share`.
+  The R6 split by later exit class needs the gap members' IDs, which the record does not hold.
+
 ## 2026-10-06 - Declared Blank Months in the Criteria (Milestone 5.5, path_break, coordinator default)
 
 Context:
@@ -74,6 +110,72 @@ Consequences:
 
 - The trial file states the 26-month gap and the check start after the gap; the check months are 2014-04 to
   2019-06 and 2021-09 to the last complete month.
+
+## 2026-10-05 - Declared Signal Set for the Index Tilt (Milestone 5.5, card m55-signal-sets, coordinator default)
+
+Context:
+
+- The O-21 screen runs each candidate S1 to S8 alone as a 2 percent TE tilt, then one composite of the shortlisted
+  candidates, and the six Family A price signals once as a counted baseline. `research/m55_index_tilt.py` accepted
+  only the six Family A signals and a fixed minimum of 4 valid signals.
+
+Decision (coordinator technical default):
+
+- The caller declares the signal set (`signal_ids`) and the valid-signal minimum (`min_valid`) in `TiltInputs`.
+  The defaults are the six Family A signals and 4, so every default output is bit-identical to `6395511`.
+- The screen rule "c = 0 when fewer than half of the n signals are valid" is `min_valid = half_rule(n)`, with
+  `half_rule(n) = ceil(n / 2)`. The driver passes it; the engine does not choose it.
+- The engine applies no sign. Each signal value must already carry its declared sign (higher is better).
+
+Consequences:
+
+- The rank pool, the exact-fraction ranks, the full-history rule, the c = 0 counts, the weights, the cap loop, TE
+  scaling, costs, B2, and the low-risk rules do not change. The engine still reads signals at row r - 1.
+- The engine does not fix `min_valid` for the Family A baseline (4 of 6 by default; `half_rule(6)` is 3). The
+  screen trial file must state it before results (R9; Opus advisory A-3).
+
+## 2026-10-05 - Low-Risk Book Calibration Rules (Milestone 5.5, coordinator defaults)
+
+Context:
+
+- The O-20 low-risk book (`research/m55_index_tilt.py`, `lowrisk_weights` and `calibrate_lowrisk`) picks the
+  volatility power `g` from ex-ante second moments only. Review round 2 left one MATERIAL finding open (GPT-R2-01:
+  the ratio did not bound missing risk). After two rounds, the expert step settled the rules. The ruling is in
+  `coord/reports/m55_lowrisk/expert_decision.md` (untracked).
+
+Decision (coordinator defaults, each with one line of reason):
+
+- **Complete-case whole-book ratio.** The ratio uses the whole traded book on the rows of the 252-row window that
+  ends at r - 1 where every traded member has a return. Reason: a suffix or free-only rule drops clean rows and
+  biases the estimate toward calm regimes; complete-case rows blank only the rows that touch a missing return (R6)
+  and keep crash rows.
+- **126-row floor.** At least `LOWRISK_RATIO_MIN_ROWS = 126` complete-case rows, else the ratio is undefined with
+  status `ratio_window_short`. Reason: 126 rows give a per-rebalance standard error of about 0.02 on the ratio,
+  which the median over about 350 rebalances absorbs; a shorter window is declared, not filled.
+- **Two-sided median bracket and decision order.** Undefined rebalances enter the median once at +inf and once at
+  -inf; each `g` meets, fails, or is ambiguous. Order: a refusal below the first `g` that meets stops; then
+  `ratio_coverage_low`; then `ratio_coverage_ambiguous` (an ambiguous `g` below the first `g` that meets; the owner
+  decides); then `chosen` (the first `g` that meets); else `no_g_reaches_target`. Reason: the choice holds for any
+  value of the missing ratios, so missing data cannot select `g`.
+- **10 percent undefined stop.** Above `LOWRISK_UNDEFINED_MAX = 0.10` undefined rebalances, nothing is chosen
+  (`ratio_coverage_low`). Reason: a calibration that rests on few defined months is not a calibration.
+- **`LOWRISK_PINNED_MAX` retired.** The pinned-share limit, its `pinned_share_high` status, and its test are deleted.
+  Reason: the whole-book ratio counts pinned weight directly, so the limit has no job.
+- **Window diagnostic (addendum).** The diagnostic treats every `defined_partial` rebalance as undefined and repeats
+  the bracket classes and the choice, with no coverage stop inside it. `window_sensitive` is set only when its
+  choice differs from the main decision; `window_diag_coverage_high` (diagnostic undefined share above 0.10) is
+  recorded apart. Reason: with the coverage stop inside, partial windows alone set the flag almost always.
+
+Consequences:
+
+- None of these defaults loosens R1, R2, R4, R6, R8, or R9. Weights, the cap loop, TE scaling, and every TILT
+  output are bit-identical to the round 1 code; only the ratio and the decision changed.
+- The real-data driver card must copy these defaults into the trial file before any real calibration output (R9).
+  The driver card also carries the 1963-1992 missingness census, the daily data span and first full 252-row
+  anchor, the R6 exit-class split of undefined and partial counts, the bid/ask-midpoint day rule, and Opus ADV-05
+  (cut and hash the calibration panel).
+- Residual limitation: a `defined_partial` ratio cannot measure risk on rows before a member existed. Such windows
+  are declared, counted (`ratio_rows_leading`, `ratio_rows_gap`), and checked by `window_sensitive`.
 
 ## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
 

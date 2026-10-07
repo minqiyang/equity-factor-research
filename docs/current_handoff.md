@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-06 for the check gap and the declared blank months of the criteria module after PR #293.
+Updated: 2026-10-06 for the low-risk book, the ratio gap repair, and the declared signal set after PR #296.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `8d971bfb611f834402e00a2c691041f8fbc97070` (main after PR #293).
+  `c74e4eefe9f339bec9a21ca03833a7e434aaed54` (main after PR #296).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -46,7 +46,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   and the seal ruling (PR #289: O-17, O-18), and the cap-weight and index-tilt engine on synthetic fixtures
   (PR #290: O-19), and the delisting-at-rebalance rule (PR #291: O-20, O-21), and the signal-screen criteria
   module on synthetic series (PR #292), and the R11 private-path removal (PR #297), and owner decision O-22, the
-  R11 grant for WRDS data (PR #293).
+  R11 grant for WRDS data (PR #293), and the check gap and declared blank months of the criteria module (PR #296).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -56,7 +56,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `e6d04cdf` (PR #279), `c7d2d8da` (PR #280), `03e06b53` (PR #281), `e36a4a28` (PR #282), `4f7d7096` (PR #283),
   `f6cfc610` (PR #284), `988b4443` (PR #285), `2f93032d` (PR #286), `d48b8114` (PR #287), `a72f1562` (PR #288),
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
-  `398e4fd5` (PR #297), and `8d971bfb` (PR #293).
+  `398e4fd5` (PR #297), `8d971bfb` (PR #293), and `c74e4eef` (PR #296).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -66,11 +66,12 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-check-gap` changes `research/m55_criteria.py`: a check series now skips
-  `CHECK_GAP_MONTHS` 2019-07 to 2021-08 (the seal holding months plus the post-seal warm-up to the first month end
-  with a full 252-row window) in place of the seal months only. The criteria also take `blank_months`: a declared
-  month with a typed reason (now only `path_break_held`) has no row in any series, the statistics use the months
-  with values, and each record lists the blank months. No real data is read.
+- Candidate branch `claude/m55-lowrisk` adds the O-20 low-risk book and its calibration to the index-tilt engine,
+  on synthetic fixtures only. The calibration picks `g` from a complete-case whole-book ex-ante volatility ratio
+  with a two-sided median bracket; TILT and CW-PIT outputs are unchanged. The calibration rules are coordinator
+  defaults (`docs/decision_log.md`, 2026-10-05). Both review seats passed the expert-step verification. A traded
+  member with a gap in the ratio window is left out of the ratio and counted (R6). The tilt also runs on a declared
+  signal set (`signal_ids`, `min_valid`); the defaults give the same outputs. No real data is read.
 
 ## Current Research Gate Summary
 
@@ -95,8 +96,9 @@ unaccessed and reserved (O-12).
 
 - The owner ran the reviewed pull script under O-22 (vintage 2025-12-31) into the local working copy, with the
   seal months in `sealed/`, and wrote the iCloud backup archive. Next: review the loader with two seats, freeze the
-  trial file with two review seats, count coverage, calibrate the low-risk budget on 1963-1992 risk data only
-  (O-20), and run the screen under O-21. No tilt or cap-weight return exists before the trial file is frozen.
+  trial file with two review seats, count coverage, run the 1963-1992 missingness census from missing-return flags
+  only, calibrate the low-risk budget on 1963-1992 risk data only (O-20), and run the screen under O-21. No tilt or
+  cap-weight return exists before the trial file is frozen.
 
 ## Source Routing
 
