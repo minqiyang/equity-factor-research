@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import time
+from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -232,6 +233,40 @@ def stage(out: Path, name: str) -> dict:
     return json.loads((out / f"{name}.json").read_text())["result"]
 
 
+def copy_until(chain: dict, folder: Path, name: str) -> Path:
+    """A copy of the small-world stage folder without stage ``name`` and the stages after it."""
+    out = folder / "out"
+    shutil.copytree(chain["w0"]["folder"], out)
+    for later in d.STAGES[d.STAGES.index(name):]:
+        for suffix in (".json", ".sha256"):
+            (out / f"{later}{suffix}").unlink()
+    (out / "shortlist_digest.txt").unlink(missing_ok=True)
+    return out
+
+
+def rechain(out: Path, edit) -> None:
+    """Apply ``edit(stage, payload)`` to each stage file in order, then renew its digest and the chain after it."""
+    digests: dict[str, str] = {}
+    for name in d.STAGES:
+        path = out / f"{name}.json"
+        if not path.exists():
+            break
+        payload = json.loads(path.read_text())
+        edit(name, payload)
+        payload["previous"] = dict(digests)
+        text = json.dumps(payload, sort_keys=True, indent=1) + "\n"
+        path.write_text(text)
+        digests[name] = d.sha256_bytes(text.encode())
+        (out / f"{name}.sha256").write_text(digests[name] + "\n")
+
+
+def set_calibration(decision: str):
+    def edit(name: str, payload: dict) -> None:
+        if name == "calibration":
+            payload["result"]["decision"] = decision
+    return edit
+
+
 @pytest.fixture(scope="module")
 def frames() -> dict[str, pd.DataFrame]:
     return world_frames(small_members(CAL), CAL)
@@ -272,6 +307,20 @@ def test_check_trial_accepts_the_frozen_file_and_refuses_a_changed_rule() -> Non
         with pytest.raises(RunnerStop) as caught:
             d.check_trial(changed)
         assert caught.value.detail == name
+
+
+def test_the_trial_file_must_have_the_frozen_bytes(tmp_path: Path) -> None:
+    """One changed byte refuses, also where ``check_trial`` alone accepts the change (the HAC lag rule)."""
+    assert d.load_trial()[1] == d.TRIAL_SHA256
+    raw = (d.REPO / d.TRIAL_FILE).read_bytes()
+    changed = raw.replace(b"floor(4 (n / 100)^(2/9))", b"floor(5 (n / 100)^(2/9))", 1)
+    assert len(changed) == len(raw) and changed != raw
+    d.check_trial(json.loads(changed))
+    (tmp_path / d.TRIAL_FILE).parent.mkdir(parents=True)
+    (tmp_path / d.TRIAL_FILE).write_bytes(changed)
+    with pytest.raises(RunnerStop) as caught:
+        d.load_trial(tmp_path)
+    assert caught.value.reason == "trial_digest_mismatch"
 
 
 def test_stated_reads_each_written_form() -> None:
@@ -360,6 +409,80 @@ def test_a_stage_output_is_never_overwritten_and_needs_a_folder_outside_git(chai
     assert caught.value.reason == "data_manifest_mismatch"
 
 
+@pytest.mark.parametrize("decision, goes_on", [
+    ("chosen", True), ("ratio_coverage_low", True), ("refused", False), ("ratio_coverage_ambiguous", False),
+    ("no_g_reaches_target", False)])
+def test_each_calibration_decision_goes_on_or_stops(decision, goes_on) -> None:
+    if goes_on:
+        d.check_calibration({"decision": decision})
+        return
+    with pytest.raises(RunnerStop) as caught:
+        d.check_calibration({"decision": decision})
+    assert (caught.value.reason, caught.value.detail) == ("calibration_stop", f"calibration decision {decision}")
+
+
+@pytest.mark.parametrize("name", ["look", "screen", "freeze"])
+def test_look_screen_and_freeze_refuse_after_a_calibration_stop(chain, frames, tmp_path, name) -> None:
+    data = make_data(frames)
+    for decision in ("refused", "ratio_coverage_ambiguous", "no_g_reaches_target"):
+        out = copy_until(chain, tmp_path / decision, name)
+        rechain(out, set_calibration(decision))
+        with pytest.raises(RunnerStop) as caught:
+            d.run_stage(name, data, out, TRACKED)
+        assert (caught.value.reason, caught.value.detail) == ("calibration_stop", f"calibration decision {decision}")
+        assert not (out / f"{name}.json").exists()
+        assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == "calibration_stop"
+
+
+def test_the_sequence_goes_on_after_chosen_and_ratio_coverage_low(chain, frames, tmp_path) -> None:
+    """The small world's own decision is ratio_coverage_low (its chain ran on); a saved chosen also goes on."""
+    assert stage(chain["w0"]["folder"], "calibration")["decision"] == "ratio_coverage_low"
+    out = copy_until(chain, tmp_path, "freeze")
+    rechain(out, set_calibration("chosen"))
+    d.run_stage("freeze", make_data(frames), out, TRACKED)
+    assert stage(out, "freeze")["record"] == stage(chain["w0"]["folder"], "freeze")["record"]
+
+
+def test_a_refusal_inside_the_calibration_writes_no_file(chain, frames, tmp_path, monkeypatch) -> None:
+    """``calibrate_lowrisk`` raises the refusal of a g below the first g that meets: no file, so the look stops."""
+    out = copy_until(chain, tmp_path, "calibration")
+
+    def refused(*args, **kwargs):
+        raise tilt.refuse("g_refused", "a refusal below the first g that meets")
+    monkeypatch.setattr(tilt, "calibrate_lowrisk", refused)
+    data = make_data(frames)
+    with pytest.raises(RunnerStop):
+        d.run_stage("calibration", data, out, TRACKED)
+    assert not (out / "calibration.json").exists()
+    with pytest.raises(RunnerStop) as caught:
+        d.run_stage("look", data, out, TRACKED)
+    assert caught.value.reason == "stage_missing"
+
+
+def test_the_freeze_parses_no_data_table(chain, tmp_path, monkeypatch) -> None:
+    """The freeze checks the file bytes against the manifest and writes the same file as the chain."""
+    out = copy_until(chain, tmp_path, "freeze")
+    root = tmp_path / "wrds"
+    root.mkdir()
+    (root / w.MANIFEST).write_text(json.dumps({"vintage": VINTAGE, "files": {}}))
+
+    def parsed(*args, **kwargs):
+        raise AssertionError("the freeze parsed a data table")
+    for module, name in ((w, "load"), (w, "frame"), (w.pq, "read_table")):
+        monkeypatch.setattr(module, name, parsed)
+    d.run_stage("freeze", d.stage_data("freeze", root), out, TRACKED)
+    assert (out / "freeze.json").read_bytes() == (chain["w0"]["folder"] / "freeze.json").read_bytes()
+    # The bytes of each listed file are hashed, never read as a table; one changed byte refuses.
+    (root / "part.parquet").write_bytes(b"not a table")
+    record = {"rows": 1, "sha256": d.sha256_bytes(b"not a table")}
+    (root / w.MANIFEST).write_text(json.dumps({"vintage": VINTAGE, "files": {"part.parquet": record}}))
+    assert d.data_files(root).manifest["files"] == {"part.parquet": record}
+    (root / "part.parquet").write_bytes(b"not a tablE")
+    with pytest.raises(RunnerStop) as caught:
+        d.data_files(root)
+    assert caught.value.reason == "hash_mismatch"
+
+
 def test_frozen_shortlist_and_decision(chain) -> None:
     out = chain["w0"]["folder"]
     frozen = stage(out, "freeze")
@@ -379,8 +502,21 @@ def test_no_stage_uses_a_value_after_1992(chain) -> None:
     assert chain["w2"]["digests"] == chain["w0"]["digests"]
 
 
-def test_coverage_and_calibration_compute_no_return(chain) -> None:
-    """The coverage and calibration results hold no return statistic (they run before any book return)."""
+def test_coverage_and_calibration_compute_no_return(chain, frames, tmp_path, monkeypatch) -> None:
+    """Coverage and calibration run with the book runner, the criteria statistics, and vwretd made to raise, and
+    write the same files; their results hold no return statistic (they run before any book return)."""
+    def computed(*args, **kwargs):
+        raise AssertionError("a book return or a return statistic was computed")
+    for module, names in ((tilt, ("run_book", "run_index_tilt", "book_summary", "monthly_returns", "active_summary")),
+                          (crit, ("screen_record", "check_paired", "check_series", "annual_mean", "annual_vol",
+                                  "hac_t", "mean_test", "drawdown_episodes")),
+                          (d, ("monthly_vwretd", "engine_pair", "mean_gap"))):
+        for name in names:
+            monkeypatch.setattr(module, name, computed)
+    data = make_data(frames)
+    for name in ("coverage", "calibration"):
+        d.run_stage(name, data, tmp_path / "out", TRACKED)
+        assert (tmp_path / "out" / f"{name}.json").read_bytes() == (chain["w0"]["folder"] / f"{name}.json").read_bytes()
     out = chain["w0"]["folder"]
     for name in ("coverage", "calibration"):
         text = json.dumps(stage(out, name))
@@ -441,8 +577,9 @@ def test_look_blank_set_and_declarations(chain) -> None:
         assert position["previous_valid_row"] == str(row(CAL, "1975-06-15").date())
         assert position["exit_class"] == "current" and position["weight_at_last_rebalance"]["cw"] > 0
         blanked = part["blanked_level_windows"]
-        assert blanked["windows"] == blanked["by_exit_class"]["current"] == blanked["each"][0]["windows"] > 0
-        assert blanked["each"][0]["first_rebalance"] == str(month_end(CAL, "1975-07").date())   # r - 1 after W
+        assert blanked["windows"] == blanked["by_exit_class"]["current"] == len(blanked["each"]) > 0
+        assert blanked["each"][0]["rebalance"] == str(month_end(CAL, "1975-07").date())   # r - 1 after W
+        assert all(e["break_rows"] == [str(row(CAL, "1975-07-01").date())] for e in blanked["each"])
         assert part["primary"]["cw_vs_vwretd"]["blank_months"] == {"1975-06": d.BLANK, "1975-07": d.BLANK}
         assert part["coverage"]["b2"]["rebalances"] == 1
     # Each criteria output is logged with its declaration, which equals the run set cut to its span.
@@ -474,6 +611,15 @@ def test_screen_reports_r4_two_calls_counts_and_tilt_stats(chain) -> None:
     assert rerun["by_cause"]["failure"] == {**{k: primary["by_cause"]["failure"][k] for k in (
         "held", "weight_at_last_rebalance_sum")}, "settled_at_last_close": 2}
     assert set(s7["fragility"]["primary"]) == {"tilt_vs_cw", "tilt_vs_vwretd", "cw_vs_vwretd"}
+    # Each fragility value is the mean in the record of its own run (the two runs differ in every case).
+    for case in d.CASES:
+        for key, (part, field) in {"tilt_vs_cw": ("screen_record", "annual_active_mean"),
+                                   "tilt_vs_vwretd": ("tilt_vs_vwretd", "annual_mean_gap"),
+                                   "cw_vs_vwretd": ("cw_vs_vwretd", "annual_mean_gap")}.items():
+            entry = s7["fragility"][case][key]
+            assert [entry[run] for run in d.RUNS] == [s7["records"][run][case][part][field] for run in d.RUNS]
+            assert entry["primary"] != entry["last_close"]
+            assert entry["fragile"] == (tilt.sign(entry["primary"]) != tilt.sign(entry["last_close"]))
     assert s7["counts"]["primary"]["b2"]["rebalances"] == 1
     c_zero = s7["c_zero_by_exit_class"]["primary"]
     assert c_zero["window_gap"]["cells"]["current"] > 0                             # the break pins 900005
@@ -491,33 +637,103 @@ def test_short_candidate_gets_a_typed_undefined_record(chain) -> None:
     assert (records["S1"]["first_month"], records["S1"]["months"]) == ("1991-01", 24)
     assert records["S2"]["months"] == 0 and records["S2"]["first_month"] is None
     assert not any(r["shortlisted"] for c, r in records.items() if c != "S7")
+    # Every run and cost case has a typed record with its month count; the fragility is typed, not computed.
+    s1 = stage(out, "screen")["candidates"]["S1"]
+    for run in d.RUNS:
+        for case in d.CASES:
+            record = s1["records"][run][case]["screen_record"]
+            assert (record["status"], record["undefined_reason"], record["months"]) == ("undefined",
+                                                                                         "screen_too_short", 24)
+    assert s1["fragility"] == {case: {"status": "not_evaluated", "reason": "screen_too_short",
+                                      "short_runs": ["primary", "last_close"]} for case in d.CASES}
+    assert "counts" not in s1 and "path_break_positions" not in s1
+
+
+def test_a_short_last_close_run_is_typed_and_a_short_candidate_runs_no_engine(chain, frames, tmp_path,
+                                                                                monkeypatch) -> None:
+    """The look's last_close set is made to blank S7 down to 30 months; S1 is short in both runs. Only S7 calls the
+    engine (once per loader run) and only its primary run calls ``screen_record``; S1 checks each declaration."""
+    out = copy_until(chain, tmp_path, "screen")
+    blank = [str(m) for m in pd.period_range("1963-07", "1990-06", freq="M")]
+
+    def edit(name: str, payload: dict) -> None:
+        if name == "look":
+            payload["result"]["runs"]["last_close"]["blank_months"] = blank
+    rechain(out, edit)
+    seen = Counter()
+
+    def spy(module, name, key=None):
+        real = getattr(module, name)
+
+        def counted(*args, **kwargs):
+            seen[name if key is None else key(*args)] += 1
+            return real(*args, **kwargs)
+        monkeypatch.setattr(module, name, counted)
+    spy(tilt, "run_index_tilt")
+    spy(crit, "screen_record")
+    spy(d, "check_declaration", lambda declared, run_set, first, *rest: f"check_declaration {first}")
+    d.run_stage("screen", make_data(frames), out, TRACKED)
+    assert seen["run_index_tilt"] == 2 and seen["screen_record"] == 2
+    assert seen["check_declaration 1991-01"] == 2 and seen["check_declaration 1964-01"] == 4
+    result = stage(out, "screen")
+    s7 = result["candidates"]["S7"]
+    assert s7["months_with_values"] == {"primary": 346, "last_close": 30}
+    for case in d.CASES:
+        assert s7["records"]["primary"][case]["screen_record"]["status"] == "ok"
+        record = s7["records"]["last_close"][case]["screen_record"]
+        assert (record["status"], record["undefined_reason"], record["months"]) == ("undefined", "screen_too_short", 30)
+        assert s7["fragility"][case] == {"status": "not_evaluated", "reason": "screen_too_short",
+                                         "short_runs": ["last_close"]}
+    assert result["records_for_freeze"] == stage(chain["w0"]["folder"], "screen")["records_for_freeze"]
+
+
+@pytest.mark.parametrize("name", ["look", "screen"])
+def test_a_late_refusal_leaves_no_output_of_its_comparison_in_the_log(chain, frames, tmp_path, monkeypatch,
+                                                                      name) -> None:
+    """``r4_counts`` refuses after the first criteria call of the look and of S7: none of their outputs is logged."""
+    out = copy_until(chain, tmp_path, name)
+    before = len((out / "run_log.jsonl").read_text().splitlines())
+
+    def refused(*args, **kwargs):
+        raise tilt.refuse("r4_held_count_mismatch", "a refusal after the first criteria call")
+    monkeypatch.setattr(d, "r4_counts", refused)
+    with pytest.raises(RunnerStop):
+        d.run_stage(name, make_data(frames), out, TRACKED)
+    added = [json.loads(x) for x in (out / "run_log.jsonl").read_text().splitlines()[before:]]
+    assert added[-1]["refused"] == "r4_held_count_mismatch"
+    assert not any(e.get("call") in ("check_paired", "screen_record") for e in added)
 
 
 # R1: rows after t change nothing at t -----------------------------------------------------------
 
-def test_rows_after_t_change_no_signal_weight_decision_or_record_at_t(frames) -> None:
+@pytest.mark.parametrize("month, first, last, signal, positions", [
+    ("1976-06", "1974-10", "1977-06", "S7", 1),    # after the 1975 path break, before the 1979 merger
+    ("1981-06", "1979-10", "1982-06", "S2", 0)])   # S2 has values (two members with quarters from 1977)
+def test_rows_after_t_change_no_signal_weight_decision_or_record_at_t(frames, month, first, last, signal,
+                                                                       positions) -> None:
     """Every value after the decision row t of rebalance r changes, the close of r included: nothing at r changes."""
-    r = month_end(CAL, "1976-06")                # after the 1975 path break, before the 1979 merger
+    r = month_end(CAL, month)
     t = CAL[CAL.get_loc(r) - 1]
-    end = month_end(CAL, "1977-06")
+    end = month_end(CAL, last)
     found = []
     for data in (make_data(frames), make_data(perturb_after(frames, t))):
         panels = d.signal_panels(data)
-        start = month_end(CAL, "1974-10")
+        start = month_end(CAL, first)
         per_run = {run: w.tilt_frames(data, start, end, run) for run in d.RUNS}
         dates = tilt.rebalance_dates(per_run["primary"]["prices"].index, start, end)
-        signals = {run: {"S7": d.signal_frame(panels, "S7", per_run[run], dates)} for run in d.RUNS}
+        signals = {run: {signal: d.signal_frame(panels, signal, per_run[run], dates)} for run in d.RUNS}
         pair = d.engine_pair(per_run, signals, start, end)
         months = pd.period_range(start.to_period("M") + 1, end.to_period("M"), freq="M")
         held = d.path_break_positions(per_run["primary"], {"cw": pair["primary"]["cases"]["primary"]["cw"]["weights"]},
                                       d.exit_map(data), months, end)
         found.append({"panels": panels, "signals": signals, "pair": pair, "held": held})
     a, b = found
+    assert a["panels"]["values"][signal].loc[r].notna().sum() >= 2
     for s in sig.SIGNAL_IDS:
         pd.testing.assert_frame_equal(a["panels"]["values"][s].loc[:r], b["panels"]["values"][s].loc[:r])
         pd.testing.assert_frame_equal(a["panels"]["reasons"][s].loc[:r], b["panels"]["reasons"][s].loc[:r])
     for run in d.RUNS:
-        pd.testing.assert_frame_equal(a["signals"][run]["S7"].loc[:t], b["signals"][run]["S7"].loc[:t])
+        pd.testing.assert_frame_equal(a["signals"][run][signal].loc[:t], b["signals"][run][signal].loc[:t])
         for book in ("cw", "tilt"):
             pd.testing.assert_frame_equal(a["pair"][run]["targets"][book].loc[:r],
                                           b["pair"][run]["targets"][book].loc[:r])
@@ -527,7 +743,7 @@ def test_rows_after_t_change_no_signal_weight_decision_or_record_at_t(frames) ->
                 pd.testing.assert_frame_equal(x["weights"].loc[:r], y["weights"].loc[:r])
         pd.testing.assert_frame_equal(a["pair"][run]["rebalances"].loc[:r], b["pair"][run]["rebalances"].loc[:r])
     held = [p for p in a["held"] if p["break_row"] <= t]
-    assert len(held) == 1 and held == [p for p in b["held"] if p["break_row"] <= t]
+    assert len(held) == positions and held == [p for p in b["held"] if p["break_row"] <= t]
     # The perturbation reaches the rows after t: the return on r and the later targets differ.
     assert not a["pair"]["primary"]["targets"]["tilt"].loc[r:].iloc[1:].equals(
         b["pair"]["primary"]["targets"]["tilt"].loc[r:].iloc[1:])
@@ -672,6 +888,32 @@ def test_declaration_is_the_run_set_cut_to_the_span() -> None:
     d.check_declaration(declared, run_set, pd.Period("1975-07", "M"))
     with pytest.raises(RunnerStop):
         d.check_declaration({}, run_set, pd.Period("1975-07", "M"))
+
+
+def test_a_window_with_two_breaks_counts_once() -> None:
+    """Two path breaks of one member inside one 252-row window: each member-rebalance window counts once."""
+    rows = pd.bdate_range("1980-01-01", periods=300, name="date")
+    prices = pd.DataFrame({"1": 20.0}, index=rows)
+    breaks = pd.DataFrame({"1": False}, index=rows)
+    for gap in (100, 150):                      # no close on rows 100 and 150: breaks on rows 101 and 151
+        prices.iloc[gap] = np.nan
+        breaks.iloc[gap + 1] = True
+    frames = {"prices": prices, "path_break": breaks, "eligible": pd.DataFrame(True, index=rows, columns=["1"])}
+    found = d.blanked_windows(frames, rows[[160, 200, 250]], {"1": "current"}, rows[-1])
+    assert found["windows"] == len(found["each"]) == found["by_exit_class"]["current"] == 3
+    assert all(e["break_rows"] == [rows[101], rows[151]] for e in found["each"])
+    assert d.shares(found["by_exit_class"], {"current": 3})["current"] == 1.0
+
+
+def test_a_monthly_series_after_1992_refuses_before_the_criteria() -> None:
+    months = pd.Series(np.linspace(-0.01, 0.02, 37), index=pd.period_range("1990-01", "1993-01", freq="M"))
+    for book, benchmark in ((months, months.iloc[:-1]), (months.iloc[:-1], months)):
+        with pytest.raises(RunnerStop) as caught:
+            d.mean_gap(book, benchmark, {})
+        assert caught.value.reason == "row_after_screen_end"
+    with pytest.raises(RunnerStop):
+        d.check_months(months.iloc[:-1], months)
+    d.check_months(months.iloc[:-1])
 
 
 def test_monthly_vwretd_leaves_a_month_with_a_missing_day_missing(frames) -> None:

@@ -16,12 +16,15 @@ returns, and the secondary family belong to a later card.
 
 Gates (R9): each stage writes ``<stage>.json`` and ``<stage>.sha256`` to a folder outside every Git checkout and
 never overwrites them. A stage refuses unless every earlier stage file exists, matches its digest, was made from the
-same trial file, code, and data, and names the digests of the stages before it. Each criteria output is appended
-with its declaration to ``run_log.jsonl``, and so is each refusal.
+same trial file, code, and data, and names the digests of the stages before it. The look, the screen, and the freeze
+also refuse unless the saved calibration decision lets the sequence go on. The freeze parses no data table. Each
+criteria output is appended with its declaration to ``run_log.jsonl``, and so is each refusal.
 
-Period: the signal inputs and ``vwretd`` are cut at the last screen row (1992-12-31), and the engine accounts to
-that row only, so no output uses a return month after 1992-12. Outputs hold aggregates, dates, and weights only:
-no PERMNO, ticker, or name.
+Period: the daily and index rows of the signal inputs and ``vwretd`` are cut at the last screen row (1992-12-31),
+and each criteria call refuses a month after 1992-12. The engine frames hold the first row of 1993, because
+``m55_index_tilt.check_inputs`` accepts an end row only when a later row in a later month follows it; the engine
+accounts to the last screen row only, so no output uses a return month after 1992-12. Outputs hold aggregates,
+dates, and weights only: no PERMNO, ticker, or name.
 
 R4: the rerun is a second engine call on ``tilt_frames(run="last_close")``. Fragility is a sign flip of an active
 annual mean between the two calls. The driver never reads the engine fields ``fragile_active_sign`` and
@@ -52,6 +55,7 @@ from research.m55_index_tilt import refuse
 
 REPO = Path(__file__).resolve().parents[1]
 TRIAL_FILE = "docs/preregistrations/m55_trial_family_v1.json"
+TRIAL_SHA256 = "ab3b4ab0bb58084aa604d78f772850641471e28cf228ab605db5cec1da16f4fe"   # the frozen file this driver runs
 TRACKED_MANIFEST = "reports/wrds_manifest_2025.json"
 CODE_FOLDERS = ("research", "src")               # every module of the run; one digest over their Python files
 STAGES = ("coverage", "calibration", "look", "screen", "freeze")
@@ -64,6 +68,7 @@ POST_SEAL_FIRST_REBALANCE = pd.Timestamp("2021-08-31")
 NO_SIGNAL = "NO_SIGNAL"                          # an all-missing set: every composite is 0, so TILT equals CW-PIT
 BLANK = crit.BLANK_REASONS[0]                    # path_break_held
 EXIT_CLASSES = w.EXIT_CLASSES
+GO_ON = ("chosen", "ratio_coverage_low")         # calibration decisions after which the look, screen, and freeze run
 NUMBER = r"(-?\d+(?:\.\d+)?(?:e-?\d+)?)"
 
 
@@ -150,10 +155,14 @@ def check_trial(trial: Mapping[str, Any], repo: Path = REPO) -> None:
 
 
 def load_trial(repo: Path = REPO) -> tuple[dict[str, Any], str]:
+    """The trial file, refused unless its bytes are the frozen file (``TRIAL_SHA256``) and ``check_trial`` passes."""
     raw = (repo / TRIAL_FILE).read_bytes()
+    digest = sha256_bytes(raw)
+    if digest != TRIAL_SHA256:
+        raise refuse("trial_digest_mismatch", "the trial file is not the frozen file that this driver runs")
     trial = json.loads(raw)
     check_trial(trial, repo)
-    return trial, sha256_bytes(raw)
+    return trial, digest
 
 
 def check_data(data: w.WrdsData, tracked: Mapping[str, Any], trial: Mapping[str, Any]) -> str:
@@ -165,6 +174,30 @@ def check_data(data: w.WrdsData, tracked: Mapping[str, Any], trial: Mapping[str,
     if not data.manifest["vintage"] == tracked["vintage"] == trial["data"]["vintage"]:
         raise refuse("data_manifest_mismatch", "vintage")
     return sha256_bytes(json.dumps(files, sort_keys=True).encode())
+
+
+def data_files(root: str | Path) -> w.WrdsData:
+    """The working copy for the freeze: the manifest after a SHA-256 check of each file's bytes, and no table.
+
+    No table is parsed. ``check_data`` reads only the manifest, so it gives the same digest as after ``w.load``.
+    """
+    root = Path(root).expanduser().resolve()
+    sealed = root / w.SEALED
+    if w.SEALED in root.parts:
+        raise refuse("sealed_path", "the data root is inside a sealed folder")
+    manifest = json.loads((root / w.MANIFEST).read_text())
+    for relative, record in sorted(manifest["files"].items()):
+        path = (root / relative).resolve()
+        if path == sealed or sealed in path.parents or root not in path.parents:
+            raise refuse("sealed_path", "the manifest lists a sealed path or a path outside the root")
+        if record["rows"] and (not path.is_file() or w.sha256(path) != record["sha256"]):
+            raise refuse("hash_mismatch", relative)
+    return w.WrdsData({}, manifest, root)
+
+
+def stage_data(stage: str, root: str | Path) -> w.WrdsData:
+    """The freeze checks the file bytes only; every other stage loads the tables (``w.load``)."""
+    return data_files(root) if stage == "freeze" else w.load(root)
 
 
 def code_digest(repo: Path) -> str:
@@ -247,6 +280,15 @@ def earlier(out: Path, stage: str, ctx: Mapping[str, Any]) -> tuple[dict[str, di
         if payloads[name]["previous"] != {k: digests[k] for k in STAGES[:STAGES.index(name)]}:
             raise refuse("stage_chain_mismatch", f"{name} was not built on the current earlier stages")
     return payloads, digests
+
+
+def check_calibration(calibration: Mapping[str, Any]) -> None:
+    """``books.low_risk.calibration.choice``: the look, the screen, and the freeze run only after the decision
+    ``chosen`` or ``ratio_coverage_low``. Each frozen stop refuses with its ``calibrate_lowrisk`` name: ``refused``
+    (a refusal below the first g that meets; the calibration stage itself stops on it and writes no file),
+    ``ratio_coverage_ambiguous`` (the owner decides), and ``no_g_reaches_target`` (stop and ask the owner)."""
+    if calibration["decision"] not in GO_ON:
+        raise refuse("calibration_stop", f"calibration decision {calibration['decision']}")
 
 
 def write_stage(out: Path, stage: str, ctx: Mapping[str, Any], previous: Mapping[str, str],
@@ -484,27 +526,27 @@ def blank_set(positions: list[dict[str, Any]]) -> list[pd.Period]:
 
 def blanked_windows(frames: Mapping[str, Any], dates: pd.DatetimeIndex, exits: Mapping[str, str],
                     last: pd.Timestamp) -> dict[str, Any]:
-    """Each blanked level window (R6, P1_path_break): an engine rebalance whose 252-row return window, ending at
-    the decision row r - 1, holds a row after the previous valid row W and on or before the break row X, while the
-    name is eligible at r - 1. The engine return on these rows is missing (``path_break_positions`` checks the row
-    before X), so the window is short of 252 returns and the member stays at w = b. Breaks after ``last`` are not
-    read.
+    """Each blanked level window (R6, P1_path_break): a member at an engine rebalance whose 252-row return window,
+    ending at the decision row r - 1, holds a row after the previous valid row W and on or before the break row X,
+    while the member is eligible at r - 1. The engine return on these rows is missing (``path_break_positions``
+    checks the row before X), so the window is short of 252 returns and the member stays at w = b. A window counts
+    once, however many breaks it holds. Breaks after ``last`` are not read.
     """
     rows, columns = frames["prices"].index, frames["prices"].columns
     values, eligible = frames["prices"].to_numpy(dtype=float), frames["eligible"].to_numpy()
     breaks = frames["path_break"].to_numpy()[:rows.get_loc(last) + 1]
     decision = np.array([rows.get_loc(date) - 1 for date in dates], dtype=int)
-    each, by_class = [], Counter()
+    cells = defaultdict(list)
     for i, j in zip(*np.nonzero(breaks)):
         valid = np.flatnonzero(np.isfinite(values[:i, j]))
         first = int(valid[-1]) + 1 if len(valid) else 0
         hit = decision[(decision >= first) & (decision < i + tilt.COV_ROWS)]
-        hit = hit[eligible[hit, j]]
-        if len(hit):
-            each.append({"break_row": rows[i], "exit_class": exits[columns[j]], "windows": len(hit),
-                         "first_rebalance": rows[hit[0] + 1], "last_rebalance": rows[hit[-1] + 1]})
-            by_class[exits[columns[j]]] += len(hit)
-    return {"windows": sum(by_class.values()), "by_exit_class": per_class(by_class), "each": each}
+        for k in hit[eligible[hit, j]]:
+            cells[(int(k), int(j))].append(rows[i])
+    each = [{"rebalance": rows[k + 1], "exit_class": exits[columns[j]], "break_rows": found}
+            for (k, j), found in sorted(cells.items())]
+    by_class = Counter(e["exit_class"] for e in each)
+    return {"windows": len(each), "by_exit_class": per_class(by_class), "each": each}
 
 
 def declaration(run_set: list, first: pd.Period, last: pd.Period = crit.SCREEN_END) -> dict[pd.Period, str]:
@@ -543,8 +585,15 @@ def monthly_vwretd(data: w.WrdsData, first: pd.Period) -> pd.Series:
     return monthly.rename("vwretd")
 
 
+def check_months(*series: pd.Series) -> None:
+    """Refuse when a monthly series passed to the criteria holds a month after 1992-12."""
+    if any(len(s) and s.index.max() > crit.SCREEN_END for s in series):
+        raise refuse("row_after_screen_end", f"a monthly series holds a month after {crit.SCREEN_END}")
+
+
 def mean_gap(book: pd.Series, benchmark: pd.Series, declared: Mapping[pd.Period, str]) -> dict[str, Any]:
     """Annual mean gap, TE, and correlation of book - benchmark over the screen months with values."""
+    check_months(book, benchmark)
     span = book.index
     clean_ = crit.check_paired({"book": without(book, declared),
                                 "benchmark": without(benchmark.reindex(span), declared)}, "screen", declared)
@@ -631,6 +680,7 @@ def tilt_stats(found: Mapping[str, Any], declared: Mapping[pd.Period, str], fram
     sum((w - b) x ln ME) at the decision row r - 1 (an open question in the card report).
     """
     cw, book = found["cw"], found["tilt"]
+    check_months(book["monthly_net"], cw["monthly_net"])
     daily = book["daily_net"] - cw["daily_net"]
     keep = ~label_months(daily).isin(pd.PeriodIndex(list(declared), freq="M"))
     relative = without((1.0 + book["monthly_net"]) / (1.0 + cw["monthly_net"]) - 1.0, declared)
@@ -980,7 +1030,7 @@ def look_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path) -> dict[st
     frames = {run: frames_for(data, run) for run in RUNS}
     pair = engine_pair(frames, {run: no_signal(frames[run]) for run in RUNS}, start, end)
     result: dict[str, Any] = {"header": header(trial), "runs": {}}
-    gaps = {}
+    gaps, entries = {}, []
     for run in RUNS:
         books = pair[run]["cases"]
         if any(not books[case]["tilt"]["monthly_net"].equals(books[case]["cw"]["monthly_net"]) for case in CASES):
@@ -1005,8 +1055,9 @@ def look_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path) -> dict[st
             book = books[case]["cw"]
             check_declaration(declared, run_set, crit.SCREEN_START)
             stats = mean_gap(book["monthly_net"], vw, declared)
-            log(out, {"stage": "look", "call": "check_paired", "series": "cw_vs_vwretd", "run": run, "case": case,
-                      "span": [crit.SCREEN_START, crit.SCREEN_END], "declaration": declared, "output": stats})
+            entries.append({"stage": "look", "call": "check_paired", "series": "cw_vs_vwretd", "run": run,
+                            "case": case, "span": [crit.SCREEN_START, crit.SCREEN_END], "declaration": declared,
+                            "output": stats})
             part[case] = {"cw_vs_vwretd": stats, "r4": r4_counts(book, frames[run]["disappearances"], end, run),
                           "cw_annual_turnover": book["annual_turnover"],
                           "cw_annual_cost_drag": book["annual_cost_drag"]}
@@ -1014,17 +1065,26 @@ def look_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path) -> dict[st
         result["runs"][run] = part
     result["fragility"] = {case: fragility({"cw_vs_vwretd": gaps[("primary", case)]},
                                            {"cw_vs_vwretd": gaps[("last_close", case)]}) for case in CASES}
+    for entry in entries:                   # after every check of the look that can refuse (AUDIT_2 ADV-2)
+        log(out, entry)
     return result
 
 
-def undefined_record(months: pd.PeriodIndex, declared: Mapping[pd.Period, str]) -> dict[str, Any]:
+def undefined_record(months: pd.PeriodIndex, declared: Mapping[pd.Period, str],
+                     reason: str = "screen_too_short") -> dict[str, Any]:
     """OI-05: fewer than 36 screen months with values gives a typed undefined record. ``screen_record`` is not
-    called for it (its ``check_series`` would refuse ``screen_too_short`` and stop the whole screen)."""
+    called for it (its ``check_series`` would refuse ``screen_too_short`` and stop the whole screen). The reason
+    ``primary_screen_too_short`` types a run that has 36 months or more when the primary run has fewer."""
     kept = months[~months.isin(pd.PeriodIndex(list(declared), freq="M"))]
-    return {"status": "undefined", "undefined_reason": "screen_too_short",
+    return {"status": "undefined", "undefined_reason": reason,
             "first_month": str(kept[0]) if len(kept) else None, "last_month": str(kept[-1]) if len(kept) else None,
             "months": len(kept), "annual_active_mean": None, "annual_te": None, "information_ratio": None,
             "hac_t": None, "p_one_sided": None, "annual_turnover": None, **crit.blank_record(declared)}
+
+
+def not_evaluated(short: list[str]) -> dict[str, Any]:
+    """The R4 fragility of a candidate with a run of fewer than 36 months: typed, never computed."""
+    return {case: {"status": "not_evaluated", "reason": "screen_too_short", "short_runs": short} for case in CASES}
 
 
 def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage: Mapping[str, Any],
@@ -1057,15 +1117,27 @@ def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage
         span = pd.PeriodIndex([], freq="M") if first is None else pd.period_range(first, crit.SCREEN_END, freq="M")
         declared = {run: {} if first is None else declaration(run_sets[run], first) for run in RUNS}
         counts = {run: len(span) - len(declared[run]) for run in RUNS}
+        short = [run for run in RUNS if counts[run] < crit.SCREEN_MIN_MONTHS]
         item: dict[str, Any] = {"real_start": starts[s], "first_month": first, "months_with_values": counts,
                                 "records": {run: {} for run in RUNS}}
         result["candidates"][s] = item
-        if counts["primary"] < crit.SCREEN_MIN_MONTHS:
-            records[s] = undefined_record(span, declared["primary"])
-            item["records"]["primary"]["primary"] = {"screen_record": records[s]}
-            log(out, {"stage": "screen", "call": "undefined_record", "candidate": s, "run": "primary",
-                      "case": "primary", "span": [first, crit.SCREEN_END], "declaration": declared["primary"],
-                      "output": records[s]})
+        entries = []
+        if "primary" in short:
+            # A typed record for every run and cost case, and no engine call or return for this candidate.
+            for run in RUNS:
+                if first is not None:
+                    check_declaration(declared[run], run_sets[run], first)
+                record = undefined_record(span, declared[run],
+                                          "screen_too_short" if run in short else "primary_screen_too_short")
+                for case in CASES:
+                    item["records"][run][case] = {"screen_record": record}
+                    entries.append({"stage": "screen", "call": "undefined_record", "candidate": s, "run": run,
+                                    "case": case, "span": [first, crit.SCREEN_END], "declaration": declared[run],
+                                    "output": record})
+            item["fragility"] = not_evaluated(short)
+            for entry in entries:
+                log(out, entry)
+            records[s] = item["records"]["primary"]["primary"]["screen_record"]
             continue
         start, _ = window(cal, first)
         dates = tilt.rebalance_dates(frames["primary"]["prices"].index, start, end)
@@ -1083,13 +1155,14 @@ def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage
                 if case == "primary":
                     item["path_break_positions"][run] = held
                 check_declaration(declared[run], run_sets[run], first)
-                if counts[run] < crit.SCREEN_MIN_MONTHS:
+                if run in short:
                     record = undefined_record(span, declared[run])
                     item["records"][run][case] = {"screen_record": record}
-                    log(out, {"stage": "screen", "call": "undefined_record", "candidate": s, "run": run,
-                              "case": case, "span": [first, crit.SCREEN_END], "declaration": declared[run],
-                              "output": record})
+                    entries.append({"stage": "screen", "call": "undefined_record", "candidate": s, "run": run,
+                                    "case": case, "span": [first, crit.SCREEN_END], "declaration": declared[run],
+                                    "output": record})
                     continue
+                check_months(found["tilt"]["monthly_net"], found["cw"]["monthly_net"])
                 record = crit.screen_record(without(found["tilt"]["monthly_net"], declared[run]),
                                             without(found["cw"]["monthly_net"], declared[run]),
                                             found["tilt"]["annual_turnover"], declared[run])
@@ -1098,9 +1171,9 @@ def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage
                 for call, series, output in (("screen_record", "tilt_vs_cw", record),
                                              ("check_paired", "tilt_vs_vwretd", vs_vw),
                                              ("check_paired", "cw_vs_vwretd", cw_vw)):
-                    log(out, {"stage": "screen", "call": call, "series": series, "candidate": s, "run": run,
-                              "case": case, "span": [first, crit.SCREEN_END], "declaration": declared[run],
-                              "output": output})
+                    entries.append({"stage": "screen", "call": call, "series": series, "candidate": s, "run": run,
+                                    "case": case, "span": [first, crit.SCREEN_END], "declaration": declared[run],
+                                    "output": output})
                 item["records"][run][case] = {
                     "screen_record": record, "tilt_vs_vwretd": vs_vw, "cw_vs_vwretd": cw_vw,
                     "tilt_stats": tilt_stats(found, declared[run], frames[run], pair[run]["targets"], publication[s]),
@@ -1114,8 +1187,10 @@ def screen_stage(data: w.WrdsData, trial: Mapping[str, Any], out: Path, coverage
         item["c_zero_by_exit_class"] = {run: c_zero_by_exit(
             inputs_for(frames[run], signals[run], start, end), {d: setups[run][d] for d in table[run].index},
             table[run], exits) for run in RUNS}
-        if all(case in means[run] for run in RUNS for case in CASES):
-            item["fragility"] = {case: fragility(means["primary"][case], means["last_close"][case]) for case in CASES}
+        item["fragility"] = (not_evaluated(short) if short else
+                             {case: fragility(means["primary"][case], means["last_close"][case]) for case in CASES})
+        for entry in entries:               # after every check of this candidate that can refuse (AUDIT_2 ADV-2)
+            log(out, entry)
         records[s] = item["records"]["primary"]["primary"]["screen_record"]
     result["records_for_freeze"] = records
     return result
@@ -1142,6 +1217,8 @@ def run_stage(stage: str, data: w.WrdsData, out: Path, tracked: Mapping[str, Any
     ctx = context(trial, trial_sha, check_data(data, tracked, trial), repo)
     try:
         payloads, digests = earlier(out, stage, ctx)
+        if "calibration" in payloads:
+            check_calibration(payloads["calibration"]["result"])
         if (out / f"{stage}.json").exists() or (out / f"{stage}.sha256").exists():
             raise refuse("stage_output_exists", stage)
         if stage == "coverage":
@@ -1173,7 +1250,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True, help="a folder outside every Git checkout")
     parser.add_argument("--stage", choices=STAGES, required=True)
     args = parser.parse_args()
-    digest = run_stage(args.stage, w.load(args.data_root), args.out)
+    digest = run_stage(args.stage, stage_data(args.stage, args.data_root), args.out)
     print(f"{args.stage} written, sha256 {digest}")
 
 
