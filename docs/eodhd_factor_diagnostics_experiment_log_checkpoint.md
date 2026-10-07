@@ -18,13 +18,13 @@ readiness.
 Private experiment log:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json
+<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json
 ```
 
 Private Markdown handoff:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md
+<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md
 ```
 
 Both files remain outside the repository and are not git-tracked.

@@ -13,19 +13,19 @@ alpha, investment, or trading-readiness claims.
 Private bundle path:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 ```
 
 Planned loader inputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/normalized/eodhd_ohlcv_long.csv`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/normalized/eodhd_benchmark_spy.csv`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/metadata/selected_universe.csv`
+- `<private_data_root>/eodhd_first_dry_run/normalized/eodhd_ohlcv_long.csv`
+- `<private_data_root>/eodhd_first_dry_run/normalized/eodhd_benchmark_spy.csv`
+- `<private_data_root>/eodhd_first_dry_run/metadata/selected_universe.csv`
 
 Planned private output:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/VALIDATION_ONLY_LOADER_SMOKE_TEST_SUMMARY.md
+<private_data_root>/eodhd_first_dry_run/VALIDATION_ONLY_LOADER_SMOKE_TEST_SUMMARY.md
 ```
 
 No output from this smoke test should be written under the repository.
@@ -120,7 +120,7 @@ Stop before continuing if any of these occur:
 
 ```text
 Run a validation-only local CSV loader smoke test against:
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 
 Use existing strict loaders only. Write the summary only under that private
 bundle. Do not fetch data, use vendor APIs, copy private data into the repo,

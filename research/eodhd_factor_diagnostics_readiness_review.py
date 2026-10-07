@@ -6,6 +6,7 @@ does not fetch data, calculate factors, run a strategy, or interpret results.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -13,11 +14,10 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUNDLE = Path("/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run")
-DEFAULT_EXPERIMENT_LOG = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
-DEFAULT_DRY_RUN_SUMMARY = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
-DEFAULT_REVIEW_JSON = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_READINESS_REVIEW.json"
-DEFAULT_REVIEW_MARKDOWN = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_READINESS_REVIEW.md"
+EXPERIMENT_LOG_NAME = "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
+DRY_RUN_SUMMARY_NAME = "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
+REVIEW_JSON_NAME = "FACTOR_DIAGNOSTICS_READINESS_REVIEW.json"
+REVIEW_MARKDOWN_NAME = "FACTOR_DIAGNOSTICS_READINESS_REVIEW.md"
 
 EXPECTED_DATA_SOURCE = "EODHD local CSV private bundle"
 REQUIRED_ALLOWED_DIAGNOSTICS = {
@@ -58,17 +58,15 @@ REQUIRED_EXPERIMENT_LOG_FIELDS = {
 
 @dataclass(frozen=True)
 class EODHDFactorDiagnosticsReadinessReviewConfig:
-    bundle_path: Path = DEFAULT_BUNDLE
-    experiment_log_path: Path = DEFAULT_EXPERIMENT_LOG
-    dry_run_summary_path: Path = DEFAULT_DRY_RUN_SUMMARY
-    review_json_path: Path = DEFAULT_REVIEW_JSON
-    review_markdown_path: Path = DEFAULT_REVIEW_MARKDOWN
+    bundle_path: Path
+    experiment_log_path: Path
+    dry_run_summary_path: Path
+    review_json_path: Path
+    review_markdown_path: Path
 
 
 def run_eodhd_factor_diagnostics_readiness_review(
-    config: EODHDFactorDiagnosticsReadinessReviewConfig = (
-        EODHDFactorDiagnosticsReadinessReviewConfig()
-    ),
+    config: EODHDFactorDiagnosticsReadinessReviewConfig,
 ) -> dict[str, Any]:
     """Write a private readiness review for limited diagnostics review."""
 
@@ -304,8 +302,19 @@ def _is_under(path: Path, parent: Path) -> bool:
     return path == parent or parent in path.parents
 
 
-def main() -> None:
-    payload = run_eodhd_factor_diagnostics_readiness_review()
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("bundle_path", type=Path, help="Private EODHD bundle directory.")
+    bundle = parser.parse_args(argv).bundle_path
+    payload = run_eodhd_factor_diagnostics_readiness_review(
+        EODHDFactorDiagnosticsReadinessReviewConfig(
+            bundle_path=bundle,
+            experiment_log_path=bundle / EXPERIMENT_LOG_NAME,
+            dry_run_summary_path=bundle / DRY_RUN_SUMMARY_NAME,
+            review_json_path=bundle / REVIEW_JSON_NAME,
+            review_markdown_path=bundle / REVIEW_MARKDOWN_NAME,
+        )
+    )
     counts = payload["summary_counts"]
     date_range = payload["date_range"]
     print(f"REVIEW_JSON_PATH={payload['output_file_paths']['readiness_review_json']}")

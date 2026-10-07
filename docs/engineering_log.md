@@ -12,6 +12,25 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-06 - Remove private and home paths from tracked files (R11)
+
+- The repository is public, and R11 keeps private paths private. Tracked docs, coordination cards, and reports
+  named the private data root and the owner's home directory. They now use `<private_data_root>/...`,
+  `<repo>/...` (this repository root only), and `<home>/...` (other home paths, such as older checkouts). The
+  rest of each line is unchanged.
+- `research/eodhd_factor_diagnostics_dry_run.py`, `eodhd_factor_diagnostics_experiment_log.py`,
+  `eodhd_factor_diagnostics_readiness_review.py`, `eodhd_limited_factor_diagnostics_brief.py`, and
+  `eodhd_limited_factor_diagnostics_review.py` had a default bundle under the private data root. Their config path
+  fields have no default now, and `main` takes the bundle path as a required argument. In
+  `research/real_data_multifactor_diagnostic.py`, `default_data_dir` and `default_inventory_path` read
+  `EFR_EODHD_DATA_DIR` and `EFR_EODHD_INVENTORY_PATH` and refuse when they are not set; the parent walk for a
+  `private_data` directory is gone. An explicit path gives the same behavior as before.
+- `test_tracked_text_names_no_private_path` scans the content of `git ls-files` for `/Users/<name>`,
+  `/home/<name>`, and the `private_data` name with a slash. The allow list holds two guard patterns and six
+  attempt reports whose SHA-256 values `reports/dividend_comparison_release_manifest.json` pins; those six still
+  hold home paths.
+- Git history keeps the old paths (owner decision: no history rewrite).
+
 ## 2026-10-06 - WRDS loader and S2: unknown share bases are typed missing (Milestone 5.5)
 
 - Card m55-loader-r6 on `0c60805` (sweep findings audit A-2 and O2-A2). Decision log: the entry of the same date.
@@ -2580,7 +2599,7 @@ Semantic consumers outside the pattern:
 - `cross_sectional_group_neutralize`: Demeans within discrete industry/sector groups, supporting
   both static mappings and dynamic panels. Guarantees within-group zero mean.
 - Independent Review: `GROK_REVIEW` via Grok Build in Herdr tab `grok-review` (`w3:tCT`, pane `w3:pES`)
-  on clean detached worktree `/Users/rhapsoul/Documents/Codex/projects/efr-factor-neutralization-20260919`
+  on clean detached worktree `<home>/Documents/Codex/projects/efr-factor-neutralization-20260919`
   at exact candidate `70c289c`. Full report at `coord/reports/factor_neutralization_review.md`.
   Verdict: `PASS (MATERIAL: 0)`.
 - Tests: `tests/test_neutralize.py` (8 passed). Full test suite: 3574 passed, 2 skipped.
@@ -5781,7 +5800,7 @@ This ablation round completes the implementation and machine verification of sev
   outcomes. No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Build metadata and artifacts remained in an
   external temporary copy that was removed after validation.
@@ -5842,7 +5861,7 @@ This ablation round completes the implementation and machine verification of sev
   was installed or added. The check reused `build==1.5.0`,
   `setuptools==83.0.0`, `wheel==0.47.0`, and `packaging==26.2` from the
   existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Build metadata and artifacts remained in an
   external temporary copy.
@@ -5895,7 +5914,7 @@ This ablation round completes the implementation and machine verification of sev
   partitions, and conformance outcomes. No dependency was installed or added.
   The check reused `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -5942,7 +5961,7 @@ This ablation round completes the implementation and machine verification of sev
   added. The check reused `build==1.5.0`, `setuptools==83.0.0`,
   `wheel==0.47.0`, and `packaging==26.2` from the existing project
   environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -5986,7 +6005,7 @@ This ablation round completes the implementation and machine verification of sev
   outcomes. No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -6032,7 +6051,7 @@ This ablation round completes the implementation and machine verification of sev
   No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info and temporary package
   artifacts were removed or kept outside the repository.
@@ -6081,7 +6100,7 @@ This ablation round completes the implementation and machine verification of sev
   was installed or added. The check reused `build==1.5.0`,
   `setuptools==83.0.0`, `wheel==0.47.0`, and `packaging==26.2` from the
   existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file or
   persistent environment. Generated egg-info and temporary package artifacts
   were removed.
@@ -6134,7 +6153,7 @@ This ablation round completes the implementation and machine verification of sev
 - No dependency was installed or added. The no-isolation package build reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`.
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`.
   Their purpose was package-resource parity validation; they changed no
   dependency declaration or tracked repository file. Generated ignored
   egg-info metadata was removed after validation.
@@ -6182,7 +6201,7 @@ This ablation round completes the implementation and machine verification of sev
 - The no-isolation sdist/wheel build reused, without installing,
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`.
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`.
   Both artifacts reproduced raw R0 JSON SHA-256
   `4b78c36647621deaec15114558d827c17dae2bfa29918f4cbf2ceb2aa6b6e6d9`
   and sidecar SHA-256
@@ -6535,7 +6554,7 @@ This ablation round completes the implementation and machine verification of sev
   cleanup, and diff checks.
   The default shell still had no `python` command, so validation reused the
   existing isolated interpreter at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   nothing was installed into or changed in that environment.
 - Final validation of the narrow external-attribution remediation passed 21
   focused structure tests and the full 856-test suite with the same two
@@ -7324,8 +7343,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md`
 
 Implementation:
 
@@ -7381,8 +7400,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md`
 
 Implementation:
 
@@ -7438,8 +7457,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md`
 
 Implementation:
 
@@ -7495,8 +7514,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md`
 
 Implementation:
 
@@ -7549,7 +7568,7 @@ Changed files:
 
 Private output:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
 
 Implementation:
 
@@ -7612,7 +7631,7 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
 
 Aggregate diagnostics evidence recorded:
 
@@ -7663,7 +7682,7 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`
 
 Aggregate loader-smoke evidence recorded:
 
@@ -7720,7 +7739,7 @@ Scope:
   duplicate counts, invalid-value counts, OHLC consistency, and SPY benchmark
   alignment.
 - Write any loader-smoke-test summary only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 
 Guardrails:
 
@@ -7758,8 +7777,8 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
 
 Aggregate validation evidence recorded:
 
@@ -7955,7 +7974,7 @@ The stage does not regenerate committed Markdown reports, JSON experiment logs,
 or the experiment registry.
 
 Environment note: after migration, `python` is not on `PATH`; `/usr/bin/python3`
-does not have `pytest` or `pandas`; and `/Users/rhapsoul/.local/bin/pytest`
+does not have `pytest` or `pandas`; and `<home>/.local/bin/pytest`
 runs under Python 3.9 without `pandas`. An ignored `.venv` was created from the
 Codex bundled Python and given only the missing test runner/dependency pieces
 needed for focused validation. See `docs/troubleshooting_log.md` for the

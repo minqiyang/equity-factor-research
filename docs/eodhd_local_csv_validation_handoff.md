@@ -18,13 +18,13 @@ trading-readiness claims.
 Private bundle path:
 
 ```text
-/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run
+<private_data_root>/eodhd_first_dry_run
 ```
 
 Private validation summaries reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
 
 The bundle remains outside the repository. Raw CSV and JSON files were not
 copied into the repo and must not be committed.

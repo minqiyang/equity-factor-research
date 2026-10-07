@@ -64,19 +64,19 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Local branch `claude/m55-integration` is a development base only (not pushed, no PR). It starts at
-  `28abd4ca` and merges the accepted candidates below. Each code file is byte-identical to the accepted commit
-  that last changed it. The screen driver is built on this branch. All candidates are tested on synthetic
-  fixtures; no signal or return is computed on real data yet.
+- Local branch `claude/m55-integration` is a development base only (no push, no PR): `28abd4ca` plus the accepted
+  candidates below, code byte-identical. The screen driver is built on it; no real-data signal or return yet.
 - `claude/o22-wrds-grant` (`a7305915`): owner decision O-22, the R11 grant for WRDS data; no code.
-- `claude/m55-check-gap` (`e8135bc3`): a check series skips 2019-07 to 2021-08 (`CHECK_GAP_MONTHS`).
-- `claude/m55-lowrisk` (`6395511b`): the O-20 low-risk book and its calibration; TILT and CW-PIT unchanged.
-- `claude/m55-signal-sets` (`e50e8d6f`, on `claude/m55-lowrisk`): the index tilt runs on a declared signal set.
-- `claude/m55-signals` (`5cf5c84d`): point-in-time candidate signals S1 to S8; each cell is a value or a typed reason.
-- `claude/m55-wrds-loader` (`0c608058`, on `claude/m55-signals`): engine frames, signal inputs, and benchmark
-  returns from the main WRDS files (vintage 2025-12-31), and the manifest `reports/wrds_manifest_2025.json`. The
-  sealed files are never opened. Rules D1 to D9, readings P-1 to P-9, and the round 1 fixes are in
-  `docs/decision_log.md`.
+- `claude/m55-check-gap` (`e8135bc3`): check series skip 2019-07 to 2021-08; `claude/m55-criteria-mask`
+  (`1a70eb79`, on it): the criteria accept declared blank months.
+- `claude/m55-lowrisk` (`6395511b`): the O-20 low-risk book; `claude/m55-signal-sets` (`e50e8d6f`, on it): the tilt
+  runs on a declared signal set; `claude/m55-ratio-gap` (`cebb487a`, on it): gap members leave the ratio (R6).
+- `claude/m55-signals` (`5cf5c84d`): point-in-time signals S1 to S8, each cell a value or a typed reason;
+  `claude/m55-wrds-loader` (`0c608058`, on it): engine frames, signal inputs, and benchmark
+  returns from the main WRDS files (vintage 2025-12-31), manifest `reports/wrds_manifest_2025.json`; sealed files
+  never opened; rules in `docs/decision_log.md`. `claude/m55-loader-r6` (`312d2848`, on it): unknown share bases
+  are typed missing in the loader and S2 (R6).
+- `claude/r11-private-paths` (`cabd1641`, PR #297): tracked text names no home or private data path (R11).
 
 ## Current Research Gate Summary
 

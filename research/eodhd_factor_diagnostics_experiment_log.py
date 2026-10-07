@@ -7,6 +7,7 @@ interpret performance.
 
 from __future__ import annotations
 
+import argparse
 import csv
 from dataclasses import dataclass
 from datetime import date
@@ -15,10 +16,9 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BUNDLE = Path("/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run")
-DEFAULT_SUMMARY = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
-DEFAULT_LOG = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
-DEFAULT_MARKDOWN = DEFAULT_BUNDLE / "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md"
+SUMMARY_NAME = "FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md"
+LOG_NAME = "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json"
+MARKDOWN_NAME = "FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md"
 
 ALLOWED_DIAGNOSTICS = [
     "factor coverage",
@@ -45,17 +45,15 @@ FORBIDDEN_INTERPRETATIONS = [
 
 @dataclass(frozen=True)
 class EODHDFactorDiagnosticsExperimentLogConfig:
-    bundle_path: Path = DEFAULT_BUNDLE
-    summary_path: Path = DEFAULT_SUMMARY
-    log_path: Path = DEFAULT_LOG
-    markdown_path: Path = DEFAULT_MARKDOWN
+    bundle_path: Path
+    summary_path: Path
+    log_path: Path
+    markdown_path: Path
     run_label: str = "eodhd-factor-diagnostics-readiness-handoff"
 
 
 def run_eodhd_factor_diagnostics_experiment_log(
-    config: EODHDFactorDiagnosticsExperimentLogConfig = (
-        EODHDFactorDiagnosticsExperimentLogConfig()
-    ),
+    config: EODHDFactorDiagnosticsExperimentLogConfig,
 ) -> dict[str, object]:
     """Write a private structured experiment-log handoff from the summary."""
 
@@ -275,8 +273,18 @@ def _is_under(path: Path, parent: Path) -> bool:
     return path == parent or parent in path.parents
 
 
-def main() -> None:
-    payload = run_eodhd_factor_diagnostics_experiment_log()
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("bundle_path", type=Path, help="Private EODHD bundle directory.")
+    bundle = parser.parse_args(argv).bundle_path
+    payload = run_eodhd_factor_diagnostics_experiment_log(
+        EODHDFactorDiagnosticsExperimentLogConfig(
+            bundle_path=bundle,
+            summary_path=bundle / SUMMARY_NAME,
+            log_path=bundle / LOG_NAME,
+            markdown_path=bundle / MARKDOWN_NAME,
+        )
+    )
     date_range = payload["date_range"]
     row_counts = payload["row_counts"]
     assert isinstance(date_range, dict)
