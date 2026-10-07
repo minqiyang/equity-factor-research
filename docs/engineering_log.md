@@ -15,7 +15,7 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 ## 2026-10-07 - Milestone 5.5 driver from coverage counts to the shortlist freeze
 
 - Card m55-driver: `research/m55_driver.py` and `tests/test_m55_driver.py` (commits `0807473`, `b525e55`,
-  `e7e5986`). No accepted module changed. Decision log: the entry of the same date.
+  `e7e5986`, and the gate change `693d49b`). No accepted module changed. Decision log: the entry of the same date.
 - The driver runs the frozen trial family `docs/preregistrations/m55_trial_family_v1.json` on the WRDS working copy
   in five stages, one process each: `coverage` (signal validity counts and real starts, ME coverage, the
   missingness census, and R6 reason shares by later exit class; no return), `calibration` (the low-risk `g`, once,
@@ -27,22 +27,41 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   overwrites them. A stage refuses unless each earlier stage file exists, matches its digest, was made from the same
   trial file, code, and data, and names the digests of the stages before it. The trial file must have the frozen
   SHA-256 (`ab3b4ab0...16f4fe`), and the data manifest must match `reports/wrds_manifest_2025.json`. The look, the
-  screen, and the freeze refuse after a calibration stop. The freeze parses no data table. Every criteria output and
-  every refusal goes to `run_log.jsonl`, with 5- and 6-digit integers masked.
-- Period: the driver cuts the signal tables, the engine frames, and `vwretd` at 1992-12-31 right after the load.
-  Each signal build, engine call, and criteria call refuses a value after that date.
+  screen, and the freeze refuse unless the calibration decision is `chosen`. The freeze parses no data table.
+  `run_log.jsonl` gets every criteria output with its declaration, each written stage digest, and each refusal or
+  error raised after the output-folder, trial, code, and data checks. Refusal and error text masks each 5- or
+  6-digit integer.
+- Period: the driver cuts the signal tables, the engine frames, and `vwretd` at 1992-12-31 right after the load. No
+  row, event, or spell start dated after 1992-12-31 reaches the engine, the criteria, or the signal builder, and
+  each call refuses one. The one exception is the first 1993 row of the engine frames, kept as a date with every
+  value blank because the engine input check needs a row after the window end. An end date after 1992-12-31 on a
+  spell or link that starts on or before that date stays, and reads as open on every row up to 1992-12-31.
 - Review, round 1: AUDIT (Codex) FAIL, MATERIAL 2 (rows after 1992-12-31 reached the engine and the freeze loaded
   raw data; the look and the screen ran after a calibration stop), ADVISORY 4. AUDIT_2 (Opus) PASS, MATERIAL 0,
   ADVISORY 7. Repairs `b525e55` and `e7e5986`. Round 2: AUDIT PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 PASS, MATERIAL
   0, ADVISORY 2. Both seats ran the five stages on one synthetic world with each of the three commits. The frozen
   record digest `b7412549...`, the decision `shortlist_frozen`, and the shortlist `["S7"]` stayed the same.
-- Tests: `tests/test_m55_driver.py` has 47 passed and 1 skipped (the opt-in real-size world,
-  `M55_DRIVER_REAL_SIZE=1`). Full suite at `e7e5986`: `3923 passed, 3 skipped, 69 warnings`; `ruff check .` passed.
-  The merge with main (`0be2be3`) changes docs only.
-- Run time (macOS, 18 cores, one process): the real-size synthetic world (8,089 rows, 740 PERMNO columns) took
-  21.6 minutes for the five stages, with a peak resident memory of 12.7 GB. Estimate for the real run (about 1,100
-  columns): 450 to 500 s per engine call and up to 18 calls (the look and 8 candidates), about 2.5 hours. Memory at
-  1,100 columns is not measured.
+- Gate change (card m55-drivergate, `693d49b`). At PR time the coordinator found that the frozen choice rule names
+  every calibration outcome other than `chosen` a stop or an owner decision (`ratio_coverage_low` is "the coverage
+  stop"). `GO_ON` is now `("chosen",)`, so the look, the screen, and the freeze also refuse after
+  `ratio_coverage_low`. The small test world gave `ratio_coverage_low` (37 of 354 rebalances without a ratio,
+  because of the 1970 listing), and with that fixed it gave `no_g_reaches_target`, because its names had no common
+  risk. It now has a market factor (daily volatility 0.012; betas 1.8 and 0.3 by PERMNO parity), and 900013 lists
+  in 1968 and joins the index in 1970 (18 of 354 without a ratio). Its real calibration chooses g = 1.0 (g = 0.5
+  fails), and the chain reaches the freeze with the shortlist `["S7"]`; the freeze record digest is now
+  `20ed48ee...`. A world with the old 1970 listing gives `ratio_coverage_low` and stops before the look. The
+  opt-in real-size world gets the same betas: without them its calibration gives `no_g_reaches_target`, so it
+  already stopped at the look under the round 1 gate. Review: QA, then one round with both seats; the result is
+  not in this entry.
+- Tests: at `693d49b`, `tests/test_m55_driver.py` has 48 passed and 1 skipped (the opt-in real-size world), and
+  the opt-in run (`M55_DRIVER_REAL_SIZE=1`) gives `1 passed in 1277.70s`. Full suite at `e7e5986`:
+  `3923 passed, 3 skipped, 69 warnings`; `ruff check .` passed. The merge with main (`0be2be3`) changes docs only.
+- Run time (macOS, 18 cores, one process): at `0807473` the real-size synthetic world (8,089 rows, 740 PERMNO
+  columns) took 21.6 minutes for the five stages, with a peak resident memory of 12.7 GB. That run was not repeated
+  after the round 1 and round 2 repairs. At `693d49b` (this card's world, with the market factor) the opt-in test
+  took 21.3 minutes (look 618 s, screen 628 s), with a peak resident set of 11.4 GB. Estimate for the real run
+  (about 1,100 columns): 450 to 500 s per engine call and up to 18 calls (the look and 8 candidates), about 2.5
+  hours. Memory at 1,100 columns is not measured.
 - No real data was read. No real return, signal, coverage, or calibration output exists.
 
 ## 2026-10-06 - Milestone 5.5 trial family v1 committed

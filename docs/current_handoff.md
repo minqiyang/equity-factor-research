@@ -70,11 +70,12 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-driver` adds `research/m55_driver.py` and its tests. The driver runs the frozen trial
-  family in five stages (coverage, calibration, look, screen, freeze); each stage refuses unless the files of the
-  stages before it match their digests and context. It cuts every input at 1992-12-31. The coordinator defaults of
-  the card are in `docs/decision_log.md`. Both review seats (Codex and Opus) passed round 2 with MATERIAL 0. No
-  accepted module changes. No real data is read, and no real return, signal, or calibration output exists.
+- Candidate branch `claude/m55-driver` adds `research/m55_driver.py` and its tests; no accepted module changes. The
+  driver runs the frozen trial family from the coverage counts to the shortlist freeze in five stages, each gated on
+  the digests and context of the stages before it. The look, the screen, and the freeze run only after the
+  calibration decision `chosen`. No row, event, or spell start dated after 1992-12-31 reaches the engine, the
+  criteria, or the signal builder (the engine frames keep one blank 1993 date row). Defaults: `docs/decision_log.md`.
+  Both seats passed round 2 with MATERIAL 0; the gate change `693d49b` awaits its review. No real data is read.
 
 ## Current Research Gate Summary
 
@@ -96,13 +97,14 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- The owner ran the reviewed pull script under O-22 (vintage 2025-12-31) into the local working copy, with the seal
-  months in `sealed/`, and wrote the iCloud backup archive. After the driver merges: check the free memory (the
-  real-size synthetic world peaked at 12.7 GB with 740 columns; the real panel has about 1,100), then run
-  `python -m research.m55_driver` one stage at a time on the working copy, with an output folder outside every
-  checkout: coverage, calibration, look, screen (O-21), freeze (about 2.5 hours). A calibration stop,
-  `path_break_adjacent`, or `path_gap_at_period_end` goes to the owner. The confirm run waits for the owner's second
-  WRDS pull of CRSP closing bid and ask (OI-03). If a pinned file changes before a run, an amendment comes first.
+- The owner ran the reviewed pull script under O-22 (vintage 2025-12-31; seal months in `sealed/`; iCloud backup
+  written). After the driver merges: check the free memory (the real-size synthetic world peaked at 11.4 to 12.7 GB
+  with 740 columns; the real panel has about 1,100), then run `python -m research.m55_driver` one stage at a time
+  on the working copy, with an output folder outside every checkout: coverage, calibration, look, screen (O-21),
+  freeze (about 2.5 hours in total, almost all in the look and the screen). A calibration decision other than
+  `chosen`, `path_break_adjacent`, or `path_gap_at_period_end` goes to the owner. The confirm run waits for the
+  owner's second WRDS pull of CRSP closing bid and ask (OI-03). If a pinned file changes before a run, an amendment
+  comes first.
 
 ## Source Routing
 
