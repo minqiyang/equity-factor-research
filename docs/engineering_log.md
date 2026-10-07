@@ -62,6 +62,86 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   refuses an event after rows without a value; there are none in the real files.
 - Real rerun (about 22 s): every intake check passes; the tracked manifest is unchanged.
 
+## 2026-10-06 - Gap members leave the low-risk ratio (Milestone 5.5, card m55-ratio-gap)
+
+- Base `e50e8d6`. `whole_book_ratio` takes an optional per-member `short` flag (no valid return before the window,
+  from `rebalance_members`); `lowrisk_weights` forwards it; `rebalance_targets` and `calibrate_lowrisk` pass it for
+  the traded set. A NaN after a member's first-ever return is a gap: the member is left out of both books in the
+  ratio and counted (`ratio_gap_members`, `ratio_gap_cw_share`, both added to `RATIO_FIELDS`). Leading NaNs still
+  remove rows. `short=None` means that no member has a return before the window (a direct call on a bare window).
+- The kept columns are selected with `window.loc[complete, kept]`. This keeps the column-major array of the old
+  `window[complete]` path. `np.ix_` gave a row-major array and changed the last bit of the volatilities; T9
+  (`test_no_pin_ratio_is_the_round_one_value_on_the_fixture`) caught it.
+- New tests (synthetic only): (a) `test_gap_member_with_history_is_left_out_and_counted`; (b)
+  `test_window_that_starts_inside_a_gap_is_a_gap_not_leading` on the build and calibration paths; (c)
+  `test_new_listing_stays_leading_and_a_later_gap_leaves_it_out`; (d)
+  `test_no_defined_partial_value_depends_on_a_gap_row` and `test_gap_rows_move_nothing_on_the_production_path`;
+  R1 `test_gaps_and_first_returns_at_or_after_r_change_nothing_at_r` (gaps and a first close at rows >= r).
+- Changed existing tests: the gap-case assertions of the GPT-R1-01 and GPT-R2-01 fixture tests, T3 (regime), and
+  T4 (missing price at r - 2), which encoded the old rule. Six spies got a forwarding `short=None` parameter; the T10
+  stub record also got the two new keys.
+- Mutation checks: eight mutants killed (flag ignored, no exclusion, build path without the flag, calibration path
+  without the flag, flag inverted, kept weights renormalized, gap rows counted as leading, flag set from whether the
+  member ever returns).
+- Internal review workflow (five lenses, two skeptics per finding): MATERIAL 0, ADVISORY 13. Open items for the
+  coordinator: no bound or grid aggregate on `ratio_gap_cw_share` (the grid's `max_pinned_cw_share_defined` is an
+  upper bound), and the R6 exit-class split needs the gap members' IDs.
+- Full suite: 3701 passed, 2 skipped, exit code 0; `ruff check` clean.
+
+## 2026-10-06 - Declared blank months in the criteria (Milestone 5.5, card m55-critmask)
+
+- `research/m55_criteria.py`: `BLANK_REASONS`, `check_blank`, and `blank_record` are new. `check_series` and
+  `check_paired` take `blank_months`: a declared month has no row, the period rules use the rows and the declared
+  months together, and the result holds the months with values. `screen_record`, `screen` (a candidate key),
+  `composite_test`, `composite_means`, `low_risk_test`, `low_risk_check`, `primary_decision` (one confirm and one
+  check declaration), and `secondary_family` pass the declaration on and add the blank keys to their records. The
+  statistic functions did not change; their docstrings state how a blank month is treated.
+- Tests: 12 new tests (53 in the file). A declared month is left out and each statistic equals the one on the
+  joined series (screen record against the same values on months with no gap; HAC t, bootstrap, drawdowns, and the
+  confirm means against direct calls); the minimum-month rules count the months with values; an undeclared gap, a
+  declared month with a row (value, NaN, or infinite), and books that blank different months refuse; the period
+  rules and the check gap still hold; the digest changes when the blank set or its counts change. The 41 earlier
+  tests pass unchanged.
+- Identity: a scratch script ran the `e8135bc` module and this module on 528 calls with no declared month (46 of
+  them refusals). The canonical JSON of every output and the text of every refusal were the same. In the suite, the
+  equality test pins the `e8135bc` record keys and values at 1e-12, not a digest: the HAC t uses `np.dot`, and its
+  last bit can differ between BLAS builds.
+- Self-check before review (Opus subagents): 48 mutation probes on the new paths. 44 were killed at first; of the 4
+  survivors, 3 are equivalent, and the fourth (no `blank_month_has_row` case in the check period) now has a test.
+- Backlog (ADVISORY): no floor on the months with values in the confirm and check periods after blank months (only
+  the bootstrap 12-month minimum); no ceiling on declared months, so a declaration can stand for the tail of a
+  short confirm series or extend the check end. The record lists every declared month.
+
+## 2026-10-06 - Check gap covers the post-seal warm-up (Milestone 5.5)
+
+- `research/m55_criteria.py`: `CHECK_GAP_MONTHS` (2019-07 to 2021-08) replaces `SEAL_MONTHS` (2019-07 to 2020-07)
+  in `check_series`; the docstrings and the `seal_month` refusal text name the check gap. No other logic change.
+- Tests: the constant (26 months); a check series with a 2019-07, 2020-07, 2020-08, or 2021-08 row refuses; the
+  series that skips exactly 2019-07 to 2021-08 passes; the old seal-only gap (rows for 2020-08 to 2021-08) refuses;
+  a missing 2021-09 refuses with `month_missing`. The shared synthetic `CHECK` index now resumes at 2021-09.
+- Observed: the old seal-only series refuses with `seal_month`, not `month_missing`, because the gap-month check
+  runs before the contiguity check; the card expected `month_missing`. The order is unchanged (no logic change).
+- Mutation: with the old range restored, 13 of 41 criteria tests fail.
+
+## 2026-10-06 - Remove private and home paths from tracked files (R11)
+
+- The repository is public, and R11 keeps private paths private. Tracked docs, coordination cards, and reports
+  named the private data root and the owner's home directory. They now use `<private_data_root>/...`,
+  `<repo>/...` (this repository root only), and `<home>/...` (other home paths, such as older checkouts). The
+  rest of each line is unchanged.
+- `research/eodhd_factor_diagnostics_dry_run.py`, `eodhd_factor_diagnostics_experiment_log.py`,
+  `eodhd_factor_diagnostics_readiness_review.py`, `eodhd_limited_factor_diagnostics_brief.py`, and
+  `eodhd_limited_factor_diagnostics_review.py` had a default bundle under the private data root. Their config path
+  fields have no default now, and `main` takes the bundle path as a required argument. In
+  `research/real_data_multifactor_diagnostic.py`, `default_data_dir` and `default_inventory_path` read
+  `EFR_EODHD_DATA_DIR` and `EFR_EODHD_INVENTORY_PATH` and refuse when they are not set; the parent walk for a
+  `private_data` directory is gone. An explicit path gives the same behavior as before.
+- `test_tracked_text_names_no_private_path` scans the content of `git ls-files` for `/Users/<name>`,
+  `/home/<name>`, and the `private_data` name with a slash. The allow list holds two guard patterns and six
+  attempt reports whose SHA-256 values `reports/dividend_comparison_release_manifest.json` pins; those six still
+  hold home paths.
+- Git history keeps the old paths (owner decision: no history rewrite).
+
 ## 2026-10-05 - WRDS loader: coordinator decisions P-9 and IBES currency (Milestone 5.5)
 
 - Card m55-loader-p9 on candidate `4717a56`. P-9 option (a): `signal_tables` no longer reads URQ `ajexq` and
@@ -119,6 +199,74 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   goes to the backlog.
 - Full suite on the records commit: exit code 0; 3679 passed, 2 skipped (platform `longdouble`), 0 failed,
   69 warnings, in 361 s.
+
+## 2026-10-05 - Declared signal set for the index tilt (Milestone 5.5, card m55-signal-sets)
+
+- Base `6395511`, commit `e50e8d6`. `TiltInputs` gets `signal_ids` and `min_valid` (defaults `SIGNAL_IDS` and
+  `MIN_VALID_SIGNALS`, which is 4). `check_inputs` refuses with `signal_set_invalid` when `signal_ids` is not a
+  non-empty tuple of unique strings, when the signal keys do not equal `signal_ids`, or when `min_valid` is not an
+  integer (bool refused) from 1 to `len(signal_ids)`. `composite_scores` and `rebalance_targets` use the declared
+  set. `half_rule(n) = ceil(n / 2)` gives the O-21 screen rule; the driver passes it, and the engine does not call
+  it. Each signal value must already carry its declared sign. Synthetic fixtures only; no real data was read.
+- Bit identity with defaults: a scratch script ran the `6395511` module next to the new module and compared every
+  output of `build_targets`, `run_index_tilt`, and `calibrate_lowrisk` exactly (1,348 objects, all identical). All
+  167 existing tests in `tests/test_m55_index_tilt.py` pass unchanged.
+- New tests (18 cases): the defaults and `half_rule` for n = 1 to 8; the default set in another order; one signal
+  (hand values and end to end); three signals with `min_valid` 2; the S-style set `("S1", "S4")` end to end; 11
+  refusals; and the default set with a missing Family A frame.
+- Mutation checks: three mutants killed (`min_valid` ignored, 4 failed; composite loop over `SIGNAL_IDS`, 4
+  failed; rebalance loop over `SIGNAL_IDS`, 2 failed).
+- Review round 1: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 3. Each seat
+  compared the default outputs with the base on its own (GPT 1,129 objects; Opus 3,005 objects in 16 cases) and ran
+  a future-perturbation probe on a declared set. The Opus seat killed ten more mutants (M3 to M12). Advisories: A-1,
+  a 127-character docstring line at `research/m55_index_tilt.py:253` (style only, still open); A-2, the cap loop
+  refuses with `tilt_loop_not_converged` for a one-signal set on the 12-name fixture (fails closed; a note for
+  driver fixtures); A-3, the trial file must state `min_valid` for the Family A baseline.
+- Full suite on `e50e8d6`: 3694 passed, 2 skipped, exit code 0; `ruff check` clean on the changed files.
+
+## 2026-10-05 - Low-risk book and its calibration on synthetic fixtures (Milestone 5.5, O-20)
+
+- Card chain on base `8420e28`: `667ff00` adds the `lowrisk` book (`budget_weights`, `lowrisk_weights`,
+  `calibrate_lowrisk`) with TILT bit-identical to the base; `ba71a67` (repair round 1) makes the ratio undefined
+  above a pinned-share limit, adds the 10 percent coverage stop, and records late-grid refusals; `a7eb43b` (repair
+  round 2, expert decision) measures the ratio on the whole book on complete-case rows with a two-sided median
+  bracket and retires `LOWRISK_PINNED_MAX`; `f64e816` (follow-up, tests only) tests the ratio rows on the
+  production path and the bracket and window-diagnostic boundaries. Synthetic fixtures only; no real data was read.
+- Review round 1: AUDIT (GPT) FAIL, MATERIAL 1 (GPT-R1-01: the free sub-book ratio drops pinned holdings);
+  AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 6. Review round 2: AUDIT FAIL, MATERIAL 1 (GPT-R2-01: the 2 percent
+  pinned-share limit does not bound missing risk); AUDIT_2 PASS, MATERIAL 0, ADVISORY 1 (ADV-R2-01, untagged rows of
+  a `g` refused later; fixed with `g_status`).
+- Expert step (two rounds used): a workflow with three critiques and one judge. The coordinator adopted the judge
+  rules R-a to R-j and tests T1 to T12 without change, plus one addendum on the window diagnostic. The rules are in
+  `docs/decision_log.md` (low-risk calibration entry). Mutation checks on `a7eb43b` killed all eight mutants
+  (suffix rows, defined-only median, floor 125, coverage stop in the diagnostic, constant `g_status`, free-only
+  ratio, `names` window in the row mask, no ambiguous stop).
+- Verification of the expert step: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 1 (GPT-R3-A01, T6 did not run the
+  calibration caller); AUDIT_2 (Opus) PASS, MATERIAL 0, ADVISORY 4. The follow-up `f64e816` closes GPT-R3-A01 and
+  Opus ADV-R3-01 to ADV-R3-04 with tests and report text only; the coordinator checked that its diff touches tests
+  only.
+- Carried to the real-data driver card: the 1963-1992 missingness census before the freeze, the daily data span and
+  first full 252-row anchor, the R6 exit-class split, the bid/ask-midpoint day rule, and Opus ADV-05. Open question
+  for the real run: cap-loop convergence at high `g` (`lowrisk_loop_not_converged` fails closed).
+- Full suite on `f64e816`: 3676 passed, 2 skipped, exit code 0.
+
+## 2026-10-04 - Signal-screen criteria module (Milestone 5.5)
+
+- `research/m55_criteria.py` adds the period guards, the screen record and shortlist with a frozen digest, test A
+  (intersection-union against SPY and CW-PIT), test B (non-inferiority and the bootstrap volatility ratio), Holm over
+  the primary family, the stop rules, BY for the secondary family, drawdown episodes, and the dated screen cost
+  schedule (30 + 30 bp before 1975-05, 10 + 30 bp to 1992-12, then the engine schedule). Synthetic series only.
+- Review round 1 on `22f46a7`: AUDIT (GPT) FAIL, MATERIAL 2 (the confirm gate checked only the record's own digest;
+  complex and nullable boolean values passed the input check); AUDIT_2 (Opus) FAIL, MATERIAL 3 (the secondary family
+  had no gate; six wiring mutations and three bootstrap mutations passed the tests). Repair `3e57783` fixed all five
+  and six coordinator ADVISORY decisions; 18 of 18 producer mutations fail at least one test.
+- Review round 2 on `3e57783`: AUDIT (GPT) PASS, MATERIAL 0, ADVISORY 0; AUDIT_2 (Opus) PASS, MATERIAL 0,
+  ADVISORY 6. The Opus seat caught 60 of 64 mutation probes; the survivors are equivalent or nearly so.
+- For the run-script card: check months from 2020-08 still read seal-window prices through their 252-day or
+  12-month lookbacks (OPUS-R2-A1; decide where the post-seal check segment starts); tie the composite series to the
+  frozen shortlist and store the freeze record as plain JSON (R2-A5); `freeze_shortlist` should check record months
+  and refuse a `None` IR (R2-A4).
+- Backlog: OPUS-CRIT-A03, A05, and R2-A6 go to the trial file text; R2-A2 and R2-A3 (two small tests).
 
 ## 2026-10-03 - Delisting-at-rebalance execution rule (Milestone 5.5 B2)
 
@@ -2475,7 +2623,7 @@ Semantic consumers outside the pattern:
 - `cross_sectional_group_neutralize`: Demeans within discrete industry/sector groups, supporting
   both static mappings and dynamic panels. Guarantees within-group zero mean.
 - Independent Review: `GROK_REVIEW` via Grok Build in Herdr tab `grok-review` (`w3:tCT`, pane `w3:pES`)
-  on clean detached worktree `/Users/rhapsoul/Documents/Codex/projects/efr-factor-neutralization-20260919`
+  on clean detached worktree `<home>/Documents/Codex/projects/efr-factor-neutralization-20260919`
   at exact candidate `70c289c`. Full report at `coord/reports/factor_neutralization_review.md`.
   Verdict: `PASS (MATERIAL: 0)`.
 - Tests: `tests/test_neutralize.py` (8 passed). Full test suite: 3574 passed, 2 skipped.
@@ -5676,7 +5824,7 @@ This ablation round completes the implementation and machine verification of sev
   outcomes. No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Build metadata and artifacts remained in an
   external temporary copy that was removed after validation.
@@ -5737,7 +5885,7 @@ This ablation round completes the implementation and machine verification of sev
   was installed or added. The check reused `build==1.5.0`,
   `setuptools==83.0.0`, `wheel==0.47.0`, and `packaging==26.2` from the
   existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Build metadata and artifacts remained in an
   external temporary copy.
@@ -5790,7 +5938,7 @@ This ablation round completes the implementation and machine verification of sev
   partitions, and conformance outcomes. No dependency was installed or added.
   The check reused `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -5837,7 +5985,7 @@ This ablation round completes the implementation and machine verification of sev
   added. The check reused `build==1.5.0`, `setuptools==83.0.0`,
   `wheel==0.47.0`, and `packaging==26.2` from the existing project
   environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -5881,7 +6029,7 @@ This ablation round completes the implementation and machine verification of sev
   outcomes. No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info was removed and temporary
   package artifacts remained outside the repository.
@@ -5927,7 +6075,7 @@ This ablation round completes the implementation and machine verification of sev
   No dependency was installed or added. The check reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file
   or persistent environment. Generated egg-info and temporary package
   artifacts were removed or kept outside the repository.
@@ -5976,7 +6124,7 @@ This ablation round completes the implementation and machine verification of sev
   was installed or added. The check reused `build==1.5.0`,
   `setuptools==83.0.0`, `wheel==0.47.0`, and `packaging==26.2` from the
   existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   its purpose was package-resource parity, and it changed no dependency file or
   persistent environment. Generated egg-info and temporary package artifacts
   were removed.
@@ -6029,7 +6177,7 @@ This ablation round completes the implementation and machine verification of sev
 - No dependency was installed or added. The no-isolation package build reused
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from the existing project environment at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`.
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`.
   Their purpose was package-resource parity validation; they changed no
   dependency declaration or tracked repository file. Generated ignored
   egg-info metadata was removed after validation.
@@ -6077,7 +6225,7 @@ This ablation round completes the implementation and machine verification of sev
 - The no-isolation sdist/wheel build reused, without installing,
   `build==1.5.0`, `setuptools==83.0.0`, `wheel==0.47.0`, and
   `packaging==26.2` from
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`.
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`.
   Both artifacts reproduced raw R0 JSON SHA-256
   `4b78c36647621deaec15114558d827c17dae2bfa29918f4cbf2ceb2aa6b6e6d9`
   and sidecar SHA-256
@@ -6430,7 +6578,7 @@ This ablation round completes the implementation and machine verification of sev
   cleanup, and diff checks.
   The default shell still had no `python` command, so validation reused the
   existing isolated interpreter at
-  `/Users/rhapsoul/Documents/Codex/projects/equity-factor-research/.venv`;
+  `<home>/Documents/Codex/projects/equity-factor-research/.venv`;
   nothing was installed into or changed in that environment.
 - Final validation of the narrow external-attribution remediation passed 21
   focused structure tests and the full 856-test suite with the same two
@@ -7219,8 +7367,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.json`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_BRIEF.md`
 
 Implementation:
 
@@ -7276,8 +7424,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.json`
+- `<private_data_root>/eodhd_first_dry_run/LIMITED_FACTOR_DIAGNOSTICS_REVIEW.md`
 
 Implementation:
 
@@ -7333,8 +7481,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.json`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_READINESS_REVIEW.md`
 
 Implementation:
 
@@ -7390,8 +7538,8 @@ Changed files:
 
 Private outputs:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.json`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_EXPERIMENT_LOG.md`
 
 Implementation:
 
@@ -7444,7 +7592,7 @@ Changed files:
 
 Private output:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/FACTOR_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
 
 Implementation:
 
@@ -7507,7 +7655,7 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/DATA_QUALITY_DIAGNOSTICS_DRY_RUN_SUMMARY.md`
 
 Aggregate diagnostics evidence recorded:
 
@@ -7558,7 +7706,7 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/LOADER_SMOKE_TEST_SUMMARY.md`
 
 Aggregate loader-smoke evidence recorded:
 
@@ -7615,7 +7763,7 @@ Scope:
   duplicate counts, invalid-value counts, OHLC consistency, and SPY benchmark
   alignment.
 - Write any loader-smoke-test summary only under
-  `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`.
+  `<private_data_root>/eodhd_first_dry_run`.
 
 Guardrails:
 
@@ -7653,8 +7801,8 @@ Changed files:
 
 Private evidence reviewed:
 
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
-- `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/LOCAL_CSV_READINESS_INTAKE_SUMMARY.md`
+- `<private_data_root>/eodhd_first_dry_run/VALIDATION_ONLY_DRY_RUN_SUMMARY.md`
 
 Aggregate validation evidence recorded:
 
@@ -7850,7 +7998,7 @@ The stage does not regenerate committed Markdown reports, JSON experiment logs,
 or the experiment registry.
 
 Environment note: after migration, `python` is not on `PATH`; `/usr/bin/python3`
-does not have `pytest` or `pandas`; and `/Users/rhapsoul/.local/bin/pytest`
+does not have `pytest` or `pandas`; and `<home>/.local/bin/pytest`
 runs under Python 3.9 without `pandas`. An ignored `.venv` was created from the
 Codex bundled Python and given only the missing test runner/dependency pieces
 needed for focused validation. See `docs/troubleshooting_log.md` for the

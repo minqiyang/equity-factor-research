@@ -124,32 +124,23 @@ COMPOSITE_IDS = (
 ESTIMATOR_VERSION = "m4_2_purged_cpcv_v1"
 
 
-def default_data_dir() -> Path:
-    """Return the local EODHD snapshot directory, honoring ``EFR_EODHD_DATA_DIR``."""
+def _required_env_path(name: str) -> Path:
+    raw = os.environ.get(name)
+    if not raw:
+        raise ValueError(f"set {name} or pass the path explicitly; there is no default private path")
+    return Path(raw).expanduser().resolve()
 
-    raw = os.environ.get(DEFAULT_DATA_DIR_ENV)
-    if raw:
-        return Path(raw).expanduser().resolve()
-    for parent in PROJECT_ROOT.parents:
-        candidate = parent / "private_data" / "eodhd_eod_acquisition" / DEFAULT_SNAPSHOT_DIR_NAME
-        if candidate.exists():
-            return candidate.resolve()
-    return Path("/private_data/eodhd_eod_acquisition") / DEFAULT_SNAPSHOT_DIR_NAME
+
+def default_data_dir() -> Path:
+    """Return the local EODHD snapshot directory from ``EFR_EODHD_DATA_DIR`` (required)."""
+
+    return _required_env_path(DEFAULT_DATA_DIR_ENV)
 
 
 def default_inventory_path() -> Path:
-    """Return the local coverage inventory path, honoring ``EFR_EODHD_INVENTORY_PATH``."""
+    """Return the local coverage inventory path from ``EFR_EODHD_INVENTORY_PATH`` (required)."""
 
-    raw = os.environ.get(DEFAULT_INVENTORY_PATH_ENV)
-    if raw:
-        return Path(raw).expanduser().resolve()
-    for parent in PROJECT_ROOT.parents:
-        candidate = (
-            parent / "private_data" / "efr_exploration_inventory_20260913" / DEFAULT_INVENTORY_FILE_NAME
-        )
-        if candidate.exists():
-            return candidate.resolve()
-    return Path("/private_data/efr_exploration_inventory_20260913") / DEFAULT_INVENTORY_FILE_NAME
+    return _required_env_path(DEFAULT_INVENTORY_PATH_ENV)
 
 
 @dataclass(frozen=True)

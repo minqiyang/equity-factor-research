@@ -97,7 +97,7 @@ the earlier evidence remains intact.
 ## Independently executed verification
 
 The supplied interpreter is
-`/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/.venv/bin/python`.
+`<repo>/.venv/bin/python`.
 Observed versions are CPython 3.12.13, pandas 3.0.6, NumPy 2.5.3, SciPy 1.18.1,
 pytest 9.1.1, pytest-xdist 3.8.0, and Ruff 0.16.8. Runs use `PYTHONPATH=src:.`;
 the six native numerical thread limits equal 1. Full lanes use two worksteal

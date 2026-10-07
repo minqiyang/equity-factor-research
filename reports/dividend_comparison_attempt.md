@@ -49,7 +49,7 @@ bytes, frozen configs/official reports/logs/split golden, and accounting
 paths are unchanged. Isolated ablation was not required.
 
 Repair QA used interpreter
-`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
+`<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
 with `PYTHONPATH=src`. Focused suite: 546 passed. Full suite with
 outside-repository `--basetemp`: 3360 passed, 2 skipped, 1 warning. The
 card's in-repository `--basetemp=build/dividend_comparison/runtime_fix_full`
@@ -61,7 +61,7 @@ hash-identical. Coordinator attempt report:
 ## Scope and source identity
 
 - Work date: 2026-09-18, America/Los_Angeles.
-- Writer root: `/Users/rhapsoul/Documents/Codex/projects/efr-dividend-comparison-20260919`.
+- Writer root: `<home>/Documents/Codex/projects/efr-dividend-comparison-20260919`.
 - Branch: `codex/dividend-comparison-20260919`.
 - Clean starting HEAD: `5d673f26eea0174236c601fa822916506894ef20`, PR221 merge.
 - Accepted design candidate: `7307a19d1a72138afd423cf5d6ece99f33970925`.
@@ -221,7 +221,7 @@ line and unchanged earlier prefix; automated repair is absent.
 ## QA commands, environments, and retained failures
 
 All Python commands used the supplied existing interpreter
-`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
+`<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
 and `PYTHONPATH=src` for pytest. Observed environment: Python 3.12.14,
 pandas 3.0.5, NumPy 2.5.3, macOS. Logs live under ignored
 `build/dividend_comparison/`.

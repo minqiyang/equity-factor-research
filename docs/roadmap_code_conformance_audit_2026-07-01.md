@@ -101,7 +101,7 @@ This revision also includes `EXPERIMENT_LOG.md` as an experiment-record source o
 | Research scripts | `research/` contains synthetic demos, local CSV fixture workflow, EODHD dry-run/log/readiness/review/brief runners, and split robustness workflows. |
 | Tests | `tests/` includes deterministic unit, integration, fixture, private-runner, generated-output, and LEAN-scope tests. There is no portfolio-level `src/risk/constraints.py` behavior test beyond project-structure import/docstring coverage because the module is still placeholder-only. |
 | CI | `.github/workflows/ci.yml` installs `.[dev]`, runs `python -m pytest -q`, `python -m compileall src tests research`, and `python -m compileall lean`. |
-| Generated output policy | `reports/` contains committed synthetic or fixture reports/logs; EODHD private outputs stay under `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run`. |
+| Generated output policy | `reports/` contains committed synthetic or fixture reports/logs; EODHD private outputs stay under `<private_data_root>/eodhd_first_dry_run`. |
 | Package metadata | `pyproject.toml` requires Python `>=3.11` and declares `numpy`, `pandas`, `matplotlib`, `scipy`, and dev `pytest`. |
 | Scripts | `scripts/repo_map.py` rewrites only `docs/repo_map.md` and skips generated reports/cache directories; `scripts/audit-skills.ps1` audits local Skill frontmatter/fences. |
 | LEAN scaffold | `lean/` contains metadata-only scaffold/draft files and a README with no runtime LEAN dependency, no orders, no brokerage, and no performance claim. |
@@ -313,7 +313,7 @@ No tests appeared disconnected from the current roadmap. Some tests enforce beha
 
 ## Not Covered / Uncertainty
 
-- Raw private EODHD CSV/JSON/Markdown outputs under `/Users/rhapsoul/Documents/Codex/private_data/eodhd_first_dry_run` were not opened. This audit relies on aggregate repo checkpoint docs and tests for private-data claims.
+- Raw private EODHD CSV/JSON/Markdown outputs under `<private_data_root>/eodhd_first_dry_run` were not opened. This audit relies on aggregate repo checkpoint docs and tests for private-data claims.
 - Historical generated report bodies under `reports/` were inventoried and treated as committed synthetic/fixture outputs, but this pass did not re-render or rewrite them because the task forbids generated-output changes.
 - `docs/STAGE_PLAN.md` does not exist, so roadmap equivalents were used.
 - Long historical logs were searched and sampled by targeted evidence rather than read end to end. The audit uses concrete file/path evidence for every finding, but it does not claim every historical sentence in every long log was reclassified.

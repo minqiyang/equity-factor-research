@@ -21,7 +21,7 @@
 - **Candidate branch**: `claude/m4_7a2-universe-and-census`.
 - **Working root**: `/private/tmp/efr-m47a2-universe-20260925`.
 - **Operative Plan Reference**: `coord/plans/m4_7_binding_plan.md` (Revision 11, SHA-256 `6541db93336e9181ebf3ad2f066b7b17f4550a17565036c2db5a5d82872a6407` §1.5, §1.6, §2, §3, §4.1, §4.2, §5.1, §5.2, §5.3, §5.4, §5.5, §7.2 a-2, Appendices A, B, D, E).
-- **Report destination**: `/Users/rhapsoul/Documents/Codex/Artifact/EFR/equity-factor-research-clean/coord/reports/m4_7a2_universe_and_census_impl.md`.
+- **Report destination**: `<repo>/coord/reports/m4_7a2_universe_and_census_impl.md`.
 
 ---
 
