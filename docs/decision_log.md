@@ -15,6 +15,43 @@ investment performance.
 
 ---
 
+## 2026-10-05 - Owner Decision O-22: R11 Grant for WRDS Data
+
+Context:
+
+- The owner's WRDS account is approved (2026-10-05). The intake note asks for an R11 grant that names the tables,
+  purpose, storage, and publication terms, and for answers to its risks 1 (purpose) and 2 (publication). It also
+  leaves open whether the seal months are dropped at the pull.
+
+Decision:
+
+- **O-22 (owner, 2026-10-05):**
+  - Scope: WRDS CRSP (CIZ stock, index, and S&P 500 constituent tables), Compustat North America and Compustat
+    Snapshot, IBES, and the CRSP-Compustat and IBES-CRSP link tables, as listed in the download checklist.
+  - Purpose: the owner's personal academic, non-commercial research. Only the owner logs in and downloads; agents
+    read the local files. No real money uses a rule derived from these data.
+  - Storage: two copies, outside every Git checkout. The working copy is `<local_data_root>/wrds_<vintage>/` on
+    the local disk, in a folder that iCloud does not sync; all scripts read only this copy. The backup is one
+    archive per vintage, `<private_data_root>/wrds_backup/wrds_<vintage>.tar`, next to the EODHD folders, synced
+    by iCloud. No script reads the backup. It is written once after the manifest, and its SHA-256 is checked after
+    the copy. To restore, the owner extracts the archive and checks the manifest hashes. This keeps iCloud
+    conflict copies and cloud-only files away from the files that scripts read (A2-D-ADV-6).
+  - Publication: Git holds only a manifest and hashes. No raw provider row, membership list, security code or
+    ticker list, company name, credential, or private path goes into Git. Noncommercial aggregates follow the
+    existing owner data terms.
+  - Seal months: in each table with a price or a return, rows whose economic date interval touches
+    `[2019-07-31, 2020-07-31)`, or could touch it when a date is missing, are downloaded into a separate folder
+    `wrds_<vintage>/sealed/` (in the working copy; the backup archive holds it as bytes) and are never opened.
+    It joins the O-18 never-opened paths. Its files are hashed as bytes only. Tables with no price or return
+    (membership, links, shares, fundamentals, estimates) keep these dates in their main files (coordinator
+    default). Rebalances whose windows touch the seal months stay typed missing.
+
+Consequences:
+
+- The coordinator may build the WRDS loader and read the local files outside `sealed/`. Every card that lets an
+  agent read these files lists the never-opened paths, `wrds_<vintage>/sealed/**` included.
+- Next: the owner runs the read-only subscription probe, then the reviewed pull script.
+
 ## 2026-10-04 - Signal-Screen Criteria Module: Coordinator Defaults and WRDS Source Facts
 
 Context:
