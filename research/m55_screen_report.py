@@ -59,7 +59,8 @@ RUN_FACTS = (
      "stages": ("coverage", "calibration")},
     {"run": 2, "folder": "m55_screen_v2", "date": "2026-10-08",
      "code_commit": "8590b2e9ca11513cf9f5aa2c552e1d6a9f6d3925", "trial": "trial family v1 with amendments 1 and 2",
-     "stages": d.STAGES},
+     "trial_sha256": "4f9cf222da07fc039529fcbec01b3f174275483857fd7a20a69b132d76f88a03",
+     "stages": d.STAGES[:d.STAGES.index("freeze") + 1]},
 )
 RUN_1_GATE = 'GO_ON = ("chosen",)'               # the calibration gate of the run 1 code
 # Per-position rows of the stage files (each with a date or a weight), per-month blank declarations, and single
@@ -224,14 +225,15 @@ def candidate(item: Mapping[str, Any], coverage: Mapping[str, Any], shortlisted:
 
 def build(run_1: Path, run_2: Path, repo: Path = d.REPO) -> dict[str, Any]:
     """Check both runs and return the report document (aggregates only)."""
-    trial, trial_sha = d.load_trial(repo)
+    trial, _ = d.load_trial(repo)
+    trial_sha = RUN_FACTS[1]["trial_sha256"]                            # run 2 was made before amendment 3
     tracked = json.loads((repo / d.TRACKED_MANIFEST).read_text())
     data_sha = d.check_data(w.WrdsData({}, tracked), tracked, trial)    # the files digest of the tracked manifest
     first, digests_1 = check_run(Path(run_1), RUN_FACTS[0]["stages"])
     second, digests_2 = check_run(Path(run_2), RUN_FACTS[1]["stages"])
     ctx_1, ctx_2 = first["coverage"]["context"], second["coverage"]["context"]
     if ctx_2["trial_sha256"] != trial_sha:
-        raise refuse("trial_mismatch", "run 2 was not made from the frozen trial file")
+        raise refuse("trial_mismatch", "run 2 was not made from the trial file with amendments 1 and 2")
     if not ctx_1["data_files_sha256"] == ctx_2["data_files_sha256"] == data_sha:
         raise refuse("data_manifest_mismatch", "a run was not made from the tracked manifest's data")
     calibration = second["calibration"]["result"]

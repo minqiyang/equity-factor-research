@@ -21,6 +21,7 @@ from research.m55_index_tilt import ME_REASONS
 
 
 RUNS, CASES, EXITS, BLANK = d.RUNS, d.CASES, w.EXIT_CLASSES, d.BLANK
+RUN_2_STAGES, RUN_2_TRIAL = rep.RUN_FACTS[1]["stages"], rep.RUN_FACTS[1]["trial_sha256"]
 HEADER = {"evidence_ceiling": "DIAGNOSTIC_ONLY", "run_label": "stock-level out-of-sample",
           "low_risk_label": "in-sample", "labels": "every header states the run label", "vwretd": "vwretd as is"}
 PER_POSITION = {"break_row", "break_rows", "previous_valid_row", "weight_at_last_rebalance", "each", "positions"}
@@ -155,7 +156,7 @@ def runs(tmp_path: Path) -> tuple[Path, Path]:
     def ctx(trial: str, code: str) -> dict:
         return {"trial_sha256": trial, "data_files_sha256": data_sha(), "code_pins_sha256": {}, "code_sha256": code}
     return (write_run(tmp_path / "private" / "m55_screen_v1", ("coverage", "calibration"), ctx("a" * 64, "b" * 64)),
-            write_run(tmp_path / "private" / "m55_screen_v2", d.STAGES, ctx(d.TRIAL_SHA256, "c" * 64)))
+            write_run(tmp_path / "private" / "m55_screen_v2", RUN_2_STAGES, ctx(RUN_2_TRIAL, "c" * 64)))
 
 
 def rewrite(folder: Path, stage: str, edit) -> None:
@@ -247,8 +248,8 @@ def test_runs_from_another_trial_file_or_data_refuse(tmp_path, capsys) -> None:
         return {"trial_sha256": trial, "data_files_sha256": data, "code_pins_sha256": {}, "code_sha256": "c" * 64}
     v1 = write_run(tmp_path / "m55_screen_v1", ("coverage", "calibration"), ctx("a" * 64, data_sha()))
     for name, context, reason in (("trial", ctx("a" * 64, data_sha()), "trial_mismatch"),
-                                  ("data", ctx(d.TRIAL_SHA256, "f" * 64), "data_manifest_mismatch")):
-        v2 = write_run(tmp_path / name / "m55_screen_v2", d.STAGES, context)
+                                  ("data", ctx(RUN_2_TRIAL, "f" * 64), "data_manifest_mismatch")):
+        v2 = write_run(tmp_path / name / "m55_screen_v2", RUN_2_STAGES, context)
         assert rep.main([str(v1), str(v2)], out=tmp_path) == 1
         assert f"refused: {reason}:" in capsys.readouterr().err
     assert not any(p.is_file() for p in tmp_path.iterdir())
@@ -271,10 +272,10 @@ def nested(found: dict) -> None:
 
 
 def test_nested_groups_one_event_apart_give_no_candidate_weight(tmp_path) -> None:
-    ctx = {"trial_sha256": d.TRIAL_SHA256, "data_files_sha256": data_sha(), "code_pins_sha256": {},
+    ctx = {"trial_sha256": RUN_2_TRIAL, "data_files_sha256": data_sha(), "code_pins_sha256": {},
            "code_sha256": "c" * 64}
     v1 = write_run(tmp_path / "m55_screen_v1", ("coverage", "calibration"), {**ctx, "trial_sha256": "a" * 64})
-    doc = rep.build(v1, write_run(tmp_path / "m55_screen_v2", d.STAGES, ctx, nested))
+    doc = rep.build(v1, write_run(tmp_path / "m55_screen_v2", RUN_2_STAGES, ctx, nested))
     owed = doc["reports_owed"]
     groups = [doc["screen"]["candidates"], *(part["screen"] for part in owed.values()
                                               if isinstance(part, dict) and "screen" in part)]

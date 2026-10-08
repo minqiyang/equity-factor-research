@@ -15,8 +15,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 ## 2026-10-08 - Milestone 5.5 confirm and check stages with the half-spread override
 
 - Card m55-confirm: amendment 3 rule text (commit `56f556a`), then the runner, engine, driver, and tests (commit
-  `e186c63`), then the pins of amendment 3 and the driver `TRIAL_SHA256` (commit `528ac75`). Decision log: the
-  amendment 3 entry of the same date. No real data was read.
+  `e186c63`), then the pins of amendment 3 and the driver `TRIAL_SHA256` (commit `528ac75`), then the logs, and
+  last the screen report change below. Decision log: the amendment 3 entry of the same date. No real data was read.
 - Runner (`src/backtest/portfolio.py`): `run_long_only_backtest` takes an optional panel `asset_slippage_bps` (bp,
   rows by assets) beside `dated_costs`. A trade pays the row rate plus its own rate above the row rate, so equal
   rates add exactly 0.0, and on a halt-locked row H-3c applies to the full row cost. A bad panel refuses
@@ -42,11 +42,13 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   runs each) and the check stage 40, against 18 in the look and the screen. Each call reads frames from the first
   row of its seal segment (1961 before the seal), and in a profile the runner's input snapshots took about a fifth
   of the confirm time.
-- Needs follow-up: `research/m55_screen_report.py` (PR #301) checks that run 2 was made from the current trial
-  file and reads `STAGES` as the run 2 stages. After amendment 3 and the two new stages, its 8 tests fail, and the
-  report cannot be built again from the run 2 files. The change is outside card m55-confirm.
-- Checks: full suite `2 failed, 3998 passed, 3 skipped, 69 warnings, 6 errors in 624.69s` (exit 1; the 8 tests
-  are those of `tests/test_m55_screen_report.py` above); `ruff check .` passed.
+- Screen report (`research/m55_screen_report.py`, PR #301; coordinator scope grant). It checked run 2 against the
+  digest of the current trial file and took `STAGES` as the run 2 stages, so after amendment 3 its 8 tests failed
+  and the report could not be built again from the run 2 files. Now `RUN_FACTS[1]` holds the run 2 trial digest
+  (`4f9cf222...f88a03`, amendments 1 and 2) and the five stages up to the freeze, and the report checks the run 2
+  context against them. The provenance digest is still the run 2 digest, so the report bytes stay the same. The
+  tests write run 2 with these facts; no assertion changed.
+- Checks: full suite `4006 passed, 3 skipped, 69 warnings in 611.65s` (exit 0); `ruff check .` passed.
 
 ## 2026-10-08 - Milestone 5.5 public screen report of trial family v1
 
