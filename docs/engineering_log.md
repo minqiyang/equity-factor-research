@@ -12,6 +12,65 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-08 - Milestone 5.5 confirm and check stages with the half-spread override
+
+- Card m55-confirm: amendment 3 rule text (commit `56f556a`), then the runner, engine, driver, and tests (commit
+  `e186c63`), then the pins of amendment 3 and the driver `TRIAL_SHA256` (commit `528ac75`), then the logs, the
+  screen report change, and the review round 1 fixes below. Decision log: the amendment 3 entry of the same date. No
+  real data was read.
+- Runner (`src/backtest/portfolio.py`): `run_long_only_backtest` takes an optional panel `asset_slippage_bps` (bp,
+  rows by assets) beside `dated_costs`. A trade pays the row rate plus its own rate above the row rate, so equal
+  rates add exactly 0.0, and on a halt-locked row H-3c applies to the full row cost. A bad panel refuses
+  (`asset_slippage_invalid`). Without the panel every output has the bytes of main `8590b2e`.
+- Engine (`research/m55_index_tilt.py`): `half_spreads` gives the half-spread in bp and the first invalid reason of
+  each quote cell; `spread_rates` gives scale x max(schedule spread at r, half-spread at r - 1). `run_index_tilt`
+  takes a half-spread panel, and the book summary returns the trades and the spread cost of each rebalance row.
+  Without the panel every output has the bytes of `8590b2e`.
+- Driver (`research/m55_driver.py`): stages `confirm` and `check` after `freeze`, with the same gates. Each stage
+  checks the quote copy (`quote_files`: the manifest, the file hashes, and the Parquet row counts, no value) against
+  the tracked quote manifest, and its digest enters `data_files_sha256`. Only the confirm and check stages parse
+  quote values (`read_quotes`), after the earlier stage files and the frozen digest gate (`open_gate`) pass. Then
+  `quote_table` checks the keys of the whole quote copy (seal window, repeat, match with the first pull), rows after
+  the segment end too, and the three segments from cash, with dates from the calendar, cut every input at the
+  segment end. So a bad key in a check-period row stops the confirm stage, but no value after the confirm end
+  reaches a confirm result. The helpers that cut and check the screen window now take the period and its last
+  month; the screen path calls them with the old values.
+- Tests, synthetic only. The byte tests build the runner, the engine, and the driver from the bytes at `8590b2e`
+  (`tests/m55_bytes_support.py`; CI checks out the full history). The new file `tests/test_m55_confirm.py` has its
+  own xdist group, so CI runs it beside the driver group. Its long world (the coverage-stop world on a calendar to
+  2025-12-31 with the seal rows out, SPY, events after 1992, Compustat quarters from 2010, a listing after the seal,
+  and synthetic quotes with each invalid case) runs from coverage to check in about 400 s on this machine.
+- Changed test values: none. In `tests/test_m55_driver.py` the small-world chain, `copy_until`, and the real-size
+  loop name the five stages up to the freeze (`SCREEN_STAGES`), because `STAGES` now has seven, and each call
+  passes an empty quote copy, because `run_stage` now needs one. No assertion changed.
+- Run time: the confirm stage makes 22 engine calls (10 signal sets and the Family A screen baseline, two loader
+  runs each) and the check stage 40, against 18 in the look and the screen. Each call reads frames from the first
+  row of its seal segment (1961 before the seal), and in a profile the runner's input snapshots took about a fifth
+  of the confirm time.
+- Screen report (`research/m55_screen_report.py`, PR #301; coordinator scope grant). It checked run 2 against the
+  digest of the current trial file and took `STAGES` as the run 2 stages, so after amendment 3 its 8 tests failed
+  and the report could not be built again from the run 2 files. Now `RUN_FACTS[1]` holds the run 2 trial digest
+  (`4f9cf222...f88a03`, amendments 1 and 2) and the five stages up to the freeze, and the report checks the run 2
+  context against them. The provenance digest is still the run 2 digest, so the report bytes stay the same. The
+  tests write run 2 with these facts; no assertion changed.
+- Review round 1 (AUDIT FAIL, MATERIAL 1; AUDIT_2 PASS). M-1 (R9): `main` parsed every quote file before the
+  tracked quote manifest, the stage chain, and the frozen digest gate. Now `main` gives `run_stage` the quote root,
+  `quote_files` reads no value, and `read_quotes` runs only in the confirm and check stages after `open_gate`.
+  Spy tests on `pq.read_table` and `read_quotes` prove that a missing or other tracked quote manifest, a missing
+  chain, or another freeze digest refuses with no quote value parsed, through `main` and `run_stage`. The quote copy
+  checks now run inside the logged block of `run_stage`, so each refusal reaches `run_log.jsonl`, and a missing
+  `MANIFEST_local.json` refuses as `quote_copy_manifest_missing`. The first-pull load logs as before. The trial text
+  now limits "no return after 1992-12-31" to WRDS data in the runs of this trial file, and
+  `periods.confirm.segments` says that the quote key checks cover the whole copy; `TRIAL_SHA256` and the decision
+  log carry the new digest. Changed test inputs, no assertion: the `quotes` fixture of the long world is now a copy on
+  disk, so the chain parses its values through `read_quotes`, and the quote file tests call `quote_files` without
+  the old `read` argument.
+- Second pull: `reports/wrds_quotes_manifest_2025.json` (SHA-256 `cedf4cb3...8288`, 36 parts, 6,556,591 rows,
+  vintage 2025-12-31), built and verified by the coordinator; amendment 3 now states the pull (trial SHA-256
+  `f9122696...48e4c8`).
+- Checks: the full suite and `ruff check .` run on a CI-shaped merge ref of the final commit
+  (`git commit-tree HEAD^{tree} -p origin/main -p HEAD`), and both pass.
+
 ## 2026-10-08 - Milestone 5.5 public screen report of trial family v1
 
 - Card m55-screen (prod-m55screen-3): `research/m55_screen_report.py`, `tests/test_m55_screen_report.py`, and the

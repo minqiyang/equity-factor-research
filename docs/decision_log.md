@@ -15,6 +15,101 @@ investment performance.
 
 ---
 
+## 2026-10-08 - Trial Family v1 Amendment 3: Confirm and Check Stages With the Half-Spread Override (Milestone 5.5, card m55-confirm)
+
+Context:
+
+- Run 2 (2026-10-08, code `8590b2e`, WRDS vintage 2025-12-31) ran the coverage, calibration, look, screen, and
+  freeze stages on rows up to 1992-12-31 only. The freeze decision was `shortlist_frozen` with S3 and S4, digest
+  `62b2c8af...d59518`. No confirm month, check month, or quote value has been read.
+- The rules and code pins of amendment 3 were committed before the second pull: `56f556a` and `e186c63` at
+  06:28:50 PDT and `528ac75` at 06:30:07 PDT. The owner ran the pull once, on 2026-10-08 (first quote file 07:47:54
+  PDT, `VINTAGE.json` 07:50:17 PDT, vintage 2025-12-31). Later commits changed amendment 3 wording only (`452a076`
+  at 07:54:21 PDT, and the commit of the tracked quote manifest). Before run 3, only the quote file bytes (for the
+  SHA-256) and the Parquet row-count metadata were read; no quote value has been parsed.
+- The frozen file declares the half-spread override (`books.costs.half_spread_override`), but it does not state the
+  quote rule, the pull, or the run segments. The design note of card m55-confirm sets them. The engine and the
+  runner change, so amendment 3 pins their new bytes before run 3 (`code_pins.statement`).
+
+Decision:
+
+- Amendment 3 changes three fields and adds seven:
+  - `status`: names amendment 3, its timing, and the changed fields.
+  - `declaration_timing.amendment_3` (added): it came after the run 2 freeze and before any confirm month, check
+    month, or quote value is read. Run 3 reruns every stage from coverage into a new folder and must repeat the
+    run 2 digest; a different digest, coverage count, or calibration value is a stop for the owner. No return of a
+    book, SPY, or index after 1992-12-31 exists on WRDS data in the runs of this trial file (the prior exposures
+    stay listed). No coverage, signal, calibration, screen, shortlist, test, or trial-count rule changes.
+  - `code_pins["research/m55_index_tilt.py"]`: the new commit and SHA-256; the scope adds the quote rule
+    (`half_spreads`) and the spread rate per stock (`spread_rates`).
+  - `code_pins["src/backtest/portfolio.py"]` (added): the runner, with the slippage rate per asset and row
+    (`asset_slippage_bps`).
+  - `code_pins["coord/reports/m6_prep/wrds_pull_quotes.py"]` (added): the second pull script, SHA-256
+    `1287c6a1...a419b`, commit null (the script is not tracked).
+  - `data.tables_used.quotes` (added): the quote main files (`crsp_dsf_v2_quotes/<year>.parquet`, `late`,
+    `nulldate`) and their columns.
+  - `books.costs.half_spread_override`: a trade at row r pays scale x max(schedule spread at r, CRSP half-spread at
+    r - 1); the half-spread is 10,000 x (ask - bid) / (ask + bid); an invalid cell takes the first of
+    `no_quote_row`, `quote_missing`, `quote_one_sided`, `quote_nonpositive`, `quote_crossed` and pays the schedule.
+    The one-pull rule: one run of the pinned script into a folder named `wrds_quotes_*`, a re-pull is a stop for the
+    owner, and `reports/wrds_quotes_manifest_2025.json` is committed before run 3. It also lists the driver
+    refusals and puts the quote file hashes in `data_files_sha256`.
+  - `periods.confirm.segments` (added): one segment from cash, anchor 1992-12-31, first rebalance 1993-01-29, end
+    row 2014-03-31, every input cut at the end row, so no value after it reaches a confirm result. The key checks
+    of the quote rows (seal window, repeat, and match with the first pull) cover the whole quote copy, rows after
+    2014-03-31 too, so a bad key in a check-period row stops the confirm stage.
+  - `periods.check.segments` (added): pre-seal anchor 2014-02-28, first rebalance 2014-03-31, end row 2019-06-28,
+    months 2014-04 to 2019-06; post-seal anchor 2021-07-30, first rebalance 2021-08-31, end row the last row of
+    `check_period_end`, months 2021-09 to `check_period_end`.
+  - `reports_owed.half_spread` (added): by stage, signal set, loader run, cost case, book, and year.
+- The amendment pins no quote manifest. Every stage checks the quote copy from its manifest, file hashes, and
+  Parquet row counts only, and compares it with the tracked quote manifest. No stage parses a quote value before
+  that check and the earlier stage files pass, and the confirm and check stages parse the values only after the
+  frozen digest gate. The trial file SHA-256 after amendment 3 is `f9122696...48e4c8`.
+- Tracked quote manifest `reports/wrds_quotes_manifest_2025.json` (`QUOTE_MANIFEST`), SHA-256
+  `cedf4cb3...8288`: vintage 2025-12-31, 36 main parts (33 files for 1993 to 2025; 2026, `late`, and `nulldate`
+  with 0 rows and no file), 6,556,591 main rows. The coordinator built it from the main files, with the fields of
+  `m55_wrds_loader.write_manifest` without `units`: `vintage`, `script_code_sha256`, `files` (rows, `sha256`,
+  `query_sha256`), and `sealed` (`sealed_digest`: 39 files, bytes hashed, nothing parsed). The coordinator verified
+  it. Change of order: the pull finished before this code merged, so the manifest is in this PR, not in a separate
+  one.
+- Driver defaults (producer, card m55-confirm). The note does not settle these points; each serves run 3 only:
+  - The check stage reports the check means (`composite_means`) of each secondary member, with no p-value or
+    q-value. Reason: the secondary family is a confirm-period family.
+  - The check stage reports `tilt_stats`, `r4`, `half_spread`, `counts`, and the path_break positions per segment,
+    and joins only the monthly series and the declarations. Reason: each segment starts from cash, so a turnover or
+    TE across the gap has no meaning.
+  - Family A: a factor value at row t is blank when its own window of `warmup_rows` rows that ends at t holds a
+    `path_break` row (all six factors). Reason: P1_path_break blanks each level window across a break.
+  - The confirm and check stages refuse with `test_b_open` after the calibration decision `chosen` and with
+    `screen_empty_confirm` after an empty screen. Reason: run 2 gave `ratio_coverage_low` and a frozen shortlist;
+    any other path needs a rule that this trial file does not state, so it is a stop for the owner.
+  - The cost above the schedule in `half_spread` is the book's slippage cost minus turnover x schedule spread x
+    scale x (1 + daily gross) at each rebalance row.
+  - A quote row with no PERMNO or no date refuses (`quote_key_missing`). Reason: a missing key cannot be joined,
+    and a drop would be silent (R6).
+  - The composite's post-publication split is reported once for each publication year of its signals (S3 1996,
+    S4 2013); the Family A baseline has none.
+  - `me_coverage` and `bid_ask_midpoint_share` of a stage count the member-days after each segment anchor up to its
+    end row.
+  - The confirm stage records `composite_test` for both cost cases; the decision reads the 1x test and the 2x means
+    only.
+- No change loosens R1, R2, R4, R6, R8, or R9. Screen months keep `SCREEN_COST_SCHEDULE` with no rate panel.
+
+Consequences:
+
+- `research/m55_driver.py` runs seven stages; every stage needs the quote copy (`--quote-root`) and the tracked quote
+  manifest, because their digest is part of each stage context. Without a rate panel, the runner and the engine give
+  the bytes of main `8590b2e`, and on the synthetic long world the driver of `8590b2e` gives the same results from
+  coverage to freeze as this driver.
+- Run 3 order: coverage to freeze, the coordinator check of the freeze digest, coverage counts, and calibration
+  values against run 2, then confirm and check. The second pull and its tracked manifest are done (this PR).
+
+Follow-up:
+
+- Run 3 after this PR merges. The second WRDS pull of CRSP closing bid and ask (OI-03) is done, and its manifest is
+  in this PR.
+
 ## 2026-10-08 - Milestone 5.5 Screen of Trial Family v1: Shortlist S3 and S4
 
 Context:

@@ -1,5 +1,6 @@
 import ast
 import inspect
+import types
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from backtest.slippage import (
     calculate_volume_aware_slippage_diagnostics,
     calculate_volume_aware_slippage_from_trade_weights,
 )
+from m55_bytes_support import BASE_COMMIT, assert_same_bytes, module_at
 
 
 def _volume_aware_metadata(**overrides: object) -> dict[str, object]:
@@ -1322,3 +1324,121 @@ def test_dated_costs_apply_on_a_halt_locked_row() -> None:
     assert result.turnover.loc[dates[2]] > 0.0
     assert result.total_trading_costs.loc[dates[2]] == pytest.approx(
         result.turnover.loc[dates[2]] * 60.0 / 10_000.0 * (1.0 + result.gross_returns.loc[dates[2]]))
+
+
+# Per-asset slippage rates (card m55-confirm, trial family v1 amendment 3) -------------------------
+
+def _locked_fixture() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    dates = pd.date_range("2024-01-01", periods=4, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 100.0, np.nan, 100.0], "BBB": [100.0, 101.0, 99.0, 100.0],
+                           "CCC": [100.0, 99.5, 100.5, 101.0]}, index=dates)
+    rates = pd.DataFrame({"transaction_cost_bps": [0.0, 10.0, 30.0, 5.0], "slippage_bps": [0.0, 10.0, 30.0, 5.0]},
+                         index=dates)
+    flat = pd.DataFrame(1.0, index=dates, columns=prices.columns)
+    flat.iloc[1, 1] = 3.0           # row 2 targets (0.2, 0.6, 0.2), but AAA has no close: the row is locked
+    return prices, flat, rates
+
+
+def _runs(module: types.ModuleType) -> list:
+    """The existing dated-cost, fixed-cost, and halt-locked fixtures, run on ``module``."""
+    def run(prices, signals, **kwargs):
+        return module.run_long_only_backtest(
+            prices, signals, source_provenance=module.capture_backtest_source_provenance(prices, signals),
+            **_full_evaluation_bounds(prices), **kwargs)
+    prices, signals = _dated_cost_fixture()
+    dated = pd.DataFrame({"transaction_cost_bps": [9.0, 10.0, 20.0, 30.0], "slippage_bps": [9.0, 40.0, 30.0, 0.5]},
+                         index=prices.index)
+    locked_prices, flat, locked_rates = _locked_fixture()
+    return [run(prices, signals, rebalance_frequency="D", top_n=1, dated_costs=dated),
+            run(prices, signals, rebalance_frequency="D", top_n=1, transaction_cost_bps=7.0, slippage_bps=11.0),
+            run(locked_prices, flat, rebalance_frequency="D", top_pct=1.0, weighting_scheme="proportional",
+                dated_costs=locked_rates, missing_price_policy="halt_gap_return_v1")]
+
+
+def test_without_asset_rates_every_output_has_the_bytes_of_the_base_runner(tmp_path) -> None:
+    base = module_at(BASE_COMMIT, "src/backtest/portfolio.py", "portfolio_8590b2e", tmp_path)
+    for new, old in zip(_runs(portfolio), _runs(base)):
+        assert_same_bytes(new, old)
+        assert "asset_slippage" not in new.assumptions
+
+
+def test_equal_asset_rates_give_the_bytes_of_dated_costs() -> None:
+    for prices, signals, rates, kwargs in (
+            (*_dated_cost_fixture(), None, {"top_n": 1}),
+            (*_locked_fixture(), {"top_pct": 1.0, "weighting_scheme": "proportional",
+                                  "missing_price_policy": "halt_gap_return_v1"})):
+        if rates is None:
+            rates = pd.DataFrame({"transaction_cost_bps": [9.0, 10.0, 20.0, 30.0],
+                                  "slippage_bps": [9.0, 40.0, 30.0, 0.5]}, index=prices.index)
+        equal = pd.DataFrame(np.repeat(rates[["slippage_bps"]].to_numpy(), prices.shape[1], axis=1),
+                             index=prices.index, columns=prices.columns)
+        common = {**_full_evaluation_bounds(prices), "rebalance_frequency": "D", "dated_costs": rates, **kwargs}
+        plain = run_long_only_backtest(prices, signals, **common)
+        per_asset = run_long_only_backtest(prices, signals, asset_slippage_bps=equal, **common)
+        assert per_asset.assumptions.pop("asset_slippage") == "per_asset_slippage_bps"
+        assert_same_bytes(per_asset, plain)
+
+
+def test_asset_rates_charge_each_trade_at_its_own_rate() -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 10.0}, index=prices.index)
+    per_asset = pd.DataFrame({"AAA": [10.0, 50.0, 10.0, 70.0], "BBB": [10.0, 10.0, 25.0, 10.0]}, index=prices.index)
+
+    result = run_long_only_backtest(prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D",
+                                    top_n=1, dated_costs=rates, asset_slippage_bps=per_asset)
+
+    # Row 1 buys AAA (rate 50); row 2 sells AAA and buys BBB (10 and 25); row 3 sells BBB and buys AAA (10, 70).
+    gross = 1.0 + result.gross_returns
+    expected = [0.0, 1.0 * 50.0, 1.0 * 10.0 + 1.0 * 25.0, 1.0 * 10.0 + 1.0 * 70.0]
+    assert result.slippage_costs.tolist() == pytest.approx([e / 10_000.0 * g for e, g in zip(expected, gross)])
+    assert result.transaction_costs.tolist() == pytest.approx([0.0, 0.0005, 0.0010, 0.0010])
+
+
+def test_asset_rates_apply_the_full_cost_on_a_halt_locked_row() -> None:
+    """H-3c: the free sleeve pays the whole row cost, the per-asset part too, so a run whose single row rate gives
+    the same row cost holds the same weights after the locked row."""
+    prices, flat, rates = _locked_fixture()
+    per_asset = pd.DataFrame({"AAA": 30.0, "BBB": 90.0, "CCC": 30.0}, index=prices.index)
+    per_asset.iloc[1] = 10.0
+    per_asset.iloc[3] = 5.0
+    common = {**_full_evaluation_bounds(prices), "rebalance_frequency": "D", "top_pct": 1.0,
+              "weighting_scheme": "proportional", "missing_price_policy": "halt_gap_return_v1"}
+
+    result = run_long_only_backtest(prices, flat, dated_costs=rates, asset_slippage_bps=per_asset, **common)
+
+    row = prices.index[2]
+    assert len(result.halt_ledger["locked_execution_rows"]) == 1
+    trades = result.trade_weights.loc[row]
+    gross = 1.0 + result.gross_returns.loc[row]
+    assert trades["BBB"] > 0.0
+    assert result.slippage_costs.loc[row] == pytest.approx(float((trades * per_asset.loc[row]).sum()) / 1e4 * gross)
+    same = rates.copy()
+    same.loc[row, "slippage_bps"] = float((trades * per_asset.loc[row]).sum() / trades.sum())
+    single = run_long_only_backtest(prices, flat, dated_costs=same, **common)
+    assert result.total_trading_costs.loc[row] == pytest.approx(single.total_trading_costs.loc[row], rel=1e-12)
+    assert_frame_equal(result.holdings, single.holdings, check_exact=False, rtol=1e-12)
+    assert_series_equal(result.returns, single.returns, check_exact=False, rtol=1e-12)
+
+
+@pytest.mark.parametrize("change", ["no_dated_costs", "columns", "missing_row", "negative", "nan", "duplicate_index"])
+def test_asset_rates_refuse_invalid_panels(change: str) -> None:
+    prices, signals = _dated_cost_fixture()
+    rates = pd.DataFrame({"transaction_cost_bps": 5.0, "slippage_bps": 5.0}, index=prices.index)
+    panel = pd.DataFrame(5.0, index=prices.index, columns=prices.columns)
+    extra: dict[str, object] = {"dated_costs": rates}
+    if change == "no_dated_costs":
+        extra = {"slippage_bps": 5.0, "transaction_cost_bps": 5.0}
+    elif change == "columns":
+        panel = panel[["BBB", "AAA"]]
+    elif change == "missing_row":
+        panel = panel.iloc[:-1]
+    elif change == "negative":
+        panel.iloc[2, 1] = -1.0
+    elif change == "nan":
+        panel.iloc[1, 0] = np.nan
+    else:
+        panel = pd.concat([panel, panel.iloc[:1]])
+
+    with pytest.raises(portfolio.BacktestValidationError, match="asset_slippage_invalid"):
+        run_long_only_backtest(prices, signals, **_full_evaluation_bounds(prices), rebalance_frequency="D", top_n=1,
+                               asset_slippage_bps=panel, **extra)
