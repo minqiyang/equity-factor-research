@@ -12,6 +12,29 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-08 - Milestone 5.5 public confirm report
+
+- Card m55-conrep: `research/m55_confirm_report.py` reads the run 3 folder of `research/m55_driver.py` (seven stage
+  files and the run log), checks it, and writes `reports/m55_confirm_v1.{md,json}` and
+  `reports/m55_confirm_v1_attempts.jsonl`. Decision log: the report rules entry of the same date. No real data was
+  read, and no real report file was written.
+- Shared code: the report calls the checks (`check_run`, `check_freeze`), the aggregates (`aggregate`, `path_break`,
+  `look_r4`), the table helpers, and the guard sets of `research/m55_screen_report.py`. The only change there
+  moves the `keys` function out of `check_output` to module level. A test builds the screen report with the module
+  at `b1b0517` and with the current module and compares the bytes.
+- Tests, synthetic only. `tests/test_m55_confirm_report.py` (37 tests, about 3 s) writes a run 3 folder from
+  hand-made stage results with valid digests and a valid chain. It covers the full run (three files, the same bytes
+  on a second run), each damaged file and each context refusal, the run 2 digest, an open test B, each output
+  guard, an attempt line with its detail, the weight rule on nested groups, the path-break rule at 0 to 3
+  positions apart, the half-spread shares and band, the claim words, and the run 3 code digest from a
+  `git archive` of `b1b0517`. `tests/test_m55_confirm.py` adds one test that runs the report on the stage files of
+  its long-world chain, so the report reads the real driver shapes (about 300 s, most of it the chain).
+- Size: on the long synthetic chain the JSON file is about 1.15 MB, half of it the half-spread tables, because the
+  synthetic quotes put invalid cells in each year. The first version gave 2.9 MB. Three cuts made it smaller: the
+  CW-PIT record once per segment, counts only for the TILT R4 groups, and the decision cell only for the half-spread
+  tables of S1 to S8 and the Family A baseline.
+- Changed test values: none.
+
 ## 2026-10-08 - Milestone 5.5 confirm and check stages with the half-spread override
 
 - Card m55-confirm: amendment 3 rule text (commit `56f556a`), then the runner, engine, driver, and tests (commit

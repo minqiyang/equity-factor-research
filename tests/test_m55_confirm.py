@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import shutil
 import sys
 import time
@@ -24,6 +25,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+import research.m55_confirm_report as rep3
 import research.m55_driver as d
 import research.m55_wrds_loader as w
 from m55_bytes_support import BASE_COMMIT, module_at
@@ -304,6 +306,25 @@ def test_the_half_spread_report_shows_each_quote_status_and_the_cost_above_the_s
             assert year["cost_above_schedule"] >= -1e-15 and year["max_half_spread"] < 30.0
         assert any(y["crsp_binds_share"] > 0.0 for y in years.values())
         assert any(y["cost_above_schedule"] > 0.0 for y in years.values())
+
+
+def test_the_public_report_reads_the_stage_files_of_the_long_world_chain(long_chain, quotes, monkeypatch) -> None:
+    """The public confirm report (card m55-conrep) on this driver's own stage files: three aggregate files with no
+    PERMNO. The world's freeze stands in for the run 2 freeze, and its code for the code of main b1b0517."""
+    monkeypatch.setattr(d, "run2_digest", lambda trial: long_chain["frozen"])
+    monkeypatch.setitem(rep3.RUN_3, "code_sha256", d.code_digest(d.REPO))
+    doc, attempts = rep3.build(long_chain["folder"], tracked=TRACKED, tracked_quotes=quotes.manifest)
+    texts = rep3.outputs(doc, attempts)
+    assert set(texts) == {rep3.REPORT_JSON, rep3.REPORT_MD, rep3.ATTEMPTS_JSONL}
+    ids = {str(m.permno) for m in long_members(LONG_CAL)} | {str(SPY_PERMNO)}
+    for text in texts.values():
+        assert not ids & set(re.findall(r"(?<![\w.])\d{6}(?![\w.])", text))
+    assert doc["runs"]["shortlist"] == ["S7"] and doc["test_a"]["confirm_stop"] == "confirm_below_floor"
+    assert [a["stage"] for a in attempts if a["run"] == 3] == list(d.STAGES)
+    for name, names in rep3.SEGMENTS.items():
+        assert set(doc["stages"][name]["segments"]) == set(names)
+        for seg in doc["stages"][name]["segments"].values():
+            assert set(seg["tilt_stats"]) == set(rep3.SETS) and set(seg["half_spread"]["tilt"]) == set(rep3.SETS)
 
 
 # Quote files and rows ------------------------------------------------------------------------

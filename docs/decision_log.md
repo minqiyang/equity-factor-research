@@ -15,6 +15,73 @@ investment performance.
 
 ---
 
+## 2026-10-08 - Public Report Rules of the M5.5 Confirm and Check Stages (card m55-conrep)
+
+Context:
+
+- Run 3 of trial family v1 (code `b1b0517`, amendments 1 to 3) runs the seven stages of `research/m55_driver.py` on
+  the real data. Its confirm and check stage files hold per-position rows, per-cell trade weights, and CRSP quote
+  values.
+- `research/m55_confirm_report.py` makes the public report from the run 3 folder: `reports/m55_confirm_v1.md`,
+  `reports/m55_confirm_v1.json`, and `reports/m55_confirm_v1_attempts.jsonl`. It reuses the checks and aggregates
+  of `research/m55_screen_report.py`. No real stage file was read for this card, and no real report file exists yet.
+
+Decision:
+
+- Checks before any output. Each check refuses with a typed reason and writes nothing: the screen report checks
+  (`check_run`, `check_freeze`), `trial_mismatch`, `data_manifest_mismatch` (the data digest of both tracked
+  manifests), `code_pins_mismatch`, `code_mismatch`, `test_b_mismatch`, `test_b_open`, `run2_digest_mismatch` (the
+  freeze digest, and the digest and shortlist of the confirm and check files, equal the run 2 digest of amendment
+  3), `run_log_missing`, `run_log_mismatch` (the run log names each stage file once, with its digest),
+  `attempts_reference_invalid`, `cw_pit_not_one_book`, and the output guard reasons.
+- Default 1: code pin. The report pins run 3 to commit `b1b0517` and its code digest `59b0ba9d...707ca`
+  (`m55_driver.code_digest` of `research/` and `src/` at that commit). A test computes the digest from a
+  `git archive` of `b1b0517`.
+- Default 2: attempts file (R9). One line per run log entry of run 3: the stage, the outcome, and the stage digest
+  or the refusal reason. The detail text stays in the private run log, because it can name a date of one position
+  or a private path; the provenance gives the run log SHA-256. Two reference lines come first: run 1 and run 2,
+  each with the path and SHA-256 of `reports/m55_screen_v1_attempts.jsonl`.
+- Default 3: CW-PIT once. The CW-PIT book is the same in every signal set, so the report gives it once per segment,
+  from the composite run. It refuses when a set has another CW-PIT R4 or half-spread record.
+- Default 4: the public weight rule (screen report entry, Ruling 4). R4 weight sums are given only for the CW-PIT
+  group of each segment and loader run, at the `look_r4` level of the screen report (by cause, total, or none).
+  Each signal set's TILT group nests in the CW-PIT group, so it gets counts only. A path-break CW weight sum is
+  given only when each loader run has at least 3 positions and the two runs hold the same positions or differ by
+  at least 3. A position is known by its break row, previous valid row, and later exit class. A signal set gets
+  no path-break weight sum. No single maximum weight is given.
+- Default 5: half-spreads. Each book and year gives the share of the traded notional by quote status, the
+  CRSP-binds and BA shares, the spread cost above the schedule, and the invalid traded cells by reason and later
+  exit class (nonzero counts only). No figure gives the traded notional. The largest half-spread of a traded cell
+  is a band in bp (edges 5, 10, 20, 50, 100, 200), because an exact value with its book and year can single out
+  one security and day in the CRSP quotes. CW-PIT and the composite TILT get all four cells. S1 to S8 and the
+  Family A TILT get the decision cell only, to keep the file small (about 1.2 MB on the long synthetic chain).
+- Default 6: `tilt_stats` gives per-year turnover and cost drag for the active book only (the trial's "active
+  turnover and cost drag per year"), because with the per-year turnover of one book a notional share gives a weight
+  sum. The full-segment figures of each book stay.
+- Default 7: the "private list" of the card is the forbidden keys of the screen report, the identifier keys
+  (`permno`, `permanent_id`, `gvkey`, `ticker`, `cusip`, `comnam`), and the private path patterns of the screen
+  report (`PRIVATE_TEXT`).
+- Default 8: claim guard. No output text contains "confirmation", "confirmed", "confirms", "profitab", "profit",
+  "outperform", or "beat(s)", except in the run label of the trial file, quoted word for word, and in the phrase
+  "no profitability claim".
+- Default 9: the report has no run date, so its bytes depend only on the stage files and the tracked files.
+- The `missing` key lists each withheld value with its reason.
+
+Consequences:
+
+- `research/m55_screen_report.py` changes by one move: the `keys` function inside `check_output` is now a module
+  function that the confirm report shares. A test shows that the screen report output bytes equal those of the
+  module at `b1b0517`.
+- The confirm report gives no single-security row, identifier, private path, or single maximum weight. Each
+  published weight is a sum over at least 3 positions.
+
+Follow-up:
+
+- After the check stage of run 3, the coordinator runs `python -m research.m55_confirm_report <run 3 folder>`,
+  reads the three files, and commits them. A refusal goes to the engineering log.
+
+---
+
 ## 2026-10-08 - Trial Family v1 Amendment 3: Confirm and Check Stages With the Half-Spread Override (Milestone 5.5, card m55-confirm)
 
 Context:

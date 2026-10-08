@@ -112,15 +112,18 @@ def check_freeze(run: Mapping[str, dict], folder: Path) -> dict[str, Any]:
     return frozen
 
 
+def keys(value: Any) -> set:
+    """Every key of a nested document."""
+    if isinstance(value, Mapping):
+        return set(value) | set().union(*(keys(v) for v in value.values()))
+    if isinstance(value, list):
+        return set().union(*(keys(v) for v in value))
+    return set()
+
+
 def check_output(doc: Mapping[str, Any], texts: Mapping[str, str]) -> None:
     """The output guard: no per-position key and no single maximum weight in the document, no weight in a screen
     candidate group, and no private path in any output text."""
-    def keys(value: Any) -> set:
-        if isinstance(value, Mapping):
-            return set(value) | set().union(*(keys(v) for v in value.values()))
-        if isinstance(value, list):
-            return set().union(*(keys(v) for v in value))
-        return set()
     groups = [doc["screen"]["candidates"], *(part["screen"] for part in doc["reports_owed"].values()
                                               if isinstance(part, Mapping) and "screen" in part)]
     found = keys(doc) & (FORBIDDEN | SINGLE_MAX) | keys(groups) & GROUP_WEIGHTS
