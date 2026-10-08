@@ -32,8 +32,9 @@ Decision:
   - `status`: names amendment 3, its timing, and the changed fields.
   - `declaration_timing.amendment_3` (added): it came after the run 2 freeze and before any confirm month, check
     month, or quote value is read. Run 3 reruns every stage from coverage into a new folder and must repeat the
-    run 2 digest; a different digest, coverage count, or calibration value is a stop for the owner. No coverage,
-    signal, calibration, screen, shortlist, test, or trial-count rule changes.
+    run 2 digest; a different digest, coverage count, or calibration value is a stop for the owner. No return of a
+    book, SPY, or index after 1992-12-31 exists on WRDS data in the runs of this trial file (the prior exposures
+    stay listed). No coverage, signal, calibration, screen, shortlist, test, or trial-count rule changes.
   - `code_pins["research/m55_index_tilt.py"]`: the new commit and SHA-256; the scope adds the quote rule
     (`half_spreads`) and the spread rate per stock (`spread_rates`).
   - `code_pins["src/backtest/portfolio.py"]` (added): the runner, with the slippage rate per asset and row
@@ -49,13 +50,18 @@ Decision:
     owner, and `reports/wrds_quotes_manifest_2025.json` is committed before run 3. It also lists the driver
     refusals and puts the quote file hashes in `data_files_sha256`.
   - `periods.confirm.segments` (added): one segment from cash, anchor 1992-12-31, first rebalance 1993-01-29, end
-    row 2014-03-31, every input cut at the end row.
+    row 2014-03-31, every input cut at the end row, so no value after it reaches a confirm result. The key checks
+    of the quote rows (seal window, repeat, and match with the first pull) cover the whole quote copy, rows after
+    2014-03-31 too, so a bad key in a check-period row stops the confirm stage.
   - `periods.check.segments` (added): pre-seal anchor 2014-02-28, first rebalance 2014-03-31, end row 2019-06-28,
     months 2014-04 to 2019-06; post-seal anchor 2021-07-30, first rebalance 2021-08-31, end row the last row of
     `check_period_end`, months 2021-09 to `check_period_end`.
   - `reports_owed.half_spread` (added): by stage, signal set, loader run, cost case, book, and year.
-- The amendment pins no quote manifest. The owner's pull commits it before run 3, and the driver checks each quote
-  file against it before it reads the file. The trial file SHA-256 after amendment 3 is `6ccad16d...e8a54d`.
+- The amendment pins no quote manifest. The owner's pull commits it before run 3. Every stage checks the quote copy
+  from its manifest, file hashes, and Parquet row counts only, and compares it with the tracked quote manifest. No
+  stage parses a quote value before that check and the earlier stage files pass, and the confirm and check stages
+  parse the values only after the frozen digest gate. The trial file SHA-256 after amendment 3 is
+  `5eb69818...33923c`.
 - Driver defaults (producer, card m55-confirm). The note does not settle these points; each serves run 3 only:
   - The check stage reports the check means (`composite_means`) of each secondary member, with no p-value or
     q-value. Reason: the secondary family is a confirm-period family.

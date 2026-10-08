@@ -21,10 +21,13 @@ no ``g``, no engine call, and no return in any period, and test A uses p_B = 1.0
 
 Confirm and check (amendment 3): three engine segments start from cash, with dates from the calendar
 (``segment_plan``), and each cuts every input at its end row. Every book pays the half-spread override
-(``m55_index_tilt.spread_rates``) on quotes of the second pull that pass ``quote_files`` and ``quote_table``. The
-signal sets are the frozen composite, S1 to S8 alone, and the Family A baseline. The driver calls the pinned
-criteria functions in the order of ``m55_criteria.primary_decision``; it does not call that function, because
-it always runs the low-risk test.
+(``m55_index_tilt.spread_rates``) on quotes of the second pull. ``quote_files`` checks the quote copy from its
+manifest, file hashes, and Parquet row counts only. No quote value is parsed (``read_quotes``) before the tracked
+quote manifest, the earlier stage files, and the frozen digest gate (``open_gate``) pass, so only the confirm and
+check stages parse values (R9). ``quote_table`` then checks the keys of the whole quote copy, rows after the segment
+end too, before each segment cuts the values at its end row. The signal sets are the frozen composite, S1 to S8
+alone, and the Family A baseline. The driver calls the pinned criteria functions in the order of
+``m55_criteria.primary_decision``; it does not call that function, because it always runs the low-risk test.
 
 Gates (R9): each stage writes ``<stage>.json`` and ``<stage>.sha256`` to a folder outside every Git checkout and
 never overwrites them. A stage refuses unless every earlier stage file exists, matches its digest, was made from the
@@ -71,14 +74,13 @@ from research.m55_index_tilt import refuse
 
 REPO = Path(__file__).resolve().parents[1]
 TRIAL_FILE = "docs/preregistrations/m55_trial_family_v1.json"
-TRIAL_SHA256 = "6ccad16d3f2a1274f8448dfbbb7e0491c26c04186d75a0a4c2a69aef02e8a54d"   # the frozen file this driver runs
+TRIAL_SHA256 = "5eb698180da51af6113fc99b5a7d99a3e57198503ebb03e2fef34be8ee33923c"   # the frozen file this driver runs
 TRACKED_MANIFEST = "reports/wrds_manifest_2025.json"
 QUOTE_MANIFEST = "reports/wrds_quotes_manifest_2025.json"     # the second pull (amendment 3 one-pull rule)
 QUOTE_STEM = "crsp_dsf_v2_quotes"
 QUOTE_COLUMNS = ["permno", "dlycaldt", "dlybid", "dlyask", "dlyprcflg"]
 CODE_FOLDERS = ("research", "src")               # every module of the run; one digest over their Python files
 STAGES = ("coverage", "calibration", "look", "screen", "freeze", "confirm", "check")
-QUOTE_STAGES = ("confirm", "check")              # the stages that parse the quote table
 RUNS = tilt.EVENT_RUNS                           # ("primary", "last_close"): the two loader runs of R4
 CASES = tuple(tilt.COST_SCALES)                  # ("primary", "sensitivity_2x")
 COVERAGE_FIRST = pd.Period("1963-01", "M")       # real-start panel: return months 1963-01 to 1992-12
@@ -280,19 +282,21 @@ def stage_data(stage: str, root: str | Path) -> w.WrdsData:
     return data_files(root) if stage == "freeze" else w.load(root)
 
 
-def quote_files(root: str | Path, read: bool) -> w.WrdsData:
-    """The quote copy of the second pull: its manifest after a SHA-256 and row-count check of each main file, and
-    with ``read`` the quote table (``QUOTE_COLUMNS`` only).
+def quote_files(root: str | Path) -> w.WrdsData:
+    """The quote copy of the second pull, with no table: its manifest after a SHA-256 and row-count check of each
+    main file. It parses no quote value; it reads the manifest, the file bytes for the hash, and the Parquet row-count
+    metadata only.
 
-    A path under ``sealed/`` or outside the root refuses (as ``data_files`` and D9), and so does a file of another
-    table. ``check_quotes`` then compares the manifest with the tracked quote manifest.
+    A missing manifest refuses, and so does a path under ``sealed/`` or outside the root (as ``data_files`` and D9)
+    and a file of another table. ``check_quotes`` then compares the manifest with the tracked quote manifest.
     """
     root = Path(root).expanduser().resolve()
     sealed = root / w.SEALED
     if w.SEALED in root.parts:
         raise refuse("sealed_path", "the quote root is inside a sealed folder")
+    if not (root / w.MANIFEST).is_file():
+        raise refuse("quote_copy_manifest_missing", w.MANIFEST)
     manifest = json.loads((root / w.MANIFEST).read_text())
-    parts = []
     for relative, record in sorted(manifest["files"].items()):
         path = (root / relative).resolve()
         if relative.split("/")[0] == w.SEALED or path == sealed or sealed in path.parents:
@@ -311,9 +315,16 @@ def quote_files(root: str | Path, read: bool) -> w.WrdsData:
             raise refuse("hash_mismatch", relative)
         if pq.ParquetFile(path).metadata.num_rows != record["rows"]:
             raise refuse("row_count_mismatch", relative)
-        if read:
-            parts.append(pq.read_table(path, columns=QUOTE_COLUMNS))
-    return w.WrdsData({QUOTE_STEM: pa.concat_tables(parts)} if parts else {}, manifest, root)
+    return w.WrdsData({}, manifest, root)
+
+
+def read_quotes(quotes: w.WrdsData) -> w.WrdsData:
+    """The quote table (``QUOTE_COLUMNS`` only) of a copy that ``quote_files`` checked. Only the confirm and check
+    stages call it, after ``run_stage`` checks the tracked quote manifest and the earlier stage files and after
+    ``open_gate`` (R9)."""
+    parts = [pq.read_table(quotes.root / relative, columns=QUOTE_COLUMNS)
+             for relative, record in sorted(quotes.manifest["files"].items()) if record["rows"]]
+    return w.WrdsData({QUOTE_STEM: pa.concat_tables(parts)} if parts else {}, quotes.manifest, quotes.root)
 
 
 def check_quotes(quotes: w.WrdsData, tracked: Mapping[str, Any], trial: Mapping[str, Any]) -> str:
@@ -1931,13 +1942,18 @@ def confirm_stage(data: w.WrdsData, quotes: w.WrdsData, trial: Mapping[str, Any]
     The decision calls follow ``primary_decision``: ``verify_frozen_screen`` (``open_gate``), ``composite_test`` on
     the primary run at 1x, ``composite_means`` at 2x, ``holm_primary(p_A, p_B = 1.0)``, ``stop_after_confirm``. The
     same calls run on the last_close run for R4. ``decide_a`` needs the check means and runs in the check stage.
+
+    The quote values are parsed only after ``open_gate``. ``quote_table`` checks the keys of the whole quote copy
+    (seal window, repeat, and match with the first pull), check-period rows too, so a bad key after 2014-03-31 stops
+    the stage. Only then does ``run_segment`` cut the values at the confirm end row, and no value after it reaches a
+    result.
     """
     record, digest, test_b = open_gate(trial, payloads, digests)
     entries: list = [{"stage": "confirm", "call": "verify_frozen_screen", "expected_digest": digest, "output": True}]
     exits = exit_map(data)
     publication = next(o for o in trial["open_items"] if o["id"] == "OI-08")["publication_years"]
     segment = segment_plan(w.calendar(data))["confirm"]
-    found = run_segment(data, quote_table(quotes, data), segment, record["shortlist"], exits, publication,
+    found = run_segment(data, quote_table(read_quotes(quotes), data), segment, record["shortlist"], exits, publication,
                         unseen_cells(data))
     series, declared = found["series"], found["declared"]
     spy = monthly_spy(data, segment)
@@ -1982,7 +1998,8 @@ def check_stage(data: w.WrdsData, quotes: w.WrdsData, trial: Mapping[str, Any], 
     Each series joins the pre-seal and post-seal segments, and the declaration joins their blank sets
     (``P1_path_break``). ``decide_a`` takes the Holm p_A and the confirm and 2x means of the confirm stage. The
     check runs after a confirm stop. A secondary member reports its check means only (``composite_test`` is a
-    confirm-period statistic).
+    confirm-period statistic). As in the confirm stage, the quote values are parsed only after ``open_gate``, and
+    ``quote_table`` checks the keys of the whole quote copy before each segment cuts the values at its end row.
     """
     record, digest, _ = open_gate(trial, payloads, digests)
     entries: list = [{"stage": "check", "call": "verify_frozen_screen", "expected_digest": digest, "output": True}]
@@ -1991,7 +2008,7 @@ def check_stage(data: w.WrdsData, quotes: w.WrdsData, trial: Mapping[str, Any], 
     publication = next(o for o in trial["open_items"] if o["id"] == "OI-08")["publication_years"]
     cal = w.calendar(data)
     plan = segment_plan(cal)
-    table, unseen = quote_table(quotes, data), unseen_cells(data)
+    table, unseen = quote_table(read_quotes(quotes), data), unseen_cells(data)
     names = ("check_pre_seal", "check_post_seal")
     parts = {n: run_segment(data, table, plan[n], record["shortlist"], exits, publication, unseen) for n in names}
     last = plan["check_post_seal"]["last"]
@@ -2043,28 +2060,34 @@ def check_stage(data: w.WrdsData, quotes: w.WrdsData, trial: Mapping[str, Any], 
 
 
 def run_stage(stage: str, data: w.WrdsData, out: Path, tracked: Mapping[str, Any] | None = None,
-              repo: Path = REPO, quotes: w.WrdsData | None = None,
+              repo: Path = REPO, quotes: w.WrdsData | str | Path | None = None,
               tracked_quotes: Mapping[str, Any] | None = None) -> str:
-    """Run one stage after its gates; return the stage digest. A refusal is appended to the run log.
+    """Run one stage after its gates; return the stage digest. Once the output folder is valid, a refusal of the
+    quote copy, of a gate, or of the stage is appended to the run log.
 
-    Every stage needs the quote copy of the second pull (``quote_files``), and the tracked quote manifest is
-    ``QUOTE_MANIFEST`` unless ``tracked_quotes`` is given. Both data digests enter ``data_files_sha256``.
+    Every stage needs the quote copy of the second pull: ``main`` gives the root of its folder, and ``quote_files``
+    checks it here; a test may give a checked copy. The tracked quote manifest is ``QUOTE_MANIFEST`` unless
+    ``tracked_quotes`` is given. Both data digests enter ``data_files_sha256``. No quote value is parsed before these
+    checks and the earlier stage files pass; the confirm and check stages parse them after ``open_gate`` (R9).
     """
     if stage not in STAGES:
         raise refuse("stage_invalid", stage)
     out = check_out(out)
     trial, trial_sha = load_trial(repo)
     tracked = json.loads((repo / TRACKED_MANIFEST).read_text()) if tracked is None else tracked
-    if quotes is None:
-        raise refuse("quotes_missing", "every stage needs the quote copy of the second pull")
-    if tracked_quotes is None:
-        if not (repo / QUOTE_MANIFEST).is_file():
-            raise refuse("quote_manifest_missing", QUOTE_MANIFEST)
-        tracked_quotes = json.loads((repo / QUOTE_MANIFEST).read_text())
-    data_sha = sha256_bytes(json.dumps({"wrds": check_data(data, tracked, trial),
-                                        "quotes": check_quotes(quotes, tracked_quotes, trial)}, sort_keys=True).encode())
-    ctx = context(trial, trial_sha, data_sha, repo)
+    wrds_sha = check_data(data, tracked, trial)
     try:
+        if quotes is None:
+            raise refuse("quotes_missing", "every stage needs the quote copy of the second pull")
+        if not isinstance(quotes, w.WrdsData):
+            quotes = quote_files(quotes)
+        if tracked_quotes is None:
+            if not (repo / QUOTE_MANIFEST).is_file():
+                raise refuse("quote_manifest_missing", QUOTE_MANIFEST)
+            tracked_quotes = json.loads((repo / QUOTE_MANIFEST).read_text())
+        data_sha = sha256_bytes(json.dumps({"wrds": wrds_sha, "quotes": check_quotes(quotes, tracked_quotes, trial)},
+                                           sort_keys=True).encode())
+        ctx = context(trial, trial_sha, data_sha, repo)
         payloads, digests = earlier(out, stage, ctx)
         if "calibration" in payloads:
             check_calibration(payloads["calibration"]["result"])
@@ -2106,8 +2129,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True, help="a folder outside every Git checkout")
     parser.add_argument("--stage", choices=STAGES, required=True)
     args = parser.parse_args()
-    digest = run_stage(args.stage, stage_data(args.stage, args.data_root), args.out,
-                       quotes=quote_files(args.quote_root, read=args.stage in QUOTE_STAGES))
+    digest = run_stage(args.stage, stage_data(args.stage, args.data_root), args.out, quotes=args.quote_root)
     print(f"{args.stage} written, sha256 {digest}")
 
 

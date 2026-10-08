@@ -3,8 +3,8 @@
 The long world is the small world of ``test_m55_driver`` with 900013 as a new listing in 1970 (the calibration
 coverage stop, so test B is stopped), on a calendar to 2025-12-31 with no row from 2019-07-31 to 2020-07-31. It adds
 SPY, members with events after 1992, Compustat quarters from 2010, a listing after the seal, and a synthetic quote
-table and quote manifest. Its chain runs from the coverage counts to the check stage. No test reads the WRDS folder
-or opens a network connection.
+copy on disk with its manifest. Its chain runs from the coverage counts to the check stage. No test reads the WRDS
+folder or opens a network connection.
 """
 
 from __future__ import annotations
@@ -12,8 +12,10 @@ from __future__ import annotations
 import json
 import math
 import shutil
+import sys
 import time
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -150,8 +152,11 @@ def long_frames() -> dict[str, pd.DataFrame]:
 
 
 @pytest.fixture(scope="module")
-def quotes(long_frames) -> w.WrdsData:
-    return make_quotes(quote_rows(long_frames["crsp_dsf_v2"]))
+def quotes(long_frames, tmp_path_factory) -> w.WrdsData:
+    """The long world's quote copy on disk as ``quote_files`` checks it: the manifest and the root, no value."""
+    root = tmp_path_factory.mktemp("quotes") / "wrds_quotes_long"
+    write_quotes(root, quote_rows(long_frames["crsp_dsf_v2"]))
+    return d.quote_files(root)
 
 
 @pytest.fixture(scope="module")
@@ -323,10 +328,11 @@ def small_quotes() -> pd.DataFrame:
 
 def test_quote_files_check_each_file_and_read_the_quote_columns_only(tmp_path) -> None:
     manifest = write_quotes(tmp_path / "wrds_quotes_x", small_quotes())
-    read = d.quote_files(tmp_path / "wrds_quotes_x", read=True)
+    checked = d.quote_files(tmp_path / "wrds_quotes_x")
+    assert checked.manifest == manifest and checked.tables == {}
+    read = d.read_quotes(checked)
     assert read.manifest == manifest and read.tables[d.QUOTE_STEM].column_names == d.QUOTE_COLUMNS
     assert read.tables[d.QUOTE_STEM].num_rows == 2
-    assert d.quote_files(tmp_path / "wrds_quotes_x", read=False).tables == {}
     assert d.check_quotes(read, manifest, d.load_trial()[0]) == d.check_quotes(read, json.loads(json.dumps(
         manifest)), d.load_trial()[0])
 
@@ -340,7 +346,8 @@ def _relist(root: Path, edit) -> None:
 @pytest.mark.parametrize("damage, reason", [
     ("sealed_root", "sealed_path"), ("sealed_file", "sealed_path"), ("outside", "path_outside_root"),
     ("other_table", "quote_file_unexpected"), ("empty_part_has_file", "file_unexpected"),
-    ("missing", "file_missing"), ("hash", "hash_mismatch"), ("rows", "row_count_mismatch")])
+    ("missing", "file_missing"), ("hash", "hash_mismatch"), ("rows", "row_count_mismatch"),
+    ("no_manifest", "quote_copy_manifest_missing")])
 def test_quote_files_refuse_each_damage(tmp_path, damage, reason) -> None:
     root = tmp_path / ("sealed" if damage == "sealed_root" else "wrds_quotes_x")
     write_quotes(root, small_quotes())
@@ -359,8 +366,10 @@ def test_quote_files_refuse_each_damage(tmp_path, damage, reason) -> None:
         _relist(root, lambda f: f[main].update({"sha256": "0" * 64}))
     elif damage == "rows":
         _relist(root, lambda f: f[main].update({"rows": 3}))
+    elif damage == "no_manifest":
+        (root / w.MANIFEST).unlink()
     with pytest.raises(RunnerStop) as caught:
-        d.quote_files(root, read=True)
+        d.quote_files(root)
     assert caught.value.reason == reason
 
 
@@ -408,7 +417,7 @@ def test_a_quote_change_at_r_or_later_leaves_the_rate_at_r(long_frames, quotes) 
     plan = d.segment_plan(w.calendar(data))["confirm"]
     frames = d.segment_frames(data, "primary", plan)
     r = month_end(LONG_CAL, "2003-06")
-    table = d.quote_table(quotes, data)
+    table = d.quote_table(d.read_quotes(quotes), data)
     later = table["date"] >= r
     changed = table.assign(dlyask=table["dlyask"].where(~later, table["dlybid"] * 1.5))
     rates = {}
@@ -435,20 +444,52 @@ def test_the_quote_manifest_digest_enters_every_stage_context(long_frames, tmp_p
         k: v for k, v in contexts[1].items() if k != "data_files_sha256"}
 
 
-def test_every_stage_needs_the_quote_copy_and_the_tracked_quote_manifest(long_frames, tmp_path) -> None:
+def bare_repo(folder: Path) -> Path:
     """A repository copy with the trial file and the pinned files but no tracked quote manifest."""
+    trial = d.load_trial()[0]
+    for path in [d.TRIAL_FILE, *(p for p, pin in trial["code_pins"].items() if p != "statement" and pin["commit"])]:
+        (folder / path).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(d.REPO / path, folder / path)
+    return folder
+
+
+def last_refusal(out: Path) -> str:
+    return json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"]
+
+
+def test_every_stage_needs_the_quote_copy_and_the_tracked_quote_manifest(long_frames, tmp_path) -> None:
     data = make_data(long_frames)
     with pytest.raises(RunnerStop) as caught:
         d.run_stage("coverage", data, tmp_path / "a", TRACKED)
-    assert caught.value.reason == "quotes_missing"
-    repo = tmp_path / "repo"
-    trial = d.load_trial()[0]
-    for path in [d.TRIAL_FILE, *(p for p, pin in trial["code_pins"].items() if p != "statement" and pin["commit"])]:
-        (repo / path).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(d.REPO / path, repo / path)
+    assert caught.value.reason == last_refusal(tmp_path / "a") == "quotes_missing"
+    repo = bare_repo(tmp_path / "repo")
     with pytest.raises(RunnerStop) as caught:
         d.run_stage("coverage", data, tmp_path / "b", TRACKED, repo=repo, quotes=make_quotes(small_quotes()))
-    assert caught.value.reason == "quote_manifest_missing"
+    assert caught.value.reason == last_refusal(tmp_path / "b") == "quote_manifest_missing"
+
+
+@pytest.mark.parametrize("damage, reason", [
+    ("no_manifest", "quote_copy_manifest_missing"), ("hash", "hash_mismatch"), ("other", "quote_manifest_mismatch"),
+    ("no_tracked", "quote_manifest_missing")])
+def test_a_refusal_of_the_quote_copy_reaches_the_run_log(long_frames, tmp_path, damage, reason) -> None:
+    """main gives run_stage the quote root; each refusal of the copy is a run log line once the folder is valid."""
+    root, out, repo = tmp_path / "wrds_quotes_x", tmp_path / "out", d.REPO
+    manifest = write_quotes(root, small_quotes())
+    tracked = json.loads(json.dumps(manifest))
+    if damage == "no_manifest":
+        (root / w.MANIFEST).unlink()
+    elif damage == "hash":
+        _relist(root, lambda f: f[f"{d.QUOTE_STEM}/1993.parquet"].update({"sha256": "0" * 64}))
+    elif damage == "other":
+        tracked["files"][f"{d.QUOTE_STEM}/1993.parquet"]["sha256"] = "e" * 64
+    else:
+        repo, tracked = bare_repo(tmp_path / "repo"), None
+    with pytest.raises(RunnerStop) as caught:
+        d.run_stage("coverage", make_data(long_frames), out, TRACKED, repo=repo, quotes=root, tracked_quotes=tracked)
+    assert caught.value.reason == reason
+    entries = [json.loads(line) for line in (out / "run_log.jsonl").read_text().splitlines()]
+    assert entries == [{"stage": "coverage", "refused": reason, "detail": entries[0]["detail"]}]
+    assert not (out / "coverage.json").exists()
 
 
 # Segments --------------------------------------------------------------------------------
@@ -553,6 +594,65 @@ def test_a_confirm_stage_opens_no_month_after_an_empty_screen(long_frames, quote
     with pytest.raises(RunnerStop) as caught:
         run_one("confirm", make_data(long_frames), out, quotes)
     assert caught.value.reason == "screen_empty_confirm"
+
+
+# Quote values are parsed only after the gates (R9) ----------------------------------------------
+
+@pytest.fixture()
+def parsed(monkeypatch) -> list[str]:
+    """Each parse of a quote value: a ``pq.read_table`` call on a quote file and a ``read_quotes`` call."""
+    calls: list[str] = []
+    read_table, read_quotes = pq.read_table, d.read_quotes
+
+    def spy_table(source, *args, **kwargs):
+        if d.QUOTE_STEM in str(source):
+            calls.append(f"read_table {Path(source).name}")
+        return read_table(source, *args, **kwargs)
+
+    def spy_quotes(copy):
+        calls.append("read_quotes")
+        return read_quotes(copy)
+    monkeypatch.setattr(d.pq, "read_table", spy_table)
+    monkeypatch.setattr(d, "read_quotes", spy_quotes)
+    return calls
+
+
+def test_the_quote_spy_sees_each_parse(quotes, parsed) -> None:
+    assert d.read_quotes(quotes).tables[d.QUOTE_STEM].num_rows == quotes.manifest["files"][
+        f"{d.QUOTE_STEM}/1993.parquet"]["rows"]
+    assert parsed == ["read_quotes", "read_table 1993.parquet"]
+
+
+@pytest.mark.parametrize("via", ["run_stage", "main"])
+@pytest.mark.parametrize("name, gate, reason", [
+    ("confirm", "no_tracked", "quote_manifest_missing"), ("confirm", "other_tracked", "quote_manifest_mismatch"),
+    ("confirm", "no_chain", "stage_missing"), ("check", "no_chain", "stage_missing"),
+    ("confirm", "digest", "shortlist_digest_mismatch"), ("check", "digest", "shortlist_digest_mismatch")])
+def test_no_quote_value_is_parsed_before_the_gates(long_frames, quotes, long_chain, tmp_path, monkeypatch, parsed,
+                                                    via, name, gate, reason) -> None:
+    """A missing or other tracked quote manifest, a missing stage chain, and a freeze digest other than amendment 3's
+    run 2 digest each refuse before any quote value is parsed, through main as through run_stage."""
+    data, repo, tracked = make_data(long_frames), d.REPO, quotes.manifest
+    out = tmp_path / "out"
+    if gate == "no_tracked":
+        repo, tracked = bare_repo(tmp_path / "repo"), None
+    elif gate == "other_tracked":
+        tracked = json.loads(json.dumps(tracked))
+        tracked["files"][f"{d.QUOTE_STEM}/1993.parquet"]["rows"] += 1
+    elif gate == "digest":
+        out = copy_chain(long_chain, tmp_path, name)
+    run = partial(d.run_stage, tracked=TRACKED, repo=repo, tracked_quotes=tracked)
+    with pytest.raises(RunnerStop) as caught:
+        if via == "run_stage":
+            run(name, data, out, quotes=quotes.root)
+        else:
+            monkeypatch.setattr(d, "run_stage", run)
+            monkeypatch.setattr(d, "stage_data", lambda stage, root: data)
+            monkeypatch.setattr(sys, "argv", ["m55_driver", "--data-root", str(tmp_path / "wrds"), "--quote-root",
+                                              str(quotes.root), "--out", str(out), "--stage", name])
+            d.main()
+    assert caught.value.reason == last_refusal(out) == reason
+    assert parsed == [] and not (out / f"{name}.json").exists()
 
 
 @pytest.mark.parametrize("name", ["confirm", "check_pre_seal"])
