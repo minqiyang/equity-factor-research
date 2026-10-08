@@ -471,6 +471,8 @@ def render(doc: Mapping[str, Any]) -> str:
            f"- Run label: {head['run_label']}.",
            f"- Check period label: {head['check_label']}.",
            f"- Factor-level reuse (`reports_owed.labels`): {head['factor_level_reuse']}.",
+           "- Sample reuse (`prior_exposures`, R10): seen before the trial declaration, counted under R9:",
+           *(f"  - {item}" for item in head["prior_exposures"]),
            f"- Benchmarks: confirm months {head['benchmarks']['confirm']}; check months "
            f"{head['benchmarks']['check']}. SPY: {head['benchmarks']['spy']}.",
            f"- Execution timing: `{head['execution_timing']}`.",

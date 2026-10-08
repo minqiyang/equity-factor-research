@@ -314,6 +314,12 @@ def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_
         (d.REPO / d.QUOTE_MANIFEST).read_bytes())
     assert doc["runs"]["code_commit"] == MAIN_BEFORE
 
+    # R10 sample reuse: the Markdown header lists every prior exposure of the trial file word for word.
+    md = (out[0] / rep3.REPORT_MD).read_text()
+    items = trial()["prior_exposures"]["items"]
+    assert head["prior_exposures"] == items and len(items) == 4
+    assert all(f"\n  - {item}\n" in md for item in items)
+
     # The secondary family keeps its BY q-value beside each member; S5 is typed undefined.
     cell = doc["stages"]["confirm"]["secondary"]["primary"]["primary"]
     assert cell["members"]["S1"]["q_by"] == 0.1 and cell["undefined"]["S5"]["undefined_reason"] == "statistic_undefined"

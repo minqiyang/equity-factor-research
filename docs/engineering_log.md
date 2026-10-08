@@ -34,6 +34,7 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   CW-PIT record once per segment, counts only for the TILT R4 groups, and the decision cell only for the half-spread
   tables of S1 to S8 and the Family A baseline.
 - Changed test values: none.
+- Review A5 (R10): the Markdown header lists each `prior_exposures` item of the trial word for word, with a test.
 
 ## 2026-10-08 - Milestone 5.5 confirm and check stages with the half-spread override
 
