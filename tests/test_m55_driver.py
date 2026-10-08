@@ -310,7 +310,12 @@ def test_check_trial_accepts_the_frozen_file_and_refuses_a_changed_rule() -> Non
                         "shortlist rule"),
                        (lambda t: t["candidates"]["list"][6].__setitem__("sign", 1), "signs"),
                        (lambda t: t["code_pins"]["research/m55_criteria.py"].__setitem__("file_sha256", "0" * 64),
-                        "code pin research/m55_criteria.py")):
+                        "code pin research/m55_criteria.py"),
+                       (lambda t: t["declaration_timing"].__setitem__("order_after_freeze", t["declaration_timing"][
+                           "order_after_freeze"].replace("chosen or ratio_coverage_low.", "chosen.")),
+                        "calibration go-on rule"),
+                       (lambda t: t["primary_family"]["test_B"].__setitem__("after_coverage_stop", t["primary_family"][
+                           "test_B"]["after_coverage_stop"].replace("p_B = 1.0", "p_B = 0.5")), "test B stop")):
         changed = json.loads(json.dumps(trial))
         edit(changed)
         with pytest.raises(RunnerStop) as caught:
@@ -419,9 +424,10 @@ def test_a_stage_output_is_never_overwritten_and_needs_a_folder_outside_git(chai
 
 
 @pytest.mark.parametrize("decision, goes_on", [
-    ("chosen", True), ("ratio_coverage_low", False), ("refused", False), ("ratio_coverage_ambiguous", False),
+    ("chosen", True), ("ratio_coverage_low", True), ("refused", False), ("ratio_coverage_ambiguous", False),
     ("no_g_reaches_target", False)])
 def test_each_calibration_decision_goes_on_or_stops(decision, goes_on) -> None:
+    """Amendment 2: the coverage stop (``ratio_coverage_low``) stops test B only, so the later stages go on."""
     if goes_on:
         d.check_calibration({"decision": decision})
         return
@@ -433,7 +439,7 @@ def test_each_calibration_decision_goes_on_or_stops(decision, goes_on) -> None:
 @pytest.mark.parametrize("name", ["look", "screen", "freeze"])
 def test_look_screen_and_freeze_refuse_after_a_calibration_stop(chain, frames, tmp_path, name) -> None:
     data = make_data(frames)
-    for decision in ("refused", "ratio_coverage_low", "ratio_coverage_ambiguous", "no_g_reaches_target"):
+    for decision in ("refused", "ratio_coverage_ambiguous", "no_g_reaches_target"):
         out = copy_until(chain, tmp_path / decision, name)
         rechain(out, set_calibration(decision))
         with pytest.raises(RunnerStop) as caught:
@@ -451,10 +457,17 @@ def test_the_small_world_calibration_chooses_g_and_the_chain_reaches_the_freeze(
     assert [g["bracket"] for g in result["grid"][:2]] == ["fails", "meets"]
     assert (result["ratio_status_counts"]["ratio_window_short"], result["rebalances"]) == (18, 354)   # 900013
     assert stage(out, "freeze")["decision"] == "shortlist_frozen"
+    # After chosen, test B is still open in each later stage file.
+    for name in ("look", "screen", "freeze"):
+        assert stage(out, name)["test_b"] == {"stopped": False, "label": None, "p_b": None,
+                                              "calibration_decision": "chosen",
+                                              "calibration_sha256": chain["w0"]["digests"]["calibration"]}
 
 
-def test_a_ratio_coverage_low_world_stops_before_the_look(tmp_path) -> None:
-    """With 900013 as a new listing in 1970, 37 of 354 rebalances have no ratio: the coverage stop."""
+def test_a_ratio_coverage_low_world_runs_to_the_freeze_and_stops_test_b(tmp_path, monkeypatch) -> None:
+    """With 900013 as a new listing in 1970, 37 of 354 rebalances have no ratio: the coverage stop (amendment 2).
+    The look, the screen, and the freeze run, with no g, no low-risk weight, and no calibration after the
+    calibration stage, and each of them records test B as stopped."""
     members = [replace(m, listed=row(CAL, "1970-02-01"), facts_from=row(CAL, "1970-02-01"), spell=None)
                if m.permno == 900013 else m for m in small_members(CAL)]
     data = make_data(world_frames(members, CAL))
@@ -464,11 +477,51 @@ def test_a_ratio_coverage_low_world_stops_before_the_look(tmp_path) -> None:
     result = stage(out, "calibration")
     assert (result["ratio_status_counts"]["ratio_window_short"], result["rebalances"]) == (37, 354)
     assert result["decision"] == "ratio_coverage_low" and result["undefined_share"] > tilt.LOWRISK_UNDEFINED_MAX
-    with pytest.raises(RunnerStop) as caught:
-        d.run_stage("look", data, out, TRACKED)
-    assert (caught.value.reason, caught.value.detail) == ("calibration_stop", "calibration decision ratio_coverage_low")
-    assert not (out / "look.json").exists()
-    assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == "calibration_stop"
+    gs = []
+    real_run, real_build = tilt.run_index_tilt, tilt.build_targets
+
+    def run(inputs, schedule=tilt.COST_SCHEDULE, g=None):
+        gs.append(("run_index_tilt", g))
+        return real_run(inputs, schedule, g)
+
+    def build(inputs, g=None):
+        gs.append(("build_targets", g))
+        return real_build(inputs, g)
+
+    def low_risk(*args, **kwargs):
+        raise AssertionError("a low-risk weight or calibration after ratio_coverage_low")
+    monkeypatch.setattr(tilt, "run_index_tilt", run)
+    monkeypatch.setattr(tilt, "build_targets", build)
+    monkeypatch.setattr(tilt, "lowrisk_weights", low_risk)
+    monkeypatch.setattr(tilt, "calibrate_lowrisk", low_risk)
+    for name in ("look", "screen", "freeze"):
+        d.run_stage(name, data, out, TRACKED)
+    assert Counter(name for name, _ in gs) == {"run_index_tilt": 4, "build_targets": 4}  # the look and S7, 2 runs
+    assert all(g is None for _, g in gs)
+    stopped = {"stopped": True, "label": "stopped_coverage", "p_b": 1.0, "calibration_decision": "ratio_coverage_low",
+               "calibration_sha256": (out / "calibration.sha256").read_text().strip()}
+    for name in ("look", "screen", "freeze"):
+        assert stage(out, name)["test_b"] == stopped
+        assert "lowrisk" not in (out / f"{name}.json").read_text()
+    assert all("test_b" not in stage(out, name) for name in ("coverage", "calibration"))
+    frozen = stage(out, "freeze")
+    assert frozen["decision"] == "shortlist_frozen" and frozen["shortlist"] == ["S7"]
+    assert (out / "shortlist_digest.txt").read_text().strip() == frozen["digest_sha256"] == crit.shortlist_digest(
+        frozen["record"])
+
+
+def test_after_ratio_coverage_low_the_freeze_keeps_its_record_and_digest(chain, frames, tmp_path) -> None:
+    """The same screen frozen after ratio_coverage_low gives the same frozen record and digest as after chosen: the
+    calibration decision is not part of the digest; only the stage file adds test B as stopped."""
+    out = copy_until(chain, tmp_path, "freeze")
+    rechain(out, set_calibration("ratio_coverage_low"))
+    d.run_stage("freeze", make_data(frames), out, TRACKED)
+    after, before = stage(out, "freeze"), stage(chain["w0"]["folder"], "freeze")
+    assert after["record"] == before["record"] and after["digest_sha256"] == before["digest_sha256"]
+    assert after["test_b"] == {"stopped": True, "label": "stopped_coverage", "p_b": 1.0,
+                               "calibration_decision": "ratio_coverage_low",
+                               "calibration_sha256": (out / "calibration.sha256").read_text().strip()}
+    assert after["test_b"]["calibration_sha256"] != chain["w0"]["digests"]["calibration"]
 
 
 def test_a_refusal_inside_the_calibration_writes_no_file(chain, frames, tmp_path, monkeypatch) -> None:

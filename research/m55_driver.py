@@ -11,14 +11,16 @@ five stages, in this order:
 5. ``freeze``: the shortlist record and its digest (``m55_criteria.freeze_shortlist``).
 
 Coverage comes before any return and the look comes before any tilt return (``declaration_timing``,
-``candidates.real_start``, ``pre_tilt_look``). The confirm and check stages, the Family A baseline, the low-risk book
-returns, and the secondary family belong to a later card.
+``candidates.real_start``, ``pre_tilt_look``). The confirm and check stages, the Family A baseline, and the secondary
+family belong to a later card. After the coverage stop of test B (amendment 2), the low-risk book gets no ``g``, no
+engine call, and no return in any period.
 
 Gates (R9): each stage writes ``<stage>.json`` and ``<stage>.sha256`` to a folder outside every Git checkout and
 never overwrites them. A stage refuses unless every earlier stage file exists, matches its digest, was made from the
 same trial file, code, and data, and names the digests of the stages before it. The look, the screen, and the freeze
-also refuse unless the saved calibration decision is ``chosen``. The freeze parses no data table. Each
-criteria output is appended with its declaration to ``run_log.jsonl``, and so is each refusal.
+also refuse unless the saved calibration decision is ``chosen`` or ``ratio_coverage_low`` (amendment 2), and each of
+them records test B as stopped after ``ratio_coverage_low``. The freeze parses no data table. Each criteria output is
+appended with its declaration to ``run_log.jsonl``, and so is each refusal.
 
 Period: every signal-input table, the engine frames, and ``vwretd`` are cut at the last screen row (1992-12-31)
 right after the load. The engine frames keep the first row of 1993 as a date with no value, because
@@ -55,7 +57,7 @@ from research.m55_index_tilt import refuse
 
 REPO = Path(__file__).resolve().parents[1]
 TRIAL_FILE = "docs/preregistrations/m55_trial_family_v1.json"
-TRIAL_SHA256 = "ab3b4ab0bb58084aa604d78f772850641471e28cf228ab605db5cec1da16f4fe"   # the frozen file this driver runs
+TRIAL_SHA256 = "4f9cf222da07fc039529fcbec01b3f174275483857fd7a20a69b132d76f88a03"   # the frozen file this driver runs
 TRACKED_MANIFEST = "reports/wrds_manifest_2025.json"
 CODE_FOLDERS = ("research", "src")               # every module of the run; one digest over their Python files
 STAGES = ("coverage", "calibration", "look", "screen", "freeze")
@@ -68,7 +70,8 @@ POST_SEAL_FIRST_REBALANCE = pd.Timestamp("2021-08-31")
 NO_SIGNAL = "NO_SIGNAL"                          # an all-missing set: every composite is 0, so TILT equals CW-PIT
 BLANK = crit.BLANK_REASONS[0]                    # path_break_held
 EXIT_CLASSES = w.EXIT_CLASSES
-GO_ON = ("chosen",)                              # the one calibration decision after which the later stages run
+GO_ON = ("chosen", "ratio_coverage_low")         # the calibration decisions after which the later stages run
+TEST_B_STOPPED = "stopped_coverage"              # test B's label after ratio_coverage_low (amendment 2)
 # The engine frames' row after the last screen row: a date with these blank values (the loader's fill for a cell
 # without a daily row).
 BLANK_ROW = {"prices": np.nan, "market_equity": np.nan, "path_break": False, "eligible": False,
@@ -134,6 +137,10 @@ def check_trial(trial: Mapping[str, Any], repo: Path = REPO) -> None:
          "LOWRISK_UNDEFINED_MAX")
     need('once, on the tilt_frames(run="primary") panel' in calibration["order"] and "never recalibrates" in
          books["disappearance_r4"]["last_close_rerun"], "one calibration on the primary panel")
+    need(f"run after the calibration decision {' or '.join(GO_ON)}." in
+         trial["declaration_timing"]["order_after_freeze"], "calibration go-on rule")
+    need(f"label {TEST_B_STOPPED}; p_B = 1.0; the Holm family keeps size 2." in
+         trial["primary_family"]["test_B"]["after_coverage_stop"], "test B stop")
     need(trial["screen_and_shortlist"]["shortlist_rule"] == crit.SHORTLIST_RULE, "shortlist rule")
     screen = trial["periods"]["screen"]
     need(screen["first"].startswith(str(crit.SCREEN_START)) and screen["last"] == str(crit.SCREEN_END)
@@ -291,13 +298,24 @@ def earlier(out: Path, stage: str, ctx: Mapping[str, Any]) -> tuple[dict[str, di
 
 
 def check_calibration(calibration: Mapping[str, Any]) -> None:
-    """``books.low_risk.calibration.choice``: the look, the screen, and the freeze run only after the decision
-    ``chosen``. Every other outcome is a stop or an owner decision in the frozen file, and refuses with its
-    ``calibrate_lowrisk`` name: ``refused`` (a refusal below the first g that meets "stops"; the calibration stage
-    itself stops on it and writes no file), ``ratio_coverage_low`` ("the coverage stop", ``window_diagnostic``),
-    ``ratio_coverage_ambiguous`` ("the owner decides"), and ``no_g_reaches_target`` ("stop and ask the owner")."""
+    """``declaration_timing.order_after_freeze`` (amendment 2): the look, the screen, and the freeze run only after
+    the decision ``chosen`` or ``ratio_coverage_low``. ``ratio_coverage_low`` is the coverage stop of test B only
+    (``primary_family.test_B.after_coverage_stop``). Every other outcome keeps its meaning in
+    ``books.low_risk.calibration.choice``, a stop or an owner decision, and refuses with its ``calibrate_lowrisk``
+    name: ``refused`` (a refusal below the first g that meets "stops"; the calibration stage itself stops on it and
+    writes no file), ``ratio_coverage_ambiguous`` ("the owner decides"), and ``no_g_reaches_target`` ("stop and ask
+    the owner")."""
     if calibration["decision"] not in GO_ON:
         raise refuse("calibration_stop", f"calibration decision {calibration['decision']}")
+
+
+def record_test_b(calibration: Mapping[str, Any], digest: str) -> dict[str, Any]:
+    """Test B after the calibration, for each later stage file: after ``ratio_coverage_low`` it is stopped with the
+    label ``TEST_B_STOPPED`` and p_B = 1.0 (the Holm family keeps size 2); after ``chosen`` it is still open.
+    ``digest`` is the SHA-256 of the calibration stage file."""
+    stopped = calibration["decision"] == "ratio_coverage_low"
+    return {"stopped": stopped, "label": TEST_B_STOPPED if stopped else None, "p_b": 1.0 if stopped else None,
+            "calibration_decision": calibration["decision"], "calibration_sha256": digest}
 
 
 def write_stage(out: Path, stage: str, ctx: Mapping[str, Any], previous: Mapping[str, str],
@@ -1309,6 +1327,8 @@ def run_stage(stage: str, data: w.WrdsData, out: Path, tracked: Mapping[str, Any
             result = screen_stage(data, trial, out, payloads["coverage"]["result"], payloads["look"]["result"])
         else:
             result = freeze_stage(payloads["screen"], out)
+        if "calibration" in payloads:
+            result = {**result, "test_b": record_test_b(payloads["calibration"]["result"], digests["calibration"])}
         digest = write_stage(out, stage, ctx, digests, result)
     except tilt.runner.RunnerStop as exc:
         log(out, {"stage": stage, "refused": exc.reason, "detail": masked(exc.detail)})

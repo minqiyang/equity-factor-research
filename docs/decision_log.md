@@ -15,6 +15,69 @@ investment performance.
 
 ---
 
+## 2026-10-08 - Trial Family v1 Amendment 2: Test B Stopped at the Coverage Stop (Milestone 5.5, owner decision)
+
+Context:
+
+- Run 1 (2026-10-07, code `ebc9705`, WRDS vintage 2025-12-31) ran the coverage and calibration stages of
+  `research/m55_driver.py` on real data. The calibration decision was `ratio_coverage_low`. Of 354 screen
+  rebalances, 131 were `defined_full`, 159 `defined_partial`, and 64 `ratio_window_short`, so the undefined share
+  was 0.1808, above `LOWRISK_UNDEFINED_MAX` = 0.10. The driver gate `GO_ON = ("chosen",)` then refused the look. No
+  return of any kind was computed. The trial file states the run 1 aggregates in
+  `primary_family.test_B.after_coverage_stop`.
+- The frozen file calls `ratio_coverage_low` "the coverage stop" (`books.low_risk.calibration.window_diagnostic`),
+  but it does not say what the stop stops. The screen never uses g. The driver calls the engine with no g, and the
+  engine adds the low-risk book only when g is given. `books.low_risk.role` says that no screen or confirm month
+  selects the low-risk book.
+
+Decision:
+
+- Owner decision, 2026-10-08, option A. Test B of trial family v1 stops at the coverage stop, and the stop stays
+  visible (R9). The look, the screen, and the shortlist freeze go on without the low-risk book. Any later low-risk
+  rule is a separate amendment made before any low-risk return is seen. Reason: the coverage stop is about the risk
+  ratio of the low-risk book, and the look, the screen, and the freeze read no g and no low-risk output.
+- Amendment 2 states this in the fields that own each rule. Five fields changed and two were added:
+  - `status`: names amendment 2, its timing, and the changed fields.
+  - `declaration_timing.order_after_freeze`: the look, the screen, and the freeze run after the calibration
+    decision `chosen` or `ratio_coverage_low`. `ratio_coverage_low` stops test B only. `refused`,
+    `ratio_coverage_ambiguous`, and `no_g_reaches_target` keep their meaning in `calibration.choice` (a stop or an
+    owner decision) and stop the sequence before the look.
+  - `declaration_timing.amendment_2` (added): amendment 2 came after the run 1 coverage output (validity counts and
+    real starts, no return) and the run 1 calibration output (ex-ante second moments only), and before any return
+    of any kind. The look has not run. No coverage, signal, calibration, screen, or shortlist rule changes.
+  - `books.low_risk.role`: the low-risk book gets no g, no engine call, and no return in any period, the
+    last_close rerun included.
+  - `screen_and_shortlist.empty_shortlist`: test B is stopped in every case. The old text said that test B may
+    still run after `screen_empty`.
+  - `primary_family.test_B.after_coverage_stop` (added): the run 1 facts and the SHA-256 of the run 1 calibration
+    stage file (`0be87e72...a2837b`); the label `stopped_coverage`, p_B = 1.0, and a Holm family that keeps size 2,
+    as test A keeps it with p_A = 1.0 after `screen_empty`; the low-risk version and its 12 grid values stay
+    counted; the calibration result stays reported (`logged_per_g`, `low_risk_r6`).
+  - `stop_rule.forking_paths`: a later low-risk rule is a separate amendment made before any low-risk return is
+    seen, and it is a new counted trial.
+- `code_pins`, `trial_count`, and every rule in `books.low_risk.calibration` stay as frozen. The trial file SHA-256
+  after amendment 2 is `4f9cf222...f88a03`.
+- With p_B = 1.0, test A needs a Holm-adjusted 2 x p_A <= 0.05, so p_A <= 0.025. A family of size 1 would need only
+  p_A <= 0.05, so size 2 is the stricter choice. No change loosens R1, R2, R4, R6, R8, or R9.
+
+Consequences:
+
+- The driver binds the amended file (`TRIAL_SHA256`) and runs the look, the screen, and the freeze after `chosen`
+  or `ratio_coverage_low`. After `ratio_coverage_low`, the look, screen, and freeze stage files record test B as
+  stopped: the label, p_B, the calibration decision, and the calibration stage file digest. This replaces the
+  calibration gate default of the 2026-10-07 entry for `ratio_coverage_low` only. `refused`,
+  `ratio_coverage_ambiguous`, and `no_g_reaches_target` still stop the sequence with `calibration_stop`.
+- The stage context holds the trial file and code digests, so the run 1 stage files do not chain to the amended
+  driver. Run 2 starts from the coverage stage in a new output folder, and the run 1 files stay as they are (R9).
+- A later confirm card applies p_B = 1.0 with the pinned criteria functions (`holm_primary(p_A, 1.0)` and
+  `decide_a`). `m55_criteria.primary_decision` always computes test B from a low-risk series, so that card cannot
+  call it as it is. If that card needs a change to a pinned file, an amendment that pins the new bytes comes first.
+
+Follow-up:
+
+- Next: run 2 from the coverage stage. Before the look, the coordinator compares the run 2 calibration result with
+  run 1 (decision, ratio status counts, and grid brackets). A difference is a stop for the owner.
+
 ## 2026-10-07 - Driver Defaults From Coverage to the Shortlist Freeze (Milestone 5.5, coordinator defaults)
 
 Context:

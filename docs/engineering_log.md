@@ -12,6 +12,37 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-08 - Milestone 5.5 trial amendment 2 and the driver gate after the coverage stop
+
+- Card m55-screen: amendment 2 to `docs/preregistrations/m55_trial_family_v1.json` with its decision-log entry
+  (commit `5b75559`), then the driver, test, and docs change in the next commit. Decision log: the entry of the same
+  date. No pinned module changes.
+- Run 1 (2026-10-07, code `ebc9705`, real data) ran the coverage and calibration stages, and the gate refused the
+  look after the calibration decision `ratio_coverage_low` (undefined share 0.1808 against the 0.10 limit). No
+  return of any kind was computed. The owner chose option A on 2026-10-08.
+- Trial file: five fields changed and two were added (`declaration_timing.amendment_2`,
+  `primary_family.test_B.after_coverage_stop`). The file round-trips through `json.dumps(indent=2)` byte for byte,
+  so a script made the edit, and a leaf-by-leaf check against `ebc9705` found no other changed leaf. The SHA-256 is
+  now `4f9cf222...f88a03`.
+- Driver: `TRIAL_SHA256` binds the amended file, and `GO_ON` is `("chosen", "ratio_coverage_low")`. `check_trial`
+  also checks the go-on sentence of `order_after_freeze` and the test B stop sentence (label `stopped_coverage`,
+  p_B = 1.0, Holm family of size 2). `run_stage` adds a `test_b` record to the look, screen, and freeze stage files:
+  `stopped`, `label`, `p_b`, the calibration decision, and the SHA-256 of the calibration stage file. After `chosen`
+  the record is open (`stopped` false, `label` and `p_b` null). The digest of `screen_and_shortlist.freeze` and
+  `shortlist_digest.txt` do not change.
+- The look and the screen call `run_index_tilt` with no g, and the engine adds the low-risk book only when g is
+  given. A test now checks this on a world whose real calibration gives `ratio_coverage_low`.
+- Tests, synthetic only. The world with the 1970 listing (37 of 354 rebalances without a ratio) now runs to the
+  freeze with the shortlist `["S7"]`: 4 engine calls (the look and S7, two loader runs each), each with no g, no
+  low-risk weight or calibration after the calibration stage, and test B stopped in each later stage file. Changed
+  values: the gate case `ratio_coverage_low` now goes on, and the stop loop of the look, the screen, and the freeze
+  holds the other three decisions. New checks: the `chosen` chain records test B as open; a freeze after a rechained
+  `ratio_coverage_low` keeps the chain's frozen record and digest; `check_trial` refuses a changed go-on sentence or
+  p_B. `tests/test_m55_driver.py`: 49 passed and 1 skipped (48 and 1 before). Full suite on the candidate tree:
+  `3925 passed, 3 skipped, 69 warnings`; `ruff check .` passed.
+- The stage context holds the trial and code digests, so the run 1 stage files do not chain to the amended driver.
+  Run 2 starts at the coverage stage. No real data was read in this card.
+
 ## 2026-10-07 - Milestone 5.5 driver from coverage counts to the shortlist freeze
 
 - Card m55-driver: `research/m55_driver.py` and `tests/test_m55_driver.py` (commits `0807473`, `b525e55`,
