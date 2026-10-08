@@ -14,6 +14,7 @@ import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 import research.m55_index_tilt as tilt
+from m55_bytes_support import BASE_COMMIT, assert_same_bytes, module_at
 from research.m4_7_family_a import FAMILY_A_IDS
 from research.m4_7_sp500_pit_rerun import RunnerStop
 
@@ -2220,3 +2221,140 @@ def test_default_set_with_missing_family_a_frame_refuses() -> None:
     signals = {s: f for s, f in base.signals.items() if s != FAMILY_A_IDS[-1]}
     with pytest.raises(RunnerStop, match="signal_set_invalid"):
         tilt.build_targets(replace(base, signals=signals))
+
+
+# Half-spread override (card m55-confirm, trial family v1 amendment 3) ------------------------
+
+NEW_SUMMARY_KEYS = ("trades", "slippage")
+
+
+def _without_new_keys(output: dict) -> dict:
+    runs = {key: {name: ({k: v for k, v in book.items() if k not in NEW_SUMMARY_KEYS} if name in (*tilt.BOOKS,
+                                                                                                    "lowrisk")
+                         else book) for name, book in run.items()} for key, run in output["runs"].items()}
+    return {**output, "runs": runs}
+
+
+@pytest.mark.parametrize("g", [None, LOW_G])
+def test_without_a_half_spread_panel_every_output_has_the_bytes_of_the_base_engine(full_run, low_run, tmp_path,
+                                                                                 g) -> None:
+    base = module_at(BASE_COMMIT, "research/m55_index_tilt.py", "m55_index_tilt_8590b2e", tmp_path)
+    new = full_run if g is None else low_run
+    assert_same_bytes(_without_new_keys(new), base.run_index_tilt(fixture(stop=True), g=g))
+
+
+def test_the_summary_returns_the_trades_and_the_spread_cost_of_each_rebalance(full_run: dict) -> None:
+    for book in tilt.BOOKS:
+        out = full_run["runs"][("primary", "primary")][book]
+        dates = full_run["targets"][book].index
+        assert out["trades"].index.equals(dates) and out["slippage"].index.equals(dates)
+        assert_series_equal(out["trades"].sum(axis=1), out["turnover"].loc[dates], check_names=False, rtol=1e-12)
+        assert (out["slippage"] <= out["cost"].loc[dates]).all() and (out["slippage"] > 0.0).all()
+
+
+def _quotes(rows: int = 2) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    index = pd.date_range("2000-01-03", periods=rows, freq="B")
+    cells = {"valid": (9.9, 10.1), "locked": (10.0, 10.0), "wide": (5.0, 15.0), "no_row": (np.nan, np.nan),
+             "missing": (np.nan, np.nan), "bid_only": (10.0, np.nan), "ask_only": (np.nan, 10.0),
+             "zero_bid": (0.0, 10.0), "negative_ask": (10.0, -1.0), "crossed": (10.1, 9.9)}
+    bid = pd.DataFrame({k: v[0] for k, v in cells.items()}, index=index)
+    ask = pd.DataFrame({k: v[1] for k, v in cells.items()}, index=index)
+    quoted = pd.DataFrame(True, index=index, columns=bid.columns)
+    quoted["no_row"] = False
+    return bid, ask, quoted
+
+
+def test_quote_rule_gives_the_half_spread_or_the_first_reason() -> None:
+    values, reasons = tilt.half_spreads(*_quotes())
+    assert tilt.QUOTE_REASONS == ("no_quote_row", "quote_missing", "quote_one_sided", "quote_nonpositive",
+                                  "quote_crossed")
+    assert values.iloc[0]["valid"] == pytest.approx(10_000.0 * 0.2 / 20.0)
+    assert values.iloc[0]["locked"] == 0.0
+    assert values.iloc[0]["wide"] == pytest.approx(10_000.0 * 10.0 / 20.0)      # no clip
+    assert reasons.iloc[0].to_dict() == {"valid": None, "locked": None, "wide": None, "no_row": "no_quote_row",
+                                         "missing": "quote_missing", "bid_only": "quote_one_sided",
+                                         "ask_only": "quote_one_sided", "zero_bid": "quote_nonpositive",
+                                         "negative_ask": "quote_nonpositive", "crossed": "quote_crossed"}
+    assert values.iloc[0][reasons.iloc[0].notna()].isna().all()
+
+
+def test_quote_rule_refuses_an_infinite_side_and_misaligned_frames() -> None:
+    bid, ask, quoted = _quotes()
+    infinite = ask.copy()
+    infinite.iloc[0, 0] = np.inf
+    with pytest.raises(RunnerStop, match="quote_value_invalid"):
+        tilt.half_spreads(bid, infinite, quoted)
+    with pytest.raises(RunnerStop, match="input_misaligned"):
+        tilt.half_spreads(bid, ask[ask.columns[::-1]], quoted)
+
+
+def test_spread_rate_is_the_higher_of_the_schedule_and_the_half_spread_at_r_minus_1() -> None:
+    rows = pd.DatetimeIndex(["2001-03-29", "2001-03-30", "2001-04-02", "2001-04-03"])
+    half = pd.DataFrame({"A": [30.0, 5.0, 12.0, np.nan], "B": [np.nan, 50.0, 1.0, 2.0]}, index=rows)
+    rates = tilt.spread_rates(half, tilt.COST_SCHEDULE, 1.0)
+    # Schedule 20 bp to 2001-03-31, then 8 bp; each row uses the half-spread of the row before.
+    assert rates["A"].tolist() == [20.0, 30.0, 8.0, 12.0]
+    assert rates["B"].tolist() == [20.0, 20.0, 50.0, 8.0]
+    assert_frame_equal(tilt.spread_rates(half, tilt.COST_SCHEDULE, 2.0), 2.0 * rates)
+
+
+def _half_spread_panel(inputs: tilt.TiltInputs, value: float) -> pd.DataFrame:
+    return pd.DataFrame(value, index=inputs.prices.index, columns=inputs.prices.columns)
+
+
+@pytest.mark.parametrize("value", [np.nan, 0.0, 3.0])
+def test_a_half_spread_never_above_the_schedule_gives_the_bytes_of_no_panel(full_run: dict, value: float) -> None:
+    inputs = fixture(stop=True)
+    assert_same_bytes(tilt.run_index_tilt(inputs, half_spread=_half_spread_panel(inputs, value)), full_run)
+
+
+def test_a_wide_half_spread_at_r_minus_1_raises_the_spread_cost_at_r(full_run: dict) -> None:
+    inputs = fixture(stop=True)
+    r = pd.Timestamp("2001-05-31")
+    t = inputs.prices.index[inputs.prices.index.get_loc(r) - 1]
+    name = ASSETS[0]
+    half = _half_spread_panel(inputs, np.nan)
+    half.loc[t, name] = 100.0
+    run = tilt.run_index_tilt(inputs, half_spread=half)
+    for case, scale in tilt.COST_SCALES.items():
+        for book in tilt.BOOKS:
+            old, new = full_run["runs"][(case, "primary")][book], run["runs"][(case, "primary")][book]
+            trade = new["trades"].loc[r, name]
+            assert trade > 0.0
+            extra = trade * (100.0 - 8.0) * scale / 10_000.0 * (1.0 + new["daily_gross"].loc[r])
+            assert new["slippage"].loc[r] - old["slippage"].loc[r] == pytest.approx(extra, rel=1e-9)
+            assert_series_equal(new["cost"].loc[:t], old["cost"].loc[:t])
+
+
+@pytest.mark.parametrize("offset, changes", [(0, False), (1, False), (-1, True)])
+def test_a_quote_change_at_r_or_later_leaves_the_cost_at_r(offset: int, changes: bool) -> None:
+    """R1: the rate at row r uses the half-spread at r - 1 only."""
+    inputs = fixture(stop=True)
+    r = pd.Timestamp("2001-05-31")
+    position = inputs.prices.index.get_loc(r)
+    base = _half_spread_panel(inputs, 30.0)
+    changed = base.copy()
+    changed.iloc[position + offset:] = 90.0
+    one = tilt.run_index_tilt(inputs, half_spread=base)
+    two = tilt.run_index_tilt(inputs, half_spread=changed)
+    for key in one["runs"]:
+        for book in tilt.BOOKS:
+            a, b = one["runs"][key][book], two["runs"][key][book]
+            assert_series_equal(a["cost"].loc[:r - pd.Timedelta(days=1)], b["cost"].loc[:r - pd.Timedelta(days=1)])
+            assert bool(a["cost"].loc[r] != b["cost"].loc[r]) is changes
+            assert_frame_equal(a["weights"].loc[:r - pd.Timedelta(days=1)], b["weights"].loc[:r - pd.Timedelta(days=1)])
+    assert_frame_equal(one["targets"]["tilt"], two["targets"]["tilt"])
+
+
+@pytest.mark.parametrize("change", ["columns", "rows", "negative", "infinite"])
+def test_an_invalid_half_spread_panel_refuses(change: str) -> None:
+    inputs = fixture()
+    half = _half_spread_panel(inputs, 5.0)
+    if change == "columns":
+        half = half[half.columns[::-1]]
+    elif change == "rows":
+        half = half.iloc[:-1]
+    else:
+        half.iloc[3, 2] = -1.0 if change == "negative" else np.inf
+    with pytest.raises(RunnerStop, match="input_misaligned" if change in ("columns", "rows") else "half_spread_invalid"):
+        tilt.run_index_tilt(inputs, half_spread=half)

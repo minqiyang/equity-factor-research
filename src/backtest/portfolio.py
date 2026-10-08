@@ -726,6 +726,27 @@ def _resolve_dated_costs(
     return aligned[:, 0].copy(), aligned[:, 1].copy()
 
 
+def _resolve_asset_slippage(
+    asset_slippage_bps: pd.DataFrame | None, accounting_dates: pd.DatetimeIndex, columns: pd.Index,
+    row_cost_bps: tuple[np.ndarray, np.ndarray] | None,
+) -> np.ndarray | None:
+    """Per-row, per-asset slippage rates aligned to the accounting rows and the price columns, or ``None``."""
+    if asset_slippage_bps is None:
+        return None
+    if row_cost_bps is None:
+        raise BacktestValidationError("asset_slippage_invalid", "per-asset slippage rates require dated costs")
+    if (not isinstance(asset_slippage_bps, pd.DataFrame) or not isinstance(asset_slippage_bps.index, pd.DatetimeIndex)
+            or not asset_slippage_bps.index.is_unique or not asset_slippage_bps.columns.equals(columns)):
+        raise BacktestValidationError("asset_slippage_invalid", "per-asset slippage rates require a unique date index and the price columns")
+    try:
+        aligned = asset_slippage_bps.reindex(accounting_dates).to_numpy(dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise BacktestValidationError("asset_slippage_invalid", "per-asset slippage rates must be numeric") from exc
+    if not np.isfinite(aligned).all() or (aligned < 0.0).any():
+        raise BacktestValidationError("asset_slippage_invalid", "per-asset slippage requires a finite non-negative rate for every asset on every accounting row")
+    return aligned
+
+
 def _dated_cost_segments(row_cost_bps: tuple[np.ndarray, np.ndarray], dates: pd.DatetimeIndex) -> list[dict[str, Any]]:
     """The applied schedule as runs of equal rates: first accounting row and both rates of each run."""
     segments: list[dict[str, Any]] = []
@@ -764,6 +785,7 @@ def run_long_only_backtest(
     transaction_cost_bps: float = 0.0,
     slippage_bps: float = 0.0,
     dated_costs: pd.DataFrame | None = None,
+    asset_slippage_bps: pd.DataFrame | None = None,
     risk_model: CrossSectionalRiskModel | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_volumes: pd.DataFrame | None = None,
@@ -797,6 +819,11 @@ def run_long_only_backtest(
     fixed rates with per-row rates: a frame indexed by source-row date with the
     columns ``transaction_cost_bps`` and ``slippage_bps`` that covers every
     accounting row. It requires both fixed rates at zero and no impact model.
+    ``asset_slippage_bps`` (it requires ``dated_costs``) gives a slippage rate
+    per asset and row: a frame indexed by source-row date with the price
+    columns that covers every accounting row. The row slippage cost is then
+    the sum of the absolute trade weights times their rates; commission stays
+    per row.
     """
 
     _validate_backtest_inputs(
@@ -850,6 +877,7 @@ def run_long_only_backtest(
         dated_costs, accounting_dates, transaction_cost_bps=transaction_cost_bps, slippage_bps=slippage_bps,
         impact_model=impact_model, volume_aware_slippage_mode=volume_aware_slippage_mode,
     )
+    asset_slippage = _resolve_asset_slippage(asset_slippage_bps, accounting_dates, price_data.columns, row_cost_bps)
     if (constituent_intervals is not None or terminal_events is not None) and missing_price_policy == "zero_return":
         raise BacktestValidationError("pit_missing_price_policy_invalid", "PIT membership and terminal accounting require strict held-price validation")
     if missing_price_policy == HALT_GAP_POLICY and impact_model is not None:
@@ -922,6 +950,7 @@ def run_long_only_backtest(
         transaction_cost_bps=float(transaction_cost_bps),
         slippage_bps=float(slippage_bps),
         row_cost_bps=row_cost_bps,
+        asset_slippage=asset_slippage,
         raw_volume_impact=raw_volume_impact,
         volume_impact_basis=volume_impact_basis,
         missing_price_policy=missing_price_policy,
@@ -1067,6 +1096,7 @@ def run_long_only_backtest(
             **({"dated_costs": "per_row_transaction_and_slippage_bps",
                 "dated_cost_segments": _dated_cost_segments(row_cost_bps, accounting_dates)}
                if row_cost_bps is not None else {}),
+            **({"asset_slippage": "per_asset_slippage_bps"} if asset_slippage is not None else {}),
             "signal_lag_periods": signal_lag_periods,
             "missing_price_policy": missing_price_policy,
             "benchmark_missing_policy": benchmark_missing_policy,
@@ -1243,6 +1273,7 @@ def _calculate_bounded_portfolio_path(
     volume_impact_basis: str | None,
     missing_price_policy: str,
     row_cost_bps: tuple[np.ndarray, np.ndarray] | None = None,
+    asset_slippage: np.ndarray | None = None,
     terminal_events: dict[pd.Timestamp, tuple[dict[str, Any], ...]] | None = None,
     impact_model: SquareRootImpactModel | None = None,
     impact_liquidity: MarketLiquidity | None = None,
@@ -1449,6 +1480,11 @@ def _calculate_bounded_portfolio_path(
                 fixed_slippage_cost = (
                     row_turnover * (row_slippage_bps / 10_000.0) * gross_multiplier
                 )
+                if asset_slippage is not None and row_turnover != 0.0:
+                    # Per-asset rates: the row rate plus each trade's rate above it, so equal rates add 0.0.
+                    fixed_slippage_cost += math.fsum(
+                        trade_weights[position] * (asset_slippage[position] - row_slippage_bps)
+                    ) / 10_000.0 * gross_multiplier
                 volume_cost = float(raw_volume_impact.loc[date])
                 if volume_impact_basis == "post_return_portfolio_value":
                     volume_cost *= gross_multiplier

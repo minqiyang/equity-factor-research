@@ -17,6 +17,12 @@ power volatility tilt built from risk only, and ``calibrate_lowrisk``, which
 picks its one knob ``g`` from second moments only (low-risk design note,
 sections 3 and 4).
 
+Card m55-confirm (trial family v1 amendment 3) adds the half-spread override
+of the confirm and check runs: ``half_spreads`` is the quote rule, and
+``run_index_tilt`` takes the half-spread panel. A trade at row ``r`` pays a
+spread of scale x max(schedule spread at ``r``, CRSP half-spread at
+``r - 1``) per stock; a missing half-spread leaves the schedule.
+
 The books run on the long-only engine of ``backtest.portfolio`` with
 ``weighting_scheme="proportional"`` and ``top_pct=1.0``, so the target weights
 pass through unchanged. Costs (R8), terminal events (R4), point-in-time
@@ -63,6 +69,8 @@ EVENT_RUNS = ("primary", "last_close")
 COST_SCALES = {"primary": 1.0, "sensitivity_2x": 2.0}
 # One-way bp per traded notional: (first date or None, commission, spread). Design note section 1.
 COST_SCHEDULE = ((None, 5.0, 20.0), ("2001-04-01", 2.0, 8.0), ("2007-01-01", 1.0, 4.0))
+# A quote cell is invalid for the first reason that applies; it keeps the reason and pays the schedule spread.
+QUOTE_REASONS = ("no_quote_row", "quote_missing", "quote_one_sided", "quote_nonpositive", "quote_crossed")
 BOOKS = ("cw", "tilt")
 LOWRISK_CAP = 0.02                   # low-risk book: |w - b| at most 2 percentage points per stock
 LOWRISK_TE = 0.05                    # low-risk book: ex-ante tracking error against CW-PIT, per year
@@ -173,6 +181,46 @@ def dated_cost_frame(dates: pd.DatetimeIndex, schedule: tuple = COST_SCHEDULE, s
         on = np.ones(len(dates), dtype=bool) if first is None else np.asarray(dates >= pd.Timestamp(first))
         commission[on], spread[on] = c * scale, s * scale
     return pd.DataFrame({"transaction_cost_bps": commission, "slippage_bps": spread}, index=dates)
+
+
+def half_spreads(bid: pd.DataFrame, ask: pd.DataFrame, quoted: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """The CRSP closing half-spread in bp, 10,000 x (ask - bid) / (ask + bid), and the reason of each invalid cell.
+
+    ``quoted`` is True where the stock has a quote row on that calendar row. A cell is valid when it has a quote
+    row, both sides are finite and above 0, and ask >= bid; a locked quote gives 0. An invalid cell has no value
+    (NaN) and the first reason of ``QUOTE_REASONS`` that applies: no quote row, both sides missing, one side
+    missing, a side at 0 or below, ask below bid. A valid cell has no reason. No value is clipped. An infinite
+    side refuses.
+    """
+    frames = (bid, ask, quoted)
+    if any(not f.index.equals(bid.index) or not f.columns.equals(bid.columns) for f in frames):
+        raise refuse("input_misaligned", "bid, ask, and quoted share their rows and columns")
+    b, a = bid.to_numpy(dtype=float), ask.to_numpy(dtype=float)
+    if np.isinf(b).any() or np.isinf(a).any():
+        raise refuse("quote_value_invalid", "a bid or ask is infinite")
+    has = quoted.to_numpy(dtype=bool)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        rules = (~has, np.isnan(b) & np.isnan(a), np.isnan(b) | np.isnan(a), (b <= 0.0) | (a <= 0.0), a < b)
+        reasons = np.full(b.shape, None, dtype=object)
+        valid = np.ones(b.shape, dtype=bool)
+        for reason, hit in zip(QUOTE_REASONS, rules):
+            reasons[valid & hit] = reason
+            valid &= ~hit
+        values = np.where(valid, 10_000.0 * (a - b) / (a + b), np.nan)
+    return (pd.DataFrame(values, index=bid.index, columns=bid.columns),
+            pd.DataFrame(reasons, index=bid.index, columns=bid.columns))
+
+
+def spread_rates(half_spread: pd.DataFrame, schedule: tuple, scale: float) -> pd.DataFrame:
+    """The spread rate in bp of each stock at each row (``books.costs.half_spread_override``).
+
+    A trade at row ``r`` pays scale x max(schedule spread at ``r``, half-spread at ``r - 1``), so the 2x case
+    doubles the result. A missing half-spread leaves the schedule spread, which is never undercut.
+    """
+    rows = half_spread.index
+    base = dated_cost_frame(rows, schedule, 1.0)["slippage_bps"].to_numpy()
+    prior = half_spread.shift(1).to_numpy(dtype=float)
+    return pd.DataFrame(np.fmax(base[:, None], prior) * scale, index=rows, columns=half_spread.columns)
 
 
 def check_disappearances(table: pd.DataFrame, calendar: pd.DatetimeIndex, assets: pd.Index) -> pd.DataFrame:
@@ -756,7 +804,9 @@ def check_engine_targets(result: Any, target: pd.DataFrame, calendar: pd.Datetim
             raise refuse("engine_target_mismatch", str(date.date()))
 
 
-def run_book(inputs: TiltInputs, target: pd.DataFrame, events: pd.DataFrame, costs: pd.DataFrame) -> Any:
+def run_book(inputs: TiltInputs, target: pd.DataFrame, events: pd.DataFrame, costs: pd.DataFrame,
+             rates: pd.DataFrame | None = None) -> Any:
+    """One book on the long-only engine; ``rates`` is the per-stock spread panel of ``spread_rates``."""
     calendar = inputs.prices.index
     scores = engine_scores(target, calendar)
     try:
@@ -764,7 +814,8 @@ def run_book(inputs: TiltInputs, target: pd.DataFrame, events: pd.DataFrame, cos
             inputs.prices, scores, source_provenance=capture_backtest_source_provenance(inputs.prices, scores),
             evaluation_start=inputs.start, evaluation_end=inputs.end, rebalance_frequency="ME", top_pct=1.0,
             weighting_scheme="proportional", constituent_intervals=inputs.intervals,
-            terminal_events=events if len(events) else None, dated_costs=costs, missing_price_policy=HALT_POLICY)
+            terminal_events=events if len(events) else None, dated_costs=costs, asset_slippage_bps=rates,
+            missing_price_policy=HALT_POLICY)
     except BacktestValidationError as exc:
         if exc.reason in runner.CLASS_I_ENGINE:
             raise refuse(exc.reason, str(exc)) from exc
@@ -792,7 +843,9 @@ def book_summary(result: Any, target: pd.DataFrame) -> dict[str, Any]:
 
     The monthly rows are exactly the months from the one after the first
     rebalance to the month of the last rebalance (``end``): one row per
-    holding month, none outside the evaluation span.
+    holding month, none outside the evaluation span. ``trades`` (absolute
+    trade weights) and ``slippage`` (the spread cost) are those of each
+    rebalance row.
     """
     first, last = target.index[0], target.index[-1]
     measured = result.returns.index >= first
@@ -807,6 +860,7 @@ def book_summary(result: Any, target: pd.DataFrame) -> dict[str, Any]:
     return {"daily_net": daily, "daily_gross": result.gross_returns[measured],
             "monthly_net": monthly, "turnover": turnover, "cost": cost,
             "weights": result.holdings.loc[target.index],
+            "trades": result.trade_weights.loc[target.index], "slippage": result.slippage_costs.loc[target.index],
             "annual_turnover": float(turnover.mean() * ANNUAL_ROWS),
             "annual_cost_drag": float(cost.mean() * ANNUAL_ROWS),
             "initial_purchase_cost": float(cost.loc[first]),
@@ -827,16 +881,28 @@ def sign(value: float) -> int:
     return 0 if value == 0.0 else (1 if value > 0.0 else -1)
 
 
-def run_index_tilt(inputs: TiltInputs, schedule: tuple = COST_SCHEDULE, g: float | None = None) -> dict[str, Any]:
-    """Every book at both cost scales and both event runs, from one set of targets; ``g`` adds ``lowrisk``."""
-    built = build_targets(inputs, g)
+def run_index_tilt(inputs: TiltInputs, schedule: tuple = COST_SCHEDULE, g: float | None = None,
+                   half_spread: pd.DataFrame | None = None) -> dict[str, Any]:
+    """Every book at both cost scales and both event runs, from one set of targets; ``g`` adds ``lowrisk``.
+
+    ``half_spread`` (bp, rows and columns of ``inputs.prices``, NaN where missing) applies the half-spread
+    override to every book (``spread_rates``).
+    """
     calendar = inputs.prices.index
+    if half_spread is not None:
+        values = half_spread.to_numpy(dtype=float)
+        if not half_spread.index.equals(calendar) or not half_spread.columns.equals(inputs.prices.columns):
+            raise refuse("input_misaligned", "half_spread")
+        if np.isinf(values).any() or (values < 0.0).any():
+            raise refuse("half_spread_invalid", "a half-spread is finite and at least 0, or missing")
+    built = build_targets(inputs, g)
     runs = {}
     for case, scale in COST_SCALES.items():
         costs = dated_cost_frame(calendar, schedule, scale)
+        rates = None if half_spread is None else spread_rates(half_spread, schedule, scale)
         for event_run in EVENT_RUNS:
             events = terminal_events(built["disappearances"], calendar, event_run)
-            books = {book: book_summary(run_book(inputs, target, events, costs), target)
+            books = {book: book_summary(run_book(inputs, target, events, costs, rates), target)
                      for book, target in built["targets"].items()}
             runs[(case, event_run)] = {**books, "active": active_summary(books["cw"], books["tilt"])}
             if g is not None:

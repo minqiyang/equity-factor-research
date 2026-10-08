@@ -1,8 +1,9 @@
 """Synthetic tests for the Milestone 5.5 driver (card m55-driver).
 
 Every WRDS table is generated here; no test reads the WRDS folder or opens a network connection. The small world
-runs every stage from the coverage counts to the frozen shortlist digest. The real-size world (about 500 members
-at a time on about 7,900 business days) runs only when M55_DRIVER_REAL_SIZE=1 and prints its run time.
+runs every stage from the coverage counts to the frozen shortlist digest; ``test_m55_confirm`` runs the confirm and
+check stages on a longer world. The real-size world (about 500 members at a time on about 7,900 business days) runs
+only when M55_DRIVER_REAL_SIZE=1 and prints its run time.
 """
 
 from __future__ import annotations
@@ -35,6 +36,8 @@ pytestmark = pytest.mark.xdist_group("m55_driver")
 VINTAGE = "2025-12-31"
 OPEN = pd.Timestamp(VINTAGE)                  # a spell open at the vintage end: exit class current
 TRACKED = {"vintage": VINTAGE, "files": {}}
+QUOTES = w.WrdsData({}, {"vintage": VINTAGE, "files": {}})   # no quote table: the stages up to the freeze parse none
+SCREEN_STAGES = d.STAGES[:d.STAGES.index("freeze") + 1]      # coverage to freeze (card m55-driver)
 MU, K, VOL = 0.0005, 0.03, 0.008              # daily drift MU - K x share growth: S7 (sign -1) predicts returns
 MARKET_VOL = 0.012                            # a daily market factor from its own generator (Member.beta)
 BETA_HIGH, BETA_LOW = 1.8, 0.3                # small world: the low-risk book reaches its ratio target (chosen)
@@ -234,8 +237,14 @@ def perturb_after(frames: dict[str, pd.DataFrame], after: pd.Timestamp, seed: in
     return out
 
 
-def run_chain(data: w.WrdsData, out: Path) -> dict[str, str]:
-    return {stage: d.run_stage(stage, data, out, TRACKED) for stage in d.STAGES}
+def run_one(name: str, data: w.WrdsData, out: Path, tracked: dict = TRACKED, quotes: w.WrdsData = QUOTES) -> str:
+    """One stage with the in-memory data, an in-memory quote copy, and the synthetic tracked manifests."""
+    return d.run_stage(name, data, out, tracked, quotes=quotes, tracked_quotes=TRACKED)
+
+
+def run_chain(data: w.WrdsData, out: Path, stages: tuple[str, ...] = SCREEN_STAGES,
+              quotes: w.WrdsData = QUOTES) -> dict[str, str]:
+    return {name: run_one(name, data, out, quotes=quotes) for name in stages}
 
 
 def stage(out: Path, name: str) -> dict:
@@ -246,7 +255,7 @@ def copy_until(chain: dict, folder: Path, name: str) -> Path:
     """A copy of the small-world stage folder without stage ``name`` and the stages after it."""
     out = folder / "out"
     shutil.copytree(chain["w0"]["folder"], out)
-    for later in d.STAGES[d.STAGES.index(name):]:
+    for later in SCREEN_STAGES[SCREEN_STAGES.index(name):]:
         for suffix in (".json", ".sha256"):
             (out / f"{later}{suffix}").unlink()
     (out / "shortlist_digest.txt").unlink(missing_ok=True)
@@ -337,6 +346,72 @@ def test_the_trial_file_must_have_the_frozen_bytes(tmp_path: Path) -> None:
     assert caught.value.reason == "trial_digest_mismatch"
 
 
+def test_amendment_3_states_the_run_2_digest_once() -> None:
+    trial, _ = d.load_trial()
+    assert d.run2_digest(trial) == "62b2c8afb379fb0322b03cbd68da47b71c68c9eb1d1172c805dcd11b00d59518"
+
+
+def _swap_quote_reasons(t: dict) -> None:
+    text = t["books"]["costs"]["half_spread_override"]
+    t["books"]["costs"]["half_spread_override"] = text.replace("quote_missing", "<x>").replace(
+        "quote_one_sided", "quote_missing").replace("<x>", "quote_one_sided")
+
+
+@pytest.mark.parametrize("edit, name", [
+    (lambda t: t["declaration_timing"].__setitem__("amendment_3", t["declaration_timing"]["amendment_3"]
+                                                   + " run 3 must repeat the run 2 digest " + "0" * 64), "run 2 digest"),
+    (lambda t: t["books"]["costs"].__setitem__("half_spread_override", t["books"]["costs"][
+        "half_spread_override"].replace("half-spread at r - 1)", "half-spread at r)")), "half_spread_override"),
+    (_swap_quote_reasons, "half_spread_override"),
+    (lambda t: t["books"]["costs"].__setitem__("half_spread_override", t["books"]["costs"][
+        "half_spread_override"].replace(d.QUOTE_MANIFEST, "reports/x.json")), "half_spread_override"),
+    (lambda t: t["periods"]["confirm"].__setitem__("last", "2014-04"), "confirm period"),
+    (lambda t: t["periods"]["check"].__setitem__("segments", t["periods"]["check"]["segments"].replace(
+        "months 2021-09 to", "months 2021-10 to")), "check period"),
+    (lambda t: t["stop_rule"].__setitem__("after_confirm", t["stop_rule"]["after_confirm"].replace(
+        "CONFIRM_FLOOR = 0.003", "CONFIRM_FLOOR = 0.002")), "CONFIRM_FLOOR, ALPHA"),
+    (lambda t: t["secondary_family"].__setitem__("family_size", 8), "secondary family"),
+    (lambda t: t["candidates"]["family_a_baseline"].__setitem__("min_valid", 3), "Family A baseline"),
+    (lambda t: t["candidates"]["family_a_baseline"]["crsp_inputs"].__setitem__("amihud_nasdaq_divisor", t[
+        "candidates"]["family_a_baseline"]["crsp_inputs"]["amihud_nasdaq_divisor"].replace("1.8 from", "1.7 from")),
+     "Family A CRSP inputs"),
+    (lambda t: next(o for o in t["open_items"] if o["id"] == "OI-08")["publication_years"].pop("S8"),
+     "publication years"),
+    (lambda t: t["reports_owed"].pop("half_spread"), "reports_owed.half_spread")])
+def test_check_trial_refuses_a_changed_confirm_or_check_rule(edit, name) -> None:
+    changed = json.loads(json.dumps(d.load_trial()[0]))
+    edit(changed)
+    with pytest.raises(RunnerStop) as caught:
+        d.check_trial(changed)
+    assert (caught.value.reason, caught.value.detail) == ("trial_rule_mismatch", name)
+
+
+@pytest.mark.parametrize("p_a, adjusted, passes", [(0.03, 0.06, False), (0.02, 0.04, True)])
+def test_holm_with_test_b_stopped_doubles_p_a(p_a, adjusted, passes) -> None:
+    """Amendment 2: test B is stopped, so the Holm family of size 2 holds p_B = 1.0."""
+    holm = crit.holm_primary(p_a, 1.0)
+    assert holm == {"A": pytest.approx(adjusted), "B": 1.0} and (holm["A"] <= crit.ALPHA) is passes
+
+
+def test_a_check_series_refuses_a_gap_month_or_a_month_after_its_end() -> None:
+    last = pd.Period("2025-11", "M")
+    before, after = pd.period_range("2019-04", "2019-06", freq="M"), pd.period_range("2021-09", "2021-11", freq="M")
+    d.check_months(pd.Series(0.01, index=before.append(after)), last=last, period="check")
+    for month in ("2019-07", "2020-08", "2021-08"):
+        series = pd.Series(0.01, index=before.append(pd.PeriodIndex([month], freq="M")).append(after))
+        with pytest.raises(RunnerStop) as caught:
+            d.check_months(series, last=last, period="check")
+        assert caught.value.reason == "check_gap_month"
+    with pytest.raises(RunnerStop) as caught:
+        d.check_months(pd.Series(0.01, index=after.append(pd.PeriodIndex(["2025-12"], freq="M"))), last=last,
+                       period="check")
+    assert caught.value.reason == "row_after_check_end"
+    with pytest.raises(RunnerStop) as caught:
+        d.check_months(pd.Series(0.01, index=pd.period_range("2014-02", "2014-04", freq="M")),
+                       last=crit.CONFIRM_END, period="confirm")
+    assert caught.value.reason == "row_after_confirm_end"
+
+
 def test_stated_reads_each_written_form() -> None:
     assert d.stated("max |w - b| <= cap + 1e-12 (CAP_TOLERANCE) in", "CAP_TOLERANCE") == 1e-12
     assert d.stated("in at most 100 passes (RENORMALIZE_LOOPS), else", "RENORMALIZE_LOOPS") == 100
@@ -372,10 +447,10 @@ def test_context_digest_covers_every_module(tmp_path: Path) -> None:
 
 def test_chain_writes_each_stage_with_its_digest_and_chain(chain) -> None:
     out = chain["w0"]["folder"]
-    for k, name in enumerate(d.STAGES):
+    for k, name in enumerate(SCREEN_STAGES):
         raw = (out / f"{name}.json").read_bytes()
         assert (out / f"{name}.sha256").read_text().strip() == d.sha256_bytes(raw) == chain["w0"]["digests"][name]
-        assert json.loads(raw)["previous"] == {s: chain["w0"]["digests"][s] for s in d.STAGES[:k]}
+        assert json.loads(raw)["previous"] == {s: chain["w0"]["digests"][s] for s in SCREEN_STAGES[:k]}
     assert (out / "shortlist_digest.txt").read_text().strip() == stage(out, "freeze")["digest_sha256"]
 
 
@@ -404,21 +479,21 @@ def test_a_later_stage_refuses_unless_earlier_outputs_exist_and_match(chain, fra
         look.write_text(text)
         (out / "look.sha256").write_text(d.sha256_bytes(text.encode()) + "\n")
     with pytest.raises(RunnerStop) as caught:
-        d.run_stage("screen", make_data(frames), out, TRACKED)
+        run_one("screen", make_data(frames), out)
     assert caught.value.reason == reason
     assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == reason
 
 
 def test_a_stage_output_is_never_overwritten_and_needs_a_folder_outside_git(chain, frames, tmp_path) -> None:
     with pytest.raises(RunnerStop) as caught:
-        d.run_stage("look", make_data(frames), chain["w0"]["folder"], TRACKED)
+        run_one("look", make_data(frames), chain["w0"]["folder"])
     assert caught.value.reason == "stage_output_exists"
     (tmp_path / "repo" / ".git").mkdir(parents=True)
     with pytest.raises(RunnerStop) as caught:
-        d.run_stage("coverage", make_data(frames), tmp_path / "repo" / "out", TRACKED)
+        run_one("coverage", make_data(frames), tmp_path / "repo" / "out")
     assert caught.value.reason == "output_inside_checkout"
     with pytest.raises(RunnerStop) as caught:
-        d.run_stage("coverage", make_data(frames), tmp_path / "other", {"vintage": VINTAGE, "files": {"x": {
+        run_one("coverage", make_data(frames), tmp_path / "other", {"vintage": VINTAGE, "files": {"x": {
             "rows": 1, "sha256": "0"}}})
     assert caught.value.reason == "data_manifest_mismatch"
 
@@ -443,7 +518,7 @@ def test_look_screen_and_freeze_refuse_after_a_calibration_stop(chain, frames, t
         out = copy_until(chain, tmp_path / decision, name)
         rechain(out, set_calibration(decision))
         with pytest.raises(RunnerStop) as caught:
-            d.run_stage(name, data, out, TRACKED)
+            run_one(name, data, out)
         assert (caught.value.reason, caught.value.detail) == ("calibration_stop", f"calibration decision {decision}")
         assert not (out / f"{name}.json").exists()
         assert json.loads((out / "run_log.jsonl").read_text().splitlines()[-1])["refused"] == "calibration_stop"
@@ -473,7 +548,7 @@ def test_a_ratio_coverage_low_world_runs_to_the_freeze_and_stops_test_b(tmp_path
     data = make_data(world_frames(members, CAL))
     out = tmp_path / "out"
     for name in ("coverage", "calibration"):
-        d.run_stage(name, data, out, TRACKED)
+        run_one(name, data, out)
     result = stage(out, "calibration")
     assert (result["ratio_status_counts"]["ratio_window_short"], result["rebalances"]) == (37, 354)
     assert result["decision"] == "ratio_coverage_low" and result["undefined_share"] > tilt.LOWRISK_UNDEFINED_MAX
@@ -495,7 +570,7 @@ def test_a_ratio_coverage_low_world_runs_to_the_freeze_and_stops_test_b(tmp_path
     monkeypatch.setattr(tilt, "lowrisk_weights", low_risk)
     monkeypatch.setattr(tilt, "calibrate_lowrisk", low_risk)
     for name in ("look", "screen", "freeze"):
-        d.run_stage(name, data, out, TRACKED)
+        run_one(name, data, out)
     assert Counter(name for name, _ in gs) == {"run_index_tilt": 4, "build_targets": 4}  # the look and S7, 2 runs
     assert all(g is None for _, g in gs)
     stopped = {"stopped": True, "label": "stopped_coverage", "p_b": 1.0, "calibration_decision": "ratio_coverage_low",
@@ -515,7 +590,7 @@ def test_after_ratio_coverage_low_the_freeze_keeps_its_record_and_digest(chain, 
     calibration decision is not part of the digest; only the stage file adds test B as stopped."""
     out = copy_until(chain, tmp_path, "freeze")
     rechain(out, set_calibration("ratio_coverage_low"))
-    d.run_stage("freeze", make_data(frames), out, TRACKED)
+    run_one("freeze", make_data(frames), out)
     after, before = stage(out, "freeze"), stage(chain["w0"]["folder"], "freeze")
     assert after["record"] == before["record"] and after["digest_sha256"] == before["digest_sha256"]
     assert after["test_b"] == {"stopped": True, "label": "stopped_coverage", "p_b": 1.0,
@@ -533,10 +608,10 @@ def test_a_refusal_inside_the_calibration_writes_no_file(chain, frames, tmp_path
     monkeypatch.setattr(tilt, "calibrate_lowrisk", refused)
     data = make_data(frames)
     with pytest.raises(RunnerStop):
-        d.run_stage("calibration", data, out, TRACKED)
+        run_one("calibration", data, out)
     assert not (out / "calibration.json").exists()
     with pytest.raises(RunnerStop) as caught:
-        d.run_stage("look", data, out, TRACKED)
+        run_one("look", data, out)
     assert caught.value.reason == "stage_missing"
 
 
@@ -551,7 +626,7 @@ def test_the_freeze_parses_no_data_table(chain, tmp_path, monkeypatch) -> None:
         raise AssertionError("the freeze parsed a data table")
     for module, name in ((w, "load"), (w, "frame"), (w.pq, "read_table")):
         monkeypatch.setattr(module, name, parsed)
-    d.run_stage("freeze", d.stage_data("freeze", root), out, TRACKED)
+    run_one("freeze", d.stage_data("freeze", root), out)
     assert (out / "freeze.json").read_bytes() == (chain["w0"]["folder"] / "freeze.json").read_bytes()
     # The bytes of each listed file are hashed, never read as a table; one changed byte refuses.
     (root / "part.parquet").write_bytes(b"not a table")
@@ -596,7 +671,7 @@ def test_coverage_and_calibration_compute_no_return(chain, frames, tmp_path, mon
             monkeypatch.setattr(module, name, computed)
     data = make_data(frames)
     for name in ("coverage", "calibration"):
-        d.run_stage(name, data, tmp_path / "out", TRACKED)
+        run_one(name, data, tmp_path / "out")
         assert (tmp_path / "out" / f"{name}.json").read_bytes() == (chain["w0"]["folder"] / f"{name}.json").read_bytes()
     out = chain["w0"]["folder"]
     for name in ("coverage", "calibration"):
@@ -753,7 +828,7 @@ def test_a_short_last_close_run_is_typed_and_a_short_candidate_runs_no_engine(ch
     spy(tilt, "run_index_tilt")
     spy(crit, "screen_record")
     spy(d, "check_declaration", lambda declared, run_set, first, *rest: f"check_declaration {first}")
-    d.run_stage("screen", make_data(frames), out, TRACKED)
+    run_one("screen", make_data(frames), out)
     assert seen["run_index_tilt"] == 2 and seen["screen_record"] == 2
     assert seen["check_declaration 1991-01"] == 2 and seen["check_declaration 1964-01"] == 4
     result = stage(out, "screen")
@@ -779,7 +854,7 @@ def test_a_late_refusal_leaves_no_output_of_its_comparison_in_the_log(chain, fra
         raise tilt.refuse("r4_held_count_mismatch", "a refusal after the first criteria call")
     monkeypatch.setattr(d, "r4_counts", refused)
     with pytest.raises(RunnerStop):
-        d.run_stage(name, make_data(frames), out, TRACKED)
+        run_one(name, make_data(frames), out)
     added = [json.loads(x) for x in (out / "run_log.jsonl").read_text().splitlines()[before:]]
     assert added[-1]["refused"] == "r4_held_count_mismatch"
     assert not any(e.get("call") in ("check_paired", "screen_record") for e in added)
@@ -1105,9 +1180,9 @@ def test_real_size_world_runs_every_stage(tmp_path: Path) -> None:
     begin = time.perf_counter()
     data = make_data(world_frames(real_size_members(cal), cal, seed=21))
     times = {"build": time.perf_counter() - begin}
-    for name in d.STAGES:
+    for name in SCREEN_STAGES:
         begin = time.perf_counter()
-        d.run_stage(name, data, tmp_path / "out", TRACKED)
+        run_one(name, data, tmp_path / "out")
         times[name] = time.perf_counter() - begin
     columns = d.frames_for(data, "primary")["prices"].shape
     print(json.dumps({"rows_columns": columns, "seconds": {k: round(v, 1) for k, v in times.items()}}))
