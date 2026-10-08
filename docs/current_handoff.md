@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-08 for the Milestone 5.5 screen report after PR #300.
+Updated: 2026-10-08 for trial family v1 amendment 3 after PR #301.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `8590b2e9ca11513cf9f5aa2c552e1d6a9f6d3925` (main after PR #300).
+  `45c67f983ebd57f00d6ec4c4f92aeaa1d6cd46bc` (main after PR #301).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -50,7 +50,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   and the low-risk book, its calibration, and the declared signal set of the index tilt (PR #294), and the
   signals S1 to S8 and the WRDS loader with its R6 share-basis repair (PR #295), and the frozen Milestone 5.5
   trial family v1 and its amendment 1 (PR #298), and the Milestone 5.5 driver to the shortlist freeze (PR #299),
-  and trial amendment 2 with test B stopped at the coverage stop (PR #300).
+  and trial amendment 2 with test B stopped at the coverage stop (PR #300), and the public screen report of
+  trial family v1 (PR #301: run 2 froze S3 and S4).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -61,7 +62,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `f6cfc610` (PR #284), `988b4443` (PR #285), `2f93032d` (PR #286), `d48b8114` (PR #287), `a72f1562` (PR #288),
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
-  `0be2be30` (PR #298), `ebc97054` (PR #299), and `8590b2e9` (PR #300).
+  `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), and `45c67f98` (PR #301).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -71,12 +72,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-screen-report` adds `research/m55_screen_report.py` and the public screen report of
-  trial family v1 (`reports/m55_screen_v1.md`, `.json`, and `_attempts.jsonl`), made from the private stage files
-  of run 1 and run 2. Run 2 (code `8590b2e`) froze the shortlist S3 and S4 (`shortlist_frozen`, digest
-  `62b2c8af...d59518`); test B is stopped. The report holds aggregates only and no private path. Under the
-  public weight rule (decision-log Ruling 4, review fix M-1), it gives weight sums only for the run-level look
-  groups, no weight for a candidate group, and no single maximum weight.
+- Candidate branch `claude/m55-confirm` adds amendment 3 to the frozen trial family v1, after the run 2 freeze
+  (S3 and S4, digest `62b2c8af...d59518`) and before any confirm month, check month, or quote value is read. It
+  states the half-spread override and the confirm and check segments, and pins the new engine and runner bytes and
+  the quote pull script. The driver adds the confirm and check stages. Tests are synthetic; no real data is read.
 
 ## Current Research Gate Summary
 
@@ -98,10 +97,14 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- After this PR merges: the confirm card for the shortlist S3 and S4 (test A with p_B = 1.0, so p_A <= 0.025 for
-  Holm; the secondary family with Benjamini-Yekutieli q-values of family size 9). The confirm run waits for the
-  owner's second WRDS pull of CRSP closing bid and ask (OI-03). If a pinned file changes before a run, an amendment
-  comes first. The screen months stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
+- After this PR merges: the owner's second WRDS pull (one run of `coord/reports/m6_prep/wrds_pull_quotes.py` into
+  a folder named `wrds_quotes_*`; a re-pull is a stop) and the commit of `reports/wrds_quotes_manifest_2025.json`.
+  Then run 3 of `python -m research.m55_driver` with `--quote-root`, one stage at a time, in a new output folder
+  outside every checkout: coverage to freeze; the coordinator compares the freeze digest, the coverage counts, and
+  the calibration values with run 2 (a difference goes to the owner); then confirm and check. The confirm stage
+  makes 22 engine calls and the check stage 40 (the look and the screen made 18 in about 2.5 hours). Check the free
+  memory first. If a pinned file changes before a run, an amendment comes first. The screen months stay as they
+  are: the 215 blank months follow the frozen rule (no rerun, R9).
 
 ## Source Routing
 

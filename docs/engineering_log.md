@@ -12,6 +12,42 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-08 - Milestone 5.5 confirm and check stages with the half-spread override
+
+- Card m55-confirm: amendment 3 rule text (commit `56f556a`), then the runner, engine, driver, and tests (commit
+  `e186c63`), then the pins of amendment 3 and the driver `TRIAL_SHA256` (commit `528ac75`). Decision log: the
+  amendment 3 entry of the same date. No real data was read.
+- Runner (`src/backtest/portfolio.py`): `run_long_only_backtest` takes an optional panel `asset_slippage_bps` (bp,
+  rows by assets) beside `dated_costs`. A trade pays the row rate plus its own rate above the row rate, so equal
+  rates add exactly 0.0, and on a halt-locked row H-3c applies to the full row cost. A bad panel refuses
+  (`asset_slippage_invalid`). Without the panel every output has the bytes of main `8590b2e`.
+- Engine (`research/m55_index_tilt.py`): `half_spreads` gives the half-spread in bp and the first invalid reason of
+  each quote cell; `spread_rates` gives scale x max(schedule spread at r, half-spread at r - 1). `run_index_tilt`
+  takes a half-spread panel, and the book summary returns the trades and the spread cost of each rebalance row.
+  Without the panel every output has the bytes of `8590b2e`.
+- Driver (`research/m55_driver.py`): stages `confirm` and `check` after `freeze`, with the same gates. Each stage
+  checks the quote copy against the tracked quote manifest, and its digest enters `data_files_sha256`. The confirm
+  and check stages read the quote rows after the key, seal, repeat, and match checks, run three segments from cash
+  with dates from the calendar, and cut every input at the segment end. The helpers that cut and check the screen
+  window now take the period and its last month; the screen path calls them with the old values.
+- Tests, synthetic only. The byte tests build the runner, the engine, and the driver from the bytes at `8590b2e`
+  (`tests/m55_bytes_support.py`; CI checks out the full history). The new file `tests/test_m55_confirm.py` has its
+  own xdist group, so CI runs it beside the driver group. Its long world (the coverage-stop world on a calendar to
+  2025-12-31 with the seal rows out, SPY, events after 1992, Compustat quarters from 2010, a listing after the seal,
+  and synthetic quotes with each invalid case) runs from coverage to check in about 400 s on this machine.
+- Changed test values: none. In `tests/test_m55_driver.py` the small-world chain, `copy_until`, and the real-size
+  loop name the five stages up to the freeze (`SCREEN_STAGES`), because `STAGES` now has seven, and each call
+  passes an empty quote copy, because `run_stage` now needs one. No assertion changed.
+- Run time: the confirm stage makes 22 engine calls (10 signal sets and the Family A screen baseline, two loader
+  runs each) and the check stage 40, against 18 in the look and the screen. Each call reads frames from the first
+  row of its seal segment (1961 before the seal), and in a profile the runner's input snapshots took about a fifth
+  of the confirm time.
+- Needs follow-up: `research/m55_screen_report.py` (PR #301) checks that run 2 was made from the current trial
+  file and reads `STAGES` as the run 2 stages. After amendment 3 and the two new stages, its 8 tests fail, and the
+  report cannot be built again from the run 2 files. The change is outside card m55-confirm.
+- Checks: full suite `2 failed, 3998 passed, 3 skipped, 69 warnings, 6 errors in 624.69s` (exit 1; the 8 tests
+  are those of `tests/test_m55_screen_report.py` above); `ruff check .` passed.
+
 ## 2026-10-08 - Milestone 5.5 public screen report of trial family v1
 
 - Card m55-screen (prod-m55screen-3): `research/m55_screen_report.py`, `tests/test_m55_screen_report.py`, and the
