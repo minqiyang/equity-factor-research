@@ -74,8 +74,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 - Candidate branch `claude/m55-confirm` adds amendment 3 to the frozen trial family v1, after the run 2 freeze
   (S3 and S4, digest `62b2c8af...d59518`) and before any confirm month, check month, or quote value is read. It
-  states the half-spread override and the confirm and check segments, and pins the new engine and runner bytes and
-  the quote pull script. The driver adds the confirm and check stages. Tests are synthetic; no real data is read.
+  states the half-spread override and the segments, pins the engine, runner, and quote pull script bytes, and adds
+  the manifest of the second pull. The driver adds the confirm and check stages. Tests are synthetic.
 
 ## Current Research Gate Summary
 
@@ -97,14 +97,14 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- After this PR merges: the owner's second WRDS pull (one run of `coord/reports/m6_prep/wrds_pull_quotes.py` into
-  a folder named `wrds_quotes_*`; a re-pull is a stop) and the commit of `reports/wrds_quotes_manifest_2025.json`.
-  Then run 3 of `python -m research.m55_driver` with `--quote-root`, one stage at a time, in a new output folder
-  outside every checkout: coverage to freeze; the coordinator compares the freeze digest, the coverage counts, and
-  the calibration values with run 2 (a difference goes to the owner); then confirm and check. The confirm stage
-  makes 22 engine calls and the check stage 40 (the look and the screen made 18 in about 2.5 hours). Check the free
-  memory first. If a pinned file changes before a run, an amendment comes first. The screen months stay as they
-  are: the 215 blank months follow the frozen rule (no rerun, R9).
+- The second WRDS pull is done (2026-10-08, one run of `coord/reports/m6_prep/wrds_pull_quotes.py`; a re-pull is
+  a stop), and this PR commits its manifest `reports/wrds_quotes_manifest_2025.json`. After this PR merges: run 3
+  of `python -m research.m55_driver` with `--quote-root` (the `wrds_quotes_*` folder), one stage at a time, in a new
+  output folder outside every checkout: coverage to freeze; the coordinator compares the freeze digest, the coverage
+  counts, and the calibration values with run 2 (a difference goes to the owner); then confirm and check. The
+  confirm stage makes 22 engine calls and the check stage 40 (the look and the screen made 18 in about 2.5 hours).
+  Check the free memory first. If a pinned file changes before a run, an amendment comes first. The screen months
+  stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
 
 ## Source Routing
 

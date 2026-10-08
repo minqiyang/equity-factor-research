@@ -21,7 +21,12 @@ Context:
 
 - Run 2 (2026-10-08, code `8590b2e`, WRDS vintage 2025-12-31) ran the coverage, calibration, look, screen, and
   freeze stages on rows up to 1992-12-31 only. The freeze decision was `shortlist_frozen` with S3 and S4, digest
-  `62b2c8af...d59518`. No confirm month, check month, or quote value has been read, and no quote file exists yet.
+  `62b2c8af...d59518`. No confirm month, check month, or quote value has been read.
+- The rules and code pins of amendment 3 were committed before the second pull: `56f556a` and `e186c63` at
+  06:28:50 PDT and `528ac75` at 06:30:07 PDT. The owner ran the pull once, on 2026-10-08 (first quote file 07:47:54
+  PDT, `VINTAGE.json` 07:50:17 PDT, vintage 2025-12-31). Later commits changed amendment 3 wording only (`452a076`
+  at 07:54:21 PDT, and the commit of the tracked quote manifest). Before run 3, only the quote file bytes (for the
+  SHA-256) and the Parquet row-count metadata were read; no quote value has been parsed.
 - The frozen file declares the half-spread override (`books.costs.half_spread_override`), but it does not state the
   quote rule, the pull, or the run segments. The design note of card m55-confirm sets them. The engine and the
   runner change, so amendment 3 pins their new bytes before run 3 (`code_pins.statement`).
@@ -57,11 +62,17 @@ Decision:
     months 2014-04 to 2019-06; post-seal anchor 2021-07-30, first rebalance 2021-08-31, end row the last row of
     `check_period_end`, months 2021-09 to `check_period_end`.
   - `reports_owed.half_spread` (added): by stage, signal set, loader run, cost case, book, and year.
-- The amendment pins no quote manifest. The owner's pull commits it before run 3. Every stage checks the quote copy
-  from its manifest, file hashes, and Parquet row counts only, and compares it with the tracked quote manifest. No
-  stage parses a quote value before that check and the earlier stage files pass, and the confirm and check stages
-  parse the values only after the frozen digest gate. The trial file SHA-256 after amendment 3 is
-  `5eb69818...33923c`.
+- The amendment pins no quote manifest. Every stage checks the quote copy from its manifest, file hashes, and
+  Parquet row counts only, and compares it with the tracked quote manifest. No stage parses a quote value before
+  that check and the earlier stage files pass, and the confirm and check stages parse the values only after the
+  frozen digest gate. The trial file SHA-256 after amendment 3 is `f9122696...48e4c8`.
+- Tracked quote manifest `reports/wrds_quotes_manifest_2025.json` (`QUOTE_MANIFEST`), SHA-256
+  `cedf4cb3...8288`: vintage 2025-12-31, 36 main parts (33 files for 1993 to 2025; 2026, `late`, and `nulldate`
+  with 0 rows and no file), 6,556,591 main rows. The coordinator built it from the main files, with the fields of
+  `m55_wrds_loader.write_manifest` without `units`: `vintage`, `script_code_sha256`, `files` (rows, `sha256`,
+  `query_sha256`), and `sealed` (`sealed_digest`: 39 files, bytes hashed, nothing parsed). The coordinator verified
+  it. Change of order: the pull finished before this code merged, so the manifest is in this PR, not in a separate
+  one.
 - Driver defaults (producer, card m55-confirm). The note does not settle these points; each serves run 3 only:
   - The check stage reports the check means (`composite_means`) of each secondary member, with no p-value or
     q-value. Reason: the secondary family is a confirm-period family.
@@ -91,12 +102,13 @@ Consequences:
   manifest, because their digest is part of each stage context. Without a rate panel, the runner and the engine give
   the bytes of main `8590b2e`, and on the synthetic long world the driver of `8590b2e` gives the same results from
   coverage to freeze as this driver.
-- Run 3 order: the owner's second pull and its tracked manifest, then coverage to freeze, the coordinator check of
-  the freeze digest, coverage counts, and calibration values against run 2, then confirm and check.
+- Run 3 order: coverage to freeze, the coordinator check of the freeze digest, coverage counts, and calibration
+  values against run 2, then confirm and check. The second pull and its tracked manifest are done (this PR).
 
 Follow-up:
 
-- Owner: the second WRDS pull of CRSP closing bid and ask (OI-03) and the commit of its manifest. Then run 3.
+- Run 3 after this PR merges. The second WRDS pull of CRSP closing bid and ask (OI-03) is done, and its manifest is
+  in this PR.
 
 ## 2026-10-08 - Milestone 5.5 Screen of Trial Family v1: Shortlist S3 and S4
 

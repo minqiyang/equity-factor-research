@@ -61,10 +61,13 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   checks now run inside the logged block of `run_stage`, so each refusal reaches `run_log.jsonl`, and a missing
   `MANIFEST_local.json` refuses as `quote_copy_manifest_missing`. The first-pull load logs as before. The trial text
   now limits "no return after 1992-12-31" to WRDS data in the runs of this trial file, and
-  `periods.confirm.segments` says that the quote key checks cover the whole copy; the new trial SHA-256 is
-  `5eb69818...33923c`. Changed test inputs, no assertion: the `quotes` fixture of the long world is now a copy on
+  `periods.confirm.segments` says that the quote key checks cover the whole copy; `TRIAL_SHA256` and the decision
+  log carry the new digest. Changed test inputs, no assertion: the `quotes` fixture of the long world is now a copy on
   disk, so the chain parses its values through `read_quotes`, and the quote file tests call `quote_files` without
   the old `read` argument.
+- Second pull: `reports/wrds_quotes_manifest_2025.json` (SHA-256 `cedf4cb3...8288`, 36 parts, 6,556,591 rows,
+  vintage 2025-12-31), built and verified by the coordinator; amendment 3 now states the pull (trial SHA-256
+  `f9122696...48e4c8`).
 - Checks: the full suite and `ruff check .` run on a CI-shaped merge ref of the final commit
   (`git commit-tree HEAD^{tree} -p origin/main -p HEAD`), and both pass.
 
