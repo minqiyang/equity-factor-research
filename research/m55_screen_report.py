@@ -15,15 +15,20 @@ record of each later stage equals ``m55_driver.record_test_b``; and the shortlis
 ``shortlist_digest.txt``. The script computes no new statistic.
 
 Privacy (owner grant O-22, R11): the stage files hold per-position rows (path-break positions, blanked level
-windows, and B2 rows, each with a date or a weight). The report gives only their aggregates. It holds no private
-path: the stage folders are command-line arguments, and the report names them only as ``m55_screen_v1`` and
-``m55_screen_v2``. The output is the same bytes on each run.
+windows, and B2 rows, each with a date or a weight). The report gives only their aggregates. The public weight rule
+(coordinator, 2026-10-08, REVIEW M-1) also applies: a weight is published only as a sum over at least 3 positions, and
+no two published sums may differ by fewer than 3 positions. So the report gives weight sums only for the run-level
+look groups, no weight for a screen candidate group (each nests in the look group), and no single maximum weight.
+The report holds no private path: the stage folders are command-line arguments, and the report names them only as
+``m55_screen_v1`` and ``m55_screen_v2``. The output is the same bytes on each run.
 """
 
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
+import math
 import re
 import statistics
 import sys
@@ -57,11 +62,17 @@ RUN_FACTS = (
      "stages": d.STAGES},
 )
 RUN_1_GATE = 'GO_ON = ("chosen",)'               # the calibration gate of the run 1 code
-# Per-position rows of the stage files (each with a date or a weight) and per-month blank declarations: the report
-# keeps their aggregates only. FORBIDDEN is the output guard.
-DROP = frozenset({"positions", "path_break_positions", "each", "blank_months"})
+# Per-position rows of the stage files (each with a date or a weight), per-month blank declarations, and single
+# maximum weights: the report keeps their aggregates only. FORBIDDEN and SINGLE_MAX are the output guard.
+SINGLE_MAX = frozenset({"incoming_weight_max", "max_cw_share"})
+DROP = frozenset({"positions", "path_break_positions", "each", "blank_months"}) | SINGLE_MAX
 FORBIDDEN = frozenset({"positions", "path_break_positions", "each", "break_row", "break_rows", "previous_valid_row",
                        "weight_at_last_rebalance"})
+# The public weight rule (coordinator, 2026-10-08): no weight in a screen candidate group, and a weight sum covers at
+# least MIN_POSITIONS positions and differs from each other published sum by 0 or at least MIN_POSITIONS positions.
+GROUP_WEIGHTS = frozenset({"weight_at_last_rebalance_sum", "incoming_weight_sum", "weight_sum"})
+MIN_POSITIONS = 3
+WEIGHT_RULE = "private per O-22 (public weight rule, 2026-10-08)"
 # Split so this file holds no literal private path (the governance path test reads tracked files).
 PRIVATE_TEXT = re.compile("|".join((r"(?:/Users|/home)/", "private_data" + "/", "efr_local" + "_data")))
 
@@ -101,14 +112,17 @@ def check_freeze(run: Mapping[str, dict], folder: Path) -> dict[str, Any]:
 
 
 def check_output(doc: Mapping[str, Any], texts: Mapping[str, str]) -> None:
-    """The output guard: no per-position key in the document and no private path in any output text."""
+    """The output guard: no per-position key and no single maximum weight in the document, no weight in a screen
+    candidate group, and no private path in any output text."""
     def keys(value: Any) -> set:
         if isinstance(value, Mapping):
             return set(value) | set().union(*(keys(v) for v in value.values()))
         if isinstance(value, list):
             return set().union(*(keys(v) for v in value))
         return set()
-    found = keys(doc) & FORBIDDEN
+    groups = [doc["screen"]["candidates"], *(part["screen"] for part in doc["reports_owed"].values()
+                                              if isinstance(part, Mapping) and "screen" in part)]
+    found = keys(doc) & (FORBIDDEN | SINGLE_MAX) | keys(groups) & GROUP_WEIGHTS
     if found:
         raise refuse("private_field_in_output", ", ".join(sorted(found)))
     if any(PRIVATE_TEXT.search(text) for text in texts.values()):
@@ -117,24 +131,69 @@ def check_output(doc: Mapping[str, Any], texts: Mapping[str, str]) -> None:
 
 # Aggregates -------------------------------------------------------------------------------
 
-def aggregate(value: Any) -> Any:
-    """A stage subtree without per-position rows and without per-month blank declarations (``DROP``)."""
+def aggregate(value: Any, drop: frozenset = DROP) -> Any:
+    """A stage subtree without per-position rows, per-month blank declarations, and single maximum weights
+    (``DROP``), and without the other keys of ``drop``."""
     if isinstance(value, Mapping):
-        return {k: aggregate(v) for k, v in value.items() if k not in DROP}
+        return {k: aggregate(v, drop) for k, v in value.items() if k not in drop}
     if isinstance(value, list):
-        return [aggregate(v) for v in value]
+        return [aggregate(v, drop) for v in value]
     return value
 
 
-def path_break(positions: list[Mapping[str, Any]], books: tuple[str, ...]) -> dict[str, Any]:
-    """Count, months, weight sum per book, count by later exit class, and the span in months (min, median, max)."""
+def path_break(positions: list[Mapping[str, Any]], books: tuple[str, ...] = ()) -> dict[str, Any]:
+    """Count, months, count by later exit class, the span in months (min, median, max), and the weight sum of each
+    book in ``books`` (the run-level look set only, by the public weight rule)."""
     spans = [len(p["months"]) for p in positions]
-    return {"position_count": len(positions),
-            "months": len({m for p in positions for m in p["months"]}),
-            "weight_sum": {b: sum(p["weight_at_last_rebalance"][b] for p in positions) for b in books},
-            "by_exit_class": d.per_class(Counter(p["exit_class"] for p in positions)),
-            "span_months": {"min": min(spans), "median": statistics.median(spans), "max": max(spans)}
-            if spans else None}
+    out = {"position_count": len(positions),
+           "months": len({m for p in positions for m in p["months"]}),
+           "by_exit_class": d.per_class(Counter(p["exit_class"] for p in positions)),
+           "span_months": {"min": min(spans), "median": statistics.median(spans), "max": max(spans)}
+           if spans else None}
+    if books:
+        out["weight_sum"] = {b: sum(p["weight_at_last_rebalance"][b] for p in positions) for b in books}
+    return out
+
+
+def weight_rule(groups: Mapping[tuple[str, str], Mapping[str, int]]) -> bool:
+    """The public weight rule on look R4 groups keyed by (loader run, cost case), each given as held counts by cause.
+
+    Each group must cover at least MIN_POSITIONS events, and two groups must hold the same events or differ by at
+    least MIN_POSITIONS events. The causes split the events, so two groups differ by at least the sum of their count
+    differences. The cost cases of one loader run read one disappearance table and one CW-PIT target, so equal counts
+    there are the same events. The stage files hold no event identity, so two loader runs with equal counts fail.
+    """
+    if any(sum(g.values()) < MIN_POSITIONS for g in groups.values()):
+        return False
+    for a, b in itertools.combinations(groups, 2):
+        apart = sum(abs(groups[a][c] - groups[b][c]) for c in groups[a])
+        if not (apart >= MIN_POSITIONS or (a[0] == b[0] and apart == 0)):
+            return False
+    return True
+
+
+def look_r4(parts: Mapping[str, Mapping[str, Any]]) -> tuple[dict[str, Any], str]:
+    """The look R4 groups under the public weight rule, and the level of the weight sums it allows.
+
+    ``by_cause``: the weight sum of each cause and their total; ``total``: the total over causes only; ``none``: no
+    weight sum. The engine total at the event (``incoming_weight_sum``) covers the same events as the total.
+    """
+    groups = {run: {case: aggregate(parts[run][case]["r4"]) for case in CASES} for run in RUNS}
+    flat = {(run, case): groups[run][case] for run in RUNS for case in CASES}
+    causes = list(flat[DECISION_CELL]["by_cause"])
+    held = {k: {c: g["by_cause"][c]["held"] for c in causes} for k, g in flat.items()}
+    by_cause = all(weight_rule({k: {c: h[c]} for k, h in held.items()}) for c in causes)
+    total = weight_rule(held)
+    for g in flat.values():
+        sums = [g["by_cause"][c]["weight_at_last_rebalance_sum"] for c in causes]
+        if total:
+            g["weight_at_last_rebalance_sum"] = math.fsum(sums)
+        else:
+            g.pop("incoming_weight_sum")
+        if not by_cause:
+            for c in causes:
+                g["by_cause"][c].pop("weight_at_last_rebalance_sum")
+    return groups, "by_cause" if by_cause else "total" if total else "none"
 
 
 def by_year(months: list[str]) -> dict[str, int]:
@@ -218,10 +277,11 @@ def build(run_1: Path, run_2: Path, repo: Path = d.REPO) -> dict[str, Any]:
     items = screen["candidates"]
     cand = {s: candidate(items[s], coverage["signals"][s], frozen["candidates"][s]["shortlisted"]) for s in ids}
     ran = [s for s in ids if "counts" in items[s]]                     # candidates with an engine call
+    r4_look, r4_level = look_r4(parts)
     owed = {
-        "r4": {"look": {run: {case: aggregate(parts[run][case]["r4"]) for case in CASES} for run in RUNS},
-               "screen": {s: {run: {case: aggregate(items[s]["records"][run][case]["r4"]) for case in CASES}
-                              for run in RUNS} for s in ran}},
+        "r4": {"look": r4_look, "look_weight_level": r4_level,
+               "screen": {s: {run: {case: aggregate(items[s]["records"][run][case]["r4"], DROP | GROUP_WEIGHTS)
+                                    for case in CASES} for run in RUNS} for s in ran}},
         "fragility": {"look": aggregate(look["fragility"]), "screen": {s: aggregate(items[s]["fragility"])
                                                                        for s in ids}},
         "r6": {"signal_reason_shares_by_exit_class": {s: coverage["signals"][s]["reason_share_by_exit_class"]
@@ -237,8 +297,8 @@ def build(run_1: Path, run_2: Path, repo: Path = d.REPO) -> dict[str, Any]:
                 if "split_in_basis_window" in r},
             "basis_quarters_by_year": coverage["signals"]["S2"]["basis_quarters_by_year"]},
         "path_break": {"look": {run: path_break(parts[run]["positions"], ("cw",)) for run in RUNS},
-                       "screen": {s: {run: path_break(items[s]["path_break_positions"][run], ("cw", "tilt"))
-                                      for run in RUNS} for s in ran},
+                       "screen": {s: {run: path_break(items[s]["path_break_positions"][run]) for run in RUNS}
+                                  for s in ran},
                        "blanked_level_windows": {run: aggregate(parts[run]["blanked_level_windows"]) for run in RUNS}},
         "b2": {"look": {run: aggregate(parts[run]["coverage"]["b2"]) for run in RUNS},
                "screen": {s: {run: aggregate(items[s]["counts"][run]["b2"]) for run in RUNS} for s in ran}},
@@ -263,6 +323,28 @@ def build(run_1: Path, run_2: Path, repo: Path = d.REPO) -> dict[str, Any]:
                              "aggregates only (owner data terms O-22). The rows stay in the private stage files.",
                "b2": "The trial asks for unknown_event_excluded and unknown_event_cw_share at each rebalance. The "
                      "report gives aggregates only (owner data terms O-22). The rows stay in the private stage files."}
+    dropped = {"r4.look.incoming_weight_max": "The largest book weight at one event.",
+               "r4.screen.weight_at_last_rebalance_sum": "The weight share by cause of each candidate group, CW and "
+                                                         "TILT. Each group nests in the look group, so a difference "
+                                                         "can isolate one event.",
+               "r4.screen.incoming_weight_sum": "The engine total weight at the event of each candidate group, CW "
+                                                "and TILT.",
+               "r4.screen.incoming_weight_max": "The largest book weight at one event in each candidate group.",
+               "b2.max_cw_share": "The largest CW share excluded at one rebalance, for the look and each candidate.",
+               "counts.b2.max_cw_share": "The same B2 maximum in the counts of the look and each candidate.",
+               "path_break.screen.weight_sum": "The weight sum of each candidate group, CW and TILT. The run-level "
+                                               "look sum stays."}
+    if r4_level != "by_cause":
+        dropped["r4.look.by_cause.weight_at_last_rebalance_sum"] = (
+            "The weight share of each cause in the look groups. At least one cause does not meet the rule. Two loader "
+            "runs with equal counts of a cause fail it, because the stage files hold no event identity to show that "
+            "the events are the same.")
+    if r4_level == "none":
+        dropped["r4.look.weight_at_last_rebalance_sum"] = "The look total over causes. The totals do not meet the rule."
+        dropped["r4.look.incoming_weight_sum"] = ("The engine total weight at the event in the look groups. It "
+                                                  "covers the same events as the total.")
+    missing.update({k: f"{v} The report does not give it: {WEIGHT_RULE}. The value stays in the private stage "
+                       "files." for k, v in sorted(dropped.items())})
     doc = {
         "report": "m55_screen_v1",
         "header": {**coverage["header"], "factor_level_reuse": reuse},
@@ -542,7 +624,7 @@ def render(doc: Mapping[str, Any]) -> str:
             + f". Gap rebalances {low['gap_rebalances']}, ratio gap members {low['ratio_gap_members']}, max "
             f"ratio_gap_cw_share {low['max_ratio_gap_cw_share']:.4f}. Members by later exit class:", ""]
     out += table(["Group", *EXITS], [by_class(k, v) for k, v in low["r6_by_exit_class"].items()])
-    out += ["## Owed by later stages, and items given as aggregates only", "",
+    out += ["## Owed by later stages, items given as aggregates only, and withheld weights", "",
             *(f"- `{k}`: the confirm stage owes it. The trial asks for {owed[k]['reason']}."
               for k in ("check_period_end", "check_gap_months")),
             *(f"- `{k}`: {v}" for k, v in doc["missing"].items()), ""]
@@ -558,11 +640,11 @@ def counts_table(counts: Mapping[str, Mapping[str, Any]], label: str) -> list[st
                      c["c_zero_window_gap"], c["me_missing"],
                      ", ".join(f"{r} {c['me_missing_' + r]}" for r in ME_REASONS if c["me_missing_" + r]) or "none",
                      c["settled_excluded"], num(c["share_cap_at_final_weights"]), num(c["share_te_scaled"]),
-                     f"{b2['rebalances']} / {b2['excluded']} / {num(b2['max_cw_share'], 4)}"])
+                     f"{b2['rebalances']} / {b2['excluded']}"])
     return table([label, "Rebalances", "Members mean", "Members min", "Traded mean", "Traded min", "Pinned mean",
                   "c = 0 few signals", "c = 0 short history", "c = 0 window gap", "ME missing", "ME missing by reason",
                   "Settled excluded", "Share at stock cap", "Share TE-scaled",
-                  "B2 rebalances / excluded / max CW share"], rows)
+                  "B2 rebalances / excluded"], rows)
 
 
 def r4_cells(r4: Mapping[str, Any]) -> str:
@@ -576,27 +658,33 @@ def r4_cells(r4: Mapping[str, Any]) -> str:
 
 
 def r4_section(owed: Mapping[str, Any]) -> list[str]:
+    level = owed["r4"]["look_weight_level"]
     out = ["### r4", "", "Held disappearances by cause. In the primary run, `ciz_return_in_path` means CIZ put the "
            "delisting return in the path, `supplied_terminal_return` is a supplied return, and "
            "`missing_engine_default` takes the engine default. The last_close run settles every event at the last "
-           "trade close. The weight sum and the weight max are the total and the largest book weight at the event.",
-           ""]
+           "trade close. The weight at the event is the engine total book weight at the events. The weight at the "
+           "last rebalance is the total post-trade weight at the last rebalance before each event.", "",
+           "Public weight rule (2026-10-08): the report gives weight sums only for the look groups, "
+           + {"by_cause": "by cause and in total.", "total": "as totals over causes. The stage files cannot show "
+              "that the two loader runs hold the same events of a cause with equal counts, so no weight by cause "
+              "is given.", "none": "and here it gives none."}[level]
+           + " It gives no weight for a screen candidate group and no single maximum weight.", ""]
     rows = []
     for run in RUNS:
         for case in CASES:
             r = owed["r4"]["look"][run][case]
-            rows.append([run, case, r["held"], num(r["incoming_weight_sum"], 4), num(r["incoming_weight_max"], 4),
-                         r4_cells(r)])
+            rows.append([run, case, r["held"], num(r.get("incoming_weight_sum"), 4),
+                         num(r.get("weight_at_last_rebalance_sum"), 4), r4_cells(r)])
     out += ["Look, CW-PIT:", ""]
-    out += table(["Loader run", "Cost case", "Held", "Weight sum", "Weight max", "By cause"], rows)
+    out += table(["Loader run", "Cost case", "Held", "Weight at the event, sum", "Weight at the last rebalance, sum",
+                  "By cause"], rows)
     rows = []
     for s, v in owed["r4"]["screen"].items():
         p, lc = v["primary"]["primary"], v["last_close"]["primary"]
-        rows.append([s, p["cw"]["held"], p["tilt"]["held"], r4_cells(p["cw"]), lc["cw"]["held"],
-                     num(p["cw"]["incoming_weight_sum"], 4), num(p["tilt"]["incoming_weight_sum"], 4)])
-    out += ["Screen, primary cost:", ""]
+        rows.append([s, p["cw"]["held"], p["tilt"]["held"], r4_cells(p["cw"]), lc["cw"]["held"]])
+    out += ["Screen, primary cost (counts only):", ""]
     out += table(["ID", "Held CW, primary run", "Held TILT, primary run", "CW by cause, primary run",
-                  "Held CW, last_close run", "CW weight sum", "TILT weight sum"], rows)
+                  "Held CW, last_close run"], rows)
     return out
 
 
@@ -680,22 +768,18 @@ def path_break_section(owed: Mapping[str, Any], missing: Mapping[str, str],
                        cand: Mapping[str, Mapping[str, Any]]) -> list[str]:
     pb = owed["path_break"]
     out = ["### path_break", "", "Held positions across a `path_break` row, as aggregates only. The span is the "
-           "number of screen months that one position blanks.", ""]
+           "number of screen months that one position blanks. By the public weight rule (2026-10-08), only the "
+           "run-level look set has a weight sum.", ""]
     rows = []
-    for run, v in pb["look"].items():
+    for name, v in [*((f"look, {run}", v) for run, v in pb["look"].items()),
+                    *((f"{s}, {run}", v) for s, runs in pb["screen"].items() for run, v in runs.items())]:
         span = v["span_months"] or {"min": "none", "median": "none", "max": "none"}
-        rows.append([f"look, {run}", v["position_count"], v["months"], num(v["weight_sum"]["cw"], 4), "",
+        rows.append([name, v["position_count"], v["months"],
+                     num(v["weight_sum"]["cw"], 4) if "weight_sum" in v else "not given",
                      ", ".join(f"{c} {n}" for c, n in v["by_exit_class"].items() if n) or "none",
                      f"{span['min']} / {span['median']} / {span['max']}"])
-    for s, runs in pb["screen"].items():
-        for run, v in runs.items():
-            span = v["span_months"] or {"min": "none", "median": "none", "max": "none"}
-            rows.append([f"{s}, {run}", v["position_count"], v["months"], num(v["weight_sum"]["cw"], 4),
-                         num(v["weight_sum"]["tilt"], 4),
-                         ", ".join(f"{c} {n}" for c, n in v["by_exit_class"].items() if n) or "none",
-                         f"{span['min']} / {span['median']} / {span['max']}"])
-    out += table(["Book set", "Positions", "Months blanked", "CW weight sum", "TILT weight sum",
-                  "By later exit class", "Span min / median / max"], rows)
+    out += table(["Book set", "Positions", "Months blanked", "CW weight sum", "By later exit class",
+                  "Span min / median / max"], rows)
     lost = [f"{s} loses {c['blank_months']['primary']} months" for s, c in cand.items()
             if c["blank_months"]["primary"] and s in pb["screen"] and not pb["screen"][s]["primary"]["position_count"]]
     out += ["Each candidate's declaration is the run blank set cut to its span (the frozen rule). So a candidate can "
@@ -706,13 +790,11 @@ def path_break_section(owed: Mapping[str, Any], missing: Mapping[str, str],
     out += table(["Loader run", "Windows", *EXITS],
                  [[run, v["windows"], *(v["by_exit_class"][c] for c in EXITS)]
                   for run, v in pb["blanked_level_windows"].items()])
-    out += ["### b2", "", "B2 exclusions as aggregates (rebalances with an exclusion, names excluded, and the "
-            "maximum CW share excluded at one rebalance):", ""]
-    rows = [[f"look, {run}", v["rebalances"], v["excluded"], num(v["max_cw_share"], 4)]
-            for run, v in owed["b2"]["look"].items()]
-    rows += [[f"{s}, {run}", v["rebalances"], v["excluded"], num(v["max_cw_share"], 4)]
+    out += ["### b2", "", "B2 exclusions as aggregates (rebalances with an exclusion and names excluded):", ""]
+    rows = [[f"look, {run}", v["rebalances"], v["excluded"]] for run, v in owed["b2"]["look"].items()]
+    rows += [[f"{s}, {run}", v["rebalances"], v["excluded"]]
              for s, runs in owed["b2"]["screen"].items() for run, v in runs.items()]
-    out += table(["Book set", "Rebalances", "Excluded", "Max CW share"], rows)
+    out += table(["Book set", "Rebalances", "Excluded"], rows)
     out += [f"{missing['path_break']} {missing['b2']}", ""]
     return out
 

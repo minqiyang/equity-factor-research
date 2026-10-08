@@ -31,14 +31,25 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   when a per-position key or a private path reaches an output. The report names the stage folders only as
   `m55_screen_v1` and `m55_screen_v2`. It publishes the path-break weight sum as one total, not by exit class,
   because one class holds a single position.
+- Review fix M-1 (Codex review round 1, MATERIAL, R11 under O-22). The look CW-PIT group and the S7 CW-PIT group
+  held 17 and 16 failures, and both published their weight sums, so the difference gave one held event's weight.
+  The fix applies the public weight rule of decision-log Ruling 4. `look_r4` gives the look R4 weights as totals
+  over causes: `weight_rule` accepts two groups when their count differences, summed over causes, are 3 or more,
+  or when they are cost cases of one loader run with equal counts. Equal counts in two loader runs fail, because
+  the stage files hold no event identity. The candidate R4 and path-break groups keep counts only. The aggregate
+  step drops `incoming_weight_max` and B2 `max_cw_share` everywhere. The output guard also refuses a single
+  maximum weight anywhere and a weight key in a candidate group. The report lists each withheld value under
+  `missing`. Every value that the report still gives is unchanged.
 - Real run: `PYTHONPATH=src:. python -m research.m55_screen_report <run 1 folder> <run 2 folder>` wrote the three
   files, and a second run into another folder gave the same bytes. Every aggregate agrees with the run 2 producer
-  report. SHA-256: Markdown `f9d19edc...7e450f`, JSON `6a7bad0e...dfc91`, attempts `2d75b3b1...2e666`.
+  report. SHA-256 after the M-1 fix: Markdown `4c6804e9...15936c`, JSON `e2a45728...e8f9c7`, attempts
+  `2d75b3b1...2e666` (unchanged).
 - Tests, synthetic only (stage files written with `m55_driver.write_stage`): the report from two small runs holds
   no per-position key and no private path, and a second run gives the same bytes; five damaged-file cases refuse
-  with their reasons and write nothing; runs from another trial file or other data refuse.
-  `tests/test_m55_screen_report.py`: 7 passed in about 1 second. Full suite on a CI-shaped ref of the candidate
-  (`git commit-tree HEAD^{tree} -p origin/main -p HEAD`): `3932 passed, 3 skipped, 69 warnings`, exit 0;
+  with their reasons and write nothing; runs from another trial file or other data refuse; two nested R4 groups
+  one event apart give no candidate weight, and the guard refuses a weight put back into a candidate group.
+  `tests/test_m55_screen_report.py`: 8 passed in about 5 seconds. Full suite on a CI-shaped ref of the candidate
+  (`git commit-tree HEAD^{tree} -p origin/main -p HEAD`): `3933 passed, 3 skipped, 69 warnings`, exit 0;
   `ruff check .` passed. On the plain branch ref the handoff lag test fails, as it must, because it reads `HEAD~1`.
 
 ## 2026-10-08 - Milestone 5.5 trial amendment 2 and the driver gate after the coverage stop

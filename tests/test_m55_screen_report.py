@@ -16,6 +16,7 @@ import research.m55_driver as d
 import research.m55_screen_report as rep
 import research.m55_wrds_loader as w
 from research import m55_criteria as crit
+from research.m4_7_sp500_pit_rerun import RunnerStop
 from research.m55_index_tilt import ME_REASONS
 
 
@@ -130,10 +131,12 @@ def results() -> dict:
     return {"coverage": coverage, "calibration": calibration, "look": look, "screen": screen}
 
 
-def write_run(folder: Path, stages: tuple, ctx: dict) -> Path:
+def write_run(folder: Path, stages: tuple, ctx: dict, edit=None) -> Path:
     """Write the stage files of one run as the driver does, with test B and the freeze in the later stages."""
     folder.mkdir(parents=True)
     found, digests = results(), {}
+    if edit:
+        edit(found)
     for stage in stages:
         result = found.get(stage)
         if stage == "freeze":
@@ -200,8 +203,9 @@ def test_report_is_aggregate_only_and_the_same_bytes_on_a_second_run(runs, tmp_p
     assert pb["look"]["primary"] == {"position_count": 1, "months": 2, "weight_sum": {"cw": 0.001},
                                      "by_exit_class": {**per(0), "failure": 1},
                                      "span_months": {"min": 2, "median": 2, "max": 2}}
-    assert pb["screen"]["S2"]["primary"]["weight_sum"] == {"cw": 0.001, "tilt": 0.002}
-    assert doc["reports_owed"]["b2"]["look"]["primary"] == {"rebalances": 1, "excluded": 1, "max_cw_share": 0.002}
+    assert "weight_sum" not in pb["screen"]["S2"]["primary"]
+    assert doc["reports_owed"]["b2"]["look"]["primary"] == {"rebalances": 1, "excluded": 1}
+    assert doc["reports_owed"]["r4"]["look_weight_level"] == "none"          # one event: below 3 positions
     assert doc["reports_owed"]["check_period_end"]["status"] == "owed_by_confirm_stage"
 
 
@@ -248,3 +252,42 @@ def test_runs_from_another_trial_file_or_data_refuse(tmp_path, capsys) -> None:
         assert rep.main([str(v1), str(v2)], out=tmp_path) == 1
         assert f"refused: {reason}:" in capsys.readouterr().err
     assert not any(p.is_file() for p in tmp_path.iterdir())
+
+
+def nested(found: dict) -> None:
+    """Look R4 groups of 9 events (primary run) and 12 events (last_close run); the S2 groups nest in the look group
+    and hold one failure fewer."""
+    def r4(failure: int) -> dict:
+        return {"held": 5 + failure, "incoming_weight_sum": 0.05, "incoming_weight_max": 0.01,
+                "by_cause": {"cash_merger": {"held": 5, "weight_at_last_rebalance_sum": 0.02, "ciz_return_in_path": 5},
+                             "failure": {"held": failure, "weight_at_last_rebalance_sum": 0.01 * failure,
+                                         "missing_engine_default": failure}}}
+    look = found["look"]["runs"]
+    for run, failure in zip(RUNS, (4, 7)):
+        look[run] = {**look[run], **{case: {**look[run][case], "r4": r4(failure)} for case in CASES}}
+    records = found["screen"]["candidates"]["S2"]["records"]
+    for run in RUNS:
+        records[run] = {case: {**records[run][case], "r4": {"cw": r4(3), "tilt": r4(3)}} for case in CASES}
+
+
+def test_nested_groups_one_event_apart_give_no_candidate_weight(tmp_path) -> None:
+    ctx = {"trial_sha256": d.TRIAL_SHA256, "data_files_sha256": data_sha(), "code_pins_sha256": {},
+           "code_sha256": "c" * 64}
+    v1 = write_run(tmp_path / "m55_screen_v1", ("coverage", "calibration"), {**ctx, "trial_sha256": "a" * 64})
+    doc = rep.build(v1, write_run(tmp_path / "m55_screen_v2", d.STAGES, ctx, nested))
+    owed = doc["reports_owed"]
+    groups = [doc["screen"]["candidates"], *(part["screen"] for part in owed.values()
+                                              if isinstance(part, dict) and "screen" in part)]
+    assert not keys(groups) & rep.GROUP_WEIGHTS and not keys(doc) & rep.SINGLE_MAX
+    # Equal cash_merger counts in the two loader runs cannot show the same events: the look gives totals only.
+    assert owed["r4"]["look_weight_level"] == "total"
+    look = owed["r4"]["look"]["primary"]["primary"]
+    assert look["weight_at_last_rebalance_sum"] == pytest.approx(0.06) and look["incoming_weight_sum"] == 0.05
+    assert not keys(look["by_cause"]) & rep.GROUP_WEIGHTS
+    assert {"r4.screen.weight_at_last_rebalance_sum", "r4.look.by_cause.weight_at_last_rebalance_sum",
+            "b2.max_cw_share", "path_break.screen.weight_sum"} <= set(doc["missing"])
+    rep.outputs(doc)
+    owed["r4"]["screen"]["S2"]["primary"]["primary"]["cw"]["incoming_weight_sum"] = 0.05
+    with pytest.raises(RunnerStop) as stop:
+        rep.outputs(doc)
+    assert stop.value.reason == "private_field_in_output"

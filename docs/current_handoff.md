@@ -74,7 +74,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 - Candidate branch `claude/m55-screen-report` adds `research/m55_screen_report.py` and the public screen report of
   trial family v1 (`reports/m55_screen_v1.md`, `.json`, and `_attempts.jsonl`), made from the private stage files
   of run 1 and run 2. Run 2 (code `8590b2e`) froze the shortlist S3 and S4 (`shortlist_frozen`, digest
-  `62b2c8af...d59518`); test B is stopped. The report holds aggregates only and no private path.
+  `62b2c8af...d59518`); test B is stopped. The report holds aggregates only and no private path. Under the
+  public weight rule (decision-log Ruling 4, review fix M-1), it gives weight sums only for the run-level look
+  groups, no weight for a candidate group, and no single maximum weight.
 
 ## Current Research Gate Summary
 

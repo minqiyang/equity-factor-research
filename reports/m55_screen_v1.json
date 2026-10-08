@@ -2854,7 +2854,15 @@
  },
  "missing": {
   "b2": "The trial asks for unknown_event_excluded and unknown_event_cw_share at each rebalance. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files.",
+  "b2.max_cw_share": "The largest CW share excluded at one rebalance, for the look and each candidate. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "counts.b2.max_cw_share": "The same B2 maximum in the counts of the look and each candidate. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
   "path_break": "The trial asks for each held position with its weight in each book. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files.",
+  "path_break.screen.weight_sum": "The weight sum of each candidate group, CW and TILT. The run-level look sum stays. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "r4.look.by_cause.weight_at_last_rebalance_sum": "The weight share of each cause in the look groups. At least one cause does not meet the rule. Two loader runs with equal counts of a cause fail it, because the stage files hold no event identity to show that the events are the same. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "r4.look.incoming_weight_max": "The largest book weight at one event. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "r4.screen.incoming_weight_max": "The largest book weight at one event in each candidate group. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "r4.screen.incoming_weight_sum": "The engine total weight at the event of each candidate group, CW and TILT. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
+  "r4.screen.weight_at_last_rebalance_sum": "The weight share by cause of each candidate group, CW and TILT. Each group nests in the look group, so a difference can isolate one event. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.",
   "s2_history_rule": "The confirm stage owes the post-seal parts, because the screen stages do not open the check period. These are the member quarters with rdq before 2020-08-03 and a known date on or after it, and the S2 valid share in the post-seal check months."
  },
  "provenance": {
@@ -2871,12 +2879,10 @@
    "look": {
     "last_close": {
      "excluded": 9,
-     "max_cw_share": 0.008256876920241712,
      "rebalances": 9
     },
     "primary": {
      "excluded": 0,
-     "max_cw_share": 0.0,
      "rebalances": 0
     }
    },
@@ -2884,84 +2890,70 @@
     "S1": {
      "last_close": {
       "excluded": 9,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 9
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S2": {
      "last_close": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S3": {
      "last_close": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S4": {
      "last_close": {
       "excluded": 4,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 4
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S6": {
      "last_close": {
       "excluded": 4,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 4
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S7": {
      "last_close": {
       "excluded": 9,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 9
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     },
     "S8": {
      "last_close": {
       "excluded": 4,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 4
      },
      "primary": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      }
     }
@@ -2981,7 +2973,6 @@
     "last_close": {
      "b2": {
       "excluded": 9,
-      "max_cw_share": 0.008256876920241712,
       "rebalances": 9
      },
      "c_zero": 177100,
@@ -3008,7 +2999,6 @@
     "primary": {
      "b2": {
       "excluded": 0,
-      "max_cw_share": 0.0,
       "rebalances": 0
      },
      "c_zero": 177100,
@@ -3038,7 +3028,6 @@
      "last_close": {
       "b2": {
        "excluded": 9,
-       "max_cw_share": 0.008256876920241712,
        "rebalances": 9
       },
       "c_zero": 5463,
@@ -3065,7 +3054,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 5463,
@@ -3094,7 +3082,6 @@
      "last_close": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 1104,
@@ -3121,7 +3108,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 1104,
@@ -3150,7 +3136,6 @@
      "last_close": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 321,
@@ -3177,7 +3162,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 321,
@@ -3206,7 +3190,6 @@
      "last_close": {
       "b2": {
        "excluded": 4,
-       "max_cw_share": 0.008256876920241712,
        "rebalances": 4
       },
       "c_zero": 5496,
@@ -3233,7 +3216,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 5496,
@@ -3262,7 +3244,6 @@
      "last_close": {
       "b2": {
        "excluded": 4,
-       "max_cw_share": 0.008256876920241712,
        "rebalances": 4
       },
       "c_zero": 500,
@@ -3289,7 +3270,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 500,
@@ -3318,7 +3298,6 @@
      "last_close": {
       "b2": {
        "excluded": 9,
-       "max_cw_share": 0.008256876920241712,
        "rebalances": 9
       },
       "c_zero": 4350,
@@ -3345,7 +3324,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 4350,
@@ -3374,7 +3352,6 @@
      "last_close": {
       "b2": {
        "excluded": 4,
-       "max_cw_share": 0.008256876920241712,
        "rebalances": 4
       },
       "c_zero": 1124,
@@ -3401,7 +3378,6 @@
      "primary": {
       "b2": {
        "excluded": 0,
-       "max_cw_share": 0.0,
        "rebalances": 0
       },
       "c_zero": 1124,
@@ -4646,11 +4622,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4662,11 +4634,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     },
     "S2": {
@@ -4680,11 +4648,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4696,11 +4660,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     },
     "S3": {
@@ -4714,11 +4674,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4730,11 +4686,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     },
     "S4": {
@@ -4748,11 +4700,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4764,11 +4712,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     },
     "S6": {
@@ -4782,11 +4726,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4798,11 +4738,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     },
     "S7": {
@@ -4820,10 +4756,6 @@
        "max": 162,
        "median": 16,
        "min": 2
-      },
-      "weight_sum": {
-       "cw": 0.0034089952488362153,
-       "tilt": 0.0037429455796079507
       }
      },
      "primary": {
@@ -4840,10 +4772,6 @@
        "max": 162,
        "median": 16,
        "min": 2
-      },
-      "weight_sum": {
-       "cw": 0.003408995279615745,
-       "tilt": 0.003742945614403597
       }
      }
     },
@@ -4858,11 +4786,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      },
      "primary": {
       "by_exit_class": {
@@ -4874,11 +4798,7 @@
       },
       "months": 0,
       "position_count": 0,
-      "span_months": null,
-      "weight_sum": {
-       "cw": 0,
-       "tilt": 0
-      }
+      "span_months": null
      }
     }
    }
@@ -5130,45 +5050,39 @@
       "by_cause": {
        "cash_merger": {
         "held": 90,
-        "settled_at_last_close": 90,
-        "weight_at_last_rebalance_sum": 0.10035625484611227
+        "settled_at_last_close": 90
        },
        "failure": {
         "held": 17,
-        "settled_at_last_close": 17,
-        "weight_at_last_rebalance_sum": 0.0043952842610794395
+        "settled_at_last_close": 17
        },
        "unknown": {
         "held": 214,
-        "settled_at_last_close": 214,
-        "weight_at_last_rebalance_sum": 0.20097856520263332
+        "settled_at_last_close": 214
        }
       },
       "held": 321,
-      "incoming_weight_max": 0.013682532416829976,
-      "incoming_weight_sum": 0.30895706077156526
+      "incoming_weight_sum": 0.30895706077156526,
+      "weight_at_last_rebalance_sum": 0.30573010430982506
      },
      "sensitivity_2x": {
       "by_cause": {
        "cash_merger": {
         "held": 90,
-        "settled_at_last_close": 90,
-        "weight_at_last_rebalance_sum": 0.10035619278105538
+        "settled_at_last_close": 90
        },
        "failure": {
         "held": 17,
-        "settled_at_last_close": 17,
-        "weight_at_last_rebalance_sum": 0.004395283308548755
+        "settled_at_last_close": 17
        },
        "unknown": {
         "held": 214,
-        "settled_at_last_close": 214,
-        "weight_at_last_rebalance_sum": 0.2009785108426068
+        "settled_at_last_close": 214
        }
       },
       "held": 321,
-      "incoming_weight_max": 0.013682522739433196,
-      "incoming_weight_sum": 0.3089569414870906
+      "incoming_weight_sum": 0.3089569414870906,
+      "weight_at_last_rebalance_sum": 0.30572998693221093
      }
     },
     "primary": {
@@ -5178,27 +5092,24 @@
         "ciz_return_in_path": 90,
         "held": 90,
         "missing_engine_default": 0,
-        "supplied_terminal_return": 0,
-        "weight_at_last_rebalance_sum": 0.10051008273359718
+        "supplied_terminal_return": 0
        },
        "failure": {
         "ciz_return_in_path": 10,
         "held": 17,
         "missing_engine_default": 6,
-        "supplied_terminal_return": 1,
-        "weight_at_last_rebalance_sum": 0.004395284279754089
+        "supplied_terminal_return": 1
        },
        "unknown": {
         "ciz_return_in_path": 207,
         "held": 209,
         "missing_engine_default": 2,
-        "supplied_terminal_return": 0,
-        "weight_at_last_rebalance_sum": 0.19883776476261059
+        "supplied_terminal_return": 0
        }
       },
       "held": 316,
-      "incoming_weight_max": 0.013745768086305132,
-      "incoming_weight_sum": 0.308657435159421
+      "incoming_weight_sum": 0.308657435159421,
+      "weight_at_last_rebalance_sum": 0.30374313177596185
      },
      "sensitivity_2x": {
       "by_cause": {
@@ -5206,30 +5117,28 @@
         "ciz_return_in_path": 90,
         "held": 90,
         "missing_engine_default": 0,
-        "supplied_terminal_return": 0,
-        "weight_at_last_rebalance_sum": 0.1005100206877456
+        "supplied_terminal_return": 0
        },
        "failure": {
         "ciz_return_in_path": 10,
         "held": 17,
         "missing_engine_default": 6,
-        "supplied_terminal_return": 1,
-        "weight_at_last_rebalance_sum": 0.004395283327048739
+        "supplied_terminal_return": 1
        },
        "unknown": {
         "ciz_return_in_path": 207,
         "held": 209,
         "missing_engine_default": 2,
-        "supplied_terminal_return": 0,
-        "weight_at_last_rebalance_sum": 0.19883771054173704
+        "supplied_terminal_return": 0
        }
       },
       "held": 316,
-      "incoming_weight_max": 0.013745758368030573,
-      "incoming_weight_sum": 0.30865731874067076
+      "incoming_weight_sum": 0.30865731874067076,
+      "weight_at_last_rebalance_sum": 0.3037430145565314
      }
     }
    },
+   "look_weight_level": "total",
    "screen": {
     "S1": {
      "last_close": {
@@ -5238,45 +5147,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 80,
-          "settled_at_last_close": 80,
-          "weight_at_last_rebalance_sum": 0.09858642300673474
+          "settled_at_last_close": 80
          },
          "failure": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "settled_at_last_close": 2
          },
          "unknown": {
           "held": 123,
-          "settled_at_last_close": 123,
-          "weight_at_last_rebalance_sum": 0.15868095380439579
+          "settled_at_last_close": 123
          }
         },
-        "held": 205,
-        "incoming_weight_max": 0.013683185677503325,
-        "incoming_weight_sum": 0.25920763472122743
+        "held": 205
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 80,
-          "settled_at_last_close": 80,
-          "weight_at_last_rebalance_sum": 0.11034844221220026
+          "settled_at_last_close": 80
          },
          "failure": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "settled_at_last_close": 2
          },
          "unknown": {
           "held": 123,
-          "settled_at_last_close": 123,
-          "weight_at_last_rebalance_sum": 0.1589088238596775
+          "settled_at_last_close": 123
          }
         },
-        "held": 205,
-        "incoming_weight_max": 0.018249460818462092,
-        "incoming_weight_sum": 0.2709906335731032
+        "held": 205
        }
       },
       "sensitivity_2x": {
@@ -5284,45 +5183,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 80,
-          "settled_at_last_close": 80,
-          "weight_at_last_rebalance_sum": 0.09858642164617969
+          "settled_at_last_close": 80
          },
          "failure": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "settled_at_last_close": 2
          },
          "unknown": {
           "held": 123,
-          "settled_at_last_close": 123,
-          "weight_at_last_rebalance_sum": 0.15868095260199014
+          "settled_at_last_close": 123
          }
         },
-        "held": 205,
-        "incoming_weight_max": 0.013683185677503325,
-        "incoming_weight_sum": 0.2592076322419564
+        "held": 205
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 80,
-          "settled_at_last_close": 80,
-          "weight_at_last_rebalance_sum": 0.11034843737216979
+          "settled_at_last_close": 80
          },
          "failure": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "settled_at_last_close": 2
          },
          "unknown": {
           "held": 123,
-          "settled_at_last_close": 123,
-          "weight_at_last_rebalance_sum": 0.1589088205880687
+          "settled_at_last_close": 123
          }
         },
-        "held": 205,
-        "incoming_weight_max": 0.018249460818462092,
-        "incoming_weight_sum": 0.2709906256755816
+        "held": 205
        }
       }
      },
@@ -5334,27 +5223,22 @@
           "ciz_return_in_path": 80,
           "held": 80,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.09874024989806501
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 121,
           "held": 121,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.15821617461999474
+          "supplied_terminal_return": 0
          }
         },
-        "held": 203,
-        "incoming_weight_max": 0.013746424277328381,
-        "incoming_weight_sum": 0.2599331188885274
+        "held": 203
        },
        "tilt": {
         "by_cause": {
@@ -5362,27 +5246,22 @@
           "ciz_return_in_path": 80,
           "held": 80,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.11052460302790323
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 121,
           "held": 121,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.1577445709328999
+          "supplied_terminal_return": 0
          }
         },
-        "held": 203,
-        "incoming_weight_max": 0.018338581945106104,
-        "incoming_weight_sum": 0.2710058700782954
+        "held": 203
        }
       },
       "sensitivity_2x": {
@@ -5392,27 +5271,22 @@
           "ciz_return_in_path": 80,
           "held": 80,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.09874024853751047
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 121,
           "held": 121,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.15821617354673245
+          "supplied_terminal_return": 0
          }
         },
-        "held": 203,
-        "incoming_weight_max": 0.013746424277328381,
-        "incoming_weight_sum": 0.2599331166305833
+        "held": 203
        },
        "tilt": {
         "by_cause": {
@@ -5420,27 +5294,22 @@
           "ciz_return_in_path": 80,
           "held": 80,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.11052459818787888
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0004098717298515777
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 121,
           "held": 121,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.15774456794265201
+          "supplied_terminal_return": 0
          }
         },
-        "held": 203,
-        "incoming_weight_max": 0.018338581945106104,
-        "incoming_weight_sum": 0.27100586263501003
+        "held": 203
        }
       }
      }
@@ -5452,45 +5321,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009583663031777228
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.0027012620176926623,
-        "incoming_weight_sum": 0.010578345480493832
+        "held": 13
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0008625423334851306
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.00775418300413883
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.001919350468149161,
-        "incoming_weight_sum": 0.008857779375965224
+        "held": 13
        }
       },
       "sensitivity_2x": {
@@ -5498,45 +5357,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009583663031777228
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.0027012620176926623,
-        "incoming_weight_sum": 0.010578345480493832
+        "held": 13
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0008625423334851306
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.00775418300413883
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.001919350468149161,
-        "incoming_weight_sum": 0.008857779375965224
+        "held": 13
        }
       }
      },
@@ -5548,27 +5397,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009356971021423069
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.002677678818733224,
-        "incoming_weight_sum": 0.01046554750619175
+        "held": 12
        },
        "tilt": {
         "by_cause": {
@@ -5576,27 +5420,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0008625423334851306
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.007632248907359019
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.001901441133788847,
-        "incoming_weight_sum": 0.00885538022179771
+        "held": 12
        }
       },
       "sensitivity_2x": {
@@ -5606,27 +5445,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009356971021423069
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.002677678818733224,
-        "incoming_weight_sum": 0.01046554750619175
+        "held": 12
        },
        "tilt": {
         "by_cause": {
@@ -5634,27 +5468,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0008625423334851306
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.007632248907359019
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.001901441133788847,
-        "incoming_weight_sum": 0.00885538022179771
+        "held": 12
        }
       }
      }
@@ -5666,45 +5495,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009583663031777228
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.0027012620176926623,
-        "incoming_weight_sum": 0.010578345480493832
+        "held": 13
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0009214166024629417
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009972109928401205
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.002395352641796989,
-        "incoming_weight_sum": 0.011177269610863676
+        "held": 13
        }
       },
       "sensitivity_2x": {
@@ -5712,45 +5531,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009583663031777228
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.0027012620176926623,
-        "incoming_weight_sum": 0.010578345480493832
+        "held": 13
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 2,
-          "settled_at_last_close": 2,
-          "weight_at_last_rebalance_sum": 0.0009214166024629417
+          "settled_at_last_close": 2
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 11,
-          "settled_at_last_close": 11,
-          "weight_at_last_rebalance_sum": 0.009972109928401205
+          "settled_at_last_close": 11
          }
         },
-        "held": 13,
-        "incoming_weight_max": 0.002395352641796989,
-        "incoming_weight_sum": 0.011177269610863676
+        "held": 13
        }
       }
      },
@@ -5762,27 +5571,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009356971021423069
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.002677678818733224,
-        "incoming_weight_sum": 0.01046554750619175
+        "held": 12
        },
        "tilt": {
         "by_cause": {
@@ -5790,27 +5594,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0009214166024629417
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009796912924265003
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.0023806935074925316,
-        "incoming_weight_sum": 0.011101312953139379
+        "held": 12
        }
       },
       "sensitivity_2x": {
@@ -5820,27 +5619,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0007436944026370832
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009356971021423069
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.002677678818733224,
-        "incoming_weight_sum": 0.01046554750619175
+        "held": 12
        },
        "tilt": {
         "by_cause": {
@@ -5848,27 +5642,22 @@
           "ciz_return_in_path": 2,
           "held": 2,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0009214166024629417
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 10,
           "held": 10,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.009796912924265003
+          "supplied_terminal_return": 0
          }
         },
-        "held": 12,
-        "incoming_weight_max": 0.0023806935074925316,
-        "incoming_weight_sum": 0.011101312953139379
+        "held": 12
        }
       }
      }
@@ -5880,45 +5669,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011775669870933252
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.057192571551340464
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009273137997934465,
-        "incoming_weight_sum": 0.0682493152054712
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -5926,45 +5705,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011775669870933252
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.057192571551340464
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009273137997934465,
-        "incoming_weight_sum": 0.0682493152054712
+        "held": 55
        }
       }
      },
@@ -5976,27 +5745,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6004,27 +5768,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.014109009017406597
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.05655264241323868
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009324827090484652,
-        "incoming_weight_sum": 0.07084319595825572
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -6034,27 +5793,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6062,27 +5816,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.014109009017406597
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.05655264241323868
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009324827090484652,
-        "incoming_weight_sum": 0.07084319595825572
+        "held": 55
        }
       }
      }
@@ -6094,45 +5843,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.01330678442494338
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.058135018481990416
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009771332899352487,
-        "incoming_weight_sum": 0.07059237380191451
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -6140,45 +5879,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.01330678442494338
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.058135018481990416
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.009771332899352487,
-        "incoming_weight_sum": 0.07059237380191451
+        "held": 55
        }
       }
      },
@@ -6190,27 +5919,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6218,27 +5942,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.01567997354856856
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.05726527092055088
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.00979027181402601,
-        "incoming_weight_sum": 0.07320848831735854
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -6248,27 +5967,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6276,27 +5990,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.01567997354856856
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.05726527092055088
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.00979027181402601,
-        "incoming_weight_sum": 0.07320848831735854
+        "held": 55
        }
       }
      }
@@ -6308,45 +6017,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 90,
-          "settled_at_last_close": 90,
-          "weight_at_last_rebalance_sum": 0.10035625484611227
+          "settled_at_last_close": 90
          },
          "failure": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.004364946519746509
+          "settled_at_last_close": 16
          },
          "unknown": {
           "held": 212,
-          "settled_at_last_close": 212,
-          "weight_at_last_rebalance_sum": 0.20049339418279255
+          "settled_at_last_close": 212
          }
         },
-        "held": 318,
-        "incoming_weight_max": 0.013682532416829976,
-        "incoming_weight_sum": 0.30838405631272786
+        "held": 318
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 90,
-          "settled_at_last_close": 90,
-          "weight_at_last_rebalance_sum": 0.10905737362109512
+          "settled_at_last_close": 90
          },
          "failure": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.005347030190560798
+          "settled_at_last_close": 16
          },
          "unknown": {
           "held": 212,
-          "settled_at_last_close": 212,
-          "weight_at_last_rebalance_sum": 0.2019156116008583
+          "settled_at_last_close": 212
          }
         },
-        "held": 318,
-        "incoming_weight_max": 0.018072962341375138,
-        "incoming_weight_sum": 0.3198208399580196
+        "held": 318
        }
       },
       "sensitivity_2x": {
@@ -6354,45 +6053,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 90,
-          "settled_at_last_close": 90,
-          "weight_at_last_rebalance_sum": 0.10035619278105538
+          "settled_at_last_close": 90
          },
          "failure": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.004364945567215825
+          "settled_at_last_close": 16
          },
          "unknown": {
           "held": 212,
-          "settled_at_last_close": 212,
-          "weight_at_last_rebalance_sum": 0.20049333987196805
+          "settled_at_last_close": 212
          }
         },
-        "held": 318,
-        "incoming_weight_max": 0.013682522739433196,
-        "incoming_weight_sum": 0.30838393708038164
+        "held": 318
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 90,
-          "settled_at_last_close": 90,
-          "weight_at_last_rebalance_sum": 0.10905722264577793
+          "settled_at_last_close": 90
          },
          "failure": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.00534702819248058
+          "settled_at_last_close": 16
          },
          "unknown": {
           "held": 212,
-          "settled_at_last_close": 212,
-          "weight_at_last_rebalance_sum": 0.2019154446961103
+          "settled_at_last_close": 212
          }
         },
-        "held": 318,
-        "incoming_weight_max": 0.01807292641452893,
-        "incoming_weight_sum": 0.31982051639949005
+        "held": 318
        }
       }
      },
@@ -6404,27 +6093,22 @@
           "ciz_return_in_path": 90,
           "held": 90,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.10051008273359718
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 10,
           "held": 16,
           "missing_engine_default": 5,
-          "supplied_terminal_return": 1,
-          "weight_at_last_rebalance_sum": 0.004364946538421159
+          "supplied_terminal_return": 1
          },
          "unknown": {
           "ciz_return_in_path": 205,
           "held": 207,
           "missing_engine_default": 2,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.19835259374276817
+          "supplied_terminal_return": 0
          }
         },
-        "held": 313,
-        "incoming_weight_max": 0.013745768086305132,
-        "incoming_weight_sum": 0.30808477432960196
+        "held": 313
        },
        "tilt": {
         "by_cause": {
@@ -6432,27 +6116,22 @@
           "ciz_return_in_path": 90,
           "held": 90,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.10908605966013166
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 10,
           "held": 16,
           "missing_engine_default": 5,
-          "supplied_terminal_return": 1,
-          "weight_at_last_rebalance_sum": 0.0053470302076313436
+          "supplied_terminal_return": 1
          },
          "unknown": {
           "ciz_return_in_path": 205,
           "held": 207,
           "missing_engine_default": 2,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.1996635868368437
+          "supplied_terminal_return": 0
          }
         },
-        "held": 313,
-        "incoming_weight_max": 0.017794042810185186,
-        "incoming_weight_sum": 0.31900688727382204
+        "held": 313
        }
       },
       "sensitivity_2x": {
@@ -6462,27 +6141,22 @@
           "ciz_return_in_path": 90,
           "held": 90,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.1005100206877456
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 10,
           "held": 16,
           "missing_engine_default": 5,
-          "supplied_terminal_return": 1,
-          "weight_at_last_rebalance_sum": 0.004364945585715809
+          "supplied_terminal_return": 1
          },
          "unknown": {
           "ciz_return_in_path": 205,
           "held": 207,
           "missing_engine_default": 2,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.1983525395710951
+          "supplied_terminal_return": 0
          }
         },
-        "held": 313,
-        "incoming_weight_max": 0.013745758368030573,
-        "incoming_weight_sum": 0.3080846579646335
+        "held": 313
        },
        "tilt": {
         "by_cause": {
@@ -6490,27 +6164,22 @@
           "ciz_return_in_path": 90,
           "held": 90,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.10908590872943379
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 10,
           "held": 16,
           "missing_engine_default": 5,
-          "supplied_terminal_return": 1,
-          "weight_at_last_rebalance_sum": 0.0053470282093758675
+          "supplied_terminal_return": 1
          },
          "unknown": {
           "ciz_return_in_path": 205,
           "held": 207,
           "missing_engine_default": 2,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.1996634201426736
+          "supplied_terminal_return": 0
          }
         },
-        "held": 313,
-        "incoming_weight_max": 0.01779400805890353,
-        "incoming_weight_sum": 0.31900656722657167
+        "held": 313
        }
       }
      }
@@ -6522,45 +6191,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.009542507104692982
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.046370572215197595
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.00888673243908361,
-        "incoming_weight_sum": 0.05535363956548928
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -6568,45 +6227,35 @@
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.011482636605995123
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.053392233032993806
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008224269509535575,
-        "incoming_weight_sum": 0.06414250236770072
+        "held": 55
        },
        "tilt": {
         "by_cause": {
          "cash_merger": {
           "held": 16,
-          "settled_at_last_close": 16,
-          "weight_at_last_rebalance_sum": 0.009542507104692982
+          "settled_at_last_close": 16
          },
          "failure": {
           "held": 0,
-          "settled_at_last_close": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "settled_at_last_close": 0
          },
          "unknown": {
           "held": 39,
-          "settled_at_last_close": 39,
-          "weight_at_last_rebalance_sum": 0.046370572215197595
+          "settled_at_last_close": 39
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.00888673243908361,
-        "incoming_weight_sum": 0.05535363956548928
+        "held": 55
        }
       }
      },
@@ -6618,27 +6267,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6646,27 +6290,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.011179632558395651
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.04559796023669143
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008873968757819086,
-        "incoming_weight_sum": 0.057185716483697184
+        "held": 55
        }
       },
       "sensitivity_2x": {
@@ -6676,27 +6315,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.013400570717823084
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0527031082359138
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008256876920241712,
-        "incoming_weight_sum": 0.06632675787148591
+        "held": 55
        },
        "tilt": {
         "by_cause": {
@@ -6704,27 +6338,22 @@
           "ciz_return_in_path": 17,
           "held": 17,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.011179632558395651
+          "supplied_terminal_return": 0
          },
          "failure": {
           "ciz_return_in_path": 0,
           "held": 0,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.0
+          "supplied_terminal_return": 0
          },
          "unknown": {
           "ciz_return_in_path": 38,
           "held": 38,
           "missing_engine_default": 0,
-          "supplied_terminal_return": 0,
-          "weight_at_last_rebalance_sum": 0.04559796023669143
+          "supplied_terminal_return": 0
          }
         },
-        "held": 55,
-        "incoming_weight_max": 0.008873968757819086,
-        "incoming_weight_sum": 0.057185716483697184
+        "held": 55
        }
       }
      }

@@ -123,10 +123,10 @@ Blank months, all with the reason `path_break_held`. The set is the same in both
 
 Rebalance coverage of CW-PIT in the look (`reports_owed.counts`):
 
-| Loader run | Rebalances | Members mean | Members min | Traded mean | Traded min | Pinned mean | c = 0 few signals | c = 0 short history | c = 0 window gap | ME missing | ME missing by reason | Settled excluded | Share at stock cap | Share TE-scaled | B2 rebalances / excluded / max CW share |
+| Loader run | Rebalances | Members mean | Members min | Traded mean | Traded min | Pinned mean | c = 0 few signals | c = 0 short history | c = 0 window gap | ME missing | ME missing by reason | Settled excluded | Share at stock cap | Share TE-scaled | B2 rebalances / excluded |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| primary | 355 | 498.87 | 489 | 498.87 | 489 | 498.9 | 177100 | 458 | 3651 | 332 | unmapped 126, no_share_fact 206 | 45 | 0.000 | 0.000 | 0 / 0 / 0.0000 |
-| last_close | 355 | 498.87 | 489 | 498.85 | 488 | 498.9 | 177100 | 458 | 3651 | 320 | unmapped 114, no_share_fact 206 | 57 | 0.000 | 0.000 | 9 / 9 / 0.0083 |
+| primary | 355 | 498.87 | 489 | 498.87 | 489 | 498.9 | 177100 | 458 | 3651 | 332 | unmapped 126, no_share_fact 206 | 45 | 0.000 | 0.000 | 0 / 0 |
+| last_close | 355 | 498.87 | 489 | 498.85 | 488 | 498.9 | 177100 | 458 | 3651 | 320 | unmapped 114, no_share_fact 206 | 57 | 0.000 | 0.000 | 9 / 9 |
 
 ## Screen
 
@@ -212,28 +212,30 @@ Each item of `reports_owed` that the stage files hold has its own key in the JSO
 
 ### r4
 
-Held disappearances by cause. In the primary run, `ciz_return_in_path` means CIZ put the delisting return in the path, `supplied_terminal_return` is a supplied return, and `missing_engine_default` takes the engine default. The last_close run settles every event at the last trade close. The weight sum and the weight max are the total and the largest book weight at the event.
+Held disappearances by cause. In the primary run, `ciz_return_in_path` means CIZ put the delisting return in the path, `supplied_terminal_return` is a supplied return, and `missing_engine_default` takes the engine default. The last_close run settles every event at the last trade close. The weight at the event is the engine total book weight at the events. The weight at the last rebalance is the total post-trade weight at the last rebalance before each event.
+
+Public weight rule (2026-10-08): the report gives weight sums only for the look groups, as totals over causes. The stage files cannot show that the two loader runs hold the same events of a cause with equal counts, so no weight by cause is given. It gives no weight for a screen candidate group and no single maximum weight.
 
 Look, CW-PIT:
 
-| Loader run | Cost case | Held | Weight sum | Weight max | By cause |
+| Loader run | Cost case | Held | Weight at the event, sum | Weight at the last rebalance, sum | By cause |
 | --- | --- | --- | --- | --- | --- |
-| primary | primary | 316 | 0.3087 | 0.0137 | cash_merger 90 (ciz_return_in_path 90); failure 17 (ciz_return_in_path 10, missing_engine_default 6, supplied_terminal_return 1); unknown 209 (ciz_return_in_path 207, missing_engine_default 2) |
-| primary | sensitivity_2x | 316 | 0.3087 | 0.0137 | cash_merger 90 (ciz_return_in_path 90); failure 17 (ciz_return_in_path 10, missing_engine_default 6, supplied_terminal_return 1); unknown 209 (ciz_return_in_path 207, missing_engine_default 2) |
-| last_close | primary | 321 | 0.3090 | 0.0137 | cash_merger 90 (settled_at_last_close 90); failure 17 (settled_at_last_close 17); unknown 214 (settled_at_last_close 214) |
-| last_close | sensitivity_2x | 321 | 0.3090 | 0.0137 | cash_merger 90 (settled_at_last_close 90); failure 17 (settled_at_last_close 17); unknown 214 (settled_at_last_close 214) |
+| primary | primary | 316 | 0.3087 | 0.3037 | cash_merger 90 (ciz_return_in_path 90); failure 17 (ciz_return_in_path 10, missing_engine_default 6, supplied_terminal_return 1); unknown 209 (ciz_return_in_path 207, missing_engine_default 2) |
+| primary | sensitivity_2x | 316 | 0.3087 | 0.3037 | cash_merger 90 (ciz_return_in_path 90); failure 17 (ciz_return_in_path 10, missing_engine_default 6, supplied_terminal_return 1); unknown 209 (ciz_return_in_path 207, missing_engine_default 2) |
+| last_close | primary | 321 | 0.3090 | 0.3057 | cash_merger 90 (settled_at_last_close 90); failure 17 (settled_at_last_close 17); unknown 214 (settled_at_last_close 214) |
+| last_close | sensitivity_2x | 321 | 0.3090 | 0.3057 | cash_merger 90 (settled_at_last_close 90); failure 17 (settled_at_last_close 17); unknown 214 (settled_at_last_close 214) |
 
-Screen, primary cost:
+Screen, primary cost (counts only):
 
-| ID | Held CW, primary run | Held TILT, primary run | CW by cause, primary run | Held CW, last_close run | CW weight sum | TILT weight sum |
-| --- | --- | --- | --- | --- | --- | --- |
-| S1 | 203 | 203 | cash_merger 80 (ciz_return_in_path 80); failure 2 (ciz_return_in_path 2); unknown 121 (ciz_return_in_path 121) | 205 | 0.2599 | 0.2710 |
-| S2 | 12 | 12 | cash_merger 2 (ciz_return_in_path 2); unknown 10 (ciz_return_in_path 10) | 13 | 0.0105 | 0.0089 |
-| S3 | 12 | 12 | cash_merger 2 (ciz_return_in_path 2); unknown 10 (ciz_return_in_path 10) | 13 | 0.0105 | 0.0111 |
-| S4 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 | 0.0663 | 0.0708 |
-| S6 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 | 0.0663 | 0.0732 |
-| S7 | 313 | 313 | cash_merger 90 (ciz_return_in_path 90); failure 16 (ciz_return_in_path 10, missing_engine_default 5, supplied_terminal_return 1); unknown 207 (ciz_return_in_path 205, missing_engine_default 2) | 318 | 0.3081 | 0.3190 |
-| S8 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 | 0.0663 | 0.0572 |
+| ID | Held CW, primary run | Held TILT, primary run | CW by cause, primary run | Held CW, last_close run |
+| --- | --- | --- | --- | --- |
+| S1 | 203 | 203 | cash_merger 80 (ciz_return_in_path 80); failure 2 (ciz_return_in_path 2); unknown 121 (ciz_return_in_path 121) | 205 |
+| S2 | 12 | 12 | cash_merger 2 (ciz_return_in_path 2); unknown 10 (ciz_return_in_path 10) | 13 |
+| S3 | 12 | 12 | cash_merger 2 (ciz_return_in_path 2); unknown 10 (ciz_return_in_path 10) | 13 |
+| S4 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 |
+| S6 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 |
+| S7 | 313 | 313 | cash_merger 90 (ciz_return_in_path 90); failure 16 (ciz_return_in_path 10, missing_engine_default 5, supplied_terminal_return 1); unknown 207 (ciz_return_in_path 205, missing_engine_default 2) | 318 |
+| S8 | 55 | 55 | cash_merger 17 (ciz_return_in_path 17); unknown 38 (ciz_return_in_path 38) | 55 |
 
 ### fragility
 
@@ -524,26 +526,26 @@ Not in the screen stage files: The confirm stage owes the post-seal parts, becau
 
 ### path_break
 
-Held positions across a `path_break` row, as aggregates only. The span is the number of screen months that one position blanks.
+Held positions across a `path_break` row, as aggregates only. The span is the number of screen months that one position blanks. By the public weight rule (2026-10-08), only the run-level look set has a weight sum.
 
-| Book set | Positions | Months blanked | CW weight sum | TILT weight sum | By later exit class | Span min / median / max |
-| --- | --- | --- | --- | --- | --- | --- |
-| look, primary | 13 | 215 | 0.0034 |  | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
-| look, last_close | 13 | 215 | 0.0034 |  | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
-| S1, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S1, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S2, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S2, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S3, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S3, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S4, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S4, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S6, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S6, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S7, primary | 13 | 215 | 0.0034 | 0.0037 | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
-| S7, last_close | 13 | 215 | 0.0034 | 0.0037 | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
-| S8, primary | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
-| S8, last_close | 0 | 0 | 0.0000 | 0.0000 | none | none / none / none |
+| Book set | Positions | Months blanked | CW weight sum | By later exit class | Span min / median / max |
+| --- | --- | --- | --- | --- | --- |
+| look, primary | 13 | 215 | 0.0034 | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
+| look, last_close | 13 | 215 | 0.0034 | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
+| S1, primary | 0 | 0 | not given | none | none / none / none |
+| S1, last_close | 0 | 0 | not given | none | none / none / none |
+| S2, primary | 0 | 0 | not given | none | none / none / none |
+| S2, last_close | 0 | 0 | not given | none | none / none / none |
+| S3, primary | 0 | 0 | not given | none | none / none / none |
+| S3, last_close | 0 | 0 | not given | none | none / none / none |
+| S4, primary | 0 | 0 | not given | none | none / none / none |
+| S4, last_close | 0 | 0 | not given | none | none / none / none |
+| S6, primary | 0 | 0 | not given | none | none / none / none |
+| S6, last_close | 0 | 0 | not given | none | none / none / none |
+| S7, primary | 13 | 215 | not given | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
+| S7, last_close | 13 | 215 | not given | current 1, left_index 2, cash_merger 2, failure 5, unknown 3 | 2 / 16 / 162 |
+| S8, primary | 0 | 0 | not given | none | none / none / none |
+| S8, last_close | 0 | 0 | not given | none | none / none / none |
 
 Each candidate's declaration is the run blank set cut to its span (the frozen rule). So a candidate can lose months to positions that its own books do not hold. In the primary run, S1 loses 78 months, with no path-break position in its own books.
 
@@ -556,26 +558,26 @@ Blanked level windows (R6), by later exit class:
 
 ### b2
 
-B2 exclusions as aggregates (rebalances with an exclusion, names excluded, and the maximum CW share excluded at one rebalance):
+B2 exclusions as aggregates (rebalances with an exclusion and names excluded):
 
-| Book set | Rebalances | Excluded | Max CW share |
-| --- | --- | --- | --- |
-| look, primary | 0 | 0 | 0.0000 |
-| look, last_close | 9 | 9 | 0.0083 |
-| S1, primary | 0 | 0 | 0.0000 |
-| S1, last_close | 9 | 9 | 0.0083 |
-| S2, primary | 0 | 0 | 0.0000 |
-| S2, last_close | 0 | 0 | 0.0000 |
-| S3, primary | 0 | 0 | 0.0000 |
-| S3, last_close | 0 | 0 | 0.0000 |
-| S4, primary | 0 | 0 | 0.0000 |
-| S4, last_close | 4 | 4 | 0.0083 |
-| S6, primary | 0 | 0 | 0.0000 |
-| S6, last_close | 4 | 4 | 0.0083 |
-| S7, primary | 0 | 0 | 0.0000 |
-| S7, last_close | 9 | 9 | 0.0083 |
-| S8, primary | 0 | 0 | 0.0000 |
-| S8, last_close | 4 | 4 | 0.0083 |
+| Book set | Rebalances | Excluded |
+| --- | --- | --- |
+| look, primary | 0 | 0 |
+| look, last_close | 9 | 9 |
+| S1, primary | 0 | 0 |
+| S1, last_close | 9 | 9 |
+| S2, primary | 0 | 0 |
+| S2, last_close | 0 | 0 |
+| S3, primary | 0 | 0 |
+| S3, last_close | 0 | 0 |
+| S4, primary | 0 | 0 |
+| S4, last_close | 4 | 4 |
+| S6, primary | 0 | 0 |
+| S6, last_close | 4 | 4 |
+| S7, primary | 0 | 0 |
+| S7, last_close | 9 | 9 |
+| S8, primary | 0 | 0 |
+| S8, last_close | 4 | 4 |
 
 The trial asks for each held position with its weight in each book. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files. The trial asks for unknown_event_excluded and unknown_event_cw_share at each rebalance. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files.
 
@@ -583,15 +585,15 @@ The trial asks for each held position with its weight in each book. The report g
 
 Primary loader run, by candidate:
 
-| ID | Rebalances | Members mean | Members min | Traded mean | Traded min | Pinned mean | c = 0 few signals | c = 0 short history | c = 0 window gap | ME missing | ME missing by reason | Settled excluded | Share at stock cap | Share TE-scaled | B2 rebalances / excluded / max CW share |
+| ID | Rebalances | Members mean | Members min | Traded mean | Traded min | Pinned mean | c = 0 few signals | c = 0 short history | c = 0 window gap | ME missing | ME missing by reason | Settled excluded | Share at stock cap | Share TE-scaled | B2 rebalances / excluded |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| S1 | 169 | 498.82 | 489 | 498.82 | 489 | 32.3 | 4233 | 209 | 1196 | 163 | unmapped 37, no_share_fact 126 | 30 | 0.325 | 0.000 | 0 / 0 / 0.0000 |
-| S2 | 37 | 499.38 | 498 | 499.38 | 498 | 29.8 | 1094 | 42 | 0 | 21 | no_share_fact 21 | 0 | 0.297 | 0.000 | 0 / 0 / 0.0000 |
-| S3 | 37 | 499.38 | 498 | 499.38 | 498 | 8.7 | 293 | 42 | 0 | 21 | no_share_fact 21 | 0 | 0.054 | 0.000 | 0 / 0 / 0.0000 |
-| S4 | 73 | 499.33 | 497 | 499.33 | 497 | 75.3 | 5381 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.041 | 0.000 | 0 / 0 / 0.0000 |
-| S6 | 73 | 499.33 | 497 | 499.33 | 497 | 6.8 | 367 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.000 | 0.000 | 0 / 0 / 0.0000 |
-| S7 | 349 | 498.87 | 489 | 498.87 | 489 | 12.5 | 825 | 450 | 3394 | 326 | unmapped 126, no_share_fact 200 | 45 | 0.476 | 0.000 | 0 / 0 / 0.0000 |
-| S8 | 73 | 499.33 | 497 | 499.33 | 497 | 15.4 | 1011 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.000 | 0.000 | 0 / 0 / 0.0000 |
+| S1 | 169 | 498.82 | 489 | 498.82 | 489 | 32.3 | 4233 | 209 | 1196 | 163 | unmapped 37, no_share_fact 126 | 30 | 0.325 | 0.000 | 0 / 0 |
+| S2 | 37 | 499.38 | 498 | 499.38 | 498 | 29.8 | 1094 | 42 | 0 | 21 | no_share_fact 21 | 0 | 0.297 | 0.000 | 0 / 0 |
+| S3 | 37 | 499.38 | 498 | 499.38 | 498 | 8.7 | 293 | 42 | 0 | 21 | no_share_fact 21 | 0 | 0.054 | 0.000 | 0 / 0 |
+| S4 | 73 | 499.33 | 497 | 499.33 | 497 | 75.3 | 5381 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.041 | 0.000 | 0 / 0 |
+| S6 | 73 | 499.33 | 497 | 499.33 | 497 | 6.8 | 367 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.000 | 0.000 | 0 / 0 |
+| S7 | 349 | 498.87 | 489 | 498.87 | 489 | 12.5 | 825 | 450 | 3394 | 326 | unmapped 126, no_share_fact 200 | 45 | 0.476 | 0.000 | 0 / 0 |
+| S8 | 73 | 499.33 | 497 | 499.33 | 497 | 15.4 | 1011 | 75 | 34 | 43 | unmapped 2, no_share_fact 41 | 2 | 0.000 | 0.000 | 0 / 0 |
 
 ### tilt_stats
 
@@ -641,10 +643,18 @@ Ratio status counts: `defined_full` 131, `defined_partial` 159, `ratio_window_sh
 | limiting_partial | 59 | 10 | 92 | 6 | 128 |
 | limiting_short | 31 | 7 | 46 | 5 | 64 |
 
-## Owed by later stages, and items given as aggregates only
+## Owed by later stages, items given as aggregates only, and withheld weights
 
 - `check_period_end`: the confirm stage owes it. The trial asks for the last check return month, as the driver records it.
 - `check_gap_months`: the confirm stage owes it. The trial asks for the 26 check-gap months (2019-07 to 2021-08) left out of every check series, with the reason for each part (seal, sealed 2020-07-31 row, warm-up).
 - `s2_history_rule`: The confirm stage owes the post-seal parts, because the screen stages do not open the check period. These are the member quarters with rdq before 2020-08-03 and a known date on or after it, and the S2 valid share in the post-seal check months.
 - `path_break`: The trial asks for each held position with its weight in each book. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files.
 - `b2`: The trial asks for unknown_event_excluded and unknown_event_cw_share at each rebalance. The report gives aggregates only (owner data terms O-22). The rows stay in the private stage files.
+- `b2.max_cw_share`: The largest CW share excluded at one rebalance, for the look and each candidate. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `counts.b2.max_cw_share`: The same B2 maximum in the counts of the look and each candidate. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `path_break.screen.weight_sum`: The weight sum of each candidate group, CW and TILT. The run-level look sum stays. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `r4.look.by_cause.weight_at_last_rebalance_sum`: The weight share of each cause in the look groups. At least one cause does not meet the rule. Two loader runs with equal counts of a cause fail it, because the stage files hold no event identity to show that the events are the same. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `r4.look.incoming_weight_max`: The largest book weight at one event. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `r4.screen.incoming_weight_max`: The largest book weight at one event in each candidate group. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `r4.screen.incoming_weight_sum`: The engine total weight at the event of each candidate group, CW and TILT. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.
+- `r4.screen.weight_at_last_rebalance_sum`: The weight share by cause of each candidate group, CW and TILT. Each group nests in the look group, so a difference can isolate one event. The report does not give it: private per O-22 (public weight rule, 2026-10-08). The value stays in the private stage files.

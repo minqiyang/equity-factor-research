@@ -52,6 +52,16 @@ Decision:
   q-values (family size 9) at the confirm stage (`secondary_family`). The report card found no conflict with R10:
   R10 asks for q-values beside a ranking, and R9 fixes the correction method before results, so a q-value on the
   screen p-values would use a method that the trial does not name.
+- Ruling 4 (coordinator, 2026-10-08, on REVIEW M-1, R11 under O-22). Two nested public weight sums, the look
+  CW-PIT group and the S7 CW-PIT group for the failure cause, differed by one event, so a subtraction gave one held
+  event's weight, and the settlement counts gave its class. Public weight rule from now on: a weight is published
+  only as a sum over at least 3 positions, and no two published sums may differ by fewer than 3 positions. The
+  report gives R4 and path-break weight sums for the run-level look groups only. For each candidate group it gives
+  counts by cause and by settlement and no weight, and it gives no single maximum weight (`incoming_weight_max`,
+  B2 `max_cw_share`). The stage files hold no event identity, so they cannot show that the two loader runs hold
+  the same events of a cause with equal counts (cash_merger 90 and 90, failure 17 and 17). So the look R4 weights
+  are totals over causes, which differ by 5 events (316 and 321). The `missing` key of the report lists each
+  withheld value, and the values stay in the private stage files.
 
 Consequences:
 
