@@ -38,9 +38,14 @@
   "code_pins": {
     "statement": "Each file is pinned by its accepted commit and the SHA-256 of the file bytes at that commit. The runs of this trial file use these bytes. If a pinned file changes before a run, an amendment that pins the new bytes is committed before that run.",
     "research/m55_index_tilt.py": {
-      "commit": "cebb487a64b3bfcd304dbebc903f6235990db251",
-      "file_sha256": "1b57c09710c6c27b2b2cdebd6e8c716cd6bafb700b1d4dd5f16240f3dc15e186",
+      "commit": "e186c63d1dd0e81148d32d9b915e6063390c8a6b",
+      "file_sha256": "260e5dd047c48fb1d7ca520231ca9ddc09a68b5a45ffbdaf4556c5edc741d11c",
       "scope": "engine, low-risk book with the ratio gap rule (V2), declared signal set, half_rule; amendment 3: the quote rule (half_spreads) and the spread rate per stock of the half-spread override (spread_rates)"
+    },
+    "src/backtest/portfolio.py": {
+      "commit": "e186c63d1dd0e81148d32d9b915e6063390c8a6b",
+      "file_sha256": "b4bf05d771ff64a8ccc7f91775c33339110b8663ae2159eac623ec1d82dd28af",
+      "scope": "the long-only engine of every book (run_long_only_backtest); amendment 3: the slippage rate per asset and row of the half-spread override (asset_slippage_bps)"
     },
     "research/m55_criteria.py": {
       "commit": "1a70eb79b764820b0c7c284f428bcbe4ea4c615b",
