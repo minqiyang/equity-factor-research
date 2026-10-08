@@ -15,6 +15,71 @@ investment performance.
 
 ---
 
+## 2026-10-08 - Milestone 5.5 Screen of Trial Family v1: Shortlist S3 and S4
+
+Context:
+
+- Run 2 of trial family v1 (code `8590b2e`, amendment 2, WRDS vintage 2025-12-31) ran the five stages of
+  `research/m55_driver.py` on 2026-10-08 with no refusal. Its calibration result equals run 1 on every field
+  (`ratio_coverage_low`), so test B is stopped (label `stopped_coverage`, p_B = 1.0). The coordinator verified the
+  stage files: hashes, stage chain, one context, trial and code digests, the recomputed shortlist digest, the test
+  B record, and the run log.
+- `research/m55_screen_report.py` makes the public report from the stage files of run 1 and run 2:
+  `reports/m55_screen_v1.md`, `reports/m55_screen_v1.json`, and `reports/m55_screen_v1_attempts.jsonl` (one line
+  per run).
+
+Decision:
+
+- Screen result. The freeze reads only the primary loader run with the primary cost case, with the rule IR >= 0.2
+  and HAC t >= 1.0 against CW-PIT. S3 (IR 1.104, HAC t 1.850, 36 months) and S4 (IR 0.686, HAC t 1.539, 72 months)
+  meet the rule. S1, S2, S6, S7, and S8 fail it. S5 has no real start, so it has the typed undefined record
+  `screen_too_short`. The freeze decision is `shortlist_frozen`, the shortlist is S3 and S4, and the digest is
+  `62b2c8afb379fb0322b03cbd68da47b71c68c9eb1d1172c805dcd11b00d59518`. These are `DIAGNOSTIC_ONLY` screen numbers.
+  They are not a profitability claim.
+- Ruling 1 (coordinator, 2026-10-08). The `path_break_held` blank set removes 215 of 354 screen months (13 held
+  positions, CW-PIT weight sum 0.0034, longest span 162 months). The pull takes every `dsf_v2` row of every PERMNO
+  that was ever a member, and the loader drops only off-calendar rows, so each gap is a gap in CRSP. The halt
+  policy locks a held position with no close, and R6 forbids a fill, so the blank is the frozen rule applied
+  correctly. Both books lose the same months, so the cut cannot favor a candidate. It lowers the power of S1 (168
+  to 90 months) and S7 (348 to 133 months), and both fail. No fix and no rerun follow (R9 forking path). Backlog: a
+  later trial version may treat a long coverage gap as a disappearance under R4.
+- Ruling 2 (coordinator, 2026-10-08). The public report gives the path-break positions, the blanked level windows,
+  and the B2 rows as aggregates only. The trial (`reports_owed.path_break`) asks for each position with its weight,
+  but the owner data terms (O-22: no single-security row from stage files) take precedence. The per-position rows
+  stay in the private stage files, and the report commits their SHA-256 values.
+- Ruling 3 (coordinator default, 2026-10-08). The screen report has no q-values. The candidate table is in ID
+  order and is not a ranking, and each decision follows the frozen thresholds. The trial puts Benjamini-Yekutieli
+  q-values (family size 9) at the confirm stage (`secondary_family`). The report card found no conflict with R10:
+  R10 asks for q-values beside a ranking, and R9 fixes the correction method before results, so a q-value on the
+  screen p-values would use a method that the trial does not name.
+- Ruling 4 (coordinator, 2026-10-08, on REVIEW M-1, R11 under O-22). Two nested public weight sums, the look
+  CW-PIT group and the S7 CW-PIT group for the failure cause, differed by one event, so a subtraction gave one held
+  event's weight, and the settlement counts gave its class. Public weight rule from now on: a weight is published
+  only as a sum over at least 3 positions, and no two published sums may differ by fewer than 3 positions. The
+  report gives R4 and path-break weight sums for the run-level look groups only. For each candidate group it gives
+  counts by cause and by settlement and no weight, and it gives no single maximum weight (`incoming_weight_max`,
+  B2 `max_cw_share`). The stage files hold no event identity, so they cannot show that the two loader runs hold
+  the same events of a cause with equal counts (cash_merger 90 and 90, failure 17 and 17). So the look R4 weights
+  are totals over causes, which differ by 5 events (316 and 321). The `missing` key of the report lists each
+  withheld value, and the values stay in the private stage files.
+
+Consequences:
+
+- S3 meets the rule at the primary cost in both loader runs but not at 2x cost: IR 0.261 and HAC t 0.459 in the
+  primary run, 0.263 and 0.462 in the last_close run. S2 and S3 have 36 screen months, the minimum. S4 meets the
+  rule in all four cells (IR 0.669 to 0.686, HAC t 1.499 to 1.539). The other cells decide nothing.
+- R4: no candidate and no look comparison changes sign between the primary run and the last_close rerun.
+- S1 loses its 78 blank months to positions that its own books do not hold, because each declaration is the run
+  blank set cut to the candidate's span (the frozen rule).
+- The confirm stage runs test A on the composite of S3 and S4. With p_B = 1.0, test A needs p_A <= 0.025 for its
+  Holm condition. The confirm stage also owes `check_period_end`, `check_gap_months`, and the post-seal parts of
+  `s2_history_rule`.
+
+Follow-up:
+
+- The confirm run waits for the owner's second WRDS pull of CRSP closing bid and ask (OI-03). The confirm card
+  applies p_B = 1.0 with the pinned criteria functions; a change to a pinned file needs an amendment first.
+
 ## 2026-10-08 - Trial Family v1 Amendment 2: Test B Stopped at the Coverage Stop (Milestone 5.5, owner decision)
 
 Context:
