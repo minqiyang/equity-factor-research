@@ -132,6 +132,7 @@
     "repo_map": "regenerated and full-suite freshness passed",
     "ruff": "passed"
   },
+  "redaction_note": "The SHA-256 values for reports/dividend_design_attempt.md, reports/m3_07_attempt.md, reports/m3_08_attempt.md, reports/pr221_precision_fix_attempt.md, reports/pr221_runner_decision_attempt.md, and reports/split_proof_attempt.md are of the bytes at commit 28abd4ca506580941f413780ac5428818a4c3263. On 2026-10-09 the R11 fix replaced the home paths in these six files with placeholders. The old bytes are in Git history.",
   "release_kind": "local_worktree_manifest_git_sandbox_blocked",
   "scope": "Accepted Step 3 synthetic ordinary dividend comparison; coordinator owns fresh CRITICAL reviews; Step 4 private-data owner gate remains closed.",
   "writer_released": true,

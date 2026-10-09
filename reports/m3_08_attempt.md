@@ -58,7 +58,7 @@ Baseline HEAD: `e033e9d7a55607e0deb0555e759533606efc940b`.
 Commands ran from this worktree using the owner-specified Python 3.12.14:
 
 ```sh
-M3_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+M3_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 PYTHONPATH=src "$M3_PYTHON" -m pytest -q tests/test_calendar_day_spans.py tests/test_demo_v0.py tests/test_synthetic_multifactor_backtest_demo.py tests/test_bar_integrity.py tests/test_source_row_lag.py tests/test_dividend_policy.py tests/test_broader_windows.py tests/test_unchanging_price.py tests/test_backtest_timing_contract.py tests/test_official_report_paths.py
 PYTHONPATH=src "$M3_PYTHON" -m pytest -q tests/test_event_date_membership.py -k 'not official_reports'
 PYTHONPATH=src "$M3_PYTHON" -m research.demo_v0

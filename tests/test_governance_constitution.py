@@ -333,15 +333,6 @@ PRIVATE_PATH_ALLOWED = {
     ("tests/test_governance_constitution.py", "private_data/"),
     ("tests/test_ledger_track_b_v7_design.py", "private_data/"),
 }
-# Frozen attempt reports: reports/dividend_comparison_release_manifest.json pins their SHA-256.
-PRIVATE_PATH_PINNED_FILES = {
-    "reports/dividend_design_attempt.md",
-    "reports/m3_07_attempt.md",
-    "reports/m3_08_attempt.md",
-    "reports/pr221_precision_fix_attempt.md",
-    "reports/pr221_runner_decision_attempt.md",
-    "reports/split_proof_attempt.md",
-}
 
 
 def _private_path_hits(relative_path: str, text: str) -> list[str]:
@@ -368,7 +359,7 @@ def test_tracked_text_names_no_private_path() -> None:
     offenders = []
     for relative_path in _tracked_files():
         path = PROJECT_ROOT / relative_path
-        if relative_path in PRIVATE_PATH_PINNED_FILES or not path.is_file():
+        if not path.is_file():
             continue
         try:
             text = path.read_text(encoding="utf-8")
