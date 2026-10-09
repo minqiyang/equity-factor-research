@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-08 for trial family v1 amendment 3 after PR #301.
+Updated: 2026-10-08 for the public confirm report of trial family v1 after PR #302.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `45c67f983ebd57f00d6ec4c4f92aeaa1d6cd46bc` (main after PR #301).
+  `b1b0517294247e92de6734916fa84937c1351622` (main after PR #302).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -51,7 +51,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   signals S1 to S8 and the WRDS loader with its R6 share-basis repair (PR #295), and the frozen Milestone 5.5
   trial family v1 and its amendment 1 (PR #298), and the Milestone 5.5 driver to the shortlist freeze (PR #299),
   and trial amendment 2 with test B stopped at the coverage stop (PR #300), and the public screen report of
-  trial family v1 (PR #301: run 2 froze S3 and S4).
+  trial family v1 (PR #301: run 2 froze S3 and S4), and trial amendment 3 with the confirm and check stages and
+  the half-spread override (PR #302).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -62,7 +63,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `f6cfc610` (PR #284), `988b4443` (PR #285), `2f93032d` (PR #286), `d48b8114` (PR #287), `a72f1562` (PR #288),
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
-  `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), and `45c67f98` (PR #301).
+  `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), `45c67f98` (PR #301),
+  and `b1b05172` (PR #302).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -72,10 +74,10 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-confirm` adds amendment 3 to the frozen trial family v1, after the run 2 freeze
-  (S3 and S4, digest `62b2c8af...d59518`) and before any confirm month, check month, or quote value is read. It
-  states the half-spread override and the segments, pins the engine, runner, and quote pull script bytes, and adds
-  the manifest of the second pull. The driver adds the confirm and check stages. Tests are synthetic.
+- Candidate branch `claude/m55-confirm-report` adds `research/m55_confirm_report.py`. It checks the seven stage
+  files and the run log of run 3 (digests, chain, one context with the merged trial, both tracked manifests, the
+  code pins, and the code of `b1b0517`, and the run 2 freeze digest) and writes `reports/m55_confirm_v1.*` with
+  aggregates only. Tests are synthetic; this branch writes no real report file.
 
 ## Current Research Gate Summary
 
@@ -97,14 +99,11 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- The second WRDS pull is done (2026-10-08, one run of `coord/reports/m6_prep/wrds_pull_quotes.py`; a re-pull is
-  a stop), and this PR commits its manifest `reports/wrds_quotes_manifest_2025.json`. After this PR merges: run 3
-  of `python -m research.m55_driver` with `--quote-root` (the `wrds_quotes_*` folder), one stage at a time, in a new
-  output folder outside every checkout: coverage to freeze; the coordinator compares the freeze digest, the coverage
-  counts, and the calibration values with run 2 (a difference goes to the owner); then confirm and check. The
-  confirm stage makes 22 engine calls and the check stage 40 (the look and the screen made 18 in about 2.5 hours).
-  Check the free memory first. If a pinned file changes before a run, an amendment comes first. The screen months
-  stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
+- Run 3 of `python -m research.m55_driver` (code `b1b0517`) is running on the real data, one stage at a time.
+  The coordinator compares its freeze digest, coverage counts, and calibration values with run 2 (a difference
+  goes to the owner). After the check stage: `python -m research.m55_confirm_report <run 3 folder>` writes the
+  three public files, or refuses with a reason and writes nothing; a refusal goes to the engineering log (R9).
+  The screen months stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
 
 ## Source Routing
 
