@@ -27,7 +27,7 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   through W + 1. The segment-end cut protected only the outer boundary.
 - Driver (`research/m55_driver.py`): `exit_gap_events` finds, for each column, the first row W + 1 after the
   segment anchor and on or before the end row with a close and eligibility on W and neither on W + 1, unless a D6
-  event of the column has `known_at` on or before W + 1. It reads rows W and W + 1 only and returns one event per
+  event of the column has `known_at` on or before W + 1. It reads no row after W + 1 and returns one event per
   column at W + 1 (`effective_date` = `known_at`, cause `unknown`, `delisting_return` NaN in the primary run and 0.0
   in the last_close run). `exit_gap_frames` adds these events to the D6 table and takes out a later D6 event of the
   same column. `segment_frames`, which only the confirm and check segments call, applies it after `cut_frames`, so
@@ -42,23 +42,24 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   this rule and 159 for the a1 rule. Advisories adopted: `held_priced_again` in the report, the D4 and D6 premises
   in the rule text, and the statement that a held position settles also when its closes come back.
 - Tests, synthetic only:
-  - `tests/test_m55_confirm.py`: the long world's member 900026 is now a synthetic index exit on a row without a
-    close inside the confirm segment, with its own dates (index exit 2004-05-17, closes again from 2016-11 to
-    2017-06, delisting row in 2023). Its rows come from its own random generator, so the rows of the other members
-    do not change. It is a member from 1994, so the screen stages do not change, and the test against the driver
+  - `tests/test_m55_confirm.py`: the long world gains member 900026, a synthetic index exit on a row without a
+    close inside the confirm segment, with its own dates (index exit 2004-05-17; closes again from 2016-11 to
+    2018-02 and from 2021 to its delisting row in 2022). Its rows come from its own random generator, so the rows of
+    the other members do not change. It is a member from 1994, so the screen stages do not change, and the test against the driver
     of `8590b2e` still finds the same results from coverage to the freeze. Small frames test each condition of the
     rule on 14 columns, R1 for every row t of the segment under four kinds of change after t, the path-break months
     with and without the events, and `path_gap_at_period_end` for a held gap without an exit. The long chain tests
     the R4 report and counts and the engine settlement at W + 1 (-1.0 and 0.0), and the confirm stage with the rule
     switched off refuses `unresolved_disappearance` as run 3 did.
-  - `tests/test_m55_exit_gap.py` (new, 14 tests, about 10 s): the small world of the driver tests with five exits
+  - `tests/test_m55_exit_gap.py` (new, 14 tests): the small world of the driver tests with five exits
     (on a rebalance row, mid-month, on the end row, with closes and a new spell later, and with closes and a cash
     merger later), through the loader and the engine in both loader runs. It checks the B2 exclusion, the
     settlement values and reference rows, the held counts of both books, zero holdings after the event, the
     report, and that a settled column that joins the index again is never held again. Three engine-level R1 pairs
     compare events, targets, rebalance records, and the trades, holdings, and daily returns of both books through
     t. Two held gaps that the rule does not cover still refuse at H-5.
-  - `tests/test_m55_driver.py`: seven edits of the rule text that `check_trial` refuses.
+  - `tests/test_m55_driver.py`: ten edits of the rule text, one for each phrase that `check_trial` binds, and
+    the removal of the field; `check_trial` refuses each.
   - Mutation checks (not committed): the a1 trigger fails the R1 tests, and the old `path_break_positions`
     condition fails the path-break test.
 - Changed test values: none. The run report key set adds `exit_gap_events`, and the PERMNO guard of the public

@@ -95,13 +95,13 @@ def exit_gap_member_frames(frames: dict[str, pd.DataFrame], cal: pd.DatetimeInde
     """Add 900026 for amendment 4 (its own generator, so the rows of the other members do not change): listed 1994,
     a member from 1994-03-01 to 2004-05-17 (W + 1, the row after W), and no price from W + 1 to 2016-10-31, so its
     index exit at W + 1 has no close and no close comes back by the confirm end row. It is priced again until
-    2017-06-01 (no close from 2017-06-15 to the pre-seal check end row, as a non-member) and from 2021-01-04 to its
-    delisting row in 2023 (a D6 event, cause unknown). Its share count is a tenth of the others'."""
+    2018-02-01 (no close from 2018-02-15 to the pre-seal check end row, as a non-member) and from 2021-01-04 to its
+    delisting row in 2022 (a D6 event, cause unknown). Its share count is a tenth of the others'."""
     r = lambda date: row(cal, date)            # noqa: E731
-    m = Member(EXIT_GAP_PERMNO, 0.02, listed=r("1994-01-03"), facts_from=r("1994-01-03"), last=r("2023-03-15"),
+    m = Member(EXIT_GAP_PERMNO, 0.02, listed=r("1994-01-03"), facts_from=r("1994-01-03"), last=r("2022-11-15"),
                delist=("MER", "UNAV", "STK"))
     rows = member_rows(m, cal, np.random.default_rng(26), pd.Series(0.0, index=cal))
-    for first, last in (("2004-05-17", "2016-10-31"), ("2017-06-15", "2020-12-31")):
+    for first, last in (("2004-05-17", "2016-10-31"), ("2018-02-15", "2020-12-31")):
         rows.loc[rows["dlycaldt"].between(pd.Timestamp(first), pd.Timestamp(last)), ["dlyprc", "dlyret"]] = np.nan
     facts = share_facts(m, cal, rows.set_index("dlycaldt")["dlycumfacshr"].ffill())
     facts["shrout"] /= 10.0
@@ -529,7 +529,7 @@ def test_a_held_index_exit_without_a_close_settles_at_that_row(long_frames, long
 def test_without_amendment_4_a_held_gap_to_the_confirm_end_refuses(long_frames, quotes, long_chain, tmp_path,
                                                                    monkeypatch) -> None:
     """With no amendment 4 event, the engine holds 900026 halt-locked to the confirm end row and refuses (H-5), as
-    the run 3 confirm stage did."""
+    the driver did before amendment 4."""
     out = copy_chain(long_chain, tmp_path, "confirm")
     monkeypatch.setattr(d, "run2_digest", lambda trial: long_chain["frozen"])
     monkeypatch.setattr(d, "exit_gap_events", lambda frames, segment, run: frames["disappearances"].iloc[:0])

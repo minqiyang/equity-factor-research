@@ -77,7 +77,7 @@ from research.m55_index_tilt import refuse
 
 REPO = Path(__file__).resolve().parents[1]
 TRIAL_FILE = "docs/preregistrations/m55_trial_family_v1.json"
-TRIAL_SHA256 = "decabb339302fc878349c8121cd5d56091b77c632a2abb1a9dbdb98e171582b5"   # the frozen file this driver runs
+TRIAL_SHA256 = "e9b2e25b0f43164e29f0669765b92066a5196fe26fd14909a1f1dade866f7081"   # the frozen file this driver runs
 TRACKED_MANIFEST = "reports/wrds_manifest_2025.json"
 QUOTE_MANIFEST = "reports/wrds_quotes_manifest_2025.json"     # the second pull (amendment 3 one-pull rule)
 QUOTE_STEM = "crsp_dsf_v2_quotes"

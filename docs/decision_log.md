@@ -36,8 +36,8 @@ Context:
   when no close came back from W + 1 to the segment end row. So the event depended on rows after W + 1, and R1
   failed inside the segment (review finding M55-EG-01). Before the replacement, the coordinator applied the first
   form to the real frames of the three segments with no engine run and counted its events from dates only: 2 in the
-  confirm segment (1 held), 1 in the pre-seal check segment (not held), and 0 in the post-seal check segment, in
-  each loader run. No return was read. The coordinator also saw, before the new rule was set, that the held
+  confirm segment (1 held), 1 in the pre-seal check segment (not held), and 0 in the post-seal check segment. No
+  return was read. The coordinator also saw, before the new rule was set, that the held
   position left the index on the row after its last close.
 
 Decision:
@@ -62,7 +62,7 @@ Decision:
     leaves the event table of the segment. The column stays settled to the end row, also when its closes or an
     index spell come back. A gap without this index exit keeps the frozen rules (`halt_gap_return_v1`,
     `P1_path_break`, `path_gap_at_period_end`, and H-5). The screen path does not change.
-- The trial file SHA-256 is `decabb33...1582b5` (`m55_driver.TRIAL_SHA256`); with amendments 1 to 3 it was
+- The trial file SHA-256 is `e9b2e25b...6f7081` (`m55_driver.TRIAL_SHA256`); with amendments 1 to 3 it was
   `f9122696...e4c8`.
 - Driver defaults of card m55-endgap (attempt a2):
   - The rule reads rows W and W + 1 only, and "first row" reads only earlier rows. W can be the anchor row. A
@@ -87,8 +87,8 @@ Decision:
 Rationale:
 
 - R4 states the rule for a held position whose price path ends: an unknown cause settles at -100 percent for a long
-  position, with the last-close rerun. B keeps all 254 pre-registered confirm months. A would drop about a quarter
-  of them for one position.
+  position, with the last-close rerun. B blanks no month for this position. A would blank about 67 of the 254
+  confirm months for it.
 - R1: each fact that the event uses is known at the close of W + 1 under the frozen loader rules. The close on W and
   the missing close on W + 1 are D3 facts. The index exit is a D4 fact (`end_known_at` = `mbrenddt` = W + 1). The D6
   events with `known_at` on or before W + 1 are D6 facts (`known_at` = `effective_date`). The engine uses an event

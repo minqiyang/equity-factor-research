@@ -391,6 +391,13 @@ def _edit_exit_gap(t: dict, old: str, new: str) -> None:
     (lambda t: _edit_exit_gap(t, "known_at on or before W + 1", "effective_date on or before the end row"),
      "books.disappearance_r4.exit_gap"),
     (lambda t: _edit_exit_gap(t, "leaves the event table", "stays in the event table"), "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "Confirm and check engine segments only", "Every engine segment"),
+     "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "a close on row W and no close on row W + 1", "a close on row W"),
+     "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "effective_date = known_at = W + 1", "effective_date = W + 1 and known_at = W + 2"),
+     "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "(delisting_return NaN", "(delisting_return -0.5"), "books.disappearance_r4.exit_gap"),
     (lambda t: t["books"]["disappearance_r4"].pop("exit_gap"), "books.disappearance_r4.exit_gap")])
 def test_check_trial_refuses_a_changed_confirm_or_check_rule(edit, name) -> None:
     changed = json.loads(json.dumps(d.load_trial()[0]))

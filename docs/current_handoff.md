@@ -76,8 +76,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 - Candidate branch `claude/m55-endgap` adds trial amendment 4 (`books.disappearance_r4.exit_gap`): in the confirm
   and check segments only, a column with a close and eligibility on a row W and neither on W + 1 settles under R4
-  at W + 1 (cause unknown). The rule reads rows W and W + 1 only (R1) and replaces the a1 trigger. The driver
-  reports the events per segment and loader run (`exit_gap_events`). The run 3 confirm stage refused on this case.
+  at W + 1 (cause unknown), unless a D6 event is known by then. The rule reads no row after W + 1 (R1) and replaces
+  the a1 trigger; the driver reports the events (`exit_gap_events`). The run 3 confirm stage refused on this case.
   The tests are synthetic; the coordinator QA counts the added events on real data, with no return read.
 
 ## Current Research Gate Summary
