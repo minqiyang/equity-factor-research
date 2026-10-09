@@ -6540,7 +6540,8 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "leave an unverified or disputed thread open and stop",
         "thread-write",
         "metadata-only edits may omit it",
-        "the review seats in `routing_table.json` supply the formal reviews",
+        "the review seats of the PR's lane in `coordinator.md` section 2 supply the "
+        "formal reviews",
         "`@codex review` is a retired channel",
         "report `MATERIAL: 0` or an explicit merge disposition",
         "no review thread remains unresolved",
@@ -6612,7 +6613,11 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
         assert assigned_seat not in controller
 
     assert "live Herdr coordination standard" in review_lifecycle
-    assert "routing_table.json" in review_lifecycle
+    assert "`Codex/Standards/claude-herdr-coordination-standard/`" in review_lifecycle
+    assert "routing_table.json" not in controller
+    agents = " ".join((PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
+    assert "`Codex/Standards/claude-herdr-coordination-standard/`" in agents
+    assert "`Codex/Standards/coordination-standard/`" not in agents
     assert "## Predecessor PR Gate" in controller
     assert "## Protected Merge Eligibility" in controller
 
@@ -6641,11 +6646,12 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
 
     for current_rule in [
         "classified `MATERIAL` or `ADVISORY` under the materiality test in "
-        "`coordinator.md` section 3",
+        "`coordinator.md` section 5",
         "blocking status comes from that classification alone",
         "`ADVISORY` findings are recorded and never block merge",
-        "at most two per card, in place of the round count in `coordinator.md` section 3.3",
-        "that section's EXPERT step and residual-risk disposition apply",
+        "at most two per card. When the last allowed round still reports `MATERIAL` "
+        "findings, the EXPERT step of the failure limit and the residual-risk "
+        "disposition in `coordinator.md` section 5 apply",
         "PR titles and bodies are short and plain",
         "in words an ordinary engineer can follow",
     ]:

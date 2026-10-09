@@ -110,19 +110,16 @@ re-enter this gate before acting on a different PR or changed scope.
   Never post `@codex review` and never enable Auto, Exhaustive, or
   credits-for-review. Drafts get no request. After validation and required CI
   stabilize on the final stable current head, conduct formal review under the
-  live Herdr coordination standard. Reviewer routing, lane seats, quota, and
-  finding resolution live in `coordinator.md`, `routing_table.json`, and
+  live Herdr coordination standard, the Claude-herdr card in
+  `Codex/Standards/claude-herdr-coordination-standard/`. Reviewer routing, lane
+  seats, quota, and finding resolution live in its `coordinator.md` and
   `model_bindings.json`. The reviewer is read-only on a clean root at that exact
   head, never the producer worktree.
 - Each formal review seat runs as its bound model and writes its own report
-  file, which the coordinator reads directly (owner rules, 2026-09-28).
-  - A GPT seat is Codex started in its own Herdr tab, labeled with the model and
-    effort. No Claude agent launches, wraps, or relays it.
-  - A Claude seat or producer runs in Claude Code: in a labeled Herdr tab when
-    the owner should watch one long task, or as a Claude Code agent or workflow
-    for fan-out work.
-  - The coordinator monitors Claude work through Claude Code background tasks
-    (report file, process, transcript), not Herdr agent state.
+  file, which the coordinator reads directly (owner rules, 2026-09-28). No
+  agent of another model wraps a seat or relays its report. Sections 1 and 3 of
+  `coordinator.md` say how seats and producers start, in a Herdr tab or
+  headless (owner, 2026-10-09).
 - For a full-lifecycle-authorized PR, use Draft while scope or validation is
   unstable. Mark it Ready once scope is final, local validation passes, no known
   blocker remains, and any checks available only after Ready can safely begin.
@@ -135,14 +132,14 @@ re-enter this gate before acting on a different PR or changed scope.
 - Never repeat a request for an unchanged head. An actionable fix changes the
   head and requires validation, CI, and one new current-head review.
 - Every finding from any review channel is classified `MATERIAL` or
-  `ADVISORY` under the materiality test in `coordinator.md` section 3. A P1 or
+  `ADVISORY` under the materiality test in `coordinator.md` section 5. A P1 or
   P2 label from the review priorities below ranks review attention;
   blocking status comes from that classification alone. `ADVISORY` findings
   are recorded and never block merge.
 - Review rounds follow the owner process constraints in `AGENTS.md`: at most
-  two per card, in place of the round count in `coordinator.md` section 3.3.
-  When the last allowed round still reports `MATERIAL` findings, that section's
-  EXPERT step and residual-risk disposition apply.
+  two per card. When the last allowed round still reports `MATERIAL` findings,
+  the EXPERT step of the failure limit and the residual-risk disposition in
+  `coordinator.md` section 5 apply.
 - A safe actionable finding may be fixed locally inside the already-authorized
   scope. After publishing and verifying the remediation, reply with its evidence
   and resolve only the addressed thread; leave an unverified or disputed thread
@@ -152,9 +149,10 @@ re-enter this gate before acting on a different PR or changed scope.
   `MATERIAL` finding from any review channel, including PR-level comments or
   independent audits that do not create a resolvable thread. Owner-accepted
   `MATERIAL` risk needs an explicit merge disposition and never counts as zero.
-- For review-required PRs, the review seats in `routing_table.json` supply the
-  formal reviews; GitHub `@codex review` is a retired channel. Pending, missing,
-  or head-mismatched independent review evidence is ineligible. A
+- For review-required PRs, the review seats of the PR's lane in
+  `coordinator.md` section 2 supply the formal reviews; GitHub `@codex review`
+  is a retired channel. Pending, missing, or head-mismatched independent review
+  evidence is ineligible. A
   review-required PR is technically merge-eligible only when required exact-head
   independent reviews report `MATERIAL: 0` or an explicit merge disposition for
   each owner-accepted `MATERIAL` finding, no review thread remains unresolved,
@@ -221,7 +219,7 @@ first recorded the rule.
 | Short polling or checking background tasks without sufficient wait margin (under-waiting relative to task runtime) | `2c07ee4` (2026-09-25) |
 | Spending a stage on work that cannot change a real-data result or an owner decision in that step, including repeated data extension under a gate that cannot pass | North Star v2 PR (2026-09-28) |
 | Writing non-English text, including Chinese characters, to the repository, to GitHub (PR titles and bodies, comments, commit messages), or to any report | North Star v2 PR (2026-09-28) |
-| Running a formal review seat through an agent of another model, such as a GPT seat launched or relayed by a Claude agent | Milestone 5 step 3 PR (2026-09-28) |
+| Running a formal review seat through an agent of another model, such as a GPT seat whose report a Claude agent writes or relays | Milestone 5 step 3 PR (2026-09-28) |
 | Merging a PR whose head includes a commit pushed after the last required review round that the required seats have not reviewed, even when the commit only fixes CI and every check passes | PR #281 incident, recorded by `e36a4a2` (PR #282); owner confirmed 2026-09-30 |
 | Dispatching a card that lets an agent read private data without listing the seal's never-opened paths, or reading bars outside `read_discovery` | Seal-file incident, engineering log (2026-10-02); owner-confirmed under O-18 |
 

@@ -8,9 +8,11 @@ This repository is the simulation-only research phase of an automated
 stock-selection program. Procedures and review rules live in
 `docs/codex_long_running_controller.md`, standing owner grants in
 `AUTHORITY.md`, product direction in `docs/north_star.md`, and the latest
-checkpoint in `docs/current_handoff.md`. The coordination standard in
-`Codex/Standards/coordination-standard/` owns dispatch, review seats, and model
-bindings; do not copy them here, and do not load `Codex/Standards/archive/`.
+checkpoint in `docs/current_handoff.md`. The Claude-herdr coordination
+standard in `Codex/Standards/claude-herdr-coordination-standard/`
+(`coordinator.md` and `model_bindings.json`) owns dispatch, review seats, and
+model bindings; do not copy them here, and do not load
+`Codex/Standards/archive/`.
 
 ## Authority And Scope
 

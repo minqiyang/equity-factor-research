@@ -12,6 +12,17 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-09 - Repository rules point at the Claude-herdr standard
+
+- `AGENTS.md` and `docs/codex_long_running_controller.md` named `Codex/Standards/coordination-standard/` and
+  `routing_table.json`, which are no longer on the main branch of the standards repository. They now name the
+  Claude-herdr card. The seat rules keep the owner's report rules and point at the card for how seats start.
+  Decision log: the entry of the same date.
+- Tests: `tests/test_project_structure.py` pins the new text and rejects `routing_table.json` in the controller
+  and the old folder path in `AGENTS.md`.
+
+---
+
 ## 2026-10-09 - Remove home paths from the six pinned reports (R11)
 
 - Card r11-paths, attempt a3, with the owner's permission of 2026-10-09. The 2026-10-06 R11 entry left six attempt
@@ -25,6 +36,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   test or code reads these hashes.
 - `test_tracked_text_names_no_private_path` has no pinned-file exemption now. This change deletes
   `PRIVATE_PATH_PINNED_FILES` and its skip. The allow list holds only the two guard patterns.
+
+---
 
 ## 2026-10-09 - Milestone 5.5 amendment 4: R4 settlement of an index exit on a row without a close
 
@@ -79,6 +92,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 - Changed test values: none. The run report key set adds `exit_gap_events`, and the PERMNO guard of the public
   report test names 900026. The public report module keeps its run 3 pin; the coordinator updates it in a later
   card.
+
+---
 
 ## 2026-10-08 - Milestone 5.5 public confirm report
 

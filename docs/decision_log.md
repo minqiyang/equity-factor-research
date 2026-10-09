@@ -15,6 +15,41 @@ investment performance.
 
 ---
 
+## 2026-10-09 - Repository Rules Point at the Claude-herdr Coordination Standard
+
+Context:
+
+- The owner moved EFR coordination to the Claude-herdr Coordination Standard (card 0.10.0 in
+  `Codex/Standards/claude-herdr-coordination-standard/`). The old `Codex/Standards/coordination-standard/` folder
+  and its `routing_table.json` are no longer on the main branch of that repository. Version 0.13.0 stays on its
+  `coordination-standard-0.13` branch and is not maintained.
+- `AGENTS.md` and the controller still named the old folder, `routing_table.json`, and section numbers of the old
+  card. The controller's seat rules of 2026-09-28 put every GPT seat in its own Herdr tab and did not let a Claude
+  agent start one. Under the new card, the coordinator starts a GPT seat as a headless, read-only `codex exec`
+  task.
+
+Decision:
+
+- `AGENTS.md` and the controller name the Claude-herdr card: `coordinator.md` and `model_bindings.json`.
+- Sections 1 and 3 of the card say how seats and producers start, in a Herdr tab or headless. These owner rules
+  stay: each seat runs as its bound model and writes its own report file, the coordinator reads that file
+  directly, and no agent of another model wraps a seat or relays its report. The P1 process failure row now names
+  a GPT seat whose report a Claude agent writes or relays.
+- Section references move to the new card: the materiality test, the failure limit, and the residual-risk
+  disposition are in section 5, and the seats of each lane are in section 2. The owner process constraints in
+  `AGENTS.md`, the two-round limit included, do not change.
+
+Consequences:
+
+- `tests/test_project_structure.py` pins the new pointers. It fails if the controller names `routing_table.json`
+  or `AGENTS.md` names the old folder.
+
+Follow-up:
+
+- None.
+
+---
+
 ## 2026-10-09 - Trial Family v1 Amendment 4: R4 Settlement of an Index Exit on a Row Without a Close (Milestone 5.5, card m55-endgap)
 
 Context:
@@ -125,6 +160,8 @@ Follow-up:
   excepted), then the confirm and check stages.
 - The coordinator updates the run pin of the public report and adds the `exit_gap_events` aggregates in a later
   card.
+
+---
 
 ## 2026-10-08 - Public Report Rules of the M5.5 Confirm and Check Stages (card m55-conrep)
 
