@@ -1,7 +1,7 @@
 """Milestone 5.5: run the frozen trial file from the coverage counts to the check period (cards m55-driver and
 m55-confirm).
 
-The driver runs ``docs/preregistrations/m55_trial_family_v1.json`` (status FROZEN, amendments 1 to 3) on the WRDS
+The driver runs ``docs/preregistrations/m55_trial_family_v1.json`` (status FROZEN, amendments 1 to 4) on the WRDS
 working copy and the quote copy of the second pull in seven stages, in this order:
 
 1. ``coverage``: signal validity counts and real starts, ME coverage, and the missingness census. No return.
@@ -44,7 +44,10 @@ only: no PERMNO, ticker, or name.
 
 R4: the rerun is a second engine call on ``tilt_frames(run="last_close")``. Fragility is a sign flip of an active
 annual mean between the two calls. The driver never reads the engine fields ``fragile_active_sign`` and
-``fragile_lowrisk_active_sign``.
+``fragile_lowrisk_active_sign``. In the confirm and check segments only (amendment 4), a column that has a close
+and is eligible on a row W, and has neither on the next row W + 1 (an index exit on a row without a close), gets an
+event at W + 1 (``exit_gap_events``), settled by each loader run's own rule. The screen frames (``frames_for``) do
+not change.
 """
 
 from __future__ import annotations
@@ -74,7 +77,7 @@ from research.m55_index_tilt import refuse
 
 REPO = Path(__file__).resolve().parents[1]
 TRIAL_FILE = "docs/preregistrations/m55_trial_family_v1.json"
-TRIAL_SHA256 = "f91226961f47ebcef32aa8a3fc26f0b7fe70b71a4d791f38cf31955daf48e4c8"   # the frozen file this driver runs
+TRIAL_SHA256 = "e9b2e25b0f43164e29f0669765b92066a5196fe26fd14909a1f1dade866f7081"   # the frozen file this driver runs
 TRACKED_MANIFEST = "reports/wrds_manifest_2025.json"
 QUOTE_MANIFEST = "reports/wrds_quotes_manifest_2025.json"     # the second pull (amendment 3 one-pull rule)
 QUOTE_STEM = "crsp_dsf_v2_quotes"
@@ -104,6 +107,15 @@ RUN2_DIGEST = re.compile(r"run 3 must repeat the run 2 digest ([0-9a-f]{64})")
 NO_SIGNAL = "NO_SIGNAL"                          # an all-missing set: every composite is 0, so TILT equals CW-PIT
 BLANK = crit.BLANK_REASONS[0]                    # path_break_held
 EXIT_CLASSES = w.EXIT_CLASSES
+EXIT_GAP_CAUSE = "unknown"                       # books.disappearance_r4.exit_gap (amendment 4)
+# The parts of books.disappearance_r4.exit_gap that exit_gap_events and exit_gap_frames apply, word for word.
+EXIT_GAP_RULE = ("Confirm and check engine segments only", "the first row W + 1 after the segment anchor and on or "
+                 "before the segment end row", "a close on row W and no close on row W + 1", "eligible on row W and "
+                 "not eligible on row W + 1", "no D6 event of the column has known_at on or before W + 1",
+                 "effective_date = known_at = W + 1", f"with cause {EXIT_GAP_CAUSE}",
+                 "the primary run by the engine default for a missing delisting return (delisting_return NaN",
+                 "the last_close run at the last close (delisting_return 0.0)",
+                 "A D6 event of the same column with known_at after W + 1 leaves the event table of the segment")
 GO_ON = ("chosen", "ratio_coverage_low")         # the calibration decisions after which the later stages run
 TEST_B_STOPPED = "stopped_coverage"              # test B's label after ratio_coverage_low (amendment 2)
 # The engine frames' row after the last screen row: a date with these blank values (the loader's fill for a cell
@@ -224,6 +236,9 @@ def check_trial(trial: Mapping[str, Any], repo: Path = REPO) -> None:
     need(set(next(o for o in trial["open_items"] if o["id"] == "OI-08")["publication_years"]) == set(sig.SIGNAL_IDS),
          "publication years")
     need("half_spread" in trial["reports_owed"], "reports_owed.half_spread")
+    # Amendment 4: the R4 event of an index exit on a row without a close in a confirm or check segment.
+    exit_gap = trial["books"]["disappearance_r4"].get("exit_gap", "")
+    need(all(phrase in exit_gap for phrase in EXIT_GAP_RULE), "books.disappearance_r4.exit_gap")
     for path, pin in trial["code_pins"].items():
         if path == "statement" or pin["commit"] is None:
             continue
@@ -718,13 +733,17 @@ def path_break_positions(frames: Mapping[str, Any], books: Mapping[str, pd.DataF
 
     The previous valid row W is the last row before the break row X with a close in the path. A book holds the
     position when its post-trade holding at the last rebalance at or before W is not zero and the name has not
-    settled by W (a held weight drifts between rebalances but stays above zero). The position blanks the holding
-    months of the rows after W up to X, inside ``months``. Every book holds only names that CW-PIT holds; a book
-    that does not refuses. The engine return at X must be missing, so a close on the row before X refuses when the
-    name is eligible on a row whose 252-row return window holds X.
+    settled by W + 1 (a held weight drifts between rebalances but stays above zero). An amendment 4 event at W + 1
+    (``exit_gap_events``) settles the position before X; a D6 event settles after the last valued row of the whole
+    path, so never by W + 1 when X follows. The position blanks the holding months of the rows after W up to X,
+    inside ``months``. Every book holds only names that CW-PIT holds; a book that does not refuses. The engine return
+    at X must be missing, so a close on the row before X refuses when the name is eligible on a row whose 252-row
+    return window holds X.
 
     Only rows up to ``last`` are read. A held position with no close on ``last`` that has not settled refuses: its
-    return after W falls after ``last``, and the frozen file has no rule for that case.
+    return after W falls after ``last``, and the frozen file has no rule for that case. In the confirm and check
+    segments, amendment 4 settles a held position at W + 1 when its index spell ends on that row without a close;
+    this guard still refuses a held gap that the rule does not cover.
     """
     prices, breaks = frames["prices"], frames["path_break"]
     rows, values = prices.index, prices.to_numpy(dtype=float)
@@ -740,7 +759,7 @@ def path_break_positions(frames: Mapping[str, Any], books: Mapping[str, pd.DataF
         k = int(valid[-1])
         if k == i - 1 and eligible[i:min(i + tilt.COV_ROWS, stop + 1), j].any():
             raise refuse("path_break_adjacent", f"{rows[i].date()}: the row before the break has a close")
-        gone = name in settled and settled[name] <= rows[k]
+        gone = name in settled and settled[name] <= rows[k + 1]
         held = {book: 0.0 if gone else held_weight(table, rows[k], name) for book, table in books.items()}
         if not held["cw"]:
             if any(held.values()):
@@ -1511,9 +1530,85 @@ def segment_plan(cal: pd.DatetimeIndex) -> dict[str, dict[str, Any]]:
     return out
 
 
+def exit_gap_events(frames: Mapping[str, Any], segment: Mapping[str, Any], run: str) -> pd.DataFrame:
+    """Amendment 4 (``books.disappearance_r4.exit_gap``): an R4 event for each column whose index spell ends on a row
+    without a close inside a confirm or check segment.
+
+    The event row is the first row W + 1 after the segment anchor and on or before the end row where the column has
+    a close and is eligible on W and has neither on W + 1. No event is added when a D6 event of the column has
+    ``known_at`` on or before W + 1. The event has ``effective_date`` = ``known_at`` = W + 1 (reference row W) and
+    cause ``unknown``. Each loader run settles it by its own rule, as D6 does: the primary run by the engine default
+    for a missing delisting return (NaN: -100 percent for a long position), the last_close run at the last close
+    (0.0). Each fact is known at the close of W + 1 (``P3_eligibility``, ``D4_membership``), so the event reads no
+    row after W + 1 (R1). A gap without this exit gets no event and keeps the frozen rules.
+    """
+    prices, eligible, events = frames["prices"], frames["eligible"], frames["disappearances"]
+    rows = prices.index
+    first, stop = rows.get_loc(segment["anchor"]), rows.get_loc(segment["end"])
+    close = np.isfinite(prices.to_numpy(dtype=float)[first:stop + 1])
+    member = eligible.to_numpy(dtype=bool)[first:stop + 1]
+    exit_rows = close[:-1] & member[:-1] & ~close[1:] & ~member[1:]       # row k of exit_rows is W + 1 = first + k + 1
+    known = dict(zip(events["permanent_id"], events["known_at"]))
+    out = []
+    for j in np.flatnonzero(exit_rows.any(axis=0)):
+        name, effective = prices.columns[j], rows[first + int(np.argmax(exit_rows[:, j])) + 1]
+        if name in known and known[name] <= effective:
+            continue
+        out.append({"permanent_id": name, "effective_date": effective, "known_at": effective,
+                    "cause": EXIT_GAP_CAUSE, "delisting_return": 0.0 if run == "last_close" else np.nan})
+    return pd.DataFrame(out, columns=events.columns).astype(events.dtypes.to_dict())
+
+
+def exit_gap_frames(frames: Mapping[str, Any], segment: Mapping[str, Any], run: str) -> dict[str, Any]:
+    """The cut frames of one segment with the amendment 4 events (``exit_gap_events``) after the D6 events.
+
+    The engine settles a column once, so a D6 event of a column with an amendment 4 event leaves the event table: it
+    has ``known_at`` after W + 1, and the column has settled at W + 1. ``exit_gap_events`` and
+    ``exit_gap_d6_left_out`` keep both tables for the R4 report. With no amendment 4 event, the D6 table stays as the
+    loader gives it.
+    """
+    added, d6 = exit_gap_events(frames, segment, run), frames["disappearances"]
+    left_out = d6["permanent_id"].isin(added["permanent_id"])
+    events = pd.concat([d6[~left_out], added], ignore_index=True) if len(added) else d6
+    return {**frames, "disappearances": events, "exit_gap_events": added, "exit_gap_d6_left_out": d6[left_out]}
+
+
 def segment_frames(data: w.WrdsData, run: str, segment: Mapping[str, Any]) -> dict[str, Any]:
-    """The loader frames of one segment, cut at its end row right after the load (``cut_frames``)."""
-    return cut_frames(w.tilt_frames(data, segment["anchor"], segment["end"], run), segment["end"])
+    """The loader frames of one segment, cut at its end row right after the load (``cut_frames``), with the
+    amendment 4 events (``exit_gap_frames``)."""
+    return exit_gap_frames(cut_frames(w.tilt_frames(data, segment["anchor"], segment["end"], run), segment["end"]),
+                           segment, run)
+
+
+def exit_gap_report(frames: Mapping[str, Any], weights: pd.DataFrame, exits: Mapping[str, str],
+                    end: pd.Timestamp) -> dict[str, Any]:
+    """R4 report of the amendment 4 events of one segment and loader run, with no identifier.
+
+    It gives the events by later exit class, and those that CW-PIT holds at the last rebalance before W + 1
+    (``weights``: its post-trade holdings) by later exit class, with the sum of these holdings. Every book holds only
+    names that CW-PIT holds. ``priced_again`` and ``eligible_again`` count the events whose column has a close, or
+    is eligible, on a row after W + 1 and on or before ``end``: no book can hold the column again in the segment, and
+    the census leaves it out of the pool as a settled name. ``held_priced_again`` counts the held events whose column
+    has a close again: R1 settles these positions at W + 1 although a later close exists. ``d6_left_out`` counts the
+    D6 events that left the event table (``exit_gap_frames``).
+    """
+    added = frames["exit_gap_events"]
+    prices, eligible = frames["prices"].loc[:end], frames["eligible"].loc[:end]
+    held, again = {}, Counter()
+    for name, effective in zip(added["permanent_id"], added["effective_date"]):
+        weight = held_weight(weights, effective, name, inclusive=False)
+        if weight:
+            held[name] = weight
+        later = prices.index > effective
+        priced = bool(prices.loc[later, name].notna().any())
+        again["priced_again"] += priced
+        again["held_priced_again"] += priced and name in held
+        again["eligible_again"] += int(eligible.loc[later, name].any())
+    return {"events": len(added), "events_by_exit_class": per_class(Counter(exits[n] for n in added["permanent_id"])),
+            "held": len(held), "held_by_exit_class": per_class(Counter(exits[n] for n in held)),
+            "held_cw_weight_sum": math.fsum(held.values()), "priced_again": again["priced_again"],
+            "held_priced_again": again["held_priced_again"], "eligible_again": again["eligible_again"],
+            "d6_left_out": len(frames["exit_gap_d6_left_out"])}
 
 
 def segment_months(panel: pd.DataFrame, segment: Mapping[str, Any]) -> pd.DataFrame:
@@ -1696,7 +1791,9 @@ def run_segment(data: w.WrdsData, quotes: pd.DataFrame, segment: Mapping[str, An
     """Every signal set on one segment: both loader runs, both cost cases, the half-spread override.
 
     Returns the monthly series of each set, run, and case, the declaration of each run, and the reports owed. The
-    blank set of a run is that of its CW-PIT book (same in every set), and each other book must lie inside it.
+    blank set of a run is that of its CW-PIT book (same in every set), and each other book must lie inside it. The
+    frames of both loader runs hold the amendment 4 events (``segment_frames``), so every census, engine call, and
+    R4 count of the segment includes them; ``exit_gap_events`` of each run reports them.
     """
     period, anchor, end, last = segment["period"], segment["anchor"], segment["end"], segment["last"]
     frames = {run: segment_frames(data, run, segment) for run in RUNS}
@@ -1741,7 +1838,9 @@ def run_segment(data: w.WrdsData, quotes: pd.DataFrame, segment: Mapping[str, An
                     "blank_months": [str(m) for m in run_set], "blank_month_count": len(run_set),
                     "blank_month_share": len(run_set) / len(months), "positions": held["primary"],
                     "positions_by_exit_class": per_class(Counter(p["exit_class"] for p in held["primary"])),
-                    "cw_weight_by_exit_class": {c: float(weight.get(c, 0.0)) for c in EXIT_CLASSES}})
+                    "cw_weight_by_exit_class": {c: float(weight.get(c, 0.0)) for c in EXIT_CLASSES},
+                    "exit_gap_events": exit_gap_report(frames[run], pair[run]["cases"]["primary"]["cw"]["weights"],
+                                                       exits, end)})
         item: dict[str, Any] = {"records": {run: {} for run in RUNS}, "path_break_positions": {}}
         series[name] = {run: {} for run in RUNS}
         years = publication_years(name, shortlist, publication)
