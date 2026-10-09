@@ -18,7 +18,7 @@ Scope: concise orientation for Codex handoffs. Cache/build directories, generate
 | `src/ledger/` | Frozen Stage 4B ledger schema releases bound by accepted contracts; data only. The Track A runtime retired on 2026-09-23 and remains in history at 8fa0055. | 20 mapped files |
 | `src/reporting/` | Experiment log and registry helpers; plotting helpers are placeholder-only future work. | 4 mapped files |
 | `research/` | Synthetic, committed-fixture, and local real-data diagnostic workflows. | 52 mapped files |
-| `tests/` | Deterministic tests for research logic and guardrails. | 245 mapped files |
+| `tests/` | Deterministic tests for research logic and guardrails. | 246 mapped files |
 | `tests/fixtures/` | Tiny committed synthetic fixtures only. | 121 mapped files |
 | `lean/` | LEAN-adjacent planning/scaffold files under no-trading guardrails. | 3 mapped files |
 | `reports/` | Generated synthetic reports and logs; summarized but not traversed. | generated outputs summarized only |
