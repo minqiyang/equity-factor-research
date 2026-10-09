@@ -34,8 +34,8 @@ from research import m55_index_tilt as tilt
 from research import m55_signals as sig
 from research.m4_7_sp500_pit_rerun import RunnerStop
 from test_m55_driver import (OPEN, TRACKED, VINTAGE, Member, make_data, member_rows, month_end, perturb_after,
-                             rechain, row, set_calibration, small_members, sparse_calendar, stage, to_arrow,
-                             world_frames)
+                             rechain, row, set_calibration, share_facts, small_members, sparse_calendar, stage,
+                             to_arrow, world_frames)
 
 
 pytestmark = pytest.mark.xdist_group("m55_confirm")
@@ -87,11 +87,44 @@ def spy_frames(frames: dict[str, pd.DataFrame], cal: pd.DatetimeIndex) -> dict[s
     return out
 
 
+END_GAP_PERMNO = 900026
+END_GAP_W = "2008-09-01"                         # its last close before the confirm end row (W)
+
+
+def end_gap_frames(frames: dict[str, pd.DataFrame], cal: pd.DatetimeIndex) -> dict[str, pd.DataFrame]:
+    """Add 900026, the run 3 case of amendment 4 (its own generator, so no other value changes): listed 1994, a
+    member from 1994-03-01 to 2008-09-15, no price from 2008-09-15 to 2015-09-30 (no close from W + 1 to the confirm
+    end row), and priced again until 2017-06-01 (no close from 2017-06-15 to the pre-seal check end row) and from
+    2021-01-04 to its delisting row in 2024 (a D6 event, cause unknown). Its share count is a tenth of the others'."""
+    r = lambda date: row(cal, date)            # noqa: E731
+    m = Member(END_GAP_PERMNO, 0.02, listed=r("1994-01-03"), facts_from=r("1994-01-03"), last=r("2024-06-14"),
+               delist=("MER", "UNAV", "STK"))
+    rows = member_rows(m, cal, np.random.default_rng(26), pd.Series(0.0, index=cal))
+    for first, last in (("2008-09-15", "2015-09-30"), ("2017-06-15", "2020-12-31")):
+        rows.loc[rows["dlycaldt"].between(pd.Timestamp(first), pd.Timestamp(last)), ["dlyprc", "dlyret"]] = np.nan
+    facts = share_facts(m, cal, rows.set_index("dlycaldt")["dlycumfacshr"].ffill())
+    facts["shrout"] /= 10.0
+    out = dict(frames)
+    for stem, table in (("crsp_dsf_v2", rows), ("crsp_stkshares", facts),
+                        ("crsp_dsp500list_v2", pd.DataFrame({"permno": [m.permno], "indno": [1000502],
+                                                             "mbrstartdt": [r("1994-03-01")],
+                                                             "mbrenddt": [r("2008-09-15")]})),
+                        ("crsp_stkdelists", pd.DataFrame({"permno": [m.permno], "delactiontype": [m.delist[0]],
+                                                          "delreasontype": [m.delist[1]],
+                                                          "delpaymenttype": [m.delist[2]]})),
+                        ("crsp_stksecurityinfohist", pd.DataFrame({"permno": [m.permno], "ticker": [f"T{m.permno}"],
+                                                                   "secinfostartdt": [pd.Timestamp("1960-01-01")],
+                                                                   "secinfoenddt": [OPEN]}))):
+        out[stem] = pd.concat([frames[stem], table], ignore_index=True)
+    return out
+
+
 def long_world_frames(cal: pd.DatetimeIndex) -> dict[str, pd.DataFrame]:
     """The long world. Compustat quarters from 2010 for 900001, 900002, and 900022 give S2 values in the confirm and
     the check; the quarter of 2020-06-30 has rdq before 2020-08-03 and its known date after it. 900025 has no 2021
-    share fact, so its seal-window fact (basis_unseen seal) is read after the post-seal anchor."""
-    frames = spy_frames(world_frames(long_members(cal), cal), cal)
+    share fact, so its seal-window fact (basis_unseen seal) is read after the post-seal anchor. 900026 has the
+    end gaps of amendment 4 (``end_gap_frames``)."""
+    frames = end_gap_frames(spy_frames(world_frames(long_members(cal), cal), cal), cal)
     rng = np.random.default_rng(13)
     quarters = pd.date_range("2010-03-31", "2025-06-30", freq="QE")
     comp = (900001, 900002, 900022)
@@ -194,7 +227,7 @@ SETS = {d.COMPOSITE, *sig.SIGNAL_IDS, d.FAMILY_A_SET}
 SEGMENT_REPORTS = {"runs", "sets", "segment", "signals_r6", "s2_short_history", "s2_valid_share_by_month",
                    "s2_split_in_basis_window_by_year", "s2_basis_quarters_by_year"}
 RUN_REPORTS = {"blank_months", "blank_month_count", "blank_month_share", "positions", "positions_by_exit_class",
-               "cw_weight_by_exit_class", "blanked_level_windows", "r6_members"}
+               "cw_weight_by_exit_class", "blanked_level_windows", "r6_members", "end_gap_events"}
 RECORD_REPORTS = {"tilt_stats", "r4", "half_spread"}
 HALF_SPREAD = {"traded_notional", "traded_notional_by_status", "crsp_binds_share", "bid_ask_share", "max_half_spread",
                "cost_above_schedule", "invalid_traded_cells_by_exit_class"}
@@ -316,7 +349,7 @@ def test_the_public_report_reads_the_stage_files_of_the_long_world_chain(long_ch
     doc, attempts = rep3.build(long_chain["folder"], tracked=TRACKED, tracked_quotes=quotes.manifest)
     texts = rep3.outputs(doc, attempts)
     assert set(texts) == {rep3.REPORT_JSON, rep3.REPORT_MD, rep3.ATTEMPTS_JSONL}
-    ids = {str(m.permno) for m in long_members(LONG_CAL)} | {str(SPY_PERMNO)}
+    ids = {str(m.permno) for m in long_members(LONG_CAL)} | {str(SPY_PERMNO), str(END_GAP_PERMNO)}
     for text in texts.values():
         assert not ids & set(re.findall(r"(?<![\w.])\d{6}(?![\w.])", text))
     assert doc["runs"]["shortlist"] == ["S7"] and doc["test_a"]["confirm_stop"] == "confirm_below_floor"
@@ -325,6 +358,129 @@ def test_the_public_report_reads_the_stage_files_of_the_long_world_chain(long_ch
         assert set(doc["stages"][name]["segments"]) == set(names)
         for seg in doc["stages"][name]["segments"].values():
             assert set(seg["tilt_stats"]) == set(rep3.SETS) and set(seg["half_spread"]["tilt"]) == set(rep3.SETS)
+
+
+# Amendment 4: a price path that stops before a segment end row ---------------------------------
+
+def gap_frames() -> tuple[dict, dict]:
+    """Nine columns on 14 month-end rows; the segment runs from the anchor row 1 to the end row 10. Closes: A on every
+    row; B to row 5; C to row 3 and from row 7 (a path break at 7); D to row 5 and a D6 event at row 6; E on row 0
+    only (before the anchor); F on no row; G to row 6 and again after the end row; H to row 8 and a D6 event after
+    the end row (row 12); I to the end row."""
+    rows = pd.date_range("2010-01-29", periods=14, freq="BME")
+    closes = {"A": range(14), "B": range(6), "C": [0, 1, 2, 3, *range(7, 14)], "D": range(6), "E": [0], "F": [],
+              "G": [*range(7), 11, 12, 13], "H": range(9), "I": range(11)}
+    prices = pd.DataFrame(np.nan, index=rows, columns=list(closes))
+    for name, k in closes.items():
+        prices.loc[rows[list(k)], name] = 10.0 + np.arange(len(k))
+    breaks = pd.DataFrame(False, index=rows, columns=prices.columns)
+    breaks.loc[rows[7], "C"] = True
+    events = pd.DataFrame({"permanent_id": ["D", "H"], "effective_date": rows[[6, 12]], "known_at": rows[[6, 12]],
+                           "cause": ["failure", "cash_merger"], "delisting_return": [np.nan, np.nan]})
+    frames = {"prices": prices, "path_break": breaks, "disappearances": events,
+              "eligible": pd.DataFrame(True, index=rows, columns=prices.columns)}
+    return frames, {"anchor": rows[1], "end": rows[10]}
+
+
+@pytest.mark.parametrize("run, value", [("primary", math.nan), ("last_close", 0.0)])
+def test_an_end_gap_event_follows_the_last_close_and_reads_no_row_after_the_end(run, value) -> None:
+    """B, G, and H get an event at W + 1 with cause unknown, settled by the run's own rule; a gap that ends before
+    the end row (C), a D6 event by the end row (D), a last close before the anchor (E), no close (F), and a close on
+    the end row (I) get none. A D6 event after the end row (H) does not settle the gap. R1: every value and event
+    after the end row changes, and the events do not."""
+    frames, segment = gap_frames()
+    rows = frames["prices"].index
+    found = d.end_gap_events(frames, segment, run)
+    assert list(found.columns) == list(tilt.DISAPPEARANCE_FIELDS)
+    assert found.dtypes.to_dict() == frames["disappearances"].dtypes.to_dict()
+    assert dict(zip(found["permanent_id"], found["effective_date"])) == {"B": rows[6], "G": rows[7], "H": rows[9]}
+    assert found["known_at"].equals(found["effective_date"]) and set(found["cause"]) == {"unknown"}
+    assert found["delisting_return"].equals(pd.Series(value, index=found.index))
+    later = {**frames, "prices": frames["prices"].copy(), "disappearances": frames["disappearances"].iloc[:1]}
+    later["prices"].iloc[11:] = 99.0
+    pd.testing.assert_frame_equal(d.end_gap_events(later, segment, run), found)
+
+
+def test_a_gap_that_ends_before_the_end_row_stays_a_path_break_with_the_same_months() -> None:
+    """Without amendment 4, the held end gaps (B, G, H) refuse path_gap_at_period_end, as before. With its events,
+    they settle, and the path break of C keeps the months that the frozen rule gives when no end gap is held: the
+    rows after its previous valid row W (row 3) up to the break row (row 7)."""
+    frames, segment = gap_frames()
+    rows, names = frames["prices"].index, frames["prices"].columns
+    weights = pd.DataFrame(0.1, index=rows[[2, 5, 8]], columns=names)
+    exits = dict.fromkeys(names, "current")
+    months = pd.period_range(rows[2].to_period("M"), rows[10].to_period("M"), freq="M")
+    with pytest.raises(RunnerStop) as caught:
+        d.path_break_positions(frames, {"cw": weights}, exits, months, segment["end"])
+    assert caught.value.reason == "path_gap_at_period_end"
+    added = d.end_gap_events(frames, segment, "primary")
+    ruled = {**frames, "disappearances": pd.concat([frames["disappearances"], added], ignore_index=True)}
+    found = d.path_break_positions(ruled, {"cw": weights}, exits, months, segment["end"])
+    unheld = weights.copy()
+    unheld[["B", "G", "H"]] = 0.0
+    assert found == d.path_break_positions(frames, {"cw": unheld}, exits, months, segment["end"])
+    assert [(p["break_row"], p["previous_valid_row"], p["months"]) for p in found] == [
+        (rows[7], rows[3], list(pd.period_range("2010-05", "2010-08", freq="M")))]
+
+
+def test_a_held_path_that_stops_before_the_end_row_settles_at_the_next_row(long_frames, long_chain) -> None:
+    """The run 3 case (900026): the confirm and check stages run, and each segment and loader run reports its
+    events. The engine settles the held confirm position at W + 1, by the default (-100 percent) in the primary run
+    and at the last close in the rerun, and the R4 counts of CW-PIT hold it. The pre-seal check event is not held."""
+    confirm, check = stage(long_chain["folder"], "confirm"), stage(long_chain["folder"], "check")
+    parts = {"confirm": confirm["segment"], **check["segments"]}
+    one, none = {c: int(c == "unknown") for c in w.EXIT_CLASSES}, dict.fromkeys(w.EXIT_CLASSES, 0)
+    for name, events, held in (("confirm", 1, 1), ("check_pre_seal", 1, 0), ("check_post_seal", 0, 0)):
+        for run in d.RUNS:
+            found = parts[name]["runs"][run]["end_gap_events"]
+            assert (found["events"], found["held"]) == (events, held), (name, run)
+            assert found["events_by_exit_class"] == (one if events else none)
+            assert found["held_by_exit_class"] == (one if held else none)
+            assert (found["held_cw_weight_sum"] > 0.0) is bool(held)
+    for run in d.RUNS:
+        weight = parts["confirm"]["runs"][run]["end_gap_events"]["held_cw_weight_sum"]
+        settled = ({"settled_at_last_close": 1} if run == "last_close" else
+                   {"ciz_return_in_path": 0, "supplied_terminal_return": 0, "missing_engine_default": 1})
+        for case in d.CASES:
+            r4 = confirm["segment"]["sets"][d.COMPOSITE]["records"][run][case]["r4"]["cw"]
+            assert r4["by_cause"]["unknown"] == {"held": 1, "weight_at_last_rebalance_sum": weight, **settled}
+        assert confirm["segment"]["runs"][run]["blank_months"] == ["2011-06", "2011-07"]   # the 900021 break
+    data, plan = make_data(long_frames), d.segment_plan(LONG_CAL)["confirm"]
+    after_w = LONG_CAL[LONG_CAL.get_loc(pd.Timestamp(END_GAP_W)) + 1]
+    for run, value in (("primary", -1.0), ("last_close", 0.0)):
+        frames = d.segment_frames(data, run, plan)
+        events = tilt.terminal_events(frames["disappearances"], frames["prices"].index, run)
+        mine = events[events["permanent_id"] == str(END_GAP_PERMNO)].iloc[0]
+        assert (mine["reference_date"], mine["effective_date"], mine["known_at"], mine["terminal_return"]) == (
+            pd.Timestamp(END_GAP_W), after_w, after_w, value)
+
+
+def test_without_amendment_4_the_confirm_stage_refuses_as_run_3_did(long_frames, quotes, long_chain, tmp_path,
+                                                                    monkeypatch) -> None:
+    """With no end-gap event, the engine holds 900026 halt-locked to the confirm end row and refuses (H-5)."""
+    out = copy_chain(long_chain, tmp_path, "confirm")
+    monkeypatch.setattr(d, "run2_digest", lambda trial: long_chain["frozen"])
+    monkeypatch.setattr(d, "end_gap_events", lambda frames, segment, run: frames["disappearances"].iloc[:0])
+    with pytest.raises(RunnerStop) as caught:
+        run_one("confirm", make_data(long_frames), out, quotes)
+    assert caught.value.reason == last_refusal(out) == "unresolved_disappearance"
+    assert "2014-03-31" in caught.value.detail and not (out / "confirm.json").exists()
+
+
+def test_a_close_after_the_confirm_end_row_changes_no_confirm_frame(long_frames) -> None:
+    """R1: 900026 trades again from the row after the confirm end row; the confirm frames of both loader runs, their
+    events, and the end-gap events do not change."""
+    plan = d.segment_plan(LONG_CAL)["confirm"]
+    back = {k: v.copy() for k, v in long_frames.items()}
+    dsf = back["crsp_dsf_v2"]
+    dsf.loc[(dsf["permno"] == END_GAP_PERMNO) & (dsf["dlycaldt"] > plan["end"]) & dsf["dlyprc"].isna()
+            & (dsf["dlycaldt"] < pd.Timestamp("2016-01-01")), ["dlyprc", "dlyret"]] = [25.0, 0.001]
+    for run in d.RUNS:
+        before, after = (d.segment_frames(make_data(f), run, plan) for f in (long_frames, back))
+        assert len(before["end_gap_events"]) == 1
+        for key in ("prices", "path_break", "eligible", "market_equity", "me_reason", "intervals", "disappearances",
+                    "end_gap_events"):
+            pd.testing.assert_frame_equal(before[key], after[key])
 
 
 # Quote files and rows ------------------------------------------------------------------------

@@ -377,7 +377,12 @@ def _swap_quote_reasons(t: dict) -> None:
      "Family A CRSP inputs"),
     (lambda t: next(o for o in t["open_items"] if o["id"] == "OI-08")["publication_years"].pop("S8"),
      "publication years"),
-    (lambda t: t["reports_owed"].pop("half_spread"), "reports_owed.half_spread")])
+    (lambda t: t["reports_owed"].pop("half_spread"), "reports_owed.half_spread"),
+    (lambda t: t["books"]["disappearance_r4"].__setitem__("end_gap", t["books"]["disappearance_r4"][
+        "end_gap"].replace("with cause unknown", "with cause failure")), "books.disappearance_r4.end_gap"),
+    (lambda t: t["books"]["disappearance_r4"].__setitem__("end_gap", t["books"]["disappearance_r4"][
+        "end_gap"].replace("(delisting_return 0.0)", "(delisting_return NaN)")), "books.disappearance_r4.end_gap"),
+    (lambda t: t["books"]["disappearance_r4"].pop("end_gap"), "books.disappearance_r4.end_gap")])
 def test_check_trial_refuses_a_changed_confirm_or_check_rule(edit, name) -> None:
     changed = json.loads(json.dumps(d.load_trial()[0]))
     edit(changed)
