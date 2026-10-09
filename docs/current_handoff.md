@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-08 for the public confirm report of trial family v1 after PR #302.
+Updated: 2026-10-09 for trial family v1 amendment 4 after PR #303.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `b1b0517294247e92de6734916fa84937c1351622` (main after PR #302).
+  `54bc41f4de869c9485d24afdd4548c0c2c917361` (main after PR #303).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -52,7 +52,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   trial family v1 and its amendment 1 (PR #298), and the Milestone 5.5 driver to the shortlist freeze (PR #299),
   and trial amendment 2 with test B stopped at the coverage stop (PR #300), and the public screen report of
   trial family v1 (PR #301: run 2 froze S3 and S4), and trial amendment 3 with the confirm and check stages and
-  the half-spread override (PR #302).
+  the half-spread override (PR #302), and the public report of the confirm and check stages (PR #303).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -64,7 +64,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
   `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), `45c67f98` (PR #301),
-  and `b1b05172` (PR #302).
+  `b1b05172` (PR #302), and `54bc41f4` (PR #303).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -74,10 +74,11 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-confirm-report` adds `research/m55_confirm_report.py`. It checks the seven stage
-  files and the run log of run 3 (digests, chain, one context with the merged trial, both tracked manifests, the
-  code pins, and the code of `b1b0517`, and the run 2 freeze digest) and writes `reports/m55_confirm_v1.*` with
-  aggregates only. Tests are synthetic; this branch writes no real report file.
+- Candidate branch `claude/m55-endgap` adds trial amendment 4 (`books.disappearance_r4.end_gap`): in the confirm
+  and check segments only, a price path that stops inside the segment and does not come back by its end row
+  settles under R4 at the row after its last close (cause unknown; the engine default in the primary run, the
+  last close in the rerun). The driver applies it and reports the events per segment and loader run. The run 3
+  confirm stage refused on this case before it wrote a file. Tests are synthetic; no real data was read.
 
 ## Current Research Gate Summary
 
@@ -99,10 +100,10 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- Run 3 of `python -m research.m55_driver` (code `b1b0517`) is running on the real data, one stage at a time.
-  The coordinator compares its freeze digest, coverage counts, and calibration values with run 2 (a difference
-  goes to the owner). After the check stage: `python -m research.m55_confirm_report <run 3 folder>` writes the
-  three public files, or refuses with a reason and writes nothing; a refusal goes to the engineering log (R9).
+- After this candidate merges: run 4 of `python -m research.m55_driver` from coverage on the merged main, into a
+  new output folder, one stage at a time. The coordinator checks that coverage to the freeze repeat run 2
+  (provenance hashes excepted; a difference goes to the owner), then runs the confirm and check stages. The public
+  report module still pins run 3; a coordinator card moves it to run 4 and adds the `end_gap_events` aggregates.
   The screen months stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
 
 ## Source Routing

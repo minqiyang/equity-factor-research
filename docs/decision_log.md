@@ -15,6 +15,85 @@ investment performance.
 
 ---
 
+## 2026-10-09 - Trial Family v1 Amendment 4: R4 Settlement of a Price Path That Stops Before a Segment End Row (Milestone 5.5, card m55-endgap)
+
+Context:
+
+- Run 3 (2026-10-08, code `b1b0517`, WRDS vintage 2025-12-31) ran the coverage, calibration, look, screen, and
+  freeze stages again. The coordinator check found that they repeat run 2: the freeze digest is `62b2c8af...d59518`
+  (shortlist S3 and S4), and only provenance hashes differ (the stage context, and the calibration stage file
+  digest in each test B record).
+- The run 3 confirm stage then refused before it wrote a file: `unresolved_disappearance`, "a held asset has no
+  close at the last row" (2014-03-31), from the engine check H-5 (`_require_no_open_halt` in
+  `src/backtest/portfolio.py`). No confirm or check stage file exists, and no confirm or check statistic was
+  printed or read.
+- Cause (coordinator, dates and counts only): one held position has no close from the row after its last close to
+  the confirm end row, and its D6 event (cause unknown) falls after the confirm end row. `tilt_frames` keeps an event
+  only when its last valued row and its effective row are inside the rows, so the confirm frames hold no event for
+  it, and the engine holds it halt-locked to the end row. `path_break_positions` refuses the same case
+  (`path_gap_at_period_end`). The coordinator scan counts such columns, with no D6 event that settles by the end
+  row: 2 in the confirm segment (1 held), 1 in the pre-seal check segment (not held), and none in the post-seal
+  check segment. The screen never had the case.
+
+Decision:
+
+- The owner chose option B on 2026-10-08: R4 settlement at the row after the last close. Option A would have
+  extended the R6 path-break rule to the end row and blanked about 67 of the 254 confirm months in both loader runs.
+- Amendment 4 changes one field and adds two:
+  - `status`: names amendment 4, its timing, and the changed fields.
+  - `declaration_timing.amendment_4` (added): the timing facts above. The rule was set before any confirm or check
+    result. No pinned file, no code pin, and no coverage, signal, calibration, screen, shortlist, test, or
+    trial-count rule changes. The confirm and check stages still give the run 2 digest of amendment 3 to
+    `verify_frozen_screen`, and the next run reruns every stage from coverage into a new output folder.
+  - `books.disappearance_r4.end_gap` (added): in the confirm and check engine segments only, in the frames of both
+    loader runs, before the engine. A column with a close on a row W from the segment anchor to the end row, no
+    close on any row from W + 1 to the end row, and no D6 event that settles on or before the end row gets an event
+    at W + 1 (`effective_date` = `known_at` = W + 1) with cause `unknown`. The primary run settles it by the engine
+    default for a missing delisting return (-100 percent for a long position), the last_close run at the last
+    close. The rule reads no value after the end row. A gap that ends on or before the end row stays a path break
+    (`P1_path_break`), and `path_gap_at_period_end` and H-5 stay for any case that the rule does not cover. The
+    screen path does not change. Each confirm and check stage reports the events per segment and loader run.
+- The trial file SHA-256 is `f3213109...3427ab` (`m55_driver.TRIAL_SHA256`); with amendments 1 to 3 it was
+  `f9122696...e4c8`.
+- Driver defaults of card m55-endgap:
+  - W is a row from the segment anchor to the end row. A column whose last close comes before the anchor gets no
+    event: every segment starts from cash, so no book holds it there, and the census keeps it as ME missing.
+  - "A D6 event that settles on or before the end row" is an event of the cut frames. A D6 event after the end
+    row does not settle the gap.
+  - The added event has `delisting_return` NaN in the primary run and 0.0 in the last_close run, as D6 sets them.
+    The engine then applies -1.0 (cause `unknown`) and 0.0.
+  - The held count uses the CW-PIT holdings of the composite set at the 1x cost case. CW-PIT is one book in every
+    set and cost case (the public report checks this), and every book holds only names that CW-PIT holds. The
+    report also gives the sum of these holdings.
+  - The report is `end_gap_events` under each loader run of each segment result: counts by later exit class, no
+    identifier, and no date.
+  - When a segment has no such column, its D6 table stays as the loader gives it.
+
+Rationale:
+
+- R4 states the rule for a held position whose price path ends: an unknown cause settles at -100 percent for a long
+  position, with the last-close rerun. B keeps all 254 pre-registered confirm months. A would drop about a quarter
+  of them for one position.
+- `known_at` = W + 1 follows D6 (`known_at` = `effective_date`). Inside the segment the rule uses the fact that no
+  close comes back by the end row, as D6 uses the delisting record. The settlement is the adverse default, and the
+  last_close run is the R4 sensitivity. No value after the end row reaches the rule (R1).
+
+Consequences:
+
+- Each confirm and check stage result gains `end_gap_events` per segment and loader run. The R4 counts
+  (`r4.by_cause.unknown`) and the last_close rerun include the added events.
+- The run 3 confirm refusal stays visible (R9): it is in the run 3 log and goes into the attempts file of the
+  public report.
+- `research/m55_confirm_report.py` still names run 3 (the trial with amendments 1 to 3 and the code of `b1b0517`)
+  and does not publish `end_gap_events` yet.
+
+Follow-up:
+
+- Run 4 from coverage on the merged main, a check that coverage to the freeze repeat run 2 (provenance hashes
+  excepted), then the confirm and check stages.
+- The coordinator updates the run pin of the public report and adds the `end_gap_events` aggregates in a later
+  card.
+
 ## 2026-10-08 - Public Report Rules of the M5.5 Confirm and Check Stages (card m55-conrep)
 
 Context:
