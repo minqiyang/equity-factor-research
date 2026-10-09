@@ -12,36 +12,58 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
-## 2026-10-09 - Milestone 5.5 amendment 4: R4 settlement of a price path that stops before a segment end row
+## 2026-10-09 - Milestone 5.5 amendment 4: R4 settlement of an index exit on a row without a close
 
-- Card m55-endgap: the amendment 4 rule text (commit `244d661`), then the driver and the tests (commit `0fbb7a1`),
-  then the logs and the handoff. Decision log: the amendment 4 entry of the same date. No real data was read.
+- Card m55-endgap. Attempt a1 added the rule text, the driver, the tests, and the records. Review finding M55-EG-01
+  (MATERIAL, R1) failed its trigger. Attempt a2 replaces the trigger and edits amendment 4 in place, in new commits
+  on the same branch. Decision log: the amendment 4 entry of the same date. The producers read no real data. The
+  coordinator QA of each attempt counts the added events on real data as aggregates (dates and counts only), with
+  no engine run and no return read.
 - Cause: the run 3 confirm stage refused (H-5, `unresolved_disappearance`, 2014-03-31). A held position had no
   close from the row after its last close to the confirm end row, and its D6 event falls after that row, so
   `tilt_frames` gave no event and the engine held the position halt-locked to the end row.
-- Driver (`research/m55_driver.py`): `end_gap_events` finds each column with a close on a row W from the segment
-  anchor to the end row, no close from W + 1 to the end row, and no D6 event of the cut frames that settles by the
-  end row. It returns one event at W + 1 per column (`effective_date` = `known_at`, cause `unknown`,
-  `delisting_return` NaN in the primary run and 0.0 in the last_close run) and reads only rows up to the end row.
-  `segment_frames`, which only the confirm and check segments call, adds these events after the D6 events and keeps
-  them under `end_gap_events`. So the census, the engine calls, `path_break_positions`, and `r4_counts` of the
-  segment all see them. `end_gap_report` gives the R4 report of each segment and loader run: the events by later
-  exit class, and those that CW-PIT holds at the last rebalance before W + 1, with the sum of these holdings.
-  `check_trial` binds the parts of `books.disappearance_r4.end_gap` that the code applies (`END_GAP_RULE`), and
-  `TRIAL_SHA256` follows the amended file. The screen frames (`frames_for`), the engine, the runner, and the loader
-  do not change, so no code pin changes.
-- Tests, synthetic only. The long world of `tests/test_m55_confirm.py` gains 900026, the run 3 case, built from
-  its own random generator as SPY is, so no other value changes. It is listed in 1994 and is a member from 1994 to
-  2008, so the screen stages do not change, and the test against the driver of `8590b2e` still finds the same
-  results from coverage to the freeze. Its path stops inside the confirm segment (held) and inside the pre-seal
-  check segment (not held). New tests: each case of the rule on nine columns of small frames, with every value and
-  event after the end row changed (R1); the months of a path break that ends before the end row, the same as
-  without the rule, and `path_gap_at_period_end` without the events; the R4 report and counts of the long chain and
-  the engine settlement at W + 1 (-1.0 and 0.0); the confirm stage with the rule switched off, which refuses
-  `unresolved_disappearance` as run 3 did; and a close after the confirm end row, which changes no confirm frame.
-  `tests/test_m55_driver.py` adds three edits of the rule text that `check_trial` refuses.
-- Changed test values: none. The run report key set adds `end_gap_events`, and the PERMNO guard of the public
-  report test adds 900026. The public report module keeps its run 3 pin; the coordinator updates it in a later card.
+- The a1 defect: `end_gap_events` gave the event at W + 1 only when no close came back from W + 1 to the end row. A
+  close after W + 1 removed the event and changed the W + 1 returns and the later holdings, with equal inputs
+  through W + 1. The segment-end cut protected only the outer boundary.
+- Driver (`research/m55_driver.py`): `exit_gap_events` finds, for each column, the first row W + 1 after the
+  segment anchor and on or before the end row with a close and eligibility on W and neither on W + 1, unless a D6
+  event of the column has `known_at` on or before W + 1. It reads rows W and W + 1 only and returns one event per
+  column at W + 1 (`effective_date` = `known_at`, cause `unknown`, `delisting_return` NaN in the primary run and 0.0
+  in the last_close run). `exit_gap_frames` adds these events to the D6 table and takes out a later D6 event of the
+  same column. `segment_frames`, which only the confirm and check segments call, applies it after `cut_frames`, so
+  the census, the engine calls, `path_break_positions`, and `r4_counts` of the segment all see the events.
+  `path_break_positions` now treats a position as settled when its event is effective on or before W + 1.
+  `exit_gap_report` gives the R4 report per segment and loader run. `check_trial` binds the parts of
+  `books.disappearance_r4.exit_gap` that the code applies (`EXIT_GAP_RULE`), and `TRIAL_SHA256` follows the
+  amended file. The screen frames (`frames_for`), the engine, the runner, and the loader do not change, so no code
+  pin changes.
+- Design check before the code: four read-only review lenses (R1, engine, rule form, bias) on synthetic data. None
+  refuted the R1 argument. A random future-perturbation check over 18,600 history pairs found 0 differences for
+  this rule and 159 for the a1 rule. Advisories adopted: `held_priced_again` in the report, the D4 and D6 premises
+  in the rule text, and the statement that a held position settles also when its closes come back.
+- Tests, synthetic only:
+  - `tests/test_m55_confirm.py`: the long world's member 900026 is now a synthetic index exit on a row without a
+    close inside the confirm segment, with its own dates (index exit 2004-05-17, closes again from 2016-11 to
+    2017-06, delisting row in 2023). Its rows come from its own random generator, so the rows of the other members
+    do not change. It is a member from 1994, so the screen stages do not change, and the test against the driver
+    of `8590b2e` still finds the same results from coverage to the freeze. Small frames test each condition of the
+    rule on 14 columns, R1 for every row t of the segment under four kinds of change after t, the path-break months
+    with and without the events, and `path_gap_at_period_end` for a held gap without an exit. The long chain tests
+    the R4 report and counts and the engine settlement at W + 1 (-1.0 and 0.0), and the confirm stage with the rule
+    switched off refuses `unresolved_disappearance` as run 3 did.
+  - `tests/test_m55_exit_gap.py` (new, 14 tests, about 10 s): the small world of the driver tests with five exits
+    (on a rebalance row, mid-month, on the end row, with closes and a new spell later, and with closes and a cash
+    merger later), through the loader and the engine in both loader runs. It checks the B2 exclusion, the
+    settlement values and reference rows, the held counts of both books, zero holdings after the event, the
+    report, and that a settled column that joins the index again is never held again. Three engine-level R1 pairs
+    compare events, targets, rebalance records, and the trades, holdings, and daily returns of both books through
+    t. Two held gaps that the rule does not cover still refuse at H-5.
+  - `tests/test_m55_driver.py`: seven edits of the rule text that `check_trial` refuses.
+  - Mutation checks (not committed): the a1 trigger fails the R1 tests, and the old `path_break_positions`
+    condition fails the path-break test.
+- Changed test values: none. The run report key set adds `exit_gap_events`, and the PERMNO guard of the public
+  report test names 900026. The public report module keeps its run 3 pin; the coordinator updates it in a later
+  card.
 
 ## 2026-10-08 - Milestone 5.5 public confirm report
 

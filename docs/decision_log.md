@@ -15,7 +15,7 @@ investment performance.
 
 ---
 
-## 2026-10-09 - Trial Family v1 Amendment 4: R4 Settlement of a Price Path That Stops Before a Segment End Row (Milestone 5.5, card m55-endgap)
+## 2026-10-09 - Trial Family v1 Amendment 4: R4 Settlement of an Index Exit on a Row Without a Close (Milestone 5.5, card m55-endgap)
 
 Context:
 
@@ -28,70 +28,102 @@ Context:
   `src/backtest/portfolio.py`). No confirm or check stage file exists, and no confirm or check statistic was
   printed or read.
 - Cause (coordinator, dates and counts only): one held position has no close from the row after its last close to
-  the confirm end row, and its D6 event (cause unknown) falls after the confirm end row. `tilt_frames` keeps an event
-  only when its last valued row and its effective row are inside the rows, so the confirm frames hold no event for
-  it, and the engine holds it halt-locked to the end row. `path_break_positions` refuses the same case
-  (`path_gap_at_period_end`). The coordinator scan counts such columns, with no D6 event that settles by the end
-  row: 2 in the confirm segment (1 held), 1 in the pre-seal check segment (not held), and none in the post-seal
-  check segment. The screen never had the case.
+  the confirm end row, and its D6 event (cause unknown) falls after the confirm end row. `tilt_frames` keeps an
+  event only when its last valued row and its effective row are inside the rows, so the confirm frames hold no
+  event for it, and the engine holds it halt-locked to the end row. `path_break_positions` refuses the same case
+  (`path_gap_at_period_end`).
+- The first form of the rule (attempt a1 of this card) gave an event at the row W + 1 after a last close W only
+  when no close came back from W + 1 to the segment end row. So the event depended on rows after W + 1, and R1
+  failed inside the segment (review finding M55-EG-01). Before the replacement, the coordinator applied the first
+  form to the real frames of the three segments with no engine run and counted its events from dates only: 2 in the
+  confirm segment (1 held), 1 in the pre-seal check segment (not held), and 0 in the post-seal check segment, in
+  each loader run. No return was read. The coordinator also saw, before the new rule was set, that the held
+  position left the index on the row after its last close.
 
 Decision:
 
 - The owner chose option B on 2026-10-08: R4 settlement at the row after the last close. Option A would have
   extended the R6 path-break rule to the end row and blanked about 67 of the 254 confirm months in both loader runs.
-- Amendment 4 changes one field and adds two:
+- Amendment 4 changes one field and adds two. Attempt a2 edited the amendment in place, before any confirm or check
+  result:
   - `status`: names amendment 4, its timing, and the changed fields.
-  - `declaration_timing.amendment_4` (added): the timing facts above. The rule was set before any confirm or check
-    result. No pinned file, no code pin, and no coverage, signal, calibration, screen, shortlist, test, or
-    trial-count rule changes. The confirm and check stages still give the run 2 digest of amendment 3 to
-    `verify_frozen_screen`, and the next run reruns every stage from coverage into a new output folder.
-  - `books.disappearance_r4.end_gap` (added): in the confirm and check engine segments only, in the frames of both
-    loader runs, before the engine. A column with a close on a row W from the segment anchor to the end row, no
-    close on any row from W + 1 to the end row, and no D6 event that settles on or before the end row gets an event
-    at W + 1 (`effective_date` = `known_at` = W + 1) with cause `unknown`. The primary run settles it by the engine
-    default for a missing delisting return (-100 percent for a long position), the last_close run at the last
-    close. The rule reads no value after the end row. A gap that ends on or before the end row stays a path break
-    (`P1_path_break`), and `path_gap_at_period_end` and H-5 stay for any case that the rule does not cover. The
-    screen path does not change. Each confirm and check stage reports the events per segment and loader run.
-- The trial file SHA-256 is `f3213109...3427ab` (`m55_driver.TRIAL_SHA256`); with amendments 1 to 3 it was
+  - `declaration_timing.amendment_4` (added): the timing facts above, the first form and why it was replaced, and
+    the coordinator count of the first form. No pinned file, no code pin, and no coverage, signal, calibration,
+    screen, shortlist, test, or trial-count rule changes. The confirm and check stages still give the run 2 digest
+    of amendment 3 to `verify_frozen_screen`, and the next run reruns every stage from coverage into a new output
+    folder.
+  - `books.disappearance_r4.exit_gap` (added): in the confirm and check engine segments only, in the frames of
+    each loader run, before the engine. A column gets an event at the first row W + 1 after the segment anchor and
+    on or before the segment end row where all of these are true: a close on W and no close on W + 1; eligible on W
+    and not eligible on W + 1 (the index spell ends on W + 1); and no D6 event of the column has `known_at` on or
+    before W + 1. The event has `effective_date` = `known_at` = W + 1 (reference row W) and cause `unknown`. The
+    primary run settles it by the engine default for a missing delisting return (-100 percent for a long
+    position), the last_close run at the last close. A D6 event of the same column with `known_at` after W + 1
+    leaves the event table of the segment. The column stays settled to the end row, also when its closes or an
+    index spell come back. A gap without this index exit keeps the frozen rules (`halt_gap_return_v1`,
+    `P1_path_break`, `path_gap_at_period_end`, and H-5). The screen path does not change.
+- The trial file SHA-256 is `decabb33...1582b5` (`m55_driver.TRIAL_SHA256`); with amendments 1 to 3 it was
   `f9122696...e4c8`.
-- Driver defaults of card m55-endgap:
-  - W is a row from the segment anchor to the end row. A column whose last close comes before the anchor gets no
-    event: every segment starts from cash, so no book holds it there, and the census keeps it as ME missing.
-  - "A D6 event that settles on or before the end row" is an event of the cut frames. A D6 event after the end
-    row does not settle the gap.
+- Driver defaults of card m55-endgap (attempt a2):
+  - The rule reads rows W and W + 1 only, and "first row" reads only earlier rows. W can be the anchor row. A
+    column that left the index on or before the anchor gets no event: every segment starts from cash, so no book
+    holds it there.
+  - Only the first such row of a column counts, because the engine settles a column once.
+  - A D6 event with `known_at` on or before W + 1 keeps its row, cause, and value, and the column gets no added
+    event. A later D6 event of a settled column leaves the table; the report counts it.
   - The added event has `delisting_return` NaN in the primary run and 0.0 in the last_close run, as D6 sets them.
-    The engine then applies -1.0 (cause `unknown`) and 0.0.
+    The engine then applies -1.0 (cause `unknown`) and 0.0. Each loader run finds its events on its own frames.
+  - `path_break_positions` treats a position as settled when its event is effective on or before W + 1 (it was on
+    or before W). Without this change, a column settled at W + 1 whose closes come back with a path break would
+    blank months that no book holds. A D6 event is never effective on or before W + 1 when a valued break row
+    follows W, so the change does not move a screen result; the run 2 driver comparison test still passes.
   - The held count uses the CW-PIT holdings of the composite set at the 1x cost case. CW-PIT is one book in every
     set and cost case (the public report checks this), and every book holds only names that CW-PIT holds. The
     report also gives the sum of these holdings.
-  - The report is `end_gap_events` under each loader run of each segment result: counts by later exit class, no
-    identifier, and no date.
-  - When a segment has no such column, its D6 table stays as the loader gives it.
+  - The report is `exit_gap_events` under each loader run of each segment result, with no identifier and no date:
+    the events and the held events by later exit class, the held CW-PIT weight sum, `priced_again`,
+    `held_priced_again`, `eligible_again`, and `d6_left_out`.
 
 Rationale:
 
 - R4 states the rule for a held position whose price path ends: an unknown cause settles at -100 percent for a long
   position, with the last-close rerun. B keeps all 254 pre-registered confirm months. A would drop about a quarter
   of them for one position.
-- `known_at` = W + 1 follows D6 (`known_at` = `effective_date`). Inside the segment the rule uses the fact that no
-  close comes back by the end row, as D6 uses the delisting record. The settlement is the adverse default, and the
-  last_close run is the R4 sensitivity. No value after the end row reaches the rule (R1).
+- R1: each fact that the event uses is known at the close of W + 1 under the frozen loader rules. The close on W and
+  the missing close on W + 1 are D3 facts. The index exit is a D4 fact (`end_known_at` = `mbrenddt` = W + 1). The D6
+  events with `known_at` on or before W + 1 are D6 facts (`known_at` = `effective_date`). The engine uses an event
+  only on rows on or after its `effective_date`. A later D6 event leaves the table only after W + 1, when the column
+  has settled already. So no row after W + 1 changes an event, a trade, a holding, or a return on or before W + 1.
+- Cost of R1: whether the closes come back is known only after W + 1. So a held position whose closes come back
+  later also settles at -100 percent in the primary run. The last_close run bounds this, and `held_priced_again`
+  counts it. A settled column that joins the index again stays out of both books to the end row; the engine
+  allows one terminal event per column. `eligible_again` counts this.
 
 Consequences:
 
-- Each confirm and check stage result gains `end_gap_events` per segment and loader run. The R4 counts
+- Each confirm and check stage result gains `exit_gap_events` per segment and loader run. The R4 counts
   (`r4.by_cause.unknown`) and the last_close rerun include the added events.
+- The screen path does not use the rule. An index exit without a close in the screen keeps
+  `halt_gap_return_v1` or the path-break months, so confirm and check numbers for such a position are not
+  like-for-like with the screen numbers. No decision compares them directly.
+- `blanked_windows` (an R6 report count) reads eligibility, not settlement. A settled column that joins the index
+  again and has a later path break can add blanked cells that are not pool cells. `eligible_again` shows when this
+  can happen.
 - The run 3 confirm refusal stays visible (R9): it is in the run 3 log and goes into the attempts file of the
   public report.
+- R9: each coordinator QA of this card counts the added events on real data as aggregates (dates and counts only),
+  with no engine run and no return read. The a1 QA counts are above.
 - `research/m55_confirm_report.py` still names run 3 (the trial with amendments 1 to 3 and the code of `b1b0517`)
-  and does not publish `end_gap_events` yet.
+  and does not publish `exit_gap_events` yet.
 
 Follow-up:
 
+- Coordinator QA of attempt a2: count the events of this rule on real data per segment and loader run (events,
+  held, `held_priced_again`, `eligible_again`, `d6_left_out`), as dates and counts only, and confirm that the held
+  confirm position gets its event on the same row in both loader runs. Add the counts to this entry.
 - Run 4 from coverage on the merged main, a check that coverage to the freeze repeat run 2 (provenance hashes
   excepted), then the confirm and check stages.
-- The coordinator updates the run pin of the public report and adds the `end_gap_events` aggregates in a later
+- The coordinator updates the run pin of the public report and adds the `exit_gap_events` aggregates in a later
   card.
 
 ## 2026-10-08 - Public Report Rules of the M5.5 Confirm and Check Stages (card m55-conrep)

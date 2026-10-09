@@ -74,11 +74,13 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-endgap` adds trial amendment 4 (`books.disappearance_r4.end_gap`): in the confirm
-  and check segments only, a price path that stops inside the segment and does not come back by its end row
-  settles under R4 at the row after its last close (cause unknown; the engine default in the primary run, the
-  last close in the rerun). The driver applies it and reports the events per segment and loader run. The run 3
-  confirm stage refused on this case before it wrote a file. Tests are synthetic; no real data was read.
+- Candidate branch `claude/m55-endgap` adds trial amendment 4 (`books.disappearance_r4.exit_gap`): in the confirm
+  and check segments only, a column that has a close and is eligible on a row W, and has neither on the next row
+  W + 1, settles under R4 at W + 1 (cause unknown; the engine default in the primary run, the last close in the
+  rerun). The rule reads rows W and W + 1 only (R1); attempt a2 replaced the a1 trigger, which read rows after
+  W + 1. The driver applies the rule and reports the events per segment and loader run (`exit_gap_events`). The run
+  3 confirm stage refused on this case before it wrote a file. The tests are synthetic. The coordinator QA counts
+  the added events on real data as aggregates, with no return read.
 
 ## Current Research Gate Summary
 
@@ -103,7 +105,7 @@ unaccessed and reserved (O-12).
 - After this candidate merges: run 4 of `python -m research.m55_driver` from coverage on the merged main, into a
   new output folder, one stage at a time. The coordinator checks that coverage to the freeze repeat run 2
   (provenance hashes excepted; a difference goes to the owner), then runs the confirm and check stages. The public
-  report module still pins run 3; a coordinator card moves it to run 4 and adds the `end_gap_events` aggregates.
+  report module still pins run 3; a coordinator card moves it to run 4 and adds the `exit_gap_events` aggregates.
   The screen months stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
 
 ## Source Routing
