@@ -357,6 +357,12 @@ def _swap_quote_reasons(t: dict) -> None:
         "quote_one_sided", "quote_missing").replace("<x>", "quote_one_sided")
 
 
+def _edit_exit_gap(t: dict, old: str, new: str) -> None:
+    rules = t["books"]["disappearance_r4"]
+    assert old in rules["exit_gap"]
+    rules["exit_gap"] = rules["exit_gap"].replace(old, new)
+
+
 @pytest.mark.parametrize("edit, name", [
     (lambda t: t["declaration_timing"].__setitem__("amendment_3", t["declaration_timing"]["amendment_3"]
                                                    + " run 3 must repeat the run 2 digest " + "0" * 64), "run 2 digest"),
@@ -378,11 +384,14 @@ def _swap_quote_reasons(t: dict) -> None:
     (lambda t: next(o for o in t["open_items"] if o["id"] == "OI-08")["publication_years"].pop("S8"),
      "publication years"),
     (lambda t: t["reports_owed"].pop("half_spread"), "reports_owed.half_spread"),
-    (lambda t: t["books"]["disappearance_r4"].__setitem__("end_gap", t["books"]["disappearance_r4"][
-        "end_gap"].replace("with cause unknown", "with cause failure")), "books.disappearance_r4.end_gap"),
-    (lambda t: t["books"]["disappearance_r4"].__setitem__("end_gap", t["books"]["disappearance_r4"][
-        "end_gap"].replace("(delisting_return 0.0)", "(delisting_return NaN)")), "books.disappearance_r4.end_gap"),
-    (lambda t: t["books"]["disappearance_r4"].pop("end_gap"), "books.disappearance_r4.end_gap")])
+    (lambda t: _edit_exit_gap(t, "with cause unknown", "with cause failure"), "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "(delisting_return 0.0)", "(delisting_return NaN)"), "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "not eligible on row W + 1", "eligible on row W + 1"), "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "the first row W + 1", "the last row W + 1"), "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "known_at on or before W + 1", "effective_date on or before the end row"),
+     "books.disappearance_r4.exit_gap"),
+    (lambda t: _edit_exit_gap(t, "leaves the event table", "stays in the event table"), "books.disappearance_r4.exit_gap"),
+    (lambda t: t["books"]["disappearance_r4"].pop("exit_gap"), "books.disappearance_r4.exit_gap")])
 def test_check_trial_refuses_a_changed_confirm_or_check_rule(edit, name) -> None:
     changed = json.loads(json.dumps(d.load_trial()[0]))
     edit(changed)
