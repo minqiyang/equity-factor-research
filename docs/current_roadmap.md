@@ -291,6 +291,8 @@ and test the net active return against SPY and a cap-weight book. The test is de
   (two seats), one cap-weight check against SPY, then the runs.
 - Power is low: at 2 percent tracking error over 1993-2014, the test detects about 1.0 to 1.4 percent a year
   (design note appendix).
+- Result (2026-10-10, run 4, `reports/m55_confirm_v1.md`): test A `not_met`; the confirm mean of the composite
+  against SPY (0.298 percent a year) is below the stop floor, so the line stops as a declared negative result.
 
 ## Imperfection Policy And Lightweight Backlog
 

@@ -15,6 +15,42 @@ investment performance.
 
 ---
 
+## 2026-10-10 - Milestone 5.5 Confirm and Check of Trial Family v1: Stop Rule Applies
+
+Context:
+
+- Run 4 of trial family v1 (code `e5ac840`, amendment 4, WRDS vintage 2025-12-31) ran all seven stages of
+  `research/m55_driver.py` from 2026-10-09 to 2026-10-10 with no refusal. Coverage to the freeze repeat run 2
+  (provenance hashes excepted), so the shortlist is S3 and S4 with the run 2 digest. Run 3 refused at the confirm
+  stage (`unresolved_disappearance`) and stays visible in the attempts file (R9).
+- `research/m55_confirm_report.py` (PR #307) wrote `reports/m55_confirm_v1.md`, `reports/m55_confirm_v1.json`, and
+  `reports/m55_confirm_v1_attempts.jsonl` from the run 4 folder. Two builds gave the same bytes.
+
+Decision:
+
+- Test A has the label `not_met` in both loader runs. In the primary run with the primary cost, the composite of S3
+  and S4 has a confirm annual mean of 0.298 percent against SPY and -0.112 percent against CW-PIT (p_A 0.6944,
+  Holm p_A 1.0). At 2x cost both means are negative.
+- The stop rule after the confirm stage applies: 0.298 percent is below `CONFIRM_FLOOR` (0.3 percent a year). The
+  index tilt line of trial family v1 stops as a declared negative result. Any later change to the signals or the
+  construction is a new counted trial with no clean confirm data left (`stop_rule.forking_paths`).
+- R4: no active annual mean of the composite changes sign between the primary run and the last_close rerun. The
+  amendment 4 case is 1 held event in the confirm segment and 0 in the check segments; its weight is withheld under
+  the public weight rule.
+- These are `DIAGNOSTIC_ONLY` numbers. They are not a profitability claim.
+
+Consequences:
+
+- The check stage still ran and is reported (R9): composite 0.484 percent against SPY and 0.324 percent against
+  CW-PIT, primary run and cost. The check decides nothing.
+- In the confirm segment the `path_break_held` blank set removes 100 of 254 months (2 held positions), so test A
+  uses 154 months. This is the frozen rule (R6), and it lowers the power of the test.
+- The secondary family decides nothing. The smallest BY q-value is 0.934 (S7).
+
+Follow-up:
+
+- The next direction of the program is an owner decision.
+
 ## 2026-10-09 - Three Tiers of an R1–R12 Finding
 
 Context:
@@ -192,8 +228,7 @@ Consequences:
   read): the confirm segment has 1 added event in each loader run, cause unknown, held by the QA approximation. The
   check stage has 0 in each loader run. Priced again, eligible again, and D6 left out are 0. The held event is on
   the same row in both loader runs.
-- `research/m55_confirm_report.py` still names run 3 (the trial with amendments 1 to 3 and the code of `b1b0517`)
-  and does not publish `exit_gap_events` yet.
+- `research/m55_confirm_report.py` reads run 4 and publishes `exit_gap_events` (PR #307).
 
 Follow-up:
 
