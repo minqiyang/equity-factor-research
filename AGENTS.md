@@ -102,6 +102,19 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
   Wording, style, claims-file, and record findings are ADVISORY and go to the
   backlog. Reviewers also ask whether a rule drops data in a way that biases
   the sample.
+- An R1–R12 finding has one of three tiers (owner decision of 2026-10-09):
+  - Executed: a concrete trigger path exists on this project's data and
+    stages (a named path, or a count above zero on the run-of-record data).
+    It is MATERIAL and is fixed whatever its impact, zero included.
+  - Latent: an actual count of zero on the run-of-record data, not an
+    argument, shows that the violation needs inputs the project does not
+    hold. It is ADVISORY but stays a defect. The backlog records the count
+    and a revisit trigger: a new data vintage, reuse in a new stage, or a
+    change to that code. Before that use, fix it or make it refuse.
+  - R11 and R12: a leak of private material or an execution path is fixed
+    before push or publication, with no exception. A record or wording item
+    that an invariant needs is fixed in the next records change, at the
+    latest before publication; it never reopens a reviewed code candidate.
 - A design note of at most two pages replaces a binding plan unless the owner
   asks for a plan.
 - The coordinator sets technical defaults and logs each one; no default loosens

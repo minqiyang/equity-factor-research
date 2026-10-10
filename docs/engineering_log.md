@@ -12,6 +12,15 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-09 - Three tiers of an R1–R12 finding in AGENTS.md
+
+- Owner decision (2026-10-09): the owner process constraints in `AGENTS.md` now state the three tiers of an
+  R1–R12 finding (executed, latent, R11 and R12). Decision log: the entry of the same date.
+- The handoff moves to PR #305 for both changes of this branch.
+- Tests: `tests/test_governance_constitution.py` pins the three tiers.
+
+---
+
 ## 2026-10-09 - Repository rules point at the Claude-herdr standard
 
 - `AGENTS.md` and `docs/codex_long_running_controller.md` named `Codex/Standards/coordination-standard/` and

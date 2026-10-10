@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-09 for the R11 home-path removal in the six pinned reports after PR #304.
+Updated: 2026-10-09 for the Claude-herdr standard references and the R1–R12 finding tiers after PR #305.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `e5ac840e6e04406683dc93879898d272c76aaa32` (main after PR #304).
+  `d0166a5bb205eb6b0273cde43995ea9186cba845` (main after PR #305).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -53,7 +53,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   and trial amendment 2 with test B stopped at the coverage stop (PR #300), and the public screen report of
   trial family v1 (PR #301: run 2 froze S3 and S4), and trial amendment 3 with the confirm and check stages and
   the half-spread override (PR #302), and the public report of the confirm and check stages (PR #303), and
-  trial amendment 4 with the R4 settlement of an index exit on a row without a close (PR #304).
+  trial amendment 4 with the R4 settlement of an index exit on a row without a close (PR #304), and the R11
+  home-path removal in the six pinned reports (PR #305).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -65,7 +66,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
   `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), `45c67f98` (PR #301),
-  `b1b05172` (PR #302), `54bc41f4` (PR #303), and `e5ac840e` (PR #304).
+  `b1b05172` (PR #302), `54bc41f4` (PR #303), `e5ac840e` (PR #304), and `d0166a5b` (PR #305).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -75,10 +76,9 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/r11-pinned-reports` replaces the home paths with `<home>` placeholders in the six
-  attempt reports that `reports/dividend_comparison_release_manifest.json` pins (owner permission of 2026-10-09).
-  Only path text changes. The manifest keeps every hash and adds a `redaction_note` that names `28abd4c` as the
-  source of the hashed bytes. The private-path scan test has no pinned-file exemption now.
+- Candidate branch `claude/agents-rules` points `AGENTS.md` and the controller at the Claude-herdr standard in
+  place of `coordination-standard/` and `routing_table.json`, drops the two-round cap (rounds follow the card's
+  failure limit), and adds the R1–R12 finding tiers to `AGENTS.md` (owner, 2026-10-09). Docs and tests only.
 
 ## Current Research Gate Summary
 

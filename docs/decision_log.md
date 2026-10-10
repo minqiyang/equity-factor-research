@@ -15,6 +15,41 @@ investment performance.
 
 ---
 
+## 2026-10-09 - Three Tiers of an R1–R12 Finding
+
+Context:
+
+- Under the coordinator rule of 2026-10-06, every R1–R12 violation was fixed, also at zero impact. In round 2 of
+  card m55-endgap, a review seat used that rule to make two findings MATERIAL whose trigger count on the
+  run-of-record data was zero. A further repair and review round would have followed for cases that the data
+  cannot produce. The rule also conflicted with the rule against over-engineering.
+
+Decision:
+
+- Owner decision (2026-10-09): an R1–R12 finding has one of three tiers, stated in the owner process constraints
+  of `AGENTS.md`.
+  - Executed: a concrete trigger path exists on this project's data and stages (a named path, or a count above
+    zero on the run-of-record data). It is MATERIAL and is fixed whatever its impact, zero included.
+  - Latent: an actual count of zero on the run-of-record data, not an argument, shows that the violation needs
+    inputs the project does not hold. It is ADVISORY but stays a defect. The backlog records the count and a
+    revisit trigger (a new data vintage, reuse in a new stage, or a change to that code). Before that use, the
+    code is fixed or made to refuse.
+  - R11 and R12: a leak of private material or an execution path is fixed before push or publication, with no
+    exception. A record or wording item that an invariant needs is fixed in the next records change, at the
+    latest before publication, and never reopens a reviewed code candidate.
+
+Consequences:
+
+- Review seat cards quote the three tiers. The two round 2 findings of card m55-endgap are latent; their zero
+  counts and revisit trigger (a new data vintage) are on the coordinator backlog.
+- `tests/test_governance_constitution.py` pins the three tiers in `AGENTS.md`.
+
+Follow-up:
+
+- None.
+
+---
+
 ## 2026-10-09 - Repository Rules Point at the Claude-herdr Coordination Standard
 
 Context:
