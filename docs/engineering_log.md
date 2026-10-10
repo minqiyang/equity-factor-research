@@ -12,6 +12,28 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-09 - The public M5.5 confirm report reads run 4
+
+- Card m55-report4. `research/m55_confirm_report.py` pins run 4: the code of main `e5ac840` (PR #304, amendment 4)
+  and its code digest, with the merged trial file, both tracked manifests, the trial's code pins, and the run 2
+  freeze digest. A run 3 folder refuses: it has no confirm or check file, and its context names the trial file
+  with amendments 1 to 3 and the code of `b1b0517`.
+- R9: the attempts file has a reference line for run 3 after the lines of run 1 and run 2. It gives the code
+  commit, the outcome of each stage, the refusal reason `unresolved_disappearance`, the SHA-256 of the run 3 log,
+  and a pointer to the amendment 4 entry of the decision log. The facts come from the coordinator's record. No
+  refusal detail text is published.
+- Amendment 4: each segment and loader run gives the `exit_gap_events` counts. The held CW-PIT weight sum is given
+  only under the public weight rule. The held events are CW-PIT R4 events of cause unknown, so the rule also
+  compares the sum with each R4 weight sum that the report gives for the segment. A confirm or check file without
+  the key refuses (`exit_gap_events_missing`).
+- Decision log: the amendment 4 entry gets the coordinator QA counts before run 4, and says that the last_close run
+  is the R4 sensitivity for a held position whose closes come back.
+- Tests: `tests/test_m55_confirm_report.py` (synthetic run 4 and run 3 folders, the run 3 line, the exit gap table
+  in both loader runs, the weight rule) and the long-world report test in `tests/test_m55_confirm.py`. This change
+  writes no report file. The coordinator writes the report files from the run 4 output.
+
+---
+
 ## 2026-10-09 - Three tiers of an R1–R12 finding in AGENTS.md
 
 - Owner decision (2026-10-09): the owner process constraints in `AGENTS.md` now state the three tiers of an

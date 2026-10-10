@@ -170,9 +170,9 @@ Rationale:
   only on rows on or after its `effective_date`. A later D6 event leaves the table only after W + 1, when the column
   has settled already. So no row after W + 1 changes an event, a trade, a holding, or a return on or before W + 1.
 - Cost of R1: whether the closes come back is known only after W + 1. So a held position whose closes come back
-  later also settles at -100 percent in the primary run. The last_close run bounds this, and `held_priced_again`
-  counts it. A settled column that joins the index again stays out of both books to the end row; the engine
-  allows one terminal event per column. `eligible_again` counts this.
+  later also settles at -100 percent in the primary run. The last_close run is the R4 sensitivity for this case,
+  and `held_priced_again` counts it. A settled column that joins the index again stays out of both books to the
+  end row; the engine allows one terminal event per column. `eligible_again` counts this.
 
 Consequences:
 
@@ -188,6 +188,10 @@ Consequences:
   public report.
 - R9: each coordinator QA of this card counts the added events on real data as aggregates (dates and counts only),
   with no engine run and no return read. The a1 QA counts are above.
+- Coordinator QA of the merged rule on real data before run 4, from dates and counts only (no engine run, no return
+  read): the confirm segment has 1 added event in each loader run, cause unknown, held by the QA approximation. The
+  check stage has 0 in each loader run. Priced again, eligible again, and D6 left out are 0. The held event is on
+  the same row in both loader runs.
 - `research/m55_confirm_report.py` still names run 3 (the trial with amendments 1 to 3 and the code of `b1b0517`)
   and does not publish `exit_gap_events` yet.
 
