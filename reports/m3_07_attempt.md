@@ -60,7 +60,7 @@ Baseline HEAD: `e7098e6eea39a35ef4a40f20aa554f6fd7a9e290`.
 All commands ran from this worktree with the existing interpreter:
 
 ```sh
-M3_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+M3_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 PYTHONPATH=src "$M3_PYTHON" -m pytest -q tests/test_calendar_day_spans.py tests/test_demo_v0.py tests/test_synthetic_multifactor_backtest_demo.py tests/test_bar_integrity.py tests/test_source_row_lag.py tests/test_dividend_policy.py tests/test_broader_windows.py tests/test_unchanging_price.py tests/test_backtest_timing_contract.py tests/test_official_report_paths.py
 PYTHONPATH=src "$M3_PYTHON" -m pytest -q
 "$M3_PYTHON" -m ruff check research/source_row_lag.py research/demo_v0.py research/synthetic_multifactor_backtest_demo.py tests/test_calendar_day_spans.py tests/test_demo_v0.py tests/test_synthetic_multifactor_backtest_demo.py

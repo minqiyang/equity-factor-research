@@ -113,7 +113,7 @@ same absolute interpreter used by every execution. Each run's combined output
 is retained under `build/split-proof-evidence/` with the names in the hash table.
 
 ```sh
-SPLIT_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+SPLIT_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 PYTHONPATH=src "$SPLIT_PYTHON" -m pytest -q tests/test_campaign_paths.py tests/test_event_date_membership.py tests/test_dividend_policy.py tests/test_demo_v0.py tests/test_synthetic_multifactor_backtest_demo.py
 PYTHONPATH=src "$SPLIT_PYTHON" -m pytest -q tests/test_demo_split_proof.py --basetemp=build/split-proof-evidence/focused-01
 PYTHONPATH=src "$SPLIT_PYTHON" -m pytest -q tests/test_demo_split_proof.py --basetemp=build/split-proof-evidence/ablation-01
@@ -127,7 +127,7 @@ PYTHONPATH=src "$SPLIT_PYTHON" -m pytest -q -c build/split-proof-evidence/baseli
 "$SPLIT_PYTHON" -m compileall src tests research lean
 "$SPLIT_PYTHON" -m build
 mkdir -p build/split-proof-evidence/tmp
-TMPDIR="$PWD/build/split-proof-evidence/tmp" PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/Users/rhapsoul/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:/Users/rhapsoul/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$SPLIT_PYTHON" -m build --no-isolation
+TMPDIR="$PWD/build/split-proof-evidence/tmp" PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:<home>/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:<home>/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$SPLIT_PYTHON" -m build --no-isolation
 git diff --check
 ```
 

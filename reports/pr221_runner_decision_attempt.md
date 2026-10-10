@@ -15,11 +15,11 @@ interruptions and infrastructure failures retain their failure behavior.
   the dispatch instruction; this worker performed no independent host-model
   or service-tier inspection.
 - Card: `coord/pr221_astra_decision_card.md` under
-  `/Users/rhapsoul/Documents/Codex/projects/efr-demo-first-docs-20260915/`.
+  `<home>/Documents/Codex/projects/efr-demo-first-docs-20260915/`.
   Card SHA-256:
   `63513da756d935defa77249899919c878b7bdf759593b04bc4e8e922642866ca`.
 - Writer root:
-  `/Users/rhapsoul/Documents/Codex/projects/efr-pr221-astra-decision`.
+  `<home>/Documents/Codex/projects/efr-pr221-astra-decision`.
 - Branch: `codex/pr221-astra-outcome-decision`. Clean starting HEAD:
   `3cee36c3a335e69a21e29edd6246fc0421787ce2`.
 - One writer edited the design, this report and an appended engineering
@@ -151,14 +151,14 @@ The two skips concern platform `longdouble` precision; the warning is the
 existing constant-input Spearman case. Local environment: macOS 27.0 arm64,
 Python 3.12.14, NumPy 2.5.3, pandas 3.0.5, SciPy 1.18.1, pytest 9.1.1,
 Ruff 0.16.7 and build 1.6.1. QA used the existing interpreter
-`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
+`<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`
 with `PYTHONPATH=src`. The build reused the previously recorded local
 setuptools/wheel cache through `--no-isolation`; no installation ran.
 
 Reproduction commands from this writer root:
 
 ```sh
-PR221_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+PR221_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 "$PR221_PYTHON" build/pr221-runner-decision-evidence/check_decision.py
 PYTHONPATH=src "$PR221_PYTHON" -c "import runpy; runpy.run_path('build/pr221-runner-decision-evidence/probe_existing_runners.py', run_name='__main__')"
 PYTHONPATH=src "$PR221_PYTHON" build/pr221-runner-decision-evidence/run_local_qa.py

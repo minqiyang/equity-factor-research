@@ -8,9 +8,9 @@ publication remain outside this attempt.
 ## Task, ownership and candidate
 
 - Task card:
-  `/Users/rhapsoul/Documents/Codex/projects/efr-demo-first-docs-20260915/coord/dividend_design_card.md`.
+  `<home>/Documents/Codex/projects/efr-demo-first-docs-20260915/coord/dividend_design_card.md`.
 - Writer root:
-  `/Users/rhapsoul/Documents/Codex/projects/efr-dividend-design-20260918`.
+  `<home>/Documents/Codex/projects/efr-dividend-design-20260918`.
 - Branch: `codex/dividend-design-20260918`.
 - Source HEAD: `57035fbfe3f8495e6495feecb8afbc2664f3f237`, the locally
   recorded merge of Step 1 PR #220. Local `main` and `origin/main` equal this
@@ -81,13 +81,13 @@ SHA-256 identities and read extents. Reads covered:
 | Herdr skill and both live coordination files | Full; CLI syntax, visible work, evidence handoff, route and adaptive waiting requirements |
 
 The coordination sources are
-`/Users/rhapsoul/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/coordinator.md`
+`<home>/Documents/Codex/Standards/herdr_pi_coordinator_v7_two_file/coordinator.md`
 and its sibling `routing_table.json`. The operating card reads
 `v7.24-draft` and `LIVE_OPERATING_CARD`; the routing file reads version
 `7.24-draft` with status `TEMPLATE_NOT_ACTIVE`. This worker performed no model
 dispatch or review routing; the coordinator owns resolving that status before
 any later routed acceptance. The installed Herdr skill was read at
-`/Users/rhapsoul/.codex/skills/herdr/SKILL.md`. Archived standards, private
+`<home>/.codex/skills/herdr/SKILL.md`. Archived standards, private
 market data and protected C were untouched.
 
 ## Verification and exact scope of evidence
@@ -119,7 +119,7 @@ Step 2 adds a design and local evidence rather than product tests or runtime.
 
 Environment: macOS 27 arm64, Python 3.12.14, NumPy 2.5.3, pandas 3.0.5,
 SciPy 1.18.1, pytest 9.1.1, Ruff 0.16.7 and build 1.6.1. The interpreter is
-`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`.
+`<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`.
 `PYTHONPATH` selects this worker's `src`. Setuptools and wheel are absent
 from that supplied environment. The offline build reads cached setuptools
 and wheel without installing dependencies, using the cache paths recorded
@@ -134,14 +134,14 @@ repository-external temporary locations. Official reports were exercised only
 through existing tests with temporary output paths.
 
 ```sh
-DIVIDEND_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+DIVIDEND_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 "$DIVIDEND_PYTHON" build/dividend-design-evidence/check_design.py
 "$DIVIDEND_PYTHON" scripts/repo_map.py
 PYTHONPATH=src "$DIVIDEND_PYTHON" -m pytest -q tests/test_demo_split_proof.py tests/test_event_date_membership.py tests/test_dividend_policy.py tests/test_demo_v0.py tests/test_synthetic_multifactor_backtest_demo.py
 PYTHONPATH=src "$DIVIDEND_PYTHON" -m pytest -q
 "$DIVIDEND_PYTHON" -m ruff check .
 "$DIVIDEND_PYTHON" -m compileall src tests research lean
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/Users/rhapsoul/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:/Users/rhapsoul/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$DIVIDEND_PYTHON" -m build --no-isolation
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:<home>/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:<home>/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$DIVIDEND_PYTHON" -m build --no-isolation
 git diff --check
 git diff --cached --check
 git diff --check 57035fbfe3f8495e6495feecb8afbc2664f3f237...HEAD
@@ -240,7 +240,7 @@ historical language exceptions remain preserved.
 The local staging attempt returned exit 128:
 
 ```text
-fatal: Unable to create '/Users/rhapsoul/Documents/Codex/projects/efr-dividend-design-20260918/.git/index.lock': Operation not permitted
+fatal: Unable to create '<home>/Documents/Codex/projects/efr-dividend-design-20260918/.git/index.lock': Operation not permitted
 ```
 
 The exact four-file `git add` command and result are retained in

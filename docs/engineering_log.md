@@ -12,6 +12,20 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-09 - Remove home paths from the six pinned reports (R11)
+
+- Card r11-paths, attempt a3, with the owner's permission of 2026-10-09. The 2026-10-06 R11 entry left six attempt
+  reports unchanged because `reports/dividend_comparison_release_manifest.json` pins their SHA-256 values:
+  `reports/dividend_design_attempt.md`, `reports/m3_07_attempt.md`, `reports/m3_08_attempt.md`,
+  `reports/pr221_precision_fix_attempt.md`, `reports/pr221_runner_decision_attempt.md`, and
+  `reports/split_proof_attempt.md`. Their home paths are now `<home>/...`, by the same placeholder rules. Only path
+  text changes. If you replace each `<home>` with the owner's home directory, you get the old bytes again.
+- The manifest keeps every hash. A new field, `redaction_note`, says that the six hashes are of the bytes at commit
+  `28abd4c`, that the R11 fix replaced their home paths on 2026-10-09, and that Git history keeps the old bytes. No
+  test or code reads these hashes.
+- `test_tracked_text_names_no_private_path` has no pinned-file exemption now. This change deletes
+  `PRIVATE_PATH_PINNED_FILES` and its skip. The allow list holds only the two guard patterns.
+
 ## 2026-10-09 - Milestone 5.5 amendment 4: R4 settlement of an index exit on a row without a close
 
 - Card m55-endgap. Attempt a1 added the rule text, the driver, the tests, and the records. Review finding M55-EG-01

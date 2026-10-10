@@ -8,9 +8,9 @@ and publication remain outside this attempt.
 ## Task, ownership and candidate
 
 - Task card:
-  `/Users/rhapsoul/Documents/Codex/projects/efr-demo-first-docs-20260915/coord/pr221_fix_card.md`.
+  `<home>/Documents/Codex/projects/efr-demo-first-docs-20260915/coord/pr221_fix_card.md`.
 - Writer root:
-  `/Users/rhapsoul/Documents/Codex/projects/efr-pr221-fix`.
+  `<home>/Documents/Codex/projects/efr-pr221-fix`.
 - Branch: `codex/pr221-precision-fix`.
 - Repair baseline: `3a040b67d874dc850772d8053fd8c15cc9e29060`.
 - Source-base merge: `57035fbfe3f8495e6495feecb8afbc2664f3f237`.
@@ -119,7 +119,7 @@ are unchanged.
 Environment: macOS Darwin 27.0.0 arm64, Python 3.12.14, NumPy 2.5.3,
 pandas 3.0.5, SciPy 1.18.1, pytest 9.1.1, Ruff 0.16.7 and build 1.6.1. The
 interpreter is
-`/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`.
+`<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python`.
 `PYTHONPATH` selects this worker's `src`. Setuptools 84.0.0 and wheel 0.48.0
 are read from the uv cache paths below. Linux/Python 3.11 CI remains
 unverified.
@@ -129,7 +129,7 @@ through this worker. Full logs, timestamps, exit codes, durations and log
 hashes are in `build/pr221-precision-fix-evidence/qa-results.json`.
 
 ```sh
-PR221_PYTHON=/Users/rhapsoul/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
+PR221_PYTHON=<home>/Documents/Codex/projects/efr-demo-v0-20260916/.venv/bin/python
 "$PR221_PYTHON" -B build/pr221-precision-fix-evidence/check_design.py
 "$PR221_PYTHON" scripts/repo_map.py
 PYTHONPATH=src "$PR221_PYTHON" -m pytest -q tests/test_project_structure.py
@@ -137,7 +137,7 @@ PYTHONPATH=src "$PR221_PYTHON" -m pytest -q tests/test_demo_split_proof.py tests
 PYTHONPATH=src "$PR221_PYTHON" -m pytest -q
 "$PR221_PYTHON" -m ruff check .
 "$PR221_PYTHON" -m compileall src tests research lean
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:/Users/rhapsoul/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:/Users/rhapsoul/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$PR221_PYTHON" -m build --no-isolation
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$PWD/src:<home>/.cache/uv/archive-v0/-XwZ4dJTzcJgXo7y:<home>/.cache/uv/archive-v0/StOX7ZoawKj9Chai" "$PR221_PYTHON" -m build --no-isolation
 git diff --check
 git diff --cached --check
 git diff --check 3a040b67d874dc850772d8053fd8c15cc9e29060...HEAD
