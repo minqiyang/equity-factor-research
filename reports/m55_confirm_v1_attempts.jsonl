@@ -1,0 +1,10 @@
+{"file_sha256": "2d75b3b1db8642060530cec9887dd7204420bac755b971eba1d23430b5a2e666", "run": 1, "see": "reports/m55_screen_v1_attempts.jsonl", "status": "stopped"}
+{"file_sha256": "2d75b3b1db8642060530cec9887dd7204420bac755b971eba1d23430b5a2e666", "run": 2, "see": "reports/m55_screen_v1_attempts.jsonl", "status": "completed"}
+{"code_commit": "b1b0517294247e92de6734916fa84937c1351622", "entry": "Trial Family v1 Amendment 4", "reason": "unresolved_disappearance", "run": 3, "run_log_sha256": "3c7e6553b4fdf5ec0101ce7e9e98bd5e21978a48f54e2b4ada517c76a4b862b8", "see": "docs/decision_log.md", "stages": {"calibration": "written", "check": "not_run", "confirm": "refused", "coverage": "written", "freeze": "written", "look": "written", "screen": "written"}, "status": "refused"}
+{"attempt": 1, "outcome": "written", "run": 4, "stage": "coverage", "stage_sha256": "9ad6b30d800f78be5f1acee76b79cebc183f70c8a627c6e9ab23a9ed03bbed9f"}
+{"attempt": 2, "outcome": "written", "run": 4, "stage": "calibration", "stage_sha256": "67a7c56cb57e441bdf028b1ea46adee5283252899d74eb83b45026a127bb37b5"}
+{"attempt": 3, "outcome": "written", "run": 4, "stage": "look", "stage_sha256": "be0c53290920d2f514fc84f64afaa8b6283da02a094d76c5014498eb73663b31"}
+{"attempt": 4, "outcome": "written", "run": 4, "stage": "screen", "stage_sha256": "c648b3ed6e76fdfd5a0c450bae0394f9979d340cba63b7d664a1e7e3eeac89fe"}
+{"attempt": 5, "outcome": "written", "run": 4, "stage": "freeze", "stage_sha256": "98ce15ce364006ea4af5549b864c5db9d9c4d8dc29a7937a2a08635b82db4b1e"}
+{"attempt": 6, "outcome": "written", "run": 4, "stage": "confirm", "stage_sha256": "5645cf4eb251d53259ed76afac50a578caaf74b09b9180db413a21b12ed853b0"}
+{"attempt": 7, "outcome": "written", "run": 4, "stage": "check", "stage_sha256": "ac8052e0e2f2bfadb0679348773f60d2287b6c97802c60558443e11cdb043850"}

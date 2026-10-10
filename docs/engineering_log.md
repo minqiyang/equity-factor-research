@@ -12,6 +12,18 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-10 - Public report of the M5.5 confirm and check stages (run 4)
+
+- The coordinator ran `python -m research.m55_confirm_report` on a read-only copy of the run 4 folder at main
+  `6b00b8d` (PR #307). It wrote the three `reports/m55_confirm_v1*` files. A second build gave the same bytes.
+- Checks before commit: the stage hashes equal the run log; the run log has 0 refused and 0 error lines; the
+  report has no private path and no identifier key; each held exit-gap weight sum is withheld and listed under
+  `missing` (held events 1, 0, and 0 by segment).
+- Run times: confirm about 5.7 hours and check about 5.3 hours, one process each.
+- The amendment 4 Consequences item in the decision log now says that the report reads run 4.
+
+---
+
 ## 2026-10-09 - The public M5.5 confirm report reads run 4
 
 - Card m55-report4. `research/m55_confirm_report.py` pins run 4: the code of main `e5ac840` (PR #304, amendment 4)

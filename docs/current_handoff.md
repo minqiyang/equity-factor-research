@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-09 for the public M5.5 confirm report of run 4 after PR #306.
+Updated: 2026-10-10 for the public M5.5 confirm and check report files of run 4 after PR #307.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `46df45e4820ff120a66baf7ba5b3bdda86bc9708` (main after PR #306).
+  `6b00b8d41ce49ffd99fce2b3336d1c854710bf3f` (main after PR #307).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -54,7 +54,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   trial family v1 (PR #301: run 2 froze S3 and S4), and trial amendment 3 with the confirm and check stages and
   the half-spread override (PR #302), and the public report of the confirm and check stages (PR #303), and
   trial amendment 4 with the R4 settlement of an index exit on a row without a close (PR #304), and the R11
-  home-path removal in the six pinned reports (PR #305), and the Claude-herdr references and R1–R12 tiers (PR #306).
+  home-path removal in the six pinned reports (PR #305), and the Claude-herdr references and R1–R12 tiers (PR #306),
+  and the confirm report module on run 4 (PR #307).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -66,7 +67,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `356ea7fd` (PR #289), `ddfb0322` (PR #290), `8420e286` (PR #291), `28abd4ca` (PR #292),
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
   `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), `45c67f98` (PR #301),
-  `b1b05172` (PR #302), `54bc41f4` (PR #303), `e5ac840e` (PR #304), `d0166a5b` (PR #305), and `46df45e4` (PR #306).
+  `b1b05172` (PR #302), `54bc41f4` (PR #303), `e5ac840e` (PR #304), `d0166a5b` (PR #305), `46df45e4` (PR #306),
+  and `6b00b8d4` (PR #307).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -76,16 +78,15 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/m55-report-run4` moves `research/m55_confirm_report.py` to run 4 (code `e5ac840`), keeps
-  a run 3 line in the attempts file, gives the amendment 4 `exit_gap_events` counts under the public weight rule,
-  and adds the coordinator QA counts to the amendment 4 decision log entry. No report file is written.
+- Candidate branch `claude/m55-confirm-report-v1` adds the public report files of run 4 (`reports/m55_confirm_v1*`)
+  and records the result: test A `not_met`, and the stop rule after the confirm stage applies.
 
 ## Current Research Gate Summary
 
 See `docs/current_roadmap.md` for milestone status. Milestone 5 steps 1 to 4b are merged; step 5 is deferred
 (O-11); the step 6 owner report is merged (PR #283). On point-in-time books R0 over the four price classes is the
 baseline, and it trails SPY and the equal-weight book. M4.8 stays paused after Stage D, and the seal window remains
-unaccessed and reserved (O-12).
+unaccessed and reserved (O-12). Milestone 5.5 trial family v1 stops as a declared negative result (run 4).
 
 ## Immediate Blockers Or Owner Decisions
 
@@ -100,11 +101,8 @@ unaccessed and reserved (O-12).
 
 ## Next Safe Action
 
-- Run 4 of `python -m research.m55_driver` from coverage on main after PR #304, into a new output folder,
-  one stage at a time. The coordinator checks that coverage to the freeze repeat run 2
-  (provenance hashes excepted; a difference goes to the owner), then runs the confirm and check stages. After this
-  candidate merges, `python -m research.m55_confirm_report` writes the public report from the run 4 folder.
-  The screen months stay as they are: the 215 blank months follow the frozen rule (no rerun, R9).
+- Merge this records candidate. Then the owner decides the next direction of the program; trial family v1 has
+  no clean confirm data left for a changed tilt (`stop_rule.forking_paths`).
 
 ## Source Routing
 
