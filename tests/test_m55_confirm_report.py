@@ -1,7 +1,7 @@
-"""Synthetic tests for the public M5.5 confirm and check report (card m55-conrep, prod-m55conrep-1).
+"""Synthetic tests for the public M5.5 confirm and check report (cards m55-conrep and m55-report4).
 
 The stage files are made here with ``m55_driver.write_stage``; no test reads real data. One small run stands in for
-run 3 (all seven stages and a run log). Its first four stages come from the screen report tests, and its confirm and
+run 4 (all seven stages and a run log). Its first four stages come from the screen report tests, and its confirm and
 check stages have the shape that ``m55_driver.confirm_stage`` and ``check_stage`` write, with per-position rows, so
 the tests can check that the report keeps only their aggregates. ``test_m55_confirm`` runs the report on the
 long-world chain of the driver itself.
@@ -27,7 +27,17 @@ from test_m55_screen_report import keys, per, results
 
 
 RUNS, CASES, EXITS = d.RUNS, d.CASES, w.EXIT_CLASSES
-MAIN_BEFORE = "b1b0517294247e92de6734916fa84937c1351622"     # main before this card: the screen report bytes
+MAIN_BEFORE = "b1b0517294247e92de6734916fa84937c1351622"     # main before card m55-conrep: the screen report bytes
+RUN_4_COMMIT = "e5ac840e6e04406683dc93879898d272c76aaa32"    # main after amendment 4 (PR #304): the run 4 code
+RUN_3_TRIAL = "f91226961f47ebcef32aa8a3fc26f0b7fe70b71a4d791f38cf31955daf48e4c8"    # the trial with amendments 1 to 3
+RUN_3_CODE = "59b0ba9d2d6574ed6ddf25372fb41093db6f420750cee42acc97365ec93707ca"     # code_digest at b1b0517
+# The run 3 attempts line, word for word from the coordinator's record (card m55-report4).
+RUN_3_LINE = {"run": 3, "status": "refused", "code_commit": MAIN_BEFORE,
+              "stages": {"coverage": "written", "calibration": "written", "look": "written", "screen": "written",
+                         "freeze": "written", "confirm": "refused", "check": "not_run"},
+              "reason": "unresolved_disappearance",
+              "run_log_sha256": "3c7e6553b4fdf5ec0101ce7e9e98bd5e21978a48f54e2b4ada517c76a4b862b8",
+              "see": "docs/decision_log.md", "entry": "Trial Family v1 Amendment 4"}
 USERS, HOME = "/Users", "/home"     # split so this file holds no literal home path
 PER_POSITION = rep.FORBIDDEN | rep.SINGLE_MAX | {"traded_notional", "traded_notional_by_status", "max_half_spread",
                                                  "cw_weight_by_exit_class"}
@@ -43,11 +53,11 @@ def tracked() -> tuple[dict, dict]:
 
 
 def context(**change) -> dict:
-    """The run 3 context the report accepts: merged trial, tracked data, trial code pins, code of main b1b0517."""
+    """The run 4 context the report accepts: merged trial, tracked data, trial code pins, code of main e5ac840."""
     data_sha = rep3.data_digest(trial(), *tracked())
     pins = d.context(trial(), d.TRIAL_SHA256, data_sha)["code_pins_sha256"]
     return {"trial_sha256": d.TRIAL_SHA256, "data_files_sha256": data_sha, "code_pins_sha256": pins,
-            "code_sha256": rep3.RUN_3["code_sha256"], **change}
+            "code_sha256": rep3.RUN_4["code_sha256"], **change}
 
 
 def r4(held: dict[str, int], run: str) -> dict:
@@ -67,6 +77,16 @@ def position(k: int, exit_class: str = "failure") -> dict:
             "weight_at_last_rebalance": {"cw": 0.001 * (k + 1), "tilt": 0.002 * (k + 1)}}
 
 
+def gap_events(held: int, other: int) -> dict:
+    """An ``exit_gap_report`` record: ``held`` amendment 4 events that CW-PIT holds (unknown exits, CW weight 0.01
+    each) and ``other`` events that no book holds (failure exits). The later counts follow from the two, so loader
+    runs with other inputs differ in each column."""
+    return {"events": held + other, "events_by_exit_class": {**per(0), "failure": other, "unknown": held},
+            "held": held, "held_by_exit_class": {**per(0), "unknown": held}, "held_cw_weight_sum": 0.01 * held,
+            "priced_again": other, "held_priced_again": min(held, 1), "eligible_again": min(other, 1),
+            "d6_left_out": other + 1}
+
+
 def year_spread(max_half_spread: float | None = 37.5) -> dict:
     """One book-year of ``half_spread_report``: one quote_crossed cell, two no_quote_row cells."""
     invalid = {r: per(0) for r in QUOTE_REASONS}
@@ -79,7 +99,7 @@ def year_spread(max_half_spread: float | None = 37.5) -> dict:
             "cost_above_schedule": 0.0004, "invalid_traded_cells_by_exit_class": invalid}
 
 
-def segment(name: str, period: str, first: str, last: str, held: dict, positions: dict) -> dict:
+def segment(name: str, period: str, first: str, last: str, held: dict, positions: dict, gap: dict) -> dict:
     """One ``run_segment`` result: every signal set, both loader runs, both cost cases, each report owed."""
     stats = {"realized_te_daily": 0.02, "worst_relative_drawdown": -0.03, "size_exposure_mean": 0.01,
              "annual_turnover": {"tilt": 1.5, "cw": 0.5, "active": 1.0},
@@ -115,7 +135,8 @@ def segment(name: str, period: str, first: str, last: str, held: dict, positions
                                             "each": [{"rebalance": "1995-03-31", "exit_class": "failure",
                                                       "break_rows": ["1995-04-03"]}]},
                   "r6_members": {"pool_cells": per(10), "me_missing": {m: shares for m in ME_REASONS},
-                                 **{k: shares for k in ("unpriced", "basis_unseen", "blanked_windows")}}}
+                                 **{k: shares for k in ("unpriced", "basis_unseen", "blanked_windows")}},
+                  "exit_gap_events": gap[run]}
             for run in RUNS}
     return {"segment": {"name": name, "period": period, "first": first, "last": last, "anchor": "1992-12-31",
                         "first_rebalance": "1993-01-29", "end": "2014-03-31"},
@@ -161,15 +182,17 @@ def me_coverage() -> dict:
 
 def stage_results(frozen: dict, header: dict) -> tuple[dict, dict]:
     """Confirm and check results with the driver's shape. Confirm CW-PIT: 9 and 12 held events (equal cash_merger
-    counts in both loader runs) and 3 path-break positions in each run; the pre-seal segment has 1 event and 1
-    position; the post-seal segment has none."""
+    counts in both loader runs), 3 path-break positions in each run, and 2 and 1 amendment 4 events that no book
+    holds; the pre-seal segment has 1 event and 1 position; the post-seal segment has none."""
     big = {"primary": {"cash_merger": 5, "failure": 4}, "last_close": {"cash_merger": 5, "failure": 7}}
     three = {run: [position(0), position(1), position(2, "cash_merger")] for run in RUNS}
     one = {"primary": {"failure": 1}, "last_close": {"failure": 1}}
-    confirm_part = segment("confirm", "confirm", "1993-02", "2014-03", big, three)
-    pre = segment("check_pre_seal", "check", "2014-04", "2019-06", one, {run: [position(0)] for run in RUNS})
+    no_gap = {run: gap_events(0, 0) for run in RUNS}
+    confirm_part = segment("confirm", "confirm", "1993-02", "2014-03", big, three,
+                           {"primary": gap_events(0, 2), "last_close": gap_events(0, 1)})
+    pre = segment("check_pre_seal", "check", "2014-04", "2019-06", one, {run: [position(0)] for run in RUNS}, no_gap)
     post = segment("check_post_seal", "check", "2021-09", "2025-11", {run: {} for run in RUNS},
-                   {run: [] for run in RUNS})
+                   {run: [] for run in RUNS}, no_gap)
     decision = {"p_a": 0.012, "p_b": 1.0, "holm": crit.holm_primary(0.012, 1.0), "holm_p_at_most_alpha": True,
                 "confirm_means": {"vs_spy": 0.004, "vs_cw": 0.005}, "cost_2x_means": {"vs_spy": 0.002, "vs_cw": 0.003},
                 "stop": crit.stop_after_confirm(0.004)}
@@ -217,7 +240,7 @@ LOG = [{"stage": "confirm", "refused": "shortlist_digest_mismatch", "detail": f"
        {"stage": "confirm", "error": "FileNotFoundError", "detail": f"no such file {HOME}/someone/y"}]
 
 
-def write_run3(folder: Path, ctx: dict | None = None, edit=None, log: list | None = None) -> Path:
+def write_run4(folder: Path, ctx: dict | None = None, edit=None, log: list | None = None) -> Path:
     """Write the seven stage files and the run log as the driver does, with test B in the later stages. ``edit``
     changes the results before they are written; ``log`` adds attempt lines before the confirm stage."""
     folder.mkdir(parents=True)
@@ -253,8 +276,8 @@ def run2_digest(monkeypatch) -> None:
 
 
 @pytest.fixture()
-def run3(tmp_path, run2_digest) -> Path:
-    return write_run3(tmp_path / "private" / "run3")
+def run4(tmp_path, run2_digest) -> Path:
+    return write_run4(tmp_path / "private" / "run4")
 
 
 def rewrite(folder: Path, stage: str, edit) -> None:
@@ -268,11 +291,11 @@ def rewrite(folder: Path, stage: str, edit) -> None:
 
 # The report ---------------------------------------------------------------------------------
 
-def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_run(run3, tmp_path) -> None:
+def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_run(run4, tmp_path) -> None:
     out = [tmp_path / "out1", tmp_path / "out2"]
     for folder in out:
         folder.mkdir()
-        assert rep3.main([str(run3)], out=folder) == 0
+        assert rep3.main([str(run4)], out=folder) == 0
     files = sorted(p.name for p in out[0].iterdir())
     assert files == sorted([rep3.REPORT_JSON, rep3.REPORT_MD, rep3.ATTEMPTS_JSONL])
     assert all((out[0] / f).read_bytes() == (out[1] / f).read_bytes() for f in files)
@@ -285,18 +308,23 @@ def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_
         assert "/Users/" not in text and "/home/" not in text and str(tmp_path) not in text
         assert "break_row" not in text and "1996-03-29" not in text and "37.5" not in text
 
-    # R9: run 1 and run 2 by reference, then each attempt of run 3, without its detail text.
+    # R9: run 1 and run 2 by reference, the run 3 line, then each attempt of run 4, without its detail text.
     screen_sha = d.sha256_bytes((d.REPO / rep3.SCREEN_ATTEMPTS).read_bytes())
     assert lines[:2] == [{"run": 1, "status": "stopped", "see": rep3.SCREEN_ATTEMPTS, "file_sha256": screen_sha},
                          {"run": 2, "status": "completed", "see": rep3.SCREEN_ATTEMPTS, "file_sha256": screen_sha}]
-    run_3 = lines[2:]
-    assert [(a["stage"], a["outcome"]) for a in run_3] == [
+    assert lines[2] == RUN_3_LINE
+    assert (out[0] / rep3.ATTEMPTS_JSONL).read_text().splitlines()[2] == json.dumps(RUN_3_LINE, sort_keys=True)
+    log = (d.REPO / RUN_3_LINE["see"]).read_text().splitlines()
+    assert any(h.startswith("## ") and RUN_3_LINE["entry"] in h for h in log)
+    run_4 = lines[3:]
+    assert {a["run"] for a in run_4} == {4}
+    assert [(a["stage"], a["outcome"]) for a in run_4] == [
         *((s, "written") for s in d.STAGES[:5]), ("confirm", "refused"), ("confirm", "error"),
         ("confirm", "written"), ("check", "written")]
-    assert run_3[5]["reason"] == "shortlist_digest_mismatch" and run_3[6]["reason"] == "FileNotFoundError"
-    assert [a["attempt"] for a in run_3] == list(range(1, 10))
+    assert run_4[5]["reason"] == "shortlist_digest_mismatch" and run_4[6]["reason"] == "FileNotFoundError"
+    assert [a["attempt"] for a in run_4] == list(range(1, 10))
     assert doc["runs"]["attempts"] == {"error": 1, "refused": 1, "written": 7}
-    assert doc["runs"]["stage_sha256"] == {s: (run3 / f"{s}.sha256").read_text().strip() for s in d.STAGES}
+    assert doc["runs"]["stage_sha256"] == {s: (run4 / f"{s}.sha256").read_text().strip() for s in d.STAGES}
 
     # Test A, test B, and the R10 header.
     a = doc["test_a"]["runs"]["primary"]
@@ -312,7 +340,7 @@ def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_
     assert {m["file"] for m in prov["manifests"].values()} == {d.TRACKED_MANIFEST, d.QUOTE_MANIFEST}
     assert prov["manifests"]["second_pull_quotes"]["file_sha256"] == d.sha256_bytes(
         (d.REPO / d.QUOTE_MANIFEST).read_bytes())
-    assert doc["runs"]["code_commit"] == MAIN_BEFORE
+    assert doc["runs"]["code_commit"] == RUN_4_COMMIT and doc["runs"]["run"] == 4
 
     # R10 sample reuse: the Markdown header lists every prior exposure of the trial file word for word.
     md = (out[0] / rep3.REPORT_MD).read_text()
@@ -327,11 +355,11 @@ def test_a_full_run_gives_three_aggregate_files_with_the_same_bytes_on_a_second_
     assert len(doc["stages"]["check"]["check_gap_months"]) == 26
 
 
-def test_the_public_weight_rule_on_nested_groups(run3) -> None:
+def test_the_public_weight_rule_on_nested_groups(run4) -> None:
     """Confirm CW-PIT: cash_merger 5 and 5 in the two loader runs (the stage files cannot show the same events),
     totals 9 and 12 (3 apart): totals only. Pre-seal: 1 event: no weight. Path breaks: 3 equal positions in both
     runs: a CW weight sum; 1 position: none. No signal set gets a weight, and no single maximum is given."""
-    doc, _ = rep3.build(run3)
+    doc, _ = rep3.build(run4)
     confirm = doc["stages"]["confirm"]["segments"]["confirm"]
     pre = doc["stages"]["check"]["segments"]["check_pre_seal"]
     assert confirm["r4"]["weight_level"] == "total" and pre["r4"]["weight_level"] == "none"
@@ -347,6 +375,12 @@ def test_the_public_weight_rule_on_nested_groups(run3) -> None:
     assert not rep.keys(doc) & (rep.SINGLE_MAX | {"each", "positions", "path_break_positions"})
     assert {"r4.check.check_pre_seal.weight_at_last_rebalance_sum", "path_break.check.check_pre_seal.weight_sum",
             "r4.confirm.confirm.by_cause.weight_at_last_rebalance_sum"} <= set(doc["missing"])
+    # Amendment 4: no held event, so no weight sum in any segment.
+    for stage, names in rep3.SEGMENTS.items():
+        for n in names:
+            seg = doc["stages"][stage]["segments"][n]["exit_gap"]
+            assert not seg["weight_given"] and f"exit_gap.{stage}.{n}.held_cw_weight_sum" in doc["missing"]
+            assert not rep.keys(seg) & rep3.WEIGHTS
 
 
 @pytest.mark.parametrize("primary, shared, other, allowed", [
@@ -362,6 +396,63 @@ def test_path_break_weights_need_three_positions_and_runs_equal_or_three_apart(p
     assert all(("weight_sum" in v) is allowed for v in found.values())
 
 
+def exit_gap_part(held: tuple[int, int]) -> dict:
+    return {"segment": {"name": "confirm"},
+            "runs": {run: {"exit_gap_events": gap_events(n, 0)} for run, n in zip(RUNS, held)}}
+
+
+@pytest.mark.parametrize("r4_held, gap_held, level, allowed", [
+    ((3, 6), (3, 6), "total", True),          # each R4 total holds the same events or 3 more
+    ((4, 7), (3, 6), "total", False),         # an R4 total and the held events of its run differ by 1 event
+    ((6, 6), (3, 6), "none", True),           # no R4 sum is given; the loader runs are 3 apart
+    ((3, 3), (3, 3), "none", False),          # equal counts in two loader runs need not be the same events
+    ((2, 2), (2, 2), "none", False),          # fewer than 3 held events
+    ((3, 6), (3, 6), "by_cause", True),       # the R4 unknown sum of each run holds the same events
+    ((4, 7), (3, 6), "by_cause", False)])     # the R4 unknown sum and the held events differ by 1 event
+def test_the_exit_gap_weight_sum_follows_the_public_weight_rule(r4_held, gap_held, level, allowed) -> None:
+    """The held amendment 4 events are CW-PIT R4 events of cause unknown. ``r4_held`` gives the unknown count of
+    each loader run; with ``by_cause``, cash_merger and failure have 3 and 6 events too, so each cause gets a sum."""
+    other = 3 if level == "by_cause" else 0
+    held = {run: {"cash_merger": other * (k + 1), "failure": other * (k + 1), "unknown": n}
+            for k, (run, n) in enumerate(zip(RUNS, r4_held))}
+    groups, found_level = rep.look_r4({run: {case: {"r4": r4(held[run], run)} for case in CASES} for run in RUNS})
+    assert found_level == level
+    found, given = rep3.exit_gap_runs(exit_gap_part(gap_held), groups, found_level)
+    assert given is allowed
+    for run, n in zip(RUNS, gap_held):
+        expected = gap_events(n, 0)
+        if not allowed:
+            expected.pop("held_cw_weight_sum")
+        assert found[run] == expected
+
+
+@pytest.mark.parametrize("unknown, given", [((3, 6), True), ((2, 2), False)])
+def test_the_exit_gap_table_gives_each_loader_run(tmp_path, run2_digest, unknown, given) -> None:
+    """Confirm CW-PIT R4: cash_merger 5 and 5, failure 4 and 7, and the held amendment 4 events as cause unknown.
+    Held 3 and 6: each R4 total and the other loader run differ from them by at least 3 events, so the weight sum is
+    given. Held 2 and 2: fewer than 3, so it is withheld. The loader runs differ in each count."""
+    held = {run: {"cash_merger": 5, "failure": 4 if run == "primary" else 7, "unknown": n}
+            for run, n in zip(RUNS, unknown)}
+    gap = {run: gap_events(n, k + 1) for k, (run, n) in enumerate(zip(RUNS, unknown))}
+
+    def edit(found: dict) -> None:
+        found["confirm"]["segment"] = segment("confirm", "confirm", "1993-02", "2014-03", held,
+                                              {run: [position(0), position(1), position(2)] for run in RUNS}, gap)
+    texts = rep3.outputs(*rep3.build(write_run4(tmp_path / "run4", edit=edit)))
+    doc = json.loads(texts[rep3.REPORT_JSON])
+    seg = doc["stages"]["confirm"]["segments"]["confirm"]
+    assert seg["r4"]["weight_level"] == "total" and seg["exit_gap"]["weight_given"] is given
+    for run in RUNS:
+        expected = {k: v for k, v in gap[run].items() if given or k != "held_cw_weight_sum"}
+        assert seg["exit_gap"][rep3.RUN_LEVEL][run] == expected
+    assert ("exit_gap.confirm.confirm.held_cw_weight_sum" in doc["missing"]) is not given
+    lines = texts[rep3.REPORT_MD].splitlines()
+    for run, k, n in zip(RUNS, (1, 2), unknown):
+        weight = f"{0.01 * n:.4f}" if given else "not given"
+        assert (f"| {run} | {n + k} | failure {k}, unknown {n} | {n} | unknown {n} | {weight} | {k} | 1 | 1 | {k + 1} |"
+                in lines)
+
+
 def test_half_spread_gives_shares_a_band_and_no_notional_sum() -> None:
     found = rep3.half_spread({"1995": year_spread(), "1996": year_spread(None)})
     year = found["1995"]
@@ -373,8 +464,8 @@ def test_half_spread_gives_shares_a_band_and_no_notional_sum() -> None:
         "0 to 5", "0 to 5", "5 to 10", "100 to 200", "200 or more", "200 or more"]
 
 
-def test_the_text_never_calls_the_result_a_confirmation_or_claims_a_profit(run3) -> None:
-    texts = rep3.outputs(*rep3.build(run3))
+def test_the_text_never_calls_the_result_a_confirmation_or_claims_a_profit(run4) -> None:
+    texts = rep3.outputs(*rep3.build(run4))
     label = trial()["evidence_ceiling"]["run_label"]
     assert "confirmation" in label and label in texts[rep3.REPORT_MD]
     for text in texts.values():
@@ -424,11 +515,11 @@ def log_without_check(folder: Path) -> None:
     (bad_sha, "stage_digest_mismatch"), (bad_chain, "stage_chain_mismatch"), (bad_context, "stage_context_mismatch"),
     (no_stage, "stage_missing"), (bad_freeze, "shortlist_digest_mismatch"), (bad_test_b, "test_b_mismatch"),
     (no_log, "run_log_missing"), (log_without_check, "run_log_mismatch")])
-def test_a_failed_check_refuses_and_writes_nothing(run3, tmp_path, capsys, damage, reason) -> None:
-    damage(run3)
+def test_a_failed_check_refuses_and_writes_nothing(run4, tmp_path, capsys, damage, reason) -> None:
+    damage(run4)
     out = tmp_path / "out"
     out.mkdir()
-    assert rep3.main([str(run3)], out=out) == 1
+    assert rep3.main([str(run4)], out=out) == 1
     assert f"refused: {reason}:" in capsys.readouterr().err
     assert list(out.iterdir()) == []
 
@@ -437,16 +528,16 @@ def test_a_failed_check_refuses_and_writes_nothing(run3, tmp_path, capsys, damag
     ({"trial_sha256": "a" * 64}, "trial_mismatch"), ({"data_files_sha256": "b" * 64}, "data_manifest_mismatch"),
     ({"code_pins_sha256": {}}, "code_pins_mismatch"), ({"code_sha256": "c" * 64}, "code_mismatch")])
 def test_a_run_from_another_trial_data_or_code_refuses(tmp_path, capsys, run2_digest, change, reason) -> None:
-    folder = write_run3(tmp_path / "run3", context(**change))
+    folder = write_run4(tmp_path / "run4", context(**change))
     assert rep3.main([str(folder)], out=tmp_path) == 1
     assert f"refused: {reason}:" in capsys.readouterr().err
     assert not any(p.is_file() for p in tmp_path.iterdir())
 
 
-def test_a_freeze_other_than_the_run_2_freeze_refuses(run3, monkeypatch) -> None:
+def test_a_freeze_other_than_the_run_2_freeze_refuses(run4, monkeypatch) -> None:
     monkeypatch.setattr(d, "run2_digest", lambda trial: "f" * 64)
     with pytest.raises(RunnerStop) as stop:
-        rep3.build(run3)
+        rep3.build(run4)
     assert stop.value.reason == "run2_digest_mismatch"
 
 
@@ -454,8 +545,45 @@ def test_test_b_open_refuses(tmp_path, run2_digest) -> None:
     def chosen(found: dict) -> None:
         found["calibration"]["decision"] = "chosen"
     with pytest.raises(RunnerStop) as stop:
-        rep3.build(write_run3(tmp_path / "run3", edit=chosen))
+        rep3.build(write_run4(tmp_path / "run4", edit=chosen))
     assert stop.value.reason == "test_b_open"
+
+
+def segment_parts(found: dict) -> list[dict]:
+    return [found["confirm"]["segment"], *found["check"]["segments"].values()]
+
+
+@pytest.mark.parametrize("stage", ["confirm", "check"])
+def test_a_confirm_or_check_file_without_exit_gap_events_refuses(tmp_path, run2_digest, stage) -> None:
+    def drop(found: dict) -> None:
+        part = found["confirm"]["segment"] if stage == "confirm" else found["check"]["segments"]["check_post_seal"]
+        del part["runs"]["last_close"]["exit_gap_events"]
+    with pytest.raises(RunnerStop) as stop:
+        rep3.build(write_run4(tmp_path / "run4", edit=drop))
+    assert stop.value.reason == "exit_gap_events_missing"
+
+
+@pytest.mark.parametrize("shape, reason", [("as_run", "stage_missing"), ("all_stages", "trial_mismatch"),
+                                           ("run_3_code_only", "code_mismatch")])
+def test_a_run_3_folder_refuses(tmp_path, capsys, run2_digest, shape, reason) -> None:
+    """Run 3 made its stage files from the trial file with amendments 1 to 3 and the code of b1b0517, wrote no
+    confirm or check file, and has no exit_gap_events. ``all_stages`` adds the two files it never wrote;
+    ``run_3_code_only`` gives them the merged trial file and keeps the run 3 code."""
+    def no_gap(found: dict) -> None:
+        for part in segment_parts(found):
+            for run in RUNS:
+                del part["runs"][run]["exit_gap_events"]
+    trial_sha = d.TRIAL_SHA256 if shape == "run_3_code_only" else RUN_3_TRIAL
+    folder = write_run4(tmp_path / "run3", context(trial_sha256=trial_sha, code_sha256=RUN_3_CODE), edit=no_gap)
+    if shape == "as_run":
+        for stage in ("confirm", "check"):
+            for suffix in ("json", "sha256"):
+                (folder / f"{stage}.{suffix}").unlink()
+    out = tmp_path / "out"
+    out.mkdir()
+    assert rep3.main([str(folder)], out=out) == 1
+    assert f"refused: {reason}:" in capsys.readouterr().err
+    assert list(out.iterdir()) == []
 
 
 # Guards -----------------------------------------------------------------------------------
@@ -477,11 +605,12 @@ SEG = ("stages", "confirm", "segments", "confirm")
     ((*SEG, "half_spread", "cw_pit", "primary", "primary", "1993", "traded_notional"), 1.2, "private_field_in_output"),
     ((*SEG, "half_spread", "cw_pit", "primary", "primary", "1993", "max_half_spread"), 37.5, "private_field_in_output"),
     ((*SEG, "tilt_stats", "S1", "primary", "primary", "turnover_by_year"), {"tilt": {}}, "private_field_in_output"),
+    ((*SEG, "exit_gap", "held_cw_weight_sum"), 0.01, "private_field_in_output"),
     (("limitations",), [f"see {USERS}/someone/efr"], "private_path_in_output"),
     (("limitations",), ["The result is a confirmation."], "claim_in_output"),
     (("limitations",), ["The tilt is profitable."], "claim_in_output")])
-def test_each_guard_refuses(run3, path, value, reason) -> None:
-    doc, attempts = rep3.build(run3)
+def test_each_guard_refuses(run4, path, value, reason) -> None:
+    doc, attempts = rep3.build(run4)
     rep3.outputs(doc, attempts)
     put(doc, path, value)
     with pytest.raises(RunnerStop) as stop:
@@ -489,8 +618,8 @@ def test_each_guard_refuses(run3, path, value, reason) -> None:
     assert stop.value.reason == reason
 
 
-def test_an_attempt_line_with_its_detail_refuses(run3) -> None:
-    doc, attempts = rep3.build(run3)
+def test_an_attempt_line_with_its_detail_refuses(run4) -> None:
+    doc, attempts = rep3.build(run4)
     with pytest.raises(RunnerStop) as stop:
         rep3.outputs(doc, [*attempts, {"run": 3, "stage": "check", "outcome": "refused", "detail": "x"}])
     assert stop.value.reason == "private_field_in_output"
@@ -498,12 +627,15 @@ def test_an_attempt_line_with_its_detail_refuses(run3) -> None:
 
 # Run facts and the screen report ------------------------------------------------------------
 
-def test_the_run_3_code_digest_is_the_code_of_main_b1b0517(tmp_path) -> None:
-    """``code_digest`` over the research/ and src/ Python files at the commit (CI checks out the full history)."""
-    archive = subprocess.run(["git", "archive", rep3.RUN_3["code_commit"], *d.CODE_FOLDERS], cwd=d.REPO,
-                             capture_output=True, check=True).stdout
+@pytest.mark.parametrize("commit, digest", [(RUN_4_COMMIT, rep3.RUN_4["code_sha256"]), (MAIN_BEFORE, RUN_3_CODE)])
+def test_the_run_4_and_run_3_code_digests_are_the_code_of_their_commits(tmp_path, commit, digest) -> None:
+    """``code_digest`` over the research/ and src/ Python files at the commit (CI checks out the full history): run 4
+    at main e5ac840 (``RUN_4``), and run 3 at main b1b0517 (the run 3 context of the refusal test)."""
+    assert rep3.RUN_4["code_commit"] == RUN_4_COMMIT and rep3.RUN_3["code_commit"] == MAIN_BEFORE
+    archive = subprocess.run(["git", "archive", commit, *d.CODE_FOLDERS], cwd=d.REPO, capture_output=True,
+                             check=True).stdout
     subprocess.run(["tar", "-x", "-C", str(tmp_path)], input=archive, check=True)
-    assert d.code_digest(tmp_path) == rep3.RUN_3["code_sha256"]
+    assert d.code_digest(tmp_path) == digest
 
 
 def test_the_screen_report_gives_the_same_bytes_as_on_main_before(tmp_path) -> None:

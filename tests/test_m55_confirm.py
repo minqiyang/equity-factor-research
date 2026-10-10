@@ -343,10 +343,11 @@ def test_the_half_spread_report_shows_each_quote_status_and_the_cost_above_the_s
 
 
 def test_the_public_report_reads_the_stage_files_of_the_long_world_chain(long_chain, quotes, monkeypatch) -> None:
-    """The public confirm report (card m55-conrep) on this driver's own stage files: three aggregate files with no
-    PERMNO. The world's freeze stands in for the run 2 freeze, and its code for the code of main b1b0517."""
+    """The public confirm report (cards m55-conrep and m55-report4) on this driver's own stage files: three aggregate
+    files with no PERMNO. The world's freeze stands in for the run 2 freeze, and its code for the code of main
+    e5ac840. The held amendment 4 event of the confirm segment is one position, so its weight sum is withheld."""
     monkeypatch.setattr(d, "run2_digest", lambda trial: long_chain["frozen"])
-    monkeypatch.setitem(rep3.RUN_3, "code_sha256", d.code_digest(d.REPO))
+    monkeypatch.setitem(rep3.RUN_4, "code_sha256", d.code_digest(d.REPO))
     doc, attempts = rep3.build(long_chain["folder"], tracked=TRACKED, tracked_quotes=quotes.manifest)
     texts = rep3.outputs(doc, attempts)
     assert set(texts) == {rep3.REPORT_JSON, rep3.REPORT_MD, rep3.ATTEMPTS_JSONL}
@@ -354,11 +355,16 @@ def test_the_public_report_reads_the_stage_files_of_the_long_world_chain(long_ch
     for text in texts.values():
         assert not ids & set(re.findall(r"(?<![\w.])\d{6}(?![\w.])", text))
     assert doc["runs"]["shortlist"] == ["S7"] and doc["test_a"]["confirm_stop"] == "confirm_below_floor"
-    assert [a["stage"] for a in attempts if a["run"] == 3] == list(d.STAGES)
+    assert [a["stage"] for a in attempts if a["run"] == 4] == list(d.STAGES)
     for name, names in rep3.SEGMENTS.items():
         assert set(doc["stages"][name]["segments"]) == set(names)
-        for seg in doc["stages"][name]["segments"].values():
+        for n, seg in doc["stages"][name]["segments"].items():
             assert set(seg["tilt_stats"]) == set(rep3.SETS) and set(seg["half_spread"]["tilt"]) == set(rep3.SETS)
+            events = int(n == "confirm")
+            for run in d.RUNS:
+                found = seg["exit_gap"][rep3.RUN_LEVEL][run]
+                assert (found["events"], found["held"]) == (events, events) and rep3.EXIT_GAP_WEIGHT not in found
+            assert f"exit_gap.{name}.{n}.{rep3.EXIT_GAP_WEIGHT}" in doc["missing"]
 
 
 # Amendment 4: an index exit on a row without a close ------------------------------------------

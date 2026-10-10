@@ -1,29 +1,32 @@
 """Milestone 5.5: the public report of the confirm and check stages of trial family v1 from the private stage files
-of run 3.
+of run 4.
 
-The script reads the seven stage files and the run log that ``research/m55_driver.py`` wrote for run 3, checks them,
+The script reads the seven stage files and the run log that ``research/m55_driver.py`` wrote for run 4, checks them,
 and writes three public files with aggregates only:
 
 - ``reports/m55_confirm_v1.json``: every aggregate of the report;
 - ``reports/m55_confirm_v1.md``: the decision tables and the reports owed in plain tables;
-- ``reports/m55_confirm_v1_attempts.jsonl``: one line per attempt of run 3 (R9), after one reference line per earlier
-  run (``reports/m55_screen_v1_attempts.jsonl``).
+- ``reports/m55_confirm_v1_attempts.jsonl``: one line per attempt of run 4 (R9), after one reference line per earlier
+  run: run 1 and run 2 (``reports/m55_screen_v1_attempts.jsonl``), and run 3, which refused at the confirm stage and
+  wrote no confirm or check file (``RUN_3``).
 
 Checks (each refuses with a non-zero exit, and no file is written): each ``<stage>.sha256`` file matches its stage
 file, the stages share one context and each names the digests of the stages before it
 (``m55_screen_report.check_run``); the context names the merged trial file (``m55_driver.TRIAL_SHA256``), the data of
-both tracked manifests, the code pins of the trial file, and the code of main ``b1b0517``; the shortlist digest
+both tracked manifests, the code pins of the trial file, and the code of main ``e5ac840``; the shortlist digest
 recomputed from the screen records equals the freeze file (``m55_screen_report.check_freeze``) and the run 2 digest
 that amendment 3 states, and so does the digest of the confirm and check files; the test B record of each later stage
-equals ``m55_driver.record_test_b`` and is stopped; and the run log names each stage file once, with its digest. The
-script computes no new test statistic.
+equals ``m55_driver.record_test_b`` and is stopped; each segment and loader run of the confirm and check files has
+``exit_gap_events`` (amendment 4); and the run log names each stage file once, with its digest. The script computes
+no new test statistic.
 
 Privacy (owner grant O-22, R11): the stage files hold per-position rows (path-break positions, blanked level windows,
 and B2 rows) and per-cell trade weights. The report gives aggregates only, under the public weight rule (coordinator,
 2026-10-08, REVIEW M-1): a weight is published only as a sum over at least 3 positions, and no two published sums
-differ by fewer than 3 positions. So only the CW-PIT book of each segment and loader run gets R4 and path-break
-weight sums, a signal set gets counts only, and no single maximum weight is given. The half-spread tables give shares
-of the traded notional and no traded notional sum by year, and the largest half-spread of a traded cell as a band.
+differ by fewer than 3 positions. So only the CW-PIT book of each segment and loader run gets R4, path-break, and
+amendment 4 weight sums, a signal set gets counts only, and no single maximum weight is given. The half-spread tables
+give shares of the traded notional and no traded notional sum by year, and the largest half-spread of a traded cell
+as a band.
 The report holds no private path: the stage folder is a command-line argument and the report does not name it. The
 output is the same bytes on each run.
 """
@@ -53,11 +56,19 @@ ATTEMPTS_JSONL = "m55_confirm_v1_attempts.jsonl"
 SCREEN_ATTEMPTS = "reports/m55_screen_v1_attempts.jsonl"     # the lines of run 1 and run 2 (R9)
 RUNS, CASES, EXITS = d.RUNS, d.CASES, w.EXIT_CLASSES
 DECISION = ("primary", "primary")               # test A reads the primary loader run with the primary cost case
-# The run facts that the stage files do not hold: the code commit of run 3 and the digest of its research/ and src/
+# The run facts that the stage files do not hold: the code commit of run 4 and the digest of its research/ and src/
 # Python files (m55_driver.code_digest) at that commit.
-RUN_3 = {"run": 3, "code_commit": "b1b0517294247e92de6734916fa84937c1351622",
-         "code_sha256": "59b0ba9d2d6574ed6ddf25372fb41093db6f420750cee42acc97365ec93707ca",
-         "trial": "trial family v1 with amendments 1 to 3"}
+RUN_4 = {"run": 4, "code_commit": "e5ac840e6e04406683dc93879898d272c76aaa32",
+         "code_sha256": "af01de3e1b399f8e2a12099e5f525b6c71ff187a9b15c4e1735a1de1c982af0d",
+         "trial": "trial family v1 with amendments 1 to 4"}
+# The reference line of run 3 (R9), from the coordinator's record: the confirm stage refused (engine check H-5) and
+# wrote no file, so no report reads its folder. Its detail text stays in its private run log.
+RUN_3 = {"run": 3, "status": "refused", "code_commit": "b1b0517294247e92de6734916fa84937c1351622",
+         "stages": {**{s: "written" for s in d.STAGES[:d.STAGES.index("freeze") + 1]}, "confirm": "refused",
+                    "check": "not_run"},
+         "reason": "unresolved_disappearance",
+         "run_log_sha256": "3c7e6553b4fdf5ec0101ce7e9e98bd5e21978a48f54e2b4ada517c76a4b862b8",
+         "see": "docs/decision_log.md", "entry": "Trial Family v1 Amendment 4"}
 SETS = (d.COMPOSITE, *d.SECONDARY)              # the composite of the shortlist, S1 to S8 alone, the Family A baseline
 SEGMENTS = {"confirm": ("confirm",), "check": ("check_pre_seal", "check_post_seal")}
 # The largest half-spread of a traded cell is published as a band in bp (lower edge included): an exact value with
@@ -69,6 +80,8 @@ IDENTIFIERS = frozenset({"permno", "permanent_id", "gvkey", "ticker", "cusip", "
 PRIVATE_KEYS = rep.FORBIDDEN | rep.SINGLE_MAX | IDENTIFIERS | frozenset(
     {"traded_notional", "traded_notional_by_status", "max_half_spread", "cw_weight_by_exit_class"})
 RUN_LEVEL = "run_level"                         # the only key under which a weight sum may appear
+EXIT_GAP_WEIGHT = "held_cw_weight_sum"          # the CW-PIT weight sum of the held amendment 4 events
+WEIGHTS = rep.GROUP_WEIGHTS | {EXIT_GAP_WEIGHT}
 BY_YEAR = ("turnover_by_year", "cost_drag_by_year")
 # Words that would call the result a confirmation or claim a profit. The run label of the trial file is quoted word
 # for word, so it is removed from a text before the check.
@@ -87,16 +100,16 @@ def data_digest(trial: Mapping[str, Any], tracked: Mapping[str, Any], tracked_qu
 
 
 def check_context(ctx: Mapping[str, Any], trial: Mapping[str, Any], data_sha: str, repo: Path) -> None:
-    """The one context of run 3: the merged trial file, the tracked data, the trial's code pins, and the code of
-    ``RUN_3["code_commit"]``."""
+    """The one context of run 4: the merged trial file, the tracked data, the trial's code pins, and the code of
+    ``RUN_4["code_commit"]``."""
     if ctx["trial_sha256"] != d.TRIAL_SHA256:
-        raise refuse("trial_mismatch", "run 3 was not made from the merged trial file with amendments 1 to 3")
+        raise refuse("trial_mismatch", "run 4 was not made from the merged trial file with amendments 1 to 4")
     if ctx["data_files_sha256"] != data_sha:
-        raise refuse("data_manifest_mismatch", "run 3 was not made from the data of the two tracked manifests")
+        raise refuse("data_manifest_mismatch", "run 4 was not made from the data of the two tracked manifests")
     if ctx["code_pins_sha256"] != d.context(trial, d.TRIAL_SHA256, data_sha, repo)["code_pins_sha256"]:
-        raise refuse("code_pins_mismatch", "run 3 was not made from the code pins of the trial file")
-    if ctx["code_sha256"] != RUN_3["code_sha256"]:
-        raise refuse("code_mismatch", f"run 3 was not made from the code of {RUN_3['code_commit']}")
+        raise refuse("code_pins_mismatch", "run 4 was not made from the code pins of the trial file")
+    if ctx["code_sha256"] != RUN_4["code_sha256"]:
+        raise refuse("code_mismatch", f"run 4 was not made from the code of {RUN_4['code_commit']}")
 
 
 def check_test_b(payloads: Mapping[str, dict], digests: Mapping[str, str]) -> dict[str, Any]:
@@ -117,7 +130,7 @@ def check_digest(payloads: Mapping[str, dict], frozen: Mapping[str, Any], trial:
             payloads[s]["result"]["digest_sha256"] != run_2 or payloads[s]["result"].get("shortlist",
                                                                                      frozen["shortlist"])
             != frozen["shortlist"] for s in SEGMENTS):
-        raise refuse("run2_digest_mismatch", "the run 3 freeze is not the run 2 freeze that amendment 3 states")
+        raise refuse("run2_digest_mismatch", "the run 4 freeze is not the run 2 freeze that amendment 3 states")
     return run_2
 
 
@@ -133,7 +146,7 @@ def attempts_of(folder: Path, digests: Mapping[str, str]) -> list[dict[str, Any]
         outcome = next((k for k in ("written", "refused", "error") if k in entry), None)
         if outcome is None:
             continue
-        line = {"run": RUN_3["run"], "attempt": len(lines) + 1, "stage": entry["stage"], "outcome": outcome}
+        line = {"run": RUN_4["run"], "attempt": len(lines) + 1, "stage": entry["stage"], "outcome": outcome}
         if outcome == "written":
             line["stage_sha256"] = entry["written"]
             written.setdefault(entry["stage"], []).append(entry["written"])
@@ -172,6 +185,36 @@ def path_break_runs(runs: Mapping[str, Mapping[str, Any]]) -> tuple[dict[str, An
     allowed = (all(sum(h.values()) >= rep.MIN_POSITIONS for h in held.values())
                and all(n == 0 or n >= rep.MIN_POSITIONS for n in apart))
     return {run: rep.path_break(runs[run]["positions"], ("cw",) if allowed else ()) for run in RUNS}, allowed
+
+
+def exit_gap_runs(part: Mapping[str, Any], r4: Mapping[str, Any], level: str) -> tuple[dict[str, Any], bool]:
+    """The amendment 4 events of each loader run (``exit_gap_events``): every count, and the CW-PIT weight sum of
+    the held events when the public weight rule allows it.
+
+    The held events are CW-PIT R4 events of cause unknown, so the rule also compares this sum with each R4 weight
+    sum of the segment that the report gives (``level``, from ``look_r4``). In one loader run the held events are
+    part of each R4 group, so a count difference there is a difference of positions. Across loader runs, equal
+    counts fail (``m55_screen_report.weight_rule``).
+    """
+    runs = part["runs"]
+    if any("exit_gap_events" not in runs[run] for run in RUNS):
+        raise refuse("exit_gap_events_missing", f"{part['segment']['name']}: a loader run has no exit_gap_events")
+    found = {run: dict(runs[run]["exit_gap_events"]) for run in RUNS}
+    causes = list(r4["primary"]["primary"]["by_cause"])
+
+    def split(held: Mapping[str, int]) -> dict[str, int]:
+        return {c: held.get(c, 0) for c in causes}
+    groups = {(run, "exit_gap"): split({d.EXIT_GAP_CAUSE: found[run]["held"]}) for run in RUNS}
+    if level != "none":
+        for run, case in itertools.product(RUNS, CASES):
+            groups[(run, case)] = held = {c: r4[run][case]["by_cause"][c]["held"] for c in causes}
+            if level == "by_cause":
+                groups.update({(run, case, c): split({c: held[c]}) for c in causes})
+    allowed = rep.weight_rule(groups)
+    if not allowed:
+        for v in found.values():
+            v.pop(EXIT_GAP_WEIGHT)
+    return found, allowed
 
 
 def band(value: float | None) -> str | None:
@@ -227,6 +270,7 @@ def segment_doc(part: Mapping[str, Any]) -> dict[str, Any]:
     r4_run_level, r4_level = rep.look_r4({run: {case: {"r4": cw[run][case]["r4"]["cw"]} for case in CASES}
                                           for run in RUNS})
     pb_run_level, pb_weights = path_break_runs(runs)
+    gap_run_level, gap_weights = exit_gap_runs(part, r4_run_level, r4_level)
 
     def each(fn) -> dict[str, Any]:
         return {s: {run: {case: fn(items[s]["records"][run][case]) for case in CASES} for run in RUNS} for s in sets}
@@ -250,6 +294,7 @@ def segment_doc(part: Mapping[str, Any]) -> dict[str, Any]:
                                 for s in sets},
                        "blanked_level_windows": {run: rep.aggregate(runs[run]["blanked_level_windows"])
                                                  for run in RUNS}},
+        "exit_gap": {RUN_LEVEL: gap_run_level, "weight_given": gap_weights},
         "r6": {"members": {run: runs[run]["r6_members"] for run in RUNS}, "signals": part["signals_r6"],
                "c_zero_by_exit_class": {s: items[s]["c_zero_by_exit_class"] for s in sets
                                         if "c_zero_by_exit_class" in items[s]}},
@@ -302,10 +347,10 @@ def test_a(confirm: Mapping[str, Any], check: Mapping[str, Any]) -> dict[str, An
             "holm_alpha": crit.ALPHA, "confirm_floor": crit.CONFIRM_FLOOR}
 
 
-def build(run_3: Path, repo: Path = d.REPO, tracked: Mapping[str, Any] | None = None,
+def build(run_4: Path, repo: Path = d.REPO, tracked: Mapping[str, Any] | None = None,
           tracked_quotes: Mapping[str, Any] | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Check run 3 and return the report document (aggregates only) and the attempt lines."""
-    folder = Path(run_3)
+    """Check run 4 and return the report document (aggregates only) and the attempt lines."""
+    folder = Path(run_4)
     trial, _ = d.load_trial(repo)
     tracked = json.loads((repo / d.TRACKED_MANIFEST).read_text()) if tracked is None else tracked
     tracked_quotes = json.loads((repo / d.QUOTE_MANIFEST).read_text()) if tracked_quotes is None else tracked_quotes
@@ -316,17 +361,17 @@ def build(run_3: Path, repo: Path = d.REPO, tracked: Mapping[str, Any] | None = 
     test_b = check_test_b(payloads, digests)
     frozen = rep.check_freeze(payloads, folder)
     run_2 = check_digest(payloads, frozen, trial)
-    attempts = [*earlier_runs(repo), *attempts_of(folder, digests)]
+    attempts = [*earlier_runs(repo), RUN_3, *attempts_of(folder, digests)]
     confirm, check = payloads["confirm"]["result"], payloads["check"]["result"]
 
     periods = trial["periods"]
     reuse = next(i for i in trial["prior_exposures"]["items"] if i.startswith("M5 step 2"))
-    run = {"run": RUN_3["run"], "trial": RUN_3["trial"], "trial_sha256": ctx["trial_sha256"],
-           "code_commit": RUN_3["code_commit"], "code_sha256": ctx["code_sha256"],
+    run = {"run": RUN_4["run"], "trial": RUN_4["trial"], "trial_sha256": ctx["trial_sha256"],
+           "code_commit": RUN_4["code_commit"], "code_sha256": ctx["code_sha256"],
            "code_pins_sha256": ctx["code_pins_sha256"], "data_files_sha256": ctx["data_files_sha256"],
            "stage_sha256": digests, "status": "completed", "freeze_decision": frozen["decision"],
            "shortlist": frozen["shortlist"], "shortlist_digest_sha256": frozen["digest_sha256"],
-           "attempts": dict(sorted(Counter(a["outcome"] for a in attempts if a["run"] == RUN_3["run"]).items()))}
+           "attempts": dict(sorted(Counter(a["outcome"] for a in attempts if a["run"] == RUN_4["run"]).items()))}
     manifests = {name: {"file": path, "file_sha256": d.sha256_bytes((repo / path).read_bytes()),
                         "vintage": manifest["vintage"], "main_files": len(manifest["files"]),
                         "main_rows": sum(int(r["rows"]) for r in manifest["files"].values())}
@@ -405,6 +450,11 @@ def missing(doc: Mapping[str, Any]) -> dict[str, str]:
         for n, seg in part["segments"].items():
             if not seg["path_break"]["weight_given"]:
                 out[f"path_break.{stage}.{n}.weight_sum"] = f"The CW-PIT weight sum of the path-break positions. {rule}"
+            if not seg["exit_gap"]["weight_given"]:
+                out[f"exit_gap.{stage}.{n}.{EXIT_GAP_WEIGHT}"] = (
+                    "The CW-PIT weight sum of the amendment 4 events that CW-PIT holds. A loader run holds fewer than 3 "
+                    "of them, or this sum and another published sum (of the other loader run, or an R4 sum of the "
+                    f"segment) can differ by fewer than 3 positions. {rule}")
     return dict(sorted(out.items()))
 
 
@@ -434,6 +484,14 @@ def limitations(doc: Mapping[str, Any]) -> list[str]:
                            f"(share {blank['share']:.4f}) from every series of the primary loader run. "
                            f"{pb['position_count']} held positions cause it{weight}. The frozen rule blanks these "
                            "months in every book, and R6 forbids a fill.")
+    gap = [seg["exit_gap"][RUN_LEVEL]["primary"] for part in doc["stages"].values()
+           for seg in part["segments"].values()]
+    out.append("Under amendment 4, a member that leaves the index on a row without a close gets an R4 event of cause "
+               "unknown on that row, in the confirm and check segments only. In the primary loader run there are "
+               f"{sum(g['events'] for g in gap)} such events, CW-PIT holds {sum(g['held'] for g in gap)} of them, and "
+               f"{sum(g['held_priced_again'] for g in gap)} of the held ones have a close again later in the segment. "
+               "The primary run settles a held event at -100 percent, because a later close is not known on that row "
+               "(R1). The last_close run settles it at the last close and is the R4 sensitivity for this case.")
     out += [f"The check period is labelled '{head['check_label']}'. It leaves out the {len(crit.CHECK_GAP_MONTHS)} "
             f"months {crit.CHECK_GAP_MONTHS[0]} to {crit.CHECK_GAP_MONTHS[-1]} (the seal, the sealed 2020-07-31 row, "
             "and the warm-up), and each segment starts from cash.",
@@ -608,11 +666,11 @@ def provenance_section(doc: Mapping[str, Any]) -> list[str]:
                      f"{m['main_files']} main files, {m['main_rows']} main rows"])
     rows += [["Data files SHA-256 (both pulls)", f"`{prov['data_files_sha256']}`"],
              ["Run 2 freeze digest (amendment 3)", f"`{prov['run2_digest_sha256']}`"],
-             ["Run 3 code", f"commit `{run['code_commit']}`, code SHA-256 `{run['code_sha256']}`"],
-             ["Run 3 run log SHA-256", f"`{prov['run_log_sha256']}`"],
-             *([f"Run 3 {stage}.json", f"`{digest}`"] for stage, digest in run["stage_sha256"].items())]
+             ["Run 4 code", f"commit `{run['code_commit']}`, code SHA-256 `{run['code_sha256']}`"],
+             ["Run 4 run log SHA-256", f"`{prov['run_log_sha256']}`"],
+             *([f"Run 4 {stage}.json", f"`{digest}`"] for stage, digest in run["stage_sha256"].items())]
     out += table(["Item", "Value"], rows)
-    out += ["Pinned files of run 3 (SHA-256):", "",
+    out += ["Pinned files of run 4 (SHA-256):", "",
             *table(["File", "SHA-256"], [[f"`{p}`", f"`{v}`"] for p, v in sorted(run["code_pins_sha256"].items())]),
             "## Costs", "",
             "Confirm and check runs: " + "; ".join(
@@ -622,11 +680,14 @@ def provenance_section(doc: Mapping[str, Any]) -> list[str]:
             f"{costs['borrow']}. The Family A baseline over the screen months uses the screen cost schedule with no "
             "override.", "",
             "## Runs and attempts (R9)", "",
-            f"Run 3 ran the trial family again from the coverage counts into a new folder, as amendment 3 states. It "
-            f"froze `{run['freeze_decision']}` with the shortlist {', '.join(run['shortlist'])} and the run 2 digest. "
-            f"Attempts in the run log: " + ", ".join(f"{k} {v}" for k, v in sorted(run["attempts"].items()))
-            + f". `reports/{ATTEMPTS_JSONL}` has one line per attempt, after the reference lines of run 1 and run 2 "
-            f"(`{SCREEN_ATTEMPTS}`).", ""]
+            f"Run 4 ran every stage again from coverage, on the code of amendment 4, into a new folder, as amendment 4 "
+            f"states. It froze `{run['freeze_decision']}` with the shortlist {', '.join(run['shortlist'])} and the "
+            "run 2 digest. Attempts in the run log: " + ", ".join(f"{k} {v}" for k, v in sorted(run["attempts"].items()))
+            + f". `reports/{ATTEMPTS_JSONL}` has one line per attempt of run 4, after the reference lines of run 1 and "
+            f"run 2 (`{SCREEN_ATTEMPTS}`) and of run 3. Run 3 wrote the stages "
+            + ", ".join(s for s, o in RUN_3["stages"].items() if o == "written")
+            + f", and its confirm stage refused (`{RUN_3['reason']}`), so it has no confirm or check file (see "
+            f"`{RUN_3['see']}`, entry '{RUN_3['entry']}').", ""]
     return out
 
 
@@ -690,14 +751,23 @@ def segment_tables(seg: Mapping[str, Any]) -> list[str]:
         span = v["span_months"] or {"min": "none", "median": "none", "max": "none"}
         rows.append([key, v["position_count"], v["months"],
                      num(v["weight_sum"]["cw"], 4) if "weight_sum" in v else "not given",
-                     ", ".join(f"{c} {n}" for c, n in v["by_exit_class"].items() if n) or "none",
-                     f"{span['min']} / {span['median']} / {span['max']}"])
+                     classes(v["by_exit_class"]), f"{span['min']} / {span['median']} / {span['max']}"])
     out += ["path_break (aggregates only):", ""]
     out += table(["Book set", "Positions", "Months blanked", "CW weight sum", "By later exit class",
                   "Span min / median / max"], rows)
     out += ["Blanked level windows (R6), by later exit class:", ""]
     out += table(["Loader run", "Windows", *EXITS], [[run, v["windows"], *(v["by_exit_class"][c] for c in EXITS)]
                                                     for run, v in pb["blanked_level_windows"].items()])
+    out += ["exit_gap_events, the amendment 4 events (an index exit on a row without a close). Held means that CW-PIT "
+            "holds the member at the last rebalance before the event. Again means a close, or eligibility, on a later "
+            "row of the segment.", ""]
+    rows = []
+    for run, v in seg["exit_gap"][RUN_LEVEL].items():
+        rows.append([run, v["events"], classes(v["events_by_exit_class"]), v["held"], classes(v["held_by_exit_class"]),
+                     num(v[EXIT_GAP_WEIGHT], 4) if EXIT_GAP_WEIGHT in v else "not given", v["priced_again"],
+                     v["held_priced_again"], v["eligible_again"], v["d6_left_out"]])
+    out += table(["Loader run", "Events", "By later exit class", "Held", "Held, by later exit class",
+                  "Held CW weight sum", "Priced again", "Held and priced again", "Eligible again", "D6 left out"], rows)
     out += ["r6, pool cells by later exit class over the rebalances (cells; share of pool cells), primary loader "
             "run:", ""]
     m = seg["r6"]["members"]["primary"]
@@ -736,6 +806,11 @@ def segment_tables(seg: Mapping[str, Any]) -> list[str]:
     out += table(["Year", "short_history share", "Mean ME percentile, short_history", "Mean ME percentile, valid"],
                  rows)
     return out
+
+
+def classes(counts: Mapping[str, int]) -> str:
+    """Nonzero counts by later exit class."""
+    return ", ".join(f"{c} {n}" for c, n in counts.items() if n) or "none"
 
 
 def half_spread_table(seg: Mapping[str, Any]) -> list[str]:
@@ -779,7 +854,7 @@ def check_output(doc: Mapping[str, Any], texts: Mapping[str, str]) -> None:
             for k, v in value.items():
                 if k in PRIVATE_KEYS:
                     raise refuse("private_field_in_output", k)
-                if k in rep.GROUP_WEIGHTS and RUN_LEVEL not in path:
+                if k in WEIGHTS and RUN_LEVEL not in path:
                     raise refuse("private_field_in_output", f"{k} outside {RUN_LEVEL}")
                 if k in BY_YEAR and set(v) != {"active"}:
                     raise refuse("private_field_in_output", f"{k} of one book")
@@ -810,12 +885,12 @@ def outputs(doc: Mapping[str, Any], attempts: list[Mapping[str, Any]]) -> dict[s
 
 
 def main(argv: list[str] | None = None, out: Path = d.REPO / "reports") -> int:
-    parser = argparse.ArgumentParser(description="Write the public M5.5 confirm and check report from the run 3 stage "
+    parser = argparse.ArgumentParser(description="Write the public M5.5 confirm and check report from the run 4 stage "
                                                  "folder (aggregates only).")
-    parser.add_argument("run_3", type=Path, help="the run 3 stage folder (all seven stage files and run_log.jsonl)")
+    parser.add_argument("run_4", type=Path, help="the run 4 stage folder (all seven stage files and run_log.jsonl)")
     args = parser.parse_args(argv)
     try:
-        texts = outputs(*build(args.run_3))
+        texts = outputs(*build(args.run_4))
     except RunnerStop as exc:
         print(f"refused: {exc.reason}: {exc.detail}", file=sys.stderr)
         return 1
