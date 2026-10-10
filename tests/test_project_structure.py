@@ -6622,7 +6622,7 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
     assert "## Protected Merge Eligibility" in controller
 
 
-def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> None:
+def test_controller_review_rules_follow_materiality_and_card_failure_limit() -> None:
     controller = (
         PROJECT_ROOT / "docs/codex_long_running_controller.md"
     ).read_text(encoding="utf-8")
@@ -6641,6 +6641,9 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
         "unresolved actionable finding",
         "report no actionable findings",
         "unresolved P1/high risk",
+        "at most two per card",
+        "in place of the round count",
+        "last allowed round",
     ]:
         assert retired_rule not in normalized
 
@@ -6649,15 +6652,20 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
         "`coordinator.md` section 5",
         "blocking status comes from that classification alone",
         "`ADVISORY` findings are recorded and never block merge",
-        "at most two per card. When the last allowed round still reports `MATERIAL` "
-        "findings, the EXPERT step of the failure limit and the residual-risk "
-        "disposition in `coordinator.md` section 5 apply",
+        "Review rounds and escalation follow the failure limit in `coordinator.md` "
+        "section 5. EFR sets no separate round cap",
+        "follows the residual-risk disposition in that section",
         "PR titles and bodies are short and plain",
         "in words an ordinary engineer can follow",
     ]:
         assert current_rule in review_lifecycle
 
     assert "an unresolved `MATERIAL` finding or other high risk" in stop_conditions
+
+    agents = " ".join((PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
+    assert "At most two review rounds per card" not in agents
+    assert "Review rounds and escalation follow the failure limit in section 5" in agents
+    assert "with no separate round cap" in agents
 
 
 def test_retirement_deletes_code_and_no_ablation_section_remains() -> None:

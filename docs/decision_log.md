@@ -27,6 +27,8 @@ Context:
   card. The controller's seat rules of 2026-09-28 put every GPT seat in its own Herdr tab and did not let a Claude
   agent start one. Under the new card, the coordinator starts a GPT seat as a headless, read-only `codex exec`
   task.
+- `AGENTS.md` capped review at two rounds per card. Under the card, two failed GENERAL_EXEC attempts go to
+  EXPERT, and the repairs of EXPERT need more review rounds. The two rules did not agree after round 2.
 
 Decision:
 
@@ -36,13 +38,16 @@ Decision:
   directly, and no agent of another model wraps a seat or relays its report. The P1 process failure row now names
   a GPT seat whose report a Claude agent writes or relays.
 - Section references move to the new card: the materiality test, the failure limit, and the residual-risk
-  disposition are in section 5, and the seats of each lane are in section 2. The owner process constraints in
-  `AGENTS.md`, the two-round limit included, do not change.
+  disposition are in section 5, and the seats of each lane are in section 2.
+- Owner decision (2026-10-09): follow the card. The two-round cap per card is removed from `AGENTS.md` and the
+  controller. Review rounds and escalation follow the failure limit in card section 5: two failed GENERAL_EXEC
+  attempts, then EXPERT; after two failed EXPERT attempts, or when no new evidence or approach remains, the
+  coordinator asks the owner. The other owner process constraints in `AGENTS.md` do not change.
 
 Consequences:
 
-- `tests/test_project_structure.py` pins the new pointers. It fails if the controller names `routing_table.json`
-  or `AGENTS.md` names the old folder.
+- `tests/test_project_structure.py` pins the new pointers. It fails if the controller names `routing_table.json`,
+  `AGENTS.md` names the old folder, or either file states the two-round cap.
 
 Follow-up:
 

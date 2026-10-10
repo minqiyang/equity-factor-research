@@ -97,9 +97,11 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
   code on the real-data path that computes signals, returns, identity, costs, or
   statistics, and for a trial-family freeze. Other code gets one seat. Docs,
   records, and catalogs get coordinator verification.
-- At most two review rounds per card. Wording, style, claims-file, and record
-  findings are ADVISORY and go to the backlog. Reviewers also ask whether a
-  rule drops data in a way that biases the sample.
+- Review rounds and escalation follow the failure limit in section 5 of the
+  standard's `coordinator.md`, with no separate round cap (owner, 2026-10-09).
+  Wording, style, claims-file, and record findings are ADVISORY and go to the
+  backlog. Reviewers also ask whether a rule drops data in a way that biases
+  the sample.
 - A design note of at most two pages replaces a binding plan unless the owner
   asks for a plan.
 - The coordinator sets technical defaults and logs each one; no default loosens

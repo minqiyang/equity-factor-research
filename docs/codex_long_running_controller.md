@@ -136,10 +136,10 @@ re-enter this gate before acting on a different PR or changed scope.
   P2 label from the review priorities below ranks review attention;
   blocking status comes from that classification alone. `ADVISORY` findings
   are recorded and never block merge.
-- Review rounds follow the owner process constraints in `AGENTS.md`: at most
-  two per card. When the last allowed round still reports `MATERIAL` findings,
-  the EXPERT step of the failure limit and the residual-risk disposition in
-  `coordinator.md` section 5 apply.
+- Review rounds and escalation follow the failure limit in `coordinator.md`
+  section 5. EFR sets no separate round cap (owner, 2026-10-09). A `MATERIAL`
+  finding that the owner accepts follows the residual-risk disposition in that
+  section.
 - A safe actionable finding may be fixed locally inside the already-authorized
   scope. After publishing and verifying the remediation, reply with its evidence
   and resolve only the addressed thread; leave an unverified or disputed thread

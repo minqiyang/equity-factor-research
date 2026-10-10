@@ -18,6 +18,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   `routing_table.json`, which are no longer on the main branch of the standards repository. They now name the
   Claude-herdr card. The seat rules keep the owner's report rules and point at the card for how seats start.
   Decision log: the entry of the same date.
+- Owner decision (2026-10-09): the two-round cap per card is removed from `AGENTS.md` and the controller. Review
+  rounds and escalation follow the failure limit in section 5 of the card.
 - Tests: `tests/test_project_structure.py` pins the new text and rejects `routing_table.json` in the controller
   and the old folder path in `AGENTS.md`.
 
