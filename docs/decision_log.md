@@ -15,6 +15,81 @@ investment performance.
 
 ---
 
+## 2026-10-09 - Three Tiers of an R1–R12 Finding
+
+Context:
+
+- Under the coordinator rule of 2026-10-06, every R1–R12 violation was fixed, also at zero impact. In round 2 of
+  card m55-endgap, a review seat used that rule to make two findings MATERIAL whose trigger count on the
+  run-of-record data was zero. A further repair and review round would have followed for cases that the data
+  cannot produce. The rule also conflicted with the rule against over-engineering.
+
+Decision:
+
+- Owner decision (2026-10-09): an R1–R12 finding has one of three tiers, stated in the owner process constraints
+  of `AGENTS.md`.
+  - Executed: a concrete trigger path exists on this project's data and stages (a named path, or a count above
+    zero on the run-of-record data). It is MATERIAL and is fixed whatever its impact, zero included.
+  - Latent: an actual count of zero on the run-of-record data, not an argument, shows that the violation needs
+    inputs the project does not hold. It is ADVISORY but stays a defect. The backlog records the count and a
+    revisit trigger (a new data vintage, reuse in a new stage, or a change to that code). Before that use, the
+    code is fixed or made to refuse.
+  - R11 and R12: a leak of private material or an execution path is fixed before push or publication, with no
+    exception. A record or wording item that an invariant needs is fixed in the next records change, at the
+    latest before publication, and never reopens a reviewed code candidate.
+
+Consequences:
+
+- Review seat cards quote the three tiers. The two round 2 findings of card m55-endgap are latent; their zero
+  counts and revisit trigger (a new data vintage) are on the coordinator backlog.
+- `tests/test_governance_constitution.py` pins the three tiers in `AGENTS.md`.
+
+Follow-up:
+
+- None.
+
+---
+
+## 2026-10-09 - Repository Rules Point at the Claude-herdr Coordination Standard
+
+Context:
+
+- The owner moved EFR coordination to the Claude-herdr Coordination Standard (card 0.10.0 in
+  `Codex/Standards/claude-herdr-coordination-standard/`). The old `Codex/Standards/coordination-standard/` folder
+  and its `routing_table.json` are no longer on the main branch of that repository. Version 0.13.0 stays on its
+  `coordination-standard-0.13` branch and is not maintained.
+- `AGENTS.md` and the controller still named the old folder, `routing_table.json`, and section numbers of the old
+  card. The controller's seat rules of 2026-09-28 put every GPT seat in its own Herdr tab and did not let a Claude
+  agent start one. Under the new card, the coordinator starts a GPT seat as a headless, read-only `codex exec`
+  task.
+- `AGENTS.md` capped review at two rounds per card. Under the card, two failed GENERAL_EXEC attempts go to
+  EXPERT, and the repairs of EXPERT need more review rounds. The two rules did not agree after round 2.
+
+Decision:
+
+- `AGENTS.md` and the controller name the Claude-herdr card: `coordinator.md` and `model_bindings.json`.
+- Sections 1 and 3 of the card say how seats and producers start, in a Herdr tab or headless. These owner rules
+  stay: each seat runs as its bound model and writes its own report file, the coordinator reads that file
+  directly, and no agent of another model wraps a seat or relays its report. The P1 process failure row now names
+  a GPT seat whose report a Claude agent writes or relays.
+- Section references move to the new card: the materiality test, the failure limit, and the residual-risk
+  disposition are in section 5, and the seats of each lane are in section 2.
+- Owner decision (2026-10-09): follow the card. The two-round cap per card is removed from `AGENTS.md` and the
+  controller. Review rounds and escalation follow the failure limit in card section 5: two failed GENERAL_EXEC
+  attempts, then EXPERT; after two failed EXPERT attempts, or when no new evidence or approach remains, the
+  coordinator asks the owner. The other owner process constraints in `AGENTS.md` do not change.
+
+Consequences:
+
+- `tests/test_project_structure.py` pins the new pointers. It fails if the controller names `routing_table.json`,
+  `AGENTS.md` names the old folder, or either file states the two-round cap.
+
+Follow-up:
+
+- None.
+
+---
+
 ## 2026-10-09 - Trial Family v1 Amendment 4: R4 Settlement of an Index Exit on a Row Without a Close (Milestone 5.5, card m55-endgap)
 
 Context:
@@ -125,6 +200,8 @@ Follow-up:
   excepted), then the confirm and check stages.
 - The coordinator updates the run pin of the public report and adds the `exit_gap_events` aggregates in a later
   card.
+
+---
 
 ## 2026-10-08 - Public Report Rules of the M5.5 Confirm and Check Stages (card m55-conrep)
 

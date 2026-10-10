@@ -6540,7 +6540,8 @@ def test_controller_applies_same_pr_lifecycle_authorization() -> None:
         "leave an unverified or disputed thread open and stop",
         "thread-write",
         "metadata-only edits may omit it",
-        "the review seats in `routing_table.json` supply the formal reviews",
+        "the review seats of the PR's lane in `coordinator.md` section 2 supply the "
+        "formal reviews",
         "`@codex review` is a retired channel",
         "report `MATERIAL: 0` or an explicit merge disposition",
         "no review thread remains unresolved",
@@ -6612,12 +6613,16 @@ def test_controller_does_not_assign_reviewer_seats() -> None:
         assert assigned_seat not in controller
 
     assert "live Herdr coordination standard" in review_lifecycle
-    assert "routing_table.json" in review_lifecycle
+    assert "`Codex/Standards/claude-herdr-coordination-standard/`" in review_lifecycle
+    assert "routing_table.json" not in controller
+    agents = " ".join((PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
+    assert "`Codex/Standards/claude-herdr-coordination-standard/`" in agents
+    assert "`Codex/Standards/coordination-standard/`" not in agents
     assert "## Predecessor PR Gate" in controller
     assert "## Protected Merge Eligibility" in controller
 
 
-def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> None:
+def test_controller_review_rules_follow_materiality_and_card_failure_limit() -> None:
     controller = (
         PROJECT_ROOT / "docs/codex_long_running_controller.md"
     ).read_text(encoding="utf-8")
@@ -6636,22 +6641,31 @@ def test_controller_review_rules_follow_materiality_and_owner_round_limit() -> N
         "unresolved actionable finding",
         "report no actionable findings",
         "unresolved P1/high risk",
+        "at most two per card",
+        "in place of the round count",
+        "last allowed round",
     ]:
         assert retired_rule not in normalized
 
     for current_rule in [
         "classified `MATERIAL` or `ADVISORY` under the materiality test in "
-        "`coordinator.md` section 3",
+        "`coordinator.md` section 5",
         "blocking status comes from that classification alone",
         "`ADVISORY` findings are recorded and never block merge",
-        "at most two per card, in place of the round count in `coordinator.md` section 3.3",
-        "that section's EXPERT step and residual-risk disposition apply",
+        "Review rounds and escalation follow the failure limit in `coordinator.md` "
+        "section 5. EFR sets no separate round cap",
+        "follows the residual-risk disposition in that section",
         "PR titles and bodies are short and plain",
         "in words an ordinary engineer can follow",
     ]:
         assert current_rule in review_lifecycle
 
     assert "an unresolved `MATERIAL` finding or other high risk" in stop_conditions
+
+    agents = " ".join((PROJECT_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
+    assert "At most two review rounds per card" not in agents
+    assert "Review rounds and escalation follow the failure limit in section 5" in agents
+    assert "with no separate round cap" in agents
 
 
 def test_retirement_deletes_code_and_no_ablation_section_remains() -> None:

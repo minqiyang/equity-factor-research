@@ -8,9 +8,11 @@ This repository is the simulation-only research phase of an automated
 stock-selection program. Procedures and review rules live in
 `docs/codex_long_running_controller.md`, standing owner grants in
 `AUTHORITY.md`, product direction in `docs/north_star.md`, and the latest
-checkpoint in `docs/current_handoff.md`. The coordination standard in
-`Codex/Standards/coordination-standard/` owns dispatch, review seats, and model
-bindings; do not copy them here, and do not load `Codex/Standards/archive/`.
+checkpoint in `docs/current_handoff.md`. The Claude-herdr coordination
+standard in `Codex/Standards/claude-herdr-coordination-standard/`
+(`coordinator.md` and `model_bindings.json`) owns dispatch, review seats, and
+model bindings; do not copy them here, and do not load
+`Codex/Standards/archive/`.
 
 ## Authority And Scope
 
@@ -95,9 +97,24 @@ Owner decision of 2026-09-28: the fastest route to the North Star, R1–R12 inta
   code on the real-data path that computes signals, returns, identity, costs, or
   statistics, and for a trial-family freeze. Other code gets one seat. Docs,
   records, and catalogs get coordinator verification.
-- At most two review rounds per card. Wording, style, claims-file, and record
-  findings are ADVISORY and go to the backlog. Reviewers also ask whether a
-  rule drops data in a way that biases the sample.
+- Review rounds and escalation follow the failure limit in section 5 of the
+  standard's `coordinator.md`, with no separate round cap (owner, 2026-10-09).
+  Wording, style, claims-file, and record findings are ADVISORY and go to the
+  backlog. Reviewers also ask whether a rule drops data in a way that biases
+  the sample.
+- An R1–R12 finding has one of three tiers (owner decision of 2026-10-09):
+  - Executed: a concrete trigger path exists on this project's data and
+    stages (a named path, or a count above zero on the run-of-record data).
+    It is MATERIAL and is fixed whatever its impact, zero included.
+  - Latent: an actual count of zero on the run-of-record data, not an
+    argument, shows that the violation needs inputs the project does not
+    hold. It is ADVISORY but stays a defect. The backlog records the count
+    and a revisit trigger: a new data vintage, reuse in a new stage, or a
+    change to that code. Before that use, fix it or make it refuse.
+  - R11 and R12: a leak of private material or an execution path is fixed
+    before push or publication, with no exception. A record or wording item
+    that an invariant needs is fixed in the next records change, at the
+    latest before publication; it never reopens a reviewed code candidate.
 - A design note of at most two pages replaces a binding plan unless the owner
   asks for a plan.
 - The coordinator sets technical defaults and logs each one; no default loosens

@@ -175,6 +175,22 @@ def test_agents_constitution_stays_bounded_with_twelve_invariants() -> None:
     assert labels == [f"R{number}" for number in range(1, 13)]
 
 
+def test_agents_states_the_three_tiers_of_an_invariant_finding() -> None:
+    # Owner decision of 2026-10-09: an R1-R12 finding is executed, latent, or an
+    # R11 or R12 item, and a latent finding stays a defect.
+    constraints = " ".join(_section(_read("AGENTS.md"), "Owner Process Constraints").split())
+    for rule in (
+        "An R1–R12 finding has one of three tiers",
+        "It is MATERIAL and is fixed whatever its impact, zero included.",
+        "an actual count of zero on the run-of-record data, not an argument",
+        "It is ADVISORY but stays a defect.",
+        "Before that use, fix it or make it refuse.",
+        "is fixed before push or publication, with no exception",
+        "it never reopens a reviewed code candidate",
+    ):
+        assert rule in constraints, rule
+
+
 def test_authority_record_fields_and_quotes() -> None:
     authority = _read("AUTHORITY.md")
     assert (
