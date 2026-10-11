@@ -15,6 +15,35 @@ investment performance.
 
 ---
 
+## 2026-10-11 - Owner Decision O-23: No Reliable Edge at This Data Size
+
+Context:
+
+- Milestone 5 (factor-class allocator): no rule we tested beat SPY after costs on our point-in-time books
+  (`reports/m5_owner_report.md`, O-12, O-16). The state-timing claim did not qualify, and step 5 (discovery) is
+  deferred for low power (O-11).
+- Milestone 5.5 (index tilt, trial family v1): in run 4 test A is `not_met`, and the stop rule after the confirm
+  stage applies (`reports/m55_confirm_v1.md`, entry of 2026-10-10).
+- The North Star decision rule lists "no detectable edge at this data size" as a valid result that closes a line
+  of work.
+
+Decision:
+
+- **O-23 (owner, 2026-10-11):** for now the program takes the third option that the coordinator gave: with the
+  current data and these factors, we found no reliable edge. The owner chose it over a risk-first tilt with forward
+  observation, and over a return to the factor-class allocator.
+- Milestone 5 and Milestone 5.5 close with this result. No new trial line starts. Milestone 6 does not start, and
+  no forward observation runs. The seal window stays sealed.
+- A new line of work starts only by owner decision: new factors, new data, or a new question (North Star decision
+  rule). Its trial file is frozen before any result. Any test on the 1963-2025 data that these lines used is at
+  most partly out-of-sample; only new forward months are clean.
+
+Consequences:
+
+- `docs/current_roadmap.md` marks Milestone 5 and Milestone 5.5 as closed under O-23.
+- The backlog rows and their revisit triggers stay, among them the M5.5 report item on the exit-gap weight sum.
+- The private run folders and frozen copies stay where they are, under the O-22 terms.
+
 ## 2026-10-10 - Milestone 5.5 Confirm and Check of Trial Family v1: Stop Rule Applies
 
 Context:
