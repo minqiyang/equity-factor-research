@@ -5,5 +5,5 @@ type: software
 authors:
   - name: "Minchee"
     alias: "minqiyang"
-repository-code: "https://github.com/minqiyang/ai-equity-factor-research"
+repository-code: "https://github.com/minqiyang/equity-factor-research"
 license: "Apache-2.0"

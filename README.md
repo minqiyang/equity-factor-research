@@ -1,22 +1,139 @@
-<p align="center">
-  <img src="assets/readme/hero.svg" width="100%" alt="Equity Factor Research: a deterministic research pipeline shown as an aligned dithered factor panel">
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/hero-dark.svg">
+  <img alt="The 749 study months from 1963 to 2025 as one band. Screen months are pale, confirm and check months are dark, and the sealed year is red." src="assets/readme/hero-light.svg" width="100%">
+</picture>
 
-<p align="center">
+<p>
   <a href="https://github.com/minqiyang/equity-factor-research/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/minqiyang/equity-factor-research/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/Python-3.11%2B-348FEF">
-  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache--2.0-8B5CF6"></a>
+  <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/python-3.11%2B-6e6c66">
+  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-6e6c66"></a>
+  <img alt="Evidence ceiling: diagnostic only" src="https://img.shields.io/badge/evidence-DIAGNOSTIC__ONLY-6e6c66">
+  <img alt="Result: no reliable edge" src="https://img.shields.io/badge/result-no%20reliable%20edge-e2492b">
 </p>
 
-An auditable Python toolkit for equity-factor research with strict data contracts, deterministic diagnostics, drift-aware portfolio accounting, and reproducible experiment records.
+Can a simple stock-selection rule beat an S&P 500 index fund (SPY) after trading costs, using only what was known at the time?
 
-The North Star is an automated US stock selector that learns which classes of factors earn more or lose less in market conditions visible at the time, allocates monthly across those classes, and holds a long-only portfolio of US large-cap stocks. It aims to beat an index fund and a cheap factor-ETF blend after costs over the long term; risk control comes first, and profit carries no guarantee. See [North Star](docs/north_star.md). The historical [research charter](docs/research_program_charter.md) remains preserved as formal evidence policy. This repository builds the simulated research and backtesting foundation—the essential first part, not the final execution product. Live execution, broker connectivity, pre-trade risk limits, reconciliation, and emergency kill switches belong strictly to a future, separately authorized private execution repository.
+This repository is a research lab for that question. It tests factor rules on 62 years of US stock data in simulation. A factor is a stock trait, such as profitability or past return, that a rule uses to rank stocks. Each decision uses only data dated before its trade, and company accounts keep their first-reported values.
 
-`LAGGED FEATURE CONTRACTS` · `EXPLICIT SIGNAL LAG` · `DRIFT-AWARE ACCOUNTING` · `JSON EVIDENCE`
+The method is the point. Each choice that could flatter a result is fixed in writing before that result exists, and code and tests enforce it. The last trial ran end to end under those rules and stopped at its pre-set floor. With the current data and these factors, we found no reliable edge (owner decision O-23).
 
-[Quickstart](#quickstart) · [North Star](docs/north_star.md) · [Research charter](docs/research_program_charter.md) · [Data methodology](docs/point_in_time_data_methodology_contract.md) · [Research method](docs/research_method.md) · [Project specification](PROJECT_SPEC.md) · [Experiment registry](reports/experiment_registry.md) · [Current roadmap](docs/current_roadmap.md)
+## Design at a glance
 
-## Quickstart
+- **Point-in-time universe.** S&P 500 members as they were on each day from 1963 to 2025, from CRSP, with every firm that later failed or was bought.
+- **Known before the trade.** Each input enters on the day it became known. Tests rewrite the future and check that every past decision stays the same.
+- **Rules before results.** A frozen trial file fixed the periods, the tests, a stop floor, and a sealed year before any return was computed.
+- **A hash-chained run.** Seven stages, each locked to every earlier stage by SHA-256. The shortlist is locked before the code parses a single test-period quote.
+- **Two benchmarks at once.** The tilt must beat SPY and our own copy of the index, so a win has to come from the factors.
+- **Real costs.** A dated cost schedule, a floor at the real CRSP half-spread in the test periods, and every result again at twice the cost.
+- **Every run on the record.** Failed and refused runs stay in the ledger, and Holm and Benjamini-Yekutieli corrections cover every tested variant of the trial.
+- **Built by AI agents under review.** Real-data code gets reviewers from two model families, and CI runs 4,117 tests.
+
+## How a result is earned
+
+### One rule about time
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/timing-dark.svg">
+  <img alt="Rebalance timing: data up to the day before, trade at the close, returns from the next day." src="assets/readme/timing-light.svg" width="100%">
+</picture>
+
+Call the last trading day of each month `r`. The model reads data up to the trading day before, `r-1`. It trades at the close of `r`, and its return starts on the next trading day, `r+1`. The repository names this contract `after_close_signal_next_observed_close_v1`.
+
+Each layer of the code, from the data loader to the run driver, has a test that rewrites the future and checks that every earlier decision stays the same. Each of these tests also proves that it can fail. In the engine, the same random change made one day earlier moves the result.
+
+### Three periods and a sealed year
+
+The band at the top is every month of the study, 749 months from 1963-07 to 2025-11. The split was fixed before this study computed any return.
+
+- **Screen**, 1963-07 to 1992-12, 354 months. Picks candidates.
+- **Confirm**, 1993-02 to 2014-03, 254 months. Tests the frozen shortlist.
+- **Check**, 2014-04 to 2025-11, 114 months. A last look that can only veto. It steps around the sealed year and a warm-up after it, 2019-07 to 2021-08.
+- **Sealed**, 2019-07-31 to 2020-07-31. Its price and return rows live in a separate folder. The loader refuses to open it and only takes a SHA-256 fingerprint of those files.
+
+### A run that cannot go out of order
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/chain-dark.svg">
+  <img alt="Seven stages in a hash chain: coverage, calibration, look, screen, freeze, confirm, check. A lock at the freeze." src="assets/readme/chain-light.svg" width="100%">
+</picture>
+
+Each stage writes its file once, with its SHA-256 fingerprint, and starts only when every earlier file matches. The freeze stage locks the shortlist with a fingerprint. Confirm and check take that fingerprint as a separate input and must match it before the code parses a single test-period quote.
+
+## What we found
+
+The last trial (Milestone 5.5) was an index tilt. It starts from our own copy of the S&P 500, built from the members known on each date. Each stock holds its cap weight, which is its share of the total market value. The pictures call this our index, and the reports call it CW-PIT, for cap-weighted point-in-time. The tilt moves each weight `b` a little toward stocks with a good factor score `c` between -1 and 1, as `w = b(1 + 0.5c)`. Each weight moves at most 1 percentage point, and the expected tracking error against our index stays at or below 2% a year.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/verdict-dark.svg">
+  <img alt="Confirm period, percent a year after costs: our index beat SPY by 0.410, the tilt lost 0.112 against our index, so the tilted book beat SPY by 0.298, under the 0.300 stop floor." src="assets/readme/verdict-light.svg" width="100%">
+</picture>
+
+| Confirm, 1993-2014, % a year after costs | Primary cost | 2x cost |
+| --- | ---: | ---: |
+| Tilted book vs SPY | +0.298 | -0.053 |
+| Tilted book vs our index | -0.112 | -0.313 |
+| Our index vs SPY | +0.410 | +0.260 |
+
+The tilted book beat SPY by 0.298% a year, under the stop floor of 0.300% that was fixed before any return. The line stopped where the plan said it would.
+
+The table also shows where the lead came from. Our index beat SPY by 0.410% a year. The report calls that gap replication error, with sources such as SPY's fee, full against float market value, and members dropped for missing data. The tilt itself lost 0.112% a year against our index.
+
+Test A was built for this case. The tilt had to beat SPY and our index at the same time, which is an intersection-union test, so a win has to come from the factors. It got t = 1.04 against SPY and t = -0.51 against our index, for p = 0.6944 against a Holm threshold of 0.025.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/screen-dark.svg">
+  <img alt="Screen information ratio against the confirm-period result for eight signals. The two picked signals did not lead later, and S3 fell to minus 0.287." src="assets/readme/screen-light.svg" width="100%">
+</picture>
+
+The screen picked two signals out of eight. S3 is the stock's return minus the market's over the three trading days around its latest earnings announcement. S4 is gross profit over assets. In the confirm years S3 trailed our index by 0.287% a year. The strongest signal against our index was S7, net share issuance, which the screen had passed over. Across the nine secondary runs its q-value is 0.934.
+
+The plan sized test A in advance with a power analysis at 2% tracking error. The tilt ran at 0.86% against our index, so the test saw smaller edges than planned, even on the 154 months left after price gaps. Milestone 5, a factor-class allocator that moved weight between groups of factors, reached the same answer before it. The [method page](docs/research_method.md) has the full history.
+
+## Every run on the record
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/ledger-dark.svg">
+  <img alt="Four runs by seven stages. Run 1 stopped after calibration, run 2 froze the shortlist, run 3 refused at confirm, run 4 wrote all seven stages." src="assets/readme/ledger-light.svg" width="100%">
+</picture>
+
+Run 1 stopped on low coverage. Run 3 met a case the plan had already named, a held stock leaving with no closing price, and refused before it wrote a confirm file. Amendment 4 added the fix, and runs 3 and 4 rebuilt the run 2 shortlist with the same fingerprint.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/guards-dark.svg">
+  <img alt="Twelve research-safety rules, R1 to R12, each as a small glyph." src="assets/readme/guards-light.svg" width="100%">
+</picture>
+
+Twelve research-safety rules, R1 to R12 in [AGENTS.md](AGENTS.md), run through every layer. Code and tests enforce most of them, and reviews cover the rest.
+
+<details>
+<summary><b>Design notes for quants</b></summary>
+
+- **Universe.** S&P 500 members as they were on each day, from CRSP, with firms that later left, failed, or were bought. A stock is eligible at row `t` when `start <= t < end`.
+- **Identity.** Every stock is keyed by its CRSP PERMNO, so each return path belongs to one security (PIT-005). An ambiguous Compustat or IBES link blanks the values it would feed, with the reason `ambiguous_link`.
+- **First-reported fundamentals.** Each Compustat item is its first published value, usable from the trading row after the day it became known.
+- **Disappearance.** A held stock that leaves settles at its real exit return when the data has one. Otherwise a cash merger settles at its last close, and a failure or an unknown cause at -100%. In the confirm run, 302 of 303 held exits had a real return. Every run is repeated with every exit at its last close, and a sign flip between the two labels the result fragile. The composite kept its sign.
+- **Costs.** One-way commission and spread in bp, on a dated schedule. Screen months pay 30 + 30 before 1975-05 and 10 + 30 after. Confirm and check months pay 5 + 20 from 1993, 2 + 8 from 2001-04, and 1 + 4 from 2007, and each trade pays the larger of the schedule spread and the real CRSP half-spread from the day before. Our index pays the same rule. Every case also runs at 2x cost.
+- **Missing data.** Every blank signal cell stays blank and carries one of 13 named reasons. A stock with too few valid signals or an incomplete risk window keeps its index weight. A held stock across a price gap blanks every month it touches, in every book, which is 215 screen months and 100 confirm months.
+- **Multiple testing.** Two primary tests under Holm at 0.05, so test A needed p ≤ 0.025 even after test B, a lower-risk book, stopped on low data coverage. Nine secondary runs carry Benjamini-Yekutieli q-values. The 481 test slots of Milestone 5 stay on the record.
+- **Blind benchmark gap.** Our index against SPY stayed unopened until the confirm run, because that gap is one leg of test A.
+- **Cost rule before cost data.** The spread rule was committed before the quote data was downloaded.
+- **Fixes are checked too.** The first draft of the fix after run 3 had a look-ahead. It set an exit event only if no close came back before the segment end. A review seat caught it, and a check over 18,600 history pairs found 159 differences for that draft and 0 for the final fix.
+- **Privacy by arithmetic.** Each published weight is a sum over at least 3 positions, and any two published sums differ by at least 3 positions, so every difference still mixes several licensed rows.
+
+</details>
+
+## How the code is built
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/process-dark.svg">
+  <img alt="Owner goal, design note, rules frozen, build, QA, review, merge, records, with gates before rules frozen, review, and merge." src="assets/readme/process-light.svg" width="100%">
+</picture>
+
+AI agents write and review most of the code under the owner's written rules, and the owner sets goals, money, and data access. Agents build and test on synthetic data. Real-data code that computes signals, returns, identity, costs, or statistics gets two reviewers from different model families, and other code gets one. Each merge lands on the exact commit that was reviewed, with every material finding fixed or ruled on by the owner.
+
+CI runs the 4,117-test suite in four parallel lanes, then checks that the tests left every tracked file unchanged. Other tests keep this repository in English, keep private paths out of it, and pin six phrases on this page to the real scope.
+
+## Run it
 
 Python 3.11 or newer is required.
 
@@ -25,86 +142,35 @@ git clone https://github.com/minqiyang/equity-factor-research.git
 cd equity-factor-research
 python3.11 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 python -m pytest -q
-```
-
-Run the official Demo v0 synthetic vertical slice:
-
-```bash
 python -m research.demo_v0
 ```
 
-This command uses existing 12-1 momentum and frozen `SyntheticDemoConfig` values (seed 20260521, 20 assets, 756 rows, lookback 252, skip 21, ME, top 5, 10 bps, 0 slippage). It writes `reports/demo_v0.md` and appends All-Attempt Case Logging to `reports/demo_v0_attempts.jsonl`. The output is a synthetic diagnostic. It is not a profitability claim and uses no private data.
+`demo_v0` runs 12-1 momentum on a synthetic panel with a fixed seed. It rewrites `reports/demo_v0.md` and appends to `reports/demo_v0_attempts.jsonl`, so `git status` shows them as changed.
 
-Run the M3-01 exploratory synthetic three-factor backtest:
+The public research path uses local files and committed fixtures. The real-data runs use licensed WRDS data and an earlier EODHD snapshot. The repository publishes their code, frozen rules, data manifests, hashes, and aggregate reports.
 
-```bash
-python -m research.synthetic_multifactor_backtest_demo
-```
+## Where things are
 
-This command reuses Demo v0 synthetic price dates and assets, the existing factor generator and 0.50 / 0.30 / 0.20 weights, existing winsorize/z-score/`combine_factors` helpers, and the Demo v0 long-only backtester. The three panels are artificial quality, reversal, and momentum fixtures; they are distinct from Demo v0 12-1 momentum and from fundamentals. It writes `reports/synthetic_multifactor_backtest_demo.md` and appends All-Attempt Case Logging. The output is a synthetic diagnostic. `python -m research.demo_v0` remains the official Demo v0 command. `python -m research.synthetic_multifactor_workflow_demo` remains the feature-only workflow. M3-02 requires complete finite strictly positive price bars in both demos and refuses a supplied missing or zero-volume panel without silent fill, clip, drop, or repair. M3-03 proves signal lag on those commands counts observed source rows; a missing source row remains an omitted observation. Those demos keep the supplied observed index. M3-07 reports adjacent calendar-day spans and refuses panel timestamps absent from the declared source index. Official demos declare the generated price index as source. Session and holiday status remains unverified. M3-04 proves those commands compute held returns from the supplied price series only and refuse a separate cash-dividend overlay (PIT-007). Event-level dividend and split reconciliation remains later Milestone 3/4 work. M3-05 proves those commands run on a longer synthetic panel of length `2 * DEMO_V0_CONFIG.periods` (1512) through `dataclasses.replace`; official frozen Demo v0 config remains 756 rows. M3-06 counts unchanging-price segments on those commands and keeps every supplied bar. Remaining Milestone 3 work is event-level dividend/split reconciliation.
+| Path | What it holds |
+| --- | --- |
+| `src/` | Data contracts, factors, the backtest engine, risk, reporting |
+| `research/` | Runnable studies and demos |
+| `tests/` | Tests, synthetic data only |
+| `docs/preregistrations/` | Trial files, frozen before results |
+| `reports/` | Aggregate reports and append-only attempt logs |
 
-Legacy synthetic and fixture diagnostics remain available:
+- [North Star](docs/north_star.md), the long-term goal
+- [Roadmap](docs/current_roadmap.md), milestones and status
+- [Research method](docs/research_method.md), the method in detail
+- [Decision log](docs/decision_log.md), durable decisions of the owner and the coordinator, newest first
+- [Research charter](docs/research_program_charter.md), the formal evidence policy
 
-```bash
-python -m research.synthetic_momentum_demo
-python -m research.synthetic_multifactor_workflow_demo
-python -m research.synthetic_combined_score_backtest_demo
-python -m research.local_csv_fixture_workflow_demo
-python -m research.walking_skeleton_mvp
-```
+## Scope
 
-These legacy commands use synthetic data or committed fixtures and may refresh files under `reports/`. Their outputs are reproducibility and engineering diagnostics, not Demo v0 evidence. The feature-only multifactor workflow remains available for preprocessing checks. The M3-01 command above is the exploratory three-factor backtest slice.
-
-## Demo-First Delivery Target (Demo v0)
-
-The project follows a **demo-first** engineering strategy: ship a basic, presentable, and reproducible end-to-end version first, record non-blocking imperfections in a lightweight backlog, and iterate in layers. We avoid blocking a working demonstration on an ideal pipeline, full SEC entity lineage proof, or complete ledger schema coverage.
-
-**Demo v0** is the synthetic vertical slice. The official command is `python -m research.demo_v0`:
-- One reproducible local command using existing 12-1 momentum and one frozen strategy configuration;
-- Simulated stock selection and drift-aware portfolio holdings;
-- Human-readable comparison report with benchmark, explicit transaction cost and timing models (accepted `after_close_signal_next_observed_close_v1`), risk metrics, and limitations;
-- All-Attempt Case Logging recording all attempted cases, including failures (lightweight diagnostic run logging, distinct from formal experiment/trial-ledger accounting required by charter Stage 4 / Milestone 4).
-
-Synthetic fixture workflows run without private data. Any separately authorized local-data run remains explicitly exploratory and diagnostic. Demo v0 makes no profitability claim.
-
-## Method
-
-`LOCAL CSV → FACTOR PANELS → DIAGNOSTICS → DRIFT-AWARE ACCOUNTING → MARKDOWN + JSON`
-
-The timing model, portfolio accounting, control gates, system map, and evidence lifecycle live on a dedicated page:
-
-**[Read the research method →](docs/research_method.md)**
-
-Plotting is a placeholder module; the roadmap tracks its delivery.
-
-The public research path uses local files and committed fixtures. The
-provider-agnostic
-[point-in-time data methodology contract](docs/point_in_time_data_methodology_contract.md)
-defines manifest, universe, corporate-action, field, privacy, and
-holdout-access requirements. Stage 3 contract acceptance is
-methodology-process evidence.
-
-## Current program status
-
-- **North Star & Roadmap Alignment**: Six primary milestones define the path from core research foundation to simulated demo slice, exploratory multi-factor expansion, formal research, the factor-class allocator, and eventual separately authorized execution. See the [current roadmap](docs/current_roadmap.md).
-- **Historical Track A Disposition**: Track A (14-trial EODHD diagnostic design) remains frozen and REFUSED (`ACCEPTED_IDENTITIES_ZERO_NO_LINEAGE_CONFORMANT_PANEL`) under evidence ceiling `DIAGNOSTIC_ONLY`. This historical refusal is preserved as immutable evidence and is not a universal blocker for the demo-first program.
-- **Track B First Checkpoints**: SQLite ledger runtime first checkpoints (Path A PR #199, Path B PR #200) merged as software progress. The Track A campaign runner, PIT manifest validator, and ledger runtime retired on 2026-09-23 and remain in Git history at `8fa0055`; the frozen ledger schema releases stay in `src/ledger/schemas/`. Diagnostic runs append trial records (sample hash, specification, statistics, and status) to a JSONL log; the run's code commit appears once per run in the experiment log and report, and individual JSONL records carry no commit.
-- **Exploration Diagnostic Context**: A local 2026-09-13 metadata and numerical diagnostic provided qualitative feasibility and planning context on local data history, with documented caveats (zero-volume segments, date gaps, unverified adjustment events) deferred for layered handling. It is outside Demo v0 acceptance, produces no strategy or profitability claims, and does not prove tradability, universe completeness, or a pristine holdout.
-- See the [current roadmap](docs/current_roadmap.md) for execution gates and milestone tracking.
-
-## Quality gates
-
-```bash
-python -m pytest -q
-python -m ruff check .
-python -m compileall -q src research tests lean
-python -m build
-git diff --check
-```
+Every result here is a simulation at the evidence ceiling `DIAGNOSTIC_ONLY`. The [point-in-time data methodology contract](docs/point_in_time_data_methodology_contract.md) sets the rules for manifests, universe, corporate actions, fields, privacy, and holdout access. Stage 3 contract acceptance is methodology-process evidence. Plotting is a placeholder module, and scripts in `assets/readme/source/` draw the images on this page.
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+[Apache License 2.0](LICENSE).

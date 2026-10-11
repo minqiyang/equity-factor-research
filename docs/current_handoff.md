@@ -1,6 +1,6 @@
 # Current Handoff
 
-Updated: 2026-10-11 for owner decision O-23 after PR #308.
+Updated: 2026-10-11 for the README redesign after PR #309.
 
 Canonical responsibility: the latest recorded operational checkpoint, exact
 last-verified repository and PR facts, immediate blockers or owner decisions,
@@ -24,7 +24,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 ## Latest Recorded Operational Checkpoint
 
 - Last externally verified protected baseline when this handoff was authored:
-  `e88058876066874cc659d52d545982f04d9623eb` (main after PR #308).
+  `8aff7746b2c2ed13db72dfc7dde9afebacc7b91f` (main after PR #309).
 - This publication began from that baseline. Its live PR and merge state
   must be checked separately after publication.
 - Merged through PR #275: M4.0 local real-data diagnostic through M4.7 (PIT universe, registrations v1 and v2 on
@@ -56,7 +56,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   trial amendment 4 with the R4 settlement of an index exit on a row without a close (PR #304), and the R11
   home-path removal in the six pinned reports (PR #305), and the Claude-herdr references and R1–R12 tiers (PR #306),
   and the confirm report module on run 4 (PR #307), and the public confirm and check report of run 4
-  (PR #308).
+  (PR #308), and owner decision O-23 that closes Milestones 5 and 5.5 (PR #309).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
@@ -69,7 +69,7 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   `398e4fd5` (PR #297), `8d971bfb` (PR #293), `c74e4eef` (PR #296), `fef229c9` (PR #294), `3c597dbb` (PR #295),
   `0be2be30` (PR #298), `ebc97054` (PR #299), `8590b2e9` (PR #300), `45c67f98` (PR #301),
   `b1b05172` (PR #302), `54bc41f4` (PR #303), `e5ac840e` (PR #304), `d0166a5b` (PR #305), `46df45e4` (PR #306),
-  `6b00b8d4` (PR #307), and `e8805887` (PR #308).
+  `6b00b8d4` (PR #307), `e8805887` (PR #308), and `8aff7746` (PR #309).
 - PR #180 is merged. PR #181 is merged at `12e280d9afa2f23aa2850b13a08f7e8447c4b89e`.
   No pull request was open at the verified start of the CCA1 correction work.
 - Historical Track A 14-trial run remains REFUSED
@@ -79,8 +79,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 
 ## Recorded Delivery Scope
 
-- Candidate branch `claude/o23-no-edge` records owner decision O-23: with the current data and these factors we
-  found no reliable edge. Milestones 5 and 5.5 close; records only.
+- Candidate branch `claude/readme-redesign` rewrites the README and `docs/research_method.md` and redraws all
+  their images from scripts in `assets/readme/source/`. Docs and assets only; no result changes.
 
 ## Current Research Gate Summary
 
@@ -103,7 +103,7 @@ Under O-23 Milestones 5 and 5.5 are closed: no reliable edge at this data size.
 
 ## Next Safe Action
 
-- Merge this records candidate. No line of work is active after it. A new line starts only by owner decision
+- Merge this docs candidate. No line of work is active after it. A new line starts only by owner decision
   (new factors, new data, or a new question), with its trial file frozen before any result.
 
 ## Source Routing
