@@ -55,7 +55,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
   the half-spread override (PR #302), and the public report of the confirm and check stages (PR #303), and
   trial amendment 4 with the R4 settlement of an index exit on a row without a close (PR #304), and the R11
   home-path removal in the six pinned reports (PR #305), and the Claude-herdr references and R1–R12 tiers (PR #306),
-  and the confirm report module on run 4 (PR #307), and the public confirm and check report of run 4 (PR #308).
+  and the confirm report module on run 4 (PR #307), and the public confirm and check report of run 4
+  (PR #308).
 - Historical baselines: `c178d16d84a455774bcde73f21a9e3ff39ea7b2c` (CCA1 start),
   `425b7c88` (PR #200), `e76ddb4e` (PR #203), `770cfe54` (PR #260), `49eacdd4` (PR #261),
   `2c07ee4d` (PR #262), `76a0e43a` (PR #264), `de3172bc` (PR #265), `d15ef1d4` (PR #266),
