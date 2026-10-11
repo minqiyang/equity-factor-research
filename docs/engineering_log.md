@@ -12,6 +12,28 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-11 - Docs-only CI scope and `-n auto`
+
+- `scripts/ci_change_scope.py` reads changed paths and prints `docs-only` or `full`. A change set is docs-only only
+  when it is not empty and every path matches `^(README\.md|CHANGELOG\.md|CITATION\.cff|LICENSE|assets/.*|docs/.*\.md)$`
+  outside `docs/preregistrations/`.
+- In `ci.yml`, a new step runs the script on `git diff --name-only --no-renames HEAD^1 HEAD`, only for a
+  `pull_request` event. `--no-renames` lists both paths of a rename. Any listing error gives `full`. In docs-only
+  mode the core lane adds `-m "not slow"`, and the runner-v3, m4-pipelines, and diagnostics lanes print one line
+  and do not run pytest. Each lane now runs `-n auto` in place of `-n 2`.
+- Nine modules carry `pytest.mark.slow` at module level: `test_m55_confirm`, `test_m4_8_runner_v3`,
+  `test_m4_7_sp500_pit_rerun`, `test_multifactor_diagnostic_mvp`, `test_m55_driver`, `test_m4_8_integration_v3`,
+  `test_m5_step4b`, `test_m3_10_hardening`, and `test_m5_step4`. In a local `--durations` run at `7a91950`, their
+  largest single setup or call was 322 s down to 18 s, and no other module reached 30 s.
+- With docs-only mode, 3,683 of the 4,146 tests run. A run with no `-m` still collects all 4,146.
+- Read check: an audit hook logged each open and directory listing under the repository root during a `-m slow`
+  run. The slow modules opened only `docs/preregistrations/*.json` files, which the pattern does not match.
+- pytest-xdist resolves `-n auto` from `os.sched_getaffinity` because the dev extras do not install psutil. On a
+  runner this is every vCPU.
+- `tests/test_ci_workflow.py` adds a classifier table test, a run of the classify step with a stub `git`, a run of
+  the docs-only lane exit with a stub `python` that fails if called, and a check that every module outside the core
+  lane has the module-level slow mark.
+
 ## 2026-10-11 - README and method page redesign
 
 - The README and `docs/research_method.md` now lead with the research question, the method design, and the result

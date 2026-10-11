@@ -31,7 +31,7 @@ from research import m55_signals as sig
 from research.m4_7_sp500_pit_rerun import RunnerStop
 
 
-pytestmark = pytest.mark.xdist_group("m55_driver")
+pytestmark = [pytest.mark.slow, pytest.mark.xdist_group("m55_driver")]
 
 VINTAGE = "2025-12-31"
 OPEN = pd.Timestamp(VINTAGE)                  # a spell open at the vintage end: exit class current

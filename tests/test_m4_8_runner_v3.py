@@ -25,6 +25,8 @@ import research.m4_7_common_support as common_support
 import research.m4_7_sp500_pit_rerun as runner
 from research.m4_7_coverage_census import power_projection, prior_exposure_overlap
 
+pytestmark = pytest.mark.slow
+
 
 def write_registration(doc: dict, path: Path) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)

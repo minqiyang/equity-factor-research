@@ -55,6 +55,21 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
+      - name: Classify changed files
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # Only a pull request can be docs-only; push and merge_group runs always get the full suite.
+          # On a pull_request event HEAD is the merge commit, so HEAD^1 is the base tip.
+          # --no-renames lists both paths of a rename. An error while listing gives the full scope.
+          scope=full
+          if [ "$EVENT_NAME" = pull_request ] && changed="$(git diff --name-only --no-renames HEAD^1 HEAD)"; then
+            scope="$(printf '%s\n' "$changed" | python scripts/ci_change_scope.py)" || scope=full
+          fi
+          echo "Change scope: $scope"
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -90,6 +105,7 @@ jobs:
       - name: Run tests
         env:
           CI_LANE: ${{ matrix.lane }}
+          CHANGE_SCOPE: ${{ steps.scope.outputs.scope }}
         run: |
           case "$CI_LANE" in
             runner-v3)
@@ -111,12 +127,22 @@ jobs:
               ;;
             *) exit 2 ;;
           esac
+          # A docs-only change skips the tests marked slow. Every test file outside the core lane is
+          # marked slow, which tests/test_ci_workflow.py checks.
+          marker=()
+          if [ "$CHANGE_SCOPE" = docs-only ]; then
+            if [ "$CI_LANE" != core ]; then
+              echo "Docs-only change: every test in the $CI_LANE lane is marked slow, so this lane does not run pytest."
+              exit 0
+            fi
+            marker=(-m "not slow")
+          fi
           # loadgroup keeps each xdist_group (an expensive shared fixture) on one worker.
           /usr/bin/time -v -o "$RUNNER_TEMP/ci-evidence/pytest-resource.txt" \
-            python -m pytest -q -n 2 --dist loadgroup \
+            python -m pytest -q -n auto --dist loadgroup \
             --max-worker-restart=0 --durations=50 --durations-min=0.1 \
             --junitxml="$RUNNER_TEMP/ci-evidence/pytest.xml" \
-            "${selection[@]}" \
+            "${marker[@]}" "${selection[@]}" \
             2>&1 | tee "$RUNNER_TEMP/ci-evidence/pytest.log"
 
       - name: Verify tracked inputs stayed unchanged

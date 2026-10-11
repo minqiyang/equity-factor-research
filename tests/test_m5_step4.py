@@ -30,7 +30,7 @@ from features.multiple_testing import adjust_pvalues
 from research.m4_7_universe_build import BUILD_MANIFEST, Snapshot, discovery_inputs_sha256
 
 
-pytestmark = pytest.mark.xdist_group("m5_step4")
+pytestmark = [pytest.mark.slow, pytest.mark.xdist_group("m5_step4")]
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 

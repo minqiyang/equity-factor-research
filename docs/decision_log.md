@@ -15,6 +15,37 @@ investment performance.
 
 ---
 
+## 2026-10-11 - Docs-Only Pull Requests Skip the Slow Test Modules
+
+Context:
+
+- Each CI lane ran the suite with `-n 2`. A pull request that changed only documentation and images ran every
+  test; the core lane of PR #310 took more than 20 minutes.
+
+Decision:
+
+- Nine heavy end-to-end test modules carry the `slow` marker. `scripts/ci_change_scope.py` decides the scope of a
+  change set. It is docs-only only when the set is not empty and every path is `README.md`, `CHANGELOG.md`,
+  `CITATION.cff`, `LICENSE`, a file under `assets/`, or a Markdown file under `docs/` outside
+  `docs/preregistrations/`. Any other path, or an error while listing the files, gives the full scope.
+- Only a `pull_request` event can be docs-only. Then the core lane runs `-m "not slow"`, and a lane that holds only
+  slow modules passes without running pytest. A `push` to `main` and a `merge_group` run always run the full suite.
+- Each lane runs `-n auto` in place of `-n 2`.
+
+Consequences:
+
+- A docs-only pull request runs 3,683 of the 4,146 tests. The `Python validation` gate keeps its meaning.
+- No slow module reads a file that the docs-only pattern matches. A new read of that kind needs the path removed
+  from the pattern or the slow mark removed from the module.
+- `tests/test_ci_workflow.py` checks the classifier, the classify step, and that every module outside the core lane
+  is marked slow.
+
+Follow-up:
+
+- None.
+
+---
+
 ## 2026-10-11 - Owner Decision O-23: No Reliable Edge at This Data Size
 
 Context:
