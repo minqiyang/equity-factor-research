@@ -4,11 +4,7 @@
 </picture>
 
 <p>
-  <a href="https://github.com/minqiyang/equity-factor-research/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/minqiyang/equity-factor-research/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/python-3.11%2B-6e6c66">
   <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-6e6c66"></a>
-  <img alt="Evidence ceiling: diagnostic only" src="https://img.shields.io/badge/evidence-DIAGNOSTIC__ONLY-6e6c66">
-  <img alt="Result: no reliable edge" src="https://img.shields.io/badge/result-no%20reliable%20edge-e2492b">
 </p>
 
 Can a simple stock-selection rule beat an S&P 500 index fund (SPY) after trading costs, using only what was known at the time?
