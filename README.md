@@ -3,10 +3,6 @@
   <img alt="The 749 study months from 1963 to 2025 as one band. Screen months are pale, confirm and check months are dark, and the sealed year is red." src="assets/readme/hero-light.svg" width="100%">
 </picture>
 
-<p>
-  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-6e6c66"></a>
-</p>
-
 Can a simple stock-selection rule beat an S&P 500 index fund (SPY) after trading costs, using only what was known at the time?
 
 This repository is a research lab for that question. It tests factor rules on 62 years of US stock data in simulation. A factor is a stock trait, such as profitability or past return, that a rule uses to rank stocks. Each decision uses only data dated before its trade, and company accounts keep their first-reported values.
