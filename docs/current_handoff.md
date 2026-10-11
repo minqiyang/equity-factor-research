@@ -87,8 +87,8 @@ requirements. Standing owner grants are recorded in `AUTHORITY.md`.
 See `docs/current_roadmap.md` for milestone status. Milestone 5 steps 1 to 4b are merged; step 5 is deferred
 (O-11); the step 6 owner report is merged (PR #283). On point-in-time books R0 over the four price classes is the
 baseline, and it trails SPY and the equal-weight book. M4.8 stays paused after Stage D, and the seal window remains
-unaccessed and reserved (O-12). Milestone 5.5 trial family v1 stops as a declared negative result (run 4). Under O-23 Milestones 5 and 5.5 are
-closed: no reliable edge at this data size.
+unaccessed and reserved (O-12). Milestone 5.5 trial family v1 stops as a declared negative result (run 4).
+Under O-23 Milestones 5 and 5.5 are closed: no reliable edge at this data size.
 
 ## Immediate Blockers Or Owner Decisions
 
