@@ -38,7 +38,7 @@ from test_m55_driver import (OPEN, TRACKED, VINTAGE, Member, make_data, member_r
                              to_arrow, world_frames)
 
 
-pytestmark = pytest.mark.xdist_group("m55_confirm")
+pytestmark = [pytest.mark.slow, pytest.mark.xdist_group("m55_confirm")]
 
 SPY_PERMNO = 900099
 

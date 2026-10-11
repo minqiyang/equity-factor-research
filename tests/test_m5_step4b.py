@@ -31,7 +31,7 @@ from data.public_factors import PublicDataRefusal
 from data.sec_edgar import COMPANYFACTS_URL
 
 
-pytestmark = pytest.mark.xdist_group("m5_step4b")
+pytestmark = [pytest.mark.slow, pytest.mark.xdist_group("m5_step4b")]
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # The step 4 synthetic outputs before the step 4b parameterization (base `aad02a0`): the summary as sorted JSON text,
 # and the report rendered from the in-memory summary (`STEP4_REPORT`). The regression tests compare the recomputed

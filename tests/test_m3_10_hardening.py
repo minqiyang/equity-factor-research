@@ -12,6 +12,8 @@ from features.diagnostics import deflated_sharpe_ratio
 from features.regime import regime_switching_factor_composite
 import research.multifactor_diagnostic_mvp as m
 
+pytestmark = pytest.mark.slow
+
 
 def panels(n=8, assets=4):
     dates = pd.bdate_range('2025-01-06', periods=n)

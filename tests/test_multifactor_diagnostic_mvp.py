@@ -157,6 +157,8 @@ from research.multifactor_diagnostic_mvp import (
 )
 from research.walking_skeleton_mvp import month_end_dates
 
+pytestmark = pytest.mark.slow
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST_PATH = (

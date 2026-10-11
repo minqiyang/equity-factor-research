@@ -46,8 +46,11 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
-# pytest-xdist registers this marker too; the line keeps -p no:xdist runs free of warnings.
-markers = ["xdist_group(name): run the marked tests on one worker under --dist loadgroup"]
+# pytest-xdist registers xdist_group too; listing it keeps -p no:xdist runs free of warnings.
+markers = [
+    "xdist_group(name): run the marked tests on one worker under --dist loadgroup",
+    "slow: a heavy end-to-end module; CI skips it when a pull request changes only documentation",
+]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
