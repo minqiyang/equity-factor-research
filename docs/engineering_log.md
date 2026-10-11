@@ -12,6 +12,24 @@ This is a living engineering log for review notes, correctness audits, bug fixes
 
 ---
 
+## 2026-10-11 - README and method page redesign
+
+- The README and `docs/research_method.md` now lead with the research question, the method design, and the result
+  of the last trial. All images are redrawn.
+- Removed the seven old SVG files, their PlantUML sources, `visual-system.json`, and the two unused files in
+  `docs/assets/`. Twelve new images, each in a light and a dark SVG, are drawn by Python scripts in
+  `assets/readme/source/` (`python build.py`). The scripts outline Berkeley Mono glyphs with fontTools, so the SVG
+  files hold no font file.
+- Every number in an image or in the text comes from `reports/m55_screen_v1.md`, `reports/m55_confirm_v1.md`, the
+  trial file, or the decision log. Two critic rounds checked the images against those sources. They found and fixed
+  four errors before commit: the exit tree implied many -100% settlements (the confirm run had 1); the blank-month
+  positions; the first EODHD date; and a screen period claim that ignored the 1961 to 1963 look-back rows.
+- Two fact-check rounds then checked each claim of the text against the repository, with two independent checks per
+  finding. The confirmed findings are fixed. The chain image now says "uses no value after 1992".
+- `docs/repo_map.md` is regenerated (docs file count 159 to 157). `CITATION.cff` names the current repository URL.
+
+---
+
 ## 2026-10-10 - Public report of the M5.5 confirm and check stages (run 4)
 
 - The coordinator ran `python -m research.m55_confirm_report` on a read-only copy of the run 4 folder at main
