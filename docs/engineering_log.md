@@ -27,7 +27,8 @@ This is a living engineering log for review notes, correctness audits, bug fixes
   largest single setup or call was 322 s down to 18 s, and no other module reached 30 s.
 - With docs-only mode, 3,683 of the 4,146 tests run. A run with no `-m` still collects all 4,146.
 - Read check: an audit hook logged each open and directory listing under the repository root during a `-m slow`
-  run. The slow modules opened only `docs/preregistrations/*.json` files, which the pattern does not match.
+  run. Under `docs/`, the slow modules opened only `docs/preregistrations/*.json` files. No slow module opened a
+  path that the docs-only pattern matches.
 - pytest-xdist resolves `-n auto` from `os.sched_getaffinity` because the dev extras do not install psutil. On a
   runner this is every vCPU.
 - `tests/test_ci_workflow.py` adds a classifier table test, a run of the classify step with a stub `git`, a run of
